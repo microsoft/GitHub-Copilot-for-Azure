@@ -8,5 +8,5 @@ You can use this repository to:
 * Search for potential work-arounds to problems you’re having.
 * Provide feedback on using GitHub Copilot for Azure.
 
-To install GitHub Copilot for Azure you will need to be using the latest version of
+To install GitHub Copilot for Azure you will need to be using the latest version of [VS Code](https://code.visualstudio.com/) or
 [VS Code Insiders](https://code.visualstudio.com/insiders/).
