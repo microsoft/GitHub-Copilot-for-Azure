@@ -8,6 +8,18 @@ The primary supported language for GitHub Copilot for Azure is English.
 
 GitHub Copilot for Azure works by using a combination of natural language processing and machine learning to understand your question and provide you with an answer. This process can be broken down into several steps. 
 
+## What's new
+
+GitHub Copilot for Azure has been updated with:
+
+- New features
+
+  - Deploy Azure OpenAI models.
+  - Code to Cloud recommends Azure services based on your application code and generates compatible Bicep or Terraform files, saving you valuable development time.
+  - Handle various API-related tasks including generating new API specifications by simply describing your requirements in natural language and designing compliant APIs that adhere to API Center governance and best practices.
+  - Accelerate use of online experimentation (private-preview).
+
+
 ## Input processing
 
 The input prompt from the user is pre-processed by the GitHub Copilot for Azure system, combined with contextual information (for example, Azure subscription that is currently selected), and sent to a large language model. User input is in the form of plain language. 
