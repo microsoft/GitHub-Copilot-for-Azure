@@ -19,7 +19,8 @@ jobs:
       - name: Run Info Needed Closer
         uses: ./actions/needs-more-info-closer
         with:
-          token: ${{secrets.AZCODE_BOT_PAT}}
+          owner: microsoft
+          repo: GitHub-Copilot-for-Azure
           label: info-needed
           closeDays: 14
           closeComment: "This issue has been closed automatically because it needs more information and has not had recent activity. See also our [issue reporting](https://aka.ms/azcodeissuereporting) guidelines.\n\nHappy Coding!"
