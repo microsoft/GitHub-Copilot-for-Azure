@@ -5,7 +5,8 @@ GitHub Copilot for Azure is the @azure extension. It’s designed to help stream
 You can use this repository to:
 
 * Upvote a feature or request a new one.
-* Search for potential work-arounds to problems you’re having.
+* Search for potential work-arounds to problem
+s you’re having.
 * Provide feedback on using GitHub Copilot for Azure.
 
 To install GitHub Copilot for Azure you will need to be using the latest version of [VS Code](https://code.visualstudio.com/) or
