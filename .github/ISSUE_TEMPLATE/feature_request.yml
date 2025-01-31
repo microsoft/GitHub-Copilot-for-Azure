@@ -50,13 +50,13 @@ body:
         Alternatively, it would be helpful if there was...
         To work around this problem, I've tried...
   
-  - type: textarea
+  - type: input
     id: impact
     attributes:
       label: Impact
       description: How often do you expect to use this feature? How much time will it save you? Is there any other impact you would like to share?
 
-  - type: textarea
+  - type: input
     id: context
     attributes:
       label: Additional Context
