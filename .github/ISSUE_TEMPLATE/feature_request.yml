@@ -18,7 +18,7 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: goal
     attributes:
       label: Problem
@@ -30,7 +30,7 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: solution
     attributes:
       label: Desired Solution
@@ -41,7 +41,7 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: alternative
     attributes:
       label: Alternatives and Workarounds
@@ -50,7 +50,7 @@ body:
         Alternatively, it would be helpful if there was...
         To work around this problem, I've tried...
 
-  - type: input
+  - type: textarea
     id: context
     attributes:
       label: Additional Context
