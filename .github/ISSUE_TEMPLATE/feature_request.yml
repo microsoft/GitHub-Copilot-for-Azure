@@ -1,24 +1,13 @@
 name: Request a Feature
 title: "[Feature]: "
-labels: ["enhancement"]
 description: Have an idea that would make GitHub Copilot for Azure better? Let us know!
 type: "Feature"
 labels:
-  - ":bulb: feature request"
+  - "enhancement"
 body:
-  - type: dropdown
-    id: topic
+  - type: markdown
     attributes:
-      label: Topic
-      options:
-        - Learn how to accomplish something in Azure
-        - Query details of your resources
-        - Troubleshoot an application hosted on Azure
-        - Create and provision Azure resources
-        - Learn about Azure costs
-        - None of the above
-    validations:
-      required: true
+      value: ---
 
   - type: textarea
     id: goal
