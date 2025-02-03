@@ -1,0 +1,85 @@
+name: Report a Bug
+title: "[Bug]: "
+description: Something not working as expected? Tell us more about the issue.
+type: "Bug"
+labels:
+  - "bug"
+body:
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Preflight Checklist
+      description: "Before submitting a bug report, please make sure you've done the following:"
+      options:
+        - label: I have installed the [latest version of GitHub Copilot for Azure in VS Code](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/latest).
+          required: true
+        - label: I have checked existing resources, including using the /help command in the chat window.
+          required: true
+        - label: I have searched for [similar issues](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues).
+          required: true
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: input
+    id: app-version
+    attributes:
+      label: GitHub Copilot for Azure Version
+      description: In which GitHub Copilot for Azure version was this bug encountered?
+      placeholder: 1.0.0
+    validations:
+      required: true
+ 
+  - type: input
+    id: regression
+    attributes:
+      label: Regression From
+      description: Was this working in a previous version? If so, which one?
+      placeholder: 1.0.0
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: What operating system and VS Code environment are you using?
+      placeholder: "Windows, Desktop App"
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Describe the actual experience of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to Reproduce
+      description: Provide the minimal steps to reproduce the bug.
+      placeholder: |
+        1. Launch VS Code
+        2. Submit a prompt "repro prompt" to @azure 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Experience
+      description: Describe what you expected to happen.
+
+  - type: input
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other details, such as error messages, unusual system configurations, network restrictions, etc.
