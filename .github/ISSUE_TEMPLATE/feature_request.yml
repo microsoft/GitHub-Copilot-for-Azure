@@ -1,0 +1,40 @@
+name: Request a Feature
+title: "[Feature]: "
+description: Have an idea that would make GitHub Copilot for Azure better? Let us know!
+type: "Feature"
+labels:
+  - "enhancement"
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Problem
+      description: What are you trying to accomplish?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Desired Solution
+      description: What solutions or fixes would you like to see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternatives and Workarounds
+      description: Are there alternative solutions you have considered? How have you tried to work around this problem?
+  
+  - type: input
+    id: impact
+    attributes:
+      label: Impact
+      description: How often do you expect to use this feature? How much time will it save you? Is there any other impact you would like to share?
+
+  - type: input
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context that can help us understand your feature request better.
