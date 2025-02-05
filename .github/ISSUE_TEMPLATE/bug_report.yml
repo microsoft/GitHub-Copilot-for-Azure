@@ -9,7 +9,7 @@ body:
     id: pre-flight
     attributes:
       label: Preflight Checklist
-      description: "Before submitting a bug report, please make sure you've done the following:"
+      description: "Before submitting an issue, please make sure you've done the following:"
       options:
         - label: I have installed the [latest version of GitHub Copilot for Azure in VS Code](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/latest).
           required: true
@@ -56,7 +56,7 @@ body:
   - type: textarea
     id: description
     attributes:
-      label: Bug Description
+      label: Describe the Issue
       description: What issue did you have? Such as "the extension fails to give a response and shows an error".
     validations:
       required: true
@@ -65,7 +65,7 @@ body:
     id: repro
     attributes:
       label: Steps to Reproduce
-      description: Could you share the steps to reproduce the issue?
+      description: Can you share the steps to reproduce the issue?
       placeholder: |
         1. Launch VS Code
         2. Submit a prompt "repro prompt" to @azure 
