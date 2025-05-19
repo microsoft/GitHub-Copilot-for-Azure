@@ -14,37 +14,37 @@ jobs:
     permissions:
       issues: write
     steps:
-      - name: Update Issue #321
+      - name: "Update Issue 321"
         run: gh issue edit 321 --title "Error: 'spawn UNKNOWN' when activating extension in VS Code on Windows"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
       
-      - name: Update Issue #319
+      - name: "Update Issue 319"
         run: gh issue edit 319 --title "Plugin fails with 'SSL connection could not be established' during Azure best practices invocation"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
       
-      - name: Update Issue #318
+      - name: "Update Issue 318"
         run: gh issue edit 318 --title "Extension reports 'operating system and architecture not supported' error"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
       
-      - name: Update Issue #314
+      - name: "Update Issue 314"
         run: gh issue edit 314 --title "Error: 'EPERM' when activating GitHub Copilot for Azure extension in VS Code on Windows"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
       
-      - name: Update Issue #297
+      - name: "Update Issue 297"
         run: gh issue edit 297 --title "Failed to acquire .NET runtime when installing GitHub Copilot for Azure on macOS"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
       
-      - name: Update Issue #271
+      - name: "Update Issue 271"
         run: gh issue edit 271 --title "Failed to load System.Private.CoreLib.dll during GitHub Copilot for Azure installation on Windows"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
