@@ -4,13 +4,13 @@
 
 Follow these best practices to maximize your experience with GitHub Copilot for Azure. If you encounter issues, these guidelines can help resolve common problems.
 
-- **Ask about capabilities**: Query the agent about its capabilities in detail. If you receive unexpected results or the agent can't help with your request, verify whether the capability is supported. You can then submit a feature request for missing capabilities or file a bug report for supported features that aren't working correctly.
+- **Ask about capabilities**: In both Ask mode and Agent mode, you can query the agent about its capabilities in detail. If you receive unexpected results or the agent can't help with your request, verify whether the capability is supported. You can then submit a feature request for missing capabilities or file a bug report for supported features that aren't working correctly.
 
-- **Monitor tool invocations**: When the agent invokes a tool, you can view the input parameters and output by expanding the tool invocation status UI in VS Code. Monitor these invocations to ensure the agent is working correctly. If you notice issues, prompt to help the agent resolve them.
+- **Monitor tool invocations**: In Agent mode, when the agent invokes a tool, you can view the input parameters and output by expanding the tool invocation status UI in VS Code. Monitor these invocations to ensure the agent is working correctly. If you notice issues, prompt to help the agent resolve them.
 
-- **Add context when needed**: Use the `Add Context` button in the chat window to provide additional information. If the agent seems to be missing key context while handling your request, add relevant context to guide its understanding.
+- **Add context when needed**: In both Ask mode and Agent mode, you can use the `Add Context` button in the chat window to provide additional information. If the agent seems to be missing key context while handling your request, add relevant context to guide its understanding.
 
-- **Request explanations**: Ask the agent to explain its reasoning when helping with your request. When you receive unexpected results, this can help you understand the agent's decision-making process. You can then prompt to correct any misunderstandings to improve the agent's behavior.
+- **Request explanations**: In both Ask mode and Agent mode, you can ask the agent to explain its reasoning when helping with your request. When you receive unexpected results, this can help you understand the agent's decision-making process. You can then prompt to correct any misunderstandings to improve the agent's behavior.
 
 ## CLI Tool Dependencies
 
