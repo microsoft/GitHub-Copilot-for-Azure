@@ -1,14 +1,14 @@
 # Code Citations
 
-## License: MIT
+## License: MIT (1)
 
 <https://github.com/MicrosoftDocs/quantum-docs-pr/blob/d8fc0b81dc4d46abe3c407ac906892ef63692052/articles/license.md>
 
-```
+```markdownlint
 an
 ```
 
-## License: MIT
+## License: MIT (6)
 
 <https://github.com/MicrosoftDocs/quantum-docs-pr/blob/d8fc0b81dc4d46abe3c407ac906892ef63692052/articles/license.md>
 
@@ -48,7 +48,7 @@ software named above and any Microsoft services or software updates
 (except to
 ```
 
-## License: MIT
+## License: MIT (2)
 
 <https://github.com/microsoft/mssql-docker/blob/264d7201bc6301e31f91d2e9cf3c5ac261906389/linux/preview/adutil/adutil_pre_release_license.md>
 
@@ -1902,7 +1902,7 @@ software is licensed, not sold. This
    b) reverse engineer, decompile or disassemble the software, or otherwise attempt to derive the source code for the software, except and to the extent required by thir
 ```
 
-## License: MIT
+## License: MIT (3)
 
 <https://github.com/microsoft/vscode-azureapicenter/blob/1377ba57562d2fa7be847e924a4187840c582cd7/EULA>
 
@@ -2885,7 +2885,7 @@ software is licensed, not sold. This
 some
 ```
 
-## License: MIT
+## License: MIT (4)
 
 <https://github.com/microsoft/ApplicationInsights-JS/blob/2a1c332f7039eb3e13711a0fa3732541c562b58f/channels/1ds-post-js/README.md>
 
@@ -3073,7 +3073,7 @@ some features in the software that may enable you
      [https://
 ```
 
-## License: MIT
+## License: MIT (5)
 
 <https://github.com/MicrosoftDocs/microsoft-365-docs/blob/449805d567738173f7cc29dc829847c39fc04f77/microsoft-365/security/defender-endpoint/mde-terms-windows.md>
 
