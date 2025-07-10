@@ -41,3 +41,32 @@ When reporting issues, providing detailed information helps us understand and re
   - The tool's output
   
   **Important**: Remove any private or sensitive data from prompts, inputs, and outputs before sharing.
+
+## Known Issues and Resolutions
+
+This section covers common issues that users may encounter while using GitHub Copilot for Azure and their recommended resolutions.
+
+### Corrupted Installation - Missing Files
+
+**Issue**: GitHub Copilot for Azure fails to load or certain features don't work due to missing or corrupted extension files. This may manifest as:
+- Extension fails to activate properly
+- Error messages about missing files
+- Error message about the operating system and processor architecture is not supported even though it should be.
+
+**Resolution**: 
+1. **Uninstall the extension**:
+   - Open the Extensions view in VS Code (<kbd>Ctrl+Shift+X</kbd> or <kbd>Cmd+Shift+X</kbd>)
+   - Find "GitHub Copilot for Azure" in your installed extensions
+   - Click the gear icon and select "Uninstall"
+
+3. **Reinstall the extension**:
+   - Restart VS Code
+   - Go to the Extensions view
+   - Search for "GitHub Copilot for Azure"
+   - Install the extension from Microsoft
+
+4. **Verify the installation**:
+   - Restart VS Code after installation
+   - Test basic functionality by asking a simple Azure question
+
+If the issue persists after following these steps, you may want to inspect the installed files to see which files are missing. In VS Code, press <kbd>F1</kbd> and run the `Extensions: Open Extensions Folder` command. This will open the directory where all the extensions are installed. Navigate into `ms-azuretools.vscode-azure-github-copilot-{version}-{os}-{arch}` > `dist` > `node_modules` > `aidriver.{os}.{arch}`, collect the file names of files in this directory and share with us so we can compare and find out which ones are missing.
