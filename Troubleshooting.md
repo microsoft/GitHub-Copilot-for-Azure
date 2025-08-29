@@ -12,6 +12,8 @@ Follow these best practices to maximize your experience with GitHub Copilot for 
 
 - **Request explanations**: In both Ask mode and Agent mode, you can ask the agent to explain its reasoning when helping with your request. When you receive unexpected results, this can help you understand the agent's decision-making process. You can then prompt to correct any misunderstandings to improve the agent's behavior.
 
+- **Working with Azure resource tags**: When asking GitHub Copilot for Azure to help with tagging operations, provide specific context about your tagging requirements. Mention the resource types, subscription scope, and any existing tagging policies. For bulk tagging operations, always review the generated commands carefully before execution, as improper tagging can affect resource organization and cost tracking.
+
 ## CLI Tool Dependencies
 
 GitHub Copilot for Azure relies on external CLI tools for various operations. For example, after generating Azure CLI commands (`az`), VS Code needs access to the Azure CLI to execute them. Similarly, the extension may invoke Azure Developer CLI commands (`azd`) to deploy resources to Azure. Follow these guidelines to ensure optimal performance:

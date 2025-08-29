@@ -54,6 +54,19 @@ GitHub Copilot for Azure uses content from learn.microsoft.com as well as the 3r
 
 When a user asks a question that is related to deployed Azure resources, GitHub Copilot for Azure will convert the user’s question from natural language to a query compatible with Azure Resource Graph, run the query, and then use the results from the query to generate a response. 
 
+### Creating and managing Azure resource tags
+
+GitHub Copilot for Azure can help you create, modify, and manage tags for Azure resources. When you ask about tagging resources, GitHub Copilot for Azure can generate Azure CLI commands, PowerShell scripts, or provide guidance on using the Azure portal to apply tags. It can assist with common tagging scenarios such as:
+
+- Creating standardized tag schemas for resource organization
+- Applying cost center, environment, or project tags to resources
+- Bulk tagging operations across multiple resources
+- Generating tagging policies and governance recommendations
+- Querying resources based on existing tags
+- Managing tag inheritance and compliance
+
+GitHub Copilot for Azure leverages Azure Resource Graph queries to help you understand current tagging state and can provide specific commands tailored to your subscription and resource context.
+
 ### Deploying sample applications with azd templates
 
 GitHub Copilot for Azure can detect when a user is interested in deploying a new application based on an Azure Developer CLI (azd) template. GitHub Copilot for Azure will query the available templates to find one that most closely matches the user’s question and present it to the user, along with instructions for initializing the template on their local machine in preparation for deploying it to Azure. GitHub Copilot for Azure can also instruct the user in how to deploy the application to Azure through use of azd CLI commands. 
