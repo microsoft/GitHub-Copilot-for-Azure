@@ -1,5 +1,7 @@
 # How to install Azure Functions Core Tools on Linux
 
+This document describes how to install Azure Functions Core Tools on Linux to minimize issues during the setup phase.
+
 ## Azure Functions Core Tools information
 
 Azure Functions Core Tools is a command-line tool for developing and testing Azure Functions locally.

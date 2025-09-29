@@ -1,5 +1,7 @@
 # How to install Azure Developer CLI on Linux
 
+This document describes how to install Azure Developer CLI on Linux to minimize issues during the setup phase.
+
 ## Azure Developer CLI information
 
 Azure Developer CLI is a cross-platform command-line tool that enables developers to provision and deploy Azure resources using infrastructure as code.
