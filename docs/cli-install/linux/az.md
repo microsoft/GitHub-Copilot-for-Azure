@@ -4,9 +4,9 @@ This document describes how to install Azure CLI on Linux to minimize issues dur
 
 ## Azure CLI information
 
-Azure CLI is a Cross-platform command-line tool to connect to Azure and execute administrative commands on Azure resources. 
+Azure CLI is a cross-platform command-line tool to connect to Azure and execute administrative commands on Azure resources. 
 
-The default command for Azure CLI is "az".
+The default command for Azure CLI is `az`.
 
 ### Install via official script
 
@@ -34,6 +34,8 @@ Make as many modifications as you want to customize how Azure CLI will be instal
 
 ## Verify installation
 
-To verify installation of Azure CLI, you can execute "az version" which will list the version of the installed Azure CLI. If the installation is successful, the command will print the version.
+To verify installation of Azure CLI, you can execute `az version` which will list the version of the installed Azure CLI. If the installation is successful, the command will print the version.
 
-If you are already in a terminal and you get the `'az' command not found` error, you will need to find where apt installs the Azure CLI executable and add its path to the PATH environment variable.
+## Documentation
+
+[Official docs](https://learn.microsoft.com/cli/azure/)

@@ -4,9 +4,9 @@ This document describes how to install Azure CLI on macOS to minimize issues dur
 
 ## Azure CLI information
 
-Azure CLI is a Cross-platform command-line tool to connect to Azure and execute administrative commands on Azure resources. 
+Azure CLI is a cross-platform command-line tool to connect to Azure and execute administrative commands on Azure resources. 
 
-The default command for Azure CLI is "az".
+The default command for Azure CLI is `az`.
 
 ### Install via Homebrew package manager
 
@@ -20,6 +20,8 @@ Homebrew will automatically update the PATH environment variable to include the 
 
 ## Verify installation
 
-To verify installation of Azure CLI, you can execute "az version" which will list the version of the installed Azure CLI. If the installation is successful, the command will print the version.
+To verify installation of Azure CLI, you can execute `az version` which will list the version of the installed Azure CLI. If the installation is successful, the command will print the version.
 
-If you are already in a terminal and you get the `'az' command not found` error, you can manually add the `/opt/homebrew/bin` to the PATH environment variable.
+## Documentation
+
+[Official docs](https://learn.microsoft.com/cli/azure/)
