@@ -70,3 +70,21 @@ This section covers common issues that users may encounter while using GitHub Co
    - Test basic functionality by asking a simple Azure question
 
 If the issue persists after following these steps, you may want to inspect the installed files to see which files are missing. In VS Code, press <kbd>F1</kbd> and run the `Extensions: Open Extensions Folder` command. This will open the directory where all the extensions are installed. Navigate into `ms-azuretools.vscode-azure-github-copilot-{version}-{os}-{arch}` > `dist` > `node_modules` > `aidriver.{os}.{arch}`, collect the file names of files in this directory and share with us so we can compare and find out which ones are missing.
+
+### Error message "spawn EPERM"
+
+**Issue**: GitHub Copilot for Azure fails to activate because the system prevents one of its processes from starting. This usually manifests with the error message "spawn EPERM".
+
+**Resolution**:
+1. **Confirm the issue**:
+   - Using the steps in "Collecting Information for troubleshooting" (above) find the path to the executable GitHub Copilot for Azure is trying to start.
+   - Open a terminal and try to start the executable manually.
+   - If the process fails to start with a permission or authorization issue, proceed to step 2. Otherwise, proceed to step 3.
+
+2. **Contact your system administrator**
+   - If the error occurs on a Windows system, it is likely the executable is being blocked by a system policy.
+   - Contact your system administrator about adjusting the policy to allow the executable to run.
+  
+3. **Collect more information and file an issue**
+   - If the executable runs when manually started in the terminal, or you are not running Windows, collect the information in "Collecting Information for troubleshooting" (above).
+   - File an issue in this repo with the collected information.
