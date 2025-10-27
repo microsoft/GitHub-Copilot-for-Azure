@@ -123,7 +123,7 @@ do
         }
         if (toolApprovals.Count > 0)
         {
-            run = await client.Runs.SubmitToolOutputsToRunAsync(run, toolApprovals: toolApprovals);
+            run = await client.Runs.SubmitToolOutputsToRunAsync(thread.Id, run.Id, toolApprovals: toolApprovals);
         }
     }
 }
