@@ -23,7 +23,7 @@ Start by creating an `PersistentAgentsClient` with this piece of C# code
 
 ```C#
 var projectEndpoint = Environment.GetEnvironmentVariable("PROJECT_ENDPOINT");
-PersistentAgentsClient projectClient = new(projectEndpoint, new DefaultAzureCredential());
+PersistentAgentsClient client = new(projectEndpoint, new DefaultAzureCredential());
 ```
 
 ## Create an Agent
