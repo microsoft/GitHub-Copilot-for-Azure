@@ -1,0 +1,16 @@
+{
+    "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+    "name": "github-copilot-for-azure",
+    "owner": {
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+    },
+    "plugins": [
+        {
+            "name": "azure",
+            "description": "Microsoft Azure MCP integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from Claude Code.",
+            "source": "./claude",
+            "homepage": "https://github.com/microsoft/github-copilot-for-azure"
+        }
+    ]
+}
