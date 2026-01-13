@@ -1,12 +1,17 @@
-# GitHub Copilot for Azure in Visual Studio Code
+# GitHub Copilot for Azure
 
-GitHub Copilot for Azure is the @azure extension. It’s designed to help streamline the process of developing for Azure. You can ask @azure questions about Azure services or get help with tasks related to Azure and developing for Azure, all from within Visual Studio Code. [Learn more](https://aka.ms/LearnAboutGitHubCopilotForAzure) about GitHub Copilot for Azure, and [get the extension in Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azure-github-copilot).
+GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and Claude Code designed to streamline the process of developing for Azure. It’s designed to help streamline the process of developing for Azure. You can ask it questions about your Azure services or get help with tasks related to Azure and developing for Azure, all from within your IDE.
+
+[Learn more](https://aka.ms/LearnAboutGitHubCopilotForAzure) about GitHub Copilot for Azure, and get the extension:
+- [VS Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azure-github-copilot)
+- [VS 2022](https://marketplace.visualstudio.com/items?itemName=github-copilot-azure.GitHubCopilotForAzure2022)
+- VS 2026 - included "in the box" as part of the "Azure & AI" workload
+- Claude - coming soon!
+
+## Contributing
 
 You can use this repository to:
 
 * Upvote a feature or request a new one.
 * Search for potential work-arounds to problems you’re having.
 * Provide feedback on using GitHub Copilot for Azure.
-
-To install GitHub Copilot for Azure you will need to be using the latest version of [VS Code](https://code.visualstudio.com/) or
-[VS Code Insiders](https://code.visualstudio.com/insiders/).
