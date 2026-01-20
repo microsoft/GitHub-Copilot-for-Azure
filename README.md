@@ -4,9 +4,9 @@ GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and 
 
 [Learn more](https://aka.ms/LearnAboutGitHubCopilotForAzure) about GitHub Copilot for Azure, and get the extension:
 - [VS Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azure-github-copilot)
-- [VS 2022](https://marketplace.visualstudio.com/items?itemName=github-copilot-azure.GitHubCopilotForAzure2022)
-- VS 2026 - included "in the box" as part of the "Azure & AI" workload
-- Claude - coming soon!
+- [Visual Studio 2022](https://marketplace.visualstudio.com/items?itemName=github-copilot-azure.GitHubCopilotForAzure2022)
+- Visual Studio 2026 - included "in the box" as part of the "Azure & AI" workload
+- Claude - coming soon
 
 ## Contributing
 
