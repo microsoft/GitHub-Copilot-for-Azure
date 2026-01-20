@@ -208,7 +208,9 @@ az: command not found
 
 **Handling:**
 1. Note in report
-2. Provide installation link
+2. Provide installation instructions.
+  - If available use the Azure MCP `extension_cli_install` tool to get installation instructions.
+  - Otherwise look for instructions at https://learn.microsoft.com/en-us/cli/azure/install-azure-cli.
 3. Skip az commands
 
 **Report Entry:**
@@ -218,7 +220,7 @@ az: command not found
 - **Severity:** Warning
 - **Source:** environment
 - **Message:** Azure CLI (az) is not installed or not in PATH
-- **Remediation:** Install Azure CLI: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+- **Remediation:** Install the Azure CLI <ADD INSTALLATION INSTRUCTIONS HERE>
 - **Impact:** What-if validation using az commands was skipped
 ```
 
