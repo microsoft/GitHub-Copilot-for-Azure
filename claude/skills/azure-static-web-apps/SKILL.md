@@ -149,7 +149,7 @@ swa deploy ./dist                       # Deploy specific folder
 swa deploy --env production             # Deploy to production
 swa deploy --deployment-token <TOKEN>   # Use deployment token
 swa deploy --dry-run                    # Preview without deploying
-saw deploy --verbose silly              # Shows _all_ deployment issues
+swa deploy --verbose silly              # Shows _all_ deployment issues
 ```
 
 **Get deployment token:**
