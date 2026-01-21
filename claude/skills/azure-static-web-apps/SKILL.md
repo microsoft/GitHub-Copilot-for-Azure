@@ -31,7 +31,8 @@ Verify: `npx swa --version`
 
 **IMPORTANT: Always use `swa init` to create configuration files. Never manually create `swa-cli.config.json`.**
 
-1. `swa init` - **Required first step** - auto-detects framework and creates `swa-cli.config.json`
+1. **Required first step** - If requested by the user, create the frontend and backend.
+1. `swa init` - Auto-detects framework and creates `swa-cli.config.json`
 2. `swa start` - Run local emulator at `http://localhost:4280`
 3. `swa login` - Authenticate with Azure
 4. `swa deploy` - Deploy to Azure
@@ -148,6 +149,7 @@ swa deploy ./dist                       # Deploy specific folder
 swa deploy --env production             # Deploy to production
 swa deploy --deployment-token <TOKEN>   # Use deployment token
 swa deploy --dry-run                    # Preview without deploying
+saw deploy --verbose silly              # Shows _all_ deployment issues
 ```
 
 **Get deployment token:**
@@ -172,6 +174,14 @@ swa db init --database-type cosmosdb_nosql
 
 ## Scenarios
 
+### Create a New SWA
+
+- Unless told otherwise, put the frontend in a folder called "app".
+- Unless told otherwise, put the backend in a folder called "api".
+- Create the frontend and/or backend per the user's instructions.
+- Install any dependencies.
+- Then proceed to initialize the static web app as described in the following section, "Create SWA from Existing Frontend and Backend".
+
 ### Create SWA from Existing Frontend and Backend
 
 **Always run `swa init` before `swa start` or `swa deploy`. Do not manually create `swa-cli.config.json`.**
@@ -193,7 +203,7 @@ npx swa start
 
 # 5. Deploy
 npx swa login
-npx swa deploy --env production
+npx swa deploy --env production --verbose silly
 ```
 
 ### Add Azure Functions Backend
@@ -311,5 +321,6 @@ jobs:
 ```bash
 swa start --verbose log        # Verbose output
 swa deploy --dry-run           # Preview deployment
+swa deploy --verbose silly     # Shows _all_ deployment issues
 swa --print-config             # Show resolved configuration
 ```
