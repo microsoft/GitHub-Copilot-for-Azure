@@ -29,7 +29,7 @@ Ask for these requirements one at a time so that you don't overwhelm the user wi
 
 ## Researching Background Information
 
-General information on agent skills can be found at [Agent Skills](https://agentskills.io/). This includes an overview of what agent skills are, how they function, best practices for their development, and detailed specifications. 
+General information on agent skills can be found at [Agent Skills](https://agentskills.io/). This includes an overview of what agent skills are, how they function, best practices for their development, and detailed specifications.
 
 Based on the user's requirements, research and gather any additional background information that may be relevant to the skill. This may include:
 - Existing Azure services or APIs that the skill will interact with.
@@ -42,4 +42,4 @@ Once the research is complete, compile all the gathered requirements in a new fi
 
 REQUIREMENTS.md should _always_ include the following:
 - Relevant links to the [Agent Skills](https://agentskills.io/) documentation.
-- An instruction that any shell scripts should include bash and PowerShell versions for compatibility with Linux, Mac, and Windows environments. 
+- An instruction that any shell scripts should include bash and PowerShell versions for compatibility with Linux, Mac, and Windows environments.
