@@ -241,6 +241,7 @@ bicep build <bicep-file> [options]
 
 **Examples:**
 
+**Bash:**
 ```bash
 # Validate syntax (output to stdout, no file created)
 bicep build main.bicep --stdout > /dev/null
@@ -250,6 +251,18 @@ bicep build main.bicep --outdir ./build
 
 # Validate multiple files
 for f in *.bicep; do bicep build "$f" --stdout; done
+```
+
+**PowerShell:**
+```powershell
+# Validate syntax (output to stdout, no file created)
+bicep build main.bicep --stdout | Out-Null
+
+# Build to specific directory
+bicep build main.bicep --outdir ./build
+
+# Validate multiple files
+Get-ChildItem -Filter *.bicep | ForEach-Object { bicep build $_.FullName --stdout }
 ```
 
 **Error Output Format:**
@@ -372,7 +385,16 @@ targetScope = 'tenant'
 | Bicep CLI | 0.4.0 | Latest | Best error messages |
 
 **Check versions:**
+
+**Bash:**
 ```bash
+az --version
+azd version
+bicep --version
+```
+
+**PowerShell:**
+```powershell
 az --version
 azd version
 bicep --version
