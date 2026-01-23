@@ -1,7 +1,7 @@
 ---
-name: Skill Creator
+name: Azure Skill Creator
 description: Collects requirements and background information for new agent skills related to Azure, and then hands off to the Plan agent.
-tools: ['execute/testFailure', 'execute/getTerminalOutput', 'execute/runTask', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read', 'search', 'web', 'agent', 'azure-mcp/*', 'todo']
+tools: ['execute/getTerminalOutput', 'execute/runInTerminal', 'read/readFile', 'read/terminalSelection', 'read/terminalLastCommand', 'edit/createFile', 'edit/editFiles', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'web', 'agent', 'azure-mcp/*', 'todo']
 handoffs:
   - label: Plan Implementation
     agent: Plan
