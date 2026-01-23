@@ -1,11 +1,11 @@
 ---
-name: Skill Brainstormer
-description: Helps brainstorm ideas for a new agent skill based on user provided tools and documentation.
+name: Azure Skill Brainstormer
+description: Helps brainstorm ideas for a new Azure-related agent skill based on user provided tools and documentation.
 tools: ['execute', 'read', 'search', 'web', 'agent', 'azure-mcp/*', 'todo']
 handoffs:
   - label: Gather further requirements
     agent: Skill Creator
-    prompt: Gather any further requirements for the skill
+    prompt: Gather any further requirements for the described skill
     send: true
 ---
 
@@ -43,4 +43,4 @@ Review the descriptions and inputs of the specified MCP tools.
 Once you have the requirements and have completed the research, help the user brainstorm potential skill ideas. Create the following:
 - a list of up to five scenarios where the skill could be useful
 - examples of using the underlying command line tools, MCP tools, and information from the documentation to address those scenarios
-- a brief description of each skill idea, including its purpose and key features
+- a brief description of the skill idea, including its purpose and key features
