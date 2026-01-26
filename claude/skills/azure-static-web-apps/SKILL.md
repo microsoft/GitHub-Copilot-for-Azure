@@ -30,14 +30,14 @@ Verify: `npx swa --version`
 
 ### Quick Start Workflow
 
-**IMPORTANT: Always use `swa init` to create configuration files. Never manually create `swa-cli.config.json`.**
+**IMPORTANT: Do not use `swa init` in this workflow. Create and maintain `swa-cli.config.json` manually using the provided example and schema.**
 
 1. **Required first step** - If requested by the user, create the frontend and backend.
 2. Create `swa-cli.config.json` if it does not exist. Use [example-swa-cli.config.json](references/example-swa-cli.config.json) as an example, and also consider the complete [schema](references/swa-cli.config.schema.json). Look through the workspace to identify the location of the frontend and backend and to fill in the other parts of the config file.
 3. `swa start` - Run local emulator at `http://localhost:4280`
 4. `az login` - Authenticate with Azure
-5. `az staticwebapp` - Create the static web app resource in Azure if it does not already exist
-5. `swa deploy --verbose silly` - Deploy to Azure
+5. `az staticwebapp create --name <app-name> --resource-group <resource-group> --location <location> --source <app-source-path>` - Create the static web app resource in Azure if it does not already exist
+6. `swa deploy --verbose silly` - Deploy to Azure
 
 ### Configuration Files
 
