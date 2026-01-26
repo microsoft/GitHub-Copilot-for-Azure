@@ -1,5 +1,5 @@
 ---
-name: aca-deployment
+name: azure-aca-deployment
 description: Automated deployment workflow for containerized applications to Azure Container Apps using Azure MCP tools. Use this skill when deploying full-stack web applications, containerized microservices, APIs with auto-scaling, or multi-container applications to Azure.
 ---
 
