@@ -14,7 +14,8 @@ Azure Static Web Apps (SWA) hosts static frontends with optional serverless API 
 - Database connections support
 
 **Config files:**
-- `swa-cli.config.json` - CLI settings, **created by `swa init`** (never create manually)
+- `swa-cli.config.json` - CLI settings
+   - While this can be created by `swa init` you should _always_ create it manually
 - `staticwebapp.config.json` - Runtime config (routes, auth, headers, API runtime) - can be created manually
 
 ## General Instructions
@@ -29,38 +30,22 @@ Verify: `npx swa --version`
 
 ### Quick Start Workflow
 
-**IMPORTANT: Always use `swa init` to create configuration files. Never manually create `swa-cli.config.json`.**
+**IMPORTANT: Do not use `swa init` in this workflow. Create and maintain `swa-cli.config.json` manually using the provided example and schema.**
 
-1. `swa init` - **Required first step** - auto-detects framework and creates `swa-cli.config.json`
-2. `swa start` - Run local emulator at `http://localhost:4280`
-3. `swa login` - Authenticate with Azure
-4. `swa deploy` - Deploy to Azure
+1. **Required first step** - If requested by the user, create the frontend and backend.
+2. Create `swa-cli.config.json` if it does not exist. Use [example-swa-cli.config.json](references/example-swa-cli.config.json) as an example, and also consider the complete [schema](references/swa-cli.config.schema.json). Look through the workspace to identify the location of the frontend and backend and to fill in the other parts of the config file.
+3. `swa start` - Run local emulator at `http://localhost:4280`
+4. `az login` - Authenticate with Azure
+5. `az staticwebapp create --name <app-name> --resource-group <resource-group> --location <location> --source <app-source-path>` - Create the static web app resource in Azure if it does not already exist
+6. `swa deploy --verbose silly` - Deploy to Azure
 
 ### Configuration Files
 
-**swa-cli.config.json** - Created by `swa init`, do not create manually:
-- Run `swa init` for interactive setup with framework detection
-- Run `swa init --yes` to accept auto-detected defaults
-- Edit the generated file only to customize settings after initialization
+**swa-cli.config.json** - Contains parameters used by the various `swa` commands. If it does not exist it should be created after the frontend and backend have been created, and before any `swa` commands.
 
-Example of generated config (for reference only):
-```json
-{
-  "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
-  "configurations": {
-    "app": {
-      "appLocation": ".",
-      "apiLocation": "api",
-      "outputLocation": "dist",
-      "appBuildCommand": "npm run build",
-      "run": "npm run dev",
-      "appDevserverUrl": "http://localhost:3000"
-    }
-  }
-}
-```
+Use [example-swa-cli.config.json](references/example-swa-cli.config.json) as an example, and also consider the complete [schema](references/swa-cli.config.schema.json).
 
-**staticwebapp.config.json** (in app source or output folder) - This file CAN be created manually for runtime configuration:
+**staticwebapp.config.json** (in app source or output folder) - This file provides the runtime configuration for the static web app:
 ```json
 {
   "navigationFallback": {
@@ -92,12 +77,7 @@ swa login --clear-credentials          # Clear cached credentials
 
 ### swa init
 
-Configure a new SWA project based on an existing frontend and (optional) API. Detects frameworks automatically.
-
-```bash
-swa init                    # Interactive setup
-swa init --yes              # Accept defaults
-```
+Do not use this command. Instead, create the swa-cli.config.json manually.
 
 ### swa build
 
@@ -140,7 +120,7 @@ swa start http://localhost:3000 --run "npm start"  # Auto-start dev server
 
 ### swa deploy
 
-Deploy to Azure Static Web Apps.
+Deploys to an existing Azure Static Web App resource. If the resource hasn't been created yet, create it with `az staticwebapp` and fill in the `appName` and `resourceGroup` properties in the swa-cli.config.json file.
 
 ```bash
 swa deploy                              # Deploy using config
@@ -149,6 +129,8 @@ swa deploy --env production             # Deploy to production
 swa deploy --deployment-token <TOKEN>   # Use deployment token
 swa deploy --dry-run                    # Preview without deploying
 ```
+
+While the examples do not include it for brevity, you should always pass `--verbose silly` to `swa deploy` to ensure you get all the deployment details and error messages.
 
 **Get deployment token:**
 - Azure Portal: Static Web App → Overview → Manage deployment token
@@ -172,18 +154,23 @@ swa db init --database-type cosmosdb_nosql
 
 ## Scenarios
 
+### Create a New SWA
+
+- Unless told otherwise, put the frontend in a folder called "app".
+- Unless told otherwise, put the backend in a folder called "api".
+- Create the frontend and/or backend per the user's instructions.
+- Install any dependencies.
+- Then proceed to initialize the static web app as described in the following section, "Create SWA from Existing Frontend and Backend".
+
 ### Create SWA from Existing Frontend and Backend
 
-**Always run `swa init` before `swa start` or `swa deploy`. Do not manually create `swa-cli.config.json`.**
+**Always create the `swa-cli.config.json` before `swa start` or `swa deploy`.**
 
 ```bash
 # 1. Install CLI
 npm install -D @azure/static-web-apps-cli
 
-# 2. Initialize - REQUIRED: creates swa-cli.config.json with auto-detected settings
-npx swa init              # Interactive mode
-# OR
-npx swa init --yes        # Accept auto-detected defaults
+# 2. Creates swa-cli.config.json with correct values
 
 # 3. Build application (if needed)
 npm run build
@@ -192,8 +179,8 @@ npm run build
 npx swa start
 
 # 5. Deploy
-npx swa login
-npx swa deploy --env production
+az login
+npx swa deploy --env production --verbose silly
 ```
 
 ### Add Azure Functions Backend
@@ -311,5 +298,6 @@ jobs:
 ```bash
 swa start --verbose log        # Verbose output
 swa deploy --dry-run           # Preview deployment
+swa deploy --verbose silly     # Shows _all_ deployment issues
 swa --print-config             # Show resolved configuration
 ```
