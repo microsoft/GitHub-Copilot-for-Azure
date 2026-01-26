@@ -1,6 +1,6 @@
 ---
 name: azure-deploy
-description: Deploy applications to Azure including deployment planning, infrastructure as code rules, application logs, CI/CD pipeline guidance, and architecture diagrams.
+description: Deploy applications to Azure including deployment planning, infrastructure as code rules, application logs, CI/CD pipeline guidance, and architecture diagrams. Supports Container Apps, Container Apps Jobs (scheduled/cron tasks), App Service, Functions, and more.
 ---
 
 ## Capabilities
@@ -47,6 +47,24 @@ Get the logs from my deployed Container App
 How do I set up a GitHub Actions pipeline to deploy to Azure?
 ```
 
+### Deploy Scheduled Job
+
+```
+Deploy a scheduled task that runs daily at midnight
+```
+
+### Deploy Cron Job
+
+```
+Create a cron job to process data every hour on Azure
+```
+
+### Deploy Event-Driven Job
+
+```
+Deploy a job that processes messages from an Azure Storage Queue
+```
+
 ## Deployment Plan Output
 
 Plans are generated to `.azure/plan.copilotmd` and include:
@@ -58,7 +76,8 @@ Plans are generated to `.azure/plan.copilotmd` and include:
 
 ## Supported Deployment Targets
 
-- Azure Container Apps
+- Azure Container Apps (long-running services)
+- Azure Container Apps Jobs (scheduled tasks, cron jobs, event-driven batch processing)
 - Azure App Service
 - Azure Functions
 - Azure Kubernetes Service
