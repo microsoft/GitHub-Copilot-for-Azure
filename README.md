@@ -28,4 +28,8 @@ You can use this repository to:
 
 New skills can be placed under `plugin/skills`.
 
-If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill by providing links to documentation and describing any MCP or command line tools that should be included. The only difference between the two is that the Creator expects you already know what scenarios the skill should address, while the brainstormer will come up with scenarios.
+If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill:
+- Provide links to documentation
+- Describe any MCP or command line tools that should be included
+
+The only difference between the two agents is that the Creator expects you already know what scenarios the skill should address, while the Brainstormer will come up with scenarios for you.
