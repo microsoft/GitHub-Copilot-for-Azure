@@ -59,19 +59,48 @@ async function validatePrerequisites() {
     throw new Error('Not authenticated with Azure CLI. Run: az login');
   }
   
-  // Check Azure Functions Core Tools
+  // Check Azure Functions Core Tools - install if not present
   try {
     await exec('func --version');
     checks.push({ name: 'Azure Functions Core Tools', status: 'installed' });
   } catch (error) {
-    throw new Error('Azure Functions Core Tools not installed. Install from: https://docs.microsoft.com/azure/azure-functions/functions-run-local');
+    console.log('Azure Functions Core Tools not found. Installing...');
+    try {
+      await exec('npm install -g azure-functions-core-tools@4 --unsafe-perm true');
+      checks.push({ name: 'Azure Functions Core Tools', status: 'installed (just now)' });
+    } catch (installError) {
+      throw new Error('Failed to install Azure Functions Core Tools. Please install manually: npm install -g azure-functions-core-tools@4');
+    }
   }
   
   return checks;
 }
 ```
 
-**Key insight**: Azure Functions Core Tools (`func`) is required for local development and deployment. Install with `npm install -g azure-functions-core-tools@4`.
+### Platform-Specific Installation
+
+If npm installation fails, use platform-specific installers:
+
+```bash
+# Windows (winget)
+winget install Microsoft.AzureFunctionsCoreTools
+
+# Windows (Chocolatey)
+choco install azure-functions-core-tools
+
+# macOS (Homebrew)
+brew tap azure/functions
+brew install azure-functions-core-tools@4
+
+# Linux (Ubuntu/Debian)
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
+sudo apt-get update
+sudo apt-get install azure-functions-core-tools-4
+```
+
+**Key insight**: Azure Functions Core Tools (`func`) is required for local development and deployment. The validation will attempt automatic installation via npm if not found.
 
 ## Pattern 1: Initialize Function Project
 
@@ -205,6 +234,7 @@ az functionapp create \
     --resource-group $RESOURCE_GROUP \
     --storage-account $STORAGE_ACCOUNT \
     --plan myPremiumPlan \
+    --os-type Linux \
     --runtime node \
     --runtime-version 20 \
     --functions-version 4
@@ -229,7 +259,7 @@ func azure functionapp publish $FUNCTION_APP --verbose
 
 ```bash
 # Deploy using zip deployment
-func azure functionapp publish $FUNCTION_APP --zip
+func azure functionapp publish $FUNCTION_APP
 
 # Deploy specific slot
 func azure functionapp publish $FUNCTION_APP --slot staging
@@ -290,8 +320,8 @@ View function execution logs and diagnostics.
 # Stream live logs
 func azure functionapp logstream $FUNCTION_APP
 
-# View logs in portal
-az functionapp log show \
+# View deployment logs
+az functionapp log deployment list \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP
 
@@ -301,16 +331,16 @@ az monitor app-insights component create \
     --location $LOCATION \
     --resource-group $RESOURCE_GROUP
 
-# Link App Insights to Function App
-APPINSIGHTS_KEY=$(az monitor app-insights component show \
+# Link App Insights to Function App (use connection string - instrumentationKey is deprecated)
+APPINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
     --app $FUNCTION_APP-insights \
     --resource-group $RESOURCE_GROUP \
-    --query instrumentationKey -o tsv)
+    --query connectionString -o tsv)
 
 az functionapp config appsettings set \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP \
-    --settings "APPINSIGHTS_INSTRUMENTATIONKEY=$APPINSIGHTS_KEY"
+    --settings "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING"
 ```
 
 ## Pattern 7: Deployment Slots (Premium/Dedicated Plans)
@@ -335,9 +365,11 @@ az functionapp deployment slot swap \
     --target-slot production
 ```
 
-## Pattern 8: CI/CD with GitHub Actions
+## Pattern 8: CI/CD with GitHub Actions 
 
 Automate deployments with GitHub Actions.
+
+> **Important**: Before creating CI/CD pipelines, get CI/CD guidance with `deploy_pipeline_guidance_get`.
 
 `.github/workflows/azure-functions.yml`:
 ```yaml
