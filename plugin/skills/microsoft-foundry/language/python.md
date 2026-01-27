@@ -96,9 +96,8 @@ import os
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    AzureAISearchAgentTool,
-    PromptAgentDefinition,
+from azure.ai.agents.models import (
+    AzureAISearchToolDefinition,
     AzureAISearchToolResource,
     AISearchIndexResource,
     AzureAISearchQueryType,
@@ -121,32 +120,29 @@ azs_connection = project_client.connections.get(
 connection_id = azs_connection.id
 
 # Create agent with Azure AI Search tool
-agent = project_client.agents.create_version(
-    agent_name="RAGAgent",
-    definition=PromptAgentDefinition(
-        model=os.environ["FOUNDRY_MODEL_DEPLOYMENT_NAME"],
-        instructions="""You are a helpful assistant that uses the knowledge base 
-        to answer questions. You must always provide citations using the tool 
-        and render them as: `[message_idx:search_idx†source]`. 
-        If you cannot find the answer in the knowledge base, say "I don't know".""",
-        tools=[
-            AzureAISearchAgentTool(
-                azure_ai_search=AzureAISearchToolResource(
-                    indexes=[
-                        AISearchIndexResource(
-                            project_connection_id=connection_id,
-                            index_name=os.environ["AI_SEARCH_INDEX_NAME"],
-                            query_type=AzureAISearchQueryType.HYBRID,
-                        ),
-                    ]
-                )
+agent = project_client.agents.create_agent(
+    model=os.environ["FOUNDRY_MODEL_DEPLOYMENT_NAME"],
+    name="RAGAgent",
+    instructions="""You are a helpful assistant that uses the knowledge base 
+    to answer questions. You must always provide citations using the tool 
+    and render them as: `[message_idx:search_idx†source]`. 
+    If you cannot find the answer in the knowledge base, say "I don't know".""",
+    tools=[
+        AzureAISearchToolDefinition(
+            azure_ai_search=AzureAISearchToolResource(
+                indexes=[
+                    AISearchIndexResource(
+                        index_connection_id=connection_id,
+                        index_name=os.environ["AI_SEARCH_INDEX_NAME"],
+                        query_type=AzureAISearchQueryType.HYBRID,
+                    ),
+                ]
             )
-        ],
-    ),
-    description="RAG agent with Azure AI Search",
+        )
+    ],
 )
 
-print(f"Agent created: {agent.name} (version {agent.version})")
+print(f"Agent created: {agent.name} (ID: {agent.id})")
 ```
 
 ### Testing the RAG Agent
@@ -182,15 +178,13 @@ for event in stream_response:
 
 ```python
 # Update agent to request citations properly
-updated_agent = project_client.agents.create_version(
-    agent_name=agent.name,
-    definition=PromptAgentDefinition(
-        model=os.environ["MODEL_DEPLOYMENT_NAME"],
-        instructions="""You are a helpful assistant. You must always provide 
-        citations using the tool and render them as: `[message_idx:search_idx†source]`. 
-        Never answer from your own knowledge - only use the knowledge base.""",
-        tools=original_tools
-    )
+updated_agent = project_client.agents.update_agent(
+    agent_id=agent.id,
+    model=os.environ["MODEL_DEPLOYMENT_NAME"],
+    instructions="""You are a helpful assistant. You must always provide 
+    citations using the tool and render them as: `[message_idx:search_idx†source]`. 
+    Never answer from your own knowledge - only use the knowledge base.""",
+    tools=original_tools
 )
 ```
 
@@ -264,32 +258,19 @@ print(f"Created agent with function tools: {agent.id}")
 ### Agent with Web Search
 
 ```python
-from azure.ai.projects.models import (
-    PromptAgentDefinition, 
-    WebSearchPreviewTool, 
-    ApproximateLocation
-)
+from azure.ai.agents.models import BingGroundingToolDefinition
 
 # Create agent with web search capability
-agent = project_client.agents.create_version(
-    agent_name="WebSearchAgent",
-    definition=PromptAgentDefinition(
-        model=os.environ["MODEL_DEPLOYMENT_NAME"],
-        instructions="You are a helpful assistant that can search the web for current information. Always provide sources for web-based answers.",
-        tools=[
-            WebSearchPreviewTool(
-                user_location=ApproximateLocation(
-                    country="US", 
-                    city="Seattle", 
-                    region="Washington"
-                )
-            )
-        ],
-    ),
-    description="Agent with web search capabilities",
+agent = project_client.agents.create_agent(
+    model=os.environ["MODEL_DEPLOYMENT_NAME"],
+    name="WebSearchAgent",
+    instructions="You are a helpful assistant that can search the web for current information. Always provide sources for web-based answers.",
+    tools=[
+        BingGroundingToolDefinition()
+    ],
 )
 
-print(f"Web search agent created: {agent.name}")
+print(f"Web search agent created: {agent.name} (ID: {agent.id})")
 ```
 
 ### Interacting with Agents
@@ -411,21 +392,25 @@ print(f"Evaluation complete. View results at: {result['studio_url']}")
 ### Continuous Evaluation Setup
 
 ```python
-from azure.ai.projects.models import EvaluationRuleEventType, EvaluationRule
+# Note: Continuous evaluation setup requires configuration through 
+# the Azure AI Foundry portal or using the azure-ai-evaluation SDK.
+# The evaluation rules API is configured at the project level.
 
-# Create a continuous evaluation rule
-eval_rule = project_client.evaluations.rules.create(
-    rule=EvaluationRule(
-        name="continuous-evaluation",
-        event_type=EvaluationRuleEventType.RESPONSE_COMPLETED,
-        evaluators=["intent_resolution", "task_adherence"],
-        sampling_rate=0.1,  # Evaluate 10% of responses
-        azure_openai_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-        azure_openai_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"]
-    )
+# Example using azure-ai-evaluation for setting up evaluators
+from azure.ai.evaluation import IntentResolutionEvaluator, TaskAdherenceEvaluator
+
+# Initialize evaluators for use in your evaluation pipeline
+intent_evaluator = IntentResolutionEvaluator(
+    azure_openai_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    azure_openai_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"]
 )
 
-print(f"Continuous evaluation enabled: {eval_rule.name}")
+task_evaluator = TaskAdherenceEvaluator(
+    azure_openai_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    azure_openai_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"]
+)
+
+print("Evaluators initialized for continuous evaluation")
 ```
 
 **Prerequisites for Continuous Evaluation:**
@@ -482,14 +467,13 @@ import os
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    AzureAISearchAgentTool,
-    PromptAgentDefinition,
+from azure.ai.agents.models import (
+    AzureAISearchToolDefinition,
     AzureAISearchToolResource,
     AISearchIndexResource,
     AzureAISearchQueryType,
+    ListSortOrder,
 )
-from azure.ai.agents.models import ListSortOrder
 
 load_dotenv()
 
@@ -506,28 +490,25 @@ def create_rag_agent():
     )
     
     # Create agent
-    agent = project_client.agents.create_version(
-        agent_name="RAGAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["FOUNDRY_MODEL_DEPLOYMENT_NAME"],
-            instructions="""You are a helpful assistant that uses the knowledge base 
-            to answer questions. Always provide citations as: `[message_idx:search_idx†source]`. 
-            If you cannot find the answer, say "I don't know".""",
-            tools=[
-                AzureAISearchAgentTool(
-                    azure_ai_search=AzureAISearchToolResource(
-                        indexes=[
-                            AISearchIndexResource(
-                                project_connection_id=azs_connection.id,
-                                index_name=os.environ["AI_SEARCH_INDEX_NAME"],
-                                query_type=AzureAISearchQueryType.HYBRID,
-                            ),
-                        ]
-                    )
+    agent = project_client.agents.create_agent(
+        model=os.environ["FOUNDRY_MODEL_DEPLOYMENT_NAME"],
+        name="RAGAgent",
+        instructions="""You are a helpful assistant that uses the knowledge base 
+        to answer questions. Always provide citations as: `[message_idx:search_idx†source]`. 
+        If you cannot find the answer, say "I don't know".""",
+        tools=[
+            AzureAISearchToolDefinition(
+                azure_ai_search=AzureAISearchToolResource(
+                    indexes=[
+                        AISearchIndexResource(
+                            index_connection_id=azs_connection.id,
+                            index_name=os.environ["AI_SEARCH_INDEX_NAME"],
+                            query_type=AzureAISearchQueryType.HYBRID,
+                        ),
+                    ]
                 )
-            ],
-        ),
-        description="RAG agent with Azure AI Search",
+            )
+        ],
     )
     
     return project_client, agent
@@ -565,7 +546,7 @@ def main():
     """Main application entry point."""
     print("Creating RAG agent...")
     project_client, agent = create_rag_agent()
-    print(f"✅ Agent created: {agent.name} (version {agent.version})\n")
+    print(f"✅ Agent created: {agent.name} (ID: {agent.id})\n")
     
     while True:
         query = input("\nAsk a question (or 'quit' to exit): ")
@@ -582,10 +563,7 @@ def main():
     
     # Cleanup
     print("\n\n🧹 Cleaning up...")
-    project_client.agents.delete_version(
-        agent_name=agent.name, 
-        agent_version=agent.version
-    )
+    project_client.agents.delete_agent(agent.id)
     print("Done!")
 
 if __name__ == "__main__":
