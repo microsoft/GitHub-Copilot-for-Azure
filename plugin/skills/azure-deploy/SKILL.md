@@ -28,10 +28,35 @@ Look for these files first (HIGH confidence signals):
 | File Found | Recommendation | Action |
 |------------|----------------|--------|
 | `azure.yaml` | Already configured for azd | Use `azd up` to deploy |
-| `function.json` or `host.json` | Azure Functions project | Deploy as Functions |
-| `staticwebapp.config.json` | Static Web Apps project | Deploy as SWA |
+| `function.json` or `host.json` | Azure Functions project | **Route to `azure-function-app-deployment` skill** |
+| `staticwebapp.config.json` or `swa-cli.config.json` | Static Web Apps project | **Route to `azure-static-web-apps` skill** |
 
-If found, skip to the appropriate deployment section.
+If found, route to the appropriate specialized skill.
+
+> 💡 **When to use azure-static-web-apps skill:**
+> - Project has `staticwebapp.config.json` or `swa-cli.config.json`
+> - User wants to deploy static frontends (React, Vue, Angular, etc.) to Azure
+> - User needs local development emulation with SWA CLI
+> - User wants to add Azure Functions APIs to their static site
+> - User mentions Static Web Apps or SWA CLI
+> 
+> The `azure-static-web-apps` skill provides specialized guidance for SWA CLI configuration, local emulation, GitHub Actions workflows, and database connections.
+
+**Check for containerization signals:**
+
+| File/Indicator Found | Recommendation | Action |
+|---------------------|----------------|--------|
+| `Dockerfile` | Containerized application | **Consider using the `azure-aca-deployment` skill** for Container Apps |
+| `docker-compose.yml` | Multi-container application | **Consider using the `azure-aca-deployment` skill** for Container Apps |
+| User mentions "container", "Docker", "scheduled task", "cron job", "batch processing" | Container-based deployment | **Route to `azure-aca-deployment` skill** |
+
+> 💡 **When to use azure-aca-deployment skill:**
+> - Application is already containerized (has Dockerfile)
+> - User wants to deploy multiple containers together
+> - User needs scheduled tasks, cron jobs, or event-driven batch processing
+> - User mentions Container Apps or wants serverless containers
+> 
+> The `azure-aca-deployment` skill provides specialized guidance for Docker validation, ACR integration, Container Apps Jobs, and multi-container orchestration.
 
 ### Step 1.2: Detect Application Framework
 
@@ -47,9 +72,13 @@ package.json exists →
 │   ├── Has `ssr: false` or `target: 'static'` → Static Web Apps
 │   └── Otherwise → App Service (SSR)
 ├── angular.json → Angular → Static Web Apps
+│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
 ├── vite.config.* → Vite-based (React/Vue/Svelte) → Static Web Apps
+│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
 ├── gatsby-config.js → Gatsby → Static Web Apps
+│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
 ├── astro.config.mjs → Astro → Static Web Apps
+│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
 ├── nest-cli.json → NestJS → App Service
 ├── Has express/fastify/koa/hapi dependency → App Service
 └── No framework, just static build → Static Web Apps
@@ -59,16 +88,26 @@ package.json exists →
 ```
 requirements.txt or pyproject.toml exists →
 ├── function_app.py exists → Azure Functions (v2 programming model)
+│   └── **Route to `azure-function-app-deployment` skill for specialized guidance**
 ├── Has flask dependency → App Service
 ├── Has django dependency → App Service
 ├── Has fastapi dependency → App Service
 └── Has azure-functions dependency → Azure Functions
+    └── **Route to `azure-function-app-deployment` skill for specialized guidance**
 ```
+
+> 💡 **When to use azure-function-app-deployment skill:**
+> - Project has `host.json`, `local.settings.json`, or `function_app.py`
+> - User wants serverless APIs, event-driven functions, or timer-triggered jobs
+> - User mentions Azure Functions, triggers, bindings, or webhooks
+> 
+> The `azure-function-app-deployment` skill provides specialized guidance for function initialization, trigger configuration, deployment slots, and function-specific troubleshooting.
 
 **.NET:**
 ```
 *.csproj or *.sln exists →
 ├── <AzureFunctionsVersion> in csproj → Azure Functions
+│   └── **Route to `azure-function-app-deployment` skill for specialized guidance**
 ├── Blazor WebAssembly project → Static Web Apps
 ├── ASP.NET Core web app → App Service
 └── .NET API project → App Service
@@ -78,6 +117,7 @@ requirements.txt or pyproject.toml exists →
 ```
 pom.xml or build.gradle exists →
 ├── Has azure-functions-* dependency → Azure Functions
+│   └── **Route to `azure-function-app-deployment` skill for specialized guidance**
 ├── Has spring-boot dependency → App Service
 └── Standard web app → App Service
 ```
@@ -86,6 +126,7 @@ pom.xml or build.gradle exists →
 ```
 index.html exists + no package.json/requirements.txt →
 └── Pure static site → Static Web Apps
+    └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
 ```
 
 ### Step 1.3: Detect Multi-Service Architecture
@@ -117,9 +158,71 @@ After detection, assess confidence:
 | **LOW** | Ambiguous or no clear signals | Ask clarifying questions |
 
 **Clarifying questions for LOW confidence:**
-1. "What type of application is this? (static website, API, full-stack, serverless functions)"
-2. "Does your app need server-side rendering or is it purely client-side?"
-3. "Will you need a database, caching, or other Azure services?"
+1. "What type of application is this? (static website, API, full-stack, serverless functions, containerized app)"
+2. "Is your application already containerized with Docker?"
+3. "Does your app need server-side rendering or is it purely client-side?"
+4. "Do you need scheduled tasks, cron jobs, or event-driven processing?"
+5. "Will you need a database, caching, or other Azure services?"
+
+---
+
+## Specialized Deployment Skills
+
+This skill provides general deployment guidance. For specialized scenarios, consider using these dedicated skills:
+
+### 🌐 azure-static-web-apps (Static Web Apps)
+**Use when:**
+- Deploying static frontends (React, Vue, Angular, Gatsby, Astro, etc.)
+- User has `staticwebapp.config.json` or `swa-cli.config.json`
+- Need local development emulation with SWA CLI
+- Want to add Azure Functions APIs to static site
+- Setting up GitHub Actions CI/CD for Static Web Apps
+
+**Specialized features:**
+- SWA CLI installation and configuration
+- Local emulator with API proxy and auth simulation
+- Framework auto-detection and configuration
+- Database connections support
+- Detailed GitHub Actions workflow setup
+- Complete `staticwebapp.config.json` configuration guide
+
+### 🐳 azure-aca-deployment (Container Apps)
+**Use when:**
+- Application has a `Dockerfile` or `docker-compose.yml`
+- User mentions containers, Docker, or Container Apps
+- Need to deploy scheduled tasks, cron jobs, or batch processing
+- Deploying full-stack apps (frontend + backend) as separate containers
+- Want serverless containers with auto-scaling
+
+**Specialized features:**
+- Docker Desktop validation and troubleshooting
+- Azure Container Registry (ACR) integration with managed identity
+- Container Apps Jobs (scheduled, manual, event-driven)
+- Multi-container orchestration in same environment
+- MCP tool integration for infrastructure planning
+
+### ⚡ azure-function-app-deployment (Azure Functions)
+**Use when:**
+- Project has `host.json`, `local.settings.json`, or `function_app.py`
+- User mentions serverless, Functions, triggers, or bindings
+- Need HTTP-triggered APIs, timer jobs, or event handlers
+- Want pay-per-execution pricing model
+
+**Specialized features:**
+- Function project initialization with `func` CLI
+- Trigger and binding configuration (HTTP, Timer, Queue, Blob, etc.)
+- Deployment slots for zero-downtime updates
+- Function-specific monitoring and troubleshooting
+- Extension management for custom bindings
+
+**Routing decision:**
+```
+Dockerfile found? → Use azure-aca-deployment skill
+host.json found? → Use azure-function-app-deployment skill
+staticwebapp.config.json or swa-cli.config.json found? → Use azure-static-web-apps skill
+Static framework detected (React, Vue, Angular)? → Use azure-static-web-apps skill
+None of the above? → Continue with this skill (azure-deploy)
+```
 
 ---
 
@@ -290,6 +393,14 @@ Detect and install project-level dependencies:
 
 ### 4.1 Static Web Apps Deployment
 
+> 💡 **For advanced Static Web Apps scenarios**, consider using the specialized `azure-static-web-apps` skill which provides:
+> - SWA CLI configuration and local emulation
+> - Framework-specific setup guidance
+> - Azure Functions API integration
+> - GitHub Actions workflow automation
+> - Database connections setup
+> - Advanced routing and authentication configuration
+
 **Create resource and deploy:**
 ```bash
 # Create resource group (if needed)
@@ -341,6 +452,12 @@ rm -rf dist
 See [Static Web Apps Guide](./reference/static-web-apps.md) for detailed configuration.
 
 ### 4.2 Azure Functions Deployment
+
+> 💡 **For advanced Functions deployment scenarios**, consider using the specialized `azure-function-app-deployment` skill which provides:
+> - Function project initialization and templating
+> - Detailed trigger/binding configuration
+> - Deployment slots and CI/CD patterns
+> - Function-specific troubleshooting
 
 **Create and deploy:**
 ```bash
@@ -501,6 +618,16 @@ az group create --name <name> --location <location>
 - Review deployment logs: `az webapp log tail --name <app> --resource-group <rg>`
 
 See [Troubleshooting Guide](./reference/troubleshooting.md) for detailed solutions.
+
+---
+
+## Specialized Skills
+
+For advanced scenarios, use these specialized deployment skills:
+
+- **🌐 azure-static-web-apps** - Static Web Apps deployment with SWA CLI, local emulation, GitHub Actions, API integration, and database connections
+- **🐳 azure-aca-deployment** - Container Apps deployment with Docker validation, ACR integration, Container Apps Jobs, and multi-container orchestration
+- **⚡ azure-function-app-deployment** - Azure Functions deployment with func CLI, triggers/bindings, deployment slots, and function-specific troubleshooting
 
 ---
 
