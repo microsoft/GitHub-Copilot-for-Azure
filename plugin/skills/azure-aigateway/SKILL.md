@@ -88,6 +88,8 @@ param location string = resourceGroup().location
 param apimSku string = 'Basicv2'
 param apimManagedIdentityType string = 'SystemAssigned'
 
+// NOTE: Using 2024-06-01-preview because Basicv2 SKU support currently requires this preview API version.
+//       Update to the latest stable (GA) API version once Basicv2 is available there.
 resource apimService 'Microsoft.ApiManagement/service@2024-06-01-preview' = {
   name: 'apim-aigateway-${uniqueString(resourceGroup().id)}'
   location: location
