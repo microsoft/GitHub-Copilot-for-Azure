@@ -1,5 +1,5 @@
 ---
-name: azure-aks
+name: azure-aks-deployment
 description: Deploy and manage Azure Kubernetes Service (AKS) clusters for containerized workloads requiring full Kubernetes control
 ---
 

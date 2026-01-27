@@ -1,5 +1,5 @@
 ---
-name: azure-app-service
+name: azure-app-service-deployment
 description: Deploy and manage traditional web applications using Azure App Service for managed platform hosting
 ---
 
