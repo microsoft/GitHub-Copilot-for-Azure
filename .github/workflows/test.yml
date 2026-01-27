@@ -1,0 +1,81 @@
+name: Test Skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugin/skills/**'
+      - 'tests/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'plugin/skills/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tests
+        run: npm ci
+
+      - name: Run detection tests
+        working-directory: tests
+        run: npm test -- --coverage --ci
+
+      - name: Upload coverage report
+        if: matrix.node-version == 20
+        uses: codecov/codecov-action@v4
+        with:
+          directory: tests/coverage
+          flags: skill-detection
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tests
+        run: npm ci
+
+      - name: Check fixture/expectation sync
+        working-directory: tests
+        run: |
+          node -e "
+            const { validateFixturesHaveExpectations } = require('./utils/fixture-loader');
+            const result = validateFixturesHaveExpectations();
+            if (!result.valid) {
+              if (result.missing.length) console.error('Missing expectations:', result.missing);
+              if (result.extra.length) console.error('Extra expectations:', result.extra);
+              process.exit(1);
+            }
+            console.log('✓ All fixtures have expectations');
+          "
