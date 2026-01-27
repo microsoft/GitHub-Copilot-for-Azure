@@ -462,6 +462,8 @@ Directory.Read.All            : 7ab1d382-f21e-4acd-a863-ba3e13f7da61
 Directory.ReadWrite.All       : 19dbc75e-c2e2-444c-a770-ec69d8559fc7
 ```
 
+**Note:** Permission IDs may change. Always verify against the official [Microsoft Graph Permissions Reference](https://learn.microsoft.com/en-us/graph/permissions-reference) for the most current values.
+
 ---
 
 ## Additional Resources

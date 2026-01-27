@@ -87,9 +87,11 @@ az ad app list --display-name "MyApp" --output table
 az ad app list --query "[].{Name:displayName, AppId:appId}" --output table
 
 # Show apps created recently
-# Note: The following command uses GNU date syntax (Linux)
-# For macOS, use: date -u -v-7d +%Y-%m-%d
+# Linux (GNU date):
 az ad app list --query "[?createdDateTime>='$(date -u -d '7 days ago' +%Y-%m-%d)'].{Name:displayName, Created:createdDateTime}" --output table
+
+# macOS (BSD date):
+az ad app list --query "[?createdDateTime>='$(date -u -v-7d +%Y-%m-%d)'].{Name:displayName, Created:createdDateTime}" --output table
 ```
 
 ### Get app details

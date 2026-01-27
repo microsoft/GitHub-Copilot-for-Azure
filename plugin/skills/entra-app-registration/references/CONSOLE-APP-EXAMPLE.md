@@ -348,15 +348,16 @@ async function main() {
     console.log("1. Device code flow (recommended for CLI)");
     console.log("2. Client credentials (service-to-service)");
     
-    // For this example, using device code flow
-    const choice = 1;
+    // For demonstration, using device code flow
+    // In production, get user input with readline or similar
+    const choice = "1";
     
     try {
         let result;
         
-        if (choice === 1) {
+        if (choice === "1") {
             result = await acquireTokenDeviceCode();
-        } else if (choice === 2) {
+        } else if (choice === "2") {
             result = await acquireTokenClientCredentials();
         }
         
