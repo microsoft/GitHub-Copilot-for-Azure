@@ -8,6 +8,14 @@ GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and 
 - Visual Studio 2026 - included "in the box" as part of the "Azure & AI" workload
 - Claude - coming soon
 
+## Usage
+
+To install the Azure plugin into Copilot CLI and Claude:
+
+1. Add the marketplace with `/plugin marketplace add microsoft/github-copilot-for-azure`
+2. Install the plugin with `/plugin install azure@github-copilot-for-azure`
+3. Update the plugin with `/plugin update azure@github-copilot-for-azure`
+
 ## Contributing
 
 You can use this repository to:
@@ -15,3 +23,9 @@ You can use this repository to:
 * Upvote a feature or request a new one.
 * Search for potential work-arounds to problems you’re having.
 * Provide feedback on using GitHub Copilot for Azure.
+
+### Contributing Skills
+
+New skills can be placed under `plugin/skills`.
+
+If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill by providing links to documentation and describing any MCP or command line tools that should be included. The only difference between the two is that the Creator expects you already know what scenarios the skill should address, while the brainstormer will come up with scenarios.
