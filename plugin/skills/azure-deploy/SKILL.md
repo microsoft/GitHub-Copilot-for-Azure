@@ -362,6 +362,39 @@ winget install Microsoft.AzureCLI
 # Linux (Ubuntu/Debian)
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
+Multi-service triggers:
+├── Monorepo structure (frontend/, backend/, api/, packages/, apps/)
+├── docker-compose.yml with multiple services
+├── Multiple package.json in different subdirectories
+├── Database references in config (connection strings, .env files)
+├── References to Redis, Service Bus, Event Hubs, Storage queues
+├── User mentions "multiple environments", "staging", "production"
+└── More than one deployable component detected
+```
+
+**If multi-service detected → Recommend azd + Infrastructure as Code**
+See [Multi-Service Deployment Guide](./reference/multi-service.md)
+
+### Step 1.4: Confidence Assessment
+
+After detection, assess confidence:
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **HIGH** | Azure config file found (azure.yaml, function.json, staticwebapp.config.json) | Proceed with detected service |
+| **MEDIUM** | Framework detected from dependencies | Explain recommendation, ask for confirmation |
+| **LOW** | Ambiguous or no clear signals | Ask clarifying questions |
+
+**Clarifying questions for LOW confidence:**
+1. "What type of application is this? (static website, API, full-stack, serverless functions, containerized app)"
+2. "Is your application already containerized with Docker?"
+3. "Does your app need server-side rendering or is it purely client-side?"
+4. "Do you need scheduled tasks, cron jobs, or event-driven processing?"
+5. "Will you need a database, caching, or other Azure services?"
+
+---
+
+## Specialized Deployment Skills
 
 **Azure Functions Core Tools** (for Functions projects):
 ```bash
@@ -654,7 +687,7 @@ For advanced scenarios, use these specialized deployment skills:
 
 ---
 
-## Notes
+Load these guides as needed for detailed information:
 
 - Always scan the workspace before generating a deployment plan
 - Plans integrate with Azure Developer CLI (azd)
