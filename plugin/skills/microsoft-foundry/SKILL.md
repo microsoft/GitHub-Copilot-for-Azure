@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry
-description: 'Expert in Microsoft Foundry: discover and deploy models, build RAG applications with knowledge indexes, create and evaluate AI agents, and troubleshoot common issues. Supports the complete journey from setup to production monitoring.'
+description: 'Expert in Microsoft Foundry: use this skill to help discover and deploy models, build RAG applications with knowledge indexes, create and evaluate AI agents, and troubleshoot common issues in Microsoft Foundry platform.'
 ---
 
 # Microsoft Foundry Skill
