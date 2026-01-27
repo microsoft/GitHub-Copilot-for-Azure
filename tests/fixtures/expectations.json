@@ -1,0 +1,117 @@
+{
+  "react-vite": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "React (Vite)"
+  },
+  "vue-vite": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "Vue (Vite)"
+  },
+  "angular": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "Angular"
+  },
+  "nextjs-static": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "Next.js (SSG)"
+  },
+  "nextjs-ssr": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "Next.js (SSR)"
+  },
+  "plain-html": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "Static HTML"
+  },
+  "gatsby": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "Gatsby"
+  },
+  "astro": {
+    "service": "static-web-apps",
+    "skill": "azure-static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "Astro"
+  },
+  "functions-node": {
+    "service": "functions",
+    "skill": "azure-function-app-deployment",
+    "confidence": "HIGH"
+  },
+  "functions-python": {
+    "service": "functions",
+    "skill": "azure-function-app-deployment",
+    "confidence": "HIGH"
+  },
+  "functions-dotnet": {
+    "service": "functions",
+    "skill": "azure-function-app-deployment",
+    "confidence": "HIGH",
+    "framework": "Azure Functions (.NET)"
+  },
+  "docker-node": {
+    "service": "container-apps",
+    "skill": "azure-aca-deployment",
+    "confidence": "HIGH"
+  },
+  "docker-compose-multi": {
+    "service": "container-apps",
+    "skill": "azure-aca-deployment",
+    "confidence": "HIGH"
+  },
+  "express-api": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "Express"
+  },
+  "flask-app": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "Flask"
+  },
+  "django-app": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "Django"
+  },
+  "fastapi-app": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "FastAPI"
+  },
+  "dotnet-webapp": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "ASP.NET Core"
+  },
+  "spring-boot": {
+    "service": "app-service",
+    "skill": "azure-app-service-deployment",
+    "confidence": "MEDIUM",
+    "framework": "Spring Boot"
+  },
+  "azd-fullstack": {
+    "service": "azd",
+    "skill": "azure-deploy",
+    "confidence": "HIGH"
+  }
+}
