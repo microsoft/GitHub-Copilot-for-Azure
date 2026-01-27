@@ -16,7 +16,7 @@ I help you work with Azure services efficiently. This skill provides an overview
 | Domain | Use When | Skill |
 |--------|----------|-------|
 | Data | Querying databases, Cosmos DB, SQL, Redis | `azure-cosmos-db`, `azure-sql-database`, `azure-redis` |
-| Compute | Deploying apps, Functions, containers, AKS, App Service | `azure-container-apps`, `azure-functions`, `azure-app-service`, `azure-aks` |
+| Compute | Deploying apps, Functions, containers, AKS, App Service | `azure-aca-deployment`, `azure-functions`, `azure-app-service`, `azure-aks` |
 | Storage | Blob storage, file shares, queues, Data Lake | `azure-storage` |
 | Security | Key Vault, RBAC, managed identities, Entra ID | `azure-security` |
 | AI | AI Search, Speech, Foundry, vector search, cognitive services | `azure-ai` |
@@ -53,7 +53,7 @@ I help you work with Azure services efficiently. This skill provides an overview
 **User asks:** "Deploy my app to Azure"
 1. This is a **Deployment** scenario → use `azure-deploy` skill
 2. Guides compute choice and deployment method with `azd`
-3. For Container Apps specifics → use `azure-container-apps` skill
+3. For Container Apps specifics → use `azure-aca-deployment` skill
 
 **User asks:** "azd command not found"
 1. This is a **CLI tools** issue → use `azure-cli` skill

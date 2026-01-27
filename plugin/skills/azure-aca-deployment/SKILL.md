@@ -652,6 +652,86 @@ resource eventDrivenJob 'Microsoft.App/jobs@2024-03-01' = {
 }
 ```
 
+## Scaling Configuration
+
+### HTTP-Based Scaling
+
+```bash
+az containerapp update \
+  --name myapp \
+  --resource-group RG \
+  --min-replicas 1 \
+  --max-replicas 10 \
+  --scale-rule-name http-rule \
+  --scale-rule-type http \
+  --scale-rule-http-concurrency 50
+```
+
+### Prevent Cold Starts
+
+```bash
+# Set minimum replicas to avoid cold start
+az containerapp update --name myapp -g RG --min-replicas 1
+```
+
+## Environment Variables and Secrets
+
+```bash
+# Set environment variable
+az containerapp update \
+  --name myapp -g RG \
+  --set-env-vars KEY=VALUE NODE_ENV=production
+
+# Create secret
+az containerapp secret set \
+  --name myapp -g RG \
+  --secrets dbpassword=secretvalue
+
+# Reference secret in env var
+az containerapp update \
+  --name myapp -g RG \
+  --set-env-vars DB_PASSWORD=secretref:dbpassword
+```
+
+## Health Checks
+
+Configure health probes:
+
+```bash
+az containerapp update \
+  --name myapp -g RG \
+  --health-probe-path /health \
+  --health-probe-interval 30 \
+  --health-probe-timeout 5
+```
+
+Your app should expose a health endpoint:
+```javascript
+app.get('/health', (req, res) => res.sendStatus(200));
+```
+
+## Dapr Integration
+
+Enable Dapr for service-to-service communication:
+
+```bash
+az containerapp update \
+  --name myapp -g RG \
+  --enable-dapr \
+  --dapr-app-id myapp \
+  --dapr-app-port 8080
+```
+
+## View Logs
+
+```bash
+# Stream logs
+az containerapp logs show --name APP -g RG --follow
+
+# Recent logs
+az containerapp logs show --name APP -g RG --tail 100
+```
+
 ## Troubleshooting
 
 | Issue | Symptom | Solution |
@@ -663,7 +743,9 @@ resource eventDrivenJob 'Microsoft.App/jobs@2024-03-01' = {
 | **Bicep validation errors** | Error during `azd provision` | Run `get_errors` tool on Bicep files to identify syntax issues |
 | **User/group already exists** | Dockerfile build fails with "group in use" | Base images may have users pre-configured. Check if user exists before creating |
 | **Port mismatch** | App not accessible after deployment | Verify target-port matches application listening port in Dockerfile |
-| **Image pull errors** | Container fails to start | Check ACR credentials and managed identity has AcrPull role |
+| **Image pull errors** | Container fails to start | Check ACR credentials and managed identity has AcrPull role. Run: `az containerapp registry set --name APP -g RG --server ACR.azurecr.io --identity system` |
+| **ACR Tasks disabled** | `az acr build` fails with "TasksOperationsNotAllowed" | Free/trial subscriptions have ACR Tasks disabled. Build locally: `docker build`, `az acr login`, `docker push` |
+| **Cold start timeouts** | First request times out | Set minimum replicas: `az containerapp update --name APP -g RG --min-replicas 1` |
 | **Out of memory** | Container crashes or restarts | Increase memory limits in Bicep configuration |
 | **Missing env vars** | Application errors on startup | Configure environment variables in container app settings |
 | **Health probe failures** | Container marked unhealthy | Implement /health endpoint and adjust probe timings |
