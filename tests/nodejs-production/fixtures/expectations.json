@@ -1,0 +1,85 @@
+{
+  "express-prod-correct": {
+    "description": "Express app with all production best practices",
+    "express": {
+      "valid": true,
+      "errors": [],
+      "checks": {
+        "trustProxy": true,
+        "healthEndpoint": true,
+        "portBinding": true,
+        "hostBinding": true
+      }
+    },
+    "dockerfile": {
+      "valid": true,
+      "errors": [],
+      "checks": {
+        "nodeEnvProduction": true,
+        "healthcheck": true,
+        "nonRootUser": true,
+        "properBaseImage": true
+      }
+    }
+  },
+  "express-missing-trust-proxy": {
+    "description": "Express app missing trust proxy setting",
+    "express": {
+      "valid": false,
+      "errors": ["trust proxy"],
+      "checks": {
+        "trustProxy": false,
+        "healthEndpoint": true,
+        "portBinding": true
+      }
+    }
+  },
+  "express-missing-health": {
+    "description": "Express app missing health endpoint",
+    "express": {
+      "valid": false,
+      "errors": ["/health"],
+      "checks": {
+        "trustProxy": true,
+        "healthEndpoint": false,
+        "portBinding": true
+      }
+    }
+  },
+  "express-localhost-bind": {
+    "description": "Express app binding to localhost instead of 0.0.0.0",
+    "express": {
+      "valid": false,
+      "errors": ["Hardcoded"],
+      "warnings": ["localhost"],
+      "checks": {
+        "trustProxy": true,
+        "healthEndpoint": true,
+        "portBinding": false,
+        "hostBinding": false
+      }
+    }
+  },
+  "dockerfile-missing-healthcheck": {
+    "description": "Dockerfile missing HEALTHCHECK, NODE_ENV, and USER",
+    "express": {
+      "valid": true,
+      "checks": {
+        "trustProxy": true,
+        "healthEndpoint": true,
+        "portBinding": true
+      }
+    },
+    "dockerfile": {
+      "valid": false,
+      "errors": ["NODE_ENV"],
+      "warnings": ["HEALTHCHECK", "node"],
+      "checks": {
+        "nodeEnvProduction": false,
+        "healthcheck": false,
+        "nonRootUser": false,
+        "properBaseImage": true
+      }
+    }
+  }
+}
