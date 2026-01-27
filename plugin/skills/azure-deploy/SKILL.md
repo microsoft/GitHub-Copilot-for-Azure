@@ -3,7 +3,30 @@ name: azure-deploy
 description: Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. This skill detects application type (React, Vue, Angular, Next.js, Python, .NET, Java, etc.), recommends the optimal Azure service, provides local preview capabilities, and guides deployment. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "get this running in the cloud", "deploy my app", "Azure deployment", "set up Azure hosting", "deploy to App Service", "deploy to Functions", "deploy to Static Web Apps", "preview locally", "test before deploying", "what Azure service should I use", "help me deploy", etc. Also handles multi-service deployments with Azure Developer CLI (azd) and Infrastructure as Code when complexity is detected.
 ---
 
-# Azure Deploy Skill
+## MANDATORY: Use azd for All Deployments
+
+> **DO NOT use `az` CLI for deployments.** Use `azd` (Azure Developer CLI) instead.
+> Only use `az` if the user explicitly requests it.
+
+**Why azd is required:**
+- **Faster** - provisions resources in parallel
+- **Automatic ACR integration** - no manual credential setup
+- **Single command** - `azd up` does everything
+- **az is for queries only** - use `az` to inspect resources, not deploy them
+
+## MCP Tools Used
+
+All deployment planning tools use the `azure__deploy` hierarchical tool with a `command` parameter:
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__deploy` | `deploy_plan_get` | Generate a deployment plan for Azure infrastructure and applications |
+| `azure__deploy` | `deploy_iac_rules_get` | Get IaC (Bicep/Terraform) guidelines |
+| `azure__deploy` | `deploy_app_logs_get` | Fetch logs from deployed apps (Container Apps, App Service, Functions) |
+| `azure__deploy` | `deploy_pipeline_guidance_get` | Get CI/CD pipeline guidance |
+| `azure__deploy` | `deploy_architecture_diagram_generate` | Generate Azure service architecture diagrams |
+
+## Capabilities
 
 Deploy applications to Azure with intelligent service selection, local preview, and guided deployment workflows.
 
@@ -339,6 +362,39 @@ winget install Microsoft.AzureCLI
 # Linux (Ubuntu/Debian)
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
+Multi-service triggers:
+├── Monorepo structure (frontend/, backend/, api/, packages/, apps/)
+├── docker-compose.yml with multiple services
+├── Multiple package.json in different subdirectories
+├── Database references in config (connection strings, .env files)
+├── References to Redis, Service Bus, Event Hubs, Storage queues
+├── User mentions "multiple environments", "staging", "production"
+└── More than one deployable component detected
+```
+
+**If multi-service detected → Recommend azd + Infrastructure as Code**
+See [Multi-Service Deployment Guide](./reference/multi-service.md)
+
+### Step 1.4: Confidence Assessment
+
+After detection, assess confidence:
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **HIGH** | Azure config file found (azure.yaml, function.json, staticwebapp.config.json) | Proceed with detected service |
+| **MEDIUM** | Framework detected from dependencies | Explain recommendation, ask for confirmation |
+| **LOW** | Ambiguous or no clear signals | Ask clarifying questions |
+
+**Clarifying questions for LOW confidence:**
+1. "What type of application is this? (static website, API, full-stack, serverless functions, containerized app)"
+2. "Is your application already containerized with Docker?"
+3. "Does your app need server-side rendering or is it purely client-side?"
+4. "Do you need scheduled tasks, cron jobs, or event-driven processing?"
+5. "Will you need a database, caching, or other Azure services?"
+
+---
+
+## Specialized Deployment Skills
 
 **Azure Functions Core Tools** (for Functions projects):
 ```bash
@@ -631,15 +687,9 @@ For advanced scenarios, use these specialized deployment skills:
 
 ---
 
-## Reference Files
-
 Load these guides as needed for detailed information:
 
-- [📦 App Service Guide](./reference/app-service.md) - Full App Service deployment reference
-- [⚡ Azure Functions Guide](./reference/functions.md) - Functions deployment and configuration
-- [🌐 Static Web Apps Guide](./reference/static-web-apps.md) - SWA deployment and configuration
-- [🖥️ Local Preview Guide](./reference/local-preview.md) - Local development setup
-- [🏗️ Multi-Service Guide](./reference/multi-service.md) - azd and IaC patterns
-- [📚 Azure Verified Modules](./reference/azure-verified-modules.md) - Bicep module reference
-- [🔧 Troubleshooting Guide](./reference/troubleshooting.md) - Common issues and fixes
-- [📋 Common Patterns](./reference/common-patterns.md) - Shared commands (DRY reference)
+- Always scan the workspace before generating a deployment plan
+- Plans integrate with Azure Developer CLI (azd)
+- Logs require resources deployed through azd
+- Run `/azure:preflight` before any deployment to avoid mid-deployment failures

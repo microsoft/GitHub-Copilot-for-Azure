@@ -126,7 +126,7 @@ Generate a deployment plan by analyzing your workspace and recommending Azure re
 ```javascript
 async function planDeployment(workspaceFolder: string, projectName: string) {
   // Generate deployment plan
-  const plan = await mcp_azure_mcp_deploy({
+  const plan = await azure__deploy({
     intent: "Generate deployment plan for container app",
     command: "deploy_plan_get",
     parameters: {
@@ -152,7 +152,7 @@ Retrieve IaC best practices and generate Bicep files for Container Apps deployme
 ```javascript
 async function generateInfrastructure(projectName: string) {
   // Get IaC rules
-  const rules = await mcp_azure_mcp_deploy({
+  const rules = await azure__deploy({
     intent: "Get IaC rules",
     command: "deploy_iac_rules_get",
     parameters: {
@@ -162,10 +162,13 @@ async function generateInfrastructure(projectName: string) {
     }
   });
   
-  // Get Bicep schema
-  const schema = await mcp_bicep_get_az_resource_type_schema({
-    resourceType: "Microsoft.App/containerApps",
-    apiVersion: "2024-03-01"
+  // Get Bicep schema (uses latest API version automatically)
+  const schema = await azure__bicepschema({
+    intent: "Get Container Apps schema",
+    command: "bicepschema_get",
+    parameters: {
+      "resource-type": "Microsoft.App/containerApps"
+    }
   });
   
   // Generate main.bicep based on schema and rules
@@ -215,7 +218,7 @@ async function deployFullStackApp(projectName: string) {
   ];
   
   // Generate deployment plan for multi-service app
-  const plan = await mcp_azure_mcp_deploy({
+  const plan = await azure__deploy({
     intent: "Generate deployment plan for full-stack app",
     command: "deploy_plan_get",
     parameters: {
@@ -250,7 +253,7 @@ Monitor and validate deployments using application logs and health checks.
 ```javascript
 async function validateDeployment(workspaceFolder: string, envName: string) {
   // Get application logs
-  const logs = await mcp_azure_mcp_deploy({
+  const logs = await azure__deploy({
     intent: "Get deployment logs",
     command: "deploy_app_logs_get",
     parameters: {
@@ -301,7 +304,7 @@ async function deployScheduledJob(projectName: string, cronExpression: string) {
   };
 
   // Generate deployment plan for job
-  const plan = await mcp_azure_mcp_deploy({
+  const plan = await azure__deploy({
     intent: "Generate deployment plan for scheduled job",
     command: "deploy_plan_get",
     parameters: {
@@ -386,7 +389,7 @@ Check quota and availability before deploying to avoid failures.
 
 ```javascript
 async function checkRegionalCapacity(subscription: string, location: string) {
-  const availability = await mcp_azure_mcp_quota({
+  const availability = await azure__quota({
     intent: "Check availability",
     command: "quota_region_availability_list",
     parameters: {
@@ -405,7 +408,7 @@ Generate diagrams to understand service dependencies before deployment.
 
 ```javascript
 async function visualizeArchitecture(workspaceFolder: string, services: Array) {
-  return await mcp_azure_mcp_deploy({
+  return await azure__deploy({
     intent: "Generate architecture diagram",
     command: "deploy_architecture_diagram_generate",
     parameters: {
@@ -423,7 +426,7 @@ Get pipeline configuration guidance for automated deployments.
 
 ```javascript
 async function setupCICD(subscription: string) {
-  return await mcp_azure_mcp_deploy({
+  return await azure__deploy({
     intent: "Get CI/CD guidance",
     command: "deploy_pipeline_guidance_get",
     parameters: {
@@ -652,6 +655,86 @@ resource eventDrivenJob 'Microsoft.App/jobs@2024-03-01' = {
 }
 ```
 
+## Scaling Configuration
+
+### HTTP-Based Scaling
+
+```bash
+az containerapp update \
+  --name myapp \
+  --resource-group RG \
+  --min-replicas 1 \
+  --max-replicas 10 \
+  --scale-rule-name http-rule \
+  --scale-rule-type http \
+  --scale-rule-http-concurrency 50
+```
+
+### Prevent Cold Starts
+
+```bash
+# Set minimum replicas to avoid cold start
+az containerapp update --name myapp -g RG --min-replicas 1
+```
+
+## Environment Variables and Secrets
+
+```bash
+# Set environment variable
+az containerapp update \
+  --name myapp -g RG \
+  --set-env-vars KEY=VALUE NODE_ENV=production
+
+# Create secret
+az containerapp secret set \
+  --name myapp -g RG \
+  --secrets dbpassword=secretvalue
+
+# Reference secret in env var
+az containerapp update \
+  --name myapp -g RG \
+  --set-env-vars DB_PASSWORD=secretref:dbpassword
+```
+
+## Health Checks
+
+Configure health probes:
+
+```bash
+az containerapp update \
+  --name myapp -g RG \
+  --health-probe-path /health \
+  --health-probe-interval 30 \
+  --health-probe-timeout 5
+```
+
+Your app should expose a health endpoint:
+```javascript
+app.get('/health', (req, res) => res.sendStatus(200));
+```
+
+## Dapr Integration
+
+Enable Dapr for service-to-service communication:
+
+```bash
+az containerapp update \
+  --name myapp -g RG \
+  --enable-dapr \
+  --dapr-app-id myapp \
+  --dapr-app-port 8080
+```
+
+## View Logs
+
+```bash
+# Stream logs
+az containerapp logs show --name APP -g RG --follow
+
+# Recent logs
+az containerapp logs show --name APP -g RG --tail 100
+```
+
 ## Troubleshooting
 
 | Issue | Symptom | Solution |
@@ -663,7 +746,9 @@ resource eventDrivenJob 'Microsoft.App/jobs@2024-03-01' = {
 | **Bicep validation errors** | Error during `azd provision` | Run `get_errors` tool on Bicep files to identify syntax issues |
 | **User/group already exists** | Dockerfile build fails with "group in use" | Base images may have users pre-configured. Check if user exists before creating |
 | **Port mismatch** | App not accessible after deployment | Verify target-port matches application listening port in Dockerfile |
-| **Image pull errors** | Container fails to start | Check ACR credentials and managed identity has AcrPull role |
+| **Image pull errors** | Container fails to start | Check ACR credentials and managed identity has AcrPull role. Run: `az containerapp registry set --name APP -g RG --server ACR.azurecr.io --identity system` |
+| **ACR Tasks disabled** | `az acr build` fails with "TasksOperationsNotAllowed" | Free/trial subscriptions have ACR Tasks disabled. Build locally: `docker build`, `az acr login`, `docker push` |
+| **Cold start timeouts** | First request times out | Set minimum replicas: `az containerapp update --name APP -g RG --min-replicas 1` |
 | **Out of memory** | Container crashes or restarts | Increase memory limits in Bicep configuration |
 | **Missing env vars** | Application errors on startup | Configure environment variables in container app settings |
 | **Health probe failures** | Container marked unhealthy | Implement /health endpoint and adjust probe timings |
