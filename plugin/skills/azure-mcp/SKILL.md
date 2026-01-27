@@ -223,6 +223,7 @@ See `cli/cheatsheet.md` for common CLI commands.
 | `azure_monitor_metrics_query` | Query metrics |
 | `azure_monitor_logs_query` | Query logs with KQL |
 | `azure_applicationinsights_component_list` | List App Insights |
+| `azure_resourcehealth_*` | Check resource health and availability |
 
 ## CLI Helpers
 
