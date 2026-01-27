@@ -23,19 +23,6 @@ body:
     attributes:
       value: ---
 
-  - type: input
-    id: title
-    attributes:
-      label: Title
-      description: Provide a short and descriptive title for the issue
-      placeholder: e.g., "Skill fails to deploy Azure Function"
-    validations:
-      required: true
-
-  - type: markdown
-    attributes:
-      value: ---
-
   - type: textarea
     id: repro-steps
     attributes:
