@@ -74,6 +74,16 @@ npm run build
 npx swa deploy ./dist --deployment-token "$TOKEN" --env production
 ```
 
+> ⚠️ **CRITICAL: SWA CLI Directory Rule**
+> 
+> **Always run `swa deploy` from a PARENT directory, pointing to the output folder.** The SWA CLI will fail silently with "Current directory cannot be identical to or contained within artifact folders" if you run it from inside the deployment directory.
+> 
+> **✅ Correct:** `cd C:\projects && swa deploy .\myapp\dist`
+> 
+> **❌ Wrong:** `cd C:\projects\myapp\dist && swa deploy .`
+> 
+> For plain HTML sites without a build step, copy files to a `dist/` folder first, then deploy from the parent directory.
+
 ---
 
 ## SKU Options
