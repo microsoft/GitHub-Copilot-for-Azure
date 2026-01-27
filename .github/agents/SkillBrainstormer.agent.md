@@ -4,7 +4,7 @@ description: Helps brainstorm ideas for a new Azure-related agent skill based on
 tools: ['execute', 'read', 'search', 'web', 'agent', 'azure-mcp/*', 'todo']
 handoffs:
   - label: Gather further requirements
-    agent: Skill Creator
+    agent: Azure Skill Creator
     prompt: Gather any further requirements for the described skill
     send: true
 ---
