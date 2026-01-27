@@ -242,7 +242,6 @@ These skills don't have app type detection (they're service-specific, not deploy
 | `azure-keyvault-expiration-audit` | Security audit |
 | `azure-mcp` | MCP tool usage |
 | `azure-networking` | Network configuration |
-| `azure-nodejs-production` | Production best practices |
 | `azure-observability` | Monitoring setup |
 | `azure-postgres-entra-rbac-setup` | Database security |
 | `azure-redis` | Cache service |
@@ -254,6 +253,12 @@ These skills don't have app type detection (they're service-specific, not deploy
 | `azure-storage` | Storage service |
 | `azure-validation` | Validation checks |
 | `microsoft-foundry` | AI platform |
+
+### Skills with Separate Test Suites
+
+| Skill | Test Location | Description |
+|-------|---------------|-------------|
+| ✅ `azure-nodejs-production` | `tests/nodejs-production/` | Production best practices validation (83 tests) |
 
 ---
 
