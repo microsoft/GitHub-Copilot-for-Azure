@@ -62,21 +62,6 @@ az resource list \
   --output table
 ```
 
-##### PowerShell
-```powershell
-# List all Microsoft Foundry resources in subscription
-az resource list `
-  --resource-type "Microsoft.CognitiveServices/accounts" `
-  --query "[?kind=='AIServices'].{Name:name, ResourceGroup:resourceGroup, Location:location}" `
-  --output table
-
-# List resources in a specific resource group
-az resource list `
-  --resource-group <resource-group-name> `
-  --resource-type "Microsoft.CognitiveServices/accounts" `
-  --output table
-```
-
 **Using MCP Tools:**
 
 Use the `foundry_resource_get` MCP tool to get detailed information about a specific Foundry resource, or to list all resources if no name is provided.
@@ -128,26 +113,6 @@ az cognitiveservices account deployment create \
 az cognitiveservices account deployment show \
   --name <foundry-resource-name> \
   --resource-group <resource-group-name> \
-  --deployment-name gpt-4o-deployment
-```
-
-##### PowerShell
-```powershell
-# Deploy a model (e.g., gpt-4o)
-az cognitiveservices account deployment create `
-  --name <foundry-resource-name> `
-  --resource-group <resource-group-name> `
-  --deployment-name gpt-4o-deployment `
-  --model-name gpt-4o `
-  --model-version "2024-05-13" `
-  --model-format OpenAI `
-  --sku-capacity 10 `
-  --sku-name Standard
-
-# Verify deployment status
-az cognitiveservices account deployment show `
-  --name <foundry-resource-name> `
-  --resource-group <resource-group-name> `
   --deployment-name gpt-4o-deployment
 ```
 
@@ -441,22 +406,6 @@ az cognitiveservices account show \
   --query "properties.quotaLimit"
 ```
 
-##### PowerShell
-```powershell
-# Check deployment status and details
-az cognitiveservices account deployment show `
-  --name <resource-name> `
-  --resource-group <resource-group> `
-  --deployment-name <deployment-name> `
-  --output json
-
-# Check account quota
-az cognitiveservices account show `
-  --name <resource-name> `
-  --resource-group <resource-group> `
-  --query "properties.quotaLimit"
-```
-
 **Common Causes:**
 - Insufficient quota in the region
 - Region at capacity for the model
@@ -514,20 +463,6 @@ az role assignment list \
   --output table
 ```
 
-##### PowerShell
-```powershell
-# Assign Search Index Data Contributor role to managed identity
-az role assignment create `
-  --assignee <managed-identity-principal-id> `
-  --role "Search Index Data Contributor" `
-  --scope /subscriptions/<subscription-id>/resourceGroups/<rg>/providers/Microsoft.Search/searchServices/<search-service>
-
-# Verify role assignment
-az role assignment list `
-  --assignee <managed-identity-principal-id> `
-  --output table
-```
-
 #### Evaluation Issues
 
 **Problem: Evaluation Dashboard Shows No Data**
@@ -573,13 +508,6 @@ az cognitiveservices usage list \
 # Request quota increase (manual process in portal)
 echo "Request quota increase in Azure Portal under Quotas section"
 ```
-
-##### PowerShell
-```powershell
-# Check current quota usage
-az cognitiveservices usage list `
-  --name <resource-name> `
-  --resource-group <resource-group>
 
 # Request quota increase (manual process in portal)
 Write-Output "Request quota increase in Azure Portal under Quotas section"
