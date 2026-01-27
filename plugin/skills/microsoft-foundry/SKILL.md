@@ -205,13 +205,7 @@ RAG enhances AI responses by:
 
 **Using MCP Tools:**
 
-```python
-# List all knowledge indexes in a project
-foundry_knowledge_index_list(
-    endpoint="https://my-foundry.services.ai.azure.com/api/projects/my-project"
-)
-```
-Use the `foundry_knowledge_index_list` MCP tool with your project endpoint to list all available knowledge indexes.
+Use `foundry_knowledge_index_list` with your project endpoint to list knowledge indexes.
 
 #### Step 2: Inspect Index Schema
 
@@ -281,30 +275,7 @@ A developer wants to create an AI agent with tools (web search, function calling
 
 **Using MCP Tools:**
 
-```python
-# List all agents in a project
-foundry_agents_list(
-    endpoint="https://my-foundry.services.ai.azure.com/api/projects/my-project"
-)
-```
-
-**Testing Process:**
-
-1. **Query the agent** with a test question
-2. **Stream the response** to get real-time output
-3. **Capture citations** from the response annotations
-4. **Validate** that citations are properly formatted and included
-
-**For SDK Implementation:** See [language/python.md](language/python.md#testing-the-rag-agent)
-
-**Troubleshooting RAG Issues:**
-
-| Issue | Possible Cause | Resolution |
-|-------|---------------|------------|
-| No citations in response | Agent instructions don't request citations | Update instructions to explicitly request citation format |
-| "Index not found" error | Wrong index name or connection | Verify `AI_SEARCH_INDEX_NAME` matches index in Azure AI Search |
-| 401/403 authentication error | Missing RBAC permissions | Assign project managed identity **Search Index Data Contributor** role |
-| Poor retrieval quality | Query type not optimal | Try HYBRID query type for better results |
+Use `foundry_agents_list` with your project endpoint to list existing agents.
 
 #### Step 2: Create a Basic Agent
 
