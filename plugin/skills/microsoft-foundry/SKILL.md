@@ -1,17 +1,17 @@
 ---
-name: azure-ai-foundry
-description: 'Expert in Azure AI Foundry: discover and deploy models, build RAG applications with knowledge indexes, create and evaluate AI agents, and troubleshoot common issues. Supports the complete journey from setup to production monitoring.'
+name: microsoft-foundry
+description: 'Expert in Microsoft Foundry: discover and deploy models, build RAG applications with knowledge indexes, create and evaluate AI agents, and troubleshoot common issues. Supports the complete journey from setup to production monitoring.'
 ---
 
-# Azure AI Foundry Skill
+# Microsoft Foundry Skill
 
-This skill helps developers work with Azure AI Foundry resources, covering model discovery and deployment, RAG (Retrieval-Augmented Generation) applications, AI agent creation, evaluation workflows, and troubleshooting.
+This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, RAG (Retrieval-Augmented Generation) applications, AI agent creation, evaluation workflows, and troubleshooting.
 
 ## When to Use This Skill
 
 Use this skill when the user wants to:
 
-- **Discover and deploy AI models** from the Azure AI Foundry catalog
+- **Discover and deploy AI models** from the Microsoft Foundry catalog
 - **Build RAG applications** using knowledge indexes and vector search
 - **Create AI agents** with tools like Azure AI Search, web search, or custom functions
 - **Evaluate agent performance** using built-in evaluators
@@ -22,7 +22,7 @@ Use this skill when the user wants to:
 
 ### Azure Resources
 - An Azure subscription with an active account
-- Appropriate permissions to create Azure AI Foundry resources (e.g., Azure AI Owner role)
+- Appropriate permissions to create Microsoft Foundry resources (e.g., Azure AI Owner role)
 - Resource group for organizing Foundry resources
 
 ### Tools
@@ -39,17 +39,17 @@ For SDK examples and implementation details in specific programming languages, r
 ### 1. Getting Started - Model Discovery and Deployment
 
 #### Use Case
-A developer new to Azure AI Foundry wants to explore available models and deploy their first one.
+A developer new to Microsoft Foundry wants to explore available models and deploy their first one.
 
 #### Step 1: List Available Resources
 
-First, help the user discover their Azure AI Foundry resources.
+First, help the user discover their Microsoft Foundry resources.
 
 **Using Azure CLI:**
 
 ##### Bash
 ```bash
-# List all Azure AI Foundry resources in subscription
+# List all Microsoft Foundry resources in subscription
 az resource list \
   --resource-type "Microsoft.CognitiveServices/accounts" \
   --query "[?kind=='AIServices'].{Name:name, ResourceGroup:resourceGroup, Location:location}" \
@@ -64,7 +64,7 @@ az resource list \
 
 ##### PowerShell
 ```powershell
-# List all Azure AI Foundry resources in subscription
+# List all Microsoft Foundry resources in subscription
 az resource list `
   --resource-type "Microsoft.CognitiveServices/accounts" `
   --query "[?kind=='AIServices'].{Name:name, ResourceGroup:resourceGroup, Location:location}" `
@@ -669,12 +669,12 @@ For SDK-specific details, authentication, and code examples:
 ## Additional Resources
 
 ### Documentation Links
-- [Azure AI Foundry Documentation](https://learn.microsoft.com/azure/ai-foundry/)
-- [Azure AI Foundry Quickstart](https://learn.microsoft.com/azure/ai-foundry/quickstarts/get-started-code)
+- [Microsoft Foundry Documentation](https://learn.microsoft.com/azure/ai-foundry/)
+- [Microsoft Foundry Quickstart](https://learn.microsoft.com/azure/ai-foundry/quickstarts/get-started-code)
 - [RAG and Knowledge Indexes](https://learn.microsoft.com/azure/ai-foundry/concepts/retrieval-augmented-generation)
 - [Agent Evaluation Guide](https://learn.microsoft.com/azure/ai-foundry/how-to/develop/agent-evaluate-sdk)
 
 ### GitHub Samples
-- [Azure AI Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
+- [Microsoft Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
 - [Azure Search OpenAI Demo](https://github.com/Azure-Samples/azure-search-openai-demo)
 - [Azure Search Classic RAG](https://github.com/Azure-Samples/azure-search-classic-rag)

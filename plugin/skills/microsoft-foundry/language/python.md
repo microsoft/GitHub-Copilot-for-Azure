@@ -1,6 +1,6 @@
-# Azure AI Foundry - Python SDK Guide
+# Microsoft Foundry - Python SDK Guide
 
-This guide provides Python-specific implementations for working with Azure AI Foundry.
+This guide provides Python-specific implementations for working with Microsoft Foundry.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ This guide provides Python-specific implementations for working with Azure AI Fo
 ### Python Package Installation
 
 ```bash
-# Core packages for Azure AI Foundry
+# Core packages for Microsoft Foundry
 pip install azure-ai-projects azure-identity azure-ai-inference openai
 
 # For evaluation
