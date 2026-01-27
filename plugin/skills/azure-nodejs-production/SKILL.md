@@ -228,7 +228,11 @@ const TRUSTED_HOST = process.env.APP_PUBLIC_HOSTNAME; // e.g. "myapp.contoso.com
 
 app.use((req, res, next) => {
   if (req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
-    const host = TRUSTED_HOST || req.hostname;
+    const host = TRUSTED_HOST;
+    if (!host) {
+      // If no trusted host is configured, skip redirect to avoid using untrusted Host header
+      return next();
+    }
     // Optionally enforce an allowlist here for extra safety
     return res.redirect(`https://${host}${req.originalUrl}`);
   }
