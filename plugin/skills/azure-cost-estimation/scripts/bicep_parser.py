@@ -61,6 +61,7 @@ class AzureResource:
             "Microsoft.ServiceBus/namespaces": "Service Bus",
             "Microsoft.EventHub/namespaces": "Event Hubs",
             "Microsoft.CognitiveServices/accounts": "Cognitive Services",
+            "Microsoft.Web/staticSites": "Azure Static Web Apps",
         }
         return service_map.get(self.resource_type, self.resource_type)
 
@@ -222,6 +223,47 @@ def _extract_nested_block(content: str, block_name: str) -> Optional[str]:
     return None
 
 
+def _extract_array(content: str, start_pos: int) -> str:
+    """Extract content between matching brackets starting at start_pos."""
+    bracket_count = 0
+    in_string = False
+    string_char = None
+    array_start = None
+
+    i = start_pos
+    while i < len(content):
+        char = content[i]
+
+        # Handle string literals
+        if char in ('"', "'") and (i == 0 or content[i-1] != '\\'):
+            if not in_string:
+                in_string = True
+                string_char = char
+            elif char == string_char:
+                in_string = False
+                string_char = None
+            i += 1
+            continue
+
+        if in_string:
+            i += 1
+            continue
+
+        # Handle brackets
+        if char == '[':
+            if bracket_count == 0:
+                array_start = i
+            bracket_count += 1
+        elif char == ']':
+            bracket_count -= 1
+            if bracket_count == 0:
+                return content[array_start:i+1]
+
+        i += 1
+
+    return ""
+
+
 def _extract_cost_properties(block: str, resource_type: str) -> dict:
     """Extract resource-specific properties that affect cost."""
     props = {}
@@ -261,8 +303,8 @@ def _extract_cost_properties(block: str, resource_type: str) -> dict:
         if kind:
             props["kind"] = kind
 
-    # App Service Plans / Web Sites
-    elif "serverfarms" in resource_type or "sites" in resource_type:
+    # App Service Plans (serverfarms only - sites handled separately for Function Apps)
+    elif "serverfarms" in resource_type:
         # Capacity (number of instances)
         capacity = _extract_property(block, "capacity")
         if capacity:
@@ -289,15 +331,144 @@ def _extract_cost_properties(block: str, resource_type: str) -> dict:
 
     # Container Apps
     elif "containerApps" in resource_type:
-        # Resources
-        resources_block = _extract_nested_block(block, "resources")
-        if resources_block:
-            cpu = _extract_property(resources_block, "cpu")
-            memory = _extract_property(resources_block, "memory")
-            if cpu:
-                props["cpu"] = cpu
-            if memory:
-                props["memory"] = memory
+        # Container Apps have deeply nested resources: template > containers > [item] > resources
+        template_block = _extract_nested_block(block, "template")
+        if template_block:
+            # Find containers array - look for resources inside it
+            containers_match = re.search(r'containers\s*:\s*\[', template_block)
+            if containers_match:
+                # Extract the array content
+                array_content = _extract_array(template_block, containers_match.end() - 1)
+                if array_content:
+                    # Find resources block inside the container
+                    resources_block = _extract_nested_block(array_content, "resources")
+                    if resources_block:
+                        cpu = _extract_property(resources_block, "cpu")
+                        memory = _extract_property(resources_block, "memory")
+                        if cpu:
+                            # Handle json(cpu) function - extract the parameter
+                            json_match = re.search(r'json\s*\(\s*(\w+)\s*\)', cpu)
+                            if json_match:
+                                props["cpu"] = f"${{{json_match.group(1)}}}"
+                            else:
+                                props["cpu"] = cpu
+                        if memory:
+                            props["memory"] = memory
+
+            # Also extract scale settings for replica count
+            scale_block = _extract_nested_block(template_block, "scale")
+            if scale_block:
+                min_replicas = _extract_property(scale_block, "minReplicas")
+                max_replicas = _extract_property(scale_block, "maxReplicas")
+                if min_replicas:
+                    props["minReplicas"] = min_replicas
+                if max_replicas:
+                    props["maxReplicas"] = max_replicas
+
+    # Log Analytics workspaces
+    elif "workspaces" in resource_type and "OperationalInsights" in resource_type:
+        # Extract SKU and retention
+        sku_block = _extract_nested_block(block, "sku")
+        if sku_block:
+            sku_name = _extract_property(sku_block, "name")
+            if sku_name:
+                props["sku"] = sku_name
+        retention = _extract_property(block, "retentionInDays")
+        if retention:
+            props["retentionInDays"] = retention
+
+    # Static Web Apps
+    elif "staticSites" in resource_type:
+        # Extract SKU (Free or Standard)
+        sku_block = _extract_nested_block(block, "sku")
+        if sku_block:
+            sku_name = _extract_property(sku_block, "name")
+            tier = _extract_property(sku_block, "tier")
+            if sku_name:
+                props["sku"] = sku_name
+            if tier:
+                props["tier"] = tier
+
+    # Function Apps / Web Apps (Microsoft.Web/sites)
+    elif "sites" in resource_type and "Web" in resource_type:
+        # Check if it's a Function App - kind is at top level in Bicep
+        # Look for: kind: 'functionapp' or kind: 'functionapp,linux'
+        kind_match = re.search(r"\bkind\s*:\s*['\"]([^'\"]+)['\"]", block)
+        if kind_match:
+            kind = kind_match.group(1)
+            props["kind"] = kind
+            if "functionapp" in kind.lower():
+                props["isFunction"] = True
+        # Get the server farm (App Service Plan) reference
+        server_farm = _extract_property(block, "serverFarmId")
+        if server_farm:
+            props["serverFarmId"] = server_farm
+
+    # Container Apps Jobs
+    elif "jobs" in resource_type and "App" in resource_type:
+        # Extract job configuration
+        config_block = _extract_nested_block(block, "configuration")
+        if config_block:
+            trigger_type = _extract_property(config_block, "triggerType")
+            if trigger_type:
+                props["triggerType"] = trigger_type
+            replica_timeout = _extract_property(config_block, "replicaTimeout")
+            if replica_timeout:
+                props["replicaTimeout"] = replica_timeout
+        # Extract resources from template
+        template_block = _extract_nested_block(block, "template")
+        if template_block:
+            containers_match = re.search(r'containers\s*:\s*\[', template_block)
+            if containers_match:
+                array_content = _extract_array(template_block, containers_match.end() - 1)
+                if array_content:
+                    resources_block = _extract_nested_block(array_content, "resources")
+                    if resources_block:
+                        cpu = _extract_property(resources_block, "cpu")
+                        memory = _extract_property(resources_block, "memory")
+                        if cpu:
+                            json_match = re.search(r'json\s*\(\s*(\w+)\s*\)', cpu)
+                            if json_match:
+                                props["cpu"] = f"${{{json_match.group(1)}}}"
+                            else:
+                                props["cpu"] = cpu
+                        if memory:
+                            props["memory"] = memory
+
+    # Container Registry
+    elif "registries" in resource_type and "ContainerRegistry" in resource_type:
+        sku_block = _extract_nested_block(block, "sku")
+        if sku_block:
+            sku_name = _extract_property(sku_block, "name")
+            if sku_name:
+                props["sku"] = sku_name
+
+    # Application Insights
+    elif "components" in resource_type and "Insights" in resource_type:
+        # Application type
+        app_type = _extract_property(block, "Application_Type")
+        if app_type:
+            props["applicationType"] = app_type
+        # Ingestion mode
+        ingestion_mode = _extract_property(block, "IngestionMode")
+        if ingestion_mode:
+            props["ingestionMode"] = ingestion_mode
+
+    # Container Apps - check for workload profile (Dedicated vs Consumption)
+    elif "managedEnvironments" in resource_type:
+        # Check for workload profiles (indicates Dedicated plan)
+        workload_profiles = _extract_nested_block(block, "workloadProfiles")
+        if workload_profiles:
+            props["planType"] = "Dedicated"
+            # Try to extract profile details
+            profile_name = _extract_property(workload_profiles, "name")
+            profile_type = _extract_property(workload_profiles, "workloadProfileType")
+            if profile_name:
+                props["profileName"] = profile_name
+            if profile_type:
+                props["profileType"] = profile_type
+        else:
+            props["planType"] = "Consumption"
 
     # Key Vault
     elif "vaults" in resource_type and "KeyVault" in resource_type:

@@ -257,6 +257,378 @@ class AzurePricingClient:
 
         return prices
 
+    def get_storage_account_price(
+        self,
+        sku: str,
+        region: str
+    ) -> Optional[PriceInfo]:
+        """
+        Get storage account price per GB/month for a specific SKU.
+
+        Args:
+            sku: Storage SKU (e.g., 'Standard_LRS', 'Standard_GRS')
+            region: Azure region
+
+        Returns:
+            PriceInfo with per-GB monthly price, or None if not found
+        """
+        # Map Bicep SKU names to API format
+        sku_map = {
+            "Standard_LRS": "Standard LRS",
+            "Standard_GRS": "Standard GRS",
+            "Standard_ZRS": "Standard ZRS",
+            "Standard_GZRS": "Standard GZRS",
+            "Standard_RAGRS": "Standard RA-GRS",
+            "Premium_LRS": "Premium LRS",
+            "Premium_ZRS": "Premium ZRS",
+        }
+        api_sku = sku_map.get(sku, sku)
+
+        # Query for block blob storage (most common)
+        filter_str = f"serviceName eq 'Storage' and armRegionName eq '{region}' and contains(skuName, '{api_sku}') and contains(meterName, 'Data Stored')"
+
+        items = self._query(filter_str, max_results=20)
+
+        # Find Hot tier block blob pricing (most common default)
+        for item in items:
+            meter_name = item.get("meterName", "")
+            product_name = item.get("productName", "")
+
+            # Prefer Hot tier, Block Blob
+            if "Hot" in meter_name or "Block Blob" in product_name:
+                return PriceInfo(
+                    retail_price=item.get("retailPrice", 0),
+                    unit_of_measure=item.get("unitOfMeasure", ""),
+                    sku_name=item.get("skuName", ""),
+                    service_name=item.get("serviceName", ""),
+                    product_name=product_name,
+                    region=item.get("armRegionName", ""),
+                    meter_name=meter_name,
+                    currency=self.currency
+                )
+
+        # Return first result if no specific match
+        if items:
+            item = items[0]
+            return PriceInfo(
+                retail_price=item.get("retailPrice", 0),
+                unit_of_measure=item.get("unitOfMeasure", ""),
+                sku_name=item.get("skuName", ""),
+                service_name=item.get("serviceName", ""),
+                product_name=item.get("productName", ""),
+                region=item.get("armRegionName", ""),
+                meter_name=item.get("meterName", ""),
+                currency=self.currency
+            )
+
+        return None
+
+    def get_container_registry_price(
+        self,
+        tier: str,
+        region: str
+    ) -> Optional[PriceInfo]:
+        """
+        Get Azure Container Registry daily price by tier.
+
+        Args:
+            tier: ACR tier ('Basic', 'Standard', 'Premium')
+            region: Azure region
+
+        Returns:
+            PriceInfo with daily price, or None if not found
+        """
+        # Normalize tier name
+        tier_normalized = tier.capitalize()
+
+        filter_str = f"serviceName eq 'Container Registry' and armRegionName eq '{region}' and contains(skuName, '{tier_normalized}')"
+
+        items = self._query(filter_str, max_results=10)
+
+        # Find the registry service fee (not storage overage)
+        for item in items:
+            meter_name = item.get("meterName", "")
+            # Look for the base registry fee, not storage overage
+            if "Registry" in meter_name or tier_normalized in meter_name:
+                return PriceInfo(
+                    retail_price=item.get("retailPrice", 0),
+                    unit_of_measure=item.get("unitOfMeasure", ""),
+                    sku_name=item.get("skuName", ""),
+                    service_name=item.get("serviceName", ""),
+                    product_name=item.get("productName", ""),
+                    region=item.get("armRegionName", ""),
+                    meter_name=meter_name,
+                    currency=self.currency
+                )
+
+        if items:
+            item = items[0]
+            return PriceInfo(
+                retail_price=item.get("retailPrice", 0),
+                unit_of_measure=item.get("unitOfMeasure", ""),
+                sku_name=item.get("skuName", ""),
+                service_name=item.get("serviceName", ""),
+                product_name=item.get("productName", ""),
+                region=item.get("armRegionName", ""),
+                meter_name=item.get("meterName", ""),
+                currency=self.currency
+            )
+
+        return None
+
+    def get_app_service_plan_price(
+        self,
+        sku: str,
+        region: str
+    ) -> Optional[PriceInfo]:
+        """
+        Get App Service Plan hourly price by SKU.
+
+        Args:
+            sku: Plan SKU (e.g., 'B1', 'S1', 'P1V2', 'P1V3')
+            region: Azure region
+
+        Returns:
+            PriceInfo with hourly price, or None if not found
+        """
+        # Handle Dynamic/Consumption plan for Functions
+        if sku in ('Y1', 'Dynamic'):
+            return PriceInfo(
+                retail_price=0,
+                unit_of_measure="1 Hour",
+                sku_name=sku,
+                service_name="Azure App Service",
+                product_name="Consumption Plan",
+                region=region,
+                meter_name="Dynamic",
+                currency=self.currency
+            )
+
+        # Free tier
+        if sku == 'F1':
+            return PriceInfo(
+                retail_price=0,
+                unit_of_measure="1 Hour",
+                sku_name="F1",
+                service_name="Azure App Service",
+                product_name="Free Tier",
+                region=region,
+                meter_name="F1",
+                currency=self.currency
+            )
+
+        # App Service uses skuName, not armSkuName
+        filter_str = f"serviceName eq 'Azure App Service' and armRegionName eq '{region}' and contains(skuName, '{sku}')"
+
+        items = self._query(filter_str, max_results=20)
+
+        # Filter for Linux or Windows basic plan (not Premium/Isolated)
+        for item in items:
+            product_name = item.get("productName", "")
+            sku_name = item.get("skuName", "")
+
+            # Skip spot instances
+            if "Spot" in sku_name:
+                continue
+
+            # Prefer Linux pricing (generally cheaper)
+            if "Linux" in product_name:
+                return PriceInfo(
+                    retail_price=item.get("retailPrice", 0),
+                    unit_of_measure=item.get("unitOfMeasure", ""),
+                    sku_name=item.get("armSkuName", ""),
+                    service_name=item.get("serviceName", ""),
+                    product_name=product_name,
+                    region=item.get("armRegionName", ""),
+                    meter_name=item.get("meterName", ""),
+                    currency=self.currency
+                )
+
+        # Return first non-spot result
+        for item in items:
+            if "Spot" not in item.get("skuName", ""):
+                return PriceInfo(
+                    retail_price=item.get("retailPrice", 0),
+                    unit_of_measure=item.get("unitOfMeasure", ""),
+                    sku_name=item.get("armSkuName", ""),
+                    service_name=item.get("serviceName", ""),
+                    product_name=item.get("productName", ""),
+                    region=item.get("armRegionName", ""),
+                    meter_name=item.get("meterName", ""),
+                    currency=self.currency
+                )
+
+        return None
+
+    def get_static_web_app_price(
+        self,
+        tier: str,
+        region: str
+    ) -> Optional[PriceInfo]:
+        """
+        Get Azure Static Web Apps price by tier.
+
+        Args:
+            tier: SWA tier ('Free' or 'Standard')
+            region: Azure region (note: SWA has limited region pricing)
+
+        Returns:
+            PriceInfo with monthly/hourly price, or None if not found
+        """
+        # Free tier is always free
+        tier_lower = tier.lower()
+        if tier_lower == 'free':
+            return PriceInfo(
+                retail_price=0,
+                unit_of_measure="1 Month",
+                sku_name="Free",
+                service_name="Static Web Apps",
+                product_name="Static Web Apps - Free",
+                region=region,
+                meter_name="Free",
+                currency=self.currency
+            )
+
+        # Query for Standard tier
+        filter_str = f"serviceName eq 'Static Web Apps' and contains(skuName, 'Standard')"
+
+        items = self._query(filter_str, max_results=10)
+
+        # Static Web Apps may not have region-specific pricing
+        for item in items:
+            meter_name = item.get("meterName", "")
+            if "Instance" in meter_name or "Standard" in meter_name:
+                return PriceInfo(
+                    retail_price=item.get("retailPrice", 0),
+                    unit_of_measure=item.get("unitOfMeasure", ""),
+                    sku_name=item.get("skuName", ""),
+                    service_name=item.get("serviceName", ""),
+                    product_name=item.get("productName", ""),
+                    region=item.get("armRegionName", "") or region,
+                    meter_name=meter_name,
+                    currency=self.currency
+                )
+
+        if items:
+            item = items[0]
+            return PriceInfo(
+                retail_price=item.get("retailPrice", 0),
+                unit_of_measure=item.get("unitOfMeasure", ""),
+                sku_name=item.get("skuName", ""),
+                service_name=item.get("serviceName", ""),
+                product_name=item.get("productName", ""),
+                region=item.get("armRegionName", "") or region,
+                meter_name=item.get("meterName", ""),
+                currency=self.currency
+            )
+
+        return None
+
+    def get_function_app_prices(
+        self,
+        region: str
+    ) -> dict:
+        """
+        Get Azure Functions consumption plan pricing (executions + compute).
+
+        Args:
+            region: Azure region
+
+        Returns:
+            Dict with 'execution_price' (per million) and 'gb_second_price' (per GB-s)
+        """
+        result = {
+            'execution_price': 0.20,  # Default: $0.20 per million executions
+            'gb_second_price': 0.000016,  # Default: $0.000016 per GB-second
+        }
+
+        # Query for execution pricing
+        exec_filter = f"serviceName eq 'Functions' and armRegionName eq '{region}' and priceType eq 'Consumption'"
+        items = self._query(exec_filter, max_results=20)
+
+        for item in items:
+            meter_name = item.get("meterName", "").lower()
+            unit = item.get("unitOfMeasure", "")
+            price = item.get("retailPrice", 0)
+
+            if "execution" in meter_name and price > 0:
+                result['execution_price'] = price
+                result['execution_unit'] = unit
+            elif ("gb" in meter_name and "second" in meter_name) or "duration" in meter_name:
+                if price > 0:
+                    result['gb_second_price'] = price
+                    result['gb_second_unit'] = unit
+
+        # Also try "Azure Functions" service name
+        if result['execution_price'] == 0.20:
+            exec_filter = f"serviceName eq 'Azure Functions' and armRegionName eq '{region}' and priceType eq 'Consumption'"
+            items = self._query(exec_filter, max_results=20)
+
+            for item in items:
+                meter_name = item.get("meterName", "").lower()
+                price = item.get("retailPrice", 0)
+
+                if "execution" in meter_name and price > 0:
+                    result['execution_price'] = price
+                elif "duration" in meter_name or "gb" in meter_name:
+                    if price > 0:
+                        result['gb_second_price'] = price
+
+        return result
+
+    def get_log_analytics_price(
+        self,
+        region: str
+    ) -> Optional[PriceInfo]:
+        """
+        Get Log Analytics data ingestion price per GB.
+        Used for both Log Analytics workspaces and Application Insights (workspace-based).
+
+        Args:
+            region: Azure region
+
+        Returns:
+            PriceInfo with per-GB price, or None if not found
+        """
+        filter_str = f"serviceName eq 'Log Analytics' and armRegionName eq '{region}' and contains(meterName, 'Data Ingestion')"
+
+        items = self._query(filter_str, max_results=10)
+
+        # Find Pay-as-you-go ingestion pricing
+        for item in items:
+            sku_name = item.get("skuName", "")
+            meter_name = item.get("meterName", "")
+
+            # Prefer Pay-as-you-go, avoid commitment tiers
+            if "Pay-as-you-go" in sku_name or "Data Ingestion" in meter_name:
+                if "Commitment" not in sku_name:
+                    return PriceInfo(
+                        retail_price=item.get("retailPrice", 0),
+                        unit_of_measure=item.get("unitOfMeasure", ""),
+                        sku_name=sku_name,
+                        service_name=item.get("serviceName", ""),
+                        product_name=item.get("productName", ""),
+                        region=item.get("armRegionName", ""),
+                        meter_name=meter_name,
+                        currency=self.currency
+                    )
+
+        # Return first result if no specific match
+        if items:
+            item = items[0]
+            return PriceInfo(
+                retail_price=item.get("retailPrice", 0),
+                unit_of_measure=item.get("unitOfMeasure", ""),
+                sku_name=item.get("skuName", ""),
+                service_name=item.get("serviceName", ""),
+                product_name=item.get("productName", ""),
+                region=item.get("armRegionName", ""),
+                meter_name=item.get("meterName", ""),
+                currency=self.currency
+            )
+
+        return None
+
     def compare_regions(
         self,
         service_name: str,
