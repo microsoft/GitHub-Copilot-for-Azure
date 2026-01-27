@@ -12,7 +12,7 @@ description: Deploy and manage Azure Kubernetes Service (AKS) clusters for conta
 > Only use `az` for deployments if the user explicitly requests it.
 
 ```bash
-# Deploy everything - THIS IS THE ONLY WAY
+# Deploy everything - THIS IS THE MOST PREFERRED WAY
 azd up
 
 # Clean up test environments
