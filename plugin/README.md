@@ -1,6 +1,6 @@
 # Azure
 
-[Microsoft Azure](https://azure.microsoft.com) is Microsoft's cloud computing platform. This plugin connects Claude Code to your Azure account, letting you manage resources, deploy applications, and monitor services directly from your development environment.
+[Microsoft Azure](https://azure.microsoft.com) is Microsoft's cloud computing platform. This plugin connects [GitHub Copilot CLI](https://github.com/github/copilot-cli) or Claude Code to your Azure account, letting you manage resources, deploy applications, and monitor services directly from your development environment.
 
 ## Setup
 
@@ -46,6 +46,13 @@ When running on Azure resources (VMs, Container Apps, etc.), the server automati
 
 For more authentication options, see the [Azure Identity documentation](https://learn.microsoft.com/azure/developer/azure-mcp-server/).
 
+### 4. Install the Plugins
+# Add the repo as a plugin marketplace
+/plugin marketplace add microsoft/github-copilot-for-azure
+
+# Pull in the Azure plugin
+/plugin install azure@github-copilot-for-azure
+
 ## Available Tools
 
 The Azure MCP Server provides tools for 40+ Azure services:
@@ -83,7 +90,7 @@ For the complete list of 40+ services, see the [official documentation](https://
 
 ## Example Usage
 
-Ask Claude Code to:
+Ask GitHub Copilot CLI or Claude Code to:
 - "List my Azure storage accounts"
 - "Show me all containers in my Cosmos DB database"
 - "List all secrets in my key vault 'my-vault'"
