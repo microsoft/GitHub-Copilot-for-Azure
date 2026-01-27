@@ -178,6 +178,46 @@ async function generateInfrastructure(projectName: string) {
 
 **Key insight**: Always validate infrastructure before deploying using preview commands to catch configuration issues early.
 
+### ⚠️ Known Issue: Image Race Condition with `azd up`
+
+When using `azd up`, Bicep provisioning runs BEFORE images are built and pushed. If your Container App Bicep references your ACR image directly (e.g., `myregistry.azurecr.io/myapp:latest`), provisioning will fail with:
+
+```
+ContainerAppOperationError: MANIFEST_UNKNOWN: manifest tagged by "latest" is not found
+```
+
+**Recommended Solution: Use a Placeholder Image**
+
+Use a placeholder "hello world" image for initial Container App provisioning. During `azd deploy`, the actual application image will be built, pushed to ACR, and deployed to replace the placeholder.
+
+```bicep
+// In your main.bicep, use a placeholder for initial deployment
+param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
+
+resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  // ...
+  properties: {
+    template: {
+      containers: [
+        {
+          name: projectName
+          image: containerImage  // Placeholder on provision, real image on deploy
+          // ...
+        }
+      ]
+    }
+  }
+}
+```
+
+This works because:
+1. **`azd provision`**: Creates the Container App with the placeholder image (which exists in MCR)
+2. **`azd deploy`**: Builds your app image, pushes to ACR, and updates the Container App with the real image
+
+**Alternative Workarounds:**
+1. **Run separately**: `azd provision` then manually push image, then `azd deploy`
+2. **Use `az containerapp up`** instead, which handles this automatically
+
 ## Pattern 2.5: Multi-Service Deployment (UI + Backend)
 
 Deploy full-stack applications with both frontend and backend services in the same Container Apps environment.
@@ -501,6 +541,11 @@ async function setupCICD(subscription: string) {
 ### Example Bicep Template
 
 ```bicep
+param projectName string
+param location string
+// Use placeholder image for initial provisioning - azd deploy will update with real image
+param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
+
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: projectName
   location: location
@@ -526,7 +571,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: projectName
-          image: containerImage
+          image: containerImage  // Placeholder on first deploy, real image after azd deploy
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -545,6 +590,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 ### Example Bicep Template for Container Apps Job
 
 ```bicep
+param projectName string
+param location string
+// Use placeholder image for initial provisioning - azd deploy will update with real image
+param containerImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
+
 resource containerAppJob 'Microsoft.App/jobs@2024-03-01' = {
   name: '${projectName}-job'
   location: location
@@ -573,7 +623,7 @@ resource containerAppJob 'Microsoft.App/jobs@2024-03-01' = {
       containers: [
         {
           name: '${projectName}-job'
-          image: containerImage
+          image: containerImage  // Placeholder on first deploy, real image after azd deploy
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'
