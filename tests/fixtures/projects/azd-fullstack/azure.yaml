@@ -1,0 +1,12 @@
+name: fullstack-app
+metadata:
+  template: todo-app@0.0.1-beta
+services:
+  web:
+    project: ./frontend
+    language: js
+    host: staticwebapp
+  api:
+    project: ./api
+    language: js
+    host: function

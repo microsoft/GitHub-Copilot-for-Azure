@@ -1,0 +1,13 @@
+{
+  "name": "gatsby-site",
+  "version": "1.0.0",
+  "scripts": {
+    "develop": "gatsby develop",
+    "build": "gatsby build"
+  },
+  "dependencies": {
+    "gatsby": "^5.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

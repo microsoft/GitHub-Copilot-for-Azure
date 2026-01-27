@@ -1,0 +1,97 @@
+{
+  "react-vite": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "react-vite"
+  },
+  "vue-vite": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "vue-vite"
+  },
+  "angular": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "angular"
+  },
+  "nextjs-static": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "nextjs-static"
+  },
+  "nextjs-ssr": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "nextjs-ssr"
+  },
+  "plain-html": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "static-html"
+  },
+  "gatsby": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "gatsby"
+  },
+  "astro": {
+    "service": "static-web-apps",
+    "confidence": "MEDIUM",
+    "framework": "astro"
+  },
+  "functions-node": {
+    "service": "functions",
+    "confidence": "HIGH"
+  },
+  "functions-python": {
+    "service": "functions",
+    "confidence": "HIGH"
+  },
+  "functions-dotnet": {
+    "service": "functions",
+    "confidence": "HIGH",
+    "framework": "azure-functions-dotnet"
+  },
+  "docker-node": {
+    "service": "container-apps",
+    "confidence": "HIGH"
+  },
+  "docker-compose-multi": {
+    "service": "container-apps",
+    "confidence": "HIGH"
+  },
+  "express-api": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "express"
+  },
+  "flask-app": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "flask"
+  },
+  "django-app": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "django"
+  },
+  "fastapi-app": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "fastapi"
+  },
+  "dotnet-webapp": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "aspnetcore"
+  },
+  "spring-boot": {
+    "service": "app-service",
+    "confidence": "MEDIUM",
+    "framework": "spring-boot"
+  },
+  "azd-fullstack": {
+    "service": "azd-multi-service",
+    "confidence": "HIGH"
+  }
+}
