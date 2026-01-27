@@ -1,0 +1,10 @@
+name: fullstack-app
+services:
+  api:
+    project: ./api
+    language: js
+    host: containerapp
+  frontend:
+    project: ./frontend
+    language: js
+    host: containerapp

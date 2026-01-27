@@ -1,0 +1,6 @@
+{
+  "name": "docker-node-app",
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}
