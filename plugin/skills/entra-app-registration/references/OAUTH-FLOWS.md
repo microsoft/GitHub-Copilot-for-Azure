@@ -1,15 +1,15 @@
 # OAuth 2.0 Flows
 
-This document provides detailed explanations of OAuth 2.0 authentication flows supported by Microsoft Entra ID.
+This document provides an illustration of OAuth 2.0 authentication flows supported by Microsoft Entra ID.
+
+**Note:** All the following implementation steps are for illustration purposes. It's always recommended to use a library to handle the authentication flow.
 
 ## Authorization Code Flow
 
-**Use for:** Traditional web applications with server-side code
-
-### Flow Diagram
+### Flow Steps
 
 ```
-1. User → App: Navigate to app
+1. User → App: Navigate to app's web UI
 2. App → User: Redirect to Microsoft login
 3. User → Entra ID: Authenticate & consent
 4. Entra ID → App: Authorization code (via redirect URI)
@@ -88,15 +88,11 @@ GET https://graph.microsoft.com/v1.0/me
 Authorization: Bearer {access_token}
 ```
 
----
-
 ## Authorization Code Flow with PKCE
-
-**Use for:** Single-page apps (SPAs), mobile apps, desktop apps
 
 PKCE (Proof Key for Code Exchange) adds security for public clients that cannot securely store a client secret.
 
-### Flow Diagram
+### Flow Steps
 
 ```
 1. App: Generate code verifier (random string)
@@ -151,15 +147,9 @@ client_id={application_id}
 &code_verifier={code_verifier}
 ```
 
-**Note:** No `client_secret` required!
-
----
-
 ## Client Credentials Flow
 
-**Use for:** Daemon apps, background services, API-to-API calls without user context
-
-### Flow Diagram
+### Flow Steps
 
 ```
 1. App → Entra ID: Request token with client ID + secret
@@ -207,8 +197,6 @@ client_id={application_id}
 }
 ```
 
-**Note:** No refresh token (app can always request new token)
-
 #### 3. Use Access Token
 
 ```http
@@ -216,13 +204,11 @@ GET https://graph.microsoft.com/v1.0/users
 Authorization: Bearer {access_token}
 ```
 
----
-
 ## Device Code Flow
 
 **Use for:** Devices without browsers (IoT, CLIs), headless environments
 
-### Flow Diagram
+### Flow Steps
 
 ```
 1. App → Entra ID: Request device code
@@ -297,8 +283,6 @@ client_id={application_id}
 }
 ```
 
----
-
 ## Refresh Token Flow
 
 **Use for:** Refreshing expired access tokens without re-authentication
@@ -336,8 +320,6 @@ client_id={application_id}
 ```
 
 **Important:** New refresh token is returned; use it for next refresh
-
----
 
 ## Token Types
 
@@ -383,8 +365,6 @@ client_id={application_id}
 }
 ```
 
----
-
 ## Scopes and Permissions
 
 ### Scope Format
@@ -400,33 +380,6 @@ https://graph.microsoft.com/Mail.Send
 api://{api_application_id}/access_as_user
 ```
 
-### Common Scopes
-
-| Scope | Permission | Type |
-|-------|-----------|------|
-| `openid` | OpenID Connect sign-in | Delegated |
-| `profile` | Basic profile info | Delegated |
-| `email` | Email address | Delegated |
-| `offline_access` | Refresh token | Delegated |
-| `User.Read` | Read user profile | Delegated |
-| `User.ReadWrite` | Read/write user profile | Delegated |
-| `Mail.Read` | Read mail | Delegated |
-| `Mail.Send` | Send mail | Delegated |
-
-### Incremental Consent
-
-Request minimal scopes initially, request additional scopes later as needed.
-
-```javascript
-// Initial login - minimal scopes
-scopes = "openid profile User.Read"
-
-// Later, when sending email
-scopes = "Mail.Send"
-```
-
----
-
 ## Security Considerations
 
 | Practice | Why |
@@ -440,15 +393,6 @@ scopes = "Mail.Send"
 | **Handle token expiration** | Gracefully refresh or re-authenticate |
 | **Minimal scope principle** | Request only necessary permissions |
 
----
+## Additional Resources
 
-## Common Errors
-
-| Error Code | Meaning | Solution |
-|------------|---------|----------|
-| `AADSTS50011` | Redirect URI mismatch | Ensure exact match in app registration |
-| `AADSTS65001` | User consent required | Add permissions or grant admin consent |
-| `AADSTS70000` | Grant declined | User denied consent; request again or adjust permissions |
-| `AADSTS700016` | App not found | Check application ID and tenant |
-| `AADSTS90014` | Missing required field | Check all required parameters |
-| `invalid_grant` | Token expired or invalid | Use refresh token or re-authenticate |
+[OAuth 2.0 spec](https://www.rfc-editor.org/rfc/rfc6749)

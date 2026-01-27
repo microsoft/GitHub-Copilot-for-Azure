@@ -36,8 +36,6 @@ This document explains how to configure and manage API permissions for your Micr
 
 **Requirement:** Always requires admin consent
 
----
-
 ## Permission Scopes
 
 ### Understanding Scopes
@@ -67,8 +65,6 @@ api://your-api-id/.default
 - Client credentials flow (always)
 - Want all pre-configured permissions
 - Migrating from v1.0 endpoint
-
----
 
 ## Microsoft Graph Permissions
 
@@ -103,8 +99,6 @@ api://your-api-id/.default
 | `Directory.ReadWrite.All` | Read and write directory data | Yes (Always) |
 | `Group.ReadWrite.All` | Read and write all groups | Yes (Always) |
 
----
-
 ## Adding Permissions
 
 ### Azure Portal Method
@@ -124,37 +118,7 @@ api://your-api-id/.default
 6. Search and select permissions
 7. Click **"Add permissions"**
 
-### Azure CLI Method
-
-```bash
-# Get your app ID
-APP_ID="your-app-id-here"
-
-# Microsoft Graph resource ID
-GRAPH_ID="00000003-0000-0000-c000-000000000000"
-
-# Add User.Read delegated permission
-USER_READ="e1fe6dd8-ba31-4d61-89e7-88639da4683d"
-az ad app permission add --id $APP_ID \
-  --api $GRAPH_ID \
-  --api-permissions "$USER_READ=Scope"
-
-# Add Mail.Send delegated permission
-MAIL_SEND="e383f46e-2787-4529-855e-0e479a3ffac0"
-az ad app permission add --id $APP_ID \
-  --api $GRAPH_ID \
-  --api-permissions "$MAIL_SEND=Scope"
-
-# Add User.Read.All application permission
-USER_READ_ALL="df021288-bdef-4463-88db-98f22de89214"
-az ad app permission add --id $APP_ID \
-  --api $GRAPH_ID \
-  --api-permissions "$USER_READ_ALL=Role"
-```
-
-**Note:** Use `=Scope` for delegated, `=Role` for application permissions
-
----
+See [CLI-COMMANDS](CLI-COMMANDS) for az cli commands to add API permissions programmatically.
 
 ## Finding Permission IDs
 
@@ -182,8 +146,6 @@ Visit: https://learn.microsoft.com/en-us/graph/permissions-reference
 az ad sp list --filter "appId eq '00000003-0000-0000-c000-000000000000'" \
   --query "[0].{delegated:oauth2PermissionScopes,application:appRoles}" -o json
 ```
-
----
 
 ## Granting Admin Consent
 
@@ -213,17 +175,6 @@ az ad sp list --filter "appId eq '00000003-0000-0000-c000-000000000000'" \
 az ad app permission admin-consent --id $APP_ID
 ```
 
-**PowerShell Method:**
-```powershell
-# Requires Azure AD PowerShell module
-Connect-AzureAD
-New-AzureADServiceAppRoleAssignment `
-  -ObjectId $servicePrincipalId `
-  -PrincipalId $servicePrincipalId `
-  -ResourceId $graphServicePrincipalId `
-  -Id $permissionId
-```
-
 ### Verifying Consent Status
 
 **Portal:** Look for green checkmarks in "Status" column
@@ -234,47 +185,6 @@ az ad app permission list --id $APP_ID
 ```
 
 Look for `consentType: "AllPrincipals"` (admin consented)
-
----
-
-## Requesting Permissions at Runtime
-
-### Dynamic Consent (Delegated Permissions)
-
-Request permissions only when needed:
-
-```javascript
-// Initial login - minimal permissions
-const loginScopes = ["openid", "profile", "User.Read"];
-
-// Later, when sending email
-const emailScopes = ["Mail.Send"];
-```
-
-**Benefits:**
-- Better user experience (no overwhelming consent screen)
-- Incremental trust building
-- Request advanced features only when used
-
-### Static Consent (Pre-configured)
-
-All permissions requested at first login:
-
-```javascript
-const scopes = [
-  "User.Read",
-  "Mail.Read",
-  "Mail.Send",
-  "Calendars.ReadWrite"
-];
-```
-
-**When to use:**
-- Application permissions (must be pre-configured)
-- When admin consent is required
-- When all permissions are essential
-
----
 
 ## Custom API Permissions
 
@@ -290,29 +200,7 @@ If you're building an API that other apps will call:
    - **Who can consent:** Admins and users
    - **Display name:** "Access MyAPI as user"
    - **Description:** Clear description of what this allows
-
 5. Click **"Add scope"**
-
-### Calling Your Custom API
-
-In the client app:
-
-```bash
-# Add permission to call your API
-YOUR_API_ID="your-api-app-id"
-ACCESS_SCOPE="your-scope-id"  # Get from Expose an API page
-
-az ad app permission add --id $CLIENT_APP_ID \
-  --api $YOUR_API_ID \
-  --api-permissions "$ACCESS_SCOPE=Scope"
-```
-
-**In code:**
-```javascript
-const scopes = [`api://${YOUR_API_ID}/access_as_user`];
-```
-
----
 
 ## Effective Permissions
 
@@ -330,20 +218,6 @@ Example:
 - **Effective:** Only read own profile (limited by user's rights)
 
 **Application permissions:** Only app's permissions matter (no user context)
-
-### Least Privilege Principle
-
-**Best practice:** Request minimum permissions needed
-
-**Example - Reading user profile:**
-- ❌ Don't request: `Directory.ReadWrite.All` (excessive)
-- ✅ Request: `User.Read` (sufficient)
-
-**Example - Sending email:**
-- ❌ Don't request: `Mail.ReadWrite` (more than needed)
-- ✅ Request: `Mail.Send` (exact requirement)
-
----
 
 ## Troubleshooting Permissions
 
@@ -387,8 +261,6 @@ Example:
 3. Verify permission is present in token
 4. Check if permission is correct type (delegated vs application)
 
----
-
 ## Permission Best Practices
 
 ### Development
@@ -422,7 +294,6 @@ Example:
 
 ✅ **Do:**
 - Prefer delegated over application permissions
-- Use incremental consent when possible
 - Implement proper scope validation
 - Log permission usage
 - Handle consent errors gracefully
@@ -432,8 +303,6 @@ Example:
 - Skip token validation
 - Ignore scope mismatches
 - Cache permissions indefinitely
-
----
 
 ## Reference Tables
 
@@ -463,8 +332,6 @@ Directory.ReadWrite.All       : 19dbc75e-c2e2-444c-a770-ec69d8559fc7
 ```
 
 **Note:** Permission IDs may change. Always verify against the official [Microsoft Graph Permissions Reference](https://learn.microsoft.com/en-us/graph/permissions-reference) for the most current values.
-
----
 
 ## Additional Resources
 

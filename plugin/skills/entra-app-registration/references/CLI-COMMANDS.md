@@ -15,8 +15,6 @@ az login
 az account set --subscription "Your Subscription Name"
 ```
 
----
-
 ## App Registration Management
 
 ### Create App Registration
@@ -67,8 +65,6 @@ az ad app create \
 | `AzureADandPersonalMicrosoftAccount` | Multi-tenant + personal Microsoft accounts |
 | `PersonalMicrosoftAccount` | Personal Microsoft accounts only |
 
----
-
 ## List and Query Apps
 
 ### List all app registrations
@@ -85,14 +81,6 @@ az ad app list --display-name "MyApp" --output table
 
 # Get specific fields
 az ad app list --query "[].{Name:displayName, AppId:appId}" --output table
-
-# Show apps created recently
-# Linux (GNU date):
-az ad app list --query "[?createdDateTime>='$(date -u -d '7 days ago' +%Y-%m-%d)'].{Name:displayName, Created:createdDateTime}" --output table
-
-# macOS (BSD date):
-az ad app list --query "[?createdDateTime>='$(date -u -v-7d +%Y-%m-%d)'].{Name:displayName, Created:createdDateTime}" --output table
-```
 
 ### Get app details
 
@@ -118,15 +106,7 @@ OBJECT_ID=$(az ad app list --display-name "MyApp" --query "[0].id" -o tsv)
 echo "Object ID: $OBJECT_ID"
 ```
 
----
-
 ## Update App Registration
-
-### Update display name
-
-```bash
-az ad app update --id $APP_ID --display-name "NewAppName"
-```
 
 ### Add redirect URIs
 
@@ -148,27 +128,15 @@ az ad app update --id $APP_ID \
   --public-client-redirect-uris "http://localhost" "myapp://auth"
 ```
 
-### Enable/Disable implicit grant flow
-
-```bash
-# Enable ID tokens (for hybrid flows)
-az ad app update --id $APP_ID --enable-id-token-issuance true
-
-# Enable access tokens (not recommended for SPAs, use PKCE instead)
-az ad app update --id $APP_ID --enable-access-token-issuance true
-```
-
----
-
 ## Client Credentials (Secrets & Certificates)
 
 ### Create client secret
 
 ```bash
-# Create secret with default expiration (2 years)
+# Create secret with default expiration
 az ad app credential reset --id $APP_ID
 
-# Create secret with custom expiration (in years)
+# Create secret with custom expiration
 az ad app credential reset --id $APP_ID --years 1
 
 # Create secret with specific end date
@@ -184,6 +152,7 @@ az ad app credential reset --id $APP_ID --end-date "2025-12-31"
 }
 ```
 
+**⚠️ Important:** Resetting Client credential will delete all existing credentials.
 **⚠️ Important:** The secret value is only shown once. Store it securely (e.g., Azure Key Vault).
 
 ### List client credentials
@@ -209,8 +178,6 @@ az ad app credential delete --id $APP_ID --key-id "KEY_ID_HERE"
 # Upload certificate from file
 az ad app credential reset --id $APP_ID --cert "@path/to/cert.pem"
 ```
-
----
 
 ## API Permissions
 
@@ -284,8 +251,6 @@ az ad app permission delete --id $APP_ID \
   --permission-id $USER_READ_ID
 ```
 
----
-
 ## Service Principal Management
 
 ### Create service principal
@@ -313,8 +278,6 @@ az ad sp show --id $APP_ID
 az ad sp delete --id $APP_ID
 ```
 
----
-
 ## App Roles and Claims
 
 ### Get app roles
@@ -328,8 +291,6 @@ az ad app show --id $APP_ID --query "appRoles"
 ```bash
 az ad app show --id $APP_ID --query "optionalClaims"
 ```
-
----
 
 ## Owners
 
@@ -353,18 +314,12 @@ az ad app owner add --id $APP_ID --owner-object-id $USER_OBJECT_ID
 az ad app owner remove --id $APP_ID --owner-object-id $USER_OBJECT_ID
 ```
 
----
-
 ## Delete App Registration
 
 ```bash
 # Delete app registration (and associated service principal)
 az ad app delete --id $APP_ID
 ```
-
-**⚠️ Warning:** This action cannot be undone. The app will be moved to "Deleted applications" for 30 days before permanent deletion.
-
----
 
 ## Tenant and Identity Information
 
@@ -397,39 +352,6 @@ az ad user show --id "user@domain.com" --query "id" -o tsv
 ```bash
 az ad user list --output table
 ```
-
----
-
-## Advanced Scenarios
-
-### Create app with identifier URI
-
-```bash
-az ad app create \
-  --display-name "MyApi" \
-  --identifier-uris "api://myapi.com"
-```
-
-### Expose an API (add scope)
-
-This requires JSON manifest manipulation:
-
-```bash
-# Get current manifest
-az ad app show --id $APP_ID > manifest.json
-
-# Edit manifest.json to add oauth2PermissionScopes
-# Then update:
-az ad app update --id $APP_ID --set manifest.json
-```
-
-### Create app from manifest
-
-```bash
-az ad app create --display-name "MyApp" --app-manifest @manifest.json
-```
-
----
 
 ## Scripting Examples
 
@@ -484,48 +406,3 @@ az ad app list --display-name "Test*" --query "[].appId" -o tsv | while read APP
   az ad app delete --id $APP_ID
 done
 ```
-
----
-
-## Troubleshooting
-
-### Check CLI version
-
-```bash
-az version
-```
-
-**Minimum required:** Azure CLI 2.37.0 or later
-
-### Update Azure CLI
-
-```bash
-# Windows
-az upgrade
-
-# macOS/Linux
-brew upgrade azure-cli
-```
-
-### Enable debug output
-
-```bash
-az ad app create --display-name "MyApp" --debug
-```
-
-### Common errors
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `Insufficient privileges` | Not enough permissions | Use Global Admin or Application Administrator role |
-| `Property has an invalid value` | Invalid redirect URI format | Check URI format (must be valid URL) |
-| `Permission already exists` | Permission already added | Skip or remove first |
-| `Application not found` | Invalid app ID | Verify app ID is correct |
-
----
-
-## Additional Resources
-
-- [Azure CLI Reference - ad app](https://learn.microsoft.com/en-us/cli/azure/ad/app)
-- [Microsoft Graph Permission Reference](https://learn.microsoft.com/en-us/graph/permissions-reference)
-- [App Registration Documentation](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app)
