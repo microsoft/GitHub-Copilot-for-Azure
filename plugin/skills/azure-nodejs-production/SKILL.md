@@ -223,9 +223,14 @@ app.set('trust proxy', 1);
 **Fix:**
 ```javascript
 // Check x-forwarded-proto, not req.secure
+// Use a trusted host instead of the untrusted Host header to avoid open redirects
+const TRUSTED_HOST = process.env.APP_PUBLIC_HOSTNAME; // e.g. "myapp.contoso.com"
+
 app.use((req, res, next) => {
   if (req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
-    return res.redirect(`https://${req.get('host')}${req.url}`);
+    const host = TRUSTED_HOST || req.hostname;
+    // Optionally enforce an allowlist here for extra safety
+    return res.redirect(`https://${host}${req.originalUrl}`);
   }
   next();
 });
