@@ -1,0 +1,16 @@
+{
+  "name": "azure-skill-detection-tests",
+  "version": "1.0.0",
+  "description": "Tests for Azure app type detection logic",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": ["azure", "detection", "testing"],
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
