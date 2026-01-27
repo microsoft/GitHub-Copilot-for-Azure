@@ -20,7 +20,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
     
     steps:
       - name: Checkout repository
@@ -42,7 +42,7 @@ jobs:
         run: npm test -- --coverage --ci
 
       - name: Upload coverage report
-        if: matrix.node-version == 20
+        if: matrix.node-version == 22
         uses: codecov/codecov-action@v4
         with:
           directory: tests/coverage
