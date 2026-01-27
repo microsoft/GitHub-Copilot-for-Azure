@@ -162,10 +162,13 @@ async function generateInfrastructure(projectName: string) {
     }
   });
   
-  // Get Bicep schema
+  // Get Bicep schema (uses latest API version automatically)
   const schema = await azure__bicepschema({
-    resourceType: "Microsoft.App/containerApps",
-    apiVersion: "2024-03-01"
+    intent: "Get Container Apps schema",
+    command: "bicepschema_get",
+    parameters: {
+      "resource-type": "Microsoft.App/containerApps"
+    }
   });
   
   // Generate main.bicep based on schema and rules

@@ -16,7 +16,7 @@ description: Pre-deployment validation for Azure resources including naming cons
 | Resource | Min | Max | Allowed Characters | Global Unique |
 |----------|-----|-----|-------------------|---------------|
 | **Storage Account** | 3 | **24** | lowercase letters, numbers only | Yes |
-| **Container Registry** | 5 | 50 | alphanumerics only | Yes |
+| **Container Registry** | 5 | 50 | lowercase letters, numbers only | Yes |
 | **Key Vault** | 3 | **24** | alphanumerics, hyphens | Yes |
 | **Container App** | 2 | 32 | lowercase letters, numbers, hyphens | No |
 | **App Service** | 2 | 60 | alphanumerics, hyphens | Yes (for *.azurewebsites.net) |
