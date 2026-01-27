@@ -1,11 +1,11 @@
 ---
-name: azure-function-app-deployment
-description: Deploy serverless functions to Azure Function Apps using Azure CLI and Azure Functions Core Tools. Use this skill when deploying serverless APIs, event-driven functions, timer-triggered jobs, or webhook handlers to Azure Functions.
+name: azure-functions
+description: Serverless event-driven compute with Azure Functions - pay-per-execution, auto-scaling, multiple trigger types, and deployment workflows
 ---
 
-# Azure Function App Deployment
+# Azure Functions
 
-Automated deployment workflow for serverless applications to Azure Function Apps using Azure CLI and Azure Functions Core Tools.
+Azure Functions is a serverless compute service for event-driven applications. Pay only for execution time with automatic scaling.
 
 ## Skill Activation Triggers
 
@@ -23,34 +23,44 @@ Automated deployment workflow for serverless applications to Azure Function Apps
 - User wants to deploy lightweight APIs without container management
 - User needs timer jobs, queue processors, or event handlers
 
-## Overview
+## Quick Reference
 
-This skill enables end-to-end deployment of serverless functions to Azure Function Apps. Azure Functions is a serverless compute service ideal for:
-- **RESTful APIs** with HTTP triggers
-- **Event-driven processing** responding to queues, blobs, or Event Grid
-- **Timer-based jobs** for scheduled tasks
-- **Webhook handlers** for integrations
+| Property | Value |
+|----------|-------|
+| CLI prefix | `az functionapp`, `func` |
+| MCP tools | `azure_function_app_list` |
+| Best for | Event-driven, pay-per-execution, serverless |
 
-```
-Init → Develop → Test Locally → Create Resources → Deploy → Monitor
-```
+## Hosting Plans
 
-## When to Use
+| Plan | Scaling | Timeout | Use Case |
+|------|---------|---------|----------|
+| Consumption | Auto, to 0 | 5-10 min | Event-driven, variable load |
+| Premium | Auto, warm | 30+ min | Consistent load, VNet |
+| Dedicated | Manual | Unlimited | Predictable load |
 
-• **Serverless APIs**: Deploy HTTP-triggered functions for REST endpoints
-• **Background processing**: Queue-triggered functions for async workloads
-• **Scheduled tasks**: Timer-triggered functions for cron-like jobs
-• **Event handlers**: Blob, Event Grid, or Service Bus triggered functions
-• **Webhooks**: HTTP endpoints for third-party integrations
+## Trigger Types
 
-## Pattern 0: Prerequisites Validation
+| Trigger | Use Case |
+|---------|----------|
+| HTTP | REST APIs, webhooks |
+| Timer | Scheduled jobs (CRON) |
+| Blob | File processing |
+| Queue | Message processing |
+| Event Grid | Event-driven |
+| Cosmos DB | Change feed processing |
+| Service Bus | Enterprise messaging |
 
-Validate all prerequisites before starting deployment.
+---
+
+## Prerequisites Validation
+
+Validate all prerequisites before starting development or deployment.
 
 ```javascript
 async function validatePrerequisites() {
   const checks = [];
-  
+
   // Check Azure CLI authentication
   try {
     await exec('az account show');
@@ -58,7 +68,7 @@ async function validatePrerequisites() {
   } catch (error) {
     throw new Error('Not authenticated with Azure CLI. Run: az login');
   }
-  
+
   // Check Azure Functions Core Tools - install if not present
   try {
     await exec('func --version');
@@ -72,7 +82,7 @@ async function validatePrerequisites() {
       throw new Error('Failed to install Azure Functions Core Tools. Please install manually: npm install -g azure-functions-core-tools@4');
     }
   }
-  
+
   return checks;
 }
 ```
@@ -100,9 +110,11 @@ sudo apt-get update
 sudo apt-get install azure-functions-core-tools-4
 ```
 
-**Key insight**: Azure Functions Core Tools (`func`) is required for local development and deployment. The validation will attempt automatic installation via npm if not found.
+---
 
-## Pattern 1: Initialize Function Project
+## Local Development
+
+### Initialize Function Project
 
 Create a new Azure Functions project with the desired runtime.
 
@@ -132,9 +144,7 @@ MyFunctionApp/
         └── HttpTrigger.js # Function code
 ```
 
-## Pattern 2: Local Development
-
-Test functions locally before deploying.
+### Run Locally
 
 ```bash
 # Start local development server
@@ -180,7 +190,26 @@ app.timer('TimerTrigger', {
 });
 ```
 
-## Pattern 3: Create Azure Resources
+### local.settings.json
+
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "MY_API_KEY": "local-dev-key"
+  },
+  "Host": {
+    "LocalHttpPort": 7071,
+    "CORS": "*"
+  }
+}
+```
+
+---
+
+## Create Azure Resources
 
 Create the required Azure resources for deployment.
 
@@ -212,16 +241,10 @@ az functionapp create \
     --functions-version 4
 ```
 
-### Hosting Plans
-
-| Plan | Use Case | Scaling |
-|------|----------|---------|
-| **Consumption** | Event-driven, variable load | Auto-scale, pay per execution |
-| **Premium** | Enhanced performance, VNET | Pre-warmed instances |
-| **Dedicated (App Service)** | Predictable workloads | Manual/auto-scale |
+### Create with Premium Plan
 
 ```bash
-# Create with Premium Plan
+# Create Premium Plan
 az functionapp plan create \
     --name myPremiumPlan \
     --resource-group $RESOURCE_GROUP \
@@ -240,7 +263,9 @@ az functionapp create \
     --functions-version 4
 ```
 
-## Pattern 4: Deploy Functions
+---
+
+## Deploy Functions
 
 Deploy functions to Azure using Azure Functions Core Tools.
 
@@ -253,22 +278,20 @@ func azure functionapp publish $FUNCTION_APP --build remote
 
 # Deploy with verbose output
 func azure functionapp publish $FUNCTION_APP --verbose
-```
-
-### Deployment Options
-
-```bash
-# Deploy using zip deployment
-func azure functionapp publish $FUNCTION_APP
 
 # Deploy specific slot
 func azure functionapp publish $FUNCTION_APP --slot staging
 
 # Force update function app settings
 func azure functionapp publish $FUNCTION_APP --publish-settings-only
+
+# Upload local.settings.json to Azure
+func azure functionapp publish $FUNCTION_APP --publish-local-settings
 ```
 
-## Pattern 5: Configuration Management
+---
+
+## Configuration Management
 
 Manage application settings and connection strings.
 
@@ -291,28 +314,13 @@ az functionapp config appsettings list \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP
 
-# Upload local.settings.json to Azure
-func azure functionapp publish $FUNCTION_APP --publish-local-settings
+# Get function keys
+az functionapp keys list -n $FUNCTION_APP -g $RESOURCE_GROUP
 ```
 
-### local.settings.json
+---
 
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "MY_API_KEY": "local-dev-key"
-  },
-  "Host": {
-    "LocalHttpPort": 7071,
-    "CORS": "*"
-  }
-}
-```
-
-## Pattern 6: Monitoring and Logs
+## Monitoring and Logs
 
 View function execution logs and diagnostics.
 
@@ -343,7 +351,9 @@ az functionapp config appsettings set \
     --settings "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING"
 ```
 
-## Pattern 7: Deployment Slots (Premium/Dedicated Plans)
+---
+
+## Deployment Slots (Premium/Dedicated Plans)
 
 Use deployment slots for zero-downtime deployments.
 
@@ -365,7 +375,9 @@ az functionapp deployment slot swap \
     --target-slot production
 ```
 
-## Pattern 8: CI/CD with GitHub Actions 
+---
+
+## CI/CD with GitHub Actions
 
 Automate deployments with GitHub Actions.
 
@@ -389,25 +401,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      
+
       - name: Install dependencies
         run: npm ci
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-      
+
       - name: Build (if TypeScript)
         run: npm run build --if-present
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-      
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
+
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
         with:
@@ -423,17 +435,48 @@ az ad sp create-for-rbac --name "github-actions-sp" \
     --sdk-auth
 ```
 
+---
+
+## Durable Functions
+
+For long-running orchestrations and stateful workflows:
+
+```javascript
+// Orchestrator
+const df = require('durable-functions');
+
+module.exports = df.orchestrator(function* (context) {
+    const result1 = yield context.df.callActivity('Step1', input);
+    const result2 = yield context.df.callActivity('Step2', result1);
+    return result2;
+});
+```
+
+**Patterns:**
+- Function chaining
+- Fan-out/fan-in
+- Async HTTP APIs
+- Human interaction
+- Aggregator
+
+---
+
 ## Best Practices
 
 | Practice | Description |
 |----------|-------------|
+| **Keep functions small** | Single-purpose functions are easier to test and maintain |
+| **Implement idempotency** | At-least-once triggers may execute multiple times |
 | **Use managed identity** | Prefer managed identity over connection strings for secure resource access |
 | **Configure timeout** | Set `functionTimeout` in host.json (default 5 min for Consumption) |
 | **Use Application Insights** | Enable for monitoring, tracing, and diagnostics |
 | **Secure HTTP functions** | Use `authLevel: 'function'` or `'admin'` for non-public endpoints |
 | **Environment variables** | Store secrets in App Settings, not in code |
 | **Cold start optimization** | Use Premium plan or keep-alive pings for latency-sensitive apps |
-| **Durable Functions** | Use for long-running orchestrations and stateful workflows |
+| **Use Key Vault** | Store secrets securely with Key Vault references |
+| **Configure retry policies** | Set appropriate retry behavior for triggers |
+
+---
 
 ## Quick Start Checklist
 
@@ -463,14 +506,7 @@ az ad sp create-for-rbac --name "github-actions-sp" \
 - [ ] Stream logs with `func azure functionapp logstream`
 - [ ] Set up alerts for failures
 
-## Azure Resources
-
-| Resource Type | Purpose | API Version |
-|--------------|---------|-------------|
-| `Microsoft.Web/sites` | Function App | 2023-12-01 |
-| `Microsoft.Storage/storageAccounts` | Required storage | 2023-01-01 |
-| `Microsoft.Web/serverfarms` | App Service Plan | 2023-12-01 |
-| `Microsoft.Insights/components` | Application Insights | 2020-02-02 |
+---
 
 ## Troubleshooting
 
@@ -484,6 +520,8 @@ az ad sp create-for-rbac --name "github-actions-sp" \
 | **Binding errors** | Extension not loaded | Run `func extensions install` to install required extensions |
 | **Deploy fails** | Publish error | Ensure function app exists and CLI is authenticated |
 | **Runtime mismatch** | Version conflict | Verify `FUNCTIONS_EXTENSION_VERSION` matches project |
+| **Execution limits** | Consumption has 5-10 min timeout | Use Premium or Dedicated plan for longer executions |
+| **Scaling delays** | Cold starts on Consumption | Consider Premium plan with pre-warmed instances |
 
 **Debug commands:**
 ```bash
@@ -491,7 +529,31 @@ func start --verbose                     # Local debugging
 func azure functionapp logstream $APP    # Live logs
 az functionapp show --name $APP          # App details
 az functionapp config show --name $APP   # Configuration
+az functionapp list --output table       # List all function apps
 ```
+
+---
+
+## Azure Resources
+
+| Resource Type | Purpose | API Version |
+|--------------|---------|-------------|
+| `Microsoft.Web/sites` | Function App | 2023-12-01 |
+| `Microsoft.Storage/storageAccounts` | Required storage | 2023-01-01 |
+| `Microsoft.Web/serverfarms` | App Service Plan | 2023-12-01 |
+| `Microsoft.Insights/components` | Application Insights | 2020-02-02 |
+
+---
+
+## MCP Server Tools
+
+Use MCP tools to **query** existing resources:
+
+- `azure_function_app_list` - List function apps
+
+**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+
+---
 
 ## Additional Resources
 

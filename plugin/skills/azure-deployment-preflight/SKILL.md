@@ -15,6 +15,27 @@ This skill validates Bicep deployments before execution, supporting both Azure C
 - To verify permissions are sufficient for deployment
 - Before running `azd up`, `azd provision`, or `az deployment` commands
 
+## Quick Pre-flight Checks
+
+**Run these checks BEFORE any deployment** to avoid mid-deployment failures:
+
+1. **Tools installed**: az, azd, docker, bicep
+2. **Authentication valid**: `az account show` and `azd auth login`
+3. **Subscription quotas sufficient**: Check resource limits
+4. **Docker daemon running** (for container deployments)
+
+```bash
+# Verify tools
+az --version
+azd version
+bicep --version
+docker info
+
+# Verify authentication
+az account show
+azd auth login --check-status
+```
+
 ## Validation Process
 
 Follow these steps in order. Continue to the next step even if a previous step fails—capture all issues in the final report.
