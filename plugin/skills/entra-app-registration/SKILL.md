@@ -78,8 +78,6 @@ Set up authentication settings based on your application type.
 - **Mobile/Desktop**: Use `http://localhost` or custom URI scheme
 - **Services**: No redirect URI needed for client credentials flow
 
-**Details:** See [references/AUTHENTICATION-CONFIG.md](references/AUTHENTICATION-CONFIG.md)
-
 ### Step 3: Configure API Permissions
 
 Grant your application permission to access Microsoft APIs or your own APIs.
@@ -102,7 +100,7 @@ For confidential client applications (web apps, services), create a client secre
 - Copy the value immediately (only shown once)
 - Store securely (Key Vault recommended)
 
-**Certificate:** See [references/CERTIFICATES.md](references/CERTIFICATES.md)
+**Certificate:** For production environments, use certificates instead of secrets for enhanced security. Upload certificate via "Certificates & secrets" section.
 
 ### Step 5: Implement OAuth Flow
 
@@ -125,7 +123,7 @@ Integrate the OAuth flow into your application code.
 4. Exchange code for access token
 5. Use token to call APIs
 
-**Example:** See [references/OAUTH-FLOWS.md#authorization-code-flow](references/OAUTH-FLOWS.md)
+**Example:** See [references/OAUTH-FLOWS.md#authorization-code-flow](references/OAUTH-FLOWS.md#authorization-code-flow)
 
 ---
 
@@ -141,7 +139,7 @@ Integrate the OAuth flow into your application code.
 
 **Why PKCE:** Prevents authorization code interception attacks
 
-**Example:** See [references/OAUTH-FLOWS.md#pkce-flow](references/OAUTH-FLOWS.md)
+**Example:** See [references/OAUTH-FLOWS.md#authorization-code-flow-with-pkce](references/OAUTH-FLOWS.md#authorization-code-flow-with-pkce)
 
 ---
 
@@ -156,7 +154,7 @@ Integrate the OAuth flow into your application code.
 
 **Note:** No user context; app acts on its own behalf
 
-**Example:** See [references/OAUTH-FLOWS.md#client-credentials-flow](references/OAUTH-FLOWS.md)
+**Example:** See [references/OAUTH-FLOWS.md#client-credentials-flow](references/OAUTH-FLOWS.md#client-credentials-flow)
 
 ---
 
@@ -171,7 +169,7 @@ Integrate the OAuth flow into your application code.
 4. Poll for token
 5. Receive access token after user completes authentication
 
-**Example:** See [references/OAUTH-FLOWS.md#device-code-flow](references/OAUTH-FLOWS.md)
+**Example:** See [references/OAUTH-FLOWS.md#device-code-flow](references/OAUTH-FLOWS.md#device-code-flow)
 
 ## Common Patterns
 
@@ -211,7 +209,7 @@ Set up daemon/service authentication without user interaction.
 - Target API/resource
 - Whether to use secret or certificate
 
-**Script:** See [references/SERVICE-AUTH.md](references/SERVICE-AUTH.md)
+**Implementation:** Use Client Credentials flow (see [references/OAUTH-FLOWS.md#client-credentials-flow](references/OAUTH-FLOWS.md#client-credentials-flow))
 
 ---
 
@@ -224,9 +222,7 @@ Configure app registration to work across multiple Azure AD tenants.
 - Multi-tenant (any Azure AD)
 - Multi-tenant + personal Microsoft accounts
 
-**Considerations:** Tenant consent, per-tenant service principals
-
-**Details:** See [references/MULTI-TENANT.md](references/MULTI-TENANT.md)
+**Considerations:** Tenant consent, per-tenant service principals. Configure in Azure Portal under Authentication → Supported account types.
 
 ---
 
@@ -329,10 +325,6 @@ See [references/CONSOLE-APP-EXAMPLE.md](references/CONSOLE-APP-EXAMPLE.md) for c
 - [Console App Example](references/CONSOLE-APP-EXAMPLE.md) - Complete working examples
 - [First App Registration](references/FIRST-APP-REGISTRATION.md) - Step-by-step guide for beginners
 - [API Permissions](references/API-PERMISSIONS.md) - Understanding and configuring permissions
-- [Authentication Config](references/AUTHENTICATION-CONFIG.md) - Platform-specific settings
-- [Service Auth](references/SERVICE-AUTH.md) - Service-to-service authentication
-- [Multi-Tenant](references/MULTI-TENANT.md) - Multi-tenant app configuration
-- [Certificates](references/CERTIFICATES.md) - Using certificates instead of secrets
 - [Troubleshooting](references/TROUBLESHOOTING.md) - Common issues and solutions
 
 ## External Resources
