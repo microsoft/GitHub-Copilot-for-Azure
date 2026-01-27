@@ -22,6 +22,11 @@ Bootstrap and configure Azure API Management (APIM) as an AI Gateway for securin
 - "Add rate limiting to my MCP server"
 - "Enable semantic caching for my AI API"
 - "Add content safety to my AI endpoint"
+- "Add my model behind gateway"
+- "Import API from OpenAPI spec"
+- "Add API to gateway from swagger"
+- "Convert my API to MCP"
+- "Expose my API as MCP server"
 
 **Key Indicators:**
 - User deploying Azure OpenAI, AI Foundry, or other AI models
@@ -274,6 +279,409 @@ Distribute load across multiple backends with automatic failover.
     </on-error>
 </policies>
 ```
+
+## Pattern 8: Add AI Foundry Model Behind Gateway
+
+When user asks to "add my model behind gateway", first discover available models from Azure AI Foundry, then ask which model to add.
+
+### Step 1: Discover AI Foundry Projects and Available Models
+
+```bash
+# Set environment variables
+accountName="<ai-foundry-resource-name>"
+resourceGroupName="<resource-group>"
+
+# List AI Foundry resources (AI Services accounts)
+az cognitiveservices account list --query "[?kind=='AIServices'].{name:name, resourceGroup:resourceGroup, location:location}" -o table
+
+# List available models in the AI Foundry resource
+az cognitiveservices account list-models \
+  -n $accountName \
+  -g $resourceGroupName \
+  | jq '.[] | { name: .name, format: .format, version: .version, sku: .skus[0].name, capacity: .skus[0].capacity.default }'
+
+# List already deployed models
+az cognitiveservices account deployment list \
+  -n $accountName \
+  -g $resourceGroupName
+```
+
+### Step 2: Ask User Which Model to Add
+
+After listing the available models, **use the ask_user tool** to present the models as choices and let the user select which model to add behind the gateway.
+
+Example choices to present:
+- Model deployments from the discovered list
+- Include model name, format (provider), version, and SKU info
+
+### Step 3: Deploy the Model (if not already deployed)
+
+```bash
+# Deploy the selected model to AI Foundry
+az cognitiveservices account deployment create \
+  -n $accountName \
+  -g $resourceGroupName \
+  --deployment-name <model-name> \
+  --model-name <model-name> \
+  --model-version <version> \
+  --model-format <format> \
+  --sku-capacity 1 \
+  --sku-name <sku>
+```
+
+### Step 4: Configure APIM Backend for Selected Model
+
+```bash
+# Get the AI Foundry inference endpoint
+ENDPOINT=$(az cognitiveservices account show \
+  -n $accountName \
+  -g $resourceGroupName \
+  | jq -r '.properties.endpoints["Azure AI Model Inference API"]')
+
+# Create APIM backend for the selected model
+az apim backend create \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --backend-id <model-deployment-name>-backend \
+  --protocol http \
+  --url "${ENDPOINT}"
+```
+
+### Step 5: Create API and Apply Policies
+
+```bash
+# Import Azure OpenAI API specification
+az apim api import \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --path <model-deployment-name> \
+  --specification-format OpenApiJson \
+  --specification-url "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cognitiveservices/data-plane/AzureOpenAI/inference/stable/2024-02-01/inference.json"
+```
+
+### Step 6: Grant APIM Access to AI Foundry
+
+```bash
+# Get APIM managed identity principal ID
+APIM_PRINCIPAL_ID=$(az apim show \
+  --name <apim-service-name> \
+  --resource-group <apim-resource-group> \
+  --query "identity.principalId" -o tsv)
+
+# Get AI Foundry resource ID
+AI_RESOURCE_ID=$(az cognitiveservices account show \
+  -n $accountName \
+  -g $resourceGroupName \
+  --query "id" -o tsv)
+
+# Assign Cognitive Services User role
+az role assignment create \
+  --assignee $APIM_PRINCIPAL_ID \
+  --role "Cognitive Services User" \
+  --scope $AI_RESOURCE_ID
+```
+
+### Bicep Template for Backend Configuration
+
+```bicep
+param apimServiceName string
+param backendId string
+param aiFoundryEndpoint string
+param modelDeploymentName string
+
+resource apimService 'Microsoft.ApiManagement/service@2024-06-01-preview' existing = {
+  name: apimServiceName
+}
+
+resource backend 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = {
+  parent: apimService
+  name: backendId
+  properties: {
+    protocol: 'http'
+    url: '${aiFoundryEndpoint}openai/deployments/${modelDeploymentName}'
+    credentials: {
+      header: {}
+    }
+    tls: {
+      validateCertificateChain: true
+      validateCertificateName: true
+    }
+  }
+}
+```
+
+## Pattern 9: Import API from OpenAPI Specification
+
+Add an API to the gateway from an OpenAPI/Swagger specification, either from a local file or web URL.
+
+### Step 1: Import API from Web URL
+
+```bash
+# Import API from a publicly accessible OpenAPI spec URL
+az apim api import \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --api-id <api-id> \
+  --path <api-path> \
+  --display-name "<API Display Name>" \
+  --specification-format OpenApiJson \
+  --specification-url "https://example.com/openapi.json"
+```
+
+### Step 2: Import API from Local File
+
+```bash
+# Import API from a local OpenAPI spec file (JSON or YAML)
+az apim api import \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --api-id <api-id> \
+  --path <api-path> \
+  --display-name "<API Display Name>" \
+  --specification-format OpenApi \
+  --specification-path "./openapi.yaml"
+```
+
+### Step 3: Configure Backend for the API
+
+```bash
+# Create backend pointing to your API server
+az apim backend create \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --backend-id <backend-id> \
+  --protocol http \
+  --url "https://your-api-server.com"
+
+# Update API to use the backend
+az apim api update \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --api-id <api-id> \
+  --set properties.serviceUrl="https://your-api-server.com"
+```
+
+### Step 4: Apply Policies (Optional)
+
+```xml
+<policies>
+    <inbound>
+        <base />
+        <set-backend-service backend-id="{backend-id}" />
+        <!-- Add rate limiting -->
+        <rate-limit-by-key 
+            calls="100" 
+            renewal-period="60" 
+            counter-key="@(context.Request.IpAddress)" />
+    </inbound>
+    <outbound>
+        <base />
+    </outbound>
+</policies>
+```
+
+### Supported Specification Formats
+
+| Format | Value | File Extension |
+|--------|-------|----------------|
+| OpenAPI 3.x JSON | `OpenApiJson` | `.json` |
+| OpenAPI 3.x YAML | `OpenApi` | `.yaml`, `.yml` |
+| Swagger 2.0 JSON | `SwaggerJson` | `.json` |
+| Swagger 2.0 (link) | `SwaggerLinkJson` | URL |
+| WSDL | `Wsdl` | `.wsdl` |
+| WADL | `Wadl` | `.wadl` |
+
+## Pattern 10: Convert API to MCP Server
+
+Convert existing APIM API operations into an MCP (Model Context Protocol) server, enabling AI agents to discover and use your APIs as tools.
+
+### Prerequisites
+
+- APIM instance with Basicv2 SKU or higher
+- Existing API imported into APIM
+- MCP feature enabled on APIM
+
+### Step 1: List Existing APIs in APIM
+
+```bash
+# List all APIs in APIM
+az apim api list \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --query "[].{id:name, displayName:displayName, path:path}" \
+  -o table
+```
+
+### Step 2: Ask User Which API to Convert
+
+After listing the APIs, **use the ask_user tool** to let the user select which API to convert to an MCP server.
+
+### Step 3: List API Operations
+
+```bash
+# List all operations for the selected API
+az apim api operation list \
+  --resource-group <apim-resource-group> \
+  --service-name <apim-service-name> \
+  --api-id <api-id> \
+  --query "[].{operationId:name, displayName:displayName, method:method, urlTemplate:urlTemplate}" \
+  -o table
+```
+
+### Step 4: Ask User Which Operations to Expose as MCP Tools
+
+After listing the operations, **use the ask_user tool** to present the operations as choices. Let the user select which operations to expose as MCP tools. Users may want to expose all operations or only a subset.
+
+Example choices to present:
+- All operations (convert entire API)
+- Individual operations from the discovered list
+- Include operation name, method, and URL template
+
+### Step 5: Enable MCP Server on APIM
+
+```bash
+# Enable MCP server capability (via ARM/Bicep or Portal)
+# Note: MCP configuration is done via APIM policies and product configuration
+```
+
+### Step 6: Configure MCP Endpoint for API
+
+Create an MCP-compatible endpoint that exposes your API operations as tools:
+
+```xml
+<policies>
+    <inbound>
+        <base />
+        <!-- MCP tools/list endpoint handler -->
+        <choose>
+            <when condition="@(context.Request.Url.Path.EndsWith("/mcp/tools/list"))">
+                <return-response>
+                    <set-status code="200" reason="OK" />
+                    <set-header name="Content-Type" exists-action="override">
+                        <value>application/json</value>
+                    </set-header>
+                    <set-body>@{
+                        var tools = new JArray();
+                        // Define your API operations as MCP tools
+                        tools.Add(new JObject(
+                            new JProperty("name", "operation_name"),
+                            new JProperty("description", "Description of what this operation does"),
+                            new JProperty("inputSchema", new JObject(
+                                new JProperty("type", "object"),
+                                new JProperty("properties", new JObject(
+                                    new JProperty("param1", new JObject(
+                                        new JProperty("type", "string"),
+                                        new JProperty("description", "Parameter description")
+                                    ))
+                                ))
+                            ))
+                        ));
+                        return new JObject(new JProperty("tools", tools)).ToString();
+                    }</set-body>
+                </return-response>
+            </when>
+        </choose>
+    </inbound>
+</policies>
+```
+
+### Step 7: Bicep Template for MCP-Enabled API
+
+```bicep
+param apimServiceName string
+param apiId string
+param apiDisplayName string
+param apiPath string
+param backendUrl string
+
+resource apimService 'Microsoft.ApiManagement/service@2024-06-01-preview' existing = {
+  name: apimServiceName
+}
+
+resource api 'Microsoft.ApiManagement/service/apis@2024-06-01-preview' = {
+  parent: apimService
+  name: apiId
+  properties: {
+    displayName: apiDisplayName
+    path: apiPath
+    protocols: ['https']
+    serviceUrl: backendUrl
+    subscriptionRequired: true
+    // MCP endpoints
+    apiType: 'http'
+  }
+}
+
+// MCP tools/list operation
+resource mcpToolsListOperation 'Microsoft.ApiManagement/service/apis/operations@2024-06-01-preview' = {
+  parent: api
+  name: 'mcp-tools-list'
+  properties: {
+    displayName: 'MCP Tools List'
+    method: 'POST'
+    urlTemplate: '/mcp/tools/list'
+    description: 'List available MCP tools'
+  }
+}
+
+// MCP tools/call operation
+resource mcpToolsCallOperation 'Microsoft.ApiManagement/service/apis/operations@2024-06-01-preview' = {
+  parent: api
+  name: 'mcp-tools-call'
+  properties: {
+    displayName: 'MCP Tools Call'
+    method: 'POST'
+    urlTemplate: '/mcp/tools/call'
+    description: 'Call an MCP tool'
+  }
+}
+```
+
+### Step 8: Test MCP Endpoint
+
+```bash
+# Get APIM gateway URL
+GATEWAY_URL=$(az apim show \
+  --name <apim-service-name> \
+  --resource-group <apim-resource-group> \
+  --query "gatewayUrl" -o tsv)
+
+# Test MCP tools/list endpoint
+curl -X POST "${GATEWAY_URL}/<api-path>/mcp/tools/list" \
+  -H "Content-Type: application/json" \
+  -H "Ocp-Apim-Subscription-Key: <subscription-key>" \
+  -d '{}'
+```
+
+### MCP Tool Definition Schema
+
+When converting API operations to MCP tools, use this schema:
+
+```json
+{
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get current weather for a location",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "City name or coordinates"
+          }
+        },
+        "required": ["location"]
+      }
+    }
+  ]
+}
+```
+
+### Reference
+
+- [MCP Server Overview](https://learn.microsoft.com/en-us/azure/api-management/mcp-server-overview)
+- [MCP from API Lab](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/mcp-from-api)
 
 ## Lab References (AI-Gateway Repo)
 
