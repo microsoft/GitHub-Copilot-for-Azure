@@ -95,6 +95,7 @@ if [ "$ENABLE_SYNC" = "true" ]; then
   az postgres flexible-server parameter set \
     --resource-group "$RESOURCE_GROUP" \
     --server-name "$SERVER_NAME" \
+    --source user-override \
     --name pgaadauth.enable_group_sync \
     --value ON \
     --output none

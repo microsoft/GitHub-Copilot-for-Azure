@@ -7,6 +7,7 @@
 # =============================================================================
 
 # List Entra admins
+# This will fail if Entra auth is not enabled yet
 az postgres flexible-server microsoft-entra-admin list \
   --resource-group <resource-group> \
   --server-name <server-name>
@@ -14,7 +15,15 @@ az postgres flexible-server microsoft-entra-admin list \
 # Get your own object ID (current signed-in user)
 OBJECT_ID=$(az ad signed-in-user show --query id -o tsv)
 
+# IMPORTANT: Must enable Entra auth before attempting to create an admin
+az postgres flexible-server update \
+  --subscription <subscription-id> \
+  --resource-group <resource-group> \
+  --name <server-name> \
+  --microsoft-entra-auth Enabled
+
 # Add Entra admin
+# This will fail if Entra auth is not enabled yet
 az postgres flexible-server microsoft-entra-admin create \
   --resource-group <resource-group> \
   --server-name <server-name> \
@@ -66,6 +75,7 @@ az ad sp show --id <app-id> --query id -o tsv
 az postgres flexible-server parameter set \
   --resource-group <resource-group> \
   --server-name <server-name> \
+  --source user-override \
   --name pgaadauth.enable_group_sync \
   --value ON
 
@@ -73,6 +83,7 @@ az postgres flexible-server parameter set \
 az postgres flexible-server parameter set \
   --resource-group <resource-group> \
   --server-name <server-name> \
+  --source user-override \
   --name pgaadauth.enable_group_sync \
   --value OFF
 
@@ -81,3 +92,30 @@ az postgres flexible-server parameter show \
   --resource-group <resource-group> \
   --server-name <server-name> \
   --name pgaadauth.enable_group_sync
+
+# =============================================================================
+# AUTHENTICATION MODE
+# =============================================================================
+
+# !!!IMPORTANT: Must enable Entra auth before attempting to create an admin
+
+# Enable Entra-only authentication (disable password auth)
+az postgres flexible-server update \
+  --resource-group <resource-group> \
+  --name <server-name> \
+  --microsoft-entra-auth Enabled \
+  --password-auth Disabled
+
+# Enable both Entra and password authentication
+az postgres flexible-server update \
+  --resource-group <resource-group> \
+  --name <server-name> \
+  --microsoft-entra-auth Enabled \
+  --password-auth Enabled
+
+# Disable Entra authentication (password-only)
+az postgres flexible-server update \
+  --resource-group <resource-group> \
+  --name <server-name> \
+  --microsoft-entra-auth Disabled \
+  --password-auth Enabled
