@@ -21,7 +21,7 @@ from typing import Optional
 
 # Import sibling modules
 from price_lookup import AzurePricingClient, PriceInfo, HOURS_PER_MONTH
-from bicep_parser import parse_bicep, parse_parameters, parse_bicepparam, resolve_parameters as resolve_bicep_params
+from bicep_parser import parse_bicep, parse_bicep_with_modules, parse_parameters, parse_bicepparam, resolve_parameters as resolve_bicep_params
 from arm_parser import parse_arm_template, parse_parameters_file, resolve_resources as resolve_arm_resources
 
 
@@ -97,7 +97,7 @@ class CostCalculator:
 
         # Detect template type and parse
         if path.suffix == ".bicep":
-            resources = self._parse_bicep_template(content, param_file)
+            resources = self._parse_bicep_template(str(path), content, param_file)
         elif path.suffix == ".json":
             resources = self._parse_arm_template(content, param_file)
         else:
@@ -139,9 +139,10 @@ class CostCalculator:
             unsupported_resources=unsupported
         )
 
-    def _parse_bicep_template(self, content: str, param_file: Optional[str]) -> list:
-        """Parse Bicep template."""
-        resources = parse_bicep(content)
+    def _parse_bicep_template(self, template_path: str, content: str, param_file: Optional[str]) -> list:
+        """Parse Bicep template with module support."""
+        # Use module-aware parser that recursively parses module references
+        resources = parse_bicep_with_modules(template_path)
 
         # Get parameters
         params = parse_parameters(content)

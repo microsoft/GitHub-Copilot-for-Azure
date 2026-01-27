@@ -111,6 +111,79 @@ def parse_bicep(content: str) -> list[AzureResource]:
     return resources
 
 
+def parse_module_references(content: str) -> list[str]:
+    """
+    Extract module file paths from Bicep content.
+
+    Args:
+        content: Raw Bicep template content
+
+    Returns:
+        List of relative module file paths
+    """
+    module_paths = []
+
+    # Pattern to match module declarations
+    # module <name> '<path>' = { ... }
+    module_pattern = re.compile(
+        r"module\s+\w+\s+'([^']+\.bicep)'\s*=\s*\{",
+        re.MULTILINE
+    )
+
+    for match in module_pattern.finditer(content):
+        module_path = match.group(1)
+        module_paths.append(module_path)
+
+    return module_paths
+
+
+def parse_bicep_with_modules(template_path: str) -> list[AzureResource]:
+    """
+    Parse Bicep template and recursively parse any module references.
+
+    Args:
+        template_path: Path to the main Bicep template
+
+    Returns:
+        List of AzureResource objects from main template and all modules
+    """
+    all_resources = []
+    parsed_files = set()  # Avoid circular references
+
+    def _parse_file(file_path: str):
+        """Recursively parse a Bicep file and its modules."""
+        abs_path = str(Path(file_path).resolve())
+
+        # Skip if already parsed
+        if abs_path in parsed_files:
+            return
+        parsed_files.add(abs_path)
+
+        try:
+            content = Path(file_path).read_text(encoding="utf-8")
+        except (FileNotFoundError, IOError) as e:
+            print(f"Warning: Could not read {file_path}: {e}", file=sys.stderr)
+            return
+
+        # Parse resources in this file
+        resources = parse_bicep(content)
+        all_resources.extend(resources)
+
+        # Find and parse module references
+        module_refs = parse_module_references(content)
+        base_dir = Path(file_path).parent
+
+        for module_ref in module_refs:
+            module_path = base_dir / module_ref
+            if module_path.exists():
+                _parse_file(str(module_path))
+            else:
+                print(f"Warning: Module not found: {module_path}", file=sys.stderr)
+
+    _parse_file(template_path)
+    return all_resources
+
+
 def _extract_block(content: str, start_pos: int) -> str:
     """Extract content between matching braces starting at start_pos."""
     brace_count = 0
@@ -185,44 +258,70 @@ def _parse_resource_block(
 
 
 def _extract_property(block: str, prop_name: str) -> Optional[str]:
-    """Extract a simple property value from a block."""
-    # Match: propertyName: 'value' or propertyName: "value"
-    pattern = re.compile(
+    """Extract a simple property value from a block.
+
+    Finds the FIRST occurrence of the property to get top-level values,
+    not nested ones (e.g., 'name' at resource level, not in secrets).
+    """
+    # Pattern for quoted strings: propertyName: 'value' or "value"
+    pattern_quoted = re.compile(
         rf"\b{prop_name}\s*:\s*['\"]([^'\"]+)['\"]",
         re.IGNORECASE
     )
-    match = pattern.search(block)
-    if match:
-        return match.group(1)
 
-    # Match: propertyName: value (unquoted - could be number, bool, or reference)
-    pattern_ref = re.compile(
+    # Pattern for unquoted values: propertyName: value
+    pattern_unquoted = re.compile(
         rf"\b{prop_name}\s*:\s*([\w.]+)\b",
         re.IGNORECASE
     )
-    match = pattern_ref.search(block)
-    if match:
-        value = match.group(1)
-        value_lower = value.lower()
 
-        # Return booleans as-is
-        if value_lower in ('true', 'false'):
-            return value_lower
+    # Find first match of each pattern
+    match_quoted = pattern_quoted.search(block)
+    match_unquoted = pattern_unquoted.search(block)
 
-        # Skip null and keywords
-        if value_lower in ('null', 'if', 'for'):
-            return None
+    # Determine which match appears first in the block
+    best_match = None
+    best_pos = len(block) + 1
+    is_quoted = False
 
-        # Check if it's a numeric literal (integer or float)
-        if re.fullmatch(r'[-+]?\d+', value):
-            return value  # Integer literal
-        if re.fullmatch(r'[-+]?\d*\.?\d+', value):
-            return value  # Float literal
+    if match_quoted and match_quoted.start() < best_pos:
+        best_match = match_quoted
+        best_pos = match_quoted.start()
+        is_quoted = True
 
-        # Otherwise treat as parameter/variable reference
-        return f"${{{value}}}"
+    if match_unquoted and match_unquoted.start() < best_pos:
+        best_match = match_unquoted
+        best_pos = match_unquoted.start()
+        is_quoted = False
 
-    return None
+    if not best_match:
+        return None
+
+    value = best_match.group(1)
+
+    # For quoted strings, return as-is
+    if is_quoted:
+        return value
+
+    # For unquoted values, process accordingly
+    value_lower = value.lower()
+
+    # Return booleans as-is
+    if value_lower in ('true', 'false'):
+        return value_lower
+
+    # Skip null and keywords
+    if value_lower in ('null', 'if', 'for'):
+        return None
+
+    # Check if it's a numeric literal (integer or float)
+    if re.fullmatch(r'[-+]?\d+', value):
+        return value  # Integer literal
+    if re.fullmatch(r'[-+]?\d*\.?\d+', value):
+        return value  # Float literal
+
+    # Otherwise treat as parameter/variable reference
+    return f"${{{value}}}"
 
 
 def _extract_nested_block(content: str, block_name: str) -> Optional[str]:
