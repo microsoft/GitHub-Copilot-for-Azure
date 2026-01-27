@@ -23,9 +23,11 @@ from urllib.parse import quote
 
 try:
     import requests
-except ImportError:
-    print("Error: requests library required. Install with: pip install requests")
-    sys.exit(1)
+except ImportError as exc:
+    raise ImportError(
+        "The 'requests' library is required for azure-cost-estimation. "
+        "Install it with: pip install requests"
+    ) from exc
 
 
 # Constants
@@ -88,6 +90,15 @@ class AzurePricingClient:
             "Accept": "application/json"
         })
 
+    def _escape_odata_string(self, value: str) -> str:
+        """Escape a string value for use in OData filter expressions.
+
+        In OData, single quotes inside string literals must be escaped by doubling them.
+        """
+        if value is None:
+            return ""
+        return str(value).replace("'", "''")
+
     def _build_filter(self, **kwargs) -> str:
         """Build OData filter string from keyword arguments."""
         filters = []
@@ -106,14 +117,15 @@ class AzurePricingClient:
             if value is None:
                 continue
             api_field = field_map.get(key, key)
+            escaped_value = self._escape_odata_string(value)
 
             # Handle contains vs equals
             if key.endswith("_contains"):
                 actual_key = key.replace("_contains", "")
                 api_field = field_map.get(actual_key, actual_key)
-                filters.append(f"contains({api_field}, '{value}')")
+                filters.append(f"contains({api_field}, '{escaped_value}')")
             else:
-                filters.append(f"{api_field} eq '{value}'")
+                filters.append(f"{api_field} eq '{escaped_value}'")
 
         return " and ".join(filters)
 

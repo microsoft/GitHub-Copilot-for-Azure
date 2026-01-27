@@ -195,17 +195,32 @@ def _extract_property(block: str, prop_name: str) -> Optional[str]:
     if match:
         return match.group(1)
 
-    # Match: propertyName: variableName (reference)
+    # Match: propertyName: value (unquoted - could be number, bool, or reference)
     pattern_ref = re.compile(
-        rf"\b{prop_name}\s*:\s*(\w+)\b",
+        rf"\b{prop_name}\s*:\s*([\w.]+)\b",
         re.IGNORECASE
     )
     match = pattern_ref.search(block)
     if match:
         value = match.group(1)
-        # Skip keywords
-        if value.lower() not in ('true', 'false', 'null', 'if', 'for'):
-            return f"${{{value}}}"  # Return as parameter reference
+        value_lower = value.lower()
+
+        # Return booleans as-is
+        if value_lower in ('true', 'false'):
+            return value_lower
+
+        # Skip null and keywords
+        if value_lower in ('null', 'if', 'for'):
+            return None
+
+        # Check if it's a numeric literal (integer or float)
+        if re.fullmatch(r'[-+]?\d+', value):
+            return value  # Integer literal
+        if re.fullmatch(r'[-+]?\d*\.?\d+', value):
+            return value  # Float literal
+
+        # Otherwise treat as parameter/variable reference
+        return f"${{{value}}}"
 
     return None
 

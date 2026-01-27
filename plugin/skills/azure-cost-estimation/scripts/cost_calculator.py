@@ -22,9 +22,7 @@ from typing import Optional
 # Import sibling modules
 from price_lookup import AzurePricingClient, PriceInfo, HOURS_PER_MONTH
 from bicep_parser import parse_bicep, parse_parameters, parse_bicepparam, resolve_parameters as resolve_bicep_params
-from bicep_parser import AzureResource as BicepResource
 from arm_parser import parse_arm_template, parse_parameters_file, resolve_resources as resolve_arm_resources
-from arm_parser import AzureResource as ArmResource
 
 
 @dataclass
@@ -154,7 +152,13 @@ class CostCalculator:
                 if param_path.suffix == ".bicepparam":
                     params.update(parse_bicepparam(param_content))
                 elif param_path.suffix == ".json":
-                    params.update(json.loads(param_content).get("parameters", {}))
+                    # Normalize ARM-style parameters {name: {value: ...}} to {name: value}
+                    raw_params = json.loads(param_content).get("parameters", {})
+                    normalized = {
+                        name: (val.get("value") if isinstance(val, dict) and "value" in val else val)
+                        for name, val in raw_params.items()
+                    }
+                    params.update(normalized)
 
         # Set default location if not in params
         if "location" not in params:
@@ -1218,11 +1222,15 @@ class CostCalculator:
         vm_costs = [c for c in costs if "virtualMachines" in c.resource_type]
         for vm in vm_costs:
             if vm.reserved_3yr_monthly and vm.monthly_cost > 100:
-                savings = (vm.monthly_cost - vm.reserved_3yr_monthly) * 12
+                # Account for instance count in savings calculation
+                current_total_monthly = vm.total_monthly  # Uses count
+                reserved_total_monthly = vm.reserved_3yr_monthly * vm.count
+                savings = (current_total_monthly - reserved_total_monthly) * 12
                 if savings > 500:
+                    reduction_pct = ((current_total_monthly - reserved_total_monthly) / current_total_monthly * 100) if current_total_monthly > 0 else 0
                     recommendations.append(
                         f"Consider 3-year reserved instance for {vm.resource_name}: "
-                        f"Save ~${savings:.0f}/year ({((vm.monthly_cost - vm.reserved_3yr_monthly) / vm.monthly_cost * 100):.0f}% reduction)"
+                        f"Save ~${savings:.0f}/year ({reduction_pct:.0f}% reduction)"
                     )
 
         # Check for expensive SQL databases
