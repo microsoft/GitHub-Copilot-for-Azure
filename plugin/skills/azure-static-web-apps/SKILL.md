@@ -22,11 +22,26 @@ Azure Static Web Apps (SWA) hosts static frontends with optional serverless API 
 
 ### Installation
 
+**Option 1: Install locally in project (recommended)**
 ```bash
 npm install -D @azure/static-web-apps-cli
 ```
 
 Verify: `npx swa --version`
+
+**Option 2: Install globally**
+```bash
+npm install -g @azure/static-web-apps-cli
+```
+
+Verify: `swa --version`
+
+**Option 3: Use npx without installation (no setup required)**
+```bash
+npx @azure/static-web-apps-cli --version
+```
+
+> 💡 **Best Practice**: Use `npx swa` commands instead of `swa` directly to avoid "command not found" errors. This works whether SWA CLI is installed locally, globally, or not at all.
 
 ### Quick Start Workflow
 
@@ -34,10 +49,10 @@ Verify: `npx swa --version`
 
 1. **Required first step** - If requested by the user, create the frontend and backend.
 2. Create `swa-cli.config.json` if it does not exist. Use [example-swa-cli.config.json](references/example-swa-cli.config.json) as an example, and also consider the complete [schema](references/swa-cli.config.schema.json). Look through the workspace to identify the location of the frontend and backend and to fill in the other parts of the config file.
-3. `swa start` - Run local emulator at `http://localhost:4280`
+3. `npx swa start` - Run local emulator at `http://localhost:4280`
 4. `az login` - Authenticate with Azure
 5. `az staticwebapp create --name <app-name> --resource-group <resource-group> --location <location> --source <app-source-path>` - Create the static web app resource in Azure if it does not already exist
-6. `swa deploy --verbose silly` - Deploy to Azure
+6. `npx swa deploy --verbose silly` - Deploy to Azure
 
 ### Configuration Files
 
@@ -68,9 +83,9 @@ Use [example-swa-cli.config.json](references/example-swa-cli.config.json) as an 
 Authenticate with Azure for deployment.
 
 ```bash
-swa login                              # Interactive login
-swa login --subscription-id <id>       # Specific subscription
-swa login --clear-credentials          # Clear cached credentials
+npx swa login                              # Interactive login
+npx swa login --subscription-id <id>       # Specific subscription
+npx swa login --clear-credentials          # Clear cached credentials
 ```
 
 **Flags:** `--subscription-id, -S` | `--resource-group, -R` | `--tenant-id, -T` | `--client-id, -C` | `--client-secret, -CS` | `--app-name, -n`
@@ -84,9 +99,9 @@ Do not use this command. Instead, create the swa-cli.config.json manually.
 Build frontend and/or API.
 
 ```bash
-swa build                   # Build using config
-swa build --auto            # Auto-detect and build
-swa build myApp             # Build specific configuration
+npx swa build                   # Build using config
+npx swa build --auto            # Auto-detect and build
+npx swa build myApp             # Build specific configuration
 ```
 
 **Flags:** `--app-location, -a` | `--api-location, -i` | `--output-location, -O` | `--app-build-command, -A` | `--api-build-command, -I`
@@ -96,12 +111,14 @@ swa build myApp             # Build specific configuration
 Start local development emulator.
 
 ```bash
-swa start                                    # Serve from outputLocation
-swa start ./dist                             # Serve specific folder
-swa start http://localhost:3000              # Proxy to dev server
-swa start ./dist --api-location ./api        # With API folder
-swa start http://localhost:3000 --run "npm start"  # Auto-start dev server
+npx swa start                                    # Serve from outputLocation
+npx swa start ./dist                             # Serve specific folder
+npx swa start http://localhost:3000              # Proxy to dev server
+npx swa start ./dist --api-location ./api        # With API folder
+npx swa start http://localhost:3000 --run "npm start"  # Auto-start dev server
 ```
+
+> 💡 **Tip**: If you have SWA CLI installed globally, you can use `swa` instead of `npx swa`.
 
 **Common framework ports:**
 | Framework | Port |
@@ -123,14 +140,16 @@ swa start http://localhost:3000 --run "npm start"  # Auto-start dev server
 Deploys to an existing Azure Static Web App resource. If the resource hasn't been created yet, create it with `az staticwebapp` and fill in the `appName` and `resourceGroup` properties in the swa-cli.config.json file.
 
 ```bash
-swa deploy                              # Deploy using config
-swa deploy ./dist                       # Deploy specific folder
-swa deploy --env production             # Deploy to production
-swa deploy --deployment-token <TOKEN>   # Use deployment token
-swa deploy --dry-run                    # Preview without deploying
+npx swa deploy                              # Deploy using config
+npx swa deploy ./dist                       # Deploy specific folder
+npx swa deploy --env production             # Deploy to production
+npx swa deploy --deployment-token <TOKEN>   # Use deployment token
+npx swa deploy --dry-run                    # Preview without deploying
 ```
 
 While the examples do not include it for brevity, you should always pass `--verbose silly` to `swa deploy` to ensure you get all the deployment details and error messages.
+
+> 💡 **Tip**: If you have SWA CLI installed globally, you can use `swa` instead of `npx swa`.
 
 **Get deployment token:**
 - Azure Portal: Static Web App → Overview → Manage deployment token
@@ -147,9 +166,9 @@ While the examples do not include it for brevity, you should always pass `--verb
 Initialize database connections.
 
 ```bash
-swa db init --database-type mssql
-swa db init --database-type postgresql
-swa db init --database-type cosmosdb_nosql
+npx swa db init --database-type mssql
+npx swa db init --database-type postgresql
+npx swa db init --database-type cosmosdb_nosql
 ```
 
 ## Scenarios
@@ -285,6 +304,7 @@ jobs:
 
 | Issue | Solution |
 |-------|----------|
+| `swa` command not found | Use `npx swa` instead of `swa` directly, or install globally with `npm install -g @azure/static-web-apps-cli` |
 | 404 on client routes | Add `navigationFallback` with `rewrite: "/index.html"` to `staticwebapp.config.json` |
 | API returns 404 | Verify `api` folder structure, ensure `platform.apiRuntime` is set, check function exports |
 | Build output not found | Verify `output_location` matches actual build output directory |
@@ -296,8 +316,8 @@ jobs:
 
 **Debug commands:**
 ```bash
-swa start --verbose log        # Verbose output
-swa deploy --dry-run           # Preview deployment
-swa deploy --verbose silly     # Shows _all_ deployment issues
-swa --print-config             # Show resolved configuration
+npx swa start --verbose log        # Verbose output
+npx swa deploy --dry-run           # Preview deployment
+npx swa deploy --verbose silly     # Shows _all_ deployment issues
+npx swa --print-config             # Show resolved configuration
 ```
