@@ -70,5 +70,5 @@ jobs:
 
       - name: Assign to Copilot Coding Agent
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ASSIGN_ISSUE_TOKEN }}
         run: gh issue edit ${{ steps.create-issue.outputs.issue-number }} --add-assignee "@copilot"
