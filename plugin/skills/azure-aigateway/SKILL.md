@@ -275,50 +275,18 @@ Distribute load across multiple backends with automatic failover.
 
 ## Lab References (AI-Gateway Repo)
 
-| Scenario | Lab Folder | Description |
-|----------|-----------|-------------|
-| **Security & Access** | | |
-| Access Control | `labs/access-controlling/` | Control access to AI endpoints |
-| Content Safety | `labs/content-safety/` | Filter harmful content with Azure Content Safety |
-| MCP Client Authorization | `labs/mcp-client-authorization/` | Secure MCP clients with auth policies |
-| MCP PRM OAuth | `labs/mcp-prm-oauth/` | OAuth integration for MCP |
-| Private Connectivity | `labs/private-connectivity/` | Private endpoint configurations |
-| **Performance & Caching** | | |
-| Semantic Caching | `labs/semantic-caching/` | Cache similar prompts to reduce costs |
-| Token Rate Limiting | `labs/token-rate-limiting/` | Limit tokens per minute |
-| Backend Pool Load Balancing | `labs/backend-pool-load-balancing/` | Distribute load across backends |
-| Backend Pool (Terraform) | `labs/backend-pool-load-balancing-tf/` | Load balancing with Terraform |
-| **MCP & Tools** | | |
-| Model Context Protocol | `labs/model-context-protocol/` | Basic MCP server setup |
-| MCP from API | `labs/mcp-from-api/` | Convert OpenAPI to MCP server |
-| MCP Registry (APIC) | `labs/mcp-registry-apic/` | Register MCPs in API Center |
-| MCP Registry GitHub Workflow | `labs/mcp-registry-apic-github-workflow/` | CI/CD for MCP registry |
-| MCP A2A Agents | `labs/mcp-a2a-agents/` | Agent-to-agent MCP communication |
-| Realtime MCP Agents | `labs/realtime-mcp-agents/` | Real-time MCP agent scenarios |
-| Gemini MCP Agents | `labs/gemini-mcp-agents/` | Google Gemini with MCP |
-| AI Foundry Private MCP | `labs/ai-foundry-private-mcp/` | Private MCP with AI Foundry |
-| **Models & Providers** | | |
-| AI Foundry SDK | `labs/ai-foundry-sdk/` | Azure AI Foundry integration |
-| AI Foundry DeepSeek | `labs/ai-foundry-deepseek/` | DeepSeek model integration |
-| AWS Bedrock | `labs/aws-bedrock/` | AWS Bedrock backend |
-| Model Routing | `labs/model-routing/` | Route requests to different models |
-| OpenAI Agents | `labs/openai-agents/` | OpenAI Agents SDK integration |
-| AI Agent Service | `labs/ai-agent-service/` | Azure AI Agent Service |
-| SLM Self-Hosting | `labs/slm-self-hosting/` | Self-host small language models |
-| **Observability & Logging** | | |
-| Built-in Logging | `labs/built-in-logging/` | APIM logging configuration |
-| Token Metrics Emitting | `labs/token-metrics-emitting/` | Emit token usage metrics |
-| FinOps Framework | `labs/finops-framework/` | Cost management and tracking |
-| **Advanced Features** | | |
-| Function Calling | `labs/function-calling/` | OpenAI function calling |
-| Image Generation | `labs/image-generation/` | DALL-E image generation |
-| Realtime Audio | `labs/realtime-audio/` | Real-time audio processing |
-| Message Storing | `labs/message-storing/` | Store conversation history |
-| Session Awareness | `labs/session-awareness/` | Maintain session context |
-| Vector Searching | `labs/vector-searching/` | Vector search integration |
-| Secure Responses API | `labs/secure-responses-api/` | Secure OpenAI Responses API |
-| **Production** | | |
-| Zero to Production | `labs/zero-to-production/` | Complete production setup guide |
+**Essential Labs to Get Started:**
+
+| Scenario | Lab | Description |
+|----------|-----|-------------|
+| Semantic Caching | [semantic-caching](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/semantic-caching) | Cache similar prompts to reduce costs |
+| Token Rate Limiting | [token-rate-limiting](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/token-rate-limiting) | Limit tokens per minute |
+| Content Safety | [content-safety](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/content-safety) | Filter harmful content |
+| Load Balancing | [backend-pool-load-balancing](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/backend-pool-load-balancing) | Distribute load across backends |
+| MCP from API | [mcp-from-api](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/mcp-from-api) | Convert OpenAPI to MCP server |
+| Zero to Production | [zero-to-production](https://github.com/Azure-Samples/AI-Gateway/tree/main/labs/zero-to-production) | Complete production setup guide |
+
+**Find more labs at:** https://github.com/Azure-Samples/AI-Gateway/tree/main/labs
 
 ## Quick Start Checklist
 
