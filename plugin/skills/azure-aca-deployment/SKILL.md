@@ -175,6 +175,19 @@ async function generateInfrastructure(projectName: string) {
 
 **Key insight**: Always validate infrastructure before deploying using preview commands to catch configuration issues early.
 
+### ⚠️ Known Issue: Image Race Condition with `azd up`
+
+When using `azd up`, Bicep provisioning runs BEFORE images are built and pushed. If your Container App Bicep references your ACR image directly (e.g., `myregistry.azurecr.io/myapp:latest`), provisioning will fail with:
+
+```
+ContainerAppOperationError: MANIFEST_UNKNOWN: manifest tagged by "latest" is not found
+```
+
+**Workarounds:**
+1. **Pre-push an image** before running `azd up`
+2. **Run separately**: `azd provision` then manually push image, then `azd deploy`
+3. **Use `az containerapp up`** instead, which handles this automatically
+
 ## Pattern 2.5: Multi-Service Deployment (UI + Backend)
 
 Deploy full-stack applications with both frontend and backend services in the same Container Apps environment.
