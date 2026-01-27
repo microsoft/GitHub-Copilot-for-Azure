@@ -9,9 +9,9 @@ description: Azure Security Services including Key Vault, Managed Identity, RBAC
 
 | Service | Use When | MCP Tools | CLI |
 |---------|----------|-----------|-----|
-| Key Vault | Secrets, keys, certificates | `azure_keyvault_*` | `az keyvault` |
+| Key Vault | Secrets, keys, certificates | `azure__keyvault` | `az keyvault` |
 | Managed Identity | Credential-free authentication | - | `az identity` |
-| RBAC | Role-based access control | `azure_rbac_*` | `az role` |
+| RBAC | Role-based access control | `azure__role` | `az role` |
 | Entra ID | Identity and access management | - | `az ad` |
 | Defender | Threat protection, security posture | - | `az security` |
 
@@ -20,15 +20,15 @@ description: Azure Security Services including Key Vault, Managed Identity, RBAC
 When Azure MCP is enabled:
 
 ### Key Vault
-- `azure_keyvault_list` - List Key Vaults
-- `azure_keyvault_secret_list` - List secrets in vault
-- `azure_keyvault_secret_get` - Get secret value
-- `azure_keyvault_key_list` - List keys
-- `azure_keyvault_certificate_list` - List certificates
+- `azure__keyvault` with command `keyvault_list` - List Key Vaults
+- `azure__keyvault` with command `keyvault_secret_list` - List secrets in vault
+- `azure__keyvault` with command `keyvault_secret_get` - Get secret value
+- `azure__keyvault` with command `keyvault_key_list` - List keys
+- `azure__keyvault` with command `keyvault_certificate_list` - List certificates
 
 ### RBAC
-- `azure_rbac_role_assignment_list` - List role assignments
-- `azure_rbac_role_definition_list` - List role definitions
+- `azure__role` with command `role_assignment_list` - List role assignments
+- `azure__role` with command `role_definition_list` - List role definitions
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

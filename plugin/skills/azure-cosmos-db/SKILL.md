@@ -9,28 +9,28 @@ description: Build globally distributed applications with Azure Cosmos DB, a ful
 
 | Service | Use When | MCP Tools | CLI |
 |---------|----------|-----------|-----|
-| Cosmos DB | NoSQL documents, global distribution, vector search | `azure_cosmosdb_*` | `az cosmosdb` |
-| SQL Database | Relational data, ACID transactions, complex joins | `azure_sql_*` | `az sql` |
-| Redis Cache | Caching, sessions, real-time leaderboards | `azure_redis_*` | `az redis` |
-| PostgreSQL | Open source relational, PostGIS | `azure_postgres_*` | `az postgres` |
-| MySQL | LAMP stack, WordPress | `azure_mysql_*` | `az mysql` |
+| Cosmos DB | NoSQL documents, global distribution, vector search | `azure__cosmos` | `az cosmosdb` |
+| SQL Database | Relational data, ACID transactions, complex joins | `azure__sql` | `az sql` |
+| Redis Cache | Caching, sessions, real-time leaderboards | `azure__redis` | `az redis` |
+| PostgreSQL | Open source relational, PostGIS | `azure__postgres` | `az postgres` |
+| MySQL | LAMP stack, WordPress | `azure__mysql` | `az mysql` |
 
 ## MCP Server (Preferred)
 
 When Azure MCP is enabled, use these tools for data operations:
 
 ### Cosmos DB
-- `azure_cosmosdb_account_list` - List Cosmos DB accounts
-- `azure_cosmosdb_database_list` - List databases in account
-- `azure_cosmosdb_container_list` - List containers
+- `azure__cosmos` with command `cosmos_account_list` - List Cosmos DB accounts
+- `azure__cosmos` with command `cosmos_database_list` - List databases in account
+- `azure__cosmos` with command `cosmos_container_list` - List containers
 
 ### SQL Database
-- `azure_sql_server_list` - List SQL servers
-- `azure_sql_database_list` - List databases on server
-- `azure_sql_firewall_list` - List firewall rules
+- `azure__sql` with command `sql_server_list` - List SQL servers
+- `azure__sql` with command `sql_database_list` - List databases on server
+- `azure__sql` with command `sql_firewall_list` - List firewall rules
 
 ### Redis
-- `azure_redis_cache_list` - List Redis caches
+- `azure__redis` with command `redis_cache_list` - List Redis caches
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 
@@ -68,7 +68,7 @@ az redis list --output table
 | Property | Value |
 |----------|-------|
 | CLI prefix | `az cosmosdb` |
-| MCP tools | `azure_cosmosdb_account_list`, `azure_cosmosdb_database_list`, `azure_cosmosdb_container_list` |
+| MCP tools | `azure__cosmos` (commands: `cosmos_account_list`, `cosmos_database_list`, `cosmos_container_list`) |
 | Best for | JSON documents, global distribution, <10ms reads |
 
 ## API Selection
@@ -128,7 +128,7 @@ RU = normalized cost of operations:
 
 MCP:
 ```
-Use azure_cosmosdb tools to browse accounts, databases, and containers.
+Use azure__cosmos tools to browse accounts, databases, and containers.
 For queries, use the Azure portal or SDK.
 ```
 

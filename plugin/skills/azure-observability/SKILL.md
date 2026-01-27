@@ -9,26 +9,26 @@ description: Azure Observability Services including Azure Monitor, Application I
 
 | Service | Use When | MCP Tools | CLI |
 |---------|----------|-----------|-----|
-| Azure Monitor | Metrics, alerts, dashboards | `azure_monitor_*` | `az monitor` |
-| Application Insights | APM, distributed tracing | `azure_applicationinsights_*` | `az monitor app-insights` |
-| Log Analytics | Log queries, KQL | `azure_kusto_*` | `az monitor log-analytics` |
+| Azure Monitor | Metrics, alerts, dashboards | `azure__monitor` | `az monitor` |
+| Application Insights | APM, distributed tracing | `azure__applicationinsights` | `az monitor app-insights` |
+| Log Analytics | Log queries, KQL | `azure__kusto` | `az monitor log-analytics` |
 | Alerts | Notifications, actions | - | `az monitor alert` |
-| Workbooks | Interactive reports | `azure_workbooks_*` | - |
+| Workbooks | Interactive reports | `azure__workbooks` | - |
 
 ## MCP Server (Preferred)
 
 When Azure MCP is enabled:
 
 ### Monitor
-- `azure_monitor_metrics_query` - Query metrics
-- `azure_monitor_logs_query` - Query logs with KQL
+- `azure__monitor` with command `monitor_metrics_query` - Query metrics
+- `azure__monitor` with command `monitor_logs_query` - Query logs with KQL
 
 ### Application Insights
-- `azure_applicationinsights_component_list` - List App Insights resources
+- `azure__applicationinsights` with command `applicationinsights_component_list` - List App Insights resources
 
 ### Log Analytics
-- `azure_kusto_cluster_list` - List clusters
-- `azure_kusto_query` - Execute KQL queries
+- `azure__kusto` with command `kusto_cluster_list` - List clusters
+- `azure__kusto` with command `kusto_query` - Execute KQL queries
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

@@ -9,9 +9,9 @@ description: Azure AI Services including AI Search, Speech, Foundry, OpenAI, and
 
 | Service | Use When | MCP Tools | CLI |
 |---------|----------|-----------|-----|
-| AI Search | Full-text, vector, hybrid search | `azure_search_*` | `az search` |
-| Speech | Speech-to-text, text-to-speech | `azure_speech_*` | - |
-| Foundry | AI models, agents, prompt flows | `azure_foundry_*` | `az ml` |
+| AI Search | Full-text, vector, hybrid search | `azure__search` | `az search` |
+| Speech | Speech-to-text, text-to-speech | `azure__speech` | - |
+| Foundry | AI models, agents, prompt flows | `azure__foundry` | `az ml` |
 | OpenAI | GPT models, embeddings, DALL-E | - | `az cognitiveservices` |
 | Document Intelligence | Form extraction, OCR | - | - |
 
@@ -20,18 +20,18 @@ description: Azure AI Services including AI Search, Speech, Foundry, OpenAI, and
 When Azure MCP is enabled:
 
 ### AI Search
-- `azure_search_index_list` - List search indexes
-- `azure_search_index_get` - Get index details
-- `azure_search_query` - Query search index
+- `azure__search` with command `search_index_list` - List search indexes
+- `azure__search` with command `search_index_get` - Get index details
+- `azure__search` with command `search_query` - Query search index
 
 ### Speech
-- `azure_speech_transcribe` - Speech to text
-- `azure_speech_synthesize` - Text to speech
+- `azure__speech` with command `speech_transcribe` - Speech to text
+- `azure__speech` with command `speech_synthesize` - Text to speech
 
 ### Foundry
-- `azure_foundry_model_list` - List AI models
-- `azure_foundry_deployment_list` - List deployments
-- `azure_foundry_agent_list` - List AI agents
+- `azure__foundry` with command `foundry_model_list` - List AI models
+- `azure__foundry` with command `foundry_deployment_list` - List deployments
+- `azure__foundry` with command `foundry_agent_list` - List AI agents
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

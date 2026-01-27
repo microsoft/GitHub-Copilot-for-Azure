@@ -28,7 +28,7 @@ Azure Functions is a serverless compute service for event-driven applications. P
 | Property | Value |
 |----------|-------|
 | CLI prefix | `az functionapp`, `func` |
-| MCP tools | `azure_function_app_list` |
+| MCP tools | `azure__functionapp` (command: `functionapp_list`) |
 | Best for | Event-driven, pay-per-execution, serverless |
 
 ## Hosting Plans
@@ -549,7 +549,7 @@ az functionapp list --output table       # List all function apps
 
 Use MCP tools to **query** existing resources:
 
-- `azure_function_app_list` - List function apps
+- `azure__functionapp` with command `functionapp_list` - List function apps
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

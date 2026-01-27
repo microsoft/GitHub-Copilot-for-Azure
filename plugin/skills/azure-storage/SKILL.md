@@ -9,7 +9,7 @@ description: Azure Storage Services including Blob Storage, File Shares, Queue S
 
 | Service | Use When | MCP Tools | CLI |
 |---------|----------|-----------|-----|
-| Blob Storage | Objects, files, backups, static content | `azure_storage_blob_*` | `az storage blob` |
+| Blob Storage | Objects, files, backups, static content | `azure__storage` | `az storage blob` |
 | File Shares | SMB file shares, lift-and-shift | - | `az storage file` |
 | Queue Storage | Async messaging, task queues | - | `az storage queue` |
 | Table Storage | NoSQL key-value (consider Cosmos DB) | - | `az storage table` |
@@ -19,11 +19,11 @@ description: Azure Storage Services including Blob Storage, File Shares, Queue S
 
 When Azure MCP is enabled:
 
-- `azure_storage_account_list` - List storage accounts
-- `azure_storage_container_list` - List containers in account
-- `azure_storage_blob_list` - List blobs in container
-- `azure_storage_blob_get` - Download blob content
-- `azure_storage_blob_put` - Upload blob content
+- `azure__storage` with command `storage_account_list` - List storage accounts
+- `azure__storage` with command `storage_container_list` - List containers in account
+- `azure__storage` with command `storage_blob_list` - List blobs in container
+- `azure__storage` with command `storage_blob_get` - Download blob content
+- `azure__storage` with command `storage_blob_put` - Upload blob content
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

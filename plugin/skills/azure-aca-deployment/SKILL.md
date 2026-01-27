@@ -126,7 +126,7 @@ Generate a deployment plan by analyzing your workspace and recommending Azure re
 ```javascript
 async function planDeployment(workspaceFolder: string, projectName: string) {
   // Generate deployment plan
-  const plan = await mcp_azure_mcp_deploy({
+  const plan = await azure__deploy({
     intent: "Generate deployment plan for container app",
     command: "deploy_plan_get",
     parameters: {
@@ -152,7 +152,7 @@ Retrieve IaC best practices and generate Bicep files for Container Apps deployme
 ```javascript
 async function generateInfrastructure(projectName: string) {
   // Get IaC rules
-  const rules = await mcp_azure_mcp_deploy({
+  const rules = await azure__deploy({
     intent: "Get IaC rules",
     command: "deploy_iac_rules_get",
     parameters: {
@@ -163,7 +163,7 @@ async function generateInfrastructure(projectName: string) {
   });
   
   // Get Bicep schema
-  const schema = await mcp_bicep_get_az_resource_type_schema({
+  const schema = await azure__bicepschema({
     resourceType: "Microsoft.App/containerApps",
     apiVersion: "2024-03-01"
   });
@@ -215,7 +215,7 @@ async function deployFullStackApp(projectName: string) {
   ];
   
   // Generate deployment plan for multi-service app
-  const plan = await mcp_azure_mcp_deploy({
+  const plan = await azure__deploy({
     intent: "Generate deployment plan for full-stack app",
     command: "deploy_plan_get",
     parameters: {
@@ -250,7 +250,7 @@ Monitor and validate deployments using application logs and health checks.
 ```javascript
 async function validateDeployment(workspaceFolder: string, envName: string) {
   // Get application logs
-  const logs = await mcp_azure_mcp_deploy({
+  const logs = await azure__deploy({
     intent: "Get deployment logs",
     command: "deploy_app_logs_get",
     parameters: {
@@ -301,7 +301,7 @@ async function deployScheduledJob(projectName: string, cronExpression: string) {
   };
 
   // Generate deployment plan for job
-  const plan = await mcp_azure_mcp_deploy({
+  const plan = await azure__deploy({
     intent: "Generate deployment plan for scheduled job",
     command: "deploy_plan_get",
     parameters: {
@@ -386,7 +386,7 @@ Check quota and availability before deploying to avoid failures.
 
 ```javascript
 async function checkRegionalCapacity(subscription: string, location: string) {
-  const availability = await mcp_azure_mcp_quota({
+  const availability = await azure__quota({
     intent: "Check availability",
     command: "quota_region_availability_list",
     parameters: {
@@ -405,7 +405,7 @@ Generate diagrams to understand service dependencies before deployment.
 
 ```javascript
 async function visualizeArchitecture(workspaceFolder: string, services: Array) {
-  return await mcp_azure_mcp_deploy({
+  return await azure__deploy({
     intent: "Generate architecture diagram",
     command: "deploy_architecture_diagram_generate",
     parameters: {
@@ -423,7 +423,7 @@ Get pipeline configuration guidance for automated deployments.
 
 ```javascript
 async function setupCICD(subscription: string) {
-  return await mcp_azure_mcp_deploy({
+  return await azure__deploy({
     intent: "Get CI/CD guidance",
     command: "deploy_pipeline_guidance_get",
     parameters: {

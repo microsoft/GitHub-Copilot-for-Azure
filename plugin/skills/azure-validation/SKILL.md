@@ -59,7 +59,9 @@ Before generating resource names:
 **Before creating Bicep/Terraform, get the schema to understand constraints:**
 
 ```
-Use azure__bicepschema_get with resource-type: "Microsoft.Storage/storageAccounts"
+Tool: azure__bicepschema
+Parameters:
+  resource-type: "Microsoft.Storage/storageAccounts"
 ```
 
 This returns the full schema including naming constraints.
@@ -71,7 +73,9 @@ This returns the full schema including naming constraints.
 ### Get IaC Rules Before Writing Bicep
 
 ```
-Use azure__deploy_iac_rules_get with:
+Tool: azure__deploy
+Command: deploy_iac_rules_get
+Parameters:
   deployment-tool: "AZD"
   iac-type: "bicep"
   resource-types: "containerapp,storage"
@@ -82,7 +86,8 @@ This returns best practices and rules for writing correct Bicep.
 ### Get Schema for Specific Resources
 
 ```
-Use azure__bicepschema_get with:
+Tool: azure__bicepschema
+Parameters:
   resource-type: "Microsoft.App/containerApps"
 ```
 
@@ -93,7 +98,9 @@ This returns the complete Bicep schema so you know all required/optional propert
 Before writing any infrastructure code, generate a plan:
 
 ```
-Use azure__deploy_plan_get with:
+Tool: azure__deploy
+Command: deploy_plan_get
+Parameters:
   workspace-folder: "/path/to/project"
   project-name: "myapp"
   target-app-service: "ContainerApp"
@@ -163,8 +170,8 @@ Run `/azure:preflight` before any deployment to check:
 ## Quick Validation Flow
 
 1. **Name check** - Validate all resource names against limits above
-2. **Get IaC rules** - `azure__deploy_iac_rules_get` for best practices
-3. **Get schemas** - `azure__bicepschema_get` for specific resources
-4. **Generate plan** - `azure__deploy_plan_get` for full deployment plan
+2. **Get IaC rules** - `azure__deploy` with command `deploy_iac_rules_get` for best practices
+3. **Get schemas** - `azure__bicepschema` for specific resources
+4. **Generate plan** - `azure__deploy` with command `deploy_plan_get` for full deployment plan
 5. **Run preflight** - `/azure:preflight` for tool/auth checks
 6. **Deploy** - `azd up`

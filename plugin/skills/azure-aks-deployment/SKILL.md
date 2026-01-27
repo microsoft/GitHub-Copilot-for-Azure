@@ -30,7 +30,7 @@ azd down --force --purge
 | Property | Value |
 |----------|-------|
 | CLI prefix | `az aks` |
-| MCP tools | `azure_aks_cluster_list`, `azure_aks_nodepool_list` |
+| MCP tools | `azure__aks` (commands: `aks_cluster_list`, `aks_nodepool_list`) |
 | Best for | Complex microservices, full K8s control |
 | azd Template | (use azd with custom Bicep) |
 
@@ -167,8 +167,8 @@ az aks update \
 
 Use MCP tools to **query** existing resources, not deploy:
 
-- `azure_aks_cluster_list` - List AKS clusters
-- `azure_aks_nodepool_list` - List node pools in a cluster
+- `azure__aks` with command `aks_cluster_list` - List AKS clusters
+- `azure__aks` with command `aks_nodepool_list` - List node pools in a cluster
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

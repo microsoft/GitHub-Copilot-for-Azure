@@ -61,7 +61,7 @@ Set environment variables:
 
 After enabling, verify tools are available:
 - Check `/azure:status`
-- Try `azure_subscription_list` to list subscriptions
+- Try `azure__subscription_list` to list subscriptions
 
 ## Benefits Over CLI
 
@@ -110,120 +110,149 @@ See `cli/cheatsheet.md` for common CLI commands.
 
 # Tool Reference
 
+The Azure MCP server exposes two types of tools:
+- **Standalone tools**: Called directly (e.g., `azure__subscription_list`)
+- **Hierarchical tools**: Called with a `command` parameter (e.g., `azure__deploy` with command `deploy_plan_get`)
+
 ## Core Operations
 
 | Tool | Description |
 |------|-------------|
-| `azure_subscription_list` | List all subscriptions |
-| `azure_resource_group_list` | List resource groups in subscription |
+| `azure__subscription_list` | List all subscriptions |
+| `azure__group_list` | List resource groups in subscription |
 
 ## Storage
 
-| Tool | Description |
-|------|-------------|
-| `azure_storage_account_list` | List storage accounts |
-| `azure_storage_container_list` | List containers in account |
-| `azure_storage_blob_list` | List blobs in container |
-| `azure_storage_blob_get` | Download blob content |
-| `azure_storage_blob_put` | Upload blob content |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__storage` | `storage_account_list` | List storage accounts |
+| `azure__storage` | `storage_container_list` | List containers in account |
+| `azure__storage` | `storage_blob_list` | List blobs in container |
+| `azure__storage` | `storage_blob_get` | Download blob content |
+| `azure__storage` | `storage_blob_put` | Upload blob content |
 
 ## SQL Database
 
-| Tool | Description |
-|------|-------------|
-| `azure_sql_server_list` | List SQL servers |
-| `azure_sql_database_list` | List databases on server |
-| `azure_sql_firewall_list` | List firewall rules |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__sql` | `sql_server_list` | List SQL servers |
+| `azure__sql` | `sql_database_list` | List databases on server |
+| `azure__sql` | `sql_firewall_list` | List firewall rules |
 
 ## Cosmos DB
 
-| Tool | Description |
-|------|-------------|
-| `azure_cosmosdb_account_list` | List Cosmos DB accounts |
-| `azure_cosmosdb_database_list` | List databases in account |
-| `azure_cosmosdb_container_list` | List containers |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__cosmos` | `cosmos_account_list` | List Cosmos DB accounts |
+| `azure__cosmos` | `cosmos_database_list` | List databases in account |
+| `azure__cosmos` | `cosmos_container_list` | List containers |
 
 ## Redis
 
-| Tool | Description |
-|------|-------------|
-| `azure_redis_cache_list` | List Redis caches |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__redis` | `redis_cache_list` | List Redis caches |
 
 ## Key Vault
 
-| Tool | Description |
-|------|-------------|
-| `azure_keyvault_list` | List Key Vaults |
-| `azure_keyvault_secret_list` | List secrets in vault |
-| `azure_keyvault_secret_get` | Get secret value |
-| `azure_keyvault_key_list` | List keys |
-| `azure_keyvault_certificate_list` | List certificates |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__keyvault` | `keyvault_list` | List Key Vaults |
+| `azure__keyvault` | `keyvault_secret_list` | List secrets in vault |
+| `azure__keyvault` | `keyvault_secret_get` | Get secret value |
+| `azure__keyvault` | `keyvault_key_list` | List keys |
+| `azure__keyvault` | `keyvault_certificate_list` | List certificates |
 
 ## RBAC
 
-| Tool | Description |
-|------|-------------|
-| `azure_rbac_role_assignment_list` | List role assignments |
-| `azure_rbac_role_definition_list` | List role definitions |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__role` | `role_assignment_list` | List role assignments |
+| `azure__role` | `role_definition_list` | List role definitions |
 
 ## App Service
 
-| Tool | Description |
-|------|-------------|
-| `azure_appservice_webapp_list` | List web apps |
-| `azure_appservice_webapp_get` | Get app details |
-| `azure_appservice_plan_list` | List App Service plans |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__appservice` | `appservice_webapp_list` | List web apps |
+| `azure__appservice` | `appservice_webapp_get` | Get app details |
+| `azure__appservice` | `appservice_plan_list` | List App Service plans |
 
 ## Functions
 
-| Tool | Description |
-|------|-------------|
-| `azure_function_app_list` | List function apps |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__functionapp` | `functionapp_list` | List function apps |
 
 ## AKS
 
-| Tool | Description |
-|------|-------------|
-| `azure_aks_cluster_list` | List AKS clusters |
-| `azure_aks_nodepool_list` | List node pools |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__aks` | `aks_cluster_list` | List AKS clusters |
+| `azure__aks` | `aks_nodepool_list` | List node pools |
 
 ## Container Apps
 
-| Tool | Description |
-|------|-------------|
-| `azure_container_app_list` | List container apps |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__appservice` | `containerapp_list` | List container apps |
 
 ## AI Search
 
-| Tool | Description |
-|------|-------------|
-| `azure_search_index_list` | List search indexes |
-| `azure_search_index_get` | Get index details |
-| `azure_search_query` | Query search index |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__search` | `search_index_list` | List search indexes |
+| `azure__search` | `search_index_get` | Get index details |
+| `azure__search` | `search_query` | Query search index |
 
 ## Speech
 
-| Tool | Description |
-|------|-------------|
-| `azure_speech_transcribe` | Speech to text |
-| `azure_speech_synthesize` | Text to speech |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__speech` | `speech_transcribe` | Speech to text |
+| `azure__speech` | `speech_synthesize` | Text to speech |
 
 ## Foundry
 
-| Tool | Description |
-|------|-------------|
-| `azure_foundry_model_list` | List AI models |
-| `azure_foundry_deployment_list` | List deployments |
-| `azure_foundry_agent_list` | List AI agents |
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__foundry` | `foundry_model_list` | List AI models |
+| `azure__foundry` | `foundry_deployment_list` | List deployments |
+| `azure__foundry` | `foundry_agent_list` | List AI agents |
 
 ## Monitoring
 
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__monitor` | `monitor_metrics_query` | Query metrics |
+| `azure__monitor` | `monitor_logs_query` | Query logs with KQL |
+| `azure__applicationinsights` | `applicationinsights_component_list` | List App Insights |
+| `azure__resourcehealth` | *(various)* | Check resource health and availability |
+| `azure__applens` | *(conversational)* | AI-powered diagnostics for troubleshooting Azure resource issues |
+
+## Deployment & Infrastructure
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__deploy` | `deploy_plan_get` | Generate a deployment plan for Azure infrastructure |
+| `azure__deploy` | `deploy_iac_rules_get` | Get IaC (Bicep/Terraform) guidelines |
+| `azure__deploy` | `deploy_app_logs_get` | Fetch logs from deployed apps |
+| `azure__deploy` | `deploy_pipeline_guidance_get` | Get CI/CD pipeline guidance |
+| `azure__deploy` | `deploy_architecture_diagram_generate` | Generate architecture diagrams |
+| `azure__bicepschema` | *(schema queries)* | Get Bicep resource type schemas |
+| `azure__quota` | `quota_region_availability_list` | Check regional quota and availability |
+
+## Best Practices
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__get_azure_bestpractices` | *(various)* | Get Azure best practices for code generation and deployment |
+
+## Documentation
+
 | Tool | Description |
 |------|-------------|
-| `azure_monitor_metrics_query` | Query metrics |
-| `azure_monitor_logs_query` | Query logs with KQL |
-| `azure_applicationinsights_component_list` | List App Insights |
-| `azure_resourcehealth_*` | Check resource health and availability |
+| `azure__documentation` | Search official Microsoft/Azure documentation |
 
 ## CLI Helpers
 
@@ -231,6 +260,7 @@ See `cli/cheatsheet.md` for common CLI commands.
 |------|-------------|
 | `azure__extension_cli_install` | Get CLI installation instructions |
 | `azure__extension_cli_generate` | Generate Azure CLI commands |
+| `azure__extension_azqr` | Run Azure Quick Review for compliance/security reports |
 
 ### CLI Install Tool
 

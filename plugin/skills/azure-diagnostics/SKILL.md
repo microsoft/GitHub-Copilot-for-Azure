@@ -214,7 +214,7 @@ AppDependencies
 For comprehensive AI-powered diagnostics:
 
 ```
-Use azure__applens tools to get:
+Use azure_applens tools to get:
 - Automated issue detection
 - Root cause analysis
 - Remediation recommendations

@@ -24,13 +24,15 @@ description: Deploy applications to Azure including deployment planning, infrast
 
 ## Tools Used
 
-| Tool | Description |
-|------|-------------|
-| `deploy_plan_get` | Generates a deployment plan for Azure infrastructure and applications |
-| `deploy_iac_rules_get` | Provides guidelines for creating Bicep/Terraform files |
-| `deploy_app_logs_get` | Fetches logs from Container Apps, App Services, or Function Apps deployed through azd |
-| `deploy_pipeline_guidance_get` | Guidance for creating CI/CD pipelines for Azure |
-| `deploy_architecture_diagram_generate` | Generates Azure service architecture diagrams |
+All deployment tools use the `azure__deploy` hierarchical tool with a `command` parameter:
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__deploy` | `deploy_plan_get` | Generates a deployment plan for Azure infrastructure and applications |
+| `azure__deploy` | `deploy_iac_rules_get` | Provides guidelines for creating Bicep/Terraform files |
+| `azure__deploy` | `deploy_app_logs_get` | Fetches logs from Container Apps, App Services, or Function Apps deployed through azd |
+| `azure__deploy` | `deploy_pipeline_guidance_get` | Guidance for creating CI/CD pipelines for Azure |
+| `azure__deploy` | `deploy_architecture_diagram_generate` | Generates Azure service architecture diagrams |
 
 ## Quick Deploy with azd
 

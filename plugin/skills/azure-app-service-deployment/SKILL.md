@@ -14,7 +14,7 @@ Azure App Service is a fully managed platform for hosting web applications, REST
 > Only use `az` for deployments if the user explicitly requests it.
 
 ```bash
-# Deploy everything - THIS IS THE ONLY WAY
+# Deploy everything - THIS IS THE MOST PREFERRED WAY
 azd up
 
 # Clean up test environments
@@ -31,7 +31,7 @@ azd down --force --purge
 | Property | Value |
 |----------|-------|
 | CLI prefix | `az webapp` |
-| MCP tools | `azure_appservice_webapp_list`, `azure_appservice_webapp_get`, `azure_appservice_plan_list` |
+| MCP tools | `azure__appservice` (commands: `appservice_webapp_list`, `appservice_webapp_get`, `appservice_plan_list`) |
 | Best for | Web apps, REST APIs, managed hosting |
 | azd Template | `todo-csharp-sql` |
 
@@ -72,9 +72,9 @@ azd down --force --purge
 
 Use MCP tools to **query** existing resources, not deploy:
 
-- `azure_appservice_webapp_list` - List web apps
-- `azure_appservice_webapp_get` - Get web app details
-- `azure_appservice_plan_list` - List App Service plans
+- `azure__appservice` with command `appservice_webapp_list` - List web apps
+- `azure__appservice` with command `appservice_webapp_get` - Get web app details
+- `azure__appservice` with command `appservice_plan_list` - List App Service plans
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 

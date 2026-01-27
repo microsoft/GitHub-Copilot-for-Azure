@@ -72,7 +72,6 @@ app.get('/health', (req, res) => res.sendStatus(200));
 az containerapp update \
   --name APP \
   --resource-group RG \
-  --set-env-vars WEBSITES_PORT=3000 \
   --health-probe-path /health \
   --health-probe-interval 30
 ```
