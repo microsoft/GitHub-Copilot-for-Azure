@@ -83,7 +83,7 @@ Use MCP tools to **query** existing resources, not deploy:
 ### Using azd (Recommended for new apps)
 
 ```bash
-azd init --template azure-samples/todo-python-mongo-swa-func
+azd init --template azure-samples/todo-csharp-sql
 azd up
 ```
 
