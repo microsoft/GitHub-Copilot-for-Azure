@@ -75,6 +75,6 @@ az storage blob upload --account-name ACCOUNT --container-name CONTAINER --name 
 
 For deep documentation on specific services:
 
-- Blob storage patterns and lifecycle -> `services/blob.md`
-- File shares and Azure File Sync -> `services/files.md`
-- Queue patterns and poison handling -> `services/queues.md`
+- Blob storage patterns and lifecycle -> [Blob Storage documentation](https://learn.microsoft.com/azure/storage/blobs/storage-blobs-overview)
+- File shares and Azure File Sync -> [Azure Files documentation](https://learn.microsoft.com/azure/storage/files/storage-files-introduction)
+- Queue patterns and poison handling -> [Queue Storage documentation](https://learn.microsoft.com/azure/storage/queues/storage-queues-introduction)

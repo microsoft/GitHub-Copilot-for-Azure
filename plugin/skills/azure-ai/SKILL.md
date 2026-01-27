@@ -66,6 +66,6 @@ When Azure MCP is enabled:
 
 For deep documentation on specific services:
 
-- AI Search indexing and queries -> `services/ai-search.md`
-- Speech transcription patterns -> `services/speech.md`
-- Foundry agents and flows -> `services/foundry.md`
+- AI Search indexing and queries -> [Azure AI Search documentation](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
+- Speech transcription patterns -> [Azure AI Speech documentation](https://learn.microsoft.com/azure/ai-services/speech-service/overview)
+- Foundry agents and flows -> [Azure AI Foundry documentation](https://learn.microsoft.com/azure/ai-studio/what-is-ai-studio)

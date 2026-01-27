@@ -76,6 +76,6 @@ az network lb list --output table
 
 For deep documentation on specific services:
 
-- VNet design and peering -> `services/vnet.md`
-- Private endpoints setup -> `services/private-endpoints.md`
-- Load balancing options -> `services/load-balancing.md`
+- VNet design and peering -> [Virtual Network documentation](https://learn.microsoft.com/azure/virtual-network/virtual-networks-overview)
+- Private endpoints setup -> [Private Link documentation](https://learn.microsoft.com/azure/private-link/private-endpoint-overview)
+- Load balancing options -> [Load balancing options overview](https://learn.microsoft.com/azure/architecture/guide/technology-choices/load-balancing-overview)

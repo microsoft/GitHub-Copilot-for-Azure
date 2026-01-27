@@ -91,6 +91,6 @@ AzureMetrics
 
 For deep documentation on specific services:
 
-- Application Insights setup -> `services/app-insights.md`
-- KQL query patterns -> `services/log-analytics.md`
-- Alert configuration -> `services/alerts.md`
+- Application Insights setup -> `appinsights-instrumentation` skill
+- KQL query patterns -> [Log Analytics KQL documentation](https://learn.microsoft.com/azure/azure-monitor/logs/log-query-overview)
+- Alert configuration -> [Azure Monitor alerts documentation](https://learn.microsoft.com/azure/azure-monitor/alerts/alerts-overview)

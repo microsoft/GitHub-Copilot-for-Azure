@@ -70,6 +70,6 @@ az identity list --output table
 
 For deep documentation on specific services:
 
-- Key Vault best practices -> `services/keyvault.md`
-- Managed identity patterns -> `services/managed-identity.md`
-- RBAC configuration -> `services/rbac.md`
+- Key Vault best practices -> [Key Vault documentation](https://learn.microsoft.com/azure/key-vault/general/overview)
+- Managed identity patterns -> [Managed identities documentation](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview)
+- RBAC configuration -> `azure-role-selector` skill or [Azure RBAC documentation](https://learn.microsoft.com/azure/role-based-access-control/overview)
