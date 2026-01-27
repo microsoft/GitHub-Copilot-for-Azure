@@ -10,9 +10,9 @@ Bootstrap and configure Azure API Management (APIM) as an AI Gateway for securin
 ## Skill Activation Triggers
 
 **Use this skill immediately when the user asks to:**
-- "Setup a gateway for my model"
-- "Setup a gateway for my tools"
-- "Setup a gateway for my agents"
+- "Set up a gateway for my model"
+- "Set up a gateway for my tools"
+- "Set up a gateway for my agents"
 - "Add a gateway to my MCP server"
 - "Protect my AI model with a gateway"
 - "Secure my AI agents"
