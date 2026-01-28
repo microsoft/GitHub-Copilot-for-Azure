@@ -270,56 +270,64 @@ azd up --no-prompt
 
 **⚠️ FALLBACK ONLY**: Use this section only if `azd` is not available. Always prefer `azd` above.
 
-Create the required Azure resources for deployment.
+Create Flex Consumption resources with managed identity (matching azd secure-by-default).
 
 ```bash
 # Set variables
-RESOURCE_GROUP="myResourceGroup"
+RESOURCE_GROUP="rg-myfunc-$(date +%s)"
 LOCATION="eastus"
-STORAGE_ACCOUNT="mystorageaccount$(date +%s)"
-FUNCTION_APP="myFunctionApp$(date +%s)"
+STORAGE_ACCOUNT="stmyfunc$(date +%s | tail -c 8)"
+FUNCTION_APP="func-myapp-$(date +%s | tail -c 8)"
+IDENTITY_NAME="id-myfunc"
 
 # Create resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
-# Create storage account (required for Function Apps)
+# Create user-assigned managed identity
+az identity create --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP
+
+# Get identity details
+IDENTITY_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query id -o tsv)
+IDENTITY_PRINCIPAL=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query principalId -o tsv)
+IDENTITY_CLIENT_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query clientId -o tsv)
+
+# Create storage account with NO local auth (RBAC only)
 az storage account create \
     --name $STORAGE_ACCOUNT \
     --resource-group $RESOURCE_GROUP \
     --location $LOCATION \
-    --sku Standard_LRS
+    --sku Standard_LRS \
+    --allow-blob-public-access false \
+    --allow-shared-key-access false
 
-# Create Function App (Consumption Plan - pay per execution)
+# Get storage account ID and assign RBAC
+STORAGE_ID=$(az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query id -o tsv)
+az role assignment create \
+    --assignee-object-id $IDENTITY_PRINCIPAL \
+    --assignee-principal-type ServicePrincipal \
+    --role "Storage Blob Data Owner" \
+    --scope $STORAGE_ID
+
+# Create Function App (Flex Consumption) with managed identity
 az functionapp create \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP \
     --storage-account $STORAGE_ACCOUNT \
-    --consumption-plan-location $LOCATION \
+    --flexconsumption-location $LOCATION \
     --runtime node \
     --runtime-version 20 \
-    --functions-version 4
-```
+    --functions-version 4 \
+    --assign-identity $IDENTITY_ID
 
-### Create with Premium Plan
-
-```bash
-# Create Premium Plan
-az functionapp plan create \
-    --name myPremiumPlan \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku EP1 \
-    --is-linux
-
-az functionapp create \
+# Configure managed identity storage access
+STORAGE_BLOB_ENDPOINT=$(az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query primaryEndpoints.blob -o tsv)
+az functionapp config appsettings set \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --plan myPremiumPlan \
-    --os-type Linux \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4
+    --settings \
+        "AzureWebJobsStorage__credential=managedidentity" \
+        "AzureWebJobsStorage__clientId=$IDENTITY_CLIENT_ID" \
+        "AzureWebJobsStorage__blobServiceUri=$STORAGE_BLOB_ENDPOINT"
 ```
 
 ---
