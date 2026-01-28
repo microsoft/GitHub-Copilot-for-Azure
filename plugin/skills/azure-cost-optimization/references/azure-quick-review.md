@@ -24,7 +24,7 @@ Execute the scan using Azure MCP or CLI:
 
 ```powershell
 # Via Azure MCP (preferred if available)
-# Use the mcp_azure_mcp_extension_azqr tool with subscription and optional resource-group parameters
+# Use the extension_azqr tool with subscription and optional resource-group parameters
 
 # Or via direct CLI:
 azqr scan --subscription "<SUBSCRIPTION_ID>" --resource-group "<RESOURCE_GROUP>" --filters ./filters.yaml --output json

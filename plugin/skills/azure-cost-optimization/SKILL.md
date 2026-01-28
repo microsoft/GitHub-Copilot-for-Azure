@@ -16,7 +16,7 @@ Use this skill when the user asks to:
 - Find orphaned or unused resources
 - Rightsize Azure VMs, containers, or services
 - Identify where they're overspending in Azure
-- **Optimize Redis costs specifically** - See [Azure Redis Cost Optimization](references/azure-redis/azure-redis.md) for Redis-specific analysis
+- **Optimize Redis costs specifically** - See [Azure Redis Cost Optimization](./references/azure-redis.md) for Redis-specific analysis
 
 ## Instructions
 
@@ -29,7 +29,7 @@ Before starting, verify these tools and permissions are available:
 **Required Tools:**
 - Azure CLI installed and authenticated (`az login`)
 - Azure CLI extensions: `costmanagement`, `resource-graph`
-- Azure Quick Review (azqr) installed - See [Azure Quick Review](references/azure-quick-review.md) for details
+- Azure Quick Review (azqr) installed - See [Azure Quick Review](./references/azure-quick-review.md) for details
 
 **Required Permissions:**
 - Cost Management Reader role
@@ -61,7 +61,7 @@ mcp_azure_mcp_get_azure_bestpractices({
 
 **If the user specifically requests Redis cost optimization**, use the specialized Redis skill:
 
-📋 **Reference**: [Azure Redis Cost Optimization](references/azure-redis/azure-redis.md)
+📋 **Reference**: [Azure Redis Cost Optimization](./references/azure-redis.md)
 
 **When to use Redis-specific analysis:**
 - User mentions "Redis", "Azure Cache for Redis", or "Azure Managed Redis"
@@ -75,8 +75,8 @@ mcp_azure_mcp_get_azure_bestpractices({
 - Uses `mcp_azure_mcp_redis` tool with command `redis_list`
 
 **Report templates available:**
-- [Subscription-level Redis summary](references/azure-redis/templates/redis-subscription-level-report.md)
-- [Detailed Redis cache analysis](references/azure-redis/templates/redis-detailed-cache-analysis.md)
+- [Subscription-level Redis summary](./templates/redis-subscription-level-report.md)
+- [Detailed Redis cache analysis](./templates/redis-detailed-cache-analysis.md)
 
 > **Note**: For general subscription-wide cost optimization (including Redis), continue with Step 2. For Redis-only focused analysis, follow the instructions in the Redis-specific reference document.
 
@@ -84,11 +84,11 @@ mcp_azure_mcp_get_azure_bestpractices({
 
 Run azqr to find orphaned resources (immediate cost savings):
 
-📋 **Reference**: [Azure Quick Review](references/azure-quick-review.md) - Detailed instructions for running azqr scans
+📋 **Reference**: [Azure Quick Review](./references/azure-quick-review.md) - Detailed instructions for running azqr scans
 
 ```javascript
 // Use Azure MCP extension_azqr tool
-mcp_azure_mcp_extension_azqr({
+extension_azqr({
   subscription: "<SUBSCRIPTION_ID>",
   "resource-group": "<RESOURCE_GROUP>"  // optional
 })
