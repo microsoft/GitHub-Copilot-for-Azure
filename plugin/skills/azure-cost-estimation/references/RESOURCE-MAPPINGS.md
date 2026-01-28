@@ -2,6 +2,18 @@
 
 This document maps Azure resource types (as used in Bicep/ARM templates) to the Azure Retail Prices API service names.
 
+## Maintenance Note
+
+These mappings are based on stable Azure resource provider naming conventions and rarely change. However, updates may be needed when:
+
+- **New resource types are added to Azure** - New services or resource types are introduced
+- **Service names change in the Pricing API** - Rare, but service names may be updated
+- **SKU patterns change** - New VM families or SKU naming conventions are introduced
+
+**Recommended review frequency:** Quarterly, or when new Azure services are used in templates.
+
+The Azure Retail Prices API itself is stable - the mappings here help translate ARM resource types to the correct `serviceName` filter for the API.
+
 ## Compute Resources
 
 | Resource Type | API Service Name | SKU Location | Notes |

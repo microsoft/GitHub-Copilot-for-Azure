@@ -57,12 +57,16 @@ This template shows the expected format for cost estimation reports.
 
 ---
 
-## Assumptions
+## Assumptions & Disclaimers
 
-- Pricing based on Pay-As-You-Go rates
-- 730 hours per month for compute resources
+> **Important:** These are estimates only. Actual costs may vary.
+
+- Pricing based on **Pay-As-You-Go retail rates** (not customer-specific pricing)
+- 730 hours per month assumed for compute resources
 - Storage costs exclude egress and transaction costs
-- Costs are estimates and may vary based on actual usage
+- Does not include support plans, marketplace offerings, or third-party services
+- Enterprise Agreement (EA) or CSP customers may have different rates
+- For customer-specific pricing, use `az consumption pricesheet show`
 
 ---
 
@@ -166,12 +170,16 @@ This template shows the expected format for cost estimation reports.
 
 ---
 
-## Assumptions
+## Assumptions & Disclaimers
 
-- Pricing based on Pay-As-You-Go rates
-- 730 hours per month for compute resources
+> **Important:** These are estimates only. Actual costs may vary.
+
+- Pricing based on **Pay-As-You-Go retail rates** (not customer-specific pricing)
+- 730 hours per month assumed for compute resources
 - Storage costs exclude egress and transaction costs
-- Costs are estimates and may vary based on actual usage
+- Does not include support plans, marketplace offerings, or third-party services
+- Enterprise Agreement (EA) or CSP customers may have different rates
+- For customer-specific pricing, use `az consumption pricesheet show`
 
 ---
 
