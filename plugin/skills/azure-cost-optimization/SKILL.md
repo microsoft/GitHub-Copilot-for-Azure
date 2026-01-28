@@ -75,8 +75,8 @@ mcp_azure_mcp_get_azure_bestpractices({
 - Uses `mcp_azure_mcp_redis` tool with command `redis_list`
 
 **Report templates available:**
-- [Subscription-level Redis summary](references/azure-redis/report-content/redis-subscription-level-report.md)
-- [Detailed Redis cache analysis](references/azure-redis/report-content/redis-detailed-cache-analysis.md)
+- [Subscription-level Redis summary](references/azure-redis/templates/redis-subscription-level-report.md)
+- [Detailed Redis cache analysis](references/azure-redis/templates/redis-detailed-cache-analysis.md)
 
 > **Note**: For general subscription-wide cost optimization (including Redis), continue with Step 2. For Redis-only focused analysis, follow the instructions in the Redis-specific reference document.
 
