@@ -42,4 +42,6 @@ Once the research is complete, compile all the gathered requirements in a new fi
 
 REQUIREMENTS.md should _always_ include the following:
 - Relevant links to the [Agent Skills](https://agentskills.io/) documentation.
-- An instruction that any shell scripts should include bash and PowerShell versions for compatibility with Linux, Mac, and Windows environments.
+- An instruction that any non-trivial scripts should include bash and PowerShell versions for compatibility with Linux, Mac, and Windows environments. It is OK if trivial scripts only include a bash version.
+- A requirement that Azure MCP tools and `azd` should be preferred where possible over direct Azure CLI commands. Azure CLI commands should only be used when absolutely necessary.
+- A requirement that any relevant Azure MCP tools be utilized and listed (with a short description) in a "Relevant MCP Tools" section.
