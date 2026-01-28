@@ -1,5 +1,5 @@
 ---
-name: azure-cli
+name: azure-cli-reference
 description: Provides guidance on the Azure CLI tools (az, azd, func) with command reference and advanced patterns. Use this when asked about installing, configuring, or using az, azd, or func.
 ---
 
