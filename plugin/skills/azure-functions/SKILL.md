@@ -40,7 +40,6 @@ Azure Functions is a serverless compute service for event-driven applications. P
 | **Flex Consumption** ⭐ | Auto, pay-per-execution | ✅ | **Default for all new projects** |
 | Premium | Auto, pre-warmed | ✅ | Long-running, consistent load |
 | Dedicated | Manual | ✅ | Predictable workloads |
-| Consumption (legacy) | Auto, to 0 | ❌ | Dev/test only |
 
 ## Trigger Types
 
@@ -650,8 +649,8 @@ module.exports = df.orchestrator(function* (context) {
 | **Binding errors** | Extension not loaded | Run `func extensions install` to install required extensions |
 | **Deploy fails** | Publish error | Ensure function app exists and CLI is authenticated |
 | **Runtime mismatch** | Version conflict | Verify `FUNCTIONS_EXTENSION_VERSION` matches project |
-| **Execution limits** | Consumption has 5-10 min timeout | Use Premium or Dedicated plan for longer executions |
-| **Scaling delays** | Cold starts on Consumption | Consider Premium plan with pre-warmed instances |
+| **Execution limits** | Flex Consumption has 30 min timeout | Use Premium or Dedicated plan for longer executions |
+| **Scaling delays** | Cold starts on first request | Flex Consumption supports always-ready instances |
 
 **Debug commands:**
 ```bash
