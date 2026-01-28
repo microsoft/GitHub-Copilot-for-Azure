@@ -172,7 +172,12 @@ az login --service-principal -u APP_ID -p SECRET --tenant TENANT_ID
 # Uses Azure CLI credentials by default
 # Or explicitly:
 azd auth login
+
+# Check authentication status
+azd auth login --check-status
 ```
+
+> ⚠️ **For automation/CI-CD**: Always use `--no-prompt` with azd commands to avoid interactive prompts blocking execution.
 
 **Tip:** If device code auth times out repeatedly, run `az login` in a separate terminal window where you can interact with it directly.
 
@@ -195,8 +200,10 @@ winget install Microsoft.AzureCLI Microsoft.Azd Docker.DockerDesktop --accept-so
 
 **macOS:**
 ```bash
-brew install azure-cli && brew tap azure/azd && brew install azd && brew install --cask docker
+brew install azure-cli && brew install azd && brew install --cask docker
 ```
+
+> 💡 **Note**: `brew install azd` works directly without needing `brew tap azure/azd` in recent Homebrew versions.
 
 ---
 
@@ -352,15 +359,40 @@ azd init --template TEMPLATE
 # Provision and deploy
 azd up
 
-# Deploy code only
-azd deploy
+# For automation/agent scenarios - use --no-prompt
+azd up --no-prompt
+azd provision --no-prompt
+azd deploy --no-prompt
 
-# Tear down
+# Preview changes before deployment
+azd provision --preview
+
+# Deploy code only
+azd deploy --no-prompt
+
+# Tear down resources
 azd down
 
 # View deployed resources
 azd show
 ```
+
+> ⚠️ **CRITICAL: `azd down` Data Loss Warning**
+>
+> `azd down` **permanently deletes ALL resources** in the environment, including:
+> - **Databases** with all data (Cosmos DB, SQL, PostgreSQL, etc.)
+> - **Storage accounts** with all blobs and files
+> - **Key Vault** with all secrets (use `--purge` to bypass soft-delete)
+>
+> **Flags:**
+> - `azd down` - Prompts for confirmation
+> - `azd down --force` - Skips confirmation (still soft-deletes Key Vault)
+> - `azd down --force --purge` - **Permanently deletes Key Vault** (no recovery possible)
+>
+> **Best practices:**
+> - Always use `azd provision --preview` before `azd up` to understand what will be created
+> - Use separate environments for dev/staging/production
+> - Back up important data before running `azd down`
 
 ### Monitoring
 

@@ -262,8 +262,37 @@ az containerapp update \
     PORT=3000
 ```
 
-Or in azd:
+> ⚠️ **Important distinction**: `azd env set` vs Application Environment Variables
+>
+> **`azd env set`** sets variables for the **azd provisioning process**, NOT application runtime environment variables. These are used by azd and Bicep during deployment (e.g., `AZURE_LOCATION`, `AZURE_SUBSCRIPTION_ID`).
+>
+> **Application environment variables** (like `NODE_ENV`, `SESSION_SECRET`) must be configured in one of these ways:
+> 1. **In Bicep templates** - Define in the resource's `env` property
+> 2. **Via Azure CLI** - Use `az containerapp update --set-env-vars` (shown above)
+> 3. **In azure.yaml** - Use the `env` section in service configuration
+
+**Setting azd provisioning parameters:**
 ```bash
-azd env set NODE_ENV production
-azd env set SESSION_SECRET your-secret-here
+# These are for azd/Bicep configuration, NOT application runtime
+azd env set AZURE_LOCATION eastus
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+```
+
+**Setting application environment variables in azure.yaml:**
+```yaml
+services:
+  api:
+    host: containerapp
+    # Application runtime environment variables
+    env:
+      NODE_ENV: production
+      PORT: "3000"
+```
+
+**Setting application environment variables in Bicep:**
+```bicep
+env: [
+  { name: 'NODE_ENV', value: 'production' }
+  { name: 'SESSION_SECRET', secretRef: 'session-secret' }
+]
 ```
