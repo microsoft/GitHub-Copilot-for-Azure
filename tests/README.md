@@ -258,9 +258,11 @@ These skills don't have app type detection (they're service-specific, not deploy
 
 ### Skills with Separate Test Suites
 
-| Skill | Test Location | Description |
-|-------|---------------|-------------|
-| ✅ `azure-nodejs-production` | `tests/nodejs-production/` | Production best practices validation (83 tests) |
+| Skill | Test Location | Tests | Description |
+|-------|---------------|-------|-------------|
+| ✅ `azure-nodejs-production` | `tests/nodejs-production/` | 83 | Express.js production best practices validation |
+| ✅ `azure-validation` | `tests/validation/` | 165 | Resource naming, Bicep validation, preflight checks |
+| ✅ `azure-deployment-preflight` | `tests/validation/` | (shared) | Preflight utilities covered in validation suite |
 
 ---
 
