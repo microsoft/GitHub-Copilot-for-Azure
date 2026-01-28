@@ -66,8 +66,6 @@ azd down --force --purge
 - **Use az for queries only** - `az aks show`, `az aks list`, `az aks get-credentials`
 
 **When `az` CLI is acceptable:**
-- Cluster management operations (`az aks scale`, `az aks upgrade`)
-- Getting cluster credentials (`az aks get-credentials`)
 - Quick prototyping or one-off cluster creation
 - User explicitly requests `az` CLI
 
