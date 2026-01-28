@@ -1,26 +1,11 @@
-# Azure Quick Review Skill
+## Azure Quick Review (azqr) for Cost Optimization
 
-Run Azure Quick Review (azqr) to generate compliance and governance reports that identify cost-impacting issues and orphaned resources.
+Azure Quick Review (azqr) generates compliance and governance reports that identify cost-impacting issues and orphaned resources.
 
-## When to Use This Skill
-
-Use this skill when the user asks to:
-- Scan Azure subscription for issues or waste
-- Find orphaned or unused Azure resources
-- Run Azure Quick Review or azqr
-- Audit Azure resources for compliance
-- Identify quick cost optimization wins
-- Check for governance violations
-
-## Instructions
-
-Follow these steps in conversation with the user:
-
-### Step 1: Create Filters Configuration
+## Create Filters Configuration
 
 Create a `filters.yaml` file to focus the scan on cost optimization:
 
-**Use the `create_file` tool** with path `filters.yaml` and content:
 ```yaml
 includeSections:
   - Costs
@@ -33,9 +18,7 @@ excludeSections:
   - DefenderRecommendations
 ```
 
-> **Important**: Always use the `create_file` tool instead of shell commands to ensure cross-platform compatibility.
-
-### Step 2: Run the azqr Scan
+## Run the azqr Scan
 
 Execute the scan using Azure MCP or CLI:
 
@@ -47,29 +30,22 @@ Execute the scan using Azure MCP or CLI:
 azqr scan --subscription "<SUBSCRIPTION_ID>" --resource-group "<RESOURCE_GROUP>" --filters ./filters.yaml --output json
 ```
 
-### Step 3: Save Output
+## Save Output
 
 Save all generated files to the `output/` folder:
 1. Create the folder: `mkdir output` (if it doesn't exist)
 2. Save the azqr report as: `output/azqr_report_<YYYYMMDD_HHMMSS>.json`
+3. After the scan completes, delete the temporary `filters.yaml` file
 
-### Step 4: Clean Up
+## Report Output
 
-After the scan completes, delete the temporary `filters.yaml` file:
-
-```powershell
-Remove-Item filters.yaml
-```
-
-## Output
-
-The skill generates a JSON report with recommendations categorized by impact level (High/Medium/Low), including:
+The scan generates a JSON report with recommendations categorized by impact level (High/Medium/Low), including:
 - Orphaned resources (NICs, disks, IPs)
 - Azure Advisor cost recommendations  
 - Resource inventory
 - Cost breakdown by resource
 
-## Important Notes
+## Notes
 
 - azqr provides qualitative governance recommendations
 - Always validate findings with actual cost data before making changes
