@@ -101,8 +101,9 @@ winget install Microsoft.AzureFunctionsCoreTools
 choco install azure-functions-core-tools
 
 # macOS (Homebrew)
-brew tap azure/functions
 brew install azure-functions-core-tools@4
+
+> 💡 **Note**: `brew install` works directly without needing `brew tap azure/functions` in recent Homebrew versions.
 
 # Linux (Ubuntu/Debian)
 curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -211,15 +212,47 @@ app.timer('TimerTrigger', {
 
 ---
 
-## Deploy with Azure Developer CLI (ALWAYS USE FIRST)
+## Preferred: Deploy with Azure Developer CLI (azd)
 
-**CRITICAL**: Always use `azd` for deployment. Only fall back to `az` CLI if azd is unavailable.
+> **Prefer `azd` (Azure Developer CLI) over raw `az` CLI for deployments.**
+> Use `az` CLI for resource queries, simple single-resource deployments, or when explicitly requested.
 
-`azd` provides:
-- **Flex Consumption** plan (required)
-- Secure-by-default infrastructure
-- Managed identity with RBAC
-- Optional VNET with private endpoints
+**Why azd is preferred:**
+- **Flex Consumption** plan (required for new deployments)
+- **Parallel provisioning** - Deploys in seconds, not minutes
+- **Single command** - `azd up` replaces 5+ `az` commands
+- **Secure-by-default** - Managed identity with RBAC, no connection strings
+- **Infrastructure as Code** - Reproducible with Bicep
+- **Environment management** - Easy dev/staging/prod separation
+
+**When `az` CLI is acceptable:**
+- Single-resource deployments without IaC requirements
+- Quick prototyping or one-off deployments
+- User explicitly requests `az` CLI
+- Querying or inspecting existing resources
+
+> ⚠️ **IMPORTANT: For automation and agent scenarios**, always use the `--no-prompt` flag with azd commands to prevent interactive prompts from blocking execution.
+
+### MCP Tools for azd Workflows
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | **Validates azure.yaml against official JSON schema** - Use before deployment |
+| `discovery_analysis` | Analyze application components for AZD migration |
+| `architecture_planning` | Select Azure services for discovered components |
+| `infrastructure_generation` | Generate Bicep templates |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
+**Always validate azure.yaml before deployment:**
+```javascript
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
 
 ### Non-Interactive Deployment
 
@@ -230,10 +263,31 @@ ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 # Initialize with template and environment name
 azd init -t <TEMPLATE> -e "$ENV_NAME"
 
-# Configure and deploy without prompts
+# Preview changes before deployment
+azd provision --preview
+
+# Configure and deploy without prompts (REQUIRED for automation/agents)
 azd env set VNET_ENABLED false
 azd up --no-prompt
 ```
+
+> ⚠️ **CRITICAL: `azd down` Data Loss Warning**
+>
+> `azd down` **permanently deletes ALL resources** in the environment, including:
+> - **Function Apps** with all configuration and deployment slots
+> - **Storage accounts** with all blobs and files
+> - **Key Vault** with all secrets (use `--purge` to bypass soft-delete)
+> - **Databases** with all data (Cosmos DB, SQL, etc.)
+>
+> **Flags:**
+> - `azd down` - Prompts for confirmation
+> - `azd down --force` - Skips confirmation (still soft-deletes Key Vault)
+> - `azd down --force --purge` - **Permanently deletes Key Vault** (no recovery possible)
+>
+> **Best practices:**
+> - Always use `azd provision --preview` before `azd up` to understand what will be created
+> - Use separate environments for dev/staging/production
+> - Back up important data before running `azd down`
 
 ### Template Selection Decision Tree
 
@@ -314,7 +368,20 @@ azd up --no-prompt
 |------|---------|
 | `-e <name>` | Set environment name (avoids prompt) |
 | `-t <template>` | Specify template |
-| `--no-prompt` | Skip all confirmations |
+| `--no-prompt` | Skip all confirmations (REQUIRED for automation/agents) |
+
+> ⚠️ **`azd env set` vs Application Environment Variables**
+>
+> **`azd env set`** sets variables for the **azd provisioning process**, NOT application runtime environment variables. These are used by azd and Bicep during deployment:
+> ```bash
+> azd env set AZURE_LOCATION eastus
+> azd env set VNET_ENABLED true
+> ```
+>
+> **Application environment variables** (like `FUNCTIONS_WORKER_RUNTIME`) must be configured:
+> 1. **In Bicep templates** - Define in the resource's app settings
+> 2. **Via Azure CLI** - Use `az functionapp config appsettings set`
+> 3. **In local.settings.json** - For local development only
 
 **Browse all templates:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)
 
