@@ -347,7 +347,7 @@ Emit token metrics for monitoring and cost tracking.
             <dimension name="Subscription ID" value="@(context.Subscription.Id)" />
             <dimension name="Client IP" value="@(context.Request.IpAddress)" />
             <dimension name="API ID" value="@(context.Api.Id)" />
-            <dimension name="Model" value="@(context.Request.Headers.GetValueOrDefault("x-model","unknown"))" />
+            <dimension name="Model" value="@(context.Request.Headers.GetValueOrDefault('x-model','unknown'))" />
         </azure-openai-emit-token-metric>
     </inbound>
 </policies>
