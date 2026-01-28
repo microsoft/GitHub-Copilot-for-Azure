@@ -1,11 +1,12 @@
+
 ---
-name: azure-functions
-description: Serverless event-driven compute with Azure Functions - pay-per-execution, auto-scaling, multiple trigger types, and deployment workflows
+name: azure-function-app-deployment
+description: Deploy serverless functions to Azure Function Apps using Azure Developer CLI (azd) with secure-by-default infrastructure. Use this skill when deploying serverless APIs, event-driven functions, timer-triggered jobs, or webhook handlers to Azure Functions. Supports enterprise policies requiring managed identity, RBAC (no local auth), and VNET.
 ---
 
-# Azure Functions
+# Azure Function App Deployment
 
-Azure Functions is a serverless compute service for event-driven applications. Pay only for execution time with automatic scaling.
+Automated deployment workflow for serverless applications to Azure Function Apps using Azure Developer CLI (azd) with secure-by-default infrastructure that supports enterprise policies.
 
 ## Skill Activation Triggers
 
@@ -23,44 +24,42 @@ Azure Functions is a serverless compute service for event-driven applications. P
 - User wants to deploy lightweight APIs without container management
 - User needs timer jobs, queue processors, or event handlers
 
-## Quick Reference
+## Overview
 
-| Property | Value |
-|----------|-------|
-| CLI prefix | `az functionapp`, `func` |
-| MCP tools | `azure__functionapp` (command: `functionapp_list`) |
-| Best for | Event-driven, pay-per-execution, serverless |
+This skill enables end-to-end deployment of serverless functions to Azure Function Apps. Azure Functions is a serverless compute service ideal for:
+- **RESTful APIs** with HTTP triggers
+- **Event-driven processing** responding to queues, blobs, or Event Grid
+- **Timer-based jobs** for scheduled tasks
+- **Webhook handlers** for integrations
 
-## Hosting Plans
+```
+Init → Develop → Test Locally → Deploy with azd → Monitor
+```
 
-| Plan | Scaling | Timeout | Use Case |
-|------|---------|---------|----------|
-| Consumption | Auto, to 0 | 5-10 min | Event-driven, variable load |
-| Premium | Auto, warm | 30+ min | Consistent load, VNet |
-| Dedicated | Manual | Unlimited | Predictable load |
+### Secure-by-Default Architecture
 
-## Trigger Types
+All deployments use **secure-by-default** patterns that comply with common enterprise policies:
+- **Managed Identity (User-Assigned)**: No connection strings or keys in app settings
+- **RBAC-based Access**: Storage, Application Insights, and other resources use role assignments
+- **No Local Auth**: `allowSharedKeyAccess: false` on storage, `disableLocalAuth: true` on App Insights
+- **VNET Integration (Optional)**: Private endpoints for storage with virtual network integration
 
-| Trigger | Use Case |
-|---------|----------|
-| HTTP | REST APIs, webhooks |
-| Timer | Scheduled jobs (CRON) |
-| Blob | File processing |
-| Queue | Message processing |
-| Event Grid | Event-driven |
-| Cosmos DB | Change feed processing |
-| Service Bus | Enterprise messaging |
+## When to Use
 
----
+• **Serverless APIs**: Deploy HTTP-triggered functions for REST endpoints
+• **Background processing**: Queue-triggered functions for async workloads
+• **Scheduled tasks**: Timer-triggered functions for cron-like jobs
+• **Event handlers**: Blob, Event Grid, or Service Bus triggered functions
+• **Webhooks**: HTTP endpoints for third-party integrations
 
-## Prerequisites Validation
+## Pattern 0: Prerequisites Validation
 
-Validate all prerequisites before starting development or deployment.
+Validate all prerequisites before starting deployment.
 
 ```javascript
 async function validatePrerequisites() {
   const checks = [];
-
+  
   // Check Azure CLI authentication
   try {
     await exec('az account show');
@@ -68,7 +67,15 @@ async function validatePrerequisites() {
   } catch (error) {
     throw new Error('Not authenticated with Azure CLI. Run: az login');
   }
-
+  
+  // Check Azure Developer CLI (azd) - required for secure-by-default deployments
+  try {
+    await exec('azd version');
+    checks.push({ name: 'Azure Developer CLI (azd)', status: 'installed' });
+  } catch (error) {
+    throw new Error('Azure Developer CLI not found. Install from: https://aka.ms/azd-install');
+  }
+  
   // Check Azure Functions Core Tools - install if not present
   try {
     await exec('func --version');
@@ -82,39 +89,41 @@ async function validatePrerequisites() {
       throw new Error('Failed to install Azure Functions Core Tools. Please install manually: npm install -g azure-functions-core-tools@4');
     }
   }
-
+  
   return checks;
 }
 ```
 
 ### Platform-Specific Installation
 
-If npm installation fails, use platform-specific installers:
+**Azure Developer CLI (azd):**
+```bash
+# Windows (winget)
+winget install Microsoft.Azd
 
+# macOS (Homebrew)
+brew install azd
+
+# Linux (script)
+curl -fsSL https://aka.ms/install-azd.sh | bash
+```
+
+**Azure Functions Core Tools:**
 ```bash
 # Windows (winget)
 winget install Microsoft.AzureFunctionsCoreTools
-
-# Windows (Chocolatey)
-choco install azure-functions-core-tools
 
 # macOS (Homebrew)
 brew tap azure/functions
 brew install azure-functions-core-tools@4
 
-# Linux (Ubuntu/Debian)
-curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
-sudo apt-get update
-sudo apt-get install azure-functions-core-tools-4
+# npm (cross-platform)
+npm install -g azure-functions-core-tools@4
 ```
 
----
+**Key insight**: Azure Developer CLI (`azd`) is the recommended deployment method for secure-by-default infrastructure with managed identity, RBAC, and VNET support.
 
-## Local Development
-
-### Initialize Function Project
+## Pattern 1: Initialize Function Project
 
 Create a new Azure Functions project with the desired runtime.
 
@@ -144,7 +153,9 @@ MyFunctionApp/
         └── HttpTrigger.js # Function code
 ```
 
-### Run Locally
+## Pattern 2: Local Development
+
+Test functions locally before deploying.
 
 ```bash
 # Start local development server
@@ -190,15 +201,432 @@ app.timer('TimerTrigger', {
 });
 ```
 
-### local.settings.json
+## Hosting Plans
+
+| Plan | Use Case | Scaling | VNET Support | Managed Identity |
+|------|----------|---------|--------------|------------------|
+| **Flex Consumption** | Production serverless (recommended) | Auto-scale, pay per execution | ✅ Private endpoints | ✅ Full support |
+| **Consumption** | Development/testing | Auto-scale, pay per execution | ❌ Limited | ✅ Full support |
+| **Premium (EP1-EP3)** | Enhanced performance, long-running | Pre-warmed instances | ✅ Full integration | ✅ Full support |
+| **Dedicated (App Service)** | Predictable workloads | Manual/auto-scale | ✅ Full integration | ✅ Full support |
+
+**Recommendation**: Use **Flex Consumption** for new production workloads. It provides the best combination of serverless scaling, VNET support, and managed identity.
+
+## Pattern 3: Deploy with Azure Developer CLI (Recommended)
+
+The recommended approach uses Azure Developer CLI (`azd`) with official quickstart templates that implement secure-by-default patterns including managed identity, RBAC, and optional VNET.
+
+### Official Quickstart Templates
+
+Use these Microsoft-authored templates from [Awesome AZD](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=http) based on your runtime:
+
+| Language | Template Command |
+|----------|------------------|
+| **C# (.NET)** | `azd init -t functions-quickstart-dotnet-azd` |
+| **JavaScript** | `azd init -t functions-quickstart-javascript-azd` |
+| **TypeScript** | `azd init -t functions-quickstart-typescript-azd` |
+| **Python** | `azd init -t functions-quickstart-python-http-azd` |
+| **Java** | `azd init -t azure-functions-java-flex-consumption-azd` |
+| **PowerShell** | `azd init -t functions-quickstart-powershell-azd` |
+
+All templates use:
+- **Azure Flex Consumption Plan** (serverless with enhanced performance)
+- **Azure Verified Modules (AVM)** for Bicep infrastructure
+- **User-assigned managed identity** with RBAC role assignments
+- **Optional VNET integration** with private endpoints for storage
+
+### Deploy Workflow
+
+```bash
+# Option 1: Initialize from template (new project)
+azd init -t functions-quickstart-javascript-azd
+cd <project-folder>
+
+# Option 2: Initialize in existing project
+azd init
+
+# Deploy to Azure (provisions infrastructure + deploys code)
+azd up
+```
+
+### VNET Configuration
+
+By default, templates prompt for VNET enablement. To configure:
+
+```bash
+# Enable VNET (recommended for enterprise)
+azd env set VNET_ENABLED true
+azd up
+
+# Disable VNET (simpler, faster deployment)
+azd env set VNET_ENABLED false
+azd up
+```
+
+### What `azd up` Creates (Secure-by-Default)
+
+The infrastructure includes:
+
+1. **Resource Group** with proper tagging
+2. **User-Assigned Managed Identity** for the function app
+3. **Storage Account** with:
+   - `allowSharedKeyAccess: false` (no connection strings)
+   - `allowBlobPublicAccess: false`
+   - Private endpoints (when VNET enabled)
+4. **RBAC Role Assignments**:
+   - `Storage Blob Data Owner` on storage
+   - `Storage Queue Data Contributor` (for Durable Functions)
+   - `Storage Table Data Contributor` (for Durable Functions)
+   - `Monitoring Metrics Publisher` on Application Insights
+5. **Application Insights** with `disableLocalAuth: true`
+6. **Log Analytics Workspace**
+7. **Flex Consumption App Service Plan**
+8. **Function App** with managed identity configuration
+9. **Virtual Network** with subnets (when VNET enabled):
+   - Private endpoint subnet
+   - App integration subnet
+10. **Private DNS Zones** for storage endpoints (when VNET enabled)
+
+### Template Structure
+
+The quickstart templates use this structure:
+```
+project/
+├── azure.yaml                 # azd configuration
+├── infra/
+│   ├── main.bicep            # Main orchestration (uses AVM modules)
+│   ├── main.parameters.json   # Parameters including VNET_ENABLED
+│   ├── abbreviations.json     # Resource naming abbreviations
+│   └── app/
+│       ├── api.bicep          # Function app configuration
+│       ├── rbac.bicep         # Role assignments
+│       ├── vnet.bicep         # Virtual network
+│       └── storage-PrivateEndpoint.bicep  # Private endpoints
+├── src/                       # Function code
+├── host.json
+└── local.settings.json
+```
+
+### Key Bicep Patterns (Azure Verified Modules)
+
+The templates use AVM modules. Reference implementation patterns:
+
+**Storage with no local auth:**
+```bicep
+module storage 'br/public:avm/res/storage/storage-account:0.8.3' = {
+  name: 'storage'
+  params: {
+    name: storageAccountName
+    allowBlobPublicAccess: false
+    allowSharedKeyAccess: false  // Disable local authentication
+    publicNetworkAccess: vnetEnabled ? 'Disabled' : 'Enabled'
+    networkAcls: vnetEnabled ? { defaultAction: 'Deny' } : { defaultAction: 'Allow' }
+  }
+}
+```
+
+**Managed Identity:**
+```bicep
+module apiUserAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
+  name: 'apiUserAssignedIdentity'
+  params: {
+    name: identityName
+    location: location
+  }
+}
+```
+
+**RBAC Role Assignments:**
+```bicep
+// Storage Blob Data Owner for managed identity
+resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, managedIdentityPrincipalId, 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+    principalId: managedIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+```
+
+**Function App with Managed Identity:**
+```bicep
+module api 'br/public:avm/res/web/site:0.15.1' = {
+  name: 'functionapp'
+  params: {
+    kind: 'functionapp,linux'
+    managedIdentities: {
+      userAssignedResourceIds: [identityId]
+    }
+    appSettingsKeyValuePairs: {
+      AzureWebJobsStorage__credential: 'managedidentity'
+      AzureWebJobsStorage__clientId: identityClientId
+      AzureWebJobsStorage__blobServiceUri: storageAccount.properties.primaryEndpoints.blob
+    }
+  }
+}
+```
+
+## Pattern 4: Deploy with Azure CLI (Fallback)
+
+Use Azure CLI when `azd` is not available or for specific customization needs. **Important**: Follow the same secure-by-default patterns as the azd templates.
+
+### Create Resources with Managed Identity and RBAC
+
+```bash
+# Set variables
+RESOURCE_GROUP="rg-myfunc-$(date +%s)"
+LOCATION="eastus"
+STORAGE_ACCOUNT="stmyfunc$(date +%s | tail -c 8)"
+FUNCTION_APP="func-myapp-$(date +%s | tail -c 8)"
+IDENTITY_NAME="id-myfunc"
+
+# Create resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# Create user-assigned managed identity
+az identity create \
+    --name $IDENTITY_NAME \
+    --resource-group $RESOURCE_GROUP
+
+# Get identity details
+IDENTITY_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query id -o tsv)
+IDENTITY_PRINCIPAL=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query principalId -o tsv)
+IDENTITY_CLIENT_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query clientId -o tsv)
+
+# Create storage account with NO local auth (RBAC only)
+az storage account create \
+    --name $STORAGE_ACCOUNT \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --sku Standard_LRS \
+    --allow-blob-public-access false \
+    --allow-shared-key-access false \
+    --min-tls-version TLS1_2
+
+# Get storage account ID
+STORAGE_ID=$(az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query id -o tsv)
+
+# Assign Storage Blob Data Owner to managed identity
+az role assignment create \
+    --assignee-object-id $IDENTITY_PRINCIPAL \
+    --assignee-principal-type ServicePrincipal \
+    --role "Storage Blob Data Owner" \
+    --scope $STORAGE_ID
+
+# Create deployment container using Azure CLI with logged-in identity
+# (This works because your user has permissions; the function app will use managed identity)
+DEPLOYMENT_CONTAINER="app-package-container"
+az storage container create \
+    --name $DEPLOYMENT_CONTAINER \
+    --account-name $STORAGE_ACCOUNT \
+    --auth-mode login
+
+# Create Application Insights with no local auth
+az monitor app-insights component create \
+    --app "${FUNCTION_APP}-insights" \
+    --location $LOCATION \
+    --resource-group $RESOURCE_GROUP \
+    --application-type web \
+    --disable-local-auth true
+
+# Get App Insights connection string
+APPINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
+    --app "${FUNCTION_APP}-insights" \
+    --resource-group $RESOURCE_GROUP \
+    --query connectionString -o tsv)
+
+# Get App Insights resource ID for RBAC
+APPINSIGHTS_ID=$(az monitor app-insights component show \
+    --app "${FUNCTION_APP}-insights" \
+    --resource-group $RESOURCE_GROUP \
+    --query id -o tsv)
+
+# Assign Monitoring Metrics Publisher to managed identity
+az role assignment create \
+    --assignee-object-id $IDENTITY_PRINCIPAL \
+    --assignee-principal-type ServicePrincipal \
+    --role "Monitoring Metrics Publisher" \
+    --scope $APPINSIGHTS_ID
+
+# Create Function App (Flex Consumption) with managed identity
+az functionapp create \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --storage-account $STORAGE_ACCOUNT \
+    --flexconsumption-location $LOCATION \
+    --runtime node \
+    --runtime-version 20 \
+    --functions-version 4 \
+    --assign-identity $IDENTITY_ID
+
+# Configure app settings for managed identity-based storage access
+STORAGE_BLOB_ENDPOINT=$(az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query primaryEndpoints.blob -o tsv)
+
+az functionapp config appsettings set \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --settings \
+        "AzureWebJobsStorage__credential=managedidentity" \
+        "AzureWebJobsStorage__clientId=$IDENTITY_CLIENT_ID" \
+        "AzureWebJobsStorage__blobServiceUri=$STORAGE_BLOB_ENDPOINT" \
+        "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING" \
+        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING=ClientId=$IDENTITY_CLIENT_ID;Authorization=AAD"
+```
+
+### Add VNET Integration (Optional but Recommended)
+
+```bash
+# Create VNET
+VNET_NAME="vnet-myfunc"
+az network vnet create \
+    --name $VNET_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --address-prefix 10.0.0.0/16
+
+# Create subnet for private endpoints
+az network vnet subnet create \
+    --name private-endpoints-subnet \
+    --resource-group $RESOURCE_GROUP \
+    --vnet-name $VNET_NAME \
+    --address-prefix 10.0.1.0/24 \
+    --disable-private-endpoint-network-policies
+
+# Create subnet for function app integration
+az network vnet subnet create \
+    --name app-subnet \
+    --resource-group $RESOURCE_GROUP \
+    --vnet-name $VNET_NAME \
+    --address-prefix 10.0.2.0/24 \
+    --delegations Microsoft.App/environments
+
+# Disable public access on storage
+az storage account update \
+    --name $STORAGE_ACCOUNT \
+    --resource-group $RESOURCE_GROUP \
+    --public-network-access Disabled
+
+# Create private endpoint for blob storage
+az network private-endpoint create \
+    --name pe-blob \
+    --resource-group $RESOURCE_GROUP \
+    --vnet-name $VNET_NAME \
+    --subnet private-endpoints-subnet \
+    --private-connection-resource-id $STORAGE_ID \
+    --group-id blob \
+    --connection-name blob-connection
+
+# Create private DNS zone for blob
+az network private-dns zone create \
+    --name "privatelink.blob.core.windows.net" \
+    --resource-group $RESOURCE_GROUP
+
+# Link DNS zone to VNET
+az network private-dns link vnet create \
+    --name blob-dns-link \
+    --resource-group $RESOURCE_GROUP \
+    --zone-name "privatelink.blob.core.windows.net" \
+    --virtual-network $VNET_NAME \
+    --registration-enabled false
+
+# Create DNS records
+az network private-endpoint dns-zone-group create \
+    --name blob-dns-group \
+    --resource-group $RESOURCE_GROUP \
+    --endpoint-name pe-blob \
+    --private-dns-zone "privatelink.blob.core.windows.net" \
+    --zone-name blob
+
+# Configure function app VNET integration
+SUBNET_ID=$(az network vnet subnet show --name app-subnet --resource-group $RESOURCE_GROUP --vnet-name $VNET_NAME --query id -o tsv)
+az functionapp vnet-integration add \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --vnet $VNET_NAME \
+    --subnet app-subnet
+```
+
+### Deploy Functions
+
+```bash
+# Deploy to Azure (from project root)
+func azure functionapp publish $FUNCTION_APP
+
+# For TypeScript/compiled projects
+func azure functionapp publish $FUNCTION_APP --build remote
+```
+
+### RBAC Role Reference
+
+| Role | ID | Purpose |
+|------|-----|---------|
+| Storage Blob Data Owner | `b7e6dc6d-f1e8-4753-8033-0f276bb0955b` | Function app access to deployment container and blob triggers |
+| Storage Queue Data Contributor | `974c5e8b-45b9-4653-ba55-5f855dd0fb88` | Required for Durable Functions |
+| Storage Table Data Contributor | `0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3` | Required for Durable Functions |
+| Monitoring Metrics Publisher | `3913510d-42f4-4e42-8a64-420c390055eb` | App Insights telemetry with managed identity |
+
+## Pattern 5: Configuration Management
+
+Manage application settings for secure-by-default deployments.
+
+### Managed Identity App Settings
+
+When using managed identity (recommended), configure storage access without connection strings:
+
+```bash
+# Required settings for managed identity storage access
+az functionapp config appsettings set \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --settings \
+        "AzureWebJobsStorage__credential=managedidentity" \
+        "AzureWebJobsStorage__clientId=$IDENTITY_CLIENT_ID" \
+        "AzureWebJobsStorage__blobServiceUri=https://$STORAGE_ACCOUNT.blob.core.windows.net/"
+
+# For Durable Functions, also add queue and table endpoints
+az functionapp config appsettings set \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --settings \
+        "AzureWebJobsStorage__queueServiceUri=https://$STORAGE_ACCOUNT.queue.core.windows.net/" \
+        "AzureWebJobsStorage__tableServiceUri=https://$STORAGE_ACCOUNT.table.core.windows.net/"
+
+# Application Insights with managed identity
+az functionapp config appsettings set \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --settings \
+        "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING" \
+        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING=ClientId=$IDENTITY_CLIENT_ID;Authorization=AAD"
+```
+
+### General Settings
+
+```bash
+# Set custom application settings
+az functionapp config appsettings set \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --settings "MY_SETTING=value"
+
+# List settings
+az functionapp config appsettings list \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP
+```
+
+### local.settings.json (Local Development)
+
+For local development, use the storage emulator or local managed identity:
 
 ```json
 {
   "IsEncrypted": false,
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "node",
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "MY_API_KEY": "local-dev-key"
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true"
   },
   "Host": {
     "LocalHttpPort": 7071,
@@ -207,120 +635,9 @@ app.timer('TimerTrigger', {
 }
 ```
 
----
+**Note**: `local.settings.json` is for development only. In Azure, settings are configured through app settings with managed identity.
 
-## Create Azure Resources
-
-Create the required Azure resources for deployment.
-
-```bash
-# Set variables
-RESOURCE_GROUP="myResourceGroup"
-LOCATION="eastus"
-STORAGE_ACCOUNT="mystorageaccount$(date +%s)"
-FUNCTION_APP="myFunctionApp$(date +%s)"
-
-# Create resource group
-az group create --name $RESOURCE_GROUP --location $LOCATION
-
-# Create storage account (required for Function Apps)
-az storage account create \
-    --name $STORAGE_ACCOUNT \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku Standard_LRS
-
-# Create Function App (Consumption Plan - pay per execution)
-az functionapp create \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --consumption-plan-location $LOCATION \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4
-```
-
-### Create with Premium Plan
-
-```bash
-# Create Premium Plan
-az functionapp plan create \
-    --name myPremiumPlan \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku EP1 \
-    --is-linux
-
-az functionapp create \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --plan myPremiumPlan \
-    --os-type Linux \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4
-```
-
----
-
-## Deploy Functions
-
-Deploy functions to Azure using Azure Functions Core Tools.
-
-```bash
-# Deploy to Azure (from project root)
-func azure functionapp publish $FUNCTION_APP
-
-# Deploy with build (for TypeScript/compiled projects)
-func azure functionapp publish $FUNCTION_APP --build remote
-
-# Deploy with verbose output
-func azure functionapp publish $FUNCTION_APP --verbose
-
-# Deploy specific slot
-func azure functionapp publish $FUNCTION_APP --slot staging
-
-# Force update function app settings
-func azure functionapp publish $FUNCTION_APP --publish-settings-only
-
-# Upload local.settings.json to Azure
-func azure functionapp publish $FUNCTION_APP --publish-local-settings
-```
-
----
-
-## Configuration Management
-
-Manage application settings and connection strings.
-
-```bash
-# Set application setting
-az functionapp config appsettings set \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --settings "MySetting=MyValue"
-
-# Set connection string
-az functionapp config connection-string set \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --connection-string-type SQLAzure \
-    --settings "MyConnection=Server=..."
-
-# List settings
-az functionapp config appsettings list \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP
-
-# Get function keys
-az functionapp keys list -n $FUNCTION_APP -g $RESOURCE_GROUP
-```
-
----
-
-## Monitoring and Logs
+## Pattern 6: Monitoring and Logs
 
 View function execution logs and diagnostics.
 
@@ -351,9 +668,7 @@ az functionapp config appsettings set \
     --settings "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING"
 ```
 
----
-
-## Deployment Slots (Premium/Dedicated Plans)
+## Pattern 7: Deployment Slots (Premium/Dedicated Plans)
 
 Use deployment slots for zero-downtime deployments.
 
@@ -375,9 +690,7 @@ az functionapp deployment slot swap \
     --target-slot production
 ```
 
----
-
-## CI/CD with GitHub Actions
+## Pattern 8: CI/CD with GitHub Actions 
 
 Automate deployments with GitHub Actions.
 
@@ -401,25 +714,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
+      
       - name: Install dependencies
         run: npm ci
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-
+      
       - name: Build (if TypeScript)
         run: npm run build --if-present
         working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-
+      
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+      
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
         with:
@@ -435,104 +748,56 @@ az ad sp create-for-rbac --name "github-actions-sp" \
     --sdk-auth
 ```
 
----
-
-## Durable Functions
-
-For long-running orchestrations and stateful workflows:
-
-```javascript
-// Orchestrator
-const df = require('durable-functions');
-
-module.exports = df.orchestrator(function* (context) {
-    const result1 = yield context.df.callActivity('Step1', input);
-    const result2 = yield context.df.callActivity('Step2', result1);
-    return result2;
-});
-```
-
-**Patterns:**
-- Function chaining
-- Fan-out/fan-in
-- Async HTTP APIs
-- Human interaction
-- Aggregator
-
----
-
 ## Best Practices
 
 | Practice | Description |
 |----------|-------------|
-| **Keep functions small** | Single-purpose functions are easier to test and maintain |
-| **Implement idempotency** | At-least-once triggers may execute multiple times |
-| **Use managed identity** | Prefer managed identity over connection strings for secure resource access |
+| **Use azd templates** | Start with [official quickstart templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=http) for secure-by-default infrastructure |
+| **Use managed identity** | Always use user-assigned managed identity instead of connection strings |
+| **Disable local auth** | Set `allowSharedKeyAccess: false` on storage, `disableLocalAuth: true` on App Insights |
+| **RBAC role assignments** | Grant only required roles: Storage Blob Data Owner, Monitoring Metrics Publisher |
+| **Enable VNET** | Use private endpoints for storage in enterprise environments |
+| **Use Azure Verified Modules** | Bicep templates should use [AVM](https://aka.ms/avm) for consistency and best practices |
 | **Configure timeout** | Set `functionTimeout` in host.json (default 5 min for Consumption) |
-| **Use Application Insights** | Enable for monitoring, tracing, and diagnostics |
+| **Use Application Insights** | Enable for monitoring, tracing, and diagnostics with managed identity auth |
 | **Secure HTTP functions** | Use `authLevel: 'function'` or `'admin'` for non-public endpoints |
-| **Environment variables** | Store secrets in App Settings, not in code |
-| **Cold start optimization** | Use Premium plan or keep-alive pings for latency-sensitive apps |
-| **Use Key Vault** | Store secrets securely with Key Vault references |
-| **Configure retry policies** | Set appropriate retry behavior for triggers |
-
----
+| **Cold start optimization** | Use Flex Consumption or Premium plan for latency-sensitive apps |
+| **Durable Functions** | Use for long-running orchestrations; requires Queue and Table RBAC roles |
 
 ## Quick Start Checklist
 
-### Setup
+### Prerequisites
 - [ ] Azure subscription created
-- [ ] Azure CLI installed (`az --version`)
-- [ ] Azure CLI authenticated (`az login`)
+- [ ] Azure Developer CLI installed (`azd version`)
+- [ ] Azure CLI installed and authenticated (`az login`)
 - [ ] Azure Functions Core Tools installed (`func --version`)
 - [ ] Node.js/Python/dotnet installed (based on runtime)
 
 ### Development
-- [ ] Initialize project with `func init`
-- [ ] Create functions with `func new`
+- [ ] Initialize from quickstart template: `azd init -t functions-quickstart-<language>-azd`
+- [ ] Or create new project: `func init` + `func new`
 - [ ] Configure `host.json` settings
 - [ ] Test locally with `func start`
 
-### Deployment
+### Deployment (azd - Recommended)
+- [ ] Run `azd up` to provision and deploy
+- [ ] Confirm VNET enabled if required: `azd env set VNET_ENABLED true`
+- [ ] Verify managed identity and RBAC assignments
+- [ ] Test deployed function endpoints
+
+### Deployment (az CLI - Fallback)
 - [ ] Create resource group
-- [ ] Create storage account
-- [ ] Create Function App
+- [ ] Create user-assigned managed identity
+- [ ] Create storage account with `--allow-shared-key-access false`
+- [ ] Assign RBAC roles to managed identity
+- [ ] Create Function App with `--assign-identity`
+- [ ] Configure managed identity app settings
 - [ ] Deploy with `func azure functionapp publish`
-- [ ] Configure app settings
-- [ ] Verify function URLs
 
 ### Monitoring
-- [ ] Enable Application Insights
+- [ ] Verify Application Insights is connected with managed identity
 - [ ] Stream logs with `func azure functionapp logstream`
 - [ ] Set up alerts for failures
-
----
-
-## Troubleshooting
-
-| Issue | Symptom | Solution |
-|-------|---------|----------|
-| **func not found** | Command not recognized | Install Azure Functions Core Tools: `npm install -g azure-functions-core-tools@4` |
-| **Storage error** | Function app won't start | Verify `AzureWebJobsStorage` connection string is valid |
-| **404 on function** | Function not found | Check function is exported correctly and route is configured |
-| **Cold start delays** | First request slow | Use Premium plan or implement warm-up triggers |
-| **Timeout** | Function exceeds limit | Increase `functionTimeout` in host.json or use Durable Functions |
-| **Binding errors** | Extension not loaded | Run `func extensions install` to install required extensions |
-| **Deploy fails** | Publish error | Ensure function app exists and CLI is authenticated |
-| **Runtime mismatch** | Version conflict | Verify `FUNCTIONS_EXTENSION_VERSION` matches project |
-| **Execution limits** | Consumption has 5-10 min timeout | Use Premium or Dedicated plan for longer executions |
-| **Scaling delays** | Cold starts on Consumption | Consider Premium plan with pre-warmed instances |
-
-**Debug commands:**
-```bash
-func start --verbose                     # Local debugging
-func azure functionapp logstream $APP    # Live logs
-az functionapp show --name $APP          # App details
-az functionapp config show --name $APP   # Configuration
-az functionapp list --output table       # List all function apps
-```
-
----
 
 ## Azure Resources
 
@@ -543,21 +808,99 @@ az functionapp list --output table       # List all function apps
 | `Microsoft.Web/serverfarms` | App Service Plan | 2023-12-01 |
 | `Microsoft.Insights/components` | Application Insights | 2020-02-02 |
 
----
+## Troubleshooting
 
-## MCP Server Tools
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| **azd not found** | Command not recognized | Install: `brew install azd` (macOS) or `winget install Microsoft.Azd` (Windows) |
+| **func not found** | Command not recognized | Install: `npm install -g azure-functions-core-tools@4` |
+| **Storage auth error** | 403 Forbidden on storage | Verify managed identity has `Storage Blob Data Owner` role assigned |
+| **RBAC propagation** | Role assignment not working | Wait 5-10 minutes for RBAC to propagate, or redeploy |
+| **Missing RBAC for Durable** | Durable Functions fail | Add `Storage Queue Data Contributor` and `Storage Table Data Contributor` roles |
+| **App Insights auth error** | Telemetry not appearing | Verify `Monitoring Metrics Publisher` role and `APPLICATIONINSIGHTS_AUTHENTICATION_STRING` setting |
+| **VNET connectivity** | Function can't reach storage | Verify private endpoints and DNS zones are configured correctly |
+| **Storage public access denied** | Can't create deployment container | Use `az storage container create --auth-mode login` (uses your identity) |
+| **404 on function** | Function not found | Check function is exported correctly and route is configured |
+| **Cold start delays** | First request slow | Use Flex Consumption or Premium plan |
+| **Deploy fails** | Publish error | Verify managed identity is assigned and has required roles |
+| **Runtime mismatch** | Version conflict | Verify `FUNCTIONS_EXTENSION_VERSION` matches project |
 
-Use MCP tools to **query** existing resources:
+### Debug Commands
 
-- `azure__functionapp` with command `functionapp_list` - List function apps
+```bash
+# Check azd environment
+azd env list
+azd env get-values
 
-**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+# Verify managed identity assignment
+az functionapp identity show --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
 
----
+# List role assignments on storage
+az role assignment list --scope $STORAGE_ID --output table
+
+# Check function app settings
+az functionapp config appsettings list --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
+
+# Stream live logs
+func azure functionapp logstream $FUNCTION_APP
+
+# View deployment logs
+az functionapp log deployment list --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
+
+# Test storage connectivity from function app (requires Kudu/SCM access)
+az functionapp show --name $FUNCTION_APP --resource-group $RESOURCE_GROUP --query defaultHostName
+```
+
+### Common RBAC Issues
+
+**Problem**: Function app can't access storage after deployment
+
+**Solution**: Ensure these role assignments exist:
+```bash
+# Check required roles
+az role assignment list \
+    --assignee $IDENTITY_PRINCIPAL \
+    --scope $STORAGE_ID \
+    --query "[].roleDefinitionName" -o tsv
+
+# Should include: Storage Blob Data Owner
+# For Durable Functions, also: Storage Queue Data Contributor, Storage Table Data Contributor
+```
+
+**Problem**: Application Insights telemetry not appearing
+
+**Solution**: Verify managed identity auth is configured:
+```bash
+# Check app settings
+az functionapp config appsettings list \
+    --name $FUNCTION_APP \
+    --resource-group $RESOURCE_GROUP \
+    --query "[?name=='APPLICATIONINSIGHTS_AUTHENTICATION_STRING'].value" -o tsv
+
+# Should be: ClientId=<client-id>;Authorization=AAD
+```
 
 ## Additional Resources
 
+### Official Quickstart Templates (Secure-by-Default)
+- [Awesome AZD Functions Templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=http) - All language quickstarts
+- [C# (.NET) Quickstart](https://github.com/Azure-Samples/functions-quickstart-dotnet-azd)
+- [JavaScript Quickstart](https://github.com/Azure-Samples/functions-quickstart-javascript-azd)
+- [TypeScript Quickstart](https://github.com/Azure-Samples/functions-quickstart-typescript-azd)
+- [Python Quickstart](https://github.com/Azure-Samples/functions-quickstart-python-http-azd)
+- [Java Quickstart](https://github.com/Azure-Samples/azure-functions-java-flex-consumption-azd)
+- [PowerShell Quickstart](https://github.com/Azure-Samples/functions-quickstart-powershell-azd)
+
+### Azure Verified Modules (AVM)
+- [AVM Overview](https://aka.ms/avm) - Best practice Bicep/Terraform modules
+- [AVM Storage Account Module](https://github.com/Azure/bicep-registry-modules/tree/main/avm/res/storage/storage-account)
+- [AVM Web Site Module](https://github.com/Azure/bicep-registry-modules/tree/main/avm/res/web/site)
+- [AVM Managed Identity Module](https://github.com/Azure/bicep-registry-modules/tree/main/avm/res/managed-identity/user-assigned-identity)
+
+### Documentation
 - [Azure Functions Documentation](https://learn.microsoft.com/azure/azure-functions/)
+- [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local)
+- [Managed Identity for Azure Functions](https://learn.microsoft.com/azure/azure-functions/security-concepts#managed-identities)
 - [Triggers and Bindings](https://learn.microsoft.com/azure/azure-functions/functions-triggers-bindings)
 - [Durable Functions](https://learn.microsoft.com/azure/azure-functions/durable/)
