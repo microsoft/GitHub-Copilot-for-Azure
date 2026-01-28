@@ -72,13 +72,25 @@ mcp_azure_mcp_get_azure_bestpractices({
 - Interactive subscription filtering (prefix, ID, or "all subscriptions")
 - Redis-specific optimization rules (failed caches, oversized tiers, missing tags)
 - Pre-built report templates for Redis cost analysis
-- Uses `mcp_azure_mcp_redis` tool with command `redis_list`
+- Uses `redis_list` command
 
 **Report templates available:**
 - [Subscription-level Redis summary](./templates/redis-subscription-level-report.md)
 - [Detailed Redis cache analysis](./templates/redis-detailed-cache-analysis.md)
 
 > **Note**: For general subscription-wide cost optimization (including Redis), continue with Step 2. For Redis-only focused analysis, follow the instructions in the Redis-specific reference document.
+### Step 1.6: Choose Analysis Scope (for Redis-specific analysis)
+
+**If performing Redis cost optimization**, ask the user to select their analysis scope:
+
+**Prompt the user with these options:**
+1. **Specific Subscription ID** - Analyze a single subscription
+2. **Subscription Name** - Use display name instead of ID
+3. **Subscription Prefix** - Analyze all subscriptions starting with a prefix (e.g., "CacheTeam")
+4. **All My Subscriptions** - Scan all accessible subscriptions
+5. **Tenant-wide** - Analyze entire organization
+
+Wait for user response before proceeding to Step 2.
 
 ### Step 2: Run Azure Quick Review
 
