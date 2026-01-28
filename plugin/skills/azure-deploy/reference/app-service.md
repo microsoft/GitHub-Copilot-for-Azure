@@ -28,26 +28,45 @@ Azure App Service is a fully managed platform-as-a-service (PaaS) for hosting we
 
 ---
 
-## MANDATORY: Use azd for All Deployments
+## Preferred: Use azd for Deployments
 
-> **DO NOT use `az webapp up` or manual `az webapp` commands for deployments.**
-> **ALWAYS use `azd up` for deployments.**
-> Only use `az` for deployments if the user explicitly requests it.
+> **Prefer `azd` (Azure Developer CLI) over raw `az webapp` commands for deployments.**
+> Use `az` CLI for resource queries, simple single-resource deployments, or when explicitly requested.
 
 ```bash
 # Deploy everything - THIS IS THE MOST PREFERRED WAY
 azd up
 
+# For automation/agent scenarios - use --no-prompt
+azd up --no-prompt
+
+# Preview changes before deployment
+azd provision --preview
+
 # Clean up test environments
 azd down --force --purge
 ```
 
-**Why azd is mandatory:**
+> ⚠️ **CRITICAL: `azd down` Data Loss Warning**
+>
+> `azd down` **permanently deletes ALL resources** including databases with data, storage accounts, and Key Vaults.
+> - `--force` skips confirmation
+> - `--purge` permanently deletes Key Vault (no soft-delete recovery)
+>
+> Always back up important data before running `azd down`.
+
+**Why azd is preferred:**
 - **Parallel provisioning** - Deploys in seconds, not minutes
 - **Single command** - `azd up` replaces 5+ `az` commands
 - **Infrastructure as Code** - Reproducible with Bicep
 - **Environment management** - Easy dev/staging/prod separation
 - **Use az for queries only** - `az webapp list`, `az webapp show`, etc.
+
+**When `az` CLI is acceptable:**
+- Single-resource deployments without IaC requirements
+- Quick prototyping or one-off deployments
+- User explicitly requests `az` CLI
+- Querying or inspecting existing resources
 
 ---
 
@@ -120,6 +139,24 @@ azd auth login
 
 ## Quick Deploy with azd
 
+### MCP Tools for App Service
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | Validate azure.yaml before deployment |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose azd errors |
+
+**Validate before deployment:**
+```javascript
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
 ### Using AZD Template
 
 ```bash
@@ -127,15 +164,16 @@ azd auth login
 azd init --template azure-samples/todo-csharp-sql
 
 # 2. Deploy (provisions + deploys in parallel)
-azd up
+# Use --no-prompt for automation/agent scenarios
+azd up --no-prompt
 
 # 3. Iterate on code changes
-azd deploy
+azd deploy --no-prompt
 
 # 4. View application logs
 azd monitor --logs
 
-# 5. Clean up test environment
+# 5. Clean up test environment (WARNING: deletes all resources)
 azd down --force --purge
 ```
 

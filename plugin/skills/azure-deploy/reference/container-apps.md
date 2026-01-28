@@ -161,6 +161,23 @@ az account set --subscription "<name-or-id>"
 
 ## MCP Tools Available
 
+### azd-Specific MCP Tools
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | **Validates azure.yaml against official JSON schema** - Use before deployment |
+| `discovery_analysis` | Analyze application components for AZD migration |
+| `architecture_planning` | Select Azure services for discovered components |
+| `docker_generation` | Generate optimized Dockerfiles for Container Apps |
+| `infrastructure_generation` | Generate Bicep templates |
+| `iac_generation_rules` | Get Bicep compliance rules and best practices |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
+### Deployment Planning Tools
+
 Use the `azure__deploy` hierarchical tool with these commands for automated Container Apps deployment:
 
 | Command | Description | Parameters |
@@ -556,20 +573,34 @@ module containerApp 'br/public:avm/res/app/container-app:0.4.0' = {
 # Interactive deployment
 azd up
 
-# Non-interactive with environment
-azd up --environment production
+# Non-interactive with environment (for automation/agents)
+azd up --no-prompt --environment production
 ```
+
+> ⚠️ **CRITICAL for automation**: Always use `--no-prompt` when azd is called by an agent or in CI/CD pipelines where interactive prompts cannot be answered.
 
 **Or deploy in steps:**
 ```bash
-# 1. Provision infrastructure only
-azd provision
+# 1. Preview changes before provisioning
+azd provision --preview
 
-# 2. Build and deploy containers
-azd deploy
+# 2. Provision infrastructure only (with --no-prompt for automation)
+azd provision --no-prompt
 
-# 3. Deploy specific service
-azd deploy api
+# 3. Build and deploy containers
+azd deploy --no-prompt
+
+# 4. Deploy specific service
+azd deploy api --no-prompt
+```
+
+**Validate azure.yaml before deployment:**
+```javascript
+// Use MCP tool to validate azure.yaml
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
 ```
 
 **What azd does automatically:**

@@ -3,20 +3,59 @@ name: azure-deploy
 description: Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. This skill detects application type (React, Vue, Angular, Next.js, Python, .NET, Java, etc.), recommends the optimal Azure service, provides local preview capabilities, and guides deployment. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "get this running in the cloud", "deploy my app", "Azure deployment", "set up Azure hosting", "deploy to App Service", "deploy to Functions", "deploy to Static Web Apps", "preview locally", "test before deploying", "what Azure service should I use", "help me deploy", etc. Also handles multi-service deployments with Azure Developer CLI (azd) and Infrastructure as Code when complexity is detected.
 ---
 
-## MANDATORY: Use azd for All Deployments
+## Preferred: Use azd for Deployments
 
-> **DO NOT use `az` CLI for deployments.** Use `azd` (Azure Developer CLI) instead.
-> Only use `az` if the user explicitly requests it.
+> **Prefer `azd` (Azure Developer CLI) over raw `az` CLI for deployments.**
+> Use `az` CLI for resource queries, simple single-resource deployments, or when explicitly requested.
 
-**Why azd is required:**
+**Why azd is preferred:**
 - **Faster** - provisions resources in parallel
 - **Automatic ACR integration** - no manual credential setup
 - **Single command** - `azd up` does everything
-- **az is for queries only** - use `az` to inspect resources, not deploy them
+- **Infrastructure as Code** - reproducible deployments with Bicep
+- **Environment management** - easy dev/staging/prod separation
 
-## MCP Tools Used
+**When `az` CLI is acceptable:**
+- Single-resource deployments without IaC requirements
+- Quick prototyping or one-off deployments
+- User explicitly requests `az` CLI
+- Querying or inspecting existing resources
 
-All deployment planning tools use the `azure__deploy` hierarchical tool with a `command` parameter:
+> ⚠️ **IMPORTANT: For automation and agent scenarios**, always use the `--no-prompt` flag with azd commands to prevent interactive prompts from blocking execution:
+> ```bash
+> azd up --no-prompt
+> azd provision --no-prompt
+> azd deploy --no-prompt
+> ```
+
+## MCP Tools for azd Workflows
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | **Validates azure.yaml against official JSON schema** - Use before deployment |
+| `discovery_analysis` | Analyze application components for AZD migration |
+| `architecture_planning` | Select Azure services for discovered components |
+| `azure_yaml_generation` | Instructions for generating azure.yaml |
+| `docker_generation` | Generate Dockerfiles for Container Apps/AKS |
+| `infrastructure_generation` | Generate Bicep templates |
+| `iac_generation_rules` | Get Bicep compliance rules and best practices |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
+**Always validate azure.yaml before deployment:**
+```javascript
+// Validate azure.yaml using MCP tool
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
+### Additional MCP Tools
+
+For deployment planning and logs, use `azure__deploy`:
 
 | Tool | Command | Description |
 |------|---------|-------------|
@@ -50,11 +89,27 @@ Look for these files first (HIGH confidence signals):
 
 | File Found | Recommendation | Action |
 |------------|----------------|--------|
-| `azure.yaml` | Already configured for azd | Use `azd up` to deploy |
+| `azure.yaml` | Already configured for azd | **Validate first**, then use `azd up` to deploy |
 | `function.json` or `host.json` | Azure Functions project | **See [Azure Functions Guide](./reference/functions.md)** |
 | `staticwebapp.config.json` or `swa-cli.config.json` | Static Web Apps project | **See [Static Web Apps Guide](./reference/static-web-apps.md)** |
 
-If found, route to the appropriate specialized skill.
+**When `azure.yaml` is found, validate before deployment:**
+```javascript
+// Validate azure.yaml using MCP tool before proceeding
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+
+if (validation.errors && validation.errors.length > 0) {
+  // Fix validation errors before deployment
+  console.error("azure.yaml validation failed:", validation.errors);
+} else {
+  // Proceed with azd up
+}
+```
+
+If found and valid, route to the appropriate specialized skill.
 
 > 💡 **When to use Static Web Apps:**
 > - Project has `staticwebapp.config.json` or `swa-cli.config.json`
@@ -472,6 +527,22 @@ services:
     # "language 'html' is not supported by built-in framework services"
 ```
 
+**azure.yaml `language` property by host type:**
+| Host Type | Language Property | Notes |
+|-----------|-------------------|-------|
+| `staticwebapp` | **Do NOT specify** for plain HTML | Only needed for managed Functions API |
+| `containerapp` | Optional - used for build detection | Values: `js`, `ts`, `python`, `csharp`, `java`, `go` |
+| `appservice` | Required for runtime selection | Values: `js`, `ts`, `python`, `csharp`, `java` |
+| `function` | Required for runtime | Values: `js`, `ts`, `python`, `csharp`, `java` |
+
+> 💡 **Validate azure.yaml before deployment** using the MCP tool:
+> ```javascript
+> const validation = await azure-azd({
+>   command: "validate_azure_yaml",
+>   parameters: { path: "./azure.yaml" }
+> });
+> ```
+
 **infra/staticwebapp.bicep** - Must include the `azd-service-name` tag:
 ```bicep
 @description('Name of the Static Web App')
@@ -627,18 +698,57 @@ project/
 ```
 
 ### Deploy with azd
+
+**Step 1: Validate azure.yaml before deployment**
+
+Always validate the azure.yaml configuration before running deployment commands:
+
+```javascript
+// Validate azure.yaml using MCP tool
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+
+// Check for validation errors
+if (validation.errors && validation.errors.length > 0) {
+  // Report errors to user and fix before proceeding
+  console.error("azure.yaml validation failed:", validation.errors);
+  return;
+}
+```
+
+**Step 2: Deploy**
+
 ```bash
 # Provision infrastructure + deploy code
 azd up
 
+# For automation/agent scenarios - use --no-prompt to avoid interactive prompts
+azd up --no-prompt
+
 # Or separately:
-azd provision  # Create infrastructure
-azd deploy     # Deploy application code
+azd provision --no-prompt  # Create infrastructure
+azd deploy --no-prompt     # Deploy application code
+
+# Preview changes before deployment
+azd provision --preview
 
 # Manage environments
 azd env new staging
 azd env select staging
-azd up
+azd up --no-prompt
+```
+
+> ⚠️ **CRITICAL for automation**: Always use `--no-prompt` when azd is called by an agent or in CI/CD pipelines where interactive prompts cannot be answered.
+
+**Step 3: On errors, use MCP troubleshooting**
+
+```javascript
+// If azd commands fail, get troubleshooting guidance
+const troubleshooting = await azure-azd({
+  command: "error_troubleshooting"
+});
 ```
 
 See [Multi-Service Guide](./reference/multi-service.md) for azure.yaml configuration.
