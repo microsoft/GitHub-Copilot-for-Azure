@@ -33,11 +33,13 @@ Azure Functions is a serverless compute service for event-driven applications. P
 
 ## Hosting Plans
 
-| Plan | Scaling | Timeout | Use Case |
-|------|---------|---------|----------|
-| Consumption | Auto, to 0 | 5-10 min | Event-driven, variable load |
-| Premium | Auto, warm | 30+ min | Consistent load, VNet |
-| Dedicated | Manual | Unlimited | Predictable load |
+**ALWAYS USE FLEX CONSUMPTION** for new deployments. All azd templates use Flex Consumption by default.
+
+| Plan | Scaling | VNET | Use Case |
+|------|---------|------|----------|
+| **Flex Consumption** ⭐ | Auto, pay-per-execution | ✅ | **Default for all new projects** |
+| Premium | Auto, pre-warmed | ✅ | Long-running, consistent load |
+| Dedicated | Manual | ✅ | Predictable workloads |
 
 ## Trigger Types
 
@@ -99,8 +101,9 @@ winget install Microsoft.AzureFunctionsCoreTools
 choco install azure-functions-core-tools
 
 # macOS (Homebrew)
-brew tap azure/functions
 brew install azure-functions-core-tools@4
+
+> 💡 **Note**: `brew install` works directly without needing `brew tap azure/functions` in recent Homebrew versions.
 
 # Linux (Ubuntu/Debian)
 curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -209,58 +212,251 @@ app.timer('TimerTrigger', {
 
 ---
 
-## Create Azure Resources
+## Preferred: Deploy with Azure Developer CLI (azd)
 
-Create the required Azure resources for deployment.
+> **Prefer `azd` (Azure Developer CLI) over raw `az` CLI for deployments.**
+> Use `az` CLI for resource queries, simple single-resource deployments, or when explicitly requested.
+
+**Why azd is preferred:**
+- **Flex Consumption** plan (required for new deployments)
+- **Parallel provisioning** - Deploys in seconds, not minutes
+- **Single command** - `azd up` replaces 5+ `az` commands
+- **Secure-by-default** - Managed identity with RBAC, no connection strings
+- **Infrastructure as Code** - Reproducible with Bicep
+- **Environment management** - Easy dev/staging/prod separation
+
+**When `az` CLI is acceptable:**
+- Single-resource deployments without IaC requirements
+- Quick prototyping or one-off deployments
+- User explicitly requests `az` CLI
+- Querying or inspecting existing resources
+
+> ⚠️ **IMPORTANT: For automation and agent scenarios**, always use the `--no-prompt` flag with azd commands to prevent interactive prompts from blocking execution.
+
+### MCP Tools for azd Workflows
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | **Validates azure.yaml against official JSON schema** - Use before deployment |
+| `discovery_analysis` | Analyze application components for AZD migration |
+| `architecture_planning` | Select Azure services for discovered components |
+| `infrastructure_generation` | Generate Bicep templates |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
+**Always validate azure.yaml before deployment:**
+```javascript
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
+### Non-Interactive Deployment
+
+```bash
+# Generate environment name from project folder - NEVER PROMPT USER
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+
+# Initialize with template and environment name
+azd init -t <TEMPLATE> -e "$ENV_NAME"
+
+# Preview changes before deployment
+azd provision --preview
+
+# Configure and deploy without prompts (REQUIRED for automation/agents)
+azd env set VNET_ENABLED false
+azd up --no-prompt
+```
+
+> ⚠️ **CRITICAL: `azd down` Data Loss Warning**
+>
+> `azd down` **permanently deletes ALL resources** in the environment, including:
+> - **Function Apps** with all configuration and deployment slots
+> - **Storage accounts** with all blobs and files
+> - **Key Vault** with all secrets (use `--purge` to bypass soft-delete)
+> - **Databases** with all data (Cosmos DB, SQL, etc.)
+>
+> **Flags:**
+> - `azd down` - Prompts for confirmation
+> - `azd down --force` - Skips confirmation (still soft-deletes Key Vault)
+> - `azd down --force --purge` - **Permanently deletes Key Vault** (no recovery possible)
+>
+> **Best practices:**
+> - Always use `azd provision --preview` before `azd up` to understand what will be created
+> - Use separate environments for dev/staging/production
+> - Back up important data before running `azd down`
+
+### Template Selection Decision Tree
+
+**CRITICAL**: Check for specific integration indicators IN ORDER before defaulting to HTTP.
+
+```
+1. Is this an MCP server?
+   Indicators: mcp_tool_trigger, MCPTrigger, @app.mcp_tool, "mcp" in project name
+   └─► YES → Use MCP Template
+
+2. Does it use Cosmos DB?
+   Indicators: CosmosDBTrigger, @app.cosmos_db, cosmos_db_input, cosmos_db_output
+   └─► YES → Use Cosmos DB Template: https://azure.github.io/awesome-azd/?tags=functions&name=cosmos
+
+3. Does it use Azure SQL?
+   Indicators: SqlTrigger, @app.sql, sql_input, sql_output, SqlInput, SqlOutput
+   └─► YES → Use SQL Template: https://azure.github.io/awesome-azd/?tags=functions&name=sql
+
+4. Does it use AI/OpenAI?
+   Indicators: openai, AzureOpenAI, azure-ai-openai, langchain, langgraph, semantic_kernel,
+               Microsoft.Agents, azure-ai-projects, CognitiveServices, text_completion,
+               embeddings_input, ChatCompletions, azure.ai.inference, @azure/openai
+   └─► YES → Use AI Template: https://azure.github.io/awesome-azd/?tags=functions&name=ai
+
+5. Is it a full-stack app with SWA?
+   Indicators: staticwebapp.config.json, swa-cli, @azure/static-web-apps
+   └─► YES → Use SWA+Functions Template (see Integration Templates below)
+
+6. DEFAULT → Use HTTP Template by runtime
+```
+
+### MCP Server Templates
+
+**Indicators**: `mcp_tool_trigger`, `MCPTrigger`, `@app.mcp_tool`, project name contains "mcp"
+
+| Language | MCP Template |
+|----------|--------------|
+| Python | `azd init -t remote-mcp-functions-python` |
+| TypeScript | `azd init -t remote-mcp-functions-typescript` |
+| C# (.NET) | `azd init -t remote-mcp-functions-dotnet` |
+| Java | `azd init -t remote-mcp-functions-java` |
+
+**MCP + API Management (OAuth):**
+| Language | Template |
+|----------|----------|
+| Python | `azd init -t remote-mcp-apim-functions-python` |
+
+**Self-Hosted MCP SDK:**
+| Language | Template |
+|----------|----------|
+| Python | `azd init -t remote-mcp-sdk-functions-hosting-python` |
+| TypeScript | `azd init -t remote-mcp-sdk-functions-hosting-node` |
+| C# | `azd init -t remote-mcp-sdk-functions-hosting-dotnet` |
+
+### Integration Templates (Cosmos DB, SQL, AI, SWA)
+
+**Browse by service to find the right template:**
+| Service | Find Templates |
+|---------|----------------|
+| Cosmos DB | [Awesome AZD Cosmos](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
+| Azure SQL | [Awesome AZD SQL](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
+| AI/OpenAI | [Awesome AZD AI](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+| SWA + Functions | [todo-csharp-sql-swa-func](https://github.com/Azure-Samples/todo-csharp-sql-swa-func), [todo-nodejs-mongo-swa-func](https://github.com/azure-samples/todo-nodejs-mongo-swa-func) |
+
+### HTTP Function Templates (Default - use only if no specific integration)
+
+| Runtime | Template |
+|---------|----------|
+| C# (.NET) | `azd init -t functions-quickstart-dotnet-azd` |
+| JavaScript | `azd init -t functions-quickstart-javascript-azd` |
+| TypeScript | `azd init -t functions-quickstart-typescript-azd` |
+| Python | `azd init -t functions-quickstart-python-http-azd` |
+| Java | `azd init -t azure-functions-java-flex-consumption-azd` |
+| PowerShell | `azd init -t functions-quickstart-powershell-azd` |
+
+**Key flags for non-interactive mode:**
+| Flag | Purpose |
+|------|---------|
+| `-e <name>` | Set environment name (avoids prompt) |
+| `-t <template>` | Specify template |
+| `--no-prompt` | Skip all confirmations (REQUIRED for automation/agents) |
+
+> ⚠️ **`azd env set` vs Application Environment Variables**
+>
+> **`azd env set`** sets variables for the **azd provisioning process**, NOT application runtime environment variables. These are used by azd and Bicep during deployment:
+> ```bash
+> azd env set AZURE_LOCATION eastus
+> azd env set VNET_ENABLED true
+> ```
+>
+> **Application environment variables** (like `FUNCTIONS_WORKER_RUNTIME`) must be configured:
+> 1. **In Bicep templates** - Define in the resource's app settings
+> 2. **Via Azure CLI** - Use `az functionapp config appsettings set`
+> 3. **In local.settings.json** - For local development only
+
+**Browse all templates:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)
+
+### What azd Creates (Secure-by-Default)
+- **Flex Consumption plan** (required for new deployments)
+- User-assigned managed identity
+- RBAC role assignments (no connection strings)
+- Storage with `allowSharedKeyAccess: false`
+- App Insights with `disableLocalAuth: true`
+- Optional VNET with private endpoints
+
+---
+
+## Create Azure Resources (az CLI Fallback)
+
+**⚠️ FALLBACK ONLY**: Use this section only if `azd` is not available. Always prefer `azd` above.
+
+Create Flex Consumption resources with managed identity (matching azd secure-by-default).
 
 ```bash
 # Set variables
-RESOURCE_GROUP="myResourceGroup"
+RESOURCE_GROUP="rg-myfunc-$(date +%s)"
 LOCATION="eastus"
-STORAGE_ACCOUNT="mystorageaccount$(date +%s)"
-FUNCTION_APP="myFunctionApp$(date +%s)"
+STORAGE_ACCOUNT="stmyfunc$(date +%s | tail -c 8)"
+FUNCTION_APP="func-myapp-$(date +%s | tail -c 8)"
+IDENTITY_NAME="id-myfunc"
 
 # Create resource group
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
-# Create storage account (required for Function Apps)
+# Create user-assigned managed identity
+az identity create --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP
+
+# Get identity details
+IDENTITY_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query id -o tsv)
+IDENTITY_PRINCIPAL=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query principalId -o tsv)
+IDENTITY_CLIENT_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query clientId -o tsv)
+
+# Create storage account with NO local auth (RBAC only)
 az storage account create \
     --name $STORAGE_ACCOUNT \
     --resource-group $RESOURCE_GROUP \
     --location $LOCATION \
-    --sku Standard_LRS
+    --sku Standard_LRS \
+    --allow-blob-public-access false \
+    --allow-shared-key-access false
 
-# Create Function App (Consumption Plan - pay per execution)
+# Get storage account ID and assign RBAC
+STORAGE_ID=$(az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query id -o tsv)
+az role assignment create \
+    --assignee-object-id $IDENTITY_PRINCIPAL \
+    --assignee-principal-type ServicePrincipal \
+    --role "Storage Blob Data Owner" \
+    --scope $STORAGE_ID
+
+# Create Function App (Flex Consumption) with managed identity
 az functionapp create \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP \
     --storage-account $STORAGE_ACCOUNT \
-    --consumption-plan-location $LOCATION \
+    --flexconsumption-location $LOCATION \
     --runtime node \
     --runtime-version 20 \
-    --functions-version 4
-```
+    --functions-version 4 \
+    --assign-identity $IDENTITY_ID
 
-### Create with Premium Plan
-
-```bash
-# Create Premium Plan
-az functionapp plan create \
-    --name myPremiumPlan \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku EP1 \
-    --is-linux
-
-az functionapp create \
+# Configure managed identity storage access
+STORAGE_BLOB_ENDPOINT=$(az storage account show --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query primaryEndpoints.blob -o tsv)
+az functionapp config appsettings set \
     --name $FUNCTION_APP \
     --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --plan myPremiumPlan \
-    --os-type Linux \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4
+    --settings \
+        "AzureWebJobsStorage__credential=managedidentity" \
+        "AzureWebJobsStorage__clientId=$IDENTITY_CLIENT_ID" \
+        "AzureWebJobsStorage__blobServiceUri=$STORAGE_BLOB_ENDPOINT"
 ```
 
 ---
@@ -520,8 +716,8 @@ module.exports = df.orchestrator(function* (context) {
 | **Binding errors** | Extension not loaded | Run `func extensions install` to install required extensions |
 | **Deploy fails** | Publish error | Ensure function app exists and CLI is authenticated |
 | **Runtime mismatch** | Version conflict | Verify `FUNCTIONS_EXTENSION_VERSION` matches project |
-| **Execution limits** | Consumption has 5-10 min timeout | Use Premium or Dedicated plan for longer executions |
-| **Scaling delays** | Cold starts on Consumption | Consider Premium plan with pre-warmed instances |
+| **Execution limits** | Flex Consumption has 30 min timeout | Use Premium or Dedicated plan for longer executions |
+| **Scaling delays** | Cold starts on first request | Flex Consumption supports always-ready instances |
 
 **Debug commands:**
 ```bash
@@ -552,6 +748,48 @@ Use MCP tools to **query** existing resources:
 - `azure__functionapp` with command `functionapp_list` - List function apps
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+
+---
+
+## MCP Server Templates
+
+> **See "Template Selection Decision Tree" above for deployment.** This section provides additional context and GitHub links.
+
+**Browse:** [Awesome AZD MCP](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) | [Remote MCP Docs](https://aka.ms/remote-mcp)
+
+**GitHub Repositories:**
+- Python: [remote-mcp-functions-python](https://github.com/Azure-Samples/remote-mcp-functions-python)
+- TypeScript: [remote-mcp-functions-typescript](https://github.com/Azure-Samples/remote-mcp-functions-typescript)
+- C#: [remote-mcp-functions-dotnet](https://github.com/Azure-Samples/remote-mcp-functions-dotnet)
+- Java: [remote-mcp-functions-java](https://github.com/Azure-Samples/remote-mcp-functions-java)
+
+---
+
+## Integration Templates
+
+### Full-Stack (SWA + Functions)
+| Stack | Sample |
+|-------|--------|
+| C# + SQL | [todo-csharp-sql-swa-func](https://github.com/Azure-Samples/todo-csharp-sql-swa-func) |
+| Node + MongoDB | [todo-nodejs-mongo-swa-func](https://github.com/azure-samples/todo-nodejs-mongo-swa-func) |
+
+### Database & AI Templates
+| Service | Templates |
+|---------|-----------|
+| Cosmos DB | [Awesome AZD Cosmos](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
+| Azure SQL | [Awesome AZD SQL](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
+| OpenAI/AI Foundry | [Awesome AZD AI](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+
+### Trigger & Binding Quick Reference
+| Service | Trigger | Input | Output |
+|---------|---------|-------|--------|
+| Cosmos DB | ✅ | ✅ | ✅ |
+| Azure SQL | ✅ | ✅ | ✅ |
+| Storage Blob/Queue | ✅ | ✅ | ✅ |
+| Service Bus | ✅ | ❌ | ✅ |
+| Event Grid/Hubs | ✅ | ❌ | ✅ |
+| Azure OpenAI | ❌ | ✅ | ✅ |
+| SignalR | ✅ | ✅ | ✅ |
 
 ---
 
