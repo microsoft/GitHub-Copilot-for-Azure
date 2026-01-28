@@ -880,6 +880,298 @@ az functionapp config appsettings list \
 # Should be: ClientId=<client-id>;Authorization=AAD
 ```
 
+## Integrated Services Samples & Patterns
+
+Azure Functions integrates with many Azure services through triggers, bindings, and SDKs. Below are curated samples for common integration patterns.
+
+### MCP (Model Context Protocol) Servers
+
+Build AI-powered MCP servers using Azure Functions with the Functions extension and programming model:
+
+| Resource | Description |
+|----------|-------------|
+| [MCP Samples on Awesome AZD](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) | Microsoft-authored MCP templates using Azure Functions |
+| [Remote MCP Documentation](https://aka.ms/remote-mcp) | Self-host MCP servers with OAuth / Built-in Auth (EasyAuth) support |
+
+**Key capabilities:**
+- Host MCP servers as Azure Functions endpoints
+- Use managed identity for secure authentication
+- Integrate with Azure AI services
+- Support for OAuth and Built-in Auth (EasyAuth)
+
+### Static Web Apps (SWA) with Functions Backend
+
+Build full-stack applications with Static Web Apps frontend and Azure Functions API backend:
+
+| Sample | Description |
+|--------|-------------|
+| [Todo App - C# + SQL + SWA](https://github.com/Azure-Samples/todo-csharp-sql-swa-func) | C# Functions with Azure SQL Database and SWA frontend |
+| [Todo App - Node.js + MongoDB + SWA](https://github.com/azure-samples/todo-nodejs-mongo-swa-func) | Node.js Functions with MongoDB on Azure and SWA frontend |
+
+**Pattern benefits:**
+- Unified deployment with `azd up`
+- Automatic API routing from SWA to Functions
+- Managed authentication integration
+- Global CDN distribution for static assets
+
+### Cosmos DB Integration
+
+Serverless data processing with Azure Cosmos DB triggers and bindings:
+
+| Resource | Description |
+|----------|-------------|
+| [Cosmos DB + Functions Templates](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) | Awesome AZD templates for Cosmos DB integration |
+
+**Common patterns:**
+- **Change feed trigger**: React to document changes in real-time
+- **Input/output bindings**: Read and write documents without SDK boilerplate
+- **Event-driven architectures**: Process data streams with serverless compute
+
+```javascript
+// Example: Cosmos DB trigger (Node.js v4)
+const { app } = require('@azure/functions');
+
+app.cosmosDB('cosmosDBTrigger', {
+    connection: 'CosmosDBConnection',
+    databaseName: 'myDatabase',
+    containerName: 'myContainer',
+    createLeaseContainerIfNotExists: true,
+    handler: async (documents, context) => {
+        context.log(`Processing ${documents.length} documents`);
+        for (const doc of documents) {
+            context.log(`Document id: ${doc.id}`);
+        }
+    }
+});
+```
+
+### Azure SQL Database Integration
+
+Connect to Azure SQL using triggers, bindings, and the SQL binding extension:
+
+| Resource | Description |
+|----------|-------------|
+| [SQL + Functions Templates](https://azure.github.io/awesome-azd/?tags=functions&name=sql) | Awesome AZD templates for SQL Database integration |
+
+**Common patterns:**
+- **SQL input binding**: Query data without connection management
+- **SQL output binding**: Insert/upsert data with automatic batching
+- **SQL trigger**: React to table changes (using change tracking)
+
+```javascript
+// Example: SQL input binding (Node.js v4)
+const { app, input } = require('@azure/functions');
+
+const sqlInput = input.sql({
+    commandText: 'SELECT * FROM Products WHERE Category = @category',
+    commandType: 'Text',
+    parameters: '@category={category}',
+    connectionStringSetting: 'SqlConnectionString'
+});
+
+app.http('getProducts', {
+    methods: ['GET'],
+    extraInputs: [sqlInput],
+    handler: async (request, context) => {
+        const products = context.extraInputs.get(sqlInput);
+        return { jsonBody: products };
+    }
+});
+```
+
+### AI, OpenAI, Cognitive Services & Azure AI Foundry
+
+Build intelligent applications with Azure AI services integration:
+
+| Resource | Description |
+|----------|-------------|
+| [AI + Functions Templates](https://azure.github.io/awesome-azd/?tags=functions&name=ai) | Awesome AZD templates for AI integration |
+
+**Integration options:**
+- **Azure OpenAI bindings**: Simplified access to GPT models with input/output bindings
+- **Azure AI Services SDK**: Direct integration with Cognitive Services
+- **Azure AI Foundry**: Enterprise AI platform integration for production workloads
+- **Semantic Kernel**: AI orchestration framework support
+
+```javascript
+// Example: Azure OpenAI text completion (Node.js v4)
+const { app, input } = require('@azure/functions');
+
+const openAIInput = input.generic({
+    type: 'textCompletion',
+    prompt: '{prompt}',
+    model: 'gpt-4',
+    maxTokens: 500
+});
+
+app.http('generateText', {
+    methods: ['POST'],
+    extraInputs: [openAIInput],
+    handler: async (request, context) => {
+        const completion = context.extraInputs.get(openAIInput);
+        return { jsonBody: { response: completion.content } };
+    }
+});
+```
+
+### Integration Quick Reference
+
+| Service | Trigger | Input Binding | Output Binding | SDK Available |
+|---------|---------|---------------|----------------|---------------|
+| **Cosmos DB** | ✅ Change feed | ✅ | ✅ | ✅ |
+| **Azure SQL** | ✅ Change tracking | ✅ | ✅ | ✅ |
+| **Azure Storage** | ✅ Blob/Queue | ✅ | ✅ | ✅ |
+| **Event Grid** | ✅ | - | ✅ | ✅ |
+| **Event Hubs** | ✅ | - | ✅ | ✅ |
+| **Service Bus** | ✅ | - | ✅ | ✅ |
+| **Azure OpenAI** | - | ✅ | ✅ | ✅ |
+| **SignalR** | ✅ | ✅ | ✅ | ✅ |
+
+## Attached Services & Integration Patterns
+
+Azure Functions integrates with many Azure services through triggers, bindings, and SDKs. Use these reference samples and patterns when building functions that connect to databases, AI services, messaging systems, and frontend applications.
+
+### Model Context Protocol (MCP) Integration
+
+Build AI-powered MCP servers using Azure Functions for hosting and scaling.
+
+| Pattern | Description | Samples |
+|---------|-------------|---------|
+| **MCP with Flex Consumption** | Host MCP servers using the Azure Functions extension | [Awesome AZD MCP Templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) |
+| **Remote MCP Servers** | Self-host MCP servers with OAuth/Built-in Auth (EasyAuth) | [Remote MCP Samples](https://aka.ms/remote-mcp) |
+| **MCP Programming Model** | Use the Functions programming model for MCP endpoints | [Awesome AZD MCP Templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) |
+
+**Key capabilities:**
+- Host MCP servers on Azure Functions Flex Consumption for serverless scaling
+- Use Built-in Authentication (EasyAuth) for secure OAuth flows
+- Leverage managed identity for secure connections to Azure services
+
+### Static Web Apps (SWA) + Functions
+
+Build full-stack applications with Static Web Apps frontend and Azure Functions backend API.
+
+| Stack | Description | Sample |
+|-------|-------------|--------|
+| **C# + SQL + SWA** | Todo app with .NET Functions API and Azure SQL | [todo-csharp-sql-swa-func](https://github.com/Azure-Samples/todo-csharp-sql-swa-func) |
+| **Node.js + MongoDB + SWA** | Todo app with Node.js Functions API and MongoDB | [todo-nodejs-mongo-swa-func](https://github.com/azure-samples/todo-nodejs-mongo-swa-func) |
+
+**Pattern highlights:**
+- SWA provides global CDN-backed static hosting
+- Functions API runs as managed backend
+- Automatic API routing from SWA to Functions
+- Built-in authentication and authorization
+
+### Cosmos DB Integration
+
+Use Cosmos DB triggers and bindings for event-driven data processing.
+
+| Pattern | Description | Samples |
+|---------|-------------|---------|
+| **Cosmos DB Trigger** | React to document changes with change feed | [Awesome AZD Cosmos Templates](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
+| **Input/Output Bindings** | Read and write documents declaratively | [Awesome AZD Cosmos Templates](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
+| **SDK Integration** | Direct SDK usage for complex queries | [Awesome AZD Cosmos Templates](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
+
+**Example Cosmos DB trigger (Node.js v4):**
+```javascript
+const { app } = require('@azure/functions');
+
+app.cosmosDB('cosmosDBTrigger', {
+    connection: 'CosmosDBConnection',
+    databaseName: 'myDatabase',
+    containerName: 'myContainer',
+    createLeaseContainerIfNotExists: true,
+    handler: async (documents, context) => {
+        context.log(`Processing ${documents.length} documents`);
+        for (const doc of documents) {
+            context.log(`Document id: ${doc.id}`);
+        }
+    }
+});
+```
+
+### Azure SQL Database Integration
+
+Connect to Azure SQL using bindings or SDK for relational data.
+
+| Pattern | Description | Samples |
+|---------|-------------|---------|
+| **SQL Input Binding** | Query SQL data declaratively | [Awesome AZD SQL Templates](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
+| **SQL Output Binding** | Insert/update data without boilerplate | [Awesome AZD SQL Templates](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
+| **SQL Trigger** | React to table changes | [Awesome AZD SQL Templates](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
+
+**Example SQL input binding (C#):**
+```csharp
+[Function("GetProducts")]
+public static IActionResult GetProducts(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req,
+    [SqlInput("SELECT * FROM Products WHERE Active = 1",
+        "SqlConnectionString")] IEnumerable<Product> products)
+{
+    return new OkObjectResult(products);
+}
+```
+
+### AI, OpenAI, Cognitive Services & Azure AI Foundry
+
+Build intelligent applications with AI service integrations.
+
+| Pattern | Description | Samples |
+|---------|-------------|---------|
+| **Azure OpenAI** | GPT models, embeddings, chat completions | [Awesome AZD AI Templates](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+| **Cognitive Services** | Vision, speech, language processing | [Awesome AZD AI Templates](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+| **Azure AI Foundry** | Unified AI development platform | [Awesome AZD AI Templates](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+| **Semantic Kernel** | AI orchestration framework | [Awesome AZD AI Templates](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+
+**Example Azure OpenAI integration (Python):**
+```python
+import azure.functions as func
+from openai import AzureOpenAI
+
+app = func.FunctionApp()
+
+@app.route(route="chat")
+def chat(req: func.HttpRequest) -> func.HttpResponse:
+    client = AzureOpenAI(
+        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        azure_ad_token_provider=get_bearer_token_provider(
+            DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+        ),
+        api_version="2024-02-01"
+    )
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": req.params.get("prompt")}]
+    )
+    return func.HttpResponse(response.choices[0].message.content)
+```
+
+### Integration Quick Reference
+
+| Service | Trigger | Input Binding | Output Binding | SDK |
+|---------|---------|---------------|----------------|-----|
+| **Cosmos DB** | ✅ Change feed | ✅ Read docs | ✅ Write docs | ✅ |
+| **Azure SQL** | ✅ Change tracking | ✅ Query | ✅ Upsert | ✅ |
+| **Azure Storage Blob** | ✅ Blob created/updated | ✅ Read blob | ✅ Write blob | ✅ |
+| **Azure Storage Queue** | ✅ Queue message | ✅ Peek | ✅ Add message | ✅ |
+| **Service Bus** | ✅ Queue/Topic message | ❌ | ✅ Send message | ✅ |
+| **Event Grid** | ✅ Events | ❌ | ✅ Publish events | ✅ |
+| **Event Hubs** | ✅ Stream events | ❌ | ✅ Send events | ✅ |
+| **Azure OpenAI** | ❌ | ✅ Embeddings | ✅ Completions | ✅ |
+| **SignalR** | ✅ Messages | ✅ Connection info | ✅ Send messages | ✅ |
+
+### Finding More Templates
+
+Use [Awesome AZD](https://azure.github.io/awesome-azd/) to discover templates by service:
+
+```bash
+# Browse all Functions templates
+# Visit: https://azure.github.io/awesome-azd/?tags=functions
+
+# Initialize from any template
+azd init -t <template-name>
+```
+
 ## Additional Resources
 
 ### Official Quickstart Templates (Secure-by-Default)
