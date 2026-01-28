@@ -26,11 +26,14 @@ jobs:
       - name: Create Issue for Copilot Coding Agent
         id: create-issue
         uses: actions/github-script@v7
+        env:
+          SKILL_NAME: ${{ github.event.inputs.skill_name }}
+          SKILL_DESCRIPTION: ${{ github.event.inputs.skill_description }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const skillName = '${{ github.event.inputs.skill_name }}';
-            const skillDescription = '${{ github.event.inputs.skill_description }}';
+            const skillName = process.env.SKILL_NAME;
+            const skillDescription = process.env.SKILL_DESCRIPTION;
             
             const issueBody = `## Skill Factory Request
 
