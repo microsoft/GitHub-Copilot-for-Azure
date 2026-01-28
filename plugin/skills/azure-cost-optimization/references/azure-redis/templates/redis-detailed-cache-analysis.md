@@ -41,7 +41,7 @@ CRITICAL ISSUES (🔴 Immediate Action)
     Next Steps:
     1. Verify with owner: jane@contoso.com
     2. Schedule maintenance window
-    3. az redis update --name dev-api-cache --resource-group dev-rg --sku Standard --size 6GB
+    3. az redis update --name dev-api-cache --resource-group dev-rg --sku Standard --vm-size C3
 
 HIGH PRIORITY (🟠 Review This Week)
 
