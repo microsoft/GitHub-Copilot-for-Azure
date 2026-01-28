@@ -11,11 +11,15 @@ const AZURE_SERVICES = {
   AZD: 'Azure Developer CLI (azd)'
 };
 
+// All deployment skills consolidated into azure-deploy
+// Reference guides: ./reference/functions.md, ./reference/static-web-apps.md, 
+// ./reference/container-apps.md, ./reference/app-service.md, ./reference/aks.md
 const SKILL_ROUTES = {
-  FUNCTIONS: 'azure-function-app-deployment',
-  STATIC_WEB_APPS: 'azure-static-web-apps',
-  CONTAINER_APPS: 'azure-aca-deployment',
-  APP_SERVICE: 'azure-app-service-deployment',
+  FUNCTIONS: 'azure-deploy',
+  STATIC_WEB_APPS: 'azure-deploy',
+  CONTAINER_APPS: 'azure-deploy',
+  APP_SERVICE: 'azure-deploy',
+  AKS: 'azure-deploy',
   DEPLOY: 'azure-deploy'
 };
 

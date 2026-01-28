@@ -53,9 +53,9 @@ npm test -- --testNamePattern="Next.js"
 ### Expected Output
 
 ```
-Test Suites: 9 passed, 9 total
-Tests:       181 passed, 181 total
-Time:        0.268 s
+Test Suites: 12 passed, 12 total
+Tests:       264 passed, 264 total
+Time:        0.3 s
 ```
 
 ---
@@ -121,7 +121,7 @@ tests/
    {
      "remix-app": {
        "service": "app-service",
-       "skill": "azure-app-service-deployment",
+       "skill": "azure-deploy",
        "confidence": "MEDIUM",
        "framework": "Remix"
      }
@@ -164,14 +164,16 @@ test('detects Remix and recommends App Service', () => {
 
 ### Deployment Skills Coverage
 
-| Skill | Tested | Fixtures | Notes |
-|-------|--------|----------|-------|
-| ✅ `azure-deploy` | Yes | `azd-fullstack` | Main orchestrator, azure.yaml detection |
-| ✅ `azure-aca-deployment` | Yes | `docker-node`, `docker-compose-multi` | Container Apps |
-| ✅ `azure-aks-deployment` | ⚠️ Partial | - | Needs Kubernetes fixtures |
-| ✅ `azure-app-service-deployment` | Yes | `express-api`, `flask-app`, `django-app`, `fastapi-app`, `dotnet-webapp`, `spring-boot`, `nextjs-ssr` | App Service |
-| ✅ `azure-function-app-deployment` | Yes | `functions-node`, `functions-python`, `functions-dotnet` | Azure Functions |
-| ✅ `azure-static-web-apps` | Yes | `react-vite`, `vue-vite`, `angular`, `nextjs-static`, `gatsby`, `astro`, `plain-html` | Static Web Apps |
+All deployment scenarios now route to the consolidated `azure-deploy` skill with specialized reference guides:
+
+| Service | Tested | Fixtures | Reference Guide |
+|---------|--------|----------|-----------------|
+| ✅ Azure Developer CLI (azd) | Yes | `azd-fullstack` | Main orchestrator, `azure.yaml` detection |
+| ✅ Container Apps | Yes | `docker-node`, `docker-compose-multi` | `reference/container-apps.md` |
+| ✅ AKS | ⚠️ Partial | - | `reference/aks.md` - Needs Kubernetes fixtures |
+| ✅ App Service | Yes | `express-api`, `flask-app`, `django-app`, `fastapi-app`, `dotnet-webapp`, `spring-boot`, `nextjs-ssr` | `reference/app-service.md` |
+| ✅ Azure Functions | Yes | `functions-node`, `functions-python`, `functions-dotnet` | `reference/functions.md` |
+| ✅ Static Web Apps | Yes | `react-vite`, `vue-vite`, `angular`, `nextjs-static`, `gatsby`, `astro`, `plain-html` | `reference/static-web-apps.md` |
 
 ### Framework Detection Coverage
 
@@ -281,17 +283,19 @@ These skills don't have app type detection (they're service-specific, not deploy
 
 ### Service Mappings
 
-| Detection | Service | Skill Route |
-|-----------|---------|-------------|
-| `azure.yaml` | Azure Developer CLI | `azure-deploy` |
-| `host.json`, `function.json` | Azure Functions | `azure-function-app-deployment` |
-| `staticwebapp.config.json` | Static Web Apps | `azure-static-web-apps` |
-| `Dockerfile` | Container Apps | `azure-aca-deployment` |
-| React, Vue, Angular, Gatsby, Astro | Static Web Apps | `azure-static-web-apps` |
-| Next.js (SSR), Express, NestJS | App Service | `azure-app-service-deployment` |
-| Flask, Django, FastAPI | App Service | `azure-app-service-deployment` |
-| ASP.NET Core | App Service | `azure-app-service-deployment` |
-| Spring Boot | App Service | `azure-app-service-deployment` |
+All services now route to `azure-deploy` with specialized reference guides:
+
+| Detection | Service | Skill Route | Reference Guide |
+|-----------|---------|-------------|-----------------|
+| `azure.yaml` | Azure Developer CLI | `azure-deploy` | - |
+| `host.json`, `function.json` | Azure Functions | `azure-deploy` | `reference/functions.md` |
+| `staticwebapp.config.json` | Static Web Apps | `azure-deploy` | `reference/static-web-apps.md` |
+| `Dockerfile` | Container Apps | `azure-deploy` | `reference/container-apps.md` |
+| React, Vue, Angular, Gatsby, Astro | Static Web Apps | `azure-deploy` | `reference/static-web-apps.md` |
+| Next.js (SSR), Express, NestJS | App Service | `azure-deploy` | `reference/app-service.md` |
+| Flask, Django, FastAPI | App Service | `azure-deploy` | `reference/app-service.md` |
+| ASP.NET Core | App Service | `azure-deploy` | `reference/app-service.md` |
+| Spring Boot | App Service | `azure-deploy` | `reference/app-service.md` |
 
 ---
 

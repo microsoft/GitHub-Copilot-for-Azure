@@ -38,7 +38,7 @@ describe('High Confidence Detection', () => {
   });
 
   describe('Azure Functions', () => {
-    test('detects host.json and routes to azure-function-app-deployment', () => {
+    test('detects host.json and routes to azure-deploy', () => {
       const project = {
         files: ['host.json', 'package.json'],
         contents: {}
@@ -51,7 +51,7 @@ describe('High Confidence Detection', () => {
       expect(result.confidence).toBe(CONFIDENCE_LEVELS.HIGH);
     });
     
-    test('detects function.json and routes to azure-function-app-deployment', () => {
+    test('detects function.json and routes to azure-deploy', () => {
       const project = {
         files: ['function.json', 'index.js'],
         contents: {}
@@ -107,7 +107,7 @@ describe('High Confidence Detection', () => {
   });
 
   describe('Container Apps', () => {
-    test('detects Dockerfile and routes to azure-aca-deployment', () => {
+    test('detects Dockerfile and routes to azure-deploy', () => {
       const project = {
         files: ['Dockerfile', 'package.json', 'src/index.js'],
         contents: {}
