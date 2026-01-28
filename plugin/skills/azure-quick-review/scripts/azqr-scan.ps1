@@ -103,7 +103,7 @@ function Invoke-ServiceScan {
         [string]$SubscriptionId,
         
         [Parameter(Mandatory=$true)]
-        [ValidateSet('aks','apim','appcs','asp','ca','cosmos','cr','kv','lb','mysql','psql','redis','sb','sql','st','vm','vmss','vnet')]
+        [ValidateSet('aa','adf','afd','afw','agw','aif','amg','appi','arc','aks','apim','appcs','asp','ca','cosmos','cr','kv','lb','mysql','psql','redis','sb','sql','st','vm','vmss','vnet')]
         [string]$ServiceType,
         
         [string]$OutputName = "azqr-$ServiceType-scan-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
@@ -152,18 +152,18 @@ function Invoke-ScanWithPlugins {
     )
     
     $pluginArgs = @()
-    if ($CarbonEmissions) { $pluginArgs += "--plugin carbon-emissions" }
-    if ($ZoneMapping) { $pluginArgs += "--plugin zone-mapping" }
-    if ($OpenAIThrottling) { $pluginArgs += "--plugin openai-throttling" }
+    if ($CarbonEmissions) { $pluginArgs += @("--plugin", "carbon-emissions") }
+    if ($ZoneMapping) { $pluginArgs += @("--plugin", "zone-mapping") }
+    if ($OpenAIThrottling) { $pluginArgs += @("--plugin", "openai-throttling") }
     
     if ($pluginArgs.Count -eq 0) {
         Write-Host "No plugins specified. Use -CarbonEmissions, -ZoneMapping, or -OpenAIThrottling" -ForegroundColor Yellow
         return
     }
     
-    Write-Host "Starting scan with plugins: $($pluginArgs -join ', ')..." -ForegroundColor Cyan
-    $command = "azqr scan -s $SubscriptionId $($pluginArgs -join ' ') --json --xlsx --output-name $OutputName"
-    Invoke-Expression $command
+    Write-Host "Starting scan with plugins: $($pluginArgs -join ' ')..." -ForegroundColor Cyan
+    $arguments = @("scan", "-s", $SubscriptionId) + $pluginArgs + @("--json", "--xlsx", "--output-name", $OutputName)
+    & azqr @arguments
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Scan complete. Reports saved to $OutputName.*" -ForegroundColor Green

@@ -115,7 +115,7 @@ service_scan() {
     local service_type="$2"
     local output_name="${3:-azqr-${service_type}-scan-$(date +%Y%m%d-%H%M%S)}"
     
-    local valid_services="aks apim appcs asp ca cosmos cr kv lb mysql psql redis sb sql st vm vmss vnet"
+    local valid_services="aa adf afd afw agw aif aks amg apim appcs appi arc asp ca cosmos cr kv lb mysql psql redis sb sql st vm vmss vnet"
     
     if [[ -z "$subscription_id" || -z "$service_type" ]]; then
         echo -e "${RED}Usage: service_scan <subscription-id> <service-type> [output-name]${NC}"
