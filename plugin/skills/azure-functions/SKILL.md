@@ -37,9 +37,24 @@ Do NOT prompt the user for information that can be determined from the workspace
 
 ### Autonomous Actions
 1. **Detect runtime** from project files automatically
-2. **Copy infrastructure** from template if `azure.yaml` and `/infra` don't exist
-3. **Set VNET_ENABLED** based on enterprise context (default: false for simplicity)
-4. **Run `azd up --no-prompt`** to deploy without interactive prompts
+2. **Generate environment name** from project folder name (e.g., `myproject-dev`)
+3. **Use `azd init -t`** with the appropriate template from Awesome AZD
+4. **Set VNET_ENABLED=false** unless enterprise context requires it
+5. **Run `azd up`** with environment name pre-set to avoid prompts
+
+### Environment Naming Convention
+Generate a sensible environment name to avoid interactive prompts:
+```bash
+# Pattern: {project-name}-{suffix}
+# Examples:
+#   my-function-app → my-function-app-dev
+#   api-backend → api-backend-dev
+#   mcp-server → mcp-server-dev
+
+# Get project name from folder
+PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')
+ENV_NAME="${PROJECT_NAME}-dev"
+```
 
 ### Template Selection Logic
 ```javascript
@@ -57,13 +72,16 @@ function selectTemplate(runtime) {
 }
 ```
 
-### Infrastructure Copy Script
+### Non-Interactive Deployment Script
 ```bash
 #!/bin/bash
-# Autonomous infrastructure setup - run without prompts
+# Autonomous deployment - no interactive prompts
 
 RUNTIME="${1:-node}"
-PROJECT_DIR="${2:-.}"
+
+# Generate environment name from project folder
+PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')
+ENV_NAME="${PROJECT_NAME}-dev"
 
 # Map runtime to template
 case $RUNTIME in
@@ -76,18 +94,16 @@ case $RUNTIME in
   *) TEMPLATE="functions-quickstart-javascript-azd" ;;
 esac
 
-# Clone and copy infrastructure
-TEMP_DIR=$(mktemp -d)
-git clone --depth 1 "https://github.com/Azure-Samples/$TEMPLATE" "$TEMP_DIR"
+# Initialize with template (use --force if azure.yaml exists)
+azd init -t "$TEMPLATE" -e "$ENV_NAME"
 
-# Copy infra and azure.yaml if they don't exist
-[ ! -d "$PROJECT_DIR/infra" ] && cp -r "$TEMP_DIR/infra" "$PROJECT_DIR/infra"
-[ ! -f "$PROJECT_DIR/azure.yaml" ] && cp "$TEMP_DIR/azure.yaml" "$PROJECT_DIR/azure.yaml"
+# Disable VNET for simpler deployment (override if needed)
+azd env set VNET_ENABLED false
 
-# Clean up
-rm -rf "$TEMP_DIR"
+# Deploy without prompts
+azd up --no-prompt
 
-echo "Infrastructure copied from $TEMPLATE"
+echo "Deployed to environment: $ENV_NAME"
 ```
 
 ## Overview
@@ -285,47 +301,35 @@ The recommended approach uses Azure Developer CLI (`azd`) with official quicksta
 ### Autonomous Deployment Mode
 
 **CRITICAL**: When deploying, minimize user interactions by:
-1. **Skip empty project checks** - The project state is already known from context
-2. **Skip azure.yaml existence checks** - Either copy from template or use existing
-3. **Copy infrastructure directly** - Clone the `/infra` folder and `azure.yaml` from the template repository
+1. **Generate environment name** - Derive from project folder name (e.g., `myproject-dev`)
+2. **Use `azd init -t`** - Always prefer official templates from Awesome AZD
+3. **Pre-set environment variables** - Set `VNET_ENABLED=false` before `azd up`
+4. **Run non-interactively** - Use `azd up --no-prompt` after environment is configured
 
-#### Copy Infrastructure from Template (Existing Project)
-
-When adding Azure deployment to an existing project, copy the infrastructure files directly:
+#### Non-Interactive Deployment Commands
 
 ```bash
-# Clone the template to a temp directory
-TEMPLATE_REPO="Azure-Samples/functions-quickstart-dotnet-azd"  # or appropriate language
-git clone --depth 1 https://github.com/$TEMPLATE_REPO /tmp/azd-template
+# Generate environment name from project folder
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 
-# Copy infrastructure to existing project
-cp -r /tmp/azd-template/infra ./infra
-cp /tmp/azd-template/azure.yaml ./azure.yaml
+# Initialize with template and environment name (avoids prompts)
+azd init -t functions-quickstart-dotnet-azd -e "$ENV_NAME"
 
-# Update azure.yaml to point to your source code location
-# Edit the 'project' path in azure.yaml if needed
+# Set environment variables to avoid prompts
+azd env set VNET_ENABLED false
 
-# Clean up
-rm -rf /tmp/azd-template
-
-# Deploy without prompts
+# Deploy without interactive prompts
 azd up --no-prompt
 ```
 
-#### Template Repository Structure
+#### Key Flags for Non-Interactive Mode
 
-Each template repository contains:
-```
-template-repo/
-├── azure.yaml                 # azd configuration - COPY THIS
-├── infra/                     # Infrastructure as Code - COPY THIS FOLDER
-│   ├── main.bicep            
-│   ├── main.parameters.json   
-│   └── app/
-│       └── ...
-├── src/                       # Sample code (optional to copy)
-└── ...
-```
+| Flag/Option | Purpose |
+|-------------|----------|
+| `-e <name>` | Set environment name (avoids "Enter environment name" prompt) |
+| `-t <template>` | Specify template (avoids template selection) |
+| `--no-prompt` | Skip all confirmation prompts during `azd up` |
+| `azd env set` | Pre-configure environment variables |
 
 ### Official Quickstart Templates
 
@@ -349,15 +353,20 @@ All templates use:
 ### Deploy Workflow
 
 ```bash
+# Generate environment name from project folder
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+
 # Option 1: Initialize from template (new project)
-azd init -t functions-quickstart-javascript-azd
-cd <project-folder>
+azd init -t functions-quickstart-javascript-azd -e "$ENV_NAME"
 
-# Option 2: Initialize in existing project
-azd init
+# Option 2: Initialize in existing project with environment name
+azd init -e "$ENV_NAME"
 
-# Deploy to Azure (provisions infrastructure + deploys code)
-azd up
+# Pre-configure to avoid prompts
+azd env set VNET_ENABLED false
+
+# Deploy to Azure without prompts
+azd up --no-prompt
 ```
 
 ### VNET Configuration
