@@ -19,7 +19,6 @@ This skill enables comprehensive Azure compliance assessments using Azure Quick 
 
 ## Prerequisites
 
-- **azqr CLI installed** - Install via `winget install azqr` (Windows), `brew install azqr` (macOS), or bash script (Linux)
 - **Azure authentication** - Logged in via Azure CLI (`az login`) or using Service Principal/Managed Identity
 - **Reader permissions** - Minimum Reader role on target subscription or management group
 
@@ -45,28 +44,6 @@ mcp_azure_mcp_extension_azqr
   subscription: <subscription-id>
   resource-group: <optional-rg-name>
 ```
-
-**Alternative CLI commands** (if MCP unavailable):
-
-```powershell
-# Full subscription scan
-azqr scan -s <subscription-id> --json --output-name compliance-scan
-
-# Resource group scan
-azqr scan -s <subscription-id> -g <resource-group> --json --output-name compliance-scan
-
-# Management group scan
-azqr scan --management-group-id <mg-id> --json --output-name compliance-scan
-
-# Specific service scan (e.g., storage accounts)
-azqr scan st -s <subscription-id> --json --output-name storage-scan
-```
-
-**Recommended flags:**
-- `--json` - Enables programmatic parsing of results
-- `--output-name <name>` - Sets output filename (without extension)
-- `-c=false` - Disable cost analysis if lacking Cost Management permissions
-- `--mask=false` - Show full subscription IDs (for internal use)
 
 ### Step 3: Analyze Scan Results
 
@@ -144,81 +121,25 @@ Provide a structured summary:
 
 ## Supported Azure Services
 
-azqr supports 70+ Azure resource types. Common abbreviations:
+azqr supports 70+ Azure resource types including:
 
-| Abbrev | Service |
-|--------|---------|
-| `aks` | Azure Kubernetes Service |
-| `apim` | API Management |
-| `appcs` | App Configuration |
-| `asp` | App Service |
-| `ca` | Container Apps |
-| `cosmos` | Cosmos DB |
-| `cr` | Container Registry |
-| `kv` | Key Vault |
-| `lb` | Load Balancer |
-| `mysql` | Azure Database for MySQL |
-| `psql` | Azure Database for PostgreSQL |
-| `redis` | Azure Cache for Redis |
-| `sb` | Service Bus |
-| `sql` | Azure SQL Database |
-| `st` | Storage Accounts |
-| `vm` | Virtual Machines |
-| `vnet` | Virtual Networks |
-
-Run `azqr types` for the complete list.
-
-## Advanced Features
-
-### Compare Scans Over Time
-
-Track compliance improvement by comparing scan reports:
-
-```powershell
-# Generate baseline
-azqr scan -s <sub-id> --output-name baseline
-
-# Later, generate new scan
-azqr scan -s <sub-id> --output-name current
-
-# Compare
-azqr compare --file1 baseline.xlsx --file2 current.xlsx --output comparison.txt
-```
-
-### Filtering Recommendations
-
-Create a YAML filter file to exclude specific items:
-
-```yaml
-azqr:
-  include:
-    subscriptions:
-      - <subscription-id>
-    resourceGroups:
-      - /subscriptions/<sub>/resourceGroups/<rg>
-  exclude:
-    recommendations:
-      - <recommendation-id>
-    services:
-      - /subscriptions/<sub>/resourceGroups/<rg>/providers/<provider>/<name>
-```
-
-Apply with: `azqr scan --filters filter.yaml`
-
-### Internal Plugins
-
-Enable additional analysis:
-
-```powershell
-# OpenAI throttling analysis
-azqr scan -s <sub-id> --plugin openai-throttling
-
-# Carbon emissions tracking
-azqr scan -s <sub-id> --plugin carbon-emissions
-
-# Availability zone mapping
-azqr scan -s <sub-id> --plugin zone-mapping
-```
+- Azure Kubernetes Service (AKS)
+- API Management
+- App Configuration
+- App Service
+- Container Apps
+- Cosmos DB
+- Container Registry
+- Key Vault
+- Load Balancer
+- Azure Database for MySQL
+- Azure Database for PostgreSQL
+- Azure Cache for Redis
+- Service Bus
+- Azure SQL Database
+- Storage Accounts
+- Virtual Machines
+- Virtual Networks
 
 ## Tools Used
 
@@ -227,17 +148,14 @@ azqr scan -s <sub-id> --plugin zone-mapping
 | `mcp_azure_mcp_extension_azqr` | Run azqr scans via Azure MCP |
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
-| `run_in_terminal` | Execute azqr CLI commands directly |
 
 ## Troubleshooting
 
 | Issue | Symptom | Solution |
 |-------|---------|----------|
-| Cost analysis fails | `AccountCostDisabled` error | Run with `-c=false` flag |
 | Permission denied | 403 errors during scan | Verify Reader role on scope |
 | Not authenticated | `AADSTS` errors | Run `az login` first |
-| azqr not found | Command not recognized | Install via `winget install azqr` |
-| Slow scan | Scan takes very long | Use resource group scope or service filter |
+| Slow scan | Scan takes very long | Use resource group scope |
 
 ## Example Prompts
 
@@ -245,14 +163,10 @@ azqr scan -s <sub-id> --plugin zone-mapping
 - "Run azqr on my production resource group"
 - "What Azure resources don't follow best practices?"
 - "Assess my storage accounts for security issues"
-- "Compare my Azure compliance from last month"
 
 ## Reference Documentation
 
 - [Recommendation Categories](references/RECOMMENDATIONS.md)
 - [Remediation Patterns](references/REMEDIATION-PATTERNS.md)
-- [azqr CLI Reference](references/CLI-REFERENCE.md)
-- [Scan Scripts (PowerShell)](scripts/azqr-scan.ps1)
-- [Scan Scripts (Bash)](scripts/azqr-scan.sh)
 - [Azure Quick Review Documentation](https://azure.github.io/azqr/docs/)
 - [Azure Proactive Resiliency Library](https://aka.ms/aprl)

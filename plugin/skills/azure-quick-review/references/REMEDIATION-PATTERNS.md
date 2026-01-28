@@ -363,14 +363,11 @@ foreach ($sa in $storageAccounts) {
 
 ## Remediation Validation
 
-After applying fixes, re-run the azqr scan to verify:
+After applying fixes, re-run the azqr scan using the Azure MCP tool to verify the issues have been resolved:
 
-```powershell
-# Run new scan
-azqr scan -s <subscription-id> --output-name post-remediation
-
-# Compare with baseline
-azqr compare --file1 baseline.xlsx --file2 post-remediation.xlsx --output validation.txt
+```
+mcp_azure_mcp_extension_azqr
+  subscription: <subscription-id>
 ```
 
 ## Additional Resources

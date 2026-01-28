@@ -166,20 +166,6 @@ High-impact recommendations to prioritize:
 | `sql-004` | Enable zone redundancy |
 | `sql-005` | Enable Advanced Threat Protection |
 
-## Filtering Recommendations
-
-Create a filter file to exclude known exceptions:
-
-```yaml
-azqr:
-  exclude:
-    recommendations:
-      - st-003  # Versioning not needed for temp storage
-      - vm-003  # Dev VMs don't need zone redundancy
-```
-
-Run with: `azqr scan --filters exceptions.yaml`
-
 ## Additional Resources
 
 - [Azure Proactive Resiliency Library](https://aka.ms/aprl)
