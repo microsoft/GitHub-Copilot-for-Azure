@@ -3,7 +3,69 @@ name: azure-deploy
 description: Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. This skill detects application type (React, Vue, Angular, Next.js, Python, .NET, Java, etc.), recommends the optimal Azure service, provides local preview capabilities, and guides deployment. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "get this running in the cloud", "deploy my app", "Azure deployment", "set up Azure hosting", "deploy to App Service", "deploy to Functions", "deploy to Static Web Apps", "preview locally", "test before deploying", "what Azure service should I use", "help me deploy", etc. Also handles multi-service deployments with Azure Developer CLI (azd) and Infrastructure as Code when complexity is detected.
 ---
 
-# Azure Deploy Skill
+## Preferred: Use azd for Deployments
+
+> **Prefer `azd` (Azure Developer CLI) over raw `az` CLI for deployments.**
+> Use `az` CLI for resource queries, simple single-resource deployments, or when explicitly requested.
+
+**Why azd is preferred:**
+- **Faster** - provisions resources in parallel
+- **Automatic ACR integration** - no manual credential setup
+- **Single command** - `azd up` does everything
+- **Infrastructure as Code** - reproducible deployments with Bicep
+- **Environment management** - easy dev/staging/prod separation
+
+**When `az` CLI is acceptable:**
+- Single-resource deployments without IaC requirements
+- Quick prototyping or one-off deployments
+- User explicitly requests `az` CLI
+- Querying or inspecting existing resources
+
+> ⚠️ **IMPORTANT: For automation and agent scenarios**, always use the `--no-prompt` flag with azd commands to prevent interactive prompts from blocking execution:
+> ```bash
+> azd up --no-prompt
+> azd provision --no-prompt
+> azd deploy --no-prompt
+> ```
+
+## MCP Tools for azd Workflows
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | **Validates azure.yaml against official JSON schema** - Use before deployment |
+| `discovery_analysis` | Analyze application components for AZD migration |
+| `architecture_planning` | Select Azure services for discovered components |
+| `azure_yaml_generation` | Instructions for generating azure.yaml |
+| `docker_generation` | Generate Dockerfiles for Container Apps/AKS |
+| `infrastructure_generation` | Generate Bicep templates |
+| `iac_generation_rules` | Get Bicep compliance rules and best practices |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
+**Always validate azure.yaml before deployment:**
+```javascript
+// Validate azure.yaml using MCP tool
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
+### Additional MCP Tools
+
+For deployment planning and logs, use `azure__deploy`:
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__deploy` | `deploy_plan_get` | Generate a deployment plan for Azure infrastructure and applications |
+| `azure__deploy` | `deploy_iac_rules_get` | Get IaC (Bicep/Terraform) guidelines |
+| `azure__deploy` | `deploy_app_logs_get` | Fetch logs from deployed apps (Container Apps, App Service, Functions) |
+| `azure__deploy` | `deploy_pipeline_guidance_get` | Get CI/CD pipeline guidance |
+| `azure__deploy` | `deploy_architecture_diagram_generate` | Generate Azure service architecture diagrams |
+
+## Capabilities
 
 Deploy applications to Azure with intelligent service selection, local preview, and guided deployment workflows.
 
@@ -27,36 +89,52 @@ Look for these files first (HIGH confidence signals):
 
 | File Found | Recommendation | Action |
 |------------|----------------|--------|
-| `azure.yaml` | Already configured for azd | Use `azd up` to deploy |
-| `function.json` or `host.json` | Azure Functions project | **Route to `azure-function-app-deployment` skill** |
-| `staticwebapp.config.json` or `swa-cli.config.json` | Static Web Apps project | **Route to `azure-static-web-apps` skill** |
+| `azure.yaml` | Already configured for azd | **Validate first**, then use `azd up` to deploy |
+| `function.json` or `host.json` | Azure Functions project | **See [Azure Functions Guide](./reference/functions.md)** |
+| `staticwebapp.config.json` or `swa-cli.config.json` | Static Web Apps project | **See [Static Web Apps Guide](./reference/static-web-apps.md)** |
 
-If found, route to the appropriate specialized skill.
+**When `azure.yaml` is found, validate before deployment:**
+```javascript
+// Validate azure.yaml using MCP tool before proceeding
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
 
-> 💡 **When to use azure-static-web-apps skill:**
+if (validation.errors && validation.errors.length > 0) {
+  // Fix validation errors before deployment
+  console.error("azure.yaml validation failed:", validation.errors);
+} else {
+  // Proceed with azd up
+}
+```
+
+If found and valid, route to the appropriate specialized skill.
+
+> 💡 **When to use Static Web Apps:**
 > - Project has `staticwebapp.config.json` or `swa-cli.config.json`
 > - User wants to deploy static frontends (React, Vue, Angular, etc.) to Azure
 > - User needs local development emulation with SWA CLI
 > - User wants to add Azure Functions APIs to their static site
 > - User mentions Static Web Apps or SWA CLI
 > 
-> The `azure-static-web-apps` skill provides specialized guidance for SWA CLI configuration, local emulation, GitHub Actions workflows, and database connections.
+> **📖 See [Static Web Apps Deployment Guide](./reference/static-web-apps.md)** for specialized guidance on SWA CLI configuration, local emulation, GitHub Actions workflows, and database connections.
 
 **Check for containerization signals:**
 
 | File/Indicator Found | Recommendation | Action |
 |---------------------|----------------|--------|
-| `Dockerfile` | Containerized application | **Consider using the `azure-aca-deployment` skill** for Container Apps |
-| `docker-compose.yml` | Multi-container application | **Consider using the `azure-aca-deployment` skill** for Container Apps |
-| User mentions "container", "Docker", "scheduled task", "cron job", "batch processing" | Container-based deployment | **Route to `azure-aca-deployment` skill** |
+| `Dockerfile` | Containerized application | **See [Container Apps Guide](./reference/container-apps.md)** for deployment |
+| `docker-compose.yml` | Multi-container application | **See [Container Apps Guide](./reference/container-apps.md)** for deployment |
+| User mentions "container", "Docker", "scheduled task", "cron job", "batch processing" | Container-based deployment | **See [Container Apps Guide](./reference/container-apps.md)** |
 
-> 💡 **When to use azure-aca-deployment skill:**
+> 💡 **When to use Container Apps:**
 > - Application is already containerized (has Dockerfile)
 > - User wants to deploy multiple containers together
 > - User needs scheduled tasks, cron jobs, or event-driven batch processing
 > - User mentions Container Apps or wants serverless containers
 > 
-> The `azure-aca-deployment` skill provides specialized guidance for Docker validation, ACR integration, Container Apps Jobs, and multi-container orchestration.
+> **📖 See [Container Apps Deployment Guide](./reference/container-apps.md)** for specialized guidance on Docker validation, ACR integration, Container Apps Jobs, and multi-container orchestration.
 
 ### Step 1.2: Detect Application Framework
 
@@ -72,13 +150,13 @@ package.json exists →
 │   ├── Has `ssr: false` or `target: 'static'` → Static Web Apps
 │   └── Otherwise → App Service (SSR)
 ├── angular.json → Angular → Static Web Apps
-│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
+│   └── **See [Static Web Apps Guide](./reference/static-web-apps.md)**
 ├── vite.config.* → Vite-based (React/Vue/Svelte) → Static Web Apps
-│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
+│   └── **See [Static Web Apps Guide](./reference/static-web-apps.md)**
 ├── gatsby-config.js → Gatsby → Static Web Apps
-│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
+│   └── **See [Static Web Apps Guide](./reference/static-web-apps.md)**
 ├── astro.config.mjs → Astro → Static Web Apps
-│   └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
+│   └── **See [Static Web Apps Guide](./reference/static-web-apps.md)**
 ├── nest-cli.json → NestJS → App Service
 ├── Has express/fastify/koa/hapi dependency → App Service
 └── No framework, just static build → Static Web Apps
@@ -88,26 +166,26 @@ package.json exists →
 ```
 requirements.txt or pyproject.toml exists →
 ├── function_app.py exists → Azure Functions (v2 programming model)
-│   └── **Route to `azure-function-app-deployment` skill for specialized guidance**
+│   └── **See [Azure Functions Guide](./reference/functions.md)**
 ├── Has flask dependency → App Service
 ├── Has django dependency → App Service
 ├── Has fastapi dependency → App Service
 └── Has azure-functions dependency → Azure Functions
-    └── **Route to `azure-function-app-deployment` skill for specialized guidance**
+    └── **See [Azure Functions Guide](./reference/functions.md)**
 ```
 
-> 💡 **When to use azure-function-app-deployment skill:**
+> 💡 **When to use Azure Functions:**
 > - Project has `host.json`, `local.settings.json`, or `function_app.py`
 > - User wants serverless APIs, event-driven functions, or timer-triggered jobs
 > - User mentions Azure Functions, triggers, bindings, or webhooks
 > 
-> The `azure-function-app-deployment` skill provides specialized guidance for function initialization, trigger configuration, deployment slots, and function-specific troubleshooting.
+> **📖 See [Azure Functions Deployment Guide](./reference/functions.md)** for specialized guidance on function initialization, trigger configuration, deployment slots, and function-specific troubleshooting.
 
 **.NET:**
 ```
 *.csproj or *.sln exists →
 ├── <AzureFunctionsVersion> in csproj → Azure Functions
-│   └── **Route to `azure-function-app-deployment` skill for specialized guidance**
+│   └── **See [Azure Functions Guide](./reference/functions.md)**
 ├── Blazor WebAssembly project → Static Web Apps
 ├── ASP.NET Core web app → App Service
 └── .NET API project → App Service
@@ -117,7 +195,7 @@ requirements.txt or pyproject.toml exists →
 ```
 pom.xml or build.gradle exists →
 ├── Has azure-functions-* dependency → Azure Functions
-│   └── **Route to `azure-function-app-deployment` skill for specialized guidance**
+│   └── **See [Azure Functions Guide](./reference/functions.md)**
 ├── Has spring-boot dependency → App Service
 └── Standard web app → App Service
 ```
@@ -126,7 +204,7 @@ pom.xml or build.gradle exists →
 ```
 index.html exists + no package.json/requirements.txt →
 └── Pure static site → Static Web Apps
-    └── **Route to `azure-static-web-apps` skill for SWA CLI setup**
+    └── **See [Static Web Apps Guide](./reference/static-web-apps.md)**
 ```
 
 ### Step 1.3: Detect Multi-Service Architecture
@@ -163,66 +241,6 @@ After detection, assess confidence:
 3. "Does your app need server-side rendering or is it purely client-side?"
 4. "Do you need scheduled tasks, cron jobs, or event-driven processing?"
 5. "Will you need a database, caching, or other Azure services?"
-
----
-
-## Specialized Deployment Skills
-
-This skill provides general deployment guidance. For specialized scenarios, consider using these dedicated skills:
-
-### 🌐 azure-static-web-apps (Static Web Apps)
-**Use when:**
-- Deploying static frontends (React, Vue, Angular, Gatsby, Astro, etc.)
-- User has `staticwebapp.config.json` or `swa-cli.config.json`
-- Need local development emulation with SWA CLI
-- Want to add Azure Functions APIs to static site
-- Setting up GitHub Actions CI/CD for Static Web Apps
-
-**Specialized features:**
-- SWA CLI installation and configuration
-- Local emulator with API proxy and auth simulation
-- Framework auto-detection and configuration
-- Database connections support
-- Detailed GitHub Actions workflow setup
-- Complete `staticwebapp.config.json` configuration guide
-
-### 🐳 azure-aca-deployment (Container Apps)
-**Use when:**
-- Application has a `Dockerfile` or `docker-compose.yml`
-- User mentions containers, Docker, or Container Apps
-- Need to deploy scheduled tasks, cron jobs, or batch processing
-- Deploying full-stack apps (frontend + backend) as separate containers
-- Want serverless containers with auto-scaling
-
-**Specialized features:**
-- Docker Desktop validation and troubleshooting
-- Azure Container Registry (ACR) integration with managed identity
-- Container Apps Jobs (scheduled, manual, event-driven)
-- Multi-container orchestration in same environment
-- MCP tool integration for infrastructure planning
-
-### ⚡ azure-function-app-deployment (Azure Functions)
-**Use when:**
-- Project has `host.json`, `local.settings.json`, or `function_app.py`
-- User mentions serverless, Functions, triggers, or bindings
-- Need HTTP-triggered APIs, timer jobs, or event handlers
-- Want pay-per-execution pricing model
-
-**Specialized features:**
-- Function project initialization with `func` CLI
-- Trigger and binding configuration (HTTP, Timer, Queue, Blob, etc.)
-- Deployment slots for zero-downtime updates
-- Function-specific monitoring and troubleshooting
-- Extension management for custom bindings
-
-**Routing decision:**
-```
-Dockerfile found? → Use azure-aca-deployment skill
-host.json found? → Use azure-function-app-deployment skill
-staticwebapp.config.json or swa-cli.config.json found? → Use azure-static-web-apps skill
-Static framework detected (React, Vue, Angular)? → Use azure-static-web-apps skill
-None of the above? → Continue with this skill (azure-deploy)
-```
 
 ---
 
@@ -339,6 +357,39 @@ winget install Microsoft.AzureCLI
 # Linux (Ubuntu/Debian)
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
+Multi-service triggers:
+├── Monorepo structure (frontend/, backend/, api/, packages/, apps/)
+├── docker-compose.yml with multiple services
+├── Multiple package.json in different subdirectories
+├── Database references in config (connection strings, .env files)
+├── References to Redis, Service Bus, Event Hubs, Storage queues
+├── User mentions "multiple environments", "staging", "production"
+└── More than one deployable component detected
+```
+
+**If multi-service detected → Recommend azd + Infrastructure as Code**
+See [Multi-Service Deployment Guide](./reference/multi-service.md)
+
+### Step 1.4: Confidence Assessment
+
+After detection, assess confidence:
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **HIGH** | Azure config file found (azure.yaml, function.json, staticwebapp.config.json) | Proceed with detected service |
+| **MEDIUM** | Framework detected from dependencies | Explain recommendation, ask for confirmation |
+| **LOW** | Ambiguous or no clear signals | Ask clarifying questions |
+
+**Clarifying questions for LOW confidence:**
+1. "What type of application is this? (static website, API, full-stack, serverless functions, containerized app)"
+2. "Is your application already containerized with Docker?"
+3. "Does your app need server-side rendering or is it purely client-side?"
+4. "Do you need scheduled tasks, cron jobs, or event-driven processing?"
+5. "Will you need a database, caching, or other Azure services?"
+
+---
+
+## Specialized Deployment Skills
 
 **Azure Functions Core Tools** (for Functions projects):
 ```bash
@@ -393,7 +444,7 @@ Detect and install project-level dependencies:
 
 ### 4.1 Static Web Apps Deployment
 
-> 💡 **For advanced Static Web Apps scenarios**, consider using the specialized `azure-static-web-apps` skill which provides:
+> 💡 **For advanced Static Web Apps scenarios**, see the **[Static Web Apps Deployment Guide](./reference/static-web-apps.md)** which provides:
 > - SWA CLI configuration and local emulation
 > - Framework-specific setup guidance
 > - Azure Functions API integration
@@ -445,6 +496,84 @@ swa deploy ./dist --deployment-token "$TOKEN" --env production
 rm -rf dist
 ```
 
+**Using azd for Plain HTML Sites:**
+
+When using `azd` instead of raw `swa` commands for plain HTML sites, create this project structure:
+
+```
+my-static-site/
+├── azure.yaml           # azd configuration
+├── dist/                # Static content goes here (NOT in root)
+│   └── index.html
+└── infra/
+    ├── main.bicep
+    ├── main.parameters.json
+    └── staticwebapp.bicep
+```
+
+**azure.yaml** - Note the critical settings:
+```yaml
+name: my-static-site
+services:
+  web:
+    project: .
+    # IMPORTANT: dist must point to a folder containing ONLY static content
+    # Do NOT set dist to "." as it will include azure.yaml, infra/, .azure/, etc.
+    # which causes deployment issues (stuck in "Uploading" state)
+    dist: dist
+    host: staticwebapp
+    # IMPORTANT: Do NOT specify "language" for plain HTML sites
+    # Setting language (e.g., "html", "js") causes errors like:
+    # "language 'html' is not supported by built-in framework services"
+```
+
+**azure.yaml `language` property by host type:**
+| Host Type | Language Property | Notes |
+|-----------|-------------------|-------|
+| `staticwebapp` | **Do NOT specify** for plain HTML | Only needed for managed Functions API |
+| `containerapp` | Optional - used for build detection | Values: `js`, `ts`, `python`, `csharp`, `java`, `go` |
+| `appservice` | Required for runtime selection | Values: `js`, `ts`, `python`, `csharp`, `java` |
+| `function` | Required for runtime | Values: `js`, `ts`, `python`, `csharp`, `java` |
+
+> 💡 **Validate azure.yaml before deployment** using the MCP tool:
+> ```javascript
+> const validation = await azure-azd({
+>   command: "validate_azure_yaml",
+>   parameters: { path: "./azure.yaml" }
+> });
+> ```
+
+**infra/staticwebapp.bicep** - Must include the `azd-service-name` tag:
+```bicep
+@description('Name of the Static Web App')
+param name string
+
+@description('Location for the Static Web App')
+param location string
+
+resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
+  name: name
+  location: location
+  // REQUIRED: This tag links the Bicep resource to the service in azure.yaml
+  tags: {
+    'azd-service-name': 'web'
+  }
+  sku: {
+    name: 'Free'
+    tier: 'Free'
+  }
+  properties: {}
+}
+
+output name string = staticWebApp.name
+output uri string = 'https://${staticWebApp.properties.defaultHostname}'
+```
+
+Then deploy with:
+```bash
+azd up
+```
+
 **Smart defaults:**
 - SKU: `Free` for dev/test, `Standard` for production
 - Location: SWA has limited regions - use `centralus`, `eastus2`, `westus2`, `westeurope`, or `eastasia`
@@ -453,11 +582,12 @@ See [Static Web Apps Guide](./reference/static-web-apps.md) for detailed configu
 
 ### 4.2 Azure Functions Deployment
 
-> 💡 **For advanced Functions deployment scenarios**, consider using the specialized `azure-function-app-deployment` skill which provides:
+> 💡 **For advanced Functions deployment scenarios**, see the **[Azure Functions Deployment Guide](./reference/functions.md)** which provides:
 > - Function project initialization and templating
 > - Detailed trigger/binding configuration
 > - Deployment slots and CI/CD patterns
 > - Function-specific troubleshooting
+> - Complete MCP tool integration
 
 **Create and deploy:**
 ```bash
@@ -568,18 +698,57 @@ project/
 ```
 
 ### Deploy with azd
+
+**Step 1: Validate azure.yaml before deployment**
+
+Always validate the azure.yaml configuration before running deployment commands:
+
+```javascript
+// Validate azure.yaml using MCP tool
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+
+// Check for validation errors
+if (validation.errors && validation.errors.length > 0) {
+  // Report errors to user and fix before proceeding
+  console.error("azure.yaml validation failed:", validation.errors);
+  return;
+}
+```
+
+**Step 2: Deploy**
+
 ```bash
 # Provision infrastructure + deploy code
 azd up
 
+# For automation/agent scenarios - use --no-prompt to avoid interactive prompts
+azd up --no-prompt
+
 # Or separately:
-azd provision  # Create infrastructure
-azd deploy     # Deploy application code
+azd provision --no-prompt  # Create infrastructure
+azd deploy --no-prompt     # Deploy application code
+
+# Preview changes before deployment
+azd provision --preview
 
 # Manage environments
 azd env new staging
 azd env select staging
-azd up
+azd up --no-prompt
+```
+
+> ⚠️ **CRITICAL for automation**: Always use `--no-prompt` when azd is called by an agent or in CI/CD pipelines where interactive prompts cannot be answered.
+
+**Step 3: On errors, use MCP troubleshooting**
+
+```javascript
+// If azd commands fail, get troubleshooting guidance
+const troubleshooting = await azure-azd({
+  command: "error_troubleshooting"
+});
 ```
 
 See [Multi-Service Guide](./reference/multi-service.md) for azure.yaml configuration.
@@ -621,25 +790,26 @@ See [Troubleshooting Guide](./reference/troubleshooting.md) for detailed solutio
 
 ---
 
-## Specialized Skills
+## Deployment Reference Guides
 
-For advanced scenarios, use these specialized deployment skills:
+For specialized deployment scenarios, use these comprehensive reference guides:
 
-- **🌐 azure-static-web-apps** - Static Web Apps deployment with SWA CLI, local emulation, GitHub Actions, API integration, and database connections
-- **🐳 azure-aca-deployment** - Container Apps deployment with Docker validation, ACR integration, Container Apps Jobs, and multi-container orchestration
-- **⚡ azure-function-app-deployment** - Azure Functions deployment with func CLI, triggers/bindings, deployment slots, and function-specific troubleshooting
+- **🌐 [Static Web Apps Deployment Guide](./reference/static-web-apps.md)** - Static Web Apps deployment with SWA CLI, local emulation, GitHub Actions, API integration, and database connections
+- **🐳 [Container Apps Deployment Guide](./reference/container-apps.md)** - Container Apps deployment with Docker validation, ACR integration, Container Apps Jobs, and multi-container orchestration
+- **⚡ [Azure Functions Deployment Guide](./reference/functions.md)** - Azure Functions deployment with func CLI, triggers/bindings, deployment slots, and function-specific troubleshooting
+- **☸️ [AKS Deployment Guide](./reference/aks.md)** - Kubernetes deployments with full control, custom operators, and complex microservices
+- **🌍 [App Service Deployment Guide](./reference/app-service.md)** - Traditional web applications and REST APIs with managed hosting
 
 ---
 
-## Reference Files
-
 Load these guides as needed for detailed information:
 
-- [📦 App Service Guide](./reference/app-service.md) - Full App Service deployment reference
-- [⚡ Azure Functions Guide](./reference/functions.md) - Functions deployment and configuration
-- [🌐 Static Web Apps Guide](./reference/static-web-apps.md) - SWA deployment and configuration
-- [🖥️ Local Preview Guide](./reference/local-preview.md) - Local development setup
-- [🏗️ Multi-Service Guide](./reference/multi-service.md) - azd and IaC patterns
-- [📚 Azure Verified Modules](./reference/azure-verified-modules.md) - Bicep module reference
-- [🔧 Troubleshooting Guide](./reference/troubleshooting.md) - Common issues and fixes
-- [📋 Common Patterns](./reference/common-patterns.md) - Shared commands (DRY reference)
+- [Static Web Apps Guide](./reference/static-web-apps.md) - Static frontends and JAMstack apps with SWA CLI, managed Functions APIs, GitHub Actions, and authentication
+- [Container Apps Guide](./reference/container-apps.md) - Comprehensive Container Apps deployment with azd, Docker best practices, Jobs, scaling, and troubleshooting
+- [Azure Functions Guide](./reference/functions.md) - Serverless Functions deployment with func CLI, triggers/bindings, deployment slots, and monitoring
+- [AKS Guide](./reference/aks.md) - Kubernetes deployment with AKS, node pools, workload identity, scaling, and networking
+- [App Service Guide](./reference/app-service.md) - Traditional web app deployment with App Service plans, deployment slots, and auto-scaling
+- Always scan the workspace before generating a deployment plan
+- Plans integrate with Azure Developer CLI (azd)
+- Logs require resources deployed through azd
+- Run `/azure:preflight` before any deployment to avoid mid-deployment failures

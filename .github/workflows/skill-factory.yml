@@ -1,0 +1,77 @@
+name: Skill Factory
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill_name:
+        description: "Name of the skill to create"
+        required: true
+        type: string
+      skill_description:
+        description: "Brief description of the skill"
+        required: true
+        type: string
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Issue for Copilot Coding Agent
+        id: create-issue
+        uses: actions/github-script@v7
+        env:
+          SKILL_NAME: ${{ github.event.inputs.skill_name }}
+          SKILL_DESCRIPTION: ${{ github.event.inputs.skill_description }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const skillName = process.env.SKILL_NAME;
+            const skillDescription = process.env.SKILL_DESCRIPTION;
+            
+            const issueBody = `## Skill Factory Request
+
+            **Skill Name:** ${skillName}
+            **Description:** ${skillDescription}
+
+            ## Instructions for Copilot Coding Agent
+
+            Please create a new skill in the \`plugin/skills/\` directory following the existing skill structure.
+
+            ### Requirements:
+            1. Create a new directory: \`plugin/skills/${skillName.toLowerCase().replace(/\s+/g, '-')}/\`
+            2. Create a \`SKILL.md\` file with:
+               - Skill name and description
+               - Detailed instructions for when and how to use the skill
+               - Examples of user queries that should trigger this skill
+               - Step-by-step guidance for the AI assistant
+            3. If needed, create a \`references/\` subdirectory for additional documentation
+            4. Follow the patterns established in existing skills like \`azure-cli\`, \`azure-cosmos-db\`, etc.
+
+            ### Skill Description:
+            ${skillDescription}
+
+            Implement this skill following best practices and the established patterns in this repository.
+            `;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Skill Factory] Create new skill: ${skillName}`,
+              body: issueBody,
+              labels: ['skill-factory']
+            });
+
+            console.log(`Created issue #${issue.data.number}: ${issue.data.html_url}`);
+            core.setOutput('issue-number', issue.data.number);
+
+      - name: Assign to Copilot Coding Agent
+        env:
+          GH_TOKEN: ${{ secrets.ASSIGN_ISSUE_TOKEN }}
+        run: gh issue edit ${{ steps.create-issue.outputs.issue-number }} --add-assignee "@copilot"

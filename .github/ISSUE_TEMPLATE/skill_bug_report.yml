@@ -1,0 +1,97 @@
+name: Report a Skill Bug
+title: "[Skill Bug]: "
+description: Report a bug related to Azure skills in GitHub Copilot for Azure
+type: "Bug"
+labels:
+  - "bug"
+  - "skill"
+body:
+  - type: checkboxes
+    id: pre-flight
+    attributes:
+      label: Preflight Checklist
+      description: "Before submitting an issue, please make sure you've done the following:"
+      options:
+        - label: I have installed the [latest version of GitHub Copilot for Azure in VS Code](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/latest).
+          required: true
+        - label: I have checked existing resources, including using the /help command in the chat window.
+          required: true
+        - label: I have searched for [similar issues](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues).
+          required: true
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Repro Steps
+      description: Provide numbered steps to reproduce the issue
+      placeholder: |
+        1. Open VS Code with GitHub Copilot for Azure
+        2. Use the prompt "..."
+        3. Observe the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt
+      description: Provide the exact text/prompt used when encountering the issue
+      placeholder: Copy and paste the exact prompt you used
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: Expected Result
+      description: What did you expect to happen?
+      placeholder: Describe what you expected to occur
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-result
+    attributes:
+      label: Actual Result
+      description: What actually happened?
+      placeholder: Describe what actually occurred
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Attach logs, error messages, screenshots, or any other relevant files
+      placeholder: |
+        Drag and drop files here, or paste screenshots
+        Include error messages, logs, or any other relevant information
+
+  - type: input
+    id: regression
+    attributes:
+      label: Regression?
+      description: Did this work before? If yes, which version did it work in?
+      placeholder: e.g., "Yes, worked in version 1.0.0" or "No, never worked"
+
+  - type: markdown
+    attributes:
+      value: ---
+
+  - type: input
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other details, such as Azure subscription type, network restrictions, etc.
