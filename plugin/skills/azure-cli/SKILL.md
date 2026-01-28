@@ -1,6 +1,6 @@
 ---
 name: azure-cli
-description: Install, configure, and use Azure CLI tools (az, azd, func) with command reference and advanced patterns
+description: Provides guidance on the Azure CLI tools (az, azd, func) with command reference and advanced patterns. Use this when asked about installing, configuring, or using az, azd, or func.
 ---
 
 # Azure CLI Tools
@@ -29,54 +29,20 @@ Check for these error patterns:
 
 #### 3. Run Installation Command
 
-**Windows (preferred - winget):**
-```powershell
-# Azure CLI
-winget install Microsoft.AzureCLI --accept-source-agreements --accept-package-agreements
+Use the Azure MCP tools to obtain platform-specific installation instructions appropriate for the user's system:
 
-# Azure Developer CLI
-winget install Microsoft.Azd --accept-source-agreements --accept-package-agreements
-
-# Azure Functions Core Tools
-winget install Microsoft.Azure.FunctionsCoreTools --accept-source-agreements --accept-package-agreements
-
-# Docker Desktop
-winget install Docker.DockerDesktop --accept-source-agreements --accept-package-agreements
+```
+Tool: azure__extension_cli_install
+Parameters:
+  - cli-type: "az" | "azd" | "func"
 ```
 
-**macOS:**
-```bash
-# Azure CLI
-brew install azure-cli
-
-# Azure Developer CLI
-brew tap azure/azd && brew install azd
-
-# Azure Functions Core Tools
-brew tap azure/functions && brew install azure-functions-core-tools@4
-
-# Docker Desktop
-brew install --cask docker
+**Example:**
+```
+Use azure__extension_cli_install with cli-type: "azd"
 ```
 
-**Linux (Ubuntu/Debian):**
-```bash
-# Azure CLI
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-# Azure Developer CLI
-curl -fsSL https://aka.ms/install-azd.sh | bash
-
-# Azure Functions Core Tools
-curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
-sudo apt-get update && sudo apt-get install azure-functions-core-tools-4
-
-# Docker
-sudo apt-get install docker.io
-sudo systemctl enable docker && sudo systemctl start docker
-```
+Then follow the instructions to perform the installation.
 
 #### 4. Verify Installation
 
@@ -100,23 +66,6 @@ If command still not found after install:
 **macOS/Linux:**
 - Run: `source ~/.bashrc` or `source ~/.zshrc`
 - Or start new terminal session
-
-### Using MCP Install Tool
-
-The Azure MCP server provides installation guidance:
-
-```
-Tool: azure__extension_cli_install
-Parameters:
-  - cli-type: "az" | "azd" | "func"
-```
-
-**Example:**
-```
-Use azure__extension_cli_install with cli-type: "azd"
-```
-
-This returns platform-specific installation instructions.
 
 ### Tool Priority
 
