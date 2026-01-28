@@ -57,6 +57,24 @@ Determine the deployment workflow by checking for project indicators:
    - `<filename>.parameters.json` (JSON parameters)
    - `parameters.json` or `parameters/<env>.json` in same directory
 
+### Step 1.5: Validate azure.yaml (azd projects only)
+
+For azd projects, validate the `azure.yaml` configuration using the Azure MCP azd tool:
+
+```javascript
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
+**What to capture:**
+- Schema validation errors
+- Invalid service configurations
+- Missing required fields
+
+If validation fails, include errors in the report and continue to Step 2.
+
 ### Step 2: Validate Bicep Syntax
 
 Run Bicep CLI to check template syntax before attempting deployment validation:
@@ -213,6 +231,24 @@ This skill uses the following tools:
 - **Bicep CLI** (`bicep`) - For syntax validation
 - **Azure MCP Tools** - For documentation lookups and best practices
 
+### Azure MCP azd Tools
+
+Use the Azure MCP server's azd tools (`azure-azd`) for additional validation:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | **Validates azure.yaml against official JSON schema** |
+| `project_validation` | Comprehensive project validation before deployment |
+| `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
+**Validate azure.yaml before running `azd provision --preview`:**
+```javascript
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
 Check tool availability before starting:
 ```bash
 az --version
@@ -224,11 +260,12 @@ bicep --version
 
 1. User: "Validate my Bicep deployment before I run it"
 2. Agent detects `azure.yaml` → azd project
-3. Agent finds `infra/main.bicep` and `infra/main.bicepparam`
-4. Agent runs `bicep build infra/main.bicep --stdout`
-5. Agent runs `azd provision --preview`
-6. Agent generates `preflight-report.md` in project root
-7. Agent summarizes findings to user
+3. Agent validates `azure.yaml` using `azure-azd` → `validate_azure_yaml`
+4. Agent finds `infra/main.bicep` and `infra/main.bicepparam`
+5. Agent runs `bicep build infra/main.bicep --stdout`
+6. Agent runs `azd provision --preview`
+7. Agent generates `preflight-report.md` in project root
+8. Agent summarizes findings to user
 
 ## Reference Documentation
 

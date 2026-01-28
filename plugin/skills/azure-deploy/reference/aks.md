@@ -28,27 +28,46 @@ Azure Kubernetes Service (AKS) is a managed Kubernetes container orchestration s
 
 ---
 
-## MANDATORY: Use azd for All Deployments
+## Preferred: Use azd for Deployments
 
-> **DO NOT use `az aks create` for production deployments.**
-> **ALWAYS use `azd up` for deployments when possible.**
-> Only use `az` for deployments if the user explicitly requests it.
+> **Prefer `azd` (Azure Developer CLI) over raw `az aks create` commands for deployments.**
+> Use `az` CLI for resource queries, cluster management, or when explicitly requested.
 
 ```bash
 # Deploy everything - THIS IS THE MOST PREFERRED WAY
 azd up
 
+# For automation/agent scenarios - use --no-prompt
+azd up --no-prompt
+
+# Preview changes before deployment
+azd provision --preview
+
 # Clean up test environments
 azd down --force --purge
 ```
 
-**Why azd is mandatory:**
+> ⚠️ **CRITICAL: `azd down` Data Loss Warning**
+>
+> `azd down` **permanently deletes ALL resources** including:
+> - AKS cluster with all workloads and persistent volumes
+> - Container Registry with all images
+> - Key Vault with all secrets (use `--purge` to bypass soft-delete)
+> - Storage accounts and databases
+>
+> Always back up important data before running `azd down`.
+
+**Why azd is preferred:**
 - **Parallel provisioning** - Deploys in seconds, not minutes
 - **Automatic ACR integration** - No image pull failures or manual credential setup
 - **Single command** - `azd up` replaces 5+ `az` commands
 - **Reproducible** - Infrastructure as Code with Bicep
 - **Environment management** - Easy dev/staging/prod separation
 - **Use az for queries only** - `az aks show`, `az aks list`, `az aks get-credentials`
+
+**When `az` CLI is acceptable:**
+- Quick prototyping or one-off cluster creation
+- User explicitly requests `az` CLI
 
 ---
 
@@ -142,6 +161,26 @@ azd auth login
 
 ## Quick Deploy with azd
 
+### MCP Tools for AKS
+
+Use the Azure MCP server's azd tools (`azure-azd`) for validation:
+
+| Command | Description |
+|---------|-------------|
+| `validate_azure_yaml` | Validate azure.yaml before deployment |
+| `docker_generation` | Generate Dockerfiles for AKS containers |
+| `infrastructure_generation` | Generate Bicep templates for AKS |
+| `project_validation` | Comprehensive validation before deployment |
+| `error_troubleshooting` | Diagnose azd errors |
+
+**Validate before deployment:**
+```javascript
+const validation = await azure-azd({
+  command: "validate_azure_yaml",
+  parameters: { path: "./azure.yaml" }
+});
+```
+
 ### Using AZD Template
 
 ```bash
@@ -149,7 +188,8 @@ azd auth login
 azd init --template azure-samples/aks-store-quickstart
 
 # 2. Deploy (provisions cluster + deploys workloads in parallel)
-azd up
+# Use --no-prompt for automation/agent scenarios
+azd up --no-prompt
 
 # 3. Get cluster credentials
 azd env get-value AZURE_AKS_CLUSTER_NAME | xargs -I {} az aks get-credentials --name {} --resource-group $(azd env get-value AZURE_RESOURCE_GROUP)
@@ -158,9 +198,9 @@ azd env get-value AZURE_AKS_CLUSTER_NAME | xargs -I {} az aks get-credentials --
 kubectl get pods --all-namespaces
 
 # 5. Iterate on code changes
-azd deploy
+azd deploy --no-prompt
 
-# 6. Clean up test environment
+# 6. Clean up test environment (WARNING: deletes all resources)
 azd down --force --purge
 ```
 
