@@ -24,6 +24,72 @@ Automated deployment workflow for serverless applications to Azure Function Apps
 - User wants to deploy lightweight APIs without container management
 - User needs timer jobs, queue processors, or event handlers
 
+## Agent Behavior: Autonomous Deployment
+
+**CRITICAL**: When running as an agent, minimize user interactions:
+
+### Pre-Deployment Context (Already Known)
+Do NOT prompt the user for information that can be determined from the workspace:
+- **Project exists**: Check for `host.json` or function code files
+- **Language/runtime**: Detect from `host.json`, `package.json`, `*.csproj`, `requirements.txt`
+- **azure.yaml exists**: Check filesystem before prompting
+- **Project is empty**: This state is known - don't ask
+
+### Autonomous Actions
+1. **Detect runtime** from project files automatically
+2. **Copy infrastructure** from template if `azure.yaml` and `/infra` don't exist
+3. **Set VNET_ENABLED** based on enterprise context (default: false for simplicity)
+4. **Run `azd up --no-prompt`** to deploy without interactive prompts
+
+### Template Selection Logic
+```javascript
+function selectTemplate(runtime) {
+  const templates = {
+    'dotnet': 'functions-quickstart-dotnet-azd',
+    'dotnet-isolated': 'functions-quickstart-dotnet-azd',
+    'node': 'functions-quickstart-javascript-azd',
+    'typescript': 'functions-quickstart-typescript-azd',
+    'python': 'functions-quickstart-python-http-azd',
+    'java': 'azure-functions-java-flex-consumption-azd',
+    'powershell': 'functions-quickstart-powershell-azd'
+  };
+  return templates[runtime] || 'functions-quickstart-javascript-azd';
+}
+```
+
+### Infrastructure Copy Script
+```bash
+#!/bin/bash
+# Autonomous infrastructure setup - run without prompts
+
+RUNTIME="${1:-node}"
+PROJECT_DIR="${2:-.}"
+
+# Map runtime to template
+case $RUNTIME in
+  dotnet|dotnet-isolated) TEMPLATE="functions-quickstart-dotnet-azd" ;;
+  node|javascript) TEMPLATE="functions-quickstart-javascript-azd" ;;
+  typescript) TEMPLATE="functions-quickstart-typescript-azd" ;;
+  python) TEMPLATE="functions-quickstart-python-http-azd" ;;
+  java) TEMPLATE="azure-functions-java-flex-consumption-azd" ;;
+  powershell) TEMPLATE="functions-quickstart-powershell-azd" ;;
+  *) TEMPLATE="functions-quickstart-javascript-azd" ;;
+esac
+
+# Clone and copy infrastructure
+TEMP_DIR=$(mktemp -d)
+git clone --depth 1 "https://github.com/Azure-Samples/$TEMPLATE" "$TEMP_DIR"
+
+# Copy infra and azure.yaml if they don't exist
+[ ! -d "$PROJECT_DIR/infra" ] && cp -r "$TEMP_DIR/infra" "$PROJECT_DIR/infra"
+[ ! -f "$PROJECT_DIR/azure.yaml" ] && cp "$TEMP_DIR/azure.yaml" "$PROJECT_DIR/azure.yaml"
+
+# Clean up
+rm -rf "$TEMP_DIR"
+
+echo "Infrastructure copied from $TEMPLATE"
+```
+
 ## Overview
 
 This skill enables end-to-end deployment of serverless functions to Azure Function Apps. Azure Functions is a serverless compute service ideal for:
@@ -215,6 +281,51 @@ app.timer('TimerTrigger', {
 ## Pattern 3: Deploy with Azure Developer CLI (Recommended)
 
 The recommended approach uses Azure Developer CLI (`azd`) with official quickstart templates that implement secure-by-default patterns including managed identity, RBAC, and optional VNET.
+
+### Autonomous Deployment Mode
+
+**CRITICAL**: When deploying, minimize user interactions by:
+1. **Skip empty project checks** - The project state is already known from context
+2. **Skip azure.yaml existence checks** - Either copy from template or use existing
+3. **Copy infrastructure directly** - Clone the `/infra` folder and `azure.yaml` from the template repository
+
+#### Copy Infrastructure from Template (Existing Project)
+
+When adding Azure deployment to an existing project, copy the infrastructure files directly:
+
+```bash
+# Clone the template to a temp directory
+TEMPLATE_REPO="Azure-Samples/functions-quickstart-dotnet-azd"  # or appropriate language
+git clone --depth 1 https://github.com/$TEMPLATE_REPO /tmp/azd-template
+
+# Copy infrastructure to existing project
+cp -r /tmp/azd-template/infra ./infra
+cp /tmp/azd-template/azure.yaml ./azure.yaml
+
+# Update azure.yaml to point to your source code location
+# Edit the 'project' path in azure.yaml if needed
+
+# Clean up
+rm -rf /tmp/azd-template
+
+# Deploy without prompts
+azd up --no-prompt
+```
+
+#### Template Repository Structure
+
+Each template repository contains:
+```
+template-repo/
+├── azure.yaml                 # azd configuration - COPY THIS
+├── infra/                     # Infrastructure as Code - COPY THIS FOLDER
+│   ├── main.bicep            
+│   ├── main.parameters.json   
+│   └── app/
+│       └── ...
+├── src/                       # Sample code (optional to copy)
+└── ...
+```
 
 ### Official Quickstart Templates
 
@@ -880,153 +991,6 @@ az functionapp config appsettings list \
 # Should be: ClientId=<client-id>;Authorization=AAD
 ```
 
-## Integrated Services Samples & Patterns
-
-Azure Functions integrates with many Azure services through triggers, bindings, and SDKs. Below are curated samples for common integration patterns.
-
-### MCP (Model Context Protocol) Servers
-
-Build AI-powered MCP servers using Azure Functions with the Functions extension and programming model:
-
-| Resource | Description |
-|----------|-------------|
-| [MCP Samples on Awesome AZD](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) | Microsoft-authored MCP templates using Azure Functions |
-| [Remote MCP Documentation](https://aka.ms/remote-mcp) | Self-host MCP servers with OAuth / Built-in Auth (EasyAuth) support |
-
-**Key capabilities:**
-- Host MCP servers as Azure Functions endpoints
-- Use managed identity for secure authentication
-- Integrate with Azure AI services
-- Support for OAuth and Built-in Auth (EasyAuth)
-
-### Static Web Apps (SWA) with Functions Backend
-
-Build full-stack applications with Static Web Apps frontend and Azure Functions API backend:
-
-| Sample | Description |
-|--------|-------------|
-| [Todo App - C# + SQL + SWA](https://github.com/Azure-Samples/todo-csharp-sql-swa-func) | C# Functions with Azure SQL Database and SWA frontend |
-| [Todo App - Node.js + MongoDB + SWA](https://github.com/azure-samples/todo-nodejs-mongo-swa-func) | Node.js Functions with MongoDB on Azure and SWA frontend |
-
-**Pattern benefits:**
-- Unified deployment with `azd up`
-- Automatic API routing from SWA to Functions
-- Managed authentication integration
-- Global CDN distribution for static assets
-
-### Cosmos DB Integration
-
-Serverless data processing with Azure Cosmos DB triggers and bindings:
-
-| Resource | Description |
-|----------|-------------|
-| [Cosmos DB + Functions Templates](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) | Awesome AZD templates for Cosmos DB integration |
-
-**Common patterns:**
-- **Change feed trigger**: React to document changes in real-time
-- **Input/output bindings**: Read and write documents without SDK boilerplate
-- **Event-driven architectures**: Process data streams with serverless compute
-
-```javascript
-// Example: Cosmos DB trigger (Node.js v4)
-const { app } = require('@azure/functions');
-
-app.cosmosDB('cosmosDBTrigger', {
-    connection: 'CosmosDBConnection',
-    databaseName: 'myDatabase',
-    containerName: 'myContainer',
-    createLeaseContainerIfNotExists: true,
-    handler: async (documents, context) => {
-        context.log(`Processing ${documents.length} documents`);
-        for (const doc of documents) {
-            context.log(`Document id: ${doc.id}`);
-        }
-    }
-});
-```
-
-### Azure SQL Database Integration
-
-Connect to Azure SQL using triggers, bindings, and the SQL binding extension:
-
-| Resource | Description |
-|----------|-------------|
-| [SQL + Functions Templates](https://azure.github.io/awesome-azd/?tags=functions&name=sql) | Awesome AZD templates for SQL Database integration |
-
-**Common patterns:**
-- **SQL input binding**: Query data without connection management
-- **SQL output binding**: Insert/upsert data with automatic batching
-- **SQL trigger**: React to table changes (using change tracking)
-
-```javascript
-// Example: SQL input binding (Node.js v4)
-const { app, input } = require('@azure/functions');
-
-const sqlInput = input.sql({
-    commandText: 'SELECT * FROM Products WHERE Category = @category',
-    commandType: 'Text',
-    parameters: '@category={category}',
-    connectionStringSetting: 'SqlConnectionString'
-});
-
-app.http('getProducts', {
-    methods: ['GET'],
-    extraInputs: [sqlInput],
-    handler: async (request, context) => {
-        const products = context.extraInputs.get(sqlInput);
-        return { jsonBody: products };
-    }
-});
-```
-
-### AI, OpenAI, Cognitive Services & Azure AI Foundry
-
-Build intelligent applications with Azure AI services integration:
-
-| Resource | Description |
-|----------|-------------|
-| [AI + Functions Templates](https://azure.github.io/awesome-azd/?tags=functions&name=ai) | Awesome AZD templates for AI integration |
-
-**Integration options:**
-- **Azure OpenAI bindings**: Simplified access to GPT models with input/output bindings
-- **Azure AI Services SDK**: Direct integration with Cognitive Services
-- **Azure AI Foundry**: Enterprise AI platform integration for production workloads
-- **Semantic Kernel**: AI orchestration framework support
-
-```javascript
-// Example: Azure OpenAI text completion (Node.js v4)
-const { app, input } = require('@azure/functions');
-
-const openAIInput = input.generic({
-    type: 'textCompletion',
-    prompt: '{prompt}',
-    model: 'gpt-4',
-    maxTokens: 500
-});
-
-app.http('generateText', {
-    methods: ['POST'],
-    extraInputs: [openAIInput],
-    handler: async (request, context) => {
-        const completion = context.extraInputs.get(openAIInput);
-        return { jsonBody: { response: completion.content } };
-    }
-});
-```
-
-### Integration Quick Reference
-
-| Service | Trigger | Input Binding | Output Binding | SDK Available |
-|---------|---------|---------------|----------------|---------------|
-| **Cosmos DB** | ✅ Change feed | ✅ | ✅ | ✅ |
-| **Azure SQL** | ✅ Change tracking | ✅ | ✅ | ✅ |
-| **Azure Storage** | ✅ Blob/Queue | ✅ | ✅ | ✅ |
-| **Event Grid** | ✅ | - | ✅ | ✅ |
-| **Event Hubs** | ✅ | - | ✅ | ✅ |
-| **Service Bus** | ✅ | - | ✅ | ✅ |
-| **Azure OpenAI** | - | ✅ | ✅ | ✅ |
-| **SignalR** | ✅ | ✅ | ✅ | ✅ |
-
 ## Attached Services & Integration Patterns
 
 Azure Functions integrates with many Azure services through triggers, bindings, and SDKs. Use these reference samples and patterns when building functions that connect to databases, AI services, messaging systems, and frontend applications.
@@ -1035,16 +999,39 @@ Azure Functions integrates with many Azure services through triggers, bindings, 
 
 Build AI-powered MCP servers using Azure Functions for hosting and scaling.
 
-| Pattern | Description | Samples |
-|---------|-------------|---------|
-| **MCP with Flex Consumption** | Host MCP servers using the Azure Functions extension | [Awesome AZD MCP Templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) |
-| **Remote MCP Servers** | Self-host MCP servers with OAuth/Built-in Auth (EasyAuth) | [Remote MCP Samples](https://aka.ms/remote-mcp) |
-| **MCP Programming Model** | Use the Functions programming model for MCP endpoints | [Awesome AZD MCP Templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) |
+#### MCP Extension for Azure Functions (Preview)
+
+Native Azure Functions experience using the MCPTrigger binding:
+
+| Language | Template Repository |
+|----------|---------------------|
+| **Python** | [remote-mcp-functions-python](https://github.com/Azure-Samples/remote-mcp-functions-python) |
+| **TypeScript** | [remote-mcp-functions-typescript](https://github.com/Azure-Samples/remote-mcp-functions-typescript) |
+| **C# (.NET)** | [remote-mcp-functions-dotnet](https://github.com/Azure-Samples/remote-mcp-functions-dotnet) |
+| **Java** | [remote-mcp-functions-java](https://github.com/Azure-Samples/remote-mcp-functions-java) |
+
+**With API Management + OAuth:**
+| Language | Template Repository |
+|----------|---------------------|
+| **Python** | [remote-mcp-apim-functions-python](https://github.com/Azure-Samples/remote-mcp-apim-functions-python) |
+
+#### Self-Hosted MCP SDK Servers on Azure Functions
+
+Host MCP SDK-based servers on Azure Functions serverless compute:
+
+| Language | Template Repository |
+|----------|---------------------|
+| **Python** | [remote-mcp-sdk-functions-hosting-python](https://github.com/Azure-Samples/remote-mcp-sdk-functions-hosting-python) |
+| **TypeScript** | [remote-mcp-sdk-functions-hosting-node](https://github.com/Azure-Samples/remote-mcp-sdk-functions-hosting-node) |
+| **C# (.NET)** | [remote-mcp-sdk-functions-hosting-dotnet](https://github.com/Azure-Samples/remote-mcp-sdk-functions-hosting-dotnet) |
+
+**Browse all MCP samples:** [Awesome AZD MCP Templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=mcp) | [Remote MCP Overview](https://aka.ms/remote-mcp)
 
 **Key capabilities:**
 - Host MCP servers on Azure Functions Flex Consumption for serverless scaling
 - Use Built-in Authentication (EasyAuth) for secure OAuth flows
 - Leverage managed identity for secure connections to Azure services
+- API Management integration for enterprise OAuth and policies
 
 ### Static Web Apps (SWA) + Functions
 
