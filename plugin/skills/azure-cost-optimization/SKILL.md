@@ -126,7 +126,7 @@ az resource list --subscription "<SUBSCRIPTION_ID>" --resource-group "<RESOURCE_
 
 # Use MCP tools for specific services (preferred):
 # - Storage accounts, Cosmos DB, Key Vaults: use Azure MCP tools
-# - Redis caches: use mcp_azure_mcp_redis tool (see references/azure-redis/azure-redis.md)
+# - Redis caches: use mcp_azure_mcp_redis tool (see ./references/azure-redis.md)
 # - Web apps, VMs, SQL: use az CLI commands
 ```
 
