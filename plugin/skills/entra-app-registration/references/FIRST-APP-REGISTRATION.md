@@ -232,7 +232,7 @@ See the complete code example in [CONSOLE-APP-EXAMPLE.md](CONSOLE-APP-EXAMPLE.md
 - Ensure exact match (case-sensitive, trailing slash matters)
 - Ensure correct platform (Web vs SPA vs Public client)
 
-### User consent required"
+### User consent required
 
 **Solution:**
 - Grant admin consent in API permissions

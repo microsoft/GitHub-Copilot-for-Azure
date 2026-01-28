@@ -118,7 +118,7 @@ api://your-api-id/.default
 6. Search and select permissions
 7. Click **"Add permissions"**
 
-See [CLI-COMMANDS](CLI-COMMANDS) for az cli commands to add API permissions programmatically.
+See [CLI-COMMANDS.md](CLI-COMMANDS.md) for az cli commands to add API permissions programmatically.
 
 ## Finding Permission IDs
 

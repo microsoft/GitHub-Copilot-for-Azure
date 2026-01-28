@@ -170,7 +170,7 @@ The app is trying to access a service 'your_app_id'(your_app_name) that your org
 AADSTS90014: The required field 'client_id' is missing from the request
 ```
 
-This can happen if the client your are using isn't compatible with Entra. Consult the owner of your client app to see if it supports Entra.
+This can happen if the client you are using isn't compatible with Entra. Consult the owner of your client app to see if it supports Entra.
 
 ## Token Issues
 

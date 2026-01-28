@@ -81,6 +81,7 @@ az ad app list --display-name "MyApp" --output table
 
 # Get specific fields
 az ad app list --query "[].{Name:displayName, AppId:appId}" --output table
+```
 
 ### Get app details
 

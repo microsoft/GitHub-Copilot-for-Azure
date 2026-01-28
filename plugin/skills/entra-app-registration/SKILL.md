@@ -75,7 +75,7 @@ For confidential client applications (web apps, services), create a client secre
 
 **Certificate:** For production environments, use certificates instead of secrets for enhanced security. Upload certificate via "Certificates & secrets" section.
 
-**Federated Identity Credential** For dynamically authenticating the confidential client to Entra platform.
+**Federated Identity Credential:** For dynamically authenticating the confidential client to Entra platform.
 
 ### Step 5: Implement OAuth Flow
 
