@@ -230,7 +230,7 @@ az role assignment list \
 3. **Implement tiered rate limits by product:**
 ```xml
 <choose>
-    <when condition="@(context.Product.Name == "Premium")">
+    <when condition="@(context.Product.Name == 'Premium')">
         <rate-limit-by-key calls="1000" renewal-period="60" 
             counter-key="@(context.Subscription.Id)" />
     </when>
