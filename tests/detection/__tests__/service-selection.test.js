@@ -5,13 +5,13 @@
  * detection against expected results in expectations.json
  */
 
-const { detectProject, normalizeResult } = require('../../utils/project-scanner');
+const { detectProject, normalizeResult } = require('../utils/project-scanner');
 const { 
   listProjectFixtures, 
   getProjectPath, 
   loadExpectations,
   validateFixturesHaveExpectations 
-} = require('../../utils/fixture-loader');
+} = require('../utils/fixture-loader');
 
 describe('Azure Deploy - Service Selection (Fixtures)', () => {
   const fixtures = listProjectFixtures();

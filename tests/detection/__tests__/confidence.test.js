@@ -5,8 +5,8 @@
  * based on the strength of detection signals.
  */
 
-const { detectAppType } = require('../../src/detection/appTypeDetector');
-const { CONFIDENCE_LEVELS } = require('../../src/detection/serviceMapping');
+const { detectAppType } = require('../src/appTypeDetector');
+const { CONFIDENCE_LEVELS } = require('../src/serviceMapping');
 
 describe('Confidence Level Assignment', () => {
   describe('HIGH Confidence', () => {

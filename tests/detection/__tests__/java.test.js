@@ -4,8 +4,8 @@
  * Tests for detecting Java frameworks and routing to appropriate Azure services.
  */
 
-const { detectAppType } = require('../../src/detection/appTypeDetector');
-const { AZURE_SERVICES, SKILL_ROUTES, CONFIDENCE_LEVELS } = require('../../src/detection/serviceMapping');
+const { detectAppType } = require('../src/appTypeDetector');
+const { AZURE_SERVICES, SKILL_ROUTES, CONFIDENCE_LEVELS } = require('../src/serviceMapping');
 
 describe('Java Framework Detection', () => {
   describe('Azure Functions', () => {

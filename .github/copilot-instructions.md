@@ -16,11 +16,21 @@ plugin/
         └── reference/        # Reference guides (optional)
 
 tests/
-├── __tests__/detection/      # App type detection tests
-├── fixtures/                 # Test fixtures and expected results
-├── src/detection/            # Detection logic implementation
-├── nodejs-production/        # Node.js production readiness tests (separate suite)
-├── validation/               # Azure validation tests (separate suite)
+├── detection/                # App type detection tests (264 tests)
+│   ├── __tests__/
+│   ├── fixtures/
+│   ├── src/
+│   └── package.json
+├── nodejs-production/        # Node.js production readiness tests (83 tests)
+│   ├── __tests__/
+│   ├── fixtures/
+│   ├── src/
+│   └── package.json
+├── validation/               # Azure validation tests (165 tests)
+│   ├── __tests__/
+│   ├── fixtures/
+│   ├── src/
+│   └── package.json
 └── README.md
 
 .github/
@@ -59,19 +69,19 @@ description: Brief description of what the skill does. Include trigger phrases.
 
 ### Test Structure
 
-Tests are organized into focused suites:
+Tests are organized into focused suites, each with its own `package.json`:
 
-| Suite | Location | Purpose |
-|-------|----------|---------|
-| **Detection** | `tests/__tests__/detection/` | App type detection, service selection |
-| **Node.js Production** | `tests/nodejs-production/` | Production readiness validation |
-| **Validation** | `tests/validation/` | Azure resource validation, Bicep, preflight |
+| Suite | Location | Tests | Purpose |
+|-------|----------|-------|---------|
+| **Detection** | `tests/detection/` | 264 | App type detection, service selection |
+| **Node.js Production** | `tests/nodejs-production/` | 83 | Production readiness validation |
+| **Validation** | `tests/validation/` | 165 | Azure resource validation, Bicep, preflight |
 
 ### Running Tests
 
 ```bash
 # Detection tests
-cd tests && npm test
+cd tests/detection && npm test
 
 # Node.js production tests
 cd tests/nodejs-production && npm test

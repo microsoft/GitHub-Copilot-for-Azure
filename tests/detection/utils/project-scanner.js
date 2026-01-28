@@ -13,7 +13,7 @@ const {
   SKILL_ROUTES,
   CONFIDENCE_LEVELS,
   createRecommendation
-} = require('../src/detection/serviceMapping');
+} = require('../src/serviceMapping');
 
 /**
  * Recursively get all files in a directory
@@ -110,7 +110,7 @@ function detectProject(projectPath) {
     .map(d => d.name);
   
   // Use the existing detection logic
-  const { detectAppType } = require('../src/detection/appTypeDetector');
+  const { detectAppType } = require('../src/appTypeDetector');
   
   return detectAppType({
     files,

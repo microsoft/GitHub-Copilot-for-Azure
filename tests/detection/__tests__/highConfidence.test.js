@@ -5,8 +5,8 @@
  * service recommendations (azure.yaml, host.json, Dockerfile, etc.)
  */
 
-const { detectAppType } = require('../../src/detection/appTypeDetector');
-const { AZURE_SERVICES, SKILL_ROUTES, CONFIDENCE_LEVELS } = require('../../src/detection/serviceMapping');
+const { detectAppType } = require('../src/appTypeDetector');
+const { AZURE_SERVICES, SKILL_ROUTES, CONFIDENCE_LEVELS } = require('../src/serviceMapping');
 
 describe('High Confidence Detection', () => {
   describe('Azure Developer CLI (azure.yaml)', () => {
