@@ -1,0 +1,13 @@
+name: my-azd-app
+metadata:
+  template: azd-init
+
+services:
+  api:
+    project: ./src/api
+    language: python
+    host: containerapp
+  web:
+    project: ./src/web
+    language: js
+    host: staticwebapp
