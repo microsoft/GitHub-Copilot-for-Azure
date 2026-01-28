@@ -501,6 +501,68 @@ swa deploy ./dist --deployment-token "$TOKEN" --env production
 rm -rf dist
 ```
 
+**Using azd for Plain HTML Sites:**
+
+When using `azd` instead of raw `swa` commands for plain HTML sites, create this project structure:
+
+```
+my-static-site/
+├── azure.yaml           # azd configuration
+├── dist/                # Static content goes here (NOT in root)
+│   └── index.html
+└── infra/
+    ├── main.bicep
+    ├── main.parameters.json
+    └── staticwebapp.bicep
+```
+
+**azure.yaml** - Note the critical settings:
+```yaml
+name: my-static-site
+services:
+  web:
+    project: .
+    # IMPORTANT: dist must point to a folder containing ONLY static content
+    # Do NOT set dist to "." as it will include azure.yaml, infra/, .azure/, etc.
+    # which causes deployment issues (stuck in "Uploading" state)
+    dist: dist
+    host: staticwebapp
+    # IMPORTANT: Do NOT specify "language" for plain HTML sites
+    # Setting language (e.g., "html", "js") causes errors like:
+    # "language 'html' is not supported by built-in framework services"
+```
+
+**infra/staticwebapp.bicep** - Must include the `azd-service-name` tag:
+```bicep
+@description('Name of the Static Web App')
+param name string
+
+@description('Location for the Static Web App')
+param location string
+
+resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
+  name: name
+  location: location
+  // REQUIRED: This tag links the Bicep resource to the service in azure.yaml
+  tags: {
+    'azd-service-name': 'web'
+  }
+  sku: {
+    name: 'Free'
+    tier: 'Free'
+  }
+  properties: {}
+}
+
+output name string = staticWebApp.name
+output uri string = 'https://${staticWebApp.properties.defaultHostname}'
+```
+
+Then deploy with:
+```bash
+azd up
+```
+
 **Smart defaults:**
 - SKU: `Free` for dev/test, `Standard` for production
 - Location: SWA has limited regions - use `centralus`, `eastus2`, `westus2`, `westeurope`, or `eastasia`
