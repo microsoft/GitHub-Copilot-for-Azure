@@ -33,11 +33,14 @@ Azure Functions is a serverless compute service for event-driven applications. P
 
 ## Hosting Plans
 
-| Plan | Scaling | Timeout | Use Case |
-|------|---------|---------|----------|
-| Consumption | Auto, to 0 | 5-10 min | Event-driven, variable load |
-| Premium | Auto, warm | 30+ min | Consistent load, VNet |
-| Dedicated | Manual | Unlimited | Predictable load |
+**ALWAYS USE FLEX CONSUMPTION** for new deployments. All azd templates use Flex Consumption by default.
+
+| Plan | Scaling | VNET | Use Case |
+|------|---------|------|----------|
+| **Flex Consumption** ⭐ | Auto, pay-per-execution | ✅ | **Default for all new projects** |
+| Premium | Auto, pre-warmed | ✅ | Long-running, consistent load |
+| Dedicated | Manual | ✅ | Predictable workloads |
+| Consumption (legacy) | Auto, to 0 | ❌ | Dev/test only |
 
 ## Trigger Types
 
@@ -209,9 +212,15 @@ app.timer('TimerTrigger', {
 
 ---
 
-## Deploy with Azure Developer CLI (Recommended)
+## Deploy with Azure Developer CLI (ALWAYS USE FIRST)
 
-Use `azd` for secure-by-default infrastructure with managed identity, RBAC, and optional VNET.
+**CRITICAL**: Always use `azd` for deployment. Only fall back to `az` CLI if azd is unavailable.
+
+`azd` provides:
+- **Flex Consumption** plan (required)
+- Secure-by-default infrastructure
+- Managed identity with RBAC
+- Optional VNET with private endpoints
 
 ### Non-Interactive Deployment
 
@@ -248,6 +257,7 @@ azd up --no-prompt
 **Browse templates:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)
 
 ### What azd Creates (Secure-by-Default)
+- **Flex Consumption plan** (required for new deployments)
 - User-assigned managed identity
 - RBAC role assignments (no connection strings)
 - Storage with `allowSharedKeyAccess: false`
@@ -256,7 +266,9 @@ azd up --no-prompt
 
 ---
 
-## Create Azure Resources
+## Create Azure Resources (az CLI Fallback)
+
+**⚠️ FALLBACK ONLY**: Use this section only if `azd` is not available. Always prefer `azd` above.
 
 Create the required Azure resources for deployment.
 
