@@ -73,7 +73,7 @@ az role assignment create \
 
 ### Step 5: Apply Governance Policies
 
-Apply AI governance policies from [POLICIES.md](POLICIES.md):
+Apply AI governance policies from [policies.md](policies.md):
 - Token limits for cost control
 - Semantic caching for cost reduction
 - Content safety for protection
