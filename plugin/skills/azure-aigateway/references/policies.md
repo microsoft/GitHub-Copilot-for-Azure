@@ -108,10 +108,10 @@ counter-key="@(context.Subscription.Id)"
 counter-key="@(context.Request.IpAddress)"
 
 <!-- Per user (from JWT claim) -->
-counter-key="@(context.Request.Headers.GetValueOrDefault("Authorization","").AsJwt()?.Claims["sub"])"
+counter-key="@(context.Request.Headers.GetValueOrDefault('Authorization','').AsJwt()?.Claims['sub'])"
 
 <!-- Per API key header -->
-counter-key="@(context.Request.Headers.GetValueOrDefault("X-API-Key","anonymous"))"
+counter-key="@(context.Request.Headers.GetValueOrDefault('X-API-Key','anonymous'))"
 ```
 
 ### When to Use
