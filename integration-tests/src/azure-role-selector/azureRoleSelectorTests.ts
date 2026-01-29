@@ -10,7 +10,7 @@ import { describe, it } from "mocha";
 describe("azureRoleSelectorTests", function () {
     it("invokes azure-role-selector skill for AcrPull prompt", async function () {
         const agentMetadata = await run({
-            prompt: "What role should I assign to my managed identity to reading images in a Azure Container Registry?"
+            prompt: "What role should I assign to my managed identity to read images in a Azure Container Registry?"
         });
         
         const isAzureRoleSelectorSkillUsed = isSkillInvoked(agentMetadata, "azure-role-selector");
