@@ -313,8 +313,8 @@ export function compare(rootDir: string, args: string[]): void {
     allowPositionals: true
   });
 
-  const baseRef = values.base ?? 'main';
-  const headRef = values.head ?? 'HEAD';
+  const baseRef = (values.base ?? 'main') as string;
+  const headRef = (values.head ?? 'HEAD') as string;
   const markdown = values.markdown ?? false;
   const json = values.json ?? false;
   const allFiles = values.all ?? false;

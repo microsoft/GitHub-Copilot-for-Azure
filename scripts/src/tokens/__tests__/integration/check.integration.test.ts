@@ -13,12 +13,22 @@ describe('check command integration', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
   
   beforeEach(() => {
+    // Clean and create test directory structure
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true });
+    } catch {}
     mkdirSync(join(TEST_DIR, '.github', 'skills'), { recursive: true });
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    // Small delay to allow file handles to close on Windows
+    await new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
     consoleSpy.mockRestore();
   });
 
@@ -36,7 +46,7 @@ describe('check command integration', () => {
     
     check(TEST_DIR, []);
     
-    const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
     expect(output).toContain('exceeding');
   });
 
@@ -53,7 +63,7 @@ describe('check command integration', () => {
     
     check(TEST_DIR, ['--json']);
     
-    const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
     expect(() => JSON.parse(output)).not.toThrow();
   });
 
@@ -76,7 +86,7 @@ describe('check command integration', () => {
     
     check(TEST_DIR, []);
     
-    const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
     expect(output).toContain('exceeding');
   });
 });

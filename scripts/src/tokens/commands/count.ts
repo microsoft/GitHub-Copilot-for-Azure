@@ -137,7 +137,7 @@ export function count(rootDir: string, args: string[]): void {
 
   const metadata = generateMetadata(rootDir, [...DEFAULT_SCAN_DIRS]);
   
-  if (outputPath) {
+  if (outputPath && typeof outputPath === 'string') {
     const fullOutputPath = isAbsolute(outputPath) 
       ? outputPath 
       : join(rootDir, outputPath);

@@ -28,8 +28,14 @@ describe('compare command integration', () => {
     }
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    // Small delay to allow file handles to close on Windows
+    await new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
     consoleSpy.mockRestore();
   });
 
@@ -47,7 +53,7 @@ describe('compare command integration', () => {
       
       compare(TEST_DIR, []);
       
-      const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+      const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
       expect(output).toContain('TOKEN CHANGE REPORT');
     } catch {
       // Git operations might fail in test environment, that's ok
@@ -58,14 +64,14 @@ describe('compare command integration', () => {
   it('outputs markdown format when --markdown flag is provided', () => {
     compare(TEST_DIR, ['--markdown']);
     
-    const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
     expect(output).toContain('## 📊 Token Change Report');
   });
 
   it('outputs JSON when --json flag is provided', () => {
     compare(TEST_DIR, ['--json']);
     
-    const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
     expect(() => JSON.parse(output)).not.toThrow();
   });
 

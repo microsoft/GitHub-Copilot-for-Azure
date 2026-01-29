@@ -13,8 +13,14 @@ describe('count command', () => {
     mkdirSync(TEST_DIR, { recursive: true });
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    // Small delay to allow file handles to close on Windows
+    await new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
   });
 
   describe('token counting', () => {
@@ -50,6 +56,10 @@ describe('count command', () => {
 
   describe('file discovery', () => {
     it('finds all markdown files in directory', () => {
+      // Clean directory first to avoid leftover files from other tests
+      rmSync(TEST_DIR, { recursive: true, force: true });
+      mkdirSync(TEST_DIR, { recursive: true });
+      
       writeFileSync(join(TEST_DIR, 'readme.md'), '# README');
       writeFileSync(join(TEST_DIR, 'guide.md'), '# Guide');
       writeFileSync(join(TEST_DIR, 'script.ts'), 'console.log("test")');
@@ -87,6 +97,10 @@ describe('count command', () => {
     });
 
     it('excludes node_modules directory', () => {
+      // Clean and recreate test directory
+      rmSync(TEST_DIR, { recursive: true, force: true });
+      mkdirSync(TEST_DIR, { recursive: true });
+      
       writeFileSync(join(TEST_DIR, 'root.md'), '# Root');
       mkdirSync(join(TEST_DIR, 'node_modules', 'package'), { recursive: true });
       writeFileSync(join(TEST_DIR, 'node_modules', 'package', 'readme.md'), '# Package');

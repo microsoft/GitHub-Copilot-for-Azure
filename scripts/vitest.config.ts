@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    fileParallelism: false,  // Run test files sequentially to avoid race conditions on Windows
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

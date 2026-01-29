@@ -13,7 +13,10 @@ describe('count command integration', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
   
   beforeEach(() => {
-    // Create test directory structure
+    // Clean and create test directory structure
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true });
+    } catch {}
     mkdirSync(join(TEST_DIR, '.github', 'skills'), { recursive: true });
     mkdirSync(join(TEST_DIR, 'plugin', 'skills'), { recursive: true });
     
@@ -21,8 +24,14 @@ describe('count command integration', () => {
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    // Small delay to allow file handles to close on Windows
+    await new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
     consoleSpy.mockRestore();
   });
 
@@ -45,7 +54,7 @@ describe('count command integration', () => {
     count(TEST_DIR, ['--json']);
     
     // Should output JSON
-    const output = consoleSpy.mock.calls.map(call => call[0]).join('');
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join('');
     expect(() => JSON.parse(output)).not.toThrow();
   });
 

@@ -27,9 +27,14 @@ describe('check command', () => {
     mkdirSync(join(TEST_DIR, 'subdir'), { recursive: true });
   });
 
-  afterEach(() => {
-    // Clean up test directory
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    // Small delay to allow file handles to close on Windows
+    await new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
   });
 
   describe('token limit checking', () => {

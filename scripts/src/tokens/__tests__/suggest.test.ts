@@ -13,8 +13,14 @@ describe('suggest command', () => {
     mkdirSync(TEST_DIR, { recursive: true });
   });
 
-  afterEach(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+  afterEach(async () => {
+    // Small delay to allow file handles to close on Windows
+    await new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
   });
 
   describe('emoji detection', () => {
@@ -206,6 +212,12 @@ describe('suggest command', () => {
 
   describe('markdown file scanning', () => {
     it('finds markdown files recursively', () => {
+      // Clean and recreate test directory
+      try {
+        rmSync(TEST_DIR, { recursive: true, force: true });
+      } catch {}
+      mkdirSync(TEST_DIR, { recursive: true });
+      
       // Create test structure
       writeFileSync(join(TEST_DIR, 'readme.md'), '# Readme');
       mkdirSync(join(TEST_DIR, 'docs'), { recursive: true });
