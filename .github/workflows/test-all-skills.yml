@@ -156,9 +156,15 @@ jobs:
         run: npm run coverage:grid
 
       - name: Commit README updates
+        continue-on-error: true
+        working-directory: .
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add tests/README.md
-          git diff --staged --quiet || git commit -m "docs: update skills coverage grid [skip ci]"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: update skills coverage grid [skip ci]"
+            git push || echo "::warning::Could not push changes - branch protection may be enabled"
+          fi
