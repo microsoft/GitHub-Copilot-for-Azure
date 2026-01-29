@@ -45,3 +45,29 @@ REQUIREMENTS.md should _always_ include the following:
 - An instruction that any non-trivial scripts should include bash and PowerShell versions for compatibility with Linux, Mac, and Windows environments. It is OK if trivial scripts only include a bash version.
 - A requirement that Azure MCP tools and `azd` should be preferred where possible over direct Azure CLI commands. Azure CLI commands should only be used when absolutely necessary.
 - A requirement that any relevant Azure MCP tools be utilized and listed (with a short description) in a "Relevant MCP Tools" section.
+- A requirement to create tests for the new skill following the patterns in `/tests/AGENTS.md`.
+
+## Testing Requirements
+
+When creating a new skill, tests must be created following the patterns documented in `/tests/AGENTS.md`. The test suite should include:
+
+1. **Unit Tests** (`tests/{skill-name}/unit.test.js`):
+   - Validate SKILL.md metadata
+   - Test any validation or processing logic
+
+2. **Trigger Tests** (`tests/{skill-name}/triggers.test.js`):
+   - At least 5 prompts that SHOULD trigger the skill
+   - At least 5 prompts that should NOT trigger the skill
+   - Snapshot tests for keyword changes
+
+3. **Integration Tests** (`tests/{skill-name}/integration.test.js`) - if applicable:
+   - Mock MCP tool interactions
+   - Test error handling
+
+To create tests:
+```bash
+cp -r tests/_template tests/{skill-name}
+# Update SKILL_NAME in each test file
+# Add trigger prompts specific to the skill
+npm test -- --testPathPattern={skill-name}
+```

@@ -1,0 +1,155 @@
+# Test All Skills
+#
+# Runs the complete test suite for all skills.
+# Triggered manually or on significant changes.
+
+name: Test All Skills
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill-name:
+        description: 'Skill to test (leave empty for all skills)'
+        required: false
+        type: string
+        default: ''
+      coverage:
+        description: 'Generate coverage report'
+        required: false
+        type: boolean
+        default: true
+  push:
+    branches:
+      - main
+    paths:
+      - 'tests/**'
+      - 'plugin/skills/**'
+      - '.github/workflows/test-*.yml'
+  pull_request:
+    paths:
+      - 'tests/**'
+      - 'plugin/skills/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run All Skill Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          TEST_ARGS=""
+          if [ -n "${{ inputs.skill-name }}" ]; then
+            TEST_ARGS="--testPathPattern=${{ inputs.skill-name }}"
+          fi
+          if [ "${{ inputs.coverage }}" = "true" ] || [ "${{ github.event_name }}" = "push" ]; then
+            npm run test:ci -- --coverage $TEST_ARGS
+          else
+            npm run test:ci -- $TEST_ARGS
+          fi
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-all
+          path: tests/reports/junit.xml
+          retention-days: 30
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-all
+          path: tests/coverage/
+          retention-days: 30
+
+      - name: Test Report Summary
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Jest Results - All Skills
+          path: tests/reports/junit.xml
+          reporter: jest-junit
+          fail-on-error: true
+
+      - name: Coverage Summary
+        if: always() && (inputs.coverage == true || github.event_name == 'push')
+        run: |
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e "
+              const c = require('./coverage/coverage-summary.json').total;
+              console.log('| Metric | Coverage |');
+              console.log('|--------|----------|');
+              console.log('| Statements | ' + c.statements.pct + '% |');
+              console.log('| Branches | ' + c.branches.pct + '% |');
+              console.log('| Functions | ' + c.functions.pct + '% |');
+              console.log('| Lines | ' + c.lines.pct + '% |');
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+  update-readme:
+    name: Update Coverage Grid
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: write
+
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-all
+          path: tests/coverage/
+
+      - name: Generate coverage grid
+        run: npm run coverage:grid
+
+      - name: Commit README updates
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'docs: update skills coverage grid [skip ci]'
+          file_pattern: 'tests/README.md'
+          branch: main

@@ -1,0 +1,75 @@
+# Reusable Workflow: Test a Skill
+#
+# This workflow is called by per-skill test workflows.
+# It runs Jest tests for a specific skill and reports results.
+
+name: Test Skill (Reusable)
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      skill-name:
+        description: 'Name of the skill to test'
+        required: true
+        type: string
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20'
+
+jobs:
+  test:
+    name: Test ${{ inputs.skill-name }}
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests for ${{ inputs.skill-name }}
+        run: npm run test:ci -- --testPathPattern="${{ inputs.skill-name }}"
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ inputs.skill-name }}
+          path: tests/reports/junit.xml
+          retention-days: 30
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ inputs.skill-name }}
+          path: tests/coverage/
+          retention-days: 30
+
+      - name: Test Report Summary
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Jest Results - ${{ inputs.skill-name }}
+          path: tests/reports/junit.xml
+          reporter: jest-junit
+          fail-on-error: true
