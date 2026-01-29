@@ -60,6 +60,12 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
+          # Validate BASE_REF to avoid unsafe characters in shell command
+          if ! echo "$BASE_REF" | grep -Eq '^[A-Za-z0-9._/-]+$'; then
+            echo "Error: Invalid base ref: '$BASE_REF'. Aborting token comparison."
+            exit 1
+          fi
+          
           COMPARE_OUTPUT=$(npm run tokens -- compare --base "origin/${BASE_REF}" --head HEAD --markdown 2>&1)
           echo "$COMPARE_OUTPUT" > compare-report.md
           
@@ -153,6 +159,8 @@ jobs:
         run: |
           echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
           
+          # Use IFS to safely handle filenames (though markdown files typically don't have spaces)
+          IFS=$'\n'
           for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
             echo "Checking $file..."
             

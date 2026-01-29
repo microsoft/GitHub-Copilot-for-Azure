@@ -212,11 +212,10 @@ describe('compare command', () => {
     it('handles zero before case for percent change', () => {
       const before = 0;
       const after = 100;
-      const diff = after - before;
       // When before is 0, percent calculation uses special logic for new files
-      const percentChange = before > 0 
-        ? Math.round((diff / before) * 100)
-        : (after > 0 ? 100 : 0);
+      const percentChange = before === 0
+        ? (after > 0 ? 100 : 0)
+        : Math.round(((after - before) / before) * 100);
       
       expect(percentChange).toBe(100);
     });

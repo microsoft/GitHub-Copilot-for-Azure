@@ -55,12 +55,12 @@ If not authenticated, see the authentication step above.
 
 | Verbose | Concise | Savings |
 |---------|---------|---------|
-| "To" | "To" | 0 tokens |
-| "Note:" | "Note:" | 0 tokens |
+| "In order to" | "To" | 2 tokens |
+| "It is important to note that" | "Note:" | 5 tokens |
 | "At this point in time" | "Now" | 4 tokens |
-| "Because" | "Because" | 0 tokens |
-| "If" | "If" | 0 tokens |
-| "To" / "For" | "To" / "For" | 0 tokens |
+| "Due to the fact that" | "Because" | 4 tokens |
+| "In the event that" | "If" | 3 tokens |
+| "For the purpose of" | "To" / "For" | 3 tokens |
 | "A large number of" | "Many" | 3 tokens |
 | "In close proximity to" | "Near" | 3 tokens |
 

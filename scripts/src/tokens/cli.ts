@@ -12,7 +12,6 @@
  *   npm run tokens help               # Show help
  */
 
-import { parseArgs } from 'node:util';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { count } from './commands/count.js';

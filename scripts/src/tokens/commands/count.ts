@@ -113,12 +113,21 @@ function isPathWithinRoot(targetPath: string, rootDir: string): boolean {
   const resolvedTarget = resolve(targetPath);
   const resolvedRoot = resolve(rootDir);
   
-  // Normalize paths to prevent traversal attacks
-  const normalizedTarget = resolvedTarget.replace(/[\\/]+/g, '/').toLowerCase();
-  const normalizedRoot = resolvedRoot.replace(/[\\/]+/g, '/').toLowerCase();
-  
-  // Ensure the target path starts with root and has proper separator
-  return normalizedTarget.startsWith(normalizedRoot + '/') || normalizedTarget === normalizedRoot;
+  // Normalize paths to prevent traversal attacks (unify separators)
+  const normalizedTarget = resolvedTarget.replace(/[\\/]+/g, '/');
+  const normalizedRoot = resolvedRoot.replace(/[\\/]+/g, '/');
+  const rootWithSep = normalizedRoot.endsWith('/') ? normalizedRoot : normalizedRoot + '/';
+
+  if (process.platform === 'win32') {
+    // Windows file systems are typically case-insensitive
+    const targetLower = normalizedTarget.toLowerCase();
+    const rootLowerWithSep = rootWithSep.toLowerCase();
+    const rootLower = normalizedRoot.toLowerCase();
+    return targetLower === rootLower || targetLower.startsWith(rootLowerWithSep);
+  }
+
+  // On case-sensitive platforms, compare using original case
+  return normalizedTarget === normalizedRoot || normalizedTarget.startsWith(rootWithSep);
 }
 
 export function count(rootDir: string, args: string[]): void {

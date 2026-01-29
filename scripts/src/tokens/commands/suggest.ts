@@ -36,8 +36,9 @@ const VERBOSE_PHRASES: Record<string, string> = {
 
 /**
  * Finds excessive emoji usage in markdown lines.
- * Detects all emojis and flags lines with more than 2 emojis.
- * Note: Functional emojis like ✅❌⚠️ should be kept to a minimum.
+ * Detects emojis in common Unicode ranges and flags lines with more than 2 emojis.
+ * Note: Both functional (✅❌⚠️) and decorative emojis are counted.
+ * The suggestion recommends keeping functional emojis while removing decorative ones.
  * @param lines - Array of file lines
  * @returns Array of suggestions
  */

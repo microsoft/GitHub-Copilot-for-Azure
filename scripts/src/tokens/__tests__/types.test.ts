@@ -8,8 +8,11 @@ import {
   isMarkdownFile, 
   normalizePath,
   getErrorMessage,
+  globToRegex,
+  matchesPattern,
   EXCLUDED_DIRS,
-  MARKDOWN_EXTENSIONS
+  MARKDOWN_EXTENSIONS,
+  MAX_PATTERN_LENGTH
 } from '../commands/types.js';
 
 describe('estimateTokens', () => {
@@ -72,7 +75,7 @@ describe('isMarkdownFile', () => {
   });
 
   it('handles edge cases', () => {
-    expect(isMarkdownFile('.md')).toBe(true);    // Just extension
+    expect(isMarkdownFile('.md')).toBe(false);   // Just extension - no filename
     expect(isMarkdownFile('file.md.bak')).toBe(false);  // Wrong ending
   });
 });
@@ -165,5 +168,86 @@ describe('getErrorMessage', () => {
     }
     const error = new CustomError('Custom error');
     expect(getErrorMessage(error)).toBe('Custom error');
+  });
+});
+
+describe('globToRegex', () => {
+  it('converts simple filename patterns', () => {
+    const regex = globToRegex('SKILL.md');
+    expect(regex.test('SKILL.md')).toBe(true);
+    expect(regex.test('path/to/SKILL.md')).toBe(true);
+    expect(regex.test('README.md')).toBe(false);
+  });
+
+  it('converts wildcard patterns', () => {
+    const regex = globToRegex('*.md');
+    expect(regex.test('README.md')).toBe(true);
+    expect(regex.test('SKILL.md')).toBe(true);
+    expect(regex.test('path/to/file.md')).toBe(true);
+    expect(regex.test('file.txt')).toBe(false);
+  });
+
+  it('converts globstar patterns', () => {
+    const regex = globToRegex('references/**/*.md');
+    // Note: references/**/*.md requires at least one directory between references and file
+    expect(regex.test('references/sub/file.md')).toBe(true);
+    expect(regex.test('references/a/b/c/file.md')).toBe(true);
+    expect(regex.test('other/file.md')).toBe(false);
+  });
+
+  it('escapes regex special characters', () => {
+    const regex = globToRegex('file.name.md');
+    expect(regex.test('file.name.md')).toBe(true);
+    expect(regex.test('fileXnameXmd')).toBe(false);
+  });
+
+  it('rejects patterns exceeding max length', () => {
+    const longPattern = 'a'.repeat(MAX_PATTERN_LENGTH + 1);
+    expect(() => globToRegex(longPattern)).toThrow('Pattern too long');
+  });
+
+  it('accepts patterns at max length', () => {
+    const maxPattern = 'a'.repeat(MAX_PATTERN_LENGTH);
+    expect(() => globToRegex(maxPattern)).not.toThrow();
+  });
+
+  it('uses non-greedy matching to prevent catastrophic backtracking', () => {
+    // This pattern could cause ReDoS with greedy matching
+    const regex = globToRegex('**/*.md');
+    const startTime = Date.now();
+    regex.test('a/b/c/d/e/f/g/h/i/j/k/l/m/file.md');
+    const elapsed = Date.now() - startTime;
+    // Should complete quickly (< 100ms), not hang
+    expect(elapsed).toBeLessThan(100);
+  });
+});
+
+describe('matchesPattern', () => {
+  it('matches simple filename patterns', () => {
+    expect(matchesPattern('SKILL.md', 'SKILL.md')).toBe(true);
+    expect(matchesPattern('path/to/SKILL.md', 'SKILL.md')).toBe(true);
+    expect(matchesPattern('README.md', 'SKILL.md')).toBe(false);
+  });
+
+  it('matches wildcard patterns', () => {
+    expect(matchesPattern('README.md', '*.md')).toBe(true);
+    expect(matchesPattern('path/README.md', '*.md')).toBe(true);
+    expect(matchesPattern('file.txt', '*.md')).toBe(false);
+  });
+
+  it('matches globstar patterns', () => {
+    // Note: references/**/*.md requires at least one directory between references and file
+    expect(matchesPattern('references/sub/file.md', 'references/**/*.md')).toBe(true);
+    expect(matchesPattern('other/file.md', 'references/**/*.md')).toBe(false);
+  });
+
+  it('normalizes path separators', () => {
+    expect(matchesPattern('path\\to\\SKILL.md', 'SKILL.md')).toBe(true);
+    expect(matchesPattern('references\\sub\\file.md', 'references/**/*.md')).toBe(true);
+  });
+
+  it('handles paths without leading slash', () => {
+    expect(matchesPattern('SKILL.md', 'SKILL.md')).toBe(true);
+    expect(matchesPattern('plugin/skills/SKILL.md', 'SKILL.md')).toBe(true);
   });
 });
