@@ -185,11 +185,82 @@ const prompts = loadFixture('azure-validation', 'prompts');
 
 ---
 
+## Writing Integration Tests
+
+Integration tests run a real Copilot agent session to verify skill behavior.
+
+### Prerequisites
+
+1. Install Copilot CLI: `npm install -g @github/copilot-cli`
+2. Authenticate: Run `copilot` and follow prompts
+
+### Basic Integration Test
+
+```javascript
+const { 
+  run, 
+  isSkillInvoked, 
+  doesAssistantMessageIncludeKeyword,
+  shouldSkipIntegrationTests 
+} = require('../utils/agent-runner');
+
+const SKILL_NAME = 'azure-role-selector';
+
+// Skip in CI or when SKIP_INTEGRATION_TESTS is set
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  test('invokes skill for relevant prompt', async () => {
+    const agentMetadata = await run({
+      prompt: 'What role should I assign for blob storage access?'
+    });
+
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
+  });
+});
+```
+
+### Agent Runner Helpers
+
+| Helper | Purpose |
+|--------|---------|
+| `run(config)` | Execute agent session with prompt |
+| `isSkillInvoked(metadata, skillName)` | Check if skill was invoked |
+| `areToolCallsSuccess(metadata, toolName)` | Check if tool calls succeeded |
+| `doesAssistantMessageIncludeKeyword(metadata, keyword)` | Search response for keyword |
+| `shouldSkipIntegrationTests()` | Check if tests should be skipped |
+
+### Test with Workspace Setup
+
+```javascript
+test('works with project files', async () => {
+  const agentMetadata = await run({
+    setup: async (workspace) => {
+      const fs = require('fs');
+      const path = require('path');
+      fs.writeFileSync(path.join(workspace, 'main.bicep'), 'resource ...');
+    },
+    prompt: 'Validate my Bicep file'
+  });
+
+  expect(isSkillInvoked(agentMetadata, 'azure-validation')).toBe(true);
+});
+```
+
+---
+
 ## Running Tests
 
 ### Local Development
 
 ```bash
+# Unit and trigger tests (fast, no auth)
+npm run test:unit
+
+# Integration tests (requires Copilot CLI auth)
+npm run test:integration
+
 # All tests
 npm test
 
