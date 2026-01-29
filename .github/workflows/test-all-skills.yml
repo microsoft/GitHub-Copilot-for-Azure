@@ -5,6 +5,9 @@
 
 name: Test All Skills
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:

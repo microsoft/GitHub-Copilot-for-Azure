@@ -22,7 +22,7 @@
     "outputDirectory": "./reports",
     "outputName": "junit.xml",
     "ancestorSeparator": " › ",
-    "uniqueOutputName": "false",
+    "uniqueOutputName": false,
     "suiteNameTemplate": "{filepath}",
     "classNameTemplate": "{classname}",
     "titleTemplate": "{title}"

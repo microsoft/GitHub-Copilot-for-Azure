@@ -117,10 +117,6 @@ function generateGrid() {
     table += `| ${row.skill} | ${row.tests} | ${row.unit} | ${row.triggers} | ${row.integration} | ${row.coverage} |\n`;
   }
   
-  // Add summary
-  const totalSkills = skills.length;
-  const testedSkills = rows.filter(r => r.tests === '✅').length;
-  
   table += `\n**Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage`;
   
   return table;
