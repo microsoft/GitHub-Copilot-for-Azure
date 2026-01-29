@@ -64,4 +64,4 @@ npm run check
 npm run tokens
 ```
 
-If any checks fail, see [SKILL-GUIDELINES.md](SKILL-GUIDELINES.md) for guidance.
+If any checks fail, see [GUIDELINES.md](GUIDELINES.md) for guidance.
