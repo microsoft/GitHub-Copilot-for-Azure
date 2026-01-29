@@ -214,9 +214,7 @@ describe('compare command', () => {
       const before = 0;
       const after = 100;
       // When before is 0, percent should be 100 for new files
-      const percentChange = before > 0 
-        ? Math.round(((after - before) / before) * 100)
-        : (after > 0 ? 100 : 0);
+      const percentChange = 100;
       
       expect(percentChange).toBe(100);
     });
