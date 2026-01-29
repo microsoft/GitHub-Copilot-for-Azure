@@ -37,19 +37,26 @@ Commands:
   count     Count tokens in all markdown files
   check     Validate files against token limits
   compare   Compare tokens between git refs
-  suggest   Get optimization suggestions for files
+  suggest   Get optimization suggestions (prioritizes files exceeding limits)
   help      Show this help message
+
+Default Scope:
+  All commands scan these directories by default:
+  - .github/skills
+  - plugin/skills
+  - .github/agents
 
 Options vary by command. Use --help with any command for details.
 
 Examples:
-  npm run tokens count                    # Show token summary
+  npm run tokens count                    # Count tokens in default directories
   npm run tokens count -- --json          # Output as JSON
-  npm run tokens check                    # Check all files
+  npm run tokens check                    # Check default directories
   npm run tokens check -- --markdown      # Output as markdown
+  npm run tokens check -- docs/           # Check specific directory
   npm run tokens compare                  # Compare HEAD vs main
   npm run tokens compare -- --base HEAD~1 # Compare vs previous commit
-  npm run tokens suggest                  # Analyze all files
+  npm run tokens suggest                  # Analyze default directories (shows exceeded first)
   npm run tokens suggest -- docs/         # Analyze specific directory
 `);
 }

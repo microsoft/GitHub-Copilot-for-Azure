@@ -55,31 +55,18 @@ If not authenticated, see the authentication step above.
 
 | Verbose | Concise | Savings |
 |---------|---------|---------|
-| "In order to" | "To" | 2 tokens |
-| "It is important to note that" | "Note:" | 4 tokens |
+| "To" | "To" | 0 tokens |
+| "Note:" | "Note:" | 0 tokens |
 | "At this point in time" | "Now" | 4 tokens |
-| "Due to the fact that" | "Because" | 4 tokens |
-| "In the event that" | "If" | 3 tokens |
-| "For the purpose of" | "To" / "For" | 3 tokens |
+| "Because" | "Because" | 0 tokens |
+| "If" | "If" | 0 tokens |
+| "To" / "For" | "To" / "For" | 0 tokens |
 | "A large number of" | "Many" | 3 tokens |
 | "In close proximity to" | "Near" | 3 tokens |
 
 ### Consolidate Similar Sections
 
-**Before:**
-```markdown
-## Prerequisites for Windows
-- Install Node.js
-- Install Azure CLI
-
-## Prerequisites for macOS  
-- Install Node.js
-- Install Azure CLI
-
-## Prerequisites for Linux
-- Install Node.js
-- Install Azure CLI
-```
+**Before:** Three identical prerequisite sections (Windows/macOS/Linux)
 
 **After:**
 ```markdown
@@ -87,7 +74,7 @@ If not authenticated, see the authentication step above.
 - Node.js 18+
 - Azure CLI
 
-Platform-specific notes in [references/INSTALL.md](references/INSTALL.md).
+Platform-specific: [references/INSTALL.md](references/INSTALL.md)
 ```
 
 **Savings:** 50+ tokens

@@ -9,8 +9,83 @@ import {
   FileAnalysis, 
   estimateTokens, 
   EXCLUDED_DIRS, 
-  isMarkdownFile 
+  isMarkdownFile,
+  TokenLimitsConfig,
+  normalizePath,
+  DEFAULT_SCAN_DIRS
 } from './types.js';
+
+const DEFAULT_LIMITS: TokenLimitsConfig = {
+  defaults: {
+    'SKILL.md': 500,
+    'references/**/*.md': 1000,
+    'docs/**/*.md': 1500,
+    '*.md': 2000
+  },
+  overrides: {
+    'README.md': 3000,
+    'CONTRIBUTING.md': 2500,
+    'plugin/README.md': 3000
+  }
+};
+
+function loadConfig(rootDir: string): TokenLimitsConfig {
+  const configPath = join(rootDir, '.token-limits.json');
+  
+  if (existsSync(configPath)) {
+    try {
+      const content = readFileSync(configPath, 'utf-8');
+      return JSON.parse(content) as TokenLimitsConfig;
+    } catch (error) {
+      console.error(`⚠️  Warning: Invalid .token-limits.json, using defaults`);
+      return DEFAULT_LIMITS;
+    }
+  }
+  
+  return DEFAULT_LIMITS;
+}
+
+function globToRegex(pattern: string): RegExp {
+  const regexPattern = pattern
+    .replace(/\./g, '\\.')
+    .replace(/\*\*/g, '{{GLOBSTAR}}')
+    .replace(/\*/g, '[^/]*')
+    .replace(/{{GLOBSTAR}}/g, '.*')
+    .replace(/\//g, '\\/');
+  
+  return new RegExp(`(^|\\/)${regexPattern}$`);
+}
+
+function matchesPattern(filePath: string, pattern: string): boolean {
+  const normalizedPath = normalizePath(filePath);
+  
+  if (!pattern.includes('/') && !pattern.includes('*')) {
+    return normalizedPath.endsWith('/' + pattern) || normalizedPath === pattern;
+  }
+  
+  return globToRegex(pattern).test(normalizedPath);
+}
+
+function getLimitForFile(filePath: string, config: TokenLimitsConfig, rootDir: string): { limit: number; pattern: string } {
+  const normalizedPath = normalizePath(relative(rootDir, filePath));
+  
+  for (const [overridePath, limit] of Object.entries(config.overrides)) {
+    if (normalizedPath === overridePath || normalizedPath.endsWith('/' + overridePath)) {
+      return { limit, pattern: overridePath };
+    }
+  }
+  
+  const sortedDefaults = Object.entries(config.defaults)
+    .sort(([a], [b]) => b.length - a.length);
+  
+  for (const [pattern, limit] of sortedDefaults) {
+    if (matchesPattern(normalizedPath, pattern)) {
+      return { limit, pattern };
+    }
+  }
+  
+  return { limit: config.defaults['*.md'] ?? 2000, pattern: '*.md' };
+}
 
 const VERBOSE_PHRASES: Record<string, string> = {
   'in order to': 'to',
@@ -119,9 +194,11 @@ function findLargeTables(lines: string[]): Suggestion[] {
   return suggestions;
 }
 
-function analyzeFile(filePath: string): FileAnalysis {
+function analyzeFile(filePath: string, rootDir: string, config: TokenLimitsConfig): FileAnalysis & { limit: number; exceeded: boolean } {
   const content = readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
+  const tokens = estimateTokens(content);
+  const { limit } = getLimitForFile(filePath, config, rootDir);
   
   const suggestions: Suggestion[] = [
     ...findEmojis(lines),
@@ -132,11 +209,13 @@ function analyzeFile(filePath: string): FileAnalysis {
   
   return {
     file: filePath,
-    tokens: estimateTokens(content),
+    tokens,
     characters: content.length,
     lines: lines.length,
     suggestions,
-    potentialSavings: suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0)
+    potentialSavings: suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0),
+    limit,
+    exceeded: tokens > limit
   };
 }
 
@@ -158,18 +237,27 @@ function findMarkdownFiles(dir: string): string[] {
   return files;
 }
 
-function printAnalysis(analysis: FileAnalysis, rootDir: string): void {
+function printAnalysis(analysis: FileAnalysis & { limit: number; exceeded: boolean }, rootDir: string): void {
   const relativePath = relative(rootDir, analysis.file).replace(/\\/g, '/');
+  const overBy = analysis.exceeded ? ` (over by ${analysis.tokens - analysis.limit})` : '';
+  const status = analysis.exceeded ? '❌' : '✅';
   
   console.log(`\n${'═'.repeat(60)}`);
-  console.log(`📄 ${relativePath}`);
+  console.log(`${status} ${relativePath}`);
   console.log(`${'─'.repeat(60)}`);
-  console.log(`   Tokens: ${analysis.tokens.toLocaleString()} | Lines: ${analysis.lines}`);
+  console.log(`   Tokens: ${analysis.tokens.toLocaleString()} / ${analysis.limit.toLocaleString()}${overBy} | Lines: ${analysis.lines}`);
   
   if (analysis.suggestions.length === 0) {
-    console.log('\n   ✅ No optimization suggestions');
+    if (analysis.exceeded) {
+      console.log('\n   ⚠️  File exceeds limit but no automatic suggestions found');
+      console.log('   💡 Consider moving detailed content to references/ directory');
+    } else {
+      console.log('\n   ✅ No optimization suggestions');
+    }
   } else {
-    console.log(`\n   📋 ${analysis.suggestions.length} suggestions (~${analysis.potentialSavings} tokens)\n`);
+    const willFixExceeded = analysis.exceeded && analysis.potentialSavings >= (analysis.tokens - analysis.limit);
+    const fixIndicator = willFixExceeded ? ' (will fix ✅)' : '';
+    console.log(`\n   📋 ${analysis.suggestions.length} suggestions (~${analysis.potentialSavings} tokens)${fixIndicator}\n`);
     
     for (const s of analysis.suggestions) {
       console.log(`   Line ${s.line.toString().padStart(4)}: ${s.issue}`);
@@ -180,6 +268,7 @@ function printAnalysis(analysis: FileAnalysis, rootDir: string): void {
 
 export function suggest(rootDir: string, args: string[]): void {
   const targetArg = args.filter(a => !a.startsWith('--'))[0];
+  const config = loadConfig(rootDir);
   
   let files: string[];
   if (targetArg) {
@@ -192,7 +281,16 @@ export function suggest(rootDir: string, args: string[]): void {
       ? findMarkdownFiles(targetPath) 
       : [targetPath];
   } else {
-    files = findMarkdownFiles(rootDir);
+    // Default: scan only skill/agent directories
+    files = [];
+    for (const dir of DEFAULT_SCAN_DIRS) {
+      const fullPath = join(rootDir, dir);
+      try {
+        files.push(...findMarkdownFiles(fullPath));
+      } catch {
+        // Skip if directory doesn't exist
+      }
+    }
   }
   
   if (files.length === 0) {
@@ -202,15 +300,46 @@ export function suggest(rootDir: string, args: string[]): void {
   
   console.log(`\n🔍 Analyzing ${files.length} file(s)...\n`);
   
-  const analyses = files.map(analyzeFile);
-  const withSuggestions = analyses.filter(a => a.suggestions.length > 0);
+  const analyses = files.map(f => analyzeFile(f, rootDir, config));
   
-  (files.length === 1 ? analyses : withSuggestions).forEach(a => printAnalysis(a, rootDir));
+  // Prioritize files that exceed their limits
+  const exceeded = analyses.filter(a => a.exceeded);
+  const withinLimit = analyses.filter(a => !a.exceeded && a.suggestions.length > 0);
+  
+  // For single file, show it regardless
+  // For multiple files, show exceeded files first, then files with suggestions
+  const toShow = files.length === 1 
+    ? analyses 
+    : [...exceeded, ...withinLimit];
+  
+  toShow.forEach(a => printAnalysis(a, rootDir));
   
   if (files.length > 1) {
     const totalSavings = analyses.reduce((sum, a) => sum + a.potentialSavings, 0);
+    const filesWithSuggestions = analyses.filter(a => a.suggestions.length > 0).length;
+    
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`📊 SUMMARY: ${withSuggestions.length}/${analyses.length} files have suggestions (~${totalSavings} tokens)`);
+    console.log(`📊 SUMMARY`);
+    console.log(`   Files analyzed: ${analyses.length}`);
+    console.log(`   Files exceeding limits: ${exceeded.length}${exceeded.length > 0 ? ' ⚠️' : ''}`);
+    console.log(`   Files with suggestions: ${filesWithSuggestions}`);
+    console.log(`   Total potential savings: ~${totalSavings} tokens`);
+    
+    if (exceeded.length > 0) {
+      const fixableCount = exceeded.filter(a => 
+        a.potentialSavings >= (a.tokens - a.limit)
+      ).length;
+      
+      if (fixableCount > 0) {
+        console.log(`\n   ✅ ${fixableCount} file(s) can be brought under limits with suggestions`);
+      }
+      
+      const remainingExceeded = exceeded.length - fixableCount;
+      if (remainingExceeded > 0) {
+        console.log(`   ⚠️  ${remainingExceeded} file(s) need manual optimization or references/ refactoring`);
+      }
+    }
+    
     console.log('═'.repeat(60) + '\n');
   }
 }

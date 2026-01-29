@@ -12,7 +12,8 @@ import {
   estimateTokens, 
   EXCLUDED_DIRS, 
   isMarkdownFile, 
-  normalizePath 
+  normalizePath,
+  DEFAULT_SCAN_DIRS
 } from './types.js';
 
 const GIT_REF_PATTERN = /^[a-zA-Z0-9._\-\/~^]+$/;
@@ -91,10 +92,23 @@ function getAllMarkdownFiles(dir: string, files: string[] = [], rootDir: string 
   return files;
 }
 
+function getDefaultMarkdownFiles(rootDir: string): string[] {
+  const files: string[] = [];
+  for (const dir of DEFAULT_SCAN_DIRS) {
+    const fullPath = join(rootDir, dir);
+    try {
+      getAllMarkdownFiles(fullPath, files, rootDir);
+    } catch {
+      // Skip if directory doesn't exist
+    }
+  }
+  return files;
+}
+
 function compareTokens(baseRef: string, headRef: string, rootDir: string, onlyChanged: boolean): ComparisonReport {
   const files = onlyChanged 
     ? getChangedFiles(baseRef, headRef, rootDir)
-    : getAllMarkdownFiles(rootDir);
+    : getDefaultMarkdownFiles(rootDir);
   
   const comparisons: FileComparison[] = [];
   let totalBefore = 0, totalAfter = 0;

@@ -32,8 +32,7 @@ You'll need: 🔧
 **Token cost:** ~2 tokens per emoji. 10 decorative emojis = 20 wasted tokens.
 
 **When emojis ARE appropriate:**
-- Status indicators: ✅ ❌ ⚠️
-- Severity levels in tables
+- Status indicators in tables
 - Actual meaning (not decoration)
 
 ### Horizontal Rules Overuse
@@ -41,31 +40,20 @@ You'll need: 🔧
 **Bad:**
 ```markdown
 ## Section One
-
 Content here.
-
 ---
-
 ## Section Two
-
 More content.
-
 ---
-
-## Section Three
 ```
 
 **Good:**
 ```markdown
 ## Section One
-
 Content here.
 
 ## Section Two
-
 More content.
-
-## Section Three
 ```
 
 **Token cost:** ~3 tokens per `---`
@@ -77,16 +65,9 @@ More content.
 **Bad:**
 ```markdown
 ## Prerequisites
-
-Before you begin, make sure you have the following prerequisites installed.
-
-### Node.js
-
-Node.js is required. Make sure Node.js is installed before proceeding.
-
-### Azure CLI
-
-Azure CLI is required. Make sure Azure CLI is installed before proceeding.
+Before you begin, ensure these are installed:
+- Node.js (with redundant explanations)
+- Azure CLI (with redundant explanations)
 ```
 
 **Good:**
@@ -125,7 +106,7 @@ Here are some common issues you might encounter.
 
 **Bad:**
 ```markdown
-In order to successfully deploy your application to Azure, 
+To successfully deploy your application to Azure, 
 you will first need to make sure that you have properly 
 configured all of the necessary prerequisites.
 ```
@@ -160,54 +141,29 @@ Before deploying to Azure, configure these prerequisites:
 **Bad (in SKILL.md):**
 ```markdown
 ## Complete API Reference
-
 ### GET /users
-Returns all users. Accepts `limit` (default 10, max 100) and 
-`offset` (default 0) query parameters. Response is JSON array 
-of User objects with fields: id (string), name (string), 
-email (string), createdAt (ISO 8601 timestamp)...
-
+Returns all users. Accepts params...
 [continues for 200 more lines]
 ```
 
 **Good:**
 ```markdown
 ## API Reference
-
 See [references/API.md](references/API.md) for endpoints.
-
 Key endpoints: `GET /users`, `POST /users`, `GET /users/:id`
 ```
 
 ### Duplicate Examples
 
-**Bad:**
-```markdown
-## Example 1: Basic Usage
-\`\`\`bash
-az storage account create -n myaccount -g mygroup -l eastus
-\`\`\`
-
-## Example 2: With Tags
-\`\`\`bash  
-az storage account create -n myaccount -g mygroup -l eastus --tags env=dev
-\`\`\`
-
-## Example 3: With SKU
-\`\`\`bash
-az storage account create -n myaccount -g mygroup -l eastus --sku Standard_GRS
-\`\`\`
-```
+**Bad:** Three separate examples with 95% identical base command
 
 **Good:**
 ```markdown
 ## Examples
-
 Basic: `az storage account create -n NAME -g RG -l LOCATION`
-
 Options: `--tags env=dev`, `--sku Standard_GRS`
 
-More examples: [references/EXAMPLES.md](references/EXAMPLES.md)
+More: [references/EXAMPLES.md](references/EXAMPLES.md)
 ```
 
 ## Detection Checklist
@@ -216,7 +172,7 @@ When reviewing a file, check for:
 
 - [ ] More than 3 decorative emojis
 - [ ] Sections that start with "This section..."
-- [ ] Phrases like "In order to", "It is important"
+- [ ] Verbose constructions (see Filler Words section)
 - [ ] Same command/text appearing 3+ times
 - [ ] Code blocks longer than 10 lines
 - [ ] Tables with 10+ rows in main SKILL.md

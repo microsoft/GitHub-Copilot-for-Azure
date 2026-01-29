@@ -400,7 +400,9 @@ FodyWeavers.xsd
 # Token management tools
 scripts/node_modules/
 scripts/dist/
+scripts/coverage/
 scripts/package-lock.json
 token-metadata.json
 __test_fixtures__/
 __test_fixtures_*__/
+__integration_*__/

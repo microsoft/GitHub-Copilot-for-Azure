@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: Guidelines for writing Agent Skills in this repository. Use when creating new skills, reviewing skill PRs, or checking skill structure compliance. Covers frontmatter requirements, token budgets, directory structure, and best practices per agentskills.io specification.
+description: "Guidelines for writing Agent Skills. TRIGGERS: create a skill, new skill, write a skill, skill template, skill structure, review skill, skill PR, skill compliance, agentskills spec, SKILL.md format, skill frontmatter, skill best practices"
 ---
 
 # Skill Authoring Guide
@@ -14,48 +14,24 @@ This skill provides guidance for writing Agent Skills that comply with the [agen
 - Checking if an existing skill follows best practices
 - Understanding token budgets and progressive disclosure
 
-## Quick Reference
+## Constraints
 
-| Constraint | Limit |
-|------------|-------|
-| `name` field | 1-64 chars, lowercase + hyphens |
-| `description` field | 1-1024 chars |
-| SKILL.md body | < 500 tokens (soft), < 5000 (hard) |
-| Reference files | < 1000 tokens each |
-| SKILL.md lines | < 500 lines |
+- `name`: 1-64 chars, lowercase + hyphens, match directory
+- `description`: 1-1024 chars, explain WHAT and WHEN
+- SKILL.md: <500 tokens (soft), <5000 (hard)
+- references/*.md: <1000 tokens each
 
-## Required Structure
+## Structure
 
-```
-my-skill/
-├── SKILL.md              # Required
-├── references/           # Optional: detailed docs
-├── scripts/              # Optional: executable code
-└── assets/               # Optional: templates
-```
+- `SKILL.md` (required) - Instructions
+- `references/` (optional) - Detailed docs
+- `scripts/` (optional) - Executable code
 
-## Frontmatter Template
-
-```yaml
----
-name: my-skill-name
-description: What this skill does and when to use it.
----
-```
-
-**Name rules:** lowercase, hyphens, no `--`, must match directory name.
-
-**Description:** Explain WHAT it does AND WHEN to activate it.
+Frontmatter: `name` (lowercase-hyphens), `description` (WHAT + WHEN)
 
 ## Progressive Disclosure
 
-| Tier | Budget | When Loaded |
-|------|--------|-------------|
-| Metadata (name + description) | ~100 tokens | Startup |
-| Instructions (SKILL.md body) | < 5000 tokens | On activation |
-| Resources (references/) | As needed | On demand |
-
-Keep SKILL.md lean. Move detailed content to `references/`.
+Metadata (~100 tokens) loads at startup. SKILL.md (<5000 tokens) loads on activation. References load on demand. Keep SKILL.md lean.
 
 ## Validation
 

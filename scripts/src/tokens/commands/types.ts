@@ -93,6 +93,9 @@ const CHARS_PER_TOKEN = 4;
 /** Common directories to exclude from scanning */
 export const EXCLUDED_DIRS = ['node_modules', '.git', 'dist', 'coverage'] as const;
 
+/** Default directories to scan for skills/agents */
+export const DEFAULT_SCAN_DIRS = ['.github/skills', 'plugin/skills', '.github/agents'] as const;
+
 /** Supported markdown extensions */
 export const MARKDOWN_EXTENSIONS = ['.md', '.mdx'] as const;
 

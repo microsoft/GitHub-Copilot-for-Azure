@@ -11,7 +11,8 @@ import {
   estimateTokens,
   EXCLUDED_DIRS,
   normalizePath,
-  isMarkdownFile
+  isMarkdownFile,
+  DEFAULT_SCAN_DIRS
 } from './types.js';
 
 const DEFAULT_LIMITS: TokenLimitsConfig = {
@@ -199,9 +200,22 @@ export function check(rootDir: string, args: string[]): void {
   const jsonOutput = args.includes('--json');
   const filesArg = args.filter(a => !a.startsWith('--'));
   
-  const filesToCheck = filesArg.length > 0 
-    ? filesArg.map(f => resolve(rootDir, f))
-    : undefined;
+  let filesToCheck: string[] | undefined;
+  if (filesArg.length > 0) {
+    filesToCheck = filesArg.map(f => resolve(rootDir, f));
+  } else {
+    // Default: scan only skill/agent directories
+    const allFiles: string[] = [];
+    for (const dir of DEFAULT_SCAN_DIRS) {
+      const fullPath = join(rootDir, dir);
+      try {
+        allFiles.push(...findMarkdownFiles(fullPath));
+      } catch {
+        // Skip if directory doesn't exist
+      }
+    }
+    filesToCheck = allFiles.length > 0 ? allFiles : undefined;
+  }
   
   const report = validateFiles(rootDir, filesToCheck);
   

@@ -9,7 +9,8 @@ import {
   TokenCount, 
   estimateTokens, 
   EXCLUDED_DIRS, 
-  MARKDOWN_EXTENSIONS 
+  MARKDOWN_EXTENSIONS,
+  DEFAULT_SCAN_DIRS
 } from './types.js';
 
 function findMarkdownFiles(dir: string, files: string[] = []): string[] {
@@ -42,13 +43,23 @@ function countFileTokens(filePath: string): TokenCount {
   };
 }
 
-function generateMetadata(rootDir: string): TokenMetadata {
-  const files = findMarkdownFiles(rootDir);
+function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
+  const allFiles: string[] = [];
+  for (const dir of scanDirs) {
+    const fullPath = join(rootDir, dir);
+    try {
+      const files = findMarkdownFiles(fullPath);
+      allFiles.push(...files);
+    } catch {
+      // Skip if directory doesn't exist
+    }
+  }
+  
   const fileTokens: Record<string, TokenCount> = {};
   let totalTokens = 0;
   
-  for (const file of files) {
-    const relativePath = relative(rootDir, file).replace(/\\/g, '/');
+  for (const file of allFiles) {
+    const relativePath = relative(rootDir, file).replace(/\/\\/g, '/');
     const tokenCount = countFileTokens(file);
     fileTokens[relativePath] = tokenCount;
     totalTokens += tokenCount.tokens;
@@ -57,7 +68,7 @@ function generateMetadata(rootDir: string): TokenMetadata {
   return {
     generatedAt: new Date().toISOString(),
     totalTokens,
-    totalFiles: files.length,
+    totalFiles: allFiles.length,
     files: fileTokens
   };
 }
@@ -96,7 +107,7 @@ export function count(rootDir: string, args: string[]): void {
   const outputPath = hasOutputValue ? args[outputIndex + 1] : null;
   const jsonOnly = args.includes('--json');
 
-  const metadata = generateMetadata(rootDir);
+  const metadata = generateMetadata(rootDir, [...DEFAULT_SCAN_DIRS]);
   
   if (outputPath) {
     const fullOutputPath = isAbsolute(outputPath) 
