@@ -1,0 +1,26 @@
+{
+  "name": "integration-tests",
+  "version": "0.0.1",
+  "description": "Test skills against Copilot CLI agent",
+  "license": "MIT",
+  "author": "Chunan Ye",
+  "type": "module",
+  "main": "dist/runner.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "@github/copilot-sdk": "^0.1.19",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^25.1.0",
+    "chai": "^6.2.2",
+    "mocha": "^11.7.5",
+    "typescript": "^5.9.3"
+  },
+  "mocha": {
+    "timeout": 60000,
+    "spec": "dist/**/*.js"
+  }
+}

@@ -396,3 +396,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# integration test intermediate files
+integration-tests/**/*.d.ts
+integration-tests/**/*.js
+integration-tests/**/*.js.map
+integration-tests/**/*.d.ts.map
