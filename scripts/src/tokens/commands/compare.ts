@@ -21,7 +21,7 @@ import {
   GIT_OPERATION_TIMEOUT
 } from './types.js';
 
-const GIT_REF_PATTERN = /^[a-zA-Z0-9._\-\/~^@]+$/;
+const GIT_REF_PATTERN = /^[a-zA-Z0-9._\-\/~^]+$/;
 const MAX_REF_LENGTH = 256;
 
 /**
@@ -53,10 +53,25 @@ function validateGitRef(ref: string): void {
 }
 
 /**
+ * Validates a file path for shell safety.
+ * Ensures path doesn't contain shell metacharacters that could cause injection.
+ * @param path - File path to validate
+ * @throws Error if path contains dangerous characters
+ */
+function validatePath(path: string): void {
+  const dangerousChars = [';', '&&', '||', '|', '`', '$', '(', ')', '{', '}', '<', '>', '\n', '\r', '"', "'"];
+  for (const char of dangerousChars) {
+    if (path.includes(char)) {
+      throw new Error(`Path contains dangerous characters: ${path}`);
+    }
+  }
+}
+
+/**
  * Gets token count for a file at a specific git ref.
  * 
- * Security: Uses validateGitRef() to prevent command injection.
- * All git refs are validated against strict patterns before use.
+ * Security: Uses validateGitRef() and validatePath() to prevent command injection.
+ * All git refs and paths are validated against strict patterns before use.
  * 
  * @param filePath - Path to the file
  * @param ref - Git reference
@@ -68,11 +83,11 @@ function getFileTokensAtRef(filePath: string, ref: string, rootDir: string): Fil
   
   try {
     const relativePath = normalizePath(relative(rootDir, filePath));
-    // Use array form of execSync to prevent command injection
+    validatePath(relativePath);
     const content = execSync(`git show "${ref}:${relativePath}"`, {
       cwd: rootDir,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'inherit'],
       maxBuffer: MAX_GIT_BUFFER_SIZE,
       timeout: GIT_OPERATION_TIMEOUT
     });
@@ -117,7 +132,7 @@ function getChangedFiles(baseRef: string, headRef: string, rootDir: string): str
     const output = execSync(`git diff --name-only "${baseRef}"..."${headRef}" -- "*.md" "*.mdx"`, {
       cwd: rootDir,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'inherit'],
       maxBuffer: MAX_GIT_BUFFER_SIZE,
       timeout: GIT_OPERATION_TIMEOUT
     });
