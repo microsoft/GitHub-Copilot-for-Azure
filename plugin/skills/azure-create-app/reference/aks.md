@@ -147,7 +147,7 @@ azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
 
 ### MCP Tools for AKS
 
-Use the Azure MCP server's azd tools (`azure-azd`) for validation:
+Use the Azure MCP server's azd tools (`azure__azd`) for validation:
 
 | Command | Description |
 |---------|-------------|
@@ -159,7 +159,7 @@ Use the Azure MCP server's azd tools (`azure-azd`) for validation:
 
 **Validate before deployment:**
 ```javascript
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });

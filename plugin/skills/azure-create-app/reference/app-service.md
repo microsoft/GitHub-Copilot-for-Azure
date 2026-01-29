@@ -70,7 +70,7 @@ azd down --force --purge
 | Property | Value |
 |----------|-------|
 | Deployment tool | `azd` (Azure Developer CLI) |
-| MCP tools | `azure-azd` (commands: `validate_azure_yaml`, `discovery_analysis`) |
+| MCP tools | `azure__azd` (commands: `validate_azure_yaml`, `discovery_analysis`) |
 | Best for | Web apps, REST APIs, managed hosting |
 | azd Template | `todo-csharp-sql`, `todo-nodejs-mongo` |
 
@@ -122,7 +122,7 @@ azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
 
 ### MCP Tools for App Service
 
-Use the Azure MCP server's azd tools (`azure-azd`) for validation:
+Use the Azure MCP server's azd tools (`azure__azd`) for validation:
 
 | Command | Description |
 |---------|-------------|
@@ -132,7 +132,7 @@ Use the Azure MCP server's azd tools (`azure-azd`) for validation:
 
 **Validate before deployment:**
 ```javascript
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });

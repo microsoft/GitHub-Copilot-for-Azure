@@ -65,12 +65,13 @@ Check if `AZURE_SUBSCRIPTION_ID` is set in the output.
 
 **If `AZURE_SUBSCRIPTION_ID` is NOT set:**
 
-1. Call the `mcp_azure_mcp_subscription_list` tool to get available subscriptions:
+1. Call the `azure__subscription_list` MCP tool to get available subscriptions:
 ```json
 {
-  "tool": "mcp_azure_mcp_subscription_list",
+  "command": "subscription_list",
   "parameters": {}
 }
+```
 ```
 
 2. Present the list of subscriptions to the user. If a default subscription was found in `azd config get defaults`, include it in the prompt:
@@ -132,15 +133,13 @@ azd provision --preview
 
 ### Step 6: Handle Errors
 
-If `azd up` fails, call the `mcp_azure_mcp_azd` tool:
+If `azd up` fails, call the `azure__azd` MCP tool:
 ```json
 {
-  "tool": "mcp_azure_mcp_azd",
-  "parameters": {
-    "command": "error_troubleshooting",
-    "parameters": {}
-  }
+  "command": "error_troubleshooting",
+  "parameters": {}
 }
+```
 ```
 
 Common error resolutions:

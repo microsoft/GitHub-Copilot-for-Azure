@@ -153,7 +153,7 @@ az account set --subscription "<name-or-id>"
 
 ### azd-Specific MCP Tools
 
-Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+Use the Azure MCP server's azd tools (`azure__azd`) for validation and guidance:
 
 | Command | Description |
 |---------|-------------|
@@ -587,7 +587,7 @@ azd deploy api --no-prompt
 **Validate azure.yaml before deployment:**
 ```javascript
 // Use MCP tool to validate azure.yaml
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });

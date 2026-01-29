@@ -62,7 +62,7 @@ Determine the deployment workflow by checking for project indicators:
 For azd projects, validate the `azure.yaml` configuration using the Azure MCP azd tool:
 
 ```javascript
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });
@@ -233,7 +233,7 @@ This skill uses the following tools:
 
 ### Azure MCP azd Tools
 
-Use the Azure MCP server's azd tools (`azure-azd`) for additional validation:
+Use the Azure MCP server's azd tools (`azure__azd`) for additional validation:
 
 | Command | Description |
 |---------|-------------|
@@ -243,7 +243,7 @@ Use the Azure MCP server's azd tools (`azure-azd`) for additional validation:
 
 **Validate azure.yaml before running `azd provision --preview`:**
 ```javascript
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });
@@ -260,7 +260,7 @@ bicep --version
 
 1. User: "Validate my Bicep deployment before I run it"
 2. Agent detects `azure.yaml` → azd project
-3. Agent validates `azure.yaml` using `azure-azd` → `validate_azure_yaml`
+3. Agent validates `azure.yaml` using `azure__azd` → `validate_azure_yaml`
 4. Agent finds `infra/main.bicep` and `infra/main.bicepparam`
 5. Agent runs `bicep build infra/main.bicep --stdout`
 6. Agent runs `azd provision --preview`
