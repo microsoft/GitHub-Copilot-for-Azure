@@ -213,7 +213,25 @@ PASS SKILLS azure-validation/unit.test.js
 
 ## Adding Tests for a New Skill
 
-### Step 1: Copy the Template
+### 🤖 Quick Scaffold with Copilot
+
+Just run this prompt in GitHub Copilot CLI:
+
+```
+Scaffold tests for the skill "azure-redis"
+```
+
+That's it. Copilot will read `tests/AGENTS.md` and create a complete test suite following all the patterns.
+
+> **Tip:** Replace `azure-redis` with any skill name from `/plugin/skills/`
+
+---
+
+### Manual Steps
+
+If you prefer to create tests manually:
+
+#### Step 1: Copy the Template
 
 ```bash
 cd tests
@@ -221,7 +239,7 @@ cp -r _template {skill-name}
 # Example: cp -r _template azure-redis
 ```
 
-### Step 2: Update the Skill Name
+#### Step 2: Update the Skill Name
 
 Edit each test file and change the `SKILL_NAME` constant:
 
@@ -230,7 +248,7 @@ Edit each test file and change the `SKILL_NAME` constant:
 const SKILL_NAME = 'azure-redis';  // ← Change this to match your skill folder
 ```
 
-### Step 3: Add Trigger Prompts
+#### Step 3: Add Trigger Prompts
 
 In `triggers.test.js`, add prompts that should and should NOT trigger your skill:
 
@@ -250,7 +268,7 @@ const shouldNotTriggerPrompts = [
 ];
 ```
 
-### Step 4: Customize Unit Tests
+#### Step 4: Customize Unit Tests
 
 In `unit.test.js`, add tests specific to your skill's content:
 
@@ -262,7 +280,7 @@ test('documents cache tiers', () => {
 });
 ```
 
-### Step 5: Add Integration Tests (If Applicable)
+#### Step 5: Add Integration Tests (If Applicable)
 
 If your skill uses MCP tools, add integration tests with mocks:
 
@@ -277,13 +295,13 @@ test('calls redis list tool', async () => {
 });
 ```
 
-### Step 6: Run and Verify
+#### Step 6: Run and Verify
 
 ```bash
 npm test -- --testPathPattern={skill-name}
 ```
 
-### Step 7: Update Coverage Grid
+#### Step 7: Update Coverage Grid
 
 ```bash
 npm run coverage:grid

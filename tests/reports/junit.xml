@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="40" failures="0" errors="0" time="0.206">
-  <testsuite name="azure-validation/triggers.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-29T13:24:57" time="0.144" tests="22">
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Azure storage account name&quot;" time="0.001">
+<testsuites name="jest tests" tests="40" failures="0" errors="0" time="0.163">
+  <testsuite name="azure-validation/triggers.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-29T13:59:13" time="0.099" tests="22">
+    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Azure storage account name&quot;" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the naming constraints for Azure Key Vault?&quot;" time="0">
     </testcase>
@@ -9,13 +9,13 @@
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me validate Azure resource names before deploying&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the character limits for Azure resources?&quot;" time="0.001">
+    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the character limits for Azure resources?&quot;" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Check my Bicep file for naming errors&quot;" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate naming conventions for Azure deployment&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Run preflight checks before Azure deployment&quot;" time="0">
+    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Run preflight checks before Azure deployment&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Azure storage naming validation rules&quot;" time="0">
     </testcase>
@@ -31,13 +31,13 @@
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
+    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker?&quot;" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
+    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
     </testcase>
@@ -46,7 +46,7 @@
     <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="is case insensitive for Azure terms" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="azure-validation/integration.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-29T13:24:58" time="0.019" tests="7">
+  <testsuite name="azure-validation/integration.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-29T13:59:13" time="0.02" tests="7">
     <testcase classname="azure-validation - Integration Tests › Bicep Schema Tool Usage" name="can mock bicep schema for storage account" time="0">
     </testcase>
     <testcase classname="azure-validation - Integration Tests › Bicep Schema Tool Usage" name="can mock bicep schema for key vault" time="0">
@@ -55,17 +55,17 @@
     </testcase>
     <testcase classname="azure-validation - Integration Tests › Error Handling" name="handles bicep schema service unavailable" time="0.003">
     </testcase>
-    <testcase classname="azure-validation - Integration Tests › Error Handling" name="handles missing resource type" time="0.001">
+    <testcase classname="azure-validation - Integration Tests › Error Handling" name="handles missing resource type" time="0">
     </testcase>
-    <testcase classname="azure-validation - Integration Tests › Mock Call Tracking" name="tracks multiple calls to same tool" time="0">
+    <testcase classname="azure-validation - Integration Tests › Mock Call Tracking" name="tracks multiple calls to same tool" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Integration Tests › Mock Call Tracking" name="reset clears call history" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="azure-validation/unit.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-29T13:24:58" time="0.015" tests="11">
+  <testsuite name="azure-validation/unit.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-29T13:59:13" time="0.017" tests="11">
     <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="description mentions validation or pre-deployment" time="0">
+    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="description mentions validation or pre-deployment" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Skill Content" name="has substantive content" time="0">
     </testcase>
@@ -83,7 +83,7 @@
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: invalid names" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="key vault: valid names" time="0.001">
+    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="key vault: valid names" time="0">
     </testcase>
   </testsuite>
 </testsuites>

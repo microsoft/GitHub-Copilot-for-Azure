@@ -1,6 +1,59 @@
 # Skills Testing Guide
 
-> **For AI Agents**: This document provides patterns and conventions for creating and maintaining tests for Azure Copilot skills.
+> **For AI Agents**: This document provides patterns and conventions for creating and maintaining tests for Azure Copilot skills. When asked to "scaffold tests" for a skill, follow the instructions below.
+
+## Scaffolding Tests for a Skill
+
+When a user asks to scaffold, create, or add tests for a skill, follow these steps:
+
+### Step 1: Copy the template
+```bash
+cp -r tests/_template tests/{skill-name}
+```
+
+### Step 2: Read the skill's SKILL.md
+Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
+- The skill's name and description (from frontmatter)
+- What the skill does (from content)
+- What Azure services/tools it references
+
+### Step 3: Update test files
+In each test file (`unit.test.js`, `triggers.test.js`, `integration.test.js`), change:
+```javascript
+const SKILL_NAME = '{skill-name}';  // Must match the folder name exactly
+```
+
+### Step 4: Generate trigger prompts
+Based on the skill's description and content, add to `triggers.test.js`:
+
+**shouldTriggerPrompts** (at least 5) - prompts that mention:
+- The skill's primary Azure service (e.g., "Redis", "Cosmos DB", "Key Vault")
+- Common tasks the skill helps with
+- Keywords from the skill's description
+
+**shouldNotTriggerPrompts** (at least 5) - prompts about:
+- Unrelated topics ("weather", "poetry")
+- Different cloud providers ("AWS", "GCP")
+- Different Azure services not covered by this skill
+
+### Step 5: Add skill-specific unit tests
+In `unit.test.js`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
+
+### Step 6: Add integration tests (if applicable)
+If the skill mentions MCP tools (e.g., `azure__redis`, `azure__bicepschema`), add mocked integration tests.
+
+### Step 7: Run and verify
+```bash
+cd tests
+npm test -- --testPathPattern={skill-name}
+```
+
+### Step 8: Update coverage grid
+```bash
+npm run coverage:grid
+```
+
+---
 
 ## Overview
 
@@ -9,44 +62,7 @@ This testing framework uses **Jest** to validate skill behavior across three tes
 - **Trigger Tests** - Skill activation validation  
 - **Integration Tests** - MCP tool interaction testing
 
-## Quick Start: Adding Tests for a New Skill
-
-### 1. Copy the Template
-
-```bash
-cp -r tests/_template tests/{skill-name}
-```
-
-### 2. Update Skill Name
-
-In each test file, update the `SKILL_NAME` constant:
-
-```javascript
-const SKILL_NAME = 'your-skill-name';  // Must match folder name in plugin/skills/
-```
-
-### 3. Add Trigger Prompts
-
-In `triggers.test.js`, add prompts that should and should NOT trigger your skill:
-
-```javascript
-const shouldTriggerPrompts = [
-  'Help me configure Azure storage',
-  'Deploy my app to Azure',
-];
-
-const shouldNotTriggerPrompts = [
-  'Help me with AWS Lambda',
-  'What is the weather?',
-];
-```
-
-### 4. Run Tests
-
-```bash
-cd tests
-npm test -- --testPathPattern=your-skill-name
-```
+## Quick Reference: Test File Conventions
 
 ---
 
