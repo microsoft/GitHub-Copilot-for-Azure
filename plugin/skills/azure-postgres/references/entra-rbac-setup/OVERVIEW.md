@@ -1,31 +1,17 @@
----
-name: azure-postgres-entra-rbac-setup
-description: Set up Microsoft Entra ID (Azure AD) authentication for Azure Database for PostgreSQL Flexible Server. Use this skill when users need to configure passwordless authentication, map Azure identities to PostgreSQL roles, grant database permissions, set up managed identity access, configure group-based access control, troubleshoot authentication failures, or migrate from password-based authentication to Entra ID.
----
-
 # Azure PostgreSQL Entra ID RBAC Setup
 
-This skill helps users set up Microsoft Entra ID (formerly Azure AD) authentication for Azure Database for PostgreSQL Flexible Server. It guides users through the confusing two-layer mapping: **Azure Identity → PostgreSQL Role → Database Permissions**.
+This guide helps you set up Microsoft Entra ID (formerly Azure AD) authentication for Azure Database for PostgreSQL Flexible Server. It covers the confusing two-layer mapping: **Azure Identity → PostgreSQL Role → Database Permissions**.
 
-## Skill Activation Triggers
+## When to Use This Guide
 
-**Use this skill immediately when the user asks to:**
-- "Set up Entra ID authentication for PostgreSQL"
-- "Configure passwordless access to my PostgreSQL database"
-- "Add a user/developer to my Azure PostgreSQL using their Azure identity"
-- "Set up managed identity for my app to access PostgreSQL"
-- "Configure group-based access to PostgreSQL"
-- "I'm getting authentication errors connecting to PostgreSQL with Entra"
-- "Migrate from password authentication to Entra ID for PostgreSQL"
-- "How do I connect to Azure PostgreSQL with my Azure account?"
-- "Grant my Container App access to PostgreSQL without storing passwords"
-
-**Key Indicators:**
-- Mentions "Entra", "Azure AD", "AAD" with PostgreSQL
-- Passwordless or identity-based database access requests
-- Managed identity + PostgreSQL configuration
-- PostgreSQL authentication failures with Azure identities
-- Questions about `pgaadauth` functions or security labels
+Use this guide when you need to:
+- Set up Entra ID authentication for PostgreSQL
+- Configure passwordless access to your PostgreSQL database
+- Add a user/developer to Azure PostgreSQL using their Azure identity
+- Set up managed identity for your app to access PostgreSQL
+- Configure group-based access to PostgreSQL
+- Troubleshoot authentication errors connecting to PostgreSQL with Entra
+- Migrate from password authentication to Entra ID for PostgreSQL
 
 ## Overview
 
@@ -46,7 +32,6 @@ Azure Database for PostgreSQL Flexible Server supports Microsoft Entra ID authen
 | **Managed Identity** | Azure-hosted app passwordless access | `pgaadauth_create_principal_with_oid` |
 
 ## Core Workflow
-
 ### Step 1: Check Current Authentication Status
 
 Verify if Entra authentication is enabled on the server. If empty, no Entra admin is configured yet.
@@ -67,7 +52,7 @@ Once connected as admin, create roles for other identities using SQL functions.
 
 Grant appropriate permissions to the new roles using GRANT statements.
 
-**See:** [scripts/az-commands.sh](scripts/az-commands.sh) for Azure CLI commands, [references/SQL-FUNCTIONS.md](references/SQL-FUNCTIONS.md) for SQL functions, and [references/PERMISSION-TEMPLATES.md](references/PERMISSION-TEMPLATES.md) for permission grants.
+**See:** [scripts/az-commands.sh](scripts/az-commands.sh) for Azure CLI commands, [references/SQL-FUNCTIONS.md](SQL-FUNCTIONS.md) for SQL functions, and [references/PERMISSION-TEMPLATES.md](PERMISSION-TEMPLATES.md) for permission grants.
 
 ## Setup Patterns
 
@@ -79,10 +64,7 @@ Set up a developer to access the database with their Azure identity.
 - Developer's UPN (e.g., `developer@company.com`)
 - Target database name
 - Permission level (read-only, read-write, admin)
-
 **Script:** See [scripts/setup-user.sh](scripts/setup-user.sh)
-
----
 
 ### Pattern 2: Managed Identity for Applications
 
@@ -94,14 +76,13 @@ Configure passwordless database access for Azure-hosted applications (Container 
 - Permission level needed
 
 **Steps:**
+
 1. Get managed identity object ID
 2. Create PostgreSQL role using `pgaadauth_create_principal_with_oid`
 3. Grant permissions
 4. Configure application to use Azure Identity SDK
 
 **Script:** See [scripts/setup-managed-identity.sh](scripts/setup-managed-identity.sh)
-
----
 
 ### Pattern 3: Group-Based Access Control
 
@@ -118,9 +99,7 @@ Manage database permissions through Azure AD groups.
 |------|----------|----------|
 | **OFF** (default) | Members use group name as username | Simple setup, no individual tracking |
 | **ON** | Individual member roles auto-created | Audit trails, per-user permissions |
-
 **Script:** See [scripts/setup-group.sh](scripts/setup-group.sh)
-
 ---
 
 ### Pattern 4: Troubleshooting Connection Failures
@@ -133,7 +112,7 @@ Diagnose and fix Entra authentication issues.
 - `FATAL: password authentication failed` - Wrong username format
 - `could not connect to server` - Network/firewall issues
 
-**Diagnostic Steps:** See [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md)
+**See:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed diagnostic steps
 
 ---
 
@@ -185,8 +164,8 @@ Transition existing password-based roles to Entra ID authentication.
 
 ## References
 
-- [Azure CLI Commands](scripts/az-commands.sh) - Token acquisition, identity lookups, admin management
-- [SQL Functions](references/SQL-FUNCTIONS.md) - Role creation, listing, security labels
-- [Permission Templates](references/PERMISSION-TEMPLATES.md) - Copy-paste SQL for common scenarios
-- [Troubleshooting Guide](references/TROUBLESHOOTING.md) - Detailed diagnostic steps
-- [Group Sync Guide](references/GROUP-SYNC.md) - Group sync configuration details
+- [Azure CLI Commands](./scripts/az-commands.sh) - Token acquisition, identity lookups, admin management
+- [SQL Functions](SQL-FUNCTIONS.md) - Role creation, listing, security labels
+- [Permission Templates](PERMISSION-TEMPLATES.md) - Copy-paste SQL for common scenarios
+- [Group Sync Guide](GROUP-SYNC.md) - Group sync configuration details
+- [Troubleshooting Guide](TROUBLESHOOTING.md) - Detailed diagnostic steps

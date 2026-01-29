@@ -3,65 +3,25 @@ name: azure-sql-database
 description: Build enterprise applications with Azure SQL Database, a fully managed relational database with built-in intelligence, ACID transactions, and high availability
 ---
 
-# Azure Data Services
+# Azure SQL Database
 
-## Services
+## MCP Tools (Preferred)
 
-| Service | Use When | MCP Tools | CLI |
-|---------|----------|-----------|-----|
-| Cosmos DB | NoSQL documents, global distribution, vector search | `azure__cosmos` | `az cosmosdb` |
-| SQL Database | Relational data, ACID transactions, complex joins | `azure__sql` | `az sql` |
-| Redis Cache | Caching, sessions, real-time leaderboards | `azure__redis` | `az redis` |
-| PostgreSQL | Open source relational, PostGIS | `azure__postgres` | `az postgres` |
-| MySQL | LAMP stack, WordPress | `azure__mysql` | `az mysql` |
+When Azure MCP is enabled, use these tools for SQL Database operations:
 
-## MCP Server (Preferred)
-
-When Azure MCP is enabled, use these tools for data operations:
-
-### Cosmos DB
-- `azure__cosmos` with command `cosmos_account_list` - List Cosmos DB accounts
-- `azure__cosmos` with command `cosmos_database_list` - List databases in account
-- `azure__cosmos` with command `cosmos_container_list` - List containers
-
-### SQL Database
 - `azure__sql` with command `sql_server_list` - List SQL servers
 - `azure__sql` with command `sql_database_list` - List databases on server
 - `azure__sql` with command `sql_firewall_list` - List firewall rules
 
-### Redis
-- `azure__redis` with command `redis_cache_list` - List Redis caches
-
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 
-## CLI Fallback
+## CLI Commands (Fallback)
 
 ```bash
-# Cosmos DB
-az cosmosdb list --output table
-az cosmosdb sql database list --account-name ACCOUNT -g RG
-
-# SQL Database
 az sql server list --output table
 az sql db list --server SERVER -g RG
-
-# Redis
-az redis list --output table
+az sql server firewall-rule list --server SERVER -g RG
 ```
-
-## Choosing the Right Database
-
-| If you need... | Use |
-|----------------|-----|
-| Global distribution, <10ms latency | Cosmos DB |
-| Complex SQL queries, ACID transactions | SQL Database |
-| Caching layer, session state | Redis Cache |
-| PostgreSQL compatibility | Azure PostgreSQL |
-| MySQL compatibility | Azure MySQL |
-
----
-
-# Azure SQL Database
 
 ## Quick Reference
 
