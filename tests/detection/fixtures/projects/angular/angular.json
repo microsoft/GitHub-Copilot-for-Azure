@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "projects": {
+    "angular-app": {
+      "architect": {
+        "build": {
+          "options": {
+            "outputPath": "dist/angular-app"
+          }
+        }
+      }
+    }
+  }
+}

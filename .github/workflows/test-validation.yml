@@ -1,0 +1,58 @@
+name: Validation Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugin/skills/azure-validation/**'
+      - 'plugin/skills/azure-deployment-preflight/**'
+      - 'tests/validation/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'plugin/skills/azure-validation/**'
+      - 'plugin/skills/azure-deployment-preflight/**'
+      - 'tests/validation/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    
+    defaults:
+      run:
+        working-directory: tests/validation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: tests/validation/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == 20
+        uses: codecov/codecov-action@v4
+        with:
+          directory: tests/validation/coverage
+          flags: validation
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

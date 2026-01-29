@@ -1,0 +1,16 @@
+{
+  "name": "azure-validation-tests",
+  "version": "1.0.0",
+  "description": "Tests for Azure resource naming validation, Bicep detection, and preflight checks",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": ["azure", "validation", "bicep", "testing"],
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
