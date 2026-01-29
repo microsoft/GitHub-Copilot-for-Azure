@@ -281,8 +281,8 @@ Common error resolutions:
 ## Reference Guides
 
 Load these guides for service-specific details:
-- [Static Web Apps Guide](./reference/static-web-apps.md)
-- [Container Apps Guide](./reference/container-apps.md)
-- [Azure Functions Guide](./reference/functions.md)
-- [App Service Guide](./reference/app-service.md)
-- [AKS Guide](./reference/aks.md)
+- [Static Web Apps Guide](../azure-deploy/reference/static-web-apps.md)
+- [Container Apps Guide](../azure-deploy/reference/container-apps.md)
+- [Azure Functions Guide](../azure-deploy/reference/functions.md)
+- [App Service Guide](../azure-deploy/reference/app-service.md)
+- [AKS Guide](../azure-deploy/reference/aks.md)
