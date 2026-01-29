@@ -6,7 +6,6 @@
   "scripts": {
     "tokens": "cd scripts && npm run tokens --",
     "test": "cd scripts && npm test",
-    "tokens:install": "cd scripts && npm install",
     "postinstall": "cd scripts && npm install"
   },
   "engines": {

@@ -24,11 +24,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: scripts/package-lock.json
+          cache-dependency-path: scripts/package.json
 
       - name: Install dependencies
         working-directory: ./scripts
-        run: npm ci || npm install
+        run: npm ci
 
       - name: Check changed markdown files
         id: changed-files
@@ -44,13 +44,13 @@ jobs:
         id: token-check
         working-directory: ./scripts
         run: |
-          LIMIT_OUTPUT=$(npm run tokens -- check --markdown 2>&1)
-          echo "$LIMIT_OUTPUT" > limit-report.md
-          
-          if echo "$LIMIT_OUTPUT" | grep -q "Files Exceeding Token Limits"; then
-            echo "exceeded=true" >> $GITHUB_OUTPUT
-          else
+          LIMIT_OUTPUT=""
+          if LIMIT_OUTPUT=$(npm run tokens -- check --markdown 2>&1); then
+            echo "$LIMIT_OUTPUT" > limit-report.md
             echo "exceeded=false" >> $GITHUB_OUTPUT
+          else
+            echo "$LIMIT_OUTPUT" > limit-report.md
+            echo "exceeded=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Run token comparison
@@ -144,7 +144,9 @@ jobs:
         id: changed-skills
         uses: tj-actions/changed-files@v44
         with:
-          files: plugin/skills/**/SKILL.md
+          files: |
+            plugin/skills/**/SKILL.md
+            .github/skills/**/SKILL.md
 
       - name: Validate skill frontmatter
         if: steps.changed-skills.outputs.any_changed == 'true'

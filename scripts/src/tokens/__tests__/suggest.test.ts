@@ -212,7 +212,7 @@ describe('suggest command', () => {
       writeFileSync(join(TEST_DIR, 'docs', 'guide.md'), '# Guide');
       
       const files: string[] = [];
-      const { readdirSync, statSync } = require('node:fs');
+      const { readdirSync } = require('node:fs');
       
       function scan(dir: string) {
         const entries = readdirSync(dir, { withFileTypes: true });

@@ -147,8 +147,9 @@ Keep references one level deep. Avoid chains like `references/detail/more/file.m
 Before submitting, verify your skill with the token checker:
 
 ```bash
+# Run from the repository root; paths are resolved relative to the repo root
 cd scripts
-npm run check -- ../plugin/skills/my-skill/SKILL.md
+npm run check -- plugin/skills/my-skill/SKILL.md
 ```
 
 Or run the full validation:

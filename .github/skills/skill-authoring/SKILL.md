@@ -36,8 +36,9 @@ Metadata (~100 tokens) loads at startup. SKILL.md (<5000 tokens) loads on activa
 ## Validation
 
 ```bash
+# Run from the repository root; paths are resolved relative to the repo root
 cd scripts
-npm run check -- ../plugin/skills/my-skill/SKILL.md
+npm run check -- plugin/skills/my-skill/SKILL.md
 ```
 
 ## Reference Documentation

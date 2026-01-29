@@ -17,6 +17,7 @@ export interface TokenMetadata {
 }
 
 export interface TokenLimitsConfig {
+  readonly description?: string;
   readonly defaults: Record<string, number>;
   readonly overrides: Record<string, number>;
 }

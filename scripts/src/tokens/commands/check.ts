@@ -226,4 +226,8 @@ export function check(rootDir: string, args: string[]): void {
   } else {
     printConsoleReport(report);
   }
+
+  if (report.exceededCount > 0) {
+    process.exitCode = 1;
+  }
 }
