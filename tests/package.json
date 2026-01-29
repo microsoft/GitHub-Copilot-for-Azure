@@ -1,0 +1,30 @@
+{
+  "name": "azure-copilot-skills-tests",
+  "version": "1.0.0",
+  "description": "Test suite for Azure Copilot Skills",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:verbose": "jest --verbose",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --reporters=default --reporters=jest-junit",
+    "test:watch": "jest --watch",
+    "test:skill": "jest --testPathPattern",
+    "coverage:grid": "node scripts/generate-coverage-grid.js",
+    "update:snapshots": "jest --updateSnapshot"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "gray-matter": "^4.0.3"
+  },
+  "jest-junit": {
+    "outputDirectory": "./reports",
+    "outputName": "junit.xml",
+    "ancestorSeparator": " › ",
+    "uniqueOutputName": "false",
+    "suiteNameTemplate": "{filepath}",
+    "classNameTemplate": "{classname}",
+    "titleTemplate": "{title}"
+  }
+}
