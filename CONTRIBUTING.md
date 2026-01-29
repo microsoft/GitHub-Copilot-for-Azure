@@ -146,6 +146,10 @@ plugin/skills/your-skill-name/
 
 ### Creating a New Skill
 
+_NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill.
+- The Creator agents expects you already know what scenarios the skill should address
+- The Brainstormer agent will help you identify scenarios
+
 1. **Create your skill folder** under `plugin/skills/your-skill-name/`
 
 2. **Write your SKILL.md** following the existing patterns in other skills
@@ -158,6 +162,12 @@ plugin/skills/your-skill-name/
 ### Skill Guidelines
 
 - Keep skills focused on a specific Azure service or capability
+- The `description` frontmatter should:
+   - be short
+   - describe _what_ the skill does and _when_ to use it
+   - include trigger phrases (see existing skills for examples)
+- Focus on one "golden path" rather than providing multiple approaches
+- To ensure consistency across skills, prefer Azure MCP tools (for data collection operations) and `azd` (for deployment) over `az`.
 - Include practical examples and common use cases
 - Reference official Microsoft documentation
 - Test your skill thoroughly before submitting
