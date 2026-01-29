@@ -1,6 +1,6 @@
 ---
 name: azure-deploy
-description: Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. This skill detects application type (React, Vue, Angular, Next.js, Python, .NET, Java, etc.), recommends the optimal Azure service, provides local preview capabilities, and guides deployment. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "get this running in the cloud", "deploy my app", "Azure deployment", "set up Azure hosting", "deploy to App Service", "deploy to Functions", "deploy to Static Web Apps", "preview locally", "test before deploying", "what Azure service should I use", "help me deploy", etc. Also handles multi-service deployments with Azure Developer CLI (azd) and Infrastructure as Code when complexity is detected.
+description: Deploy applications to Azure App Service, Azure Functions, Static Web Apps, and API Management (APIM). USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure, or deploy APIM for API Gateway/AI Gateway scenarios. This skill detects application type (React, Vue, Angular, Next.js, Python, .NET, Java, etc.), recommends the optimal Azure service, provides local preview capabilities, and guides deployment. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "get this running in the cloud", "deploy my app", "Azure deployment", "set up Azure hosting", "deploy to App Service", "deploy to Functions", "deploy to Static Web Apps", "deploy APIM", "create API Management", "deploy API gateway", "preview locally", "test before deploying", "what Azure service should I use", "help me deploy", etc. Also handles multi-service deployments with Azure Developer CLI (azd) and Infrastructure as Code when complexity is detected.
 ---
 
 ## Preferred: Use azd for Deployments
@@ -92,6 +92,20 @@ Look for these files first (HIGH confidence signals):
 | `azure.yaml` | Already configured for azd | **Validate first**, then use `azd up` to deploy |
 | `function.json` or `host.json` | Azure Functions project | **See [Azure Functions Guide](./reference/functions.md)** |
 | `staticwebapp.config.json` or `swa-cli.config.json` | Static Web Apps project | **See [Static Web Apps Guide](./reference/static-web-apps.md)** |
+
+**Check for API Management / AI Gateway requests:**
+
+| User Request | Recommendation | Action |
+|--------------|----------------|--------|
+| "Deploy APIM", "create API Management", "API gateway" | Deploy API Management | **See [APIM Deployment Guide](./reference/apim.md)** |
+| "AI gateway", "configure AI model", "add Azure OpenAI backend" | AI Gateway configuration | Deploy with **[APIM Guide](./reference/apim.md)**, configure with **azure-aigateway skill** |
+
+> 💡 **When to use API Management:**
+> - User wants to expose APIs with policies (rate limiting, auth, caching)
+> - User needs an AI Gateway for Azure OpenAI or AI Foundry models
+> - User mentions APIM, API Management, or API gateway
+> 
+> **📖 See [APIM Deployment Guide](./reference/apim.md)** for deployment, then use **azure-aigateway skill** for AI-specific configuration.
 
 **When `azure.yaml` is found, validate before deployment:**
 ```javascript
@@ -799,6 +813,7 @@ For specialized deployment scenarios, use these comprehensive reference guides:
 - **⚡ [Azure Functions Deployment Guide](./reference/functions.md)** - Azure Functions deployment with func CLI, triggers/bindings, deployment slots, and function-specific troubleshooting
 - **☸️ [AKS Deployment Guide](./reference/aks.md)** - Kubernetes deployments with full control, custom operators, and complex microservices
 - **🌍 [App Service Deployment Guide](./reference/app-service.md)** - Traditional web applications and REST APIs with managed hosting
+- **🔌 [APIM Deployment Guide](./reference/apim.md)** - API Management deployment for API Gateway and AI Gateway scenarios with Basicv2 SKU
 
 ---
 
@@ -809,6 +824,7 @@ Load these guides as needed for detailed information:
 - [Azure Functions Guide](./reference/functions.md) - Serverless Functions deployment with func CLI, triggers/bindings, deployment slots, and monitoring
 - [AKS Guide](./reference/aks.md) - Kubernetes deployment with AKS, node pools, workload identity, scaling, and networking
 - [App Service Guide](./reference/app-service.md) - Traditional web app deployment with App Service plans, deployment slots, and auto-scaling
+- [APIM Guide](./reference/apim.md) - API Management deployment for API gateway and AI gateway, with Basicv2 SKU for fast deployment
 - Always scan the workspace before generating a deployment plan
 - Plans integrate with Azure Developer CLI (azd)
 - Logs require resources deployed through azd
