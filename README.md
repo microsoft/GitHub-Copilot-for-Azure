@@ -23,7 +23,7 @@ You can use this repository to:
 * Upvote a feature or request a new one.
 * Search for potential work-arounds to problems you’re having.
 * Provide feedback on using GitHub Copilot for Azure.
-
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to contribute, including local development setup.
 ### Contributing Skills
 
 New skills can be placed under `plugin/skills`.
