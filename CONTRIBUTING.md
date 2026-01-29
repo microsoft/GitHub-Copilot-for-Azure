@@ -86,7 +86,7 @@ Verify that the symlink was created correctly:
 
 #### Windows (Command Prompt)
 ```cmd
-dir "C:\Users\%USERNAME%\.copilot\installed-plugins"
+dir "%USERPROFILE%\.copilot\installed-plugins"
 ```
 
 #### Windows (PowerShell)
@@ -109,7 +109,7 @@ If you need to remove or recreate a symlink:
 
 #### Windows (Command Prompt - Run as Administrator)
 ```cmd
-rmdir "C:\Users\%USERNAME%\.copilot\installed-plugins\github-copilot-for-azure"
+rmdir "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure"
 ```
 
 #### Windows (PowerShell - Run as Administrator)
@@ -223,7 +223,7 @@ Include the following information:
 - **Steps to Reproduce**: Numbered steps to reproduce the bug
 - **Expected Behavior**: What you expected to happen
 - **Actual Behavior**: What actually happened
-- **Environment**: OS, VS Code version, extension version
+- **Environment**: OS, GitHub Copilot CLI version
 - **Logs/Screenshots**: Any relevant error messages or screenshots
 
 ### Requesting Features
