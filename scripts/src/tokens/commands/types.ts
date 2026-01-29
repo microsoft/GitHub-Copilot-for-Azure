@@ -16,12 +16,19 @@ export interface TokenMetadata {
   readonly files: Record<string, TokenCount>;
 }
 
+/**
+ * Configuration for token limits across different file types.
+ * Used to enforce consistent token budgets for markdown files.
+ */
 export interface TokenLimitsConfig {
   readonly description?: string;
   readonly defaults: Record<string, number>;
   readonly overrides: Record<string, number>;
 }
 
+/**
+ * Result of validating a single file against token limits.
+ */
 export interface ValidationResult {
   readonly file: string;
   readonly tokens: number;
@@ -72,6 +79,9 @@ export interface ComparisonReport {
   readonly files: FileComparison[];
 }
 
+/**
+ * Optimization suggestion for reducing token count.
+ */
 export interface Suggestion {
   readonly line: number;
   readonly issue: string;
@@ -91,6 +101,23 @@ export interface FileAnalysis {
 /** Characters per token approximation */
 const CHARS_PER_TOKEN = 4;
 
+/** Maximum pattern length to prevent ReDoS attacks */
+export const MAX_PATTERN_LENGTH = 500;
+
+/** Maximum buffer size for git operations (10MB) */
+export const MAX_GIT_BUFFER_SIZE = 10 * 1024 * 1024;
+
+/** Timeout for git operations in milliseconds */
+export const GIT_OPERATION_TIMEOUT = 30000;
+
+/** Suggestion thresholds */
+export const MAX_DECORATIVE_EMOJIS = 2;
+export const LARGE_CODE_BLOCK_LINES = 10;
+export const LARGE_TABLE_ROWS = 10;
+export const TOKENS_PER_EMOJI = 2;
+export const TOKENS_PER_CODE_LINE = 16;
+export const TOKENS_PER_TABLE_ROW = 12;
+
 /** Common directories to exclude from scanning */
 export const EXCLUDED_DIRS = ['node_modules', '.git', 'dist', 'coverage'] as const;
 
@@ -99,6 +126,21 @@ export const DEFAULT_SCAN_DIRS = ['.github/skills', 'plugin/skills', '.github/ag
 
 /** Supported markdown extensions */
 export const MARKDOWN_EXTENSIONS = ['.md', '.mdx'] as const;
+
+/** Default token limits configuration */
+export const DEFAULT_LIMITS: TokenLimitsConfig = {
+  defaults: {
+    'SKILL.md': 500,
+    'references/**/*.md': 1000,
+    'docs/**/*.md': 1500,
+    '*.md': 2000
+  },
+  overrides: {
+    'README.md': 3000,
+    'CONTRIBUTING.md': 2500,
+    'plugin/README.md': 3000
+  }
+};
 
 /** Estimates token count (~4 chars/token) */
 export function estimateTokens(text: string): number {
@@ -114,4 +156,31 @@ export function isMarkdownFile(filename: string): boolean {
 /** Normalizes path separators to forward slashes */
 export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
+}
+
+/** Converts glob pattern to regex, preventing ReDoS attacks */
+export function globToRegex(pattern: string): RegExp {
+  if (pattern.length > MAX_PATTERN_LENGTH) {
+    throw new Error(`Pattern too long (max ${MAX_PATTERN_LENGTH} characters)`);
+  }
+  
+  const regexPattern = pattern
+    .replace(/\./g, '\\.')
+    .replace(/\*\*/g, '{{GLOBSTAR}}')
+    .replace(/\*/g, '[^/]*')
+    .replace(/{{GLOBSTAR}}/g, '.*?')  // Non-greedy to prevent catastrophic backtracking
+    .replace(/\//g, '\\/');
+  
+  return new RegExp(`(^|\\/)${regexPattern}$`);
+}
+
+/** Checks if file path matches a glob pattern */
+export function matchesPattern(filePath: string, pattern: string): boolean {
+  const normalizedPath = normalizePath(filePath);
+  
+  if (!pattern.includes('/') && !pattern.includes('*')) {
+    return normalizedPath.endsWith('/' + pattern) || normalizedPath === pattern;
+  }
+  
+  return globToRegex(pattern).test(normalizedPath);
 }

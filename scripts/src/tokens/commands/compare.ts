@@ -13,27 +13,61 @@ import {
   EXCLUDED_DIRS, 
   isMarkdownFile, 
   normalizePath,
-  DEFAULT_SCAN_DIRS
+  DEFAULT_SCAN_DIRS,
+  MAX_GIT_BUFFER_SIZE,
+  GIT_OPERATION_TIMEOUT
 } from './types.js';
 
-const GIT_REF_PATTERN = /^[a-zA-Z0-9._\-\/~^]+$/;
+const GIT_REF_PATTERN = /^[a-zA-Z0-9._\-\/~^@]+$/;
 const MAX_REF_LENGTH = 256;
 
+/**
+ * Validates a git ref to prevent command injection.
+ * Checks format, length, and dangerous characters.
+ * @param ref - Git reference to validate
+ * @throws Error if ref is invalid or dangerous
+ */
 function validateGitRef(ref: string): void {
-  if (!GIT_REF_PATTERN.test(ref) || ref.length >= MAX_REF_LENGTH) {
-    throw new Error(`Invalid git ref: ${ref}`);
+  if (!ref || typeof ref !== 'string') {
+    throw new Error('Git ref must be a non-empty string');
+  }
+  
+  if (ref.length === 0 || ref.length >= MAX_REF_LENGTH) {
+    throw new Error(`Git ref length must be between 1 and ${MAX_REF_LENGTH} characters`);
+  }
+  
+  if (!GIT_REF_PATTERN.test(ref)) {
+    throw new Error(`Invalid git ref format: ${ref}`);
+  }
+  
+  // Prevent command injection attempts
+  const dangerousPatterns = [';', '&&', '||', '|', '`', '$', '(', ')', '{', '}', '<', '>', '\n', '\r'];
+  for (const pattern of dangerousPatterns) {
+    if (ref.includes(pattern)) {
+      throw new Error(`Git ref contains dangerous characters: ${ref}`);
+    }
   }
 }
 
+/**
+ * Gets token count for a file at a specific git ref.
+ * @param filePath - Path to the file
+ * @param ref - Git reference
+ * @param rootDir - Repository root
+ * @returns File tokens or null if file doesn't exist at ref
+ */
 function getFileTokensAtRef(filePath: string, ref: string, rootDir: string): FileTokens | null {
   validateGitRef(ref);
   
   try {
     const relativePath = normalizePath(relative(rootDir, filePath));
-    const content = execSync(`git show ${ref}:${relativePath}`, {
+    // Use array form of execSync to prevent command injection
+    const content = execSync(`git show "${ref}:${relativePath}"`, {
       cwd: rootDir,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: MAX_GIT_BUFFER_SIZE,
+      timeout: GIT_OPERATION_TIMEOUT
     });
     
     return {
@@ -41,11 +75,20 @@ function getFileTokensAtRef(filePath: string, ref: string, rootDir: string): Fil
       characters: content.length,
       lines: content.split('\n').length
     };
-  } catch {
+  } catch (error) {
+    // Log specific error for debugging but return null for flow control
+    if (process.env.DEBUG) {
+      console.error(`Failed to get file tokens at ref ${ref}: ${error}`);
+    }
     return null;
   }
 }
 
+/**
+ * Gets current file tokens from the working tree.
+ * @param filePath - Path to the file
+ * @returns File tokens or null if file doesn't exist
+ */
 function getCurrentFileTokens(filePath: string): FileTokens | null {
   try {
     const content = readFileSync(filePath, 'utf-8');
@@ -64,13 +107,18 @@ function getChangedFiles(baseRef: string, headRef: string, rootDir: string): str
   validateGitRef(headRef);
   
   try {
-    const output = execSync(`git diff --name-only ${baseRef}...${headRef} -- "*.md" "*.mdx"`, {
+    const output = execSync(`git diff --name-only "${baseRef}"..."${headRef}" -- "*.md" "*.mdx"`, {
       cwd: rootDir,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: MAX_GIT_BUFFER_SIZE,
+      timeout: GIT_OPERATION_TIMEOUT
     });
     return output.trim().split('\n').filter(Boolean);
-  } catch {
+  } catch (error) {
+    if (process.env.DEBUG) {
+      console.error(`Failed to get changed files: ${error}`);
+    }
     return getAllMarkdownFiles(rootDir);
   }
 }
@@ -81,7 +129,9 @@ function getAllMarkdownFiles(dir: string, files: string[] = [], rootDir: string 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!EXCLUDED_DIRS.includes(entry.name as typeof EXCLUDED_DIRS[number])) {
+      const dirName = entry.name;
+      const isExcluded = EXCLUDED_DIRS.some(excluded => excluded === dirName);
+      if (!isExcluded) {
         getAllMarkdownFiles(fullPath, files, rootDir);
       }
     } else if (isMarkdownFile(entry.name)) {

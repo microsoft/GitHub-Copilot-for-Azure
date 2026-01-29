@@ -2,45 +2,37 @@
  * Count command - Token counting for markdown files
  */
 
-import { readFileSync, readdirSync, writeFileSync, Dirent } from 'node:fs';
-import { join, relative, resolve, extname, isAbsolute } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve, isAbsolute } from 'node:path';
 import { 
   TokenMetadata, 
   TokenCount, 
-  estimateTokens, 
-  EXCLUDED_DIRS, 
-  MARKDOWN_EXTENSIONS,
+  estimateTokens,
   DEFAULT_SCAN_DIRS
 } from './types.js';
+import { findMarkdownFiles } from './utils.js';
 
-function findMarkdownFiles(dir: string, files: string[] = []): string[] {
-  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    
-    if (entry.isDirectory()) {
-      if (!EXCLUDED_DIRS.includes(entry.name as typeof EXCLUDED_DIRS[number])) {
-        findMarkdownFiles(fullPath, files);
-      }
-    } else if (MARKDOWN_EXTENSIONS.includes(extname(entry.name).toLowerCase() as typeof MARKDOWN_EXTENSIONS[number])) {
-      files.push(fullPath);
-    }
-  }
-  
-  return files;
-}
-
+/**
+ * Counts tokens, characters, and lines in a file.
+ * @param filePath - Path to the file
+ * @returns Token count information
+ * @throws Error if file cannot be read
+ */
 function countFileTokens(filePath: string): TokenCount {
-  const content = readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n').length;
-  
-  return {
-    tokens: estimateTokens(content),
-    characters: content.length,
-    lines,
-    lastUpdated: new Date().toISOString()
-  };
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n').length;
+    
+    return {
+      tokens: estimateTokens(content),
+      characters: content.length,
+      lines,
+      lastUpdated: new Date().toISOString()
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to count tokens in ${filePath}: ${errorMsg}`);
+  }
 }
 
 function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
@@ -50,25 +42,39 @@ function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
     try {
       const files = findMarkdownFiles(fullPath);
       allFiles.push(...files);
-    } catch {
-      // Skip if directory doesn't exist
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (process.env.DEBUG) {
+        console.error(`Failed to scan directory ${dir}: ${errorMsg}`);
+      }
     }
   }
   
   const fileTokens: Record<string, TokenCount> = {};
   let totalTokens = 0;
+  let errorCount = 0;
   
   for (const file of allFiles) {
-    const relativePath = relative(rootDir, file).replace(/\/\\/g, '/');
-    const tokenCount = countFileTokens(file);
-    fileTokens[relativePath] = tokenCount;
-    totalTokens += tokenCount.tokens;
+    try {
+      const relativePath = relative(rootDir, file).replace(/[\\/]/g, '/');
+      const tokenCount = countFileTokens(file);
+      fileTokens[relativePath] = tokenCount;
+      totalTokens += tokenCount.tokens;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`⚠️  ${errorMsg}`);
+      errorCount++;
+    }
+  }
+  
+  if (errorCount > 0) {
+    console.error(`⚠️  Failed to process ${errorCount} file(s)`);
   }
   
   return {
     generatedAt: new Date().toISOString(),
     totalTokens,
-    totalFiles: allFiles.length,
+    totalFiles: allFiles.length - errorCount,
     files: fileTokens
   };
 }
@@ -95,10 +101,23 @@ function printSummary(metadata: TokenMetadata): void {
   console.log('');
 }
 
+/**
+ * Validates that a target path is within the repository root.
+ * Prevents path traversal attacks.
+ * @param targetPath - Path to validate
+ * @param rootDir - Repository root directory
+ * @returns True if path is within root
+ */
 function isPathWithinRoot(targetPath: string, rootDir: string): boolean {
   const resolvedTarget = resolve(targetPath);
   const resolvedRoot = resolve(rootDir);
-  return resolvedTarget.startsWith(resolvedRoot);
+  
+  // Normalize paths to prevent traversal attacks
+  const normalizedTarget = resolvedTarget.replace(/[\\/]+/g, '/').toLowerCase();
+  const normalizedRoot = resolvedRoot.replace(/[\\/]+/g, '/').toLowerCase();
+  
+  // Ensure the target path starts with root and has proper separator
+  return normalizedTarget.startsWith(normalizedRoot + '/') || normalizedTarget === normalizedRoot;
 }
 
 export function count(rootDir: string, args: string[]): void {

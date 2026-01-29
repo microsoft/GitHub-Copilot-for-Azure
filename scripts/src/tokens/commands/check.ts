@@ -2,108 +2,16 @@
  * Check command - Token limit validation
  */
 
-import { readFileSync, readdirSync, existsSync, Dirent } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { 
-  TokenLimitsConfig, 
   ValidationResult, 
   ValidationReport, 
   estimateTokens,
-  EXCLUDED_DIRS,
   normalizePath,
-  isMarkdownFile,
   DEFAULT_SCAN_DIRS
 } from './types.js';
-
-const DEFAULT_LIMITS: TokenLimitsConfig = {
-  defaults: {
-    'SKILL.md': 500,
-    'references/**/*.md': 1000,
-    'docs/**/*.md': 1500,
-    '*.md': 2000
-  },
-  overrides: {
-    'README.md': 3000,
-    'CONTRIBUTING.md': 2500,
-    'plugin/README.md': 3000
-  }
-};
-
-function loadConfig(rootDir: string): TokenLimitsConfig {
-  const configPath = join(rootDir, '.token-limits.json');
-  
-  if (existsSync(configPath)) {
-    try {
-      const content = readFileSync(configPath, 'utf-8');
-      return JSON.parse(content) as TokenLimitsConfig;
-    } catch (error) {
-      console.error(`⚠️  Warning: Invalid .token-limits.json, using defaults`);
-      return DEFAULT_LIMITS;
-    }
-  }
-  
-  return DEFAULT_LIMITS;
-}
-
-function globToRegex(pattern: string): RegExp {
-  const regexPattern = pattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '{{GLOBSTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/{{GLOBSTAR}}/g, '.*')
-    .replace(/\//g, '\\/');
-  
-  return new RegExp(`(^|\\/)${regexPattern}$`);
-}
-
-function matchesPattern(filePath: string, pattern: string): boolean {
-  const normalizedPath = normalizePath(filePath);
-  
-  if (!pattern.includes('/') && !pattern.includes('*')) {
-    return normalizedPath.endsWith('/' + pattern) || normalizedPath === pattern;
-  }
-  
-  return globToRegex(pattern).test(normalizedPath);
-}
-
-function getLimitForFile(filePath: string, config: TokenLimitsConfig): { limit: number; pattern: string } {
-  const normalizedPath = normalizePath(filePath);
-  
-  for (const [overridePath, limit] of Object.entries(config.overrides)) {
-    if (normalizedPath === overridePath || normalizedPath.endsWith('/' + overridePath)) {
-      return { limit, pattern: overridePath };
-    }
-  }
-  
-  const sortedDefaults = Object.entries(config.defaults)
-    .sort(([a], [b]) => b.length - a.length);
-  
-  for (const [pattern, limit] of sortedDefaults) {
-    if (matchesPattern(filePath, pattern)) {
-      return { limit, pattern };
-    }
-  }
-  
-  return { limit: config.defaults['*.md'] ?? 2000, pattern: '*.md' };
-}
-
-function findMarkdownFiles(dir: string, files: string[] = []): string[] {
-  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    
-    if (entry.isDirectory()) {
-      if (!EXCLUDED_DIRS.includes(entry.name as typeof EXCLUDED_DIRS[number])) {
-        findMarkdownFiles(fullPath, files);
-      }
-    } else if (isMarkdownFile(entry.name)) {
-      files.push(fullPath);
-    }
-  }
-  
-  return files;
-}
+import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
 
 function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationReport {
   const config = loadConfig(rootDir);
@@ -117,22 +25,30 @@ function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationRepo
       continue;
     }
     
-    const relativePath = normalizePath(relative(rootDir, file));
-    const content = readFileSync(file, 'utf-8');
-    const tokens = estimateTokens(content);
-    const { limit, pattern } = getLimitForFile(relativePath, config);
-    
-    results.push({
-      file: relativePath,
-      tokens,
-      limit,
-      exceeded: tokens > limit,
-      pattern
-    });
+    try {
+      const relativePath = normalizePath(relative(rootDir, file));
+      const content = readFileSync(file, 'utf-8');
+      const tokens = estimateTokens(content);
+      const { limit, pattern } = getLimitForFile(relativePath, config, rootDir);
+      
+      results.push({
+        file: relativePath,
+        tokens,
+        limit,
+        exceeded: tokens > limit,
+        pattern
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`⚠️  Failed to process ${file}: ${errorMsg}`);
+      skipped.push(file);
+    }
   }
   
-  if (skipped.length > 0) {
-    console.error(`⚠️  Skipped ${skipped.length} non-existent file(s)`);
+  if (skipped.length > 0 && process.env.DEBUG) {
+    console.error(`⚠️  Skipped ${skipped.length} file(s): ${skipped.join(', ')}`);
+  } else if (skipped.length > 0) {
+    console.error(`⚠️  Skipped ${skipped.length} file(s)`);
   }
   
   return {

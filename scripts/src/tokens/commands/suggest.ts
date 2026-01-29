@@ -2,90 +2,23 @@
  * Suggest command - Token optimization suggestions
  */
 
-import { readFileSync, readdirSync, existsSync, statSync, Dirent } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { 
   Suggestion, 
-  FileAnalysis, 
-  estimateTokens, 
-  EXCLUDED_DIRS, 
-  isMarkdownFile,
+  FileAnalysis,
   TokenLimitsConfig,
+  estimateTokens,
   normalizePath,
-  DEFAULT_SCAN_DIRS
+  DEFAULT_SCAN_DIRS,
+  MAX_DECORATIVE_EMOJIS,
+  LARGE_CODE_BLOCK_LINES,
+  LARGE_TABLE_ROWS,
+  TOKENS_PER_EMOJI,
+  TOKENS_PER_CODE_LINE,
+  TOKENS_PER_TABLE_ROW
 } from './types.js';
-
-const DEFAULT_LIMITS: TokenLimitsConfig = {
-  defaults: {
-    'SKILL.md': 500,
-    'references/**/*.md': 1000,
-    'docs/**/*.md': 1500,
-    '*.md': 2000
-  },
-  overrides: {
-    'README.md': 3000,
-    'CONTRIBUTING.md': 2500,
-    'plugin/README.md': 3000
-  }
-};
-
-function loadConfig(rootDir: string): TokenLimitsConfig {
-  const configPath = join(rootDir, '.token-limits.json');
-  
-  if (existsSync(configPath)) {
-    try {
-      const content = readFileSync(configPath, 'utf-8');
-      return JSON.parse(content) as TokenLimitsConfig;
-    } catch (error) {
-      console.error(`⚠️  Warning: Invalid .token-limits.json, using defaults`);
-      return DEFAULT_LIMITS;
-    }
-  }
-  
-  return DEFAULT_LIMITS;
-}
-
-function globToRegex(pattern: string): RegExp {
-  const regexPattern = pattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '{{GLOBSTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/{{GLOBSTAR}}/g, '.*')
-    .replace(/\//g, '\\/');
-  
-  return new RegExp(`(^|\\/)${regexPattern}$`);
-}
-
-function matchesPattern(filePath: string, pattern: string): boolean {
-  const normalizedPath = normalizePath(filePath);
-  
-  if (!pattern.includes('/') && !pattern.includes('*')) {
-    return normalizedPath.endsWith('/' + pattern) || normalizedPath === pattern;
-  }
-  
-  return globToRegex(pattern).test(normalizedPath);
-}
-
-function getLimitForFile(filePath: string, config: TokenLimitsConfig, rootDir: string): { limit: number; pattern: string } {
-  const normalizedPath = normalizePath(relative(rootDir, filePath));
-  
-  for (const [overridePath, limit] of Object.entries(config.overrides)) {
-    if (normalizedPath === overridePath || normalizedPath.endsWith('/' + overridePath)) {
-      return { limit, pattern: overridePath };
-    }
-  }
-  
-  const sortedDefaults = Object.entries(config.defaults)
-    .sort(([a], [b]) => b.length - a.length);
-  
-  for (const [pattern, limit] of sortedDefaults) {
-    if (matchesPattern(normalizedPath, pattern)) {
-      return { limit, pattern };
-    }
-  }
-  
-  return { limit: config.defaults['*.md'] ?? 2000, pattern: '*.md' };
-}
+import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
 
 const VERBOSE_PHRASES: Record<string, string> = {
   'in order to': 'to',
@@ -97,18 +30,24 @@ const VERBOSE_PHRASES: Record<string, string> = {
   'at the present time': 'now',
 };
 
+/**
+ * Finds excessive emoji usage in markdown lines.
+ * Allows functional emojis like ✅❌⚠️ but flags decorative ones.
+ * @param lines - Array of file lines
+ * @returns Array of suggestions
+ */
 function findEmojis(lines: string[]): Suggestion[] {
   const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
   const suggestions: Suggestion[] = [];
   
   lines.forEach((line, index) => {
     const emojis = line.match(EMOJI_REGEX);
-    if (emojis && emojis.length > 2) {
+    if (emojis && emojis.length > MAX_DECORATIVE_EMOJIS) {
       suggestions.push({
         line: index + 1,
         issue: `Decorative emoji(s): ${emojis.join(' ')}`,
         suggestion: 'Remove decorative emojis (keep functional ones like ✅❌⚠️)',
-        estimatedSavings: emojis.length * 2
+        estimatedSavings: emojis.length * TOKENS_PER_EMOJI
       });
     }
   });
@@ -116,6 +55,11 @@ function findEmojis(lines: string[]): Suggestion[] {
   return suggestions;
 }
 
+/**
+ * Finds verbose phrases that can be made more concise.
+ * @param content - File content
+ * @returns Array of suggestions
+ */
 function findVerbosePhrases(content: string): Suggestion[] {
   const suggestions: Suggestion[] = [];
   const lowerContent = content.toLowerCase();
@@ -149,12 +93,12 @@ function findLargeCodeBlocks(lines: string[]): Suggestion[] {
         blockLines = 0;
       } else {
         inBlock = false;
-        if (blockLines > 10) {
+        if (blockLines > LARGE_CODE_BLOCK_LINES) {
           suggestions.push({
             line: blockStart,
             issue: `Large code block (${blockLines} lines)`,
             suggestion: 'Move to references/ or use shorter examples',
-            estimatedSavings: Math.ceil(blockLines * 16)
+            estimatedSavings: Math.ceil(blockLines * TOKENS_PER_CODE_LINE)
           });
         }
       }
@@ -178,12 +122,12 @@ function findLargeTables(lines: string[]): Suggestion[] {
       if (tableStart === -1) { tableStart = index + 1; tableRows = 1; }
       else tableRows++;
     } else if (tableStart !== -1 && !isSeparator) {
-      if (tableRows > 10) {
+      if (tableRows > LARGE_TABLE_ROWS) {
         suggestions.push({
           line: tableStart,
           issue: `Large table (${tableRows} rows)`,
           suggestion: 'Move to references/ directory',
-          estimatedSavings: Math.ceil(tableRows * 12)
+          estimatedSavings: Math.ceil(tableRows * TOKENS_PER_TABLE_ROW)
         });
       }
       tableStart = -1;
@@ -195,46 +139,34 @@ function findLargeTables(lines: string[]): Suggestion[] {
 }
 
 function analyzeFile(filePath: string, rootDir: string, config: TokenLimitsConfig): FileAnalysis & { limit: number; exceeded: boolean } {
-  const content = readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
-  const tokens = estimateTokens(content);
-  const { limit } = getLimitForFile(filePath, config, rootDir);
-  
-  const suggestions: Suggestion[] = [
-    ...findEmojis(lines),
-    ...findVerbosePhrases(content),
-    ...findLargeCodeBlocks(lines),
-    ...findLargeTables(lines),
-  ].sort((a, b) => a.line - b.line);
-  
-  return {
-    file: filePath,
-    tokens,
-    characters: content.length,
-    lines: lines.length,
-    suggestions,
-    potentialSavings: suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0),
-    limit,
-    exceeded: tokens > limit
-  };
-}
-
-function findMarkdownFiles(dir: string): string[] {
-  const files: string[] = [];
-  const entries: Dirent[] = readdirSync(dir, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (!EXCLUDED_DIRS.includes(entry.name as typeof EXCLUDED_DIRS[number])) {
-        files.push(...findMarkdownFiles(fullPath));
-      }
-    } else if (isMarkdownFile(entry.name)) {
-      files.push(fullPath);
-    }
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+    const tokens = estimateTokens(content);
+    const relativePath = normalizePath(relative(rootDir, filePath));
+    const { limit } = getLimitForFile(relativePath, config, rootDir);
+    
+    const suggestions: Suggestion[] = [
+      ...findEmojis(lines),
+      ...findVerbosePhrases(content),
+      ...findLargeCodeBlocks(lines),
+      ...findLargeTables(lines),
+    ].sort((a, b) => a.line - b.line);
+    
+    return {
+      file: filePath,
+      tokens,
+      characters: content.length,
+      lines: lines.length,
+      suggestions,
+      potentialSavings: suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0),
+      limit,
+      exceeded: tokens > limit
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to analyze ${filePath}: ${errorMsg}`);
   }
-  
-  return files;
 }
 
 function printAnalysis(analysis: FileAnalysis & { limit: number; exceeded: boolean }, rootDir: string): void {
@@ -277,9 +209,15 @@ export function suggest(rootDir: string, args: string[]): void {
       console.error(`❌ Path not found: ${targetPath}`);
       process.exit(1);
     }
-    files = statSync(targetPath).isDirectory() 
-      ? findMarkdownFiles(targetPath) 
-      : [targetPath];
+    try {
+      files = statSync(targetPath).isDirectory() 
+        ? findMarkdownFiles(targetPath) 
+        : [targetPath];
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to access path ${targetPath}: ${errorMsg}`);
+      process.exit(1);
+    }
   } else {
     // Default: scan only skill/agent directories
     files = [];
@@ -287,8 +225,11 @@ export function suggest(rootDir: string, args: string[]): void {
       const fullPath = join(rootDir, dir);
       try {
         files.push(...findMarkdownFiles(fullPath));
-      } catch {
-        // Skip if directory doesn't exist
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (process.env.DEBUG) {
+          console.error(`Failed to scan ${dir}: ${errorMsg}`);
+        }
       }
     }
   }
@@ -300,7 +241,22 @@ export function suggest(rootDir: string, args: string[]): void {
   
   console.log(`\n🔍 Analyzing ${files.length} file(s)...\n`);
   
-  const analyses = files.map(f => analyzeFile(f, rootDir, config));
+  const analyses: (FileAnalysis & { limit: number; exceeded: boolean })[] = [];
+  let errorCount = 0;
+  
+  for (const file of files) {
+    try {
+      analyses.push(analyzeFile(file, rootDir, config));
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`⚠️  ${errorMsg}`);
+      errorCount++;
+    }
+  }
+  
+  if (errorCount > 0) {
+    console.error(`⚠️  Failed to analyze ${errorCount} file(s)\n`);
+  }
   
   // Prioritize files that exceed their limits
   const exceeded = analyses.filter(a => a.exceeded);
