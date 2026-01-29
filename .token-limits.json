@@ -1,15 +1,9 @@
 {
-  "description": "Token limits for markdown files. See https://agentskills.io/specification for guidance.",
+  "description": "Token limits for markdown files in skill directories. See scripts/README.md for usage.",
   "defaults": {
     "SKILL.md": 500,
     "references/**/*.md": 1000,
-    "docs/**/*.md": 1500,
     "*.md": 2000
   },
-  "overrides": {
-    "README.md": 3000,
-    "CONTRIBUTING.md": 2500,
-    "plugin/README.md": 3000,
-    "TRANSPARENCY_FAQ.md": 3000
-  }
+  "overrides": {}
 }
