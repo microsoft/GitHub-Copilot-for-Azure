@@ -1,6 +1,6 @@
 # Azure Functions Deployment Guide
 
-Complete reference for deploying serverless functions to Azure Function Apps using Azure CLI and Azure Functions Core Tools.
+Complete reference for deploying serverless functions to Azure Function Apps using `azd` (Azure Developer CLI) and Azure Functions Core Tools.
 
 ---
 
@@ -25,8 +25,43 @@ Azure Functions is a serverless compute service that enables you to run event-dr
 
 **Deployment Workflow:**
 ```
-Init → Develop → Test Locally → Create Resources → Deploy → Monitor
+Init → Develop → Test Locally → azd up → Monitor
 ```
+
+---
+
+## Always Use azd for Deployments
+
+> **Always use `azd` (Azure Developer CLI) for Azure provisioning and Functions deployments.**
+> The `azd` tool provides a complete, reproducible deployment workflow for all Functions scenarios.
+
+```bash
+# Deploy everything in one command
+azd up --no-prompt
+
+# Or step-by-step:
+azd init                    # Create azure.yaml and infra/
+azd provision --no-prompt   # Create Function App, Storage, and dependencies
+azd deploy --no-prompt      # Deploy function code
+
+# Preview changes before deployment
+azd provision --preview
+
+# Clean up test environments
+azd down --force --purge
+```
+
+> ⚠️ **CRITICAL: `azd down` Data Loss Warning**
+>
+> `azd down` **permanently deletes ALL resources** including Function Apps, Storage accounts, and Key Vaults.
+> Always back up important data before running `azd down`.
+
+**Why azd is required:**
+- **Parallel provisioning** - Deploys in seconds, not minutes
+- **Single command** - `azd up` replaces 5+ commands
+- **Infrastructure as Code** - Reproducible with Bicep
+- **Environment management** - Easy dev/staging/prod separation
+- **Consistent workflow** - Same commands work across all Azure services
 
 ---
 
@@ -40,12 +75,12 @@ Init → Develop → Test Locally → Create Resources → Deploy → Monitor
 async function validatePrerequisites() {
   const checks = [];
   
-  // Check Azure CLI authentication
+  // Check azd authentication
   try {
-    await exec('az account show');
-    checks.push({ name: 'Azure CLI', status: 'authenticated' });
+    await exec('azd auth login --check-status');
+    checks.push({ name: 'Azure Developer CLI', status: 'authenticated' });
   } catch (error) {
-    throw new Error('Not authenticated with Azure CLI. Run: az login');
+    throw new Error('Not authenticated with Azure Developer CLI. Run: azd auth login');
   }
   
   // Check Azure Functions Core Tools - install if not present
@@ -95,8 +130,8 @@ sudo apt-get install azure-functions-core-tools-4
 
 **Setup:**
 - [ ] Azure subscription created
-- [ ] Azure CLI installed (`az --version`)
-- [ ] Azure CLI authenticated (`az login`)
+- [ ] Azure Developer CLI installed (`azd version`)
+- [ ] Azure Developer CLI authenticated (`azd auth login`)
 - [ ] Azure Functions Core Tools installed (`func --version`)
 - [ ] Node.js/Python/.NET installed (based on runtime)
 
@@ -248,38 +283,23 @@ app.storageBlob('BlobTrigger', {
 
 ## Pattern 3: Create Azure Resources
 
-Create the required Azure resources for deployment.
+### Using azd (Required)
 
 ```bash
-# Set variables
-RESOURCE_GROUP="myResourceGroup"
-LOCATION="eastus"
-STORAGE_ACCOUNT="mystorageaccount$(date +%s)"
-FUNCTION_APP="myFunctionApp$(date +%s)"
+# Initialize project with azure.yaml
+azd init
 
-# Create resource group
-az group create --name $RESOURCE_GROUP --location $LOCATION
+# Provision infrastructure and deploy
+azd up --no-prompt
 
-# Create storage account (required for Function Apps)
-az storage account create \
-    --name $STORAGE_ACCOUNT \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku Standard_LRS
-
-# Create Function App (Consumption Plan - pay per execution)
-az functionapp create \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --consumption-plan-location $LOCATION \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4 \
-    --os-type Linux
+# Or step-by-step:
+azd provision --no-prompt   # Create Function App, Storage, App Insights
+azd deploy --no-prompt      # Deploy function code
 ```
 
 ### Hosting Plans
+
+Configure hosting plan in your Bicep templates under `infra/`:
 
 | Plan | Use Case | Scaling | Pricing |
 |------|----------|---------|---------|
@@ -287,57 +307,84 @@ az functionapp create \
 | **Premium** | Enhanced performance, VNET | Pre-warmed instances | Fixed hourly rate |
 | **Dedicated (App Service)** | Predictable workloads | Manual/auto-scale | App Service Plan pricing |
 
-#### Create with Premium Plan
+**Bicep example for Consumption plan (default):**
+```bicep
+resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: hostingPlanName
+  location: location
+  sku: {
+    name: 'Y1'
+    tier: 'Dynamic'
+  }
+  properties: {}
+}
 
-```bash
-# Create Premium plan
-az functionapp plan create \
-    --name myPremiumPlan \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku EP1 \
-    --is-linux
-
-# Create Function App on Premium plan
-az functionapp create \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --plan myPremiumPlan \
-    --os-type Linux \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4
+resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: functionAppName
+  location: location
+  kind: 'functionapp,linux'
+  properties: {
+    serverFarmId: hostingPlan.id
+    siteConfig: {
+      linuxFxVersion: 'NODE|20'
+      appSettings: [
+        { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
+        { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
+        { name: 'AzureWebJobsStorage', value: storageConnectionString }
+      ]
+    }
+  }
+}
 ```
 
-#### Create with Dedicated Plan
+**Bicep example for Premium plan:**
+```bicep
+resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: 'myPremiumPlan'
+  location: location
+  sku: {
+    name: 'EP1'
+    tier: 'ElasticPremium'
+  }
+  kind: 'elastic'
+  properties: {
+    reserved: true  // Linux
+  }
+}
+```
 
-```bash
-# Create App Service plan
-az appservice plan create \
-    --name myAppServicePlan \
-    --resource-group $RESOURCE_GROUP \
-    --location $LOCATION \
-    --sku B1 \
-    --is-linux
-
-# Create Function App on App Service plan
-az functionapp create \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --storage-account $STORAGE_ACCOUNT \
-    --plan myAppServicePlan \
-    --os-type Linux \
-    --runtime node \
-    --runtime-version 20 \
-    --functions-version 4
+**Bicep example for Dedicated plan:**
+```bicep
+resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: 'myAppServicePlan'
+  location: location
+  sku: {
+    name: 'B1'
+    tier: 'Basic'
+  }
+  properties: {
+    reserved: true  // Linux
+  }
+}
 ```
 
 ---
 
 ## Pattern 4: Deploy Functions
 
-Deploy functions to Azure using Azure Functions Core Tools.
+Deploy functions to Azure using azd or Azure Functions Core Tools.
+
+### Using azd (Recommended)
+
+```bash
+# Deploy with azd
+azd deploy --no-prompt
+
+# Deploy to specific environment
+azd deploy --environment staging --no-prompt
+```
+
+### Using func CLI
 
 ```bash
 # Deploy to Azure (from project root)
@@ -372,53 +419,45 @@ func azure functionapp publish $FUNCTION_APP --publish-settings-only
 func azure functionapp publish $FUNCTION_APP --publish-local-settings --overwrite-settings
 ```
 
-### Alternative Deployment Methods
-
-**Azure CLI ZIP Deploy:**
-```bash
-# Zip the function app
-zip -r function-app.zip .
-
-# Deploy zip file
-az functionapp deployment source config-zip \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --src function-app.zip
-```
-
 ---
 
 ## Pattern 5: Configuration Management
 
-Manage application settings and connection strings.
+Manage application settings using azd environment variables and Bicep.
+
+### Using azd (Recommended)
 
 ```bash
-# Set application setting
-az functionapp config appsettings set \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --settings "MySetting=MyValue" "AnotherSetting=AnotherValue"
+# Set environment variables with azd
+azd env set MY_SETTING "MyValue"
+azd env set ANOTHER_SETTING "AnotherValue"
 
-# Set connection string
-az functionapp config connection-string set \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --connection-string-type SQLAzure \
-    --settings "MyConnection=Server=tcp:..."
-
-# List settings
-az functionapp config appsettings list \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP
-
-# Delete setting
-az functionapp config appsettings delete \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --setting-names "MySetting"
+# Deploy with updated settings
+azd deploy --no-prompt
 
 # Upload local.settings.json to Azure
 func azure functionapp publish $FUNCTION_APP --publish-local-settings
+```
+
+### Bicep Configuration
+
+Define app settings in your Bicep template:
+
+```bicep
+resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: functionAppName
+  location: location
+  kind: 'functionapp,linux'
+  properties: {
+    siteConfig: {
+      appSettings: [
+        { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
+        { name: 'MY_SETTING', value: mySetting }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
+      ]
+    }
+  }
+}
 ```
 
 ### local.settings.json
@@ -449,48 +488,42 @@ func azure functionapp publish $FUNCTION_APP --publish-local-settings
 
 View function execution logs and diagnostics.
 
+### Using azd
+
+```bash
+# View logs from deployed functions
+azd monitor --logs
+
+# Open Azure Portal to view metrics
+azd monitor --overview
+```
+
+### Using func CLI
+
 ```bash
 # Stream live logs
 func azure functionapp logstream $FUNCTION_APP
 
-# Stream logs for specific function
+# Stream logs in browser
 func azure functionapp logstream $FUNCTION_APP --browser
-
-# View deployment logs
-az functionapp log deployment list \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP
-
-# Show deployment log
-az functionapp log deployment show \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --deployment-id <id>
 ```
 
 ### Application Insights Integration
 
-**Enable Application Insights (recommended):**
+Application Insights is automatically configured when using azd. Define it in Bicep:
 
-```bash
-# Create Application Insights
-az monitor app-insights component create \
-    --app $FUNCTION_APP-insights \
-    --location $LOCATION \
-    --resource-group $RESOURCE_GROUP \
-    --application-type web
+```bicep
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: '${functionAppName}-insights'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+  }
+}
 
-# Get connection string (use connection string, not instrumentation key)
-APPINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
-    --app $FUNCTION_APP-insights \
-    --resource-group $RESOURCE_GROUP \
-    --query connectionString -o tsv)
-
-# Link App Insights to Function App
-az functionapp config appsettings set \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --settings "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING"
+// Link to Function App via app settings in the functionApp resource
+// { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
 ```
 
 **Query Application Insights:**
@@ -525,40 +558,39 @@ requests
 
 ## Pattern 7: Deployment Slots (Premium/Dedicated Plans)
 
-Use deployment slots for zero-downtime deployments.
+Use deployment slots for zero-downtime deployments. Configure slots in Bicep and deploy with azd.
+
+### Bicep Configuration
+
+```bicep
+resource stagingSlot 'Microsoft.Web/sites/slots@2023-12-01' = {
+  parent: functionApp
+  name: 'staging'
+  location: location
+  kind: 'functionapp,linux'
+  properties: {
+    serverFarmId: hostingPlan.id
+  }
+}
+```
+
+### Deploy to Slots
+
+Deployment slots are Azure resources, not azd environments. Use the Azure Functions Core Tools CLI to deploy to slots:
 
 ```bash
-# Create staging slot
-az functionapp deployment slot create \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --slot staging
-
 # Deploy to staging slot
-func azure functionapp publish $FUNCTION_APP --slot staging
+func azure functionapp publish <function-app-name> --slot staging
 
-# Swap slots (zero downtime)
+# After testing, swap staging to production via Azure CLI
 az functionapp deployment slot swap \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --slot staging \
-    --target-slot production
-
-# Swap with preview
-az functionapp deployment slot swap \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --slot staging \
-    --target-slot production \
-    --action preview
-
-# Complete swap
-az functionapp deployment slot swap \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --slot staging \
-    --action swap
+  --name <function-app-name> \
+  --resource-group <resource-group> \
+  --slot staging \
+  --target-slot production
 ```
+
+> **Note:** `azd deploy --environment` manages separate azd environments (different resource sets), not deployment slots within the same Function App.
 
 ---
 
@@ -612,15 +644,18 @@ jobs:
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
 ```
 
-**Create Azure credentials secret:**
+**Configure GitHub Actions with azd:**
+
+Use `azd pipeline config` to set up GitHub Actions with proper credentials:
+
 ```bash
-az ad sp create-for-rbac --name "github-actions-sp" \
-    --role contributor \
-    --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
-    --sdk-auth
+# Configure CI/CD pipeline
+azd pipeline config
 ```
 
-Add the output as `AZURE_CREDENTIALS` secret in GitHub repository settings.
+This command automatically creates the necessary GitHub Actions workflow and the required secrets (including `AZURE_CREDENTIALS`) for you. No additional manual secret configuration is required when you use `azd pipeline config`.
+
+> **Note:** If you choose to configure GitHub Actions manually instead of using `azd pipeline config`, create a service principal with `az ad sp create-for-rbac` and add its JSON output as an `AZURE_CREDENTIALS` secret in your GitHub repository settings.
 
 ---
 
@@ -751,20 +786,11 @@ func start --verbose
 # Stream live logs from Azure
 func azure functionapp logstream $FUNCTION_APP
 
-# Get function app details
-az functionapp show --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
+# View logs with azd
+azd monitor --logs
 
-# View configuration
-az functionapp config show --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
-
-# View app settings
-az functionapp config appsettings list --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
-
-# Check function app state
-az functionapp show --name $FUNCTION_APP --resource-group $RESOURCE_GROUP --query "state"
-
-# Restart function app
-az functionapp restart --name $FUNCTION_APP --resource-group $RESOURCE_GROUP
+# Open Azure Portal for function app
+azd monitor --overview
 ```
 
 ---

@@ -68,14 +68,6 @@ async function validatePrerequisites() {
     throw new Error('Docker is not installed. Install Docker Desktop from https://www.docker.com/products/docker-desktop');
   }
   
-  // Check Azure CLI authentication
-  try {
-    await exec('az account show');
-    checks.push({ name: 'Azure CLI', status: 'authenticated' });
-  } catch (error) {
-    throw new Error('Not authenticated with Azure CLI. Run: az login');
-  }
-  
   // Check Azure Developer CLI authentication
   try {
     await exec('azd auth login --check-status');
@@ -103,8 +95,6 @@ async function validatePrerequisites() {
 
 **Setup:**
 - [ ] Azure subscription created
-- [ ] Azure CLI installed (`az --version`)
-- [ ] Azure CLI authenticated (`az login`)
 - [ ] **Docker Desktop installed and running** (`docker ps`)
 - [ ] Azure Developer CLI (azd) installed (`azd version`)
 - [ ] Azure Developer CLI authenticated (`azd auth login`)
@@ -163,7 +153,7 @@ az account set --subscription "<name-or-id>"
 
 ### azd-Specific MCP Tools
 
-Use the Azure MCP server's azd tools (`azure-azd`) for validation and guidance:
+Use the Azure MCP server's azd tools (`azure__azd`) for validation and guidance:
 
 | Command | Description |
 |---------|-------------|
@@ -597,7 +587,7 @@ azd deploy api --no-prompt
 **Validate azure.yaml before deployment:**
 ```javascript
 // Use MCP tool to validate azure.yaml
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });
