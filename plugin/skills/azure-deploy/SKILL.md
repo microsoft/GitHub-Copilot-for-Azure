@@ -313,6 +313,9 @@ rm -rf "$TEMP_DIR"
 
 # 6. Initialize azd environment (without -t flag since we already have infra files)
 azd init -e "$ENV_NAME"
+
+# 7. Set required infrastructure parameters (VNET disabled by default)
+azd env set VNET_ENABLED false
 ```
 
 > ⚠️ **CRITICAL**: After copying, update `azure.yaml` to match your project structure:
@@ -329,13 +332,14 @@ Only if starting a brand new project with no existing code:
 ```bash
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init -t <TEMPLATE> -e "$ENV_NAME"
+azd env set VNET_ENABLED false
 ```
 
 Then return to **Step 3** (subscription configuration).
 
 ### VNET Configuration (Optional)
 
-Before running `azd up`, enable VNET if needed:
+VNET is **disabled by default** (`VNET_ENABLED=false`). To enable VNET integration for secure deployments:
 
 ```bash
 azd env set VNET_ENABLED true
