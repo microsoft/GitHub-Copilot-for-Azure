@@ -22,8 +22,8 @@ Deploy applications to Azure using Azure Developer CLI (azd).
 - Function decorators: `@app.route`, `@app.timer`, `@app.cosmos_db`, `@app.mcp_tool`, `[Function]`, `[HttpTrigger]`
 
 > **If Azure Functions detected:**
-> 1. If `azure.yaml` exists → Continue with Step 2 (environment setup)
-> 2. If NO `azure.yaml` → Go to **"Azure Functions Deployment"** section below to select template and run `azd init`, then return to Step 2
+> 1. If `azure.yaml` exists → Skip to **Step 2** (check if environment exists, create if needed)
+> 2. If NO `azure.yaml` → Go to **"Azure Functions Deployment"** section below to select template and run `azd init` (which creates the environment), then return to **Step 3** (subscription config)
 >
 > **Do NOT use azure-create-app for Functions** - use the Functions-specific template selection instead.
 
@@ -291,15 +291,47 @@ WARNING: `azd down` permanently deletes ALL resources including databases with d
 
 Once you've identified the correct template:
 
+> **DEFAULT: Use the Existing Project flow below.** Only use the Empty Folder flow if starting from scratch.
+
 ```bash
 # 1. Generate environment name from project folder - NEVER PROMPT USER
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 
-# 2. Initialize with template and environment name
+# 2. Set template name based on decision tree above
+TEMPLATE="<TEMPLATE>"
+
+# 3. Clone template to temp folder, copy only infra files (preserves existing code)
+TEMP_DIR=$(mktemp -d)
+git clone --depth 1 "https://github.com/Azure-Samples/${TEMPLATE}.git" "$TEMP_DIR"
+
+# 4. Copy azure.yaml and infra folder (DO NOT overwrite existing code)
+cp "$TEMP_DIR/azure.yaml" .
+cp -r "$TEMP_DIR/infra" .
+
+# 5. Clean up temp folder
+rm -rf "$TEMP_DIR"
+
+# 6. Initialize azd environment (without -t flag since we already have infra files)
+azd init -e "$ENV_NAME"
+```
+
+> ⚠️ **CRITICAL**: After copying, update `azure.yaml` to match your project structure:
+> - Set correct `path` to your function app folder
+> - Set correct `language` (python, js, ts, csharp, java)
+> - Verify `host` matches the function app name in `infra/`
+
+**After `azd init` completes → Return to Step 3** (subscription configuration). Skip Step 2 since environment was already created.
+
+#### Empty Folder Alternative
+
+Only if starting a brand new project with no existing code:
+
+```bash
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init -t <TEMPLATE> -e "$ENV_NAME"
 ```
 
-**After `azd init` completes → Return to Step 2** to configure environment, subscription, and location, then **Step 5** to deploy with `azd up --no-prompt`.
+Then return to **Step 3** (subscription configuration).
 
 ### VNET Configuration (Optional)
 
