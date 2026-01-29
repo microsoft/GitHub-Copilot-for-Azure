@@ -28,17 +28,18 @@ Azure Kubernetes Service (AKS) is a managed Kubernetes container orchestration s
 
 ---
 
-## Preferred: Use azd for Deployments
+## Always Use azd for Deployments
 
-> **Prefer `azd` (Azure Developer CLI) over raw `az aks create` commands for deployments.**
-> Use `az` CLI for resource queries, cluster management, or when explicitly requested.
+> **Always use `azd` (Azure Developer CLI) for Azure provisioning and AKS deployments.**
+> The `azd` tool provides a complete, reproducible deployment workflow for all AKS scenarios.
 
 ```bash
-# Deploy everything - THIS IS THE MOST PREFERRED WAY
-azd up
-
-# For automation/agent scenarios - use --no-prompt
+# Deploy everything - THIS IS THE REQUIRED APPROACH
 azd up --no-prompt
+
+# Or step-by-step:
+azd provision --no-prompt   # Create AKS cluster, ACR, networking
+azd deploy --no-prompt      # Deploy application to cluster
 
 # Preview changes before deployment
 azd provision --preview
@@ -57,17 +58,13 @@ azd down --force --purge
 >
 > Always back up important data before running `azd down`.
 
-**Why azd is preferred:**
+**Why azd is required:**
 - **Parallel provisioning** - Deploys in seconds, not minutes
 - **Automatic ACR integration** - No image pull failures or manual credential setup
-- **Single command** - `azd up` replaces 5+ `az` commands
+- **Single command** - `azd up` replaces 5+ commands
 - **Reproducible** - Infrastructure as Code with Bicep
 - **Environment management** - Easy dev/staging/prod separation
-- **Use az for queries only** - `az aks show`, `az aks list`, `az aks get-credentials`
-
-**When `az` CLI is acceptable:**
-- Quick prototyping or one-off cluster creation
-- User explicitly requests `az` CLI
+- **Consistent workflow** - Same commands work across all Azure services
 
 ---
 
@@ -75,10 +72,10 @@ azd down --force --purge
 
 | Property | Value |
 |----------|-------|
-| CLI prefix | `az aks` |
+| Deployment tool | `azd` (Azure Developer CLI) |
 | MCP tools | `azure__aks` (commands: `aks_cluster_list`, `aks_nodepool_list`) |
 | Best for | Complex microservices, full K8s control |
-| Prerequisites | Docker, kubectl, Azure CLI, azd |
+| Prerequisites | Docker, kubectl, azd |
 
 ---
 
@@ -86,22 +83,10 @@ azd down --force --purge
 
 ### Required Tools
 
-**Azure CLI:**
-```bash
-# macOS
-brew install azure-cli
-
-# Windows
-winget install Microsoft.AzureCLI
-
-# Linux
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-```
-
 **Azure Developer CLI (azd):**
 ```bash
 # macOS
-brew install azd
+brew tap azure/azure-dev && brew install azd
 
 # Windows
 winget install Microsoft.Azd
@@ -112,15 +97,15 @@ curl -fsSL https://aka.ms/install-azd.sh | bash
 
 **kubectl:**
 ```bash
-# Install via Azure CLI
-az aks install-cli
-
-# Or via package manager
 # macOS
 brew install kubectl
 
 # Windows
 winget install Kubernetes.kubectl
+
+# Linux
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 ```
 
 **Docker Desktop:**
@@ -133,17 +118,15 @@ docker version
 ### Authentication
 
 ```bash
-# Login to Azure
-az login
-
-# Verify subscription
-az account show --query "{name:name, id:id}" -o table
-
-# Set subscription if needed
-az account set --subscription "<name-or-id>"
-
-# Login to azd
+# Login to Azure with azd
 azd auth login
+
+# Verify login status
+azd auth login --check-status
+
+# Set environment and subscription
+azd env new <environment-name>
+azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
 ```
 
 ---
@@ -151,7 +134,7 @@ azd auth login
 ## Pre-flight Check
 
 **Run `/azure:preflight` before deploying** to verify:
-- Tools installed (az, azd, docker, kubectl)
+- Tools installed (azd, docker, kubectl)
 - Authentication valid
 - Quotas sufficient
 - Docker running
@@ -163,7 +146,7 @@ azd auth login
 
 ### MCP Tools for AKS
 
-Use the Azure MCP server's azd tools (`azure-azd`) for validation:
+Use the Azure MCP server's azd tools (`azure__azd`) for validation:
 
 | Command | Description |
 |---------|-------------|
@@ -175,7 +158,7 @@ Use the Azure MCP server's azd tools (`azure-azd`) for validation:
 
 **Validate before deployment:**
 ```javascript
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });
@@ -245,9 +228,10 @@ output resourceGroupName string = resourceGroup().name
 
 ---
 
-## Cluster Creation (When Manual is Required)
+## Cluster Creation (Legacy Reference)
 
-Only use these commands if the user explicitly requests manual creation or azd cannot be used.
+> **⚠️ Do not use these commands.** Always use `azd up --no-prompt` for AKS deployments.
+> The commands below are legacy reference only for troubleshooting or when azd absolutely cannot be used.
 
 ```bash
 # Set variables
