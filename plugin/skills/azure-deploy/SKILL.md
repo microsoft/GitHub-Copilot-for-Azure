@@ -11,6 +11,26 @@ Deploy applications to Azure using Azure Developer CLI (azd).
 
 ## Execution Flow
 
+### Step 0: Detect Project Type (REQUIRED FIRST)
+
+**BEFORE following the generic flow, check for Azure Functions:**
+
+**Azure Functions Detection** - Check for ANY of these:
+- `host.json` in project root
+- `local.settings.json` in project root
+- `function.json` in any subfolder
+- Function decorators: `@app.route`, `@app.timer`, `@app.cosmos_db`, `@app.mcp_tool`, `[Function]`, `[HttpTrigger]`
+
+> **If Azure Functions detected:**
+> 1. If `azure.yaml` exists → Continue with Step 2 (environment setup)
+> 2. If NO `azure.yaml` → Go to **"Azure Functions Deployment"** section below to select template and run `azd init`, then return to Step 2
+>
+> **Do NOT use azure-create-app for Functions** - use the Functions-specific template selection instead.
+
+**If NOT a Functions project → Continue with Step 1.**
+
+---
+
 ### Step 1: Check for azure.yaml
 
 Check if `azure.yaml` exists in the project root.
@@ -174,3 +194,159 @@ azd down --force --purge
 ```
 
 WARNING: `azd down` permanently deletes ALL resources including databases with data, storage accounts with files, and Key Vaults with secrets.
+
+---
+
+## Azure Functions Deployment
+
+> **This section is for Functions projects detected in Step 0.**
+>
+> If the project already has `azure.yaml`, skip this section and continue with Step 2.
+>
+> If NO `azure.yaml` exists, use the Template Selection below to run `azd init`, then return to **Step 2** for environment/subscription/location setup, and **Step 5** to deploy.
+
+⚠️ **ALWAYS use azd for Functions deployment.** All templates deploy **Flex Consumption** (required) with secure-by-default configuration.
+
+**NEVER use legacy Consumption v1** - it is deprecated and lacks VNET, RBAC, and modern security features.
+
+**NEVER use azure-create-app skill for Functions** - use the template selection below instead.
+
+### Template Selection Decision Tree
+
+**CRITICAL**: Check for specific integration indicators IN ORDER before defaulting to HTTP.
+
+```
+1. Is this an MCP server?
+   Indicators: mcp_tool_trigger, MCPTrigger, @app.mcp_tool, "mcp" in project name
+   └─► YES → Use MCP Template
+
+2. Does it use Cosmos DB?
+   Indicators: CosmosDBTrigger, @app.cosmos_db, cosmos_db_input, cosmos_db_output
+   └─► YES → Use Cosmos DB Template: https://azure.github.io/awesome-azd/?tags=functions&name=cosmos
+
+3. Does it use Azure SQL?
+   Indicators: SqlTrigger, @app.sql, sql_input, sql_output, SqlInput, SqlOutput
+   └─► YES → Use SQL Template: https://azure.github.io/awesome-azd/?tags=functions&name=sql
+
+4. Does it use AI/OpenAI?
+   Indicators: openai, AzureOpenAI, azure-ai-openai, langchain, langgraph, semantic_kernel,
+               Microsoft.Agents, azure-ai-projects, CognitiveServices, text_completion,
+               embeddings_input, ChatCompletions, azure.ai.inference, @azure/openai
+   └─► YES → Use AI Template: https://azure.github.io/awesome-azd/?tags=functions&name=ai
+
+5. Is it a full-stack app with SWA?
+   Indicators: staticwebapp.config.json, swa-cli, @azure/static-web-apps
+   └─► YES → Use SWA+Functions Template (see Integration Templates below)
+
+6. DEFAULT → Use HTTP Template by runtime
+```
+
+### MCP Server Templates
+
+**Indicators**: `mcp_tool_trigger`, `MCPTrigger`, `@app.mcp_tool`, project name contains "mcp"
+
+| Language | MCP Template |
+|----------|--------------|
+| Python | `azd init -t remote-mcp-functions-python` |
+| TypeScript | `azd init -t remote-mcp-functions-typescript` |
+| C# (.NET) | `azd init -t remote-mcp-functions-dotnet` |
+| Java | `azd init -t remote-mcp-functions-java` |
+
+**MCP + API Management (OAuth):**
+| Language | Template |
+|----------|----------|
+| Python | `azd init -t remote-mcp-apim-functions-python` |
+
+**Self-Hosted MCP SDK:**
+| Language | Template |
+|----------|----------|
+| Python | `azd init -t remote-mcp-sdk-functions-hosting-python` |
+| TypeScript | `azd init -t remote-mcp-sdk-functions-hosting-node` |
+| C# | `azd init -t remote-mcp-sdk-functions-hosting-dotnet` |
+
+### Integration Templates (Cosmos DB, SQL, AI, SWA)
+
+**Browse by service to find the right template:**
+| Service | Find Templates |
+|---------|----------------|
+| Cosmos DB | [Awesome AZD Cosmos](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
+| Azure SQL | [Awesome AZD SQL](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
+| AI/OpenAI | [Awesome AZD AI](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
+| SWA + Functions | [todo-csharp-sql-swa-func](https://github.com/Azure-Samples/todo-csharp-sql-swa-func), [todo-nodejs-mongo-swa-func](https://github.com/azure-samples/todo-nodejs-mongo-swa-func) |
+
+### HTTP Function Templates (Default - use only if no specific integration)
+
+| Runtime | Template |
+|---------|----------|
+| C# (.NET) | `azd init -t functions-quickstart-dotnet-azd` |
+| JavaScript | `azd init -t functions-quickstart-javascript-azd` |
+| TypeScript | `azd init -t functions-quickstart-typescript-azd` |
+| Python | `azd init -t functions-quickstart-python-http-azd` |
+| Java | `azd init -t azure-functions-java-flex-consumption-azd` |
+| PowerShell | `azd init -t functions-quickstart-powershell-azd` |
+
+**Browse all templates:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)
+
+### After Template Selection
+
+Once you've identified the correct template:
+
+```bash
+# 1. Generate environment name from project folder - NEVER PROMPT USER
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+
+# 2. Initialize with template and environment name
+azd init -t <TEMPLATE> -e "$ENV_NAME"
+```
+
+**After `azd init` completes → Return to Step 2** to configure environment, subscription, and location, then **Step 5** to deploy with `azd up --no-prompt`.
+
+### VNET Configuration (Optional)
+
+Before running `azd up`, enable VNET if needed:
+
+```bash
+azd env set VNET_ENABLED true
+```
+
+### What azd Creates (Secure-by-Default)
+
+All azd Functions templates create:
+- **Flex Consumption plan** (required - NOT legacy Consumption v1)
+- User-assigned managed identity
+- RBAC role assignments (no connection strings)
+- Storage with `allowSharedKeyAccess: false`
+- App Insights with `disableLocalAuth: true`
+- Optional VNET with private endpoints (`VNET_ENABLED=true`)
+
+### RBAC Requirements
+
+Functions templates configure these RBAC roles automatically:
+
+| Resource | Role | Purpose |
+|----------|------|---------|
+| Storage Account | Storage Blob Data Owner | Function runtime storage |
+| Storage Account | Storage Queue Data Contributor | Queue triggers/bindings |
+| Storage Account | Storage Table Data Contributor | Table bindings |
+| Key Vault | Key Vault Secrets User | Secret references |
+| Cosmos DB | Cosmos DB Built-in Data Contributor | Cosmos triggers/bindings |
+| Azure SQL | SQL DB Contributor | SQL triggers/bindings |
+| App Insights | Monitoring Metrics Publisher | Telemetry |
+
+### VNET Configuration
+
+Enable VNET integration for secure deployments:
+
+```bash
+# Enable VNET before provisioning
+azd env set VNET_ENABLED true
+azd up --no-prompt
+```
+
+This creates:
+- Virtual Network with subnets
+- Private endpoints for Storage, Key Vault
+- Function App VNET integration
+- NSG rules for secure traffic
+
+> **Note:** For complete Azure Functions development guidance (triggers, bindings, local development), see the **azure-functions** skill.
