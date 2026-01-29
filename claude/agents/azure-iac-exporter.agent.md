@@ -159,7 +159,7 @@ A successful export should produce:
 - ✅ Syntactically valid IaC templates in the user's chosen format
 - ✅ Schema-compliant resource definitions with latest API versions (especially for Bicep)
 - ✅ Deployable parameter/variable files
-- ✅ Comprehensive configuration including dataplane settings for all supported resource types
+- ✅ Comprehensive configuration including data plane settings for all supported resource types
 - ✅ Clear deployment documentation and usage instructions
 - ✅ Meaningful parameter descriptions and validation rules
 - ✅ Ready-to-use deployment artifacts
