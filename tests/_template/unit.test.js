@@ -27,8 +27,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test('description is concise and actionable', () => {
-      // Descriptions should be under 500 chars for readability
+      // Descriptions should be 50-500 chars for readability
+      expect(skill.metadata.description.length).toBeGreaterThan(50);
       expect(skill.metadata.description.length).toBeLessThan(500);
+    });
+
+    test('description contains trigger phrases', () => {
+      // Descriptions should contain keywords that help with skill activation
+      const description = skill.metadata.description.toLowerCase();
+      const hasTriggerPhrases = 
+        description.includes('use this') ||
+        description.includes('use when') ||
+        description.includes('helps') ||
+        description.includes('activate') ||
+        description.includes('trigger');
+      expect(hasTriggerPhrases).toBe(true);
     });
   });
 

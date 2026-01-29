@@ -16,7 +16,7 @@ global.TESTS_PATH = __dirname;
 // Custom matcher: check if a skill should trigger on a prompt
 expect.extend({
   toTriggerSkill(prompt, skillName, triggerMatcher) {
-    const result = triggerMatcher.shouldTrigger(prompt, skillName);
+    const result = triggerMatcher.shouldTrigger(prompt);
     return {
       pass: result.triggered,
       message: () => 
@@ -28,7 +28,7 @@ expect.extend({
   },
   
   toNotTriggerSkill(prompt, skillName, triggerMatcher) {
-    const result = triggerMatcher.shouldTrigger(prompt, skillName);
+    const result = triggerMatcher.shouldTrigger(prompt);
     return {
       pass: !result.triggered,
       message: () =>

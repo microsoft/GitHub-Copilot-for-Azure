@@ -47,7 +47,6 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 |---------|---------|
 | `utils/skill-loader.js` | Parses `SKILL.md` frontmatter and content |
 | `utils/trigger-matcher.js` | Tests if prompts should activate a skill |
-| `utils/mcp-mock.js` | Mocks Azure MCP tool responses for testing |
 | `utils/fixtures.js` | Loads test data from `fixtures/` folders |
 
 ---
@@ -60,19 +59,15 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 |---------|-----------|---------------|
 | **Push to `main`** affecting `tests/**` or `plugin/skills/**` | Full test suite | `test-all-skills.yml` |
 | **Pull Request** affecting `tests/**` or `plugin/skills/**` | Full test suite | `test-all-skills.yml` |
-| **Manual dispatch** | Full test suite | `test-all-skills.yml` |
+| **Manual dispatch** | Full suite or single skill | `test-all-skills.yml` |
 
-### Per-Skill Workflows (Optional)
+### Running a Single Skill in CI
 
-You can generate per-skill workflows that only run when that skill changes:
+Use the **workflow_dispatch** trigger with the `skill-name` input:
 
-```bash
-node scripts/generate-skill-workflows.js
-```
-
-This creates `.github/workflows/test-skill-{name}.yml` files that trigger on:
-- Changes to `plugin/skills/{skill-name}/**`
-- Changes to `tests/{skill-name}/**`
+1. Go to **Actions** → **Test All Skills**
+2. Click **Run workflow**
+3. Enter a skill name (e.g., `azure-validation`) or leave empty for all skills
 
 ### Local Development
 
@@ -134,32 +129,6 @@ test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {
 npm run update:snapshots -- --testPathPattern={skill-name}
 ```
 
-### 3. Integration Tests (`integration.test.js`)
-
-**Purpose:** Test skill behavior when interacting with Azure MCP tools (using mocks).
-
-**What it checks:**
-- ✅ Correct MCP tools are called with expected parameters
-- ✅ Responses are processed correctly
-- ✅ Errors from MCP tools are handled gracefully
-
-**Example:**
-```javascript
-test('can mock bicep schema for storage account', async () => {
-  mcpMock.mockResponse('azure__bicepschema', {
-    type: 'Microsoft.Storage/storageAccounts',
-    properties: { name: { maxLength: 24 } }
-  });
-
-  const result = await mcpMock.call('azure__bicepschema', {
-    'resource-type': 'Microsoft.Storage/storageAccounts'
-  });
-
-  expect(result.properties.name.maxLength).toBe(24);
-  expect(mcpMock.wasCalled('azure__bicepschema')).toBe(true);
-});
-```
-
 ---
 
 ## Running Tests Locally
@@ -191,9 +160,7 @@ npm test -- --testPathPattern=azure-validation
 # Output:
 # PASS azure-validation/unit.test.js
 # PASS azure-validation/triggers.test.js
-# PASS azure-validation/integration.test.js
-# Test Suites: 3 passed, 3 total
-# Tests:       40 passed, 40 total
+# Test Suites: 2 passed, 2 total
 ```
 
 ### Reading Test Output
@@ -280,28 +247,13 @@ test('documents cache tiers', () => {
 });
 ```
 
-#### Step 5: Add Integration Tests (If Applicable)
-
-If your skill uses MCP tools, add integration tests with mocks:
-
-```javascript
-test('calls redis list tool', async () => {
-  mcpMock.mockResponse('azure__redis', {
-    caches: [{ name: 'my-cache', tier: 'Standard' }]
-  });
-  
-  const result = await mcpMock.call('azure__redis');
-  expect(result.caches).toHaveLength(1);
-});
-```
-
-#### Step 6: Run and Verify
+#### Step 5: Run and Verify
 
 ```bash
 npm test -- --testPathPattern={skill-name}
 ```
 
-#### Step 7: Update Coverage Grid
+#### Step 6: Update Coverage Grid
 
 ```bash
 npm run coverage:grid
@@ -316,7 +268,6 @@ This updates the Skills Coverage Grid in this README.
 - [ ] Added 5+ prompts that SHOULD trigger
 - [ ] Added 5+ prompts that should NOT trigger
 - [ ] Added unit tests for skill-specific content
-- [ ] Added integration tests (if skill uses MCP tools)
 - [ ] All tests pass locally
 - [ ] Ran `npm run coverage:grid` to update README
 
@@ -335,24 +286,20 @@ tests/
 ├── _template/                # 📋 Copy this for new skills
 │   ├── unit.test.js          #    Metadata & logic tests
 │   ├── triggers.test.js      #    Prompt activation tests
-│   ├── integration.test.js   #    MCP tool interaction tests
 │   ├── fixtures/             #    Test data
 │   └── README.md             #    Template usage guide
 │
 ├── utils/                    # 🔧 Shared test utilities
 │   ├── skill-loader.js       #    Load & parse SKILL.md
 │   ├── trigger-matcher.js    #    Test prompt → skill matching
-│   ├── mcp-mock.js           #    Mock Azure MCP tools
 │   └── fixtures.js           #    Load test fixtures
 │
 ├── scripts/                  # 📜 Helper scripts
-│   ├── generate-coverage-grid.js    # Update README coverage table
-│   └── generate-skill-workflows.js  # Create per-skill CI workflows
+│   └── generate-coverage-grid.js    # Update README coverage table
 │
 ├── azure-validation/         # ✅ Example: fully tested skill
 │   ├── unit.test.js
 │   ├── triggers.test.js
-│   ├── integration.test.js
 │   └── __snapshots__/        # Jest snapshot files
 │
 ├── reports/                  # 📊 Generated test reports
