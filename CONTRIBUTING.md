@@ -122,6 +122,41 @@ Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azur
 rm ~/.copilot/installed-plugins/github-copilot-for-azure
 ```
 
+### 5. Testing Pull Requests Locally
+
+Once your symlink is set up, you can quickly test any open pull request by checking out its branch. This is especially useful during code review to verify changes work as expected.
+
+#### Using GitHub CLI
+
+Install the [GitHub CLI](https://cli.github.com/) if you haven't already, then run:
+
+```bash
+gh pr checkout <PR-NUMBER>
+```
+
+For example, to test PR #42:
+
+```bash
+gh pr checkout 42
+```
+
+This automatically:
+1. Fetches the PR branch from the contributor's fork
+2. Creates a local branch tracking the PR
+3. Updates your symlinked plugin folder with the PR's changes
+
+After checking out, restart GitHub Copilot CLI to pick up the changes and test the skill or feature.
+
+#### Switching Back
+
+To return to the main branch after testing:
+
+```bash
+git checkout main
+```
+
+> **Tip:** You can also use `gh pr checkout <PR-NUMBER> --force` to discard any local changes and switch to the PR branch.
+
 ---
 
 ## Contributing Skills
