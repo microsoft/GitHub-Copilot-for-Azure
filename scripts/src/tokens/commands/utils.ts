@@ -45,6 +45,35 @@ export function loadConfig(rootDir: string): TokenLimitsConfig {
 }
 
 /**
+ * Calculates specificity score for a glob pattern.
+ * Higher scores indicate more specific patterns.
+ * @param pattern - Glob pattern
+ * @returns Specificity score
+ */
+function getPatternSpecificity(pattern: string): number {
+  let score = 0;
+  
+  // No wildcards = most specific (exact match)
+  if (!pattern.includes('*')) {
+    score += 10000;
+  }
+  
+  // More path segments = more specific
+  score += (pattern.split('/').length - 1) * 100;
+  
+  // Single wildcard * is more specific than globstar **
+  const starCount = (pattern.match(/(?<!\*)\*(?!\*)/g) || []).length;
+  const globstarCount = (pattern.match(/\*\*/g) || []).length;
+  score += starCount * 10;
+  score -= globstarCount * 50;
+  
+  // Longer patterns are slightly more specific
+  score += pattern.length;
+  
+  return score;
+}
+
+/**
  * Determines the token limit and matching pattern for a given file.
  * @param filePath - Path to the file (can be relative or absolute)
  * @param config - Token limits configuration
@@ -61,9 +90,9 @@ export function getLimitForFile(filePath: string, config: TokenLimitsConfig, roo
     }
   }
   
-  // Check defaults (sorted by pattern length for specificity)
+  // Check defaults (sorted by specificity, most specific first)
   const sortedDefaults = Object.entries(config.defaults)
-    .sort(([a], [b]) => b.length - a.length);
+    .sort(([a], [b]) => getPatternSpecificity(b) - getPatternSpecificity(a));
   
   for (const [pattern, limit] of sortedDefaults) {
     if (matchesPattern(normalizedPath, pattern)) {

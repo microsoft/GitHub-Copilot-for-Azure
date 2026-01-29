@@ -143,7 +143,9 @@ export function count(rootDir: string, args: string[]): void {
       : join(rootDir, outputPath);
     
     if (!isPathWithinRoot(fullOutputPath, rootDir)) {
-      console.error('❌ Error: Output path must be within the repository');
+      console.error(`❌ Error: Output path must be within the repository root`);
+      console.error(`   Attempted path: ${fullOutputPath}`);
+      console.error(`   Repository root: ${rootDir}`);
       process.exitCode = 1;
       return;
     }

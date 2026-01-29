@@ -4,12 +4,13 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 
 // We'll test the internal functions by importing them
 // First, let's create test fixtures
 
-const TEST_DIR = join(process.cwd(), '__test_fixtures__');
+const TEST_DIR = join(tmpdir(), '__test_fixtures__');
 const TEST_CONFIG = {
   defaults: {
     'SKILL.md': 10,

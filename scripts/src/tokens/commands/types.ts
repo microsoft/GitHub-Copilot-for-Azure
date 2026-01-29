@@ -2,6 +2,8 @@
  * Shared types and utilities for token management
  */
 
+import { extname } from 'node:path';
+
 export interface TokenCount {
   readonly tokens: number;
   readonly characters: number;
@@ -149,7 +151,7 @@ export function estimateTokens(text: string): number {
 
 /** Checks if file has markdown extension */
 export function isMarkdownFile(filename: string): boolean {
-  const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
+  const ext = extname(filename).toLowerCase();
   return MARKDOWN_EXTENSIONS.includes(ext as typeof MARKDOWN_EXTENSIONS[number]);
 }
 

@@ -36,7 +36,8 @@ const VERBOSE_PHRASES: Record<string, string> = {
 
 /**
  * Finds excessive emoji usage in markdown lines.
- * Allows functional emojis like ✅❌⚠️ but flags decorative ones.
+ * Detects all emojis and flags lines with more than 2 emojis.
+ * Note: Functional emojis like ✅❌⚠️ should be kept to a minimum.
  * @param lines - Array of file lines
  * @returns Array of suggestions
  */
@@ -120,7 +121,8 @@ function findLargeTables(lines: string[]): Suggestion[] {
   
   lines.forEach((line, index) => {
     const isTableRow = line.trim().startsWith('|') && line.trim().endsWith('|');
-    const isSeparator = /^\|[\s\-:|]+\|$/.test(line.trim());
+    // Improved separator: requires at least one dash per column
+    const isSeparator = /^\|(\s*:?-+:?\s*\|)+$/.test(line.trim());
     
     if (isTableRow && !isSeparator) {
       if (tableStart === -1) { tableStart = index + 1; tableRows = 1; }
@@ -225,7 +227,14 @@ export function suggest(rootDir: string, args: string[]): void {
         ? findMarkdownFiles(targetPath) 
         : [targetPath];
     } catch (error) {
-      console.error(`❌ Failed to access path ${targetPath}: ${getErrorMessage(error)}`);
+      const errMsg = getErrorMessage(error);
+      if (errMsg.includes('ENOENT')) {
+        console.error(`❌ Path does not exist: ${targetPath}`);
+      } else if (errMsg.includes('EACCES') || errMsg.includes('EPERM')) {
+        console.error(`❌ Permission denied accessing: ${targetPath}`);
+      } else {
+        console.error(`❌ Failed to access path ${targetPath}: ${errMsg}`);
+      }
       process.exitCode = 1;
       return;
     }

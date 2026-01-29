@@ -4,9 +4,10 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 
-const TEST_DIR = join(process.cwd(), '__test_fixtures_suggest__');
+const TEST_DIR = join(tmpdir(), '__test_fixtures_suggest__');
 
 describe('suggest command', () => {
   beforeEach(() => {
