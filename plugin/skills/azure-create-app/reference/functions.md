@@ -574,22 +574,23 @@ resource stagingSlot 'Microsoft.Web/sites/slots@2023-12-01' = {
 }
 ```
 
-### Deploy to Slots with azd
+### Deploy to Slots
 
-```bash
-# Deploy to staging environment
-azd deploy --environment staging --no-prompt
-
-# After testing, promote to production
-azd deploy --environment production --no-prompt
-```
-
-### Deploy with func CLI
+Deployment slots are Azure resources, not azd environments. Use the Azure Functions Core Tools CLI to deploy to slots:
 
 ```bash
 # Deploy to staging slot
-func azure functionapp publish $FUNCTION_APP --slot staging
+func azure functionapp publish <function-app-name> --slot staging
+
+# After testing, swap staging to production via Azure CLI
+az functionapp deployment slot swap \
+  --name <function-app-name> \
+  --resource-group <resource-group> \
+  --slot staging \
+  --target-slot production
 ```
+
+> **Note:** `azd deploy --environment` manages separate azd environments (different resource sets), not deployment slots within the same Function App.
 
 ---
 
@@ -652,9 +653,9 @@ Use `azd pipeline config` to set up GitHub Actions with proper credentials:
 azd pipeline config
 ```
 
-This automatically creates the necessary secrets and workflow configuration.
+This command automatically creates the necessary GitHub Actions workflow and the required secrets (including `AZURE_CREDENTIALS`) for you. No additional manual secret configuration is required when you use `azd pipeline config`.
 
-Add the output as `AZURE_CREDENTIALS` secret in GitHub repository settings.
+> **Note:** If you choose to configure GitHub Actions manually instead of using `azd pipeline config`, create a service principal with `az ad sp create-for-rbac` and add its JSON output as an `AZURE_CREDENTIALS` secret in your GitHub repository settings.
 
 ---
 

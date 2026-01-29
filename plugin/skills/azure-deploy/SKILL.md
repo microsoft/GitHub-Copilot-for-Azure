@@ -72,7 +72,6 @@ Check if `AZURE_SUBSCRIPTION_ID` is set in the output.
   "parameters": {}
 }
 ```
-```
 
 2. Present the list of subscriptions to the user. If a default subscription was found in `azd config get defaults`, include it in the prompt:
    - With default: "Which Azure subscription would you like to use? (default from azd config: `<default-subscription-id>`)"
@@ -139,7 +138,6 @@ If `azd up` fails, call the `azure__azd` MCP tool:
   "command": "error_troubleshooting",
   "parameters": {}
 }
-```
 ```
 
 Common error resolutions:

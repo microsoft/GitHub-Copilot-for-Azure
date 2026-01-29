@@ -101,13 +101,18 @@ azd down --force --purge
 | **Free** | $0/month | 2 custom domains, 100GB bandwidth/month, community support |
 | **Standard** | ~$9/month | 5 custom domains, unlimited bandwidth, password protection, custom auth providers, SLA |
 
-```bash
-# Create with Standard SKU
-az staticwebapp create \
-  --name myapp \
-  --resource-group myapp-rg \
-  --location centralus \
-  --sku Standard
+To use Standard SKU with azd, set the SKU in your Bicep template (`infra/main.bicep`):
+
+```bicep
+resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
+  name: name
+  location: location
+  sku: {
+    name: 'Standard'
+    tier: 'Standard'
+  }
+  // ...
+}
 ```
 
 ---

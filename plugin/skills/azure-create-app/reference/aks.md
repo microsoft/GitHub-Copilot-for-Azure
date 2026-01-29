@@ -73,7 +73,7 @@ azd down --force --purge
 | Property | Value |
 |----------|-------|
 | Deployment tool | `azd` (Azure Developer CLI) |
-| MCP tools | `mcp_azure_mcp_aks` (commands: `aks_cluster_get`, `aks_nodepool_get`) |
+| MCP tools | `azure__aks` (commands: `aks_cluster_list`, `aks_nodepool_list`) |
 | Best for | Complex microservices, full K8s control |
 | Prerequisites | Docker, kubectl, azd |
 
@@ -106,7 +106,6 @@ winget install Kubernetes.kubectl
 # Linux
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-```
 ```
 
 **Docker Desktop:**
