@@ -161,6 +161,115 @@ plugin/skills/your-skill-name/
 - Include practical examples and common use cases
 - Reference official Microsoft documentation
 - Test your skill thoroughly before submitting
+- **Follow the [Agent Skills Specification](https://agentskills.io/specification)**
+- See [.github/skills/skill-authoring/SKILL.md](.github/skills/skill-authoring/SKILL.md) for detailed guidelines
+
+### Token Management
+
+#### Why Token Limits?
+
+AI agents load skill content into their context window, which has finite capacity. Large skills:
+- Consume context space needed for user conversations
+- Slow down agent response times
+- May get truncated, losing important instructions
+
+The [agentskills.io specification](https://agentskills.io/specification) recommends keeping SKILL.md under 5000 tokens, with detailed content in `references/` directories that load on-demand.
+
+#### Token Limits
+
+| File Type | Soft Limit | Hard Limit | Action if Exceeded |
+|-----------|------------|------------|-------------------|
+| SKILL.md | 500 tokens | 5000 tokens | Move content to `references/` |
+| references/*.md | 1000 tokens | 2000 tokens | Split into multiple files |
+| docs/*.md | 1500 tokens | 3000 tokens | Restructure content |
+
+Token estimation: **~4 characters = 1 token**
+
+#### Commands
+
+Run these from the repository root:
+
+```bash
+# First time setup (installs dependencies)
+npm install
+
+# Show help and available commands
+npm run tokens help
+
+# Count tokens in all markdown files
+npm run tokens count
+
+# Check all markdown files against token limits
+npm run tokens check
+
+# Get optimization suggestions
+npm run tokens suggest                    # All files
+npm run tokens suggest -- docs/           # Specific directory
+npm run tokens suggest -- path/to/file.md # Specific file
+
+# Compare token counts between git refs
+npm run tokens compare                           # HEAD vs main
+npm run tokens compare -- --base HEAD~1          # vs previous commit
+npm run tokens compare -- --base feature-branch  # vs specific branch
+```
+
+**Example output from `npm run tokens compare`:**
+
+```
+📊 TOKEN CHANGE REPORT
+══════════════════════════════════════════════════════════════════════
+Comparing: main → HEAD
+──────────────────────────────────────────────────────────────────────
+
+📈 Total Change: +350 tokens (+5%)
+   Before: 7,000 tokens
+   After:  7,350 tokens
+   Files:  3 modified, 1 added, 0 removed
+
+Changed Files:
+──────────────────────────────────────────────────────────────────────
+🆕 plugin/skills/my-new-skill/SKILL.md
+   0 → 450 tokens [+450 (+100%)]
+📈 plugin/skills/existing-skill/SKILL.md
+   500 → 600 tokens [+100 (+20%)]
+```
+
+**Example output from `npm run tokens check`:**
+
+```
+📊 Token Limit Check
+════════════════════════════════════════════════════════════
+Files Checked: 83
+Files Exceeded: 5
+
+⚠️  Files exceeding limits:
+────────────────────────────────────────────────────────────
+  ❌ plugin/skills/my-skill/SKILL.md
+     850 tokens (limit: 500, over by 350)
+     Pattern: SKILL.md
+
+💡 Tip: Move detailed content to references/ subdirectories
+```
+
+#### CI Integration
+
+Pull requests automatically run token analysis which includes:
+
+1. **Token Comparison** - Shows token changes between your PR and the base branch
+   - Total token increase/decrease with percentage
+   - Per-file breakdown of changes
+   - Highlights files with significant increases (>20%)
+
+2. **Limit Check** - Warns if any files exceed their token limits
+
+The bot will comment on your PR with a combined report. Address warnings by:
+
+1. Moving detailed content to `references/` subdirectory
+2. Using tables instead of verbose lists
+3. Removing decorative elements (excessive emojis, redundant headers)
+4. Linking to external documentation instead of duplicating it
+
+See [markdown-token-optimizer](.github/skills/markdown-token-optimizer/SKILL.md) skill for optimization techniques.
 
 ---
 

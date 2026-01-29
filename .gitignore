@@ -396,3 +396,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Token management tools
+scripts/node_modules/
+scripts/dist/
+scripts/package-lock.json
+token-metadata.json

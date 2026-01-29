@@ -1,0 +1,185 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Token limit check and comparison for markdown files
+  token-check:
+    name: Token Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comparison
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./scripts
+        run: npm ci || npm install
+
+      - name: Check changed markdown files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **/*.md
+            **/*.mdx
+            .token-limits.json
+
+      - name: Run token limit check
+        if: steps.changed-files.outputs.any_changed == 'true'
+        id: token-check
+        working-directory: ./scripts
+        run: |
+          LIMIT_OUTPUT=$(npm run tokens -- check --markdown 2>&1)
+          echo "$LIMIT_OUTPUT" > limit-report.md
+          
+          if echo "$LIMIT_OUTPUT" | grep -q "Files Exceeding Token Limits"; then
+            echo "exceeded=true" >> $GITHUB_OUTPUT
+          else
+            echo "exceeded=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run token comparison
+        if: steps.changed-files.outputs.any_changed == 'true'
+        id: token-compare
+        working-directory: ./scripts
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          COMPARE_OUTPUT=$(npm run tokens -- compare --base "origin/${BASE_REF}" --head HEAD --markdown 2>&1)
+          echo "$COMPARE_OUTPUT" > compare-report.md
+          
+          TOTAL_DIFF=$(echo "$COMPARE_OUTPUT" | grep -oP 'Total Change.*?\*\*\K[^*]+' | head -1 || echo "0 tokens")
+          echo "diff=$TOTAL_DIFF" >> $GITHUB_OUTPUT
+
+      - name: Generate combined report
+        if: steps.changed-files.outputs.any_changed == 'true'
+        working-directory: ./scripts
+        run: |
+          # Combine reports
+          echo "# 🔍 Token Analysis Report" > combined-report.md
+          echo "" >> combined-report.md
+          
+          # Add comparison report first
+          if [ -f compare-report.md ]; then
+            cat compare-report.md >> combined-report.md
+            echo "" >> combined-report.md
+          fi
+          
+          # Add limit check report
+          if [ -f limit-report.md ]; then
+            cat limit-report.md >> combined-report.md
+          fi
+          
+          # Add to step summary
+          cat combined-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('./scripts/combined-report.md', 'utf8');
+            
+            // Check for existing bot comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(c => 
+              c.user.type === 'Bot' && 
+              c.body.includes('Token Analysis Report')
+            );
+            
+            const footer = '\n\n---\n*Automated token analysis. See [skill authoring guidelines](.github/skills/skill-authoring/SKILL.md) for best practices.*';
+            const body = report + footer;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Skip message
+        if: steps.changed-files.outputs.any_changed != 'true'
+        run: echo "No markdown files changed - skipping token analysis"
+
+  # Validate skill structure
+  skill-validation:
+    name: Skill Structure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check changed skill files
+        id: changed-skills
+        uses: tj-actions/changed-files@v44
+        with:
+          files: plugin/skills/**/SKILL.md
+
+      - name: Validate skill frontmatter
+        if: steps.changed-skills.outputs.any_changed == 'true'
+        run: |
+          echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
+          
+          for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
+            echo "Checking $file..."
+            
+            # Check for required frontmatter
+            if ! head -1 "$file" | grep -q "^---"; then
+              echo "::error file=$file::Missing YAML frontmatter"
+              echo "❌ $file - Missing frontmatter" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+            
+            # Check for name field
+            if ! grep -q "^name:" "$file"; then
+              echo "::error file=$file::Missing required 'name' field in frontmatter"
+              echo "❌ $file - Missing 'name' field" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+            
+            # Check for description field
+            if ! grep -q "^description:" "$file"; then
+              echo "::error file=$file::Missing required 'description' field in frontmatter"
+              echo "❌ $file - Missing 'description' field" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+            
+            echo "✅ $file - Valid" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "All skill files have valid frontmatter"
+
+      - name: Skip message
+        if: steps.changed-skills.outputs.any_changed != 'true'
+        run: echo "No skill files changed - skipping validation"
