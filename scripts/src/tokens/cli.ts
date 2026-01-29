@@ -12,6 +12,7 @@
  *   npm run tokens help               # Show help
  */
 
+import { parseArgs } from 'node:util';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { count } from './commands/count.js';
@@ -70,7 +71,8 @@ function main(): void {
   if (!COMMANDS.includes(command)) {
     console.error(`Unknown command: ${command}`);
     console.error(`Available commands: ${COMMANDS.join(', ')}`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   switch (command) {

@@ -2,13 +2,17 @@
  * Count command - Token counting for markdown files
  */
 
+import { parseArgs } from 'node:util';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, isAbsolute } from 'node:path';
-import { 
+import type { 
   TokenMetadata, 
-  TokenCount, 
+  TokenCount
+} from './types.js';
+import { 
   estimateTokens,
-  DEFAULT_SCAN_DIRS
+  DEFAULT_SCAN_DIRS,
+  getErrorMessage
 } from './types.js';
 import { findMarkdownFiles } from './utils.js';
 
@@ -30,8 +34,7 @@ function countFileTokens(filePath: string): TokenCount {
       lastUpdated: new Date().toISOString()
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to count tokens in ${filePath}: ${errorMsg}`);
+    throw new Error(`Failed to count tokens in ${filePath}: ${getErrorMessage(error)}`);
   }
 }
 
@@ -43,9 +46,8 @@ function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
       const files = findMarkdownFiles(fullPath);
       allFiles.push(...files);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
       if (process.env.DEBUG) {
-        console.error(`Failed to scan directory ${dir}: ${errorMsg}`);
+        console.error(`Failed to scan directory ${dir}: ${getErrorMessage(error)}`);
       }
     }
   }
@@ -61,8 +63,7 @@ function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
       fileTokens[relativePath] = tokenCount;
       totalTokens += tokenCount.tokens;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`⚠️  ${errorMsg}`);
+      console.error(`⚠️  ${getErrorMessage(error)}`);
       errorCount++;
     }
   }
@@ -121,10 +122,18 @@ function isPathWithinRoot(targetPath: string, rootDir: string): boolean {
 }
 
 export function count(rootDir: string, args: string[]): void {
-  const outputIndex = args.indexOf('--output');
-  const hasOutputValue = outputIndex !== -1 && args[outputIndex + 1] && !args[outputIndex + 1].startsWith('--');
-  const outputPath = hasOutputValue ? args[outputIndex + 1] : null;
-  const jsonOnly = args.includes('--json');
+  const { values } = parseArgs({
+    args,
+    options: {
+      output: { type: 'string' },
+      json: { type: 'boolean', default: false }
+    },
+    strict: false,
+    allowPositionals: true
+  });
+
+  const outputPath = values.output ?? null;
+  const jsonOnly = values.json ?? false;
 
   const metadata = generateMetadata(rootDir, [...DEFAULT_SCAN_DIRS]);
   
@@ -135,7 +144,8 @@ export function count(rootDir: string, args: string[]): void {
     
     if (!isPathWithinRoot(fullOutputPath, rootDir)) {
       console.error('❌ Error: Output path must be within the repository');
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
     
     writeFileSync(fullOutputPath, JSON.stringify(metadata, null, 2));

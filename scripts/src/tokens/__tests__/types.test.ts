@@ -7,6 +7,7 @@ import {
   estimateTokens, 
   isMarkdownFile, 
   normalizePath,
+  getErrorMessage,
   EXCLUDED_DIRS,
   MARKDOWN_EXTENSIONS
 } from '../commands/types.js';
@@ -121,5 +122,48 @@ describe('MARKDOWN_EXTENSIONS', () => {
 
   it('has correct length', () => {
     expect(MARKDOWN_EXTENSIONS.length).toBe(2);
+  });
+});
+
+describe('getErrorMessage', () => {
+  it('extracts message from Error instances', () => {
+    const error = new Error('Test error message');
+    expect(getErrorMessage(error)).toBe('Test error message');
+  });
+
+  it('handles Error with empty message', () => {
+    const error = new Error('');
+    expect(getErrorMessage(error)).toBe('');
+  });
+
+  it('converts string errors to strings', () => {
+    expect(getErrorMessage('String error')).toBe('String error');
+  });
+
+  it('converts number errors to strings', () => {
+    expect(getErrorMessage(404)).toBe('404');
+  });
+
+  it('converts null to string', () => {
+    expect(getErrorMessage(null)).toBe('null');
+  });
+
+  it('converts undefined to string', () => {
+    expect(getErrorMessage(undefined)).toBe('undefined');
+  });
+
+  it('converts object errors to strings', () => {
+    expect(getErrorMessage({ code: 'ERR_UNKNOWN' })).toBe('[object Object]');
+  });
+
+  it('handles custom error classes', () => {
+    class CustomError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'CustomError';
+      }
+    }
+    const error = new CustomError('Custom error');
+    expect(getErrorMessage(error)).toBe('Custom error');
   });
 });

@@ -2,14 +2,18 @@
  * Check command - Token limit validation
  */
 
+import { parseArgs } from 'node:util';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { 
+import type { 
   ValidationResult, 
-  ValidationReport, 
+  ValidationReport
+} from './types.js';
+import { 
   estimateTokens,
   normalizePath,
-  DEFAULT_SCAN_DIRS
+  DEFAULT_SCAN_DIRS,
+  getErrorMessage
 } from './types.js';
 import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
 
@@ -39,8 +43,7 @@ function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationRepo
         pattern
       });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`⚠️  Failed to process ${file}: ${errorMsg}`);
+      console.error(`⚠️  Failed to process ${file}: ${getErrorMessage(error)}`);
       skipped.push(file);
     }
   }
@@ -112,13 +115,22 @@ function printConsoleReport(report: ValidationReport): void {
 }
 
 export function check(rootDir: string, args: string[]): void {
-  const markdownOutput = args.includes('--markdown');
-  const jsonOutput = args.includes('--json');
-  const filesArg = args.filter(a => !a.startsWith('--'));
+  const { values, positionals } = parseArgs({
+    args,
+    options: {
+      markdown: { type: 'boolean', default: false },
+      json: { type: 'boolean', default: false }
+    },
+    strict: false,
+    allowPositionals: true
+  });
+
+  const markdownOutput = values.markdown ?? false;
+  const jsonOutput = values.json ?? false;
   
   let filesToCheck: string[] | undefined;
-  if (filesArg.length > 0) {
-    filesToCheck = filesArg.map(f => resolve(rootDir, f));
+  if (positionals.length > 0) {
+    filesToCheck = positionals.map(f => resolve(rootDir, f));
   } else {
     // Default: scan only skill/agent directories
     const allFiles: string[] = [];

@@ -2,13 +2,16 @@
  * Compare command - Git-based token comparison
  */
 
+import { parseArgs } from 'node:util';
 import { readFileSync, readdirSync, Dirent } from 'node:fs';
 import { join, relative } from 'node:path';
 import { execSync } from 'node:child_process';
-import { 
+import type { 
   FileTokens, 
   FileComparison, 
-  ComparisonReport,
+  ComparisonReport
+} from './types.js';
+import {
   estimateTokens, 
   EXCLUDED_DIRS, 
   isMarkdownFile, 
@@ -51,6 +54,10 @@ function validateGitRef(ref: string): void {
 
 /**
  * Gets token count for a file at a specific git ref.
+ * 
+ * Security: Uses validateGitRef() to prevent command injection.
+ * All git refs are validated against strict patterns before use.
+ * 
  * @param filePath - Path to the file
  * @param ref - Git reference
  * @param rootDir - Repository root
@@ -293,17 +300,24 @@ function formatConsoleReport(report: ComparisonReport): void {
 }
 
 export function compare(rootDir: string, args: string[]): void {
-  let baseRef = 'main', headRef = 'HEAD';
-  let markdown = false, json = false, allFiles = false;
-  
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i], next = args[i + 1];
-    if (arg === '--base' && next && !next.startsWith('--')) { baseRef = next; i++; }
-    else if (arg === '--head' && next && !next.startsWith('--')) { headRef = next; i++; }
-    else if (arg === '--markdown') markdown = true;
-    else if (arg === '--json') json = true;
-    else if (arg === '--all') allFiles = true;
-  }
+  const { values } = parseArgs({
+    args,
+    options: {
+      base: { type: 'string', default: 'main' },
+      head: { type: 'string', default: 'HEAD' },
+      markdown: { type: 'boolean', default: false },
+      json: { type: 'boolean', default: false },
+      all: { type: 'boolean', default: false }
+    },
+    strict: false,
+    allowPositionals: true
+  });
+
+  const baseRef = values.base ?? 'main';
+  const headRef = values.head ?? 'HEAD';
+  const markdown = values.markdown ?? false;
+  const json = values.json ?? false;
+  const allFiles = values.all ?? false;
   
   const report = compareTokens(baseRef, headRef, rootDir, !allFiles);
   

@@ -2,12 +2,15 @@
  * Suggest command - Token optimization suggestions
  */
 
+import { parseArgs } from 'node:util';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import { 
+import type { 
   Suggestion, 
   FileAnalysis,
-  TokenLimitsConfig,
+  TokenLimitsConfig
+} from './types.js';
+import { 
   estimateTokens,
   normalizePath,
   DEFAULT_SCAN_DIRS,
@@ -16,7 +19,8 @@ import {
   LARGE_TABLE_ROWS,
   TOKENS_PER_EMOJI,
   TOKENS_PER_CODE_LINE,
-  TOKENS_PER_TABLE_ROW
+  TOKENS_PER_TABLE_ROW,
+  getErrorMessage
 } from './types.js';
 import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
 
@@ -164,8 +168,7 @@ function analyzeFile(filePath: string, rootDir: string, config: TokenLimitsConfi
       exceeded: tokens > limit
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to analyze ${filePath}: ${errorMsg}`);
+    throw new Error(`Failed to analyze ${filePath}: ${getErrorMessage(error)}`);
   }
 }
 
@@ -199,7 +202,14 @@ function printAnalysis(analysis: FileAnalysis & { limit: number; exceeded: boole
 }
 
 export function suggest(rootDir: string, args: string[]): void {
-  const targetArg = args.filter(a => !a.startsWith('--'))[0];
+  const { positionals } = parseArgs({
+    args,
+    options: {},
+    strict: false,
+    allowPositionals: true
+  });
+
+  const targetArg = positionals[0];
   const config = loadConfig(rootDir);
   
   let files: string[];
@@ -207,16 +217,17 @@ export function suggest(rootDir: string, args: string[]): void {
     const targetPath = resolve(rootDir, targetArg);
     if (!existsSync(targetPath)) {
       console.error(`❌ Path not found: ${targetPath}`);
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
     try {
       files = statSync(targetPath).isDirectory() 
         ? findMarkdownFiles(targetPath) 
         : [targetPath];
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`❌ Failed to access path ${targetPath}: ${errorMsg}`);
-      process.exit(1);
+      console.error(`❌ Failed to access path ${targetPath}: ${getErrorMessage(error)}`);
+      process.exitCode = 1;
+      return;
     }
   } else {
     // Default: scan only skill/agent directories
@@ -226,9 +237,8 @@ export function suggest(rootDir: string, args: string[]): void {
       try {
         files.push(...findMarkdownFiles(fullPath));
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
         if (process.env.DEBUG) {
-          console.error(`Failed to scan ${dir}: ${errorMsg}`);
+          console.error(`Failed to scan ${dir}: ${getErrorMessage(error)}`);
         }
       }
     }
@@ -248,8 +258,7 @@ export function suggest(rootDir: string, args: string[]): void {
     try {
       analyses.push(analyzeFile(file, rootDir, config));
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`⚠️  ${errorMsg}`);
+      console.error(`⚠️  ${getErrorMessage(error)}`);
       errorCount++;
     }
   }

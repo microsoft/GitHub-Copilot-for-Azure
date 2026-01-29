@@ -4,13 +4,16 @@
 
 import { readFileSync, readdirSync, existsSync, Dirent } from 'node:fs';
 import { join } from 'node:path';
-import { 
-  TokenLimitsConfig,
+import type { 
+  TokenLimitsConfig
+} from './types.js';
+import {
   DEFAULT_LIMITS,
   EXCLUDED_DIRS,
   isMarkdownFile,
   normalizePath,
-  matchesPattern
+  matchesPattern,
+  getErrorMessage
 } from './types.js';
 
 /**
@@ -33,8 +36,7 @@ export function loadConfig(rootDir: string): TokenLimitsConfig {
       
       return parsed as TokenLimitsConfig;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`⚠️  Warning: Invalid .token-limits.json (${errorMsg}), using defaults`);
+      console.error(`⚠️  Warning: Invalid .token-limits.json (${getErrorMessage(error)}), using defaults`);
       return DEFAULT_LIMITS;
     }
   }
@@ -86,9 +88,8 @@ export function findMarkdownFiles(dir: string, files: string[] = []): string[] {
   try {
     entries = readdirSync(dir, { withFileTypes: true });
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
     if (process.env.DEBUG) {
-      console.error(`Failed to read directory ${dir}: ${errorMsg}`);
+      console.error(`Failed to read directory ${dir}: ${getErrorMessage(error)}`);
     }
     return files;
   }

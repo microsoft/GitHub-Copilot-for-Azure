@@ -184,3 +184,16 @@ export function matchesPattern(filePath: string, pattern: string): boolean {
   
   return globToRegex(pattern).test(normalizedPath);
 }
+
+/**
+ * Safely extracts error message from unknown error types.
+ * Handles Error instances, strings, and other types.
+ * @param error - Unknown error object
+ * @returns Error message string
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}

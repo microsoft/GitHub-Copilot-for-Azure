@@ -59,15 +59,15 @@ describe('count command integration', () => {
   });
 
   it('rejects output paths outside repository', () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const originalExitCode = process.exitCode;
     
     count(TEST_DIR, ['--output', '/etc/passwd']);
     
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(process.exitCode).toBe(1);
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('must be within the repository'));
     
-    exitSpy.mockRestore();
+    process.exitCode = originalExitCode;
     errorSpy.mockRestore();
   });
 

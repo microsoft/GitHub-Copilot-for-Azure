@@ -9,10 +9,13 @@ export default defineConfig({
       exclude: [
         'src/**/*.test.ts',
         'src/**/__tests__/**'
-      ]
-      // Coverage tracking enabled, no enforcement thresholds
-      // Current baseline: ~2% (only types.ts utility functions)
-      // TODO: Add integration tests for command functions to increase coverage
+      ],
+      thresholds: {
+        statements: 80,
+        branches: 66,  // Baseline: 66.35% (cli.ts entry point not covered)
+        functions: 97,
+        lines: 80
+      }
     }
   }
 });
