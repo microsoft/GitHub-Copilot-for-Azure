@@ -311,11 +311,58 @@ cp -r "$TEMP_DIR/infra" .
 # 5. Clean up temp folder
 rm -rf "$TEMP_DIR"
 
-# 6. Initialize azd environment (without -t flag since we already have infra files)
-azd init -e "$ENV_NAME"
+# 6. Create azd environment (NOT azd init - that would prompt about existing azure.yaml)
+azd env new "$ENV_NAME"
 
-# 7. Set required infrastructure parameters (VNET disabled by default)
+# 7. Set ALL required infrastructure parameters to prevent prompts
 azd env set VNET_ENABLED false
+```
+
+#### Template-Specific Parameters
+
+After step 7, set additional parameters based on template type:
+
+**MCP Templates** (`remote-mcp-*`):
+```bash
+azd env set VNET_ENABLED false
+azd env set ENABLE_APIM false           # If template supports APIM
+```
+
+**AI/OpenAI Templates**:
+```bash
+azd env set VNET_ENABLED false
+azd env set AZURE_OPENAI_LOCATION eastus2   # Or user-preferred region with capacity
+azd env set DEPLOY_AZURE_OPENAI true        # If template has optional AI
+```
+
+**Cosmos DB Templates**:
+```bash
+azd env set VNET_ENABLED false
+azd env set COSMOS_DB_FREE_TIER false       # Free tier has limitations
+```
+
+**All Templates** - Common parameters to always set:
+```bash
+azd env set VNET_ENABLED false
+```
+
+> 💡 **TIP**: To discover required parameters for any template, check `infra/main.parameters.json` or run `azd provision --preview` to see what would be prompted.
+
+#### Discover and Set All Required Parameters
+
+After `azd init`, check for required parameters that don't have defaults:
+
+```bash
+# Check main.parameters.json for parameters without default values
+cat infra/main.parameters.json 2>/dev/null || cat infra/main.bicepparam 2>/dev/null
+
+# Or check main.bicep for @secure() or required parameters
+grep -E "^param.*=.*\$" infra/main.bicep | head -20
+```
+
+For each parameter found without a default, set a value:
+```bash
+azd env set <PARAMETER_NAME> <value>
 ```
 
 > ⚠️ **CRITICAL**: After copying, update `azure.yaml` to match your project structure:
