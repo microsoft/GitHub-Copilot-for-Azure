@@ -28,17 +28,18 @@ Azure App Service is a fully managed platform-as-a-service (PaaS) for hosting we
 
 ---
 
-## Preferred: Use azd for Deployments
+## Always Use azd for Deployments
 
-> **Prefer `azd` (Azure Developer CLI) over raw `az webapp` commands for deployments.**
-> Use `az` CLI for resource queries, simple single-resource deployments, or when explicitly requested.
+> **Always use `azd` (Azure Developer CLI) for Azure provisioning and App Service deployments.**
+> The `azd` tool provides a complete, reproducible deployment workflow for all App Service scenarios.
 
 ```bash
-# Deploy everything - THIS IS THE MOST PREFERRED WAY
-azd up
-
-# For automation/agent scenarios - use --no-prompt
+# Deploy everything - THIS IS THE REQUIRED APPROACH
 azd up --no-prompt
+
+# Or step-by-step:
+azd provision --no-prompt   # Create App Service, plan, and dependencies
+azd deploy --no-prompt      # Deploy application code
 
 # Preview changes before deployment
 azd provision --preview
@@ -55,18 +56,12 @@ azd down --force --purge
 >
 > Always back up important data before running `azd down`.
 
-**Why azd is preferred:**
+**Why azd is required:**
 - **Parallel provisioning** - Deploys in seconds, not minutes
-- **Single command** - `azd up` replaces 5+ `az` commands
+- **Single command** - `azd up` replaces 5+ commands
 - **Infrastructure as Code** - Reproducible with Bicep
 - **Environment management** - Easy dev/staging/prod separation
-- **Use az for queries only** - `az webapp list`, `az webapp show`, etc.
-
-**When `az` CLI is acceptable:**
-- Single-resource deployments without IaC requirements
-- Quick prototyping or one-off deployments
-- User explicitly requests `az` CLI
-- Querying or inspecting existing resources
+- **Consistent workflow** - Same commands work across all Azure services
 
 ---
 
@@ -74,8 +69,8 @@ azd down --force --purge
 
 | Property | Value |
 |----------|-------|
-| CLI prefix | `az webapp` |
-| MCP tools | `azure__appservice` (commands: `appservice_webapp_list`, `appservice_webapp_get`, `appservice_plan_list`) |
+| Deployment tool | `azd` (Azure Developer CLI) |
+| MCP tools | `azure__azd` (commands: `validate_azure_yaml`, `discovery_analysis`) |
 | Best for | Web apps, REST APIs, managed hosting |
 | azd Template | `todo-csharp-sql`, `todo-nodejs-mongo` |
 
@@ -85,22 +80,10 @@ azd down --force --purge
 
 ### Required Tools
 
-**Azure CLI:**
-```bash
-# macOS
-brew install azure-cli
-
-# Windows
-winget install Microsoft.AzureCLI
-
-# Linux
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-```
-
 **Azure Developer CLI (azd):**
 ```bash
 # macOS
-brew install azd
+brew tap azure/azure-dev && brew install azd
 
 # Windows
 winget install Microsoft.Azd
@@ -112,17 +95,15 @@ curl -fsSL https://aka.ms/install-azd.sh | bash
 ### Authentication
 
 ```bash
-# Login to Azure
-az login
-
-# Verify subscription
-az account show --query "{name:name, id:id}" -o table
-
-# Set subscription if needed
-az account set --subscription "<name-or-id>"
-
-# Login to azd
+# Login to Azure with azd
 azd auth login
+
+# Verify login status
+azd auth login --check-status
+
+# Set environment and subscription
+azd env new <environment-name>
+azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
 ```
 
 ---
@@ -130,7 +111,7 @@ azd auth login
 ## Pre-flight Check
 
 **Run `/azure:preflight` before deploying** to verify:
-- Tools installed (az, azd)
+- Tools installed (azd)
 - Authentication valid
 - Quotas sufficient
 - Subscription has capacity
@@ -141,7 +122,7 @@ azd auth login
 
 ### MCP Tools for App Service
 
-Use the Azure MCP server's azd tools (`azure-azd`) for validation:
+Use the Azure MCP server's azd tools (`azure__azd`) for validation:
 
 | Command | Description |
 |---------|-------------|
@@ -151,7 +132,7 @@ Use the Azure MCP server's azd tools (`azure-azd`) for validation:
 
 **Validate before deployment:**
 ```javascript
-const validation = await azure-azd({
+const validation = await azure__azd({
   command: "validate_azure_yaml",
   parameters: { path: "./azure.yaml" }
 });
@@ -233,6 +214,8 @@ output webAppUrl string = webApp.properties.defaultHostName
 
 ### Creating App Service Plans
 
+> **Note:** Always use `azd up --no-prompt` for deployments. Define plan configuration in Bicep templates. The commands below are legacy reference only.
+
 ```bash
 # Create Basic plan
 az appservice plan create \
@@ -278,6 +261,8 @@ az appservice plan create \
 - Node.js: Configured via app settings
 
 ### Create Web App
+
+> **Note:** Always use `azd up --no-prompt` for deployments. The commands below are legacy reference only.
 
 ```bash
 # Create Node.js web app

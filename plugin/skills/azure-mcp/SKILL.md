@@ -242,6 +242,20 @@ The Azure MCP server exposes two types of tools:
 | `azure__bicepschema` | *(schema queries)* | Get Bicep resource type schemas |
 | `azure__quota` | `quota_region_availability_list` | Check regional quota and availability |
 
+## Azure Developer CLI (azd)
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| `azure__azd` | `validate_azure_yaml` | Validate azure.yaml against official JSON schema |
+| `azure__azd` | `discovery_analysis` | Analyze application components for azd migration |
+| `azure__azd` | `architecture_planning` | Select Azure services for discovered components |
+| `azure__azd` | `azure_yaml_generation` | Generate azure.yaml configuration |
+| `azure__azd` | `docker_generation` | Generate Dockerfiles for Container Apps/AKS |
+| `azure__azd` | `infrastructure_generation` | Generate Bicep templates |
+| `azure__azd` | `iac_generation_rules` | Get Bicep compliance rules and best practices |
+| `azure__azd` | `project_validation` | Comprehensive validation before deployment |
+| `azure__azd` | `error_troubleshooting` | Diagnose and troubleshoot azd errors |
+
 ## Best Practices
 
 | Tool | Command | Description |

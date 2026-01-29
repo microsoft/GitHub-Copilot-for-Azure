@@ -21,11 +21,23 @@ Azure Static Web Apps (SWA) provides:
 ## Prerequisites
 
 ### Required Tools
-- **SWA CLI** - Static Web Apps command-line tool
-- **Azure CLI** - For resource management
+- **Azure Developer CLI (azd)** - For resource provisioning and deployment
+- **SWA CLI** - Static Web Apps command-line tool (optional, for local development)
 - **Node.js** - For SWA CLI and managed Functions APIs
 
 ### Installation
+
+**Azure Developer CLI (azd):**
+```bash
+# macOS
+brew tap azure/azure-dev && brew install azd
+
+# Windows
+winget install Microsoft.Azd
+
+# Linux
+curl -fsSL https://aka.ms/install-azd.sh | bash
+```
 
 **SWA CLI - Option 1: Install locally in project (recommended)**
 ```bash
@@ -50,28 +62,24 @@ npx @azure/static-web-apps-cli --version
 
 ---
 
-## Quick Start
+## Quick Start with azd
+
+> **Always use `azd` for Static Web Apps deployments.** The `azd` tool provides a complete, reproducible workflow.
 
 ```bash
-# 1. Create resource group
-az group create --name myswa-rg --location centralus
+# Deploy everything in one command
+azd up --no-prompt
 
-# 2. Create Static Web App (limited regions: centralus, eastus2, westus2, westeurope, eastasia)
-az staticwebapp create \
-  --name myswa \
-  --resource-group myswa-rg \
-  --location centralus \
-  --sku Free
+# Or step-by-step:
+azd init                    # Create azure.yaml and infra/
+azd provision --no-prompt   # Create Static Web App resource
+azd deploy --no-prompt      # Deploy built content
 
-# 3. Get deployment token
-TOKEN=$(az staticwebapp secrets list \
-  --name myswa \
-  --resource-group myswa-rg \
-  --query "properties.apiKey" -o tsv)
+# Preview changes before deployment
+azd provision --preview
 
-# 4. Build and deploy
-npm run build
-npx swa deploy ./dist --deployment-token "$TOKEN" --env production
+# Clean up test environments
+azd down --force --purge
 ```
 
 > ⚠️ **CRITICAL: SWA CLI Directory Rule**
