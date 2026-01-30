@@ -189,7 +189,7 @@ az account get-access-token --resource "https://graph.microsoft.com"
 
 ### Option B: Test with MSAL Library
 
-See the complete code example in [CONSOLE-APP-EXAMPLE.md](CONSOLE-APP-EXAMPLE.md)
+See the complete code example in [console-app-example.md](console-app-example.md)
 
 ### Expected Results
 

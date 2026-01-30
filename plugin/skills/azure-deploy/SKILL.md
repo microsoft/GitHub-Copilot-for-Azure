@@ -155,7 +155,7 @@ Common error resolutions:
 
 ## Troubleshooting
 
-See [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) for detailed troubleshooting guidance.
+See [references/troubleshooting.md](references/troubleshooting.md) for detailed troubleshooting guidance.
 
 ---
 
@@ -186,4 +186,4 @@ WARNING: `azd down` permanently deletes ALL resources including databases with d
 
 ## Additional Resources
 
-- For detailed troubleshooting guidance for `azd` related commands, see [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md)
+- For detailed troubleshooting guidance for `azd` related commands, see [references/troubleshooting.md](references/troubleshooting.md)
