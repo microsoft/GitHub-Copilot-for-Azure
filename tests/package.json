@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "test:unit": "jest --testPathIgnorePatterns=\"node_modules|_template|integration\"",
-    "test:integration": "jest --testPathPattern=integration --testPathIgnorePatterns=\"node_modules|_template\"",
+    "test:integration": "jest --no-cache --testPathPattern=integration --testPathIgnorePatterns=\"node_modules|_template\"",
     "test:verbose": "jest --verbose",
     "test:coverage": "jest --coverage --testPathIgnorePatterns=\"node_modules|_template|integration\"",
     "test:ci": "jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",

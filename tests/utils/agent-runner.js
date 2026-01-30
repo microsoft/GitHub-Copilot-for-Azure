@@ -9,10 +9,22 @@
  * - Login: Run `copilot` and follow prompts to authenticate
  */
 
-const { CopilotClient } = require('@github/copilot-sdk');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+
+// Dynamically load the Copilot SDK (may be ESM-only)
+let CopilotClient = null;
+let sdkAvailable = false;
+
+try {
+  // Try CommonJS require first
+  CopilotClient = require('@github/copilot-sdk').CopilotClient;
+  sdkAvailable = true;
+} catch {
+  // SDK not available - integration tests will be skipped
+  sdkAvailable = false;
+}
 
 /**
  * @typedef {Object} AgentMetadata
@@ -32,6 +44,10 @@ const path = require('path');
  * @returns {Promise<AgentMetadata>} - Captured agent metadata
  */
 async function run(config) {
+  if (!sdkAvailable) {
+    throw new Error('@github/copilot-sdk not available. Use shouldSkipIntegrationTests() to skip tests.');
+  }
+  
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   try {
@@ -210,7 +226,7 @@ function getToolCalls(agentMetadata, toolName = null) {
  * @returns {boolean}
  */
 function shouldSkipIntegrationTests() {
-  return process.env.SKIP_INTEGRATION_TESTS === 'true' || process.env.CI === 'true';
+  return !sdkAvailable || process.env.SKIP_INTEGRATION_TESTS === 'true' || process.env.CI === 'true';
 }
 
 module.exports = {
@@ -219,5 +235,6 @@ module.exports = {
   areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
   getToolCalls,
-  shouldSkipIntegrationTests
+  shouldSkipIntegrationTests,
+  sdkAvailable
 };
