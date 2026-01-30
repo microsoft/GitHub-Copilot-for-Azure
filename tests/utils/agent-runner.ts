@@ -67,19 +67,6 @@ async function getCopilotClient() {
 }
 
 /**
- * Check if Copilot SDK can be loaded (for pre-test validation)
- * Returns true if SDK is loadable, false otherwise
- */
-export async function canLoadCopilotSdk(): Promise<boolean> {
-  try {
-    await getCopilotClient();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
@@ -278,6 +265,7 @@ let integrationSkipReason: string | null = null;
  * - Running in CI (CI=true)
  * - SKIP_INTEGRATION_TESTS=true is set
  * - @github/copilot-sdk is not available
+ * - Running in Jest with ESM-only SDK (known incompatibility)
  */
 export function shouldSkipIntegrationTests(): boolean {
   // Always skip in CI
@@ -301,12 +289,19 @@ export function shouldSkipIntegrationTests(): boolean {
       integrationSkipReason = '@github/copilot-sdk not installed';
       return true;
     }
+    
+    // Check if SDK is ESM-only (Jest has issues with ESM dynamic imports)
+    const sdkPkg = JSON.parse(fs.readFileSync(sdkPath, 'utf8'));
+    if (sdkPkg.type === 'module' && typeof jest !== 'undefined') {
+      integrationSkipReason = '@github/copilot-sdk is ESM-only (Jest incompatibility)';
+      return true;
+    }
   } catch {
     integrationSkipReason = '@github/copilot-sdk not installed';
     return true;
   }
   
-  // SDK available, tests should run
+  // SDK available and compatible
   integrationSkipReason = null;
   return false;
 }

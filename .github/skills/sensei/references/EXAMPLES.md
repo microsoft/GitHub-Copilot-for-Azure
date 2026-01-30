@@ -26,7 +26,7 @@ description: 'Instrument a webapp to send useful telemetry data to Azure App Ins
 - ❌ No anti-triggers
 - ❌ Agent doesn't know when to activate
 
-**triggers.test.js:**
+**triggers.test.ts:**
 ```javascript
 const shouldTriggerPrompts = [
   // Empty - no test coverage
@@ -66,7 +66,7 @@ description: |
 - ✅ Explicit "USE FOR:" trigger phrases
 - ✅ "DO NOT USE FOR:" anti-triggers prevent collision
 
-**triggers.test.js:**
+**triggers.test.ts:**
 ```javascript
 const shouldTriggerPrompts = [
   'Add Application Insights to my web app',
@@ -223,7 +223,7 @@ sensei: improve appinsights-instrumentation frontmatter
 
 - Added USE FOR trigger phrases: "add App Insights", "instrument my app", etc.
 - Added DO NOT USE FOR anti-triggers: querying logs, creating alerts
-- Updated triggers.test.js with 6 should-trigger and 7 should-not-trigger prompts
+- Updated triggers.test.ts with 6 should-trigger and 7 should-not-trigger prompts
 - Score improved: Low → Medium-High
 - All tests passing
 ```
@@ -274,7 +274,7 @@ USE FOR: "deploy to Azure", "host on Azure"
 ```
 
 ```javascript
-// But triggers.test.js has:
+// But triggers.test.ts has:
 const shouldTriggerPrompts = [
   'Create a new Azure project',  // Wrong! This is azure-create-app
   'Validate my Bicep file',      // Wrong! This is azure-deployment-preflight

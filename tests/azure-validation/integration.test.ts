@@ -13,8 +13,7 @@ import {
   isSkillInvoked, 
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason,
-  canLoadCopilotSdk
+  getIntegrationSkipReason
 } from '../utils/agent-runner';
 
 const SKILL_NAME = 'azure-validation';
@@ -31,21 +30,8 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  let sdkAvailable = false;
-
-  beforeAll(async () => {
-    sdkAvailable = await canLoadCopilotSdk();
-    if (!sdkAvailable) {
-      console.log('⏭️  Copilot SDK could not be loaded - skipping integration tests');
-    }
-  });
-
+  
   test('invokes azure-validation skill for storage naming question', async () => {
-    if (!sdkAvailable) {
-      console.log('SDK not available, skipping test');
-      return;
-    }
-    
     const agentMetadata = await run({
       prompt: 'What are the naming rules for Azure storage accounts?'
     });
@@ -62,11 +48,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   test('provides Key Vault naming constraints', async () => {
-    if (!sdkAvailable) {
-      console.log('SDK not available, skipping test');
-      return;
-    }
-    
     const agentMetadata = await run({
       prompt: 'What are the naming constraints for Azure Key Vault?'
     });
@@ -79,11 +60,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   test('validates a specific storage account name', async () => {
-    if (!sdkAvailable) {
-      console.log('SDK not available, skipping test');
-      return;
-    }
-    
     const agentMetadata = await run({
       prompt: 'Is "MyStorageAccount123" a valid Azure storage account name?'
     });

@@ -15,8 +15,7 @@ import {
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason,
-  canLoadCopilotSdk
+  getIntegrationSkipReason
 } from '../utils/agent-runner';
 
 const SKILL_NAME = 'azure-role-selector';
@@ -33,21 +32,8 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  let sdkAvailable = false;
-
-  beforeAll(async () => {
-    sdkAvailable = await canLoadCopilotSdk();
-    if (!sdkAvailable) {
-      console.log('⏭️  Copilot SDK could not be loaded - skipping integration tests');
-    }
-  });
-
+  
   test('invokes azure-role-selector skill for AcrPull prompt', async () => {
-    if (!sdkAvailable) {
-      console.log('SDK not available, skipping test');
-      return;
-    }
-    
     const agentMetadata = await run({
       prompt: 'What role should I assign to my managed identity to read images in an Azure Container Registry?'
     });
@@ -62,11 +48,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   test('recommends Storage Blob Data Reader for blob read access', async () => {
-    if (!sdkAvailable) {
-      console.log('SDK not available, skipping test');
-      return;
-    }
-    
     const agentMetadata = await run({
       prompt: 'What Azure role should I use to give my app read-only access to blob storage?'
     });
@@ -79,11 +60,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   test('recommends Key Vault Secrets User for secret access', async () => {
-    if (!sdkAvailable) {
-      console.log('SDK not available, skipping test');
-      return;
-    }
-    
     const agentMetadata = await run({
       prompt: 'What role do I need to read secrets from Azure Key Vault?'
     });

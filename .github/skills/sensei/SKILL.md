@@ -23,7 +23,7 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║    Run sensei on <skill-name> --skip-integration  # Fast mode    ║
 ║    Run sensei on <skill1>, <skill2>, ...   # Multiple skills     ║
 ║    Run sensei on all Low-adherence skills  # Batch by score      ║
-║    Run sensei on all skills                # All 26 skills       ║
+║    Run sensei on all skills                # All skills       ║
 ║                                                                  ║
 ║  EXAMPLES:                                                       ║
 ║    Run sensei on appinsights-instrumentation                     ║
@@ -105,7 +105,7 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 |-------|--------------|
 | **Low** | Basic description, no explicit triggers, no anti-triggers |
 | **Medium** | Has trigger keywords/phrases, description > 150 chars |
-| **Medium-High** | Has "USE FOR:" triggers AND ("DO NOT USE FOR:" anti-triggers OR clear scope) |
+| **Medium-High** | Has "USE FOR:" triggers AND "DO NOT USE FOR:" anti-triggers |
 | **High** | Triggers + anti-triggers + compatibility field |
 
 **Target: Medium-High** (triggers + anti-triggers present)
@@ -144,7 +144,8 @@ sensei: improve {skill-name} frontmatter
 
 ## Constraints
 
-- Only modify `plugin/skills/` (not `.github/skills/`)
+- Only modify `plugin/skills/` - these are the Azure skills used by Copilot
+- `.github/skills/` contains meta-skills like sensei for developer tooling
 - Max 5 iterations per skill before moving on
 - Description must stay under 1024 characters
 - SKILL.md should stay under 500 tokens (soft limit)

@@ -22,7 +22,7 @@ Sensei automates the improvement of [Agent Skills](https://agentskills.io) front
 
 ### The Problem
 
-The [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb87489406832633aa31a7) revealed that all 26 Azure skills have:
+The [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb87489406832633aa31a7) revealed that all Azure skills have:
 - **0% High adherence** - No skills have triggers + anti-triggers + compatibility
 - **46% Low adherence** - 12 skills have minimal descriptions without clear triggers
 - **0/26 anti-triggers** - No skills tell agents when NOT to use them
