@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-// SessionEvent type - defined locally to avoid import failures when SDK not installed
+// Type definitions for the SDK (defined locally to avoid import issues)
 export interface SessionEvent {
   type: string;
   data: {
@@ -46,18 +46,32 @@ export interface KeywordOptions {
   caseSensitive?: boolean;
 }
 
+// Lazy-loaded SDK
+let CopilotClientClass: any = null;
+
+async function getCopilotClient() {
+  if (!CopilotClientClass) {
+    try {
+      const sdk = await import('@github/copilot-sdk');
+      CopilotClientClass = sdk.CopilotClient;
+    } catch (error) {
+      throw new Error('Failed to load @github/copilot-sdk. Make sure it is installed and you have authenticated with Copilot CLI.');
+    }
+  }
+  return CopilotClientClass;
+}
+
 /**
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
-  // Dynamically import the SDK to avoid failures when not installed
-  const { CopilotClient } = await import('@github/copilot-sdk');
+  const CopilotClient = await getCopilotClient();
   
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   // Declare client and session outside try block to ensure cleanup in finally
-  let client: InstanceType<typeof CopilotClient> | undefined;
-  let session: Awaited<ReturnType<InstanceType<typeof CopilotClient>['createSession']>> | undefined;
+  let client: any;
+  let session: any;
 
   try {
     // Run optional setup
@@ -238,7 +252,18 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | nu
 
 /**
  * Check if integration tests should be skipped
+ * 
+ * Integration tests are skipped by default and only run when:
+ * - RUN_INTEGRATION_TESTS=true is explicitly set (for local development with SDK configured)
+ * - AND not in CI environment (CI runs unit tests only)
  */
 export function shouldSkipIntegrationTests(): boolean {
-  return process.env.SKIP_INTEGRATION_TESTS === 'true' || process.env.CI === 'true';
+  // Always skip in CI
+  if (process.env.CI === 'true') return true;
+  
+  // Skip if explicitly requested
+  if (process.env.SKIP_INTEGRATION_TESTS === 'true') return true;
+  
+  // Skip unless RUN_INTEGRATION_TESTS is explicitly enabled
+  return process.env.RUN_INTEGRATION_TESTS !== 'true';
 }

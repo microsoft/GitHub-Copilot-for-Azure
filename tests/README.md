@@ -181,11 +181,34 @@ npm install
 | `npm test` | Run all tests (unit + trigger) |
 | `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
 | `npm run test:integration` | Run integration tests (requires Copilot CLI auth) |
+| `npm run test:ci` | Run tests for CI (excludes integration tests) |
 | `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run test:coverage` | Generate coverage report |
 | `npm run test:verbose` | Show individual test names |
 | `npm run update:snapshots` | Update Jest snapshots after intentional changes |
+
+### Integration Tests
+
+Integration tests are **skipped by default** and require explicit enablement because they:
+- Require `@github/copilot-cli` authentication
+- Make real API calls to Copilot services
+- Take longer to run (60+ seconds per test)
+
+To run integration tests locally:
+
+```bash
+# 1. Ensure you're authenticated
+copilot --help  # Should show help, not login prompt
+
+# 2. Enable integration tests and run
+RUN_INTEGRATION_TESTS=true npm run test:integration
+```
+
+Environment variables:
+- `RUN_INTEGRATION_TESTS=true` - Enable integration tests
+- `SKIP_INTEGRATION_TESTS=true` - Force skip integration tests
+- `CI=true` - Automatically set in CI; always skips integration tests
 
 ### Example: Test a Specific Skill
 

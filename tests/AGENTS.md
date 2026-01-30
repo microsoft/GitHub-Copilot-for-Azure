@@ -52,7 +52,7 @@ import {
 
 const SKILL_NAME = '{skill-name}';
 
-// Skip integration tests in CI or when SKIP_INTEGRATION_TESTS is set
+// Integration tests are skipped by default - enable with RUN_INTEGRATION_TESTS=true
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
@@ -65,12 +65,19 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 });
 ```
 
-**Note:** Integration tests require Copilot CLI authentication and are skipped in CI.
+**Note:** Integration tests are **skipped by default** and require:
+- Copilot CLI authentication (`copilot` command)
+- Environment variable: `RUN_INTEGRATION_TESTS=true`
 
 ### Step 7: Run and verify
 ```bash
 cd tests
+
+# Run unit and trigger tests (default)
 npm test -- --testPathPattern={skill-name}
+
+# Run integration tests (requires auth)
+RUN_INTEGRATION_TESTS=true npm run test:integration -- --testPathPattern={skill-name}
 ```
 
 ### Step 8: Update coverage grid
@@ -286,14 +293,14 @@ test('works with project files', async () => {
 ### Local Development
 
 ```bash
-# Unit and trigger tests (fast, no auth)
+# Unit and trigger tests (fast, no auth) - default
 npm run test:unit
 
-# Integration tests (requires Copilot CLI auth)
-npm run test:integration
-
-# All tests
+# All tests (unit + trigger, integration skipped by default)
 npm test
+
+# Integration tests (requires Copilot CLI auth + env var)
+RUN_INTEGRATION_TESTS=true npm run test:integration
 
 # Specific skill
 npm test -- --testPathPattern=azure-validation
