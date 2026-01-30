@@ -264,8 +264,7 @@ let integrationSkipReason: string | null = null;
  * Integration tests are skipped when:
  * - Running in CI (CI=true)
  * - SKIP_INTEGRATION_TESTS=true is set
- * - @github/copilot-sdk is not available
- * - Running in Jest with ESM-only SDK (known incompatibility)
+ * - @github/copilot-sdk is not installed
  */
 export function shouldSkipIntegrationTests(): boolean {
   // Always skip in CI
@@ -280,7 +279,7 @@ export function shouldSkipIntegrationTests(): boolean {
     return true;
   }
   
-  // Check if SDK package exists (works for ESM packages)
+  // Check if SDK package exists
   try {
     const fs = require('fs');
     const path = require('path');
@@ -289,19 +288,12 @@ export function shouldSkipIntegrationTests(): boolean {
       integrationSkipReason = '@github/copilot-sdk not installed';
       return true;
     }
-    
-    // Check if SDK is ESM-only (Jest has issues with ESM dynamic imports)
-    const sdkPkg = JSON.parse(fs.readFileSync(sdkPath, 'utf8'));
-    if (sdkPkg.type === 'module' && typeof jest !== 'undefined') {
-      integrationSkipReason = '@github/copilot-sdk is ESM-only (Jest incompatibility)';
-      return true;
-    }
   } catch {
     integrationSkipReason = '@github/copilot-sdk not installed';
     return true;
   }
   
-  // SDK available and compatible
+  // SDK installed, tests should attempt to run
   integrationSkipReason = null;
   return false;
 }
