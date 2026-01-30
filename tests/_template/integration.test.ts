@@ -11,13 +11,15 @@
  * Run with: npm run test:integration -- --testPathPattern={skill-name}
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { 
   run, 
   isSkillInvoked, 
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests 
-} from '../utils/agent-runner.js';
+} from '../utils/agent-runner';
 
 // Replace with your skill name
 const SKILL_NAME = 'your-skill-name';
@@ -64,13 +66,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   // Example test with workspace setup
   test('works with project files', async () => {
     const agentMetadata = await run({
-      setup: async (workspace) => {
+      setup: async (workspace: string) => {
         // Create any files needed in the workspace
-        const fs = await import('fs');
-        const path = await import('path');
-        
-        fs.default.writeFileSync(
-          path.default.join(workspace, 'example.json'),
+        fs.writeFileSync(
+          path.join(workspace, 'example.json'),
           JSON.stringify({ key: 'value' })
         );
       },

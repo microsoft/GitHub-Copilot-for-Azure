@@ -1,21 +1,29 @@
-/** @type {import('jest').Config} */
-const config = {
-  // Root directory for tests - points to compiled output
-  rootDir: './dist',
+import type { Config } from 'jest';
+
+const config: Config = {
+  // Use ts-jest for TypeScript support
+  preset: 'ts-jest',
+  
+  // Test environment
+  testEnvironment: 'node',
+  
+  // Root directory for tests
+  rootDir: '.',
   
   // Test file patterns
   testMatch: [
-    '**/*.test.js'
+    '**/*.test.ts'
   ],
   
   // Ignore template folder in test runs (it's just examples)
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/_template/'
+    '/_template/',
+    '/dist/'
   ],
   
   // Setup file for shared utilities
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   
   // Coverage configuration
   collectCoverageFrom: [
@@ -61,7 +69,14 @@ const config = {
   displayName: {
     name: 'SKILLS',
     color: 'blue'
+  },
+  
+  // Transform TypeScript files
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.json'
+    }]
   }
 };
 
-module.exports = config;
+export default config;

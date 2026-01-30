@@ -9,15 +9,15 @@
  * 2. Run `copilot` and authenticate
  */
 
-const { 
+import { 
   run, 
   isSkillInvoked, 
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests 
-} = require('../utils/agent-runner');
+} from '../utils/agent-runner';
 
-const SKILL_NAME = 'azure-role-selector';
+const SKILL_NAME: string = 'azure-role-selector';
 
 // Skip integration tests in CI or when SKIP_INTEGRATION_TESTS is set
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
@@ -61,4 +61,5 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(isSkillUsed).toBe(true);
     expect(mentionsKeyVaultRole).toBe(true);
   });
+
 });

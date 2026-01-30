@@ -142,20 +142,6 @@ npm run update:snapshots -- --testPathPattern={skill-name}
 1. Install Copilot CLI: `npm install -g @github/copilot-cli`
 2. Authenticate: Run `copilot` and follow prompts
 
-**Example:**
-```javascript
-const { run, isSkillInvoked, doesAssistantMessageIncludeKeyword } = require('../utils/agent-runner');
-
-test('invokes skill for relevant prompt', async () => {
-  const agentMetadata = await run({
-    prompt: 'What role should I assign for Azure Container Registry access?'
-  });
-
-  expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
-  expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
-});
-```
-
 **Note:** Integration tests are skipped in CI (no auth) and when `SKIP_INTEGRATION_TESTS=true`.
 
 ---

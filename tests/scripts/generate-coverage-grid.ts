@@ -9,18 +9,36 @@
  * Run with: npm run coverage:grid
  */
 
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
 
 const SKILLS_PATH = path.resolve(__dirname, '../../plugin/skills');
 const TESTS_PATH = path.resolve(__dirname, '..');
 const README_PATH = path.resolve(__dirname, '../README.md');
 const COVERAGE_PATH = path.resolve(__dirname, '../coverage/coverage-summary.json');
 
+interface CoverageData {
+  [filePath: string]: {
+    statements?: {
+      total: number;
+      covered: number;
+    };
+  };
+}
+
+interface GridRow {
+  skill: string;
+  tests: string;
+  unit: string;
+  triggers: string;
+  integration: string;
+  coverage: string;
+}
+
 /**
  * Get list of all skills
  */
-function getSkills() {
+export function getSkills(): string[] {
   return fs.readdirSync(SKILLS_PATH, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name)
@@ -30,26 +48,27 @@ function getSkills() {
 /**
  * Check if a test file exists for a skill
  */
-function hasTestFile(skillName, testType) {
-  const testFile = path.join(TESTS_PATH, skillName, `${testType}.test.js`);
-  return fs.existsSync(testFile);
+export function hasTestFile(skillName: string, testType: string): boolean {
+  const testFileTs = path.join(TESTS_PATH, skillName, `${testType}.test.ts`);
+  const testFileJs = path.join(TESTS_PATH, skillName, `${testType}.test.js`);
+  return fs.existsSync(testFileTs) || fs.existsSync(testFileJs);
 }
 
 /**
  * Check if a skill has any tests
  */
-function hasTests(skillName) {
+export function hasTests(skillName: string): boolean {
   const skillTestDir = path.join(TESTS_PATH, skillName);
   if (!fs.existsSync(skillTestDir)) return false;
   
   const files = fs.readdirSync(skillTestDir);
-  return files.some(f => f.endsWith('.test.js'));
+  return files.some(f => f.endsWith('.test.ts') || f.endsWith('.test.js'));
 }
 
 /**
  * Load coverage data if available
  */
-function loadCoverage() {
+function loadCoverage(): CoverageData | null {
   if (!fs.existsSync(COVERAGE_PATH)) {
     return null;
   }
@@ -64,7 +83,7 @@ function loadCoverage() {
 /**
  * Get coverage percentage for a skill
  */
-function getSkillCoverage(skillName, coverageData) {
+function getSkillCoverage(skillName: string, coverageData: CoverageData | null): number | null {
   if (!coverageData) return null;
   
   // Look for files matching the skill
@@ -86,11 +105,11 @@ function getSkillCoverage(skillName, coverageData) {
 /**
  * Generate the coverage grid markdown
  */
-function generateGrid() {
+export function generateGrid(): string {
   const skills = getSkills();
   const coverageData = loadCoverage();
   
-  const rows = [];
+  const rows: GridRow[] = [];
   
   for (const skill of skills) {
     const hasAnyTests = hasTests(skill);
@@ -125,7 +144,7 @@ function generateGrid() {
 /**
  * Update README.md with new coverage grid
  */
-function updateReadme() {
+export function updateReadme(): void {
   let readme = fs.readFileSync(README_PATH, 'utf-8');
   
   const startMarker = '<!-- COVERAGE_GRID_START -->';
@@ -151,7 +170,7 @@ function updateReadme() {
 /**
  * Print coverage grid to console
  */
-function printGrid() {
+function printGrid(): void {
   console.log('\n=== Skills Coverage Grid ===\n');
   console.log(generateGrid());
   
@@ -171,11 +190,3 @@ if (require.main === module) {
     printGrid();
   }
 }
-
-module.exports = {
-  getSkills,
-  hasTests,
-  hasTestFile,
-  generateGrid,
-  updateReadme
-};

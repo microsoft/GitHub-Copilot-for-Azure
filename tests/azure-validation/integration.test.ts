@@ -8,13 +8,12 @@
  * 2. Run `copilot` and authenticate
  */
 
-const { 
+import { 
   run, 
   isSkillInvoked, 
-  areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests 
-} = require('../utils/agent-runner');
+} from '../utils/agent-runner';
 
 const SKILL_NAME = 'azure-validation';
 

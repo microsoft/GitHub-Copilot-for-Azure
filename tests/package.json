@@ -12,14 +12,19 @@
     "test:ci": "jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",
     "test:watch": "jest --watch",
     "test:skill": "jest --testPathPattern",
-    "coverage:grid": "node scripts/generate-coverage-grid.js",
+    "coverage:grid": "ts-node scripts/generate-coverage-grid.ts",
     "update:snapshots": "jest --updateSnapshot"
   },
   "devDependencies": {
     "@github/copilot-sdk": "^0.1.19",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.19",
     "gray-matter": "^4.0.3",
     "jest": "^29.7.0",
-    "jest-junit": "^16.0.0"
+    "jest-junit": "^16.0.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   },
   "jest-junit": {
     "outputDirectory": "./reports",
