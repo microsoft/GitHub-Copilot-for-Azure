@@ -1,0 +1,110 @@
+---
+name: willie
+description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run willie, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, or non-frontmatter changes."
+---
+
+# Willie
+
+> "Ach! There's nary a skill I've met yet I couldn't improve!" - Groundskeeper Willie
+
+Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests.
+
+## When to Use
+
+- Improving a skill's frontmatter compliance score
+- Adding trigger phrases and anti-triggers to skill descriptions
+- Batch-improving multiple skills at once
+- Auditing and fixing Low-adherence skills
+
+## Invocation Modes
+
+### Single Skill
+```
+Run willie on azure-deploy
+```
+
+### Multiple Skills
+```
+Run willie on azure-security, azure-networking, azure-observability
+```
+
+### By Adherence Level
+```
+Run willie on all Low-adherence skills
+```
+
+### All Skills
+```
+Run willie on all skills
+```
+
+## The Ralph Loop
+
+For each skill, execute this loop until score >= Medium-High AND tests pass:
+
+1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md` and existing tests
+2. **SCORE** - Run rule-based compliance check (see [SCORING.md](references/SCORING.md))
+3. **CHECK** - If score >= Medium-High AND tests pass → COMPLETE, move to next skill
+4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
+5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
+6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
+7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
+8. **COMMIT** - `git add . && git commit -m "ralph: improve {skill-name} frontmatter"`
+9. **REPEAT** - Go to step 2 (max 5 iterations per skill)
+
+## Scoring Criteria (Quick Reference)
+
+| Score | Requirements |
+|-------|--------------|
+| **Low** | Basic description, no explicit triggers, no anti-triggers |
+| **Medium** | Has trigger keywords/phrases, description > 150 chars |
+| **Medium-High** | Has "USE FOR:" triggers AND ("DO NOT USE FOR:" anti-triggers OR clear scope) |
+| **High** | Triggers + anti-triggers + compatibility field |
+
+**Target: Medium-High** (triggers + anti-triggers present)
+
+## Frontmatter Template
+
+```yaml
+---
+name: skill-name
+description: |
+  [1-2 sentence description of what the skill does]
+  USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]
+  DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)
+---
+```
+
+> Keep total description under 1024 characters.
+
+## Test Scaffolding
+
+When tests don't exist, scaffold from `tests/_template/`:
+
+```bash
+cp -r tests/_template tests/{skill-name}
+```
+
+Then update:
+1. `SKILL_NAME` constant in all test files
+2. `shouldTriggerPrompts` - 5+ prompts matching new frontmatter triggers
+3. `shouldNotTriggerPrompts` - 5+ prompts matching anti-triggers
+
+**Commit Messages:**
+```
+willie: improve {skill-name} frontmatter
+```
+
+## Constraints
+
+- Only modify `plugin/skills/` (not `.github/skills/`)
+- Max 5 iterations per skill before moving on
+- Description must stay under 1024 characters
+- Tests must pass before committing
+- Commit after each successful skill improvement
+
+## Reference Documentation
+
+- [SCORING.md](references/SCORING.md) - Detailed scoring criteria
+- [LOOP.md](references/LOOP.md) - Ralph loop workflow details
+- [EXAMPLES.md](references/EXAMPLES.md) - Before/after examples
