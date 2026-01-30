@@ -379,7 +379,7 @@ const SKILL_NAME = 'azure-validation';  // Must match folder exactly
 
 ### Tests Pass Locally but Fail in CI
 
-1. Check Node.ts version (CI uses Node 20)
+1. Check Node.js version (CI uses Node 20)
 2. Ensure `package-lock.json` is committed
 3. Look for environment-dependent code
 
