@@ -49,20 +49,24 @@ export interface KeywordOptions {
 export async function run(config: TestConfig): Promise<AgentMetadata> {
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
+  // Declare client and session outside try block to ensure cleanup in finally
+  let client;
+  let session;
+
   try {
     // Run optional setup
     if (config.setup) {
       await config.setup(testWorkspace);
     }
 
-    const client = new CopilotClient({
+    client = new CopilotClient({
       logLevel: process.env.DEBUG ? 'all' : 'error',
       cwd: testWorkspace
     });
 
     const skillDirectory = path.resolve(__dirname, '../../plugin/skills');
 
-    const session = await client.createSession({
+    session = await client.createSession({
       model: 'claude-sonnet-4',
       skillDirectories: [skillDirectory],
       mcpServers: {
@@ -78,7 +82,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     const agentMetadata: AgentMetadata = { events: [] };
 
     const done = new Promise<void>((resolve) => {
-      session.on(async (event: SessionEvent) => {
+      session!.on(async (event: SessionEvent) => {
         if (process.env.DEBUG) {
           console.log(`=== session event ${event.type}`);
         }
@@ -95,7 +99,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
         if (config.shouldEarlyTerminate) {
           if (config.shouldEarlyTerminate(agentMetadata)) {
             resolve();
-            session.abort();
+            session!.abort();
             return;
           }
         }
@@ -116,14 +120,26 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     await session.send({ prompt: config.prompt });
     await done;
 
-    await session.destroy();
-    await client.stop();
-
     return agentMetadata;
   } catch (error) {
     console.error('Agent runner error:', error);
     throw error;
   } finally {
+    // Cleanup session and client (guarded if undefined)
+    try {
+      if (session) {
+        await session.destroy();
+      }
+    } catch {
+      // Ignore session cleanup errors
+    }
+    try {
+      if (client) {
+        await client.stop();
+      }
+    } catch {
+      // Ignore client cleanup errors
+    }
     // Cleanup workspace
     try {
       fs.rmSync(testWorkspace, { recursive: true, force: true });
