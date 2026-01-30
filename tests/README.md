@@ -144,16 +144,20 @@ npm run update:snapshots -- --testPathPattern={skill-name}
 2. Authenticate: Run `copilot` and follow prompts
 
 **Example:**
-```javascript
-const { run, isSkillInvoked, doesAssistantMessageIncludeKeyword } = require('../utils/agent-runner');
+```typescript
+import { run, isSkillInvoked, doesAssistantMessageIncludeKeyword, shouldSkipIntegrationTests } from '../utils/agent-runner';
 
-test('invokes skill for relevant prompt', async () => {
-  const agentMetadata = await run({
-    prompt: 'What role should I assign for Azure Container Registry access?'
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+
+describeIntegration('azure-role-selector - Integration Tests', () => {
+  test('invokes skill for relevant prompt', async () => {
+    const agentMetadata = await run({
+      prompt: 'What role should I assign for Azure Container Registry access?'
+    });
+
+    expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
   });
-
-  expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
-  expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
 });
 ```
 

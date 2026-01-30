@@ -226,34 +226,27 @@ Integration tests run a real Copilot agent session to verify skill behavior.
 
 ### Basic Integration Test
 
-```javascript
-// Check if SDK is available before loading agent-runner (ESM module handling)
-let agentRunner = null;
-let sdkAvailable = false;
-
-try {
-  require.resolve('@github/copilot-sdk');
-  agentRunner = require('../utils/agent-runner');
-  sdkAvailable = true;
-} catch {
-  sdkAvailable = false;
-}
+```typescript
+import { 
+  run, 
+  isSkillInvoked, 
+  doesAssistantMessageIncludeKeyword,
+  shouldSkipIntegrationTests 
+} from '../utils/agent-runner';
 
 const SKILL_NAME = 'azure-role-selector';
 
-// Skip in CI, when SDK unavailable, or when SKIP_INTEGRATION_TESTS is set
-const shouldSkip = () => !sdkAvailable || process.env.CI === 'true' || process.env.SKIP_INTEGRATION_TESTS === 'true';
+// Skip in CI or when SKIP_INTEGRATION_TESTS is set
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describe(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test('invokes skill for relevant prompt', async () => {
-    if (shouldSkip()) return;
-    
-    const agentMetadata = await agentRunner.run({
+    const agentMetadata = await run({
       prompt: 'What role should I assign for blob storage access?'
     });
 
-    expect(agentRunner.isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    expect(agentRunner.doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
   });
 });
 ```
