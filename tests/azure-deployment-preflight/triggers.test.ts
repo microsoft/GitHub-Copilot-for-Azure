@@ -101,7 +101,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       expect(typeof result.triggered).toBe('boolean');
     });
 
-    test('is case insensitive for Azure and deployment terms', () => {
+    test('is case insensitive for Bicep and deployment terms', () => {
       const result1 = triggerMatcher.shouldTrigger('VALIDATE MY BICEP DEPLOYMENT');
       const result2 = triggerMatcher.shouldTrigger('validate my bicep deployment');
       expect(result1.triggered).toBe(result2.triggered);

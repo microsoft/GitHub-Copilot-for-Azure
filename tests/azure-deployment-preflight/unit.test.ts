@@ -69,7 +69,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test('references Azure CLI commands', () => {
-      expect(skill.content).toMatch(/az deployment|az |Azure CLI/);
+      expect(skill.content).toMatch(/az deployment|az group|Azure CLI/);
     });
 
     test('references Azure Developer CLI', () => {

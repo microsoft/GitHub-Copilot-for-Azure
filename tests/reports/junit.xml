@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="56" failures="0" errors="0" time="2.487">
-  <testsuite name="azure-deployment-preflight/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T21:54:09" time="1.969" tests="22">
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.006">
+<testsuites name="jest tests" tests="56" failures="0" errors="0" time="2.528">
+  <testsuite name="azure-deployment-preflight/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T21:56:50" time="2.123" tests="22">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.004">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0.001">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="description contains deployment and validation keywords" time="0.001">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="description contains deployment and validation keywords" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Skill Metadata" name="description mentions when to activate the skill" time="0.001">
     </testcase>
@@ -13,17 +13,17 @@
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="contains validation process section" time="0.001">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents Bicep validation" time="0">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents Bicep validation" time="0.001">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents what-if analysis" time="0.001">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents what-if analysis" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents preflight checks" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="references Azure CLI commands" time="0.001">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="references Azure CLI commands" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="references Azure Developer CLI" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents project type detection" time="0.001">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents project type detection" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="includes error handling guidance" time="0">
     </testcase>
@@ -31,23 +31,23 @@
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="documents report generation" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="references tool requirements" time="0">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Skill Content" name="references tool requirements" time="0.001">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Azure MCP Tools Documentation" name="documents azure__azd tool usage" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Azure MCP Tools Documentation" name="provides validation command examples" time="0.001">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Azure MCP Tools Documentation" name="provides validation command examples" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Deployment Scope Coverage" name="covers resource group scope deployments" time="0.001">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Deployment Scope Coverage" name="covers resource group scope deployments" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Deployment Scope Coverage" name="covers subscription scope deployments" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Unit Tests › Deployment Scope Coverage" name="covers management group scope deployments" time="0">
+    <testcase classname="azure-deployment-preflight - Unit Tests › Deployment Scope Coverage" name="covers management group scope deployments" time="0.001">
     </testcase>
     <testcase classname="azure-deployment-preflight - Unit Tests › Deployment Scope Coverage" name="covers tenant scope deployments" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="azure-deployment-preflight/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T21:54:09" time="2.11" tests="34">
-    <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Bicep template before deploying to Azure&quot;" time="0.003">
+  <testsuite name="azure-deployment-preflight/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T21:56:50" time="2.153" tests="34">
+    <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Bicep template before deploying to Azure&quot;" time="0.007">
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Run a what-if analysis to preview changes before deploying my infrastructure&quot;" time="0">
     </testcase>
@@ -67,13 +67,13 @@
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Verify my Azure deployment before executing&quot;" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate azure.yaml configuration before provisioning&quot;" time="0">
+    <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate azure.yaml configuration before provisioning&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Run deployment validation on my Bicep templates&quot;" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Preview Azure resource changes before deployment&quot;" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Check deployment syntax and permissions&quot;" time="0.001">
+    <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Check deployment syntax and permissions&quot;" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Should Trigger" name="triggers on: &quot;Run what-if analysis on my infrastructure code&quot;" time="0">
     </testcase>
@@ -109,11 +109,11 @@
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Trigger Tests › Edge Cases" name="is case insensitive for Azure and deployment terms" time="0">
+    <testcase classname="azure-deployment-preflight - Trigger Tests › Edge Cases" name="is case insensitive for Bicep and deployment terms" time="0">
     </testcase>
     <testcase classname="azure-deployment-preflight - Trigger Tests › Edge Cases" name="triggers on azd-specific prompts" time="0">
     </testcase>
-    <testcase classname="azure-deployment-preflight - Trigger Tests › Edge Cases" name="triggers on what-if specific prompts" time="0">
+    <testcase classname="azure-deployment-preflight - Trigger Tests › Edge Cases" name="triggers on what-if specific prompts" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>
