@@ -1,0 +1,23 @@
+{
+  "type": "ActualCost",
+  "timeframe": "Custom",
+  "timePeriod": {
+    "from": "2025-01-01T00:00:00Z",
+    "to": "2025-01-31T00:00:00Z"
+  },
+  "dataset": {
+    "granularity": "None",
+    "aggregation": {
+      "totalCost": {
+        "name": "Cost",
+        "function": "Sum"
+      }
+    },
+    "grouping": [
+      {
+        "type": "Dimension",
+        "name": "ResourceId"
+      }
+    ]
+  }
+}

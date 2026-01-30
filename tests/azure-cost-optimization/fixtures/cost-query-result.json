@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-01-31T10:00:00Z",
+  "subscription": "12345678-1234-1234-1234-123456789abc",
+  "resourceGroup": "rg-example",
+  "queries": [
+    {
+      "queryType": "ActualCost",
+      "timeframe": "MonthToDate",
+      "query": {
+        "type": "ActualCost",
+        "timeframe": "Custom",
+        "timePeriod": {
+          "from": "2025-01-01T00:00:00Z",
+          "to": "2025-01-31T00:00:00Z"
+        }
+      },
+      "response": {
+        "properties": {
+          "rows": [
+            [
+              "/subscriptions/12345678-1234-1234-1234-123456789abc/resourceGroups/rg-example/providers/Microsoft.Compute/virtualMachines/vm-test",
+              150.50,
+              "USD"
+            ],
+            [
+              "/subscriptions/12345678-1234-1234-1234-123456789abc/resourceGroups/rg-example/providers/Microsoft.Storage/storageAccounts/stexample",
+              25.75,
+              "USD"
+            ],
+            [
+              "/subscriptions/12345678-1234-1234-1234-123456789abc/resourceGroups/rg-example/providers/Microsoft.Compute/disks/disk-orphaned",
+              10.00,
+              "USD"
+            ]
+          ]
+        }
+      }
+    }
+  ]
+}
