@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="33" failures="0" errors="0" time="1.049">
-  <testsuite name="azure-validation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:01:00" time="0.82" tests="11">
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.001">
+<testsuites name="jest tests" tests="33" failures="0" errors="0" time="0.829">
+  <testsuite name="azure-validation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:02:09" time="0.639" tests="11">
+    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.003">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="description mentions validation or pre-deployment" time="0.001">
+    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="description mentions validation or pre-deployment" time="0">
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Skill Content" name="has substantive content" time="0">
     </testcase>
@@ -11,21 +11,21 @@
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents storage account limits" time="0">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents key vault limits" time="0">
+    <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents key vault limits" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Skill Content" name="includes validation checklist" time="0">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="references MCP tools" time="0.001">
+    <testcase classname="azure-validation - Unit Tests › Skill Content" name="references MCP tools" time="0">
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: valid names" time="0">
     </testcase>
     <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: invalid names" time="0">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="key vault: valid names" time="0">
+    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="key vault: valid names" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="azure-validation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:01:00" time="0.823" tests="22">
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Azure storage account name&quot;" time="0.002">
+  <testsuite name="azure-validation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:02:09" time="0.66" tests="22">
+    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Azure storage account name&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the naming constraints for Azure Key Vault?&quot;" time="0">
     </testcase>
@@ -45,13 +45,13 @@
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate Azure Key Vault name length&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0.001">
+    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS S3 bucket naming&quot;" time="0">
+    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS S3 bucket naming&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
     </testcase>
@@ -59,7 +59,7 @@
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.001">
+    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0">
     </testcase>
     <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
     </testcase>
