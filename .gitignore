@@ -49,6 +49,11 @@ Generated\ Files/
 TestResult.xml
 nunit-*.xml
 
+# Jest / JUnit test output
+junit.xml
+tests/reports/
+tests/result-*.txt
+
 # Build Results of an ATL Project
 [Dd]ebugPS/
 [Rr]eleasePS/
