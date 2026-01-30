@@ -1,0 +1,43 @@
+{
+  "orphanedResources": [
+    {
+      "resourceType": "Microsoft.Compute/disks",
+      "resourceName": "disk-orphaned-001",
+      "resourceGroup": "rg-example",
+      "subscriptionId": "12345678-1234-1234-1234-123456789abc",
+      "issue": "Unattached disk",
+      "estimatedMonthlyCost": 10.00,
+      "recommendation": "Delete unused disk"
+    },
+    {
+      "resourceType": "Microsoft.Network/networkInterfaces",
+      "resourceName": "nic-unused-001",
+      "resourceGroup": "rg-example",
+      "subscriptionId": "12345678-1234-1234-1234-123456789abc",
+      "issue": "Unused network interface",
+      "estimatedMonthlyCost": 0.00,
+      "recommendation": "Delete unused network interface"
+    },
+    {
+      "resourceType": "Microsoft.Network/natGateways",
+      "resourceName": "nat-idle-001",
+      "resourceGroup": "rg-example",
+      "subscriptionId": "12345678-1234-1234-1234-123456789abc",
+      "issue": "Idle NAT gateway",
+      "estimatedMonthlyCost": 35.00,
+      "recommendation": "Delete idle NAT gateway if no longer needed"
+    }
+  ],
+  "oversizedResources": [
+    {
+      "resourceType": "Microsoft.Compute/virtualMachines",
+      "resourceName": "vm-oversized",
+      "resourceGroup": "rg-example",
+      "subscriptionId": "12345678-1234-1234-1234-123456789abc",
+      "currentSku": "Standard_D4s_v5",
+      "utilizationPercent": 15,
+      "recommendedSku": "Standard_D2s_v5",
+      "potentialMonthlySavings": 75.00
+    }
+  ]
+}
