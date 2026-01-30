@@ -1,81 +1,44 @@
 ---
 name: azure-networking
-description: Azure Networking Services including Virtual Networks, Private Endpoints, Load Balancers, Application Gateway, Front Door, and DNS. Covers hub-spoke topology, private endpoint patterns, and network security layers.
+description: Azure Networking - VNets, Private Endpoints, Load Balancers, App Gateway, Front Door, DNS.
 ---
 
-# Azure Networking Services
+# Azure Networking
 
 ## Services
 
-| Service | Use When | MCP Tools | CLI |
-|---------|----------|-----------|-----|
-| Virtual Network | Private networking, subnets | - | `az network vnet` |
-| Private Endpoints | Private PaaS access | - | `az network private-endpoint` |
-| Load Balancer | Layer 4 load balancing | - | `az network lb` |
-| Application Gateway | Layer 7 load balancing, WAF | - | `az network application-gateway` |
-| Front Door | Global load balancing, CDN | - | `az afd` |
-| DNS | Domain name resolution | - | `az network dns` |
+| Service | Use | CLI |
+|---------|-----|-----|
+| Virtual Network | Private networking | `az network vnet` |
+| Private Endpoints | Private PaaS access | `az network private-endpoint` |
+| Load Balancer | L4 load balancing | `az network lb` |
+| Application Gateway | L7 + WAF | `az network application-gateway` |
+| Front Door | Global CDN | `az afd` |
 
-## Common Patterns
+## Hub-Spoke Pattern
 
-### Hub-Spoke Topology
+Hub: Firewall, VPN/ExpressRoute Gateway, Bastion
+Spokes: Application, Data, Management (peered to hub)
 
-```
-Hub VNet
-├── Azure Firewall
-├── VPN/ExpressRoute Gateway
-├── Bastion Host
-└── Central services
+## Private Endpoint Pattern
 
-Spoke VNets (peered to hub)
-├── Application Spoke
-├── Data Spoke
-└── Management Spoke
-```
+1. Create endpoint in VNet → 2. Disable public access → 3. Configure private DNS → 4. Access via private IP
 
-### Private Endpoint Pattern
-
-Connect to PaaS services privately:
-
-1. Create private endpoint in your VNet
-2. Disable public access on PaaS resource
-3. Configure private DNS zone
-4. Access service via private IP
-
-## CLI Reference
+## CLI
 
 ```bash
-# Virtual Networks
-az network vnet list --output table
-az network vnet create -g RG -n VNET --address-prefix 10.0.0.0/16
-
-# Subnets
-az network vnet subnet list --vnet-name VNET -g RG --output table
-
-# Private Endpoints
-az network private-endpoint list --output table
-
-# NSGs
-az network nsg list --output table
-az network nsg rule list --nsg-name NSG -g RG --output table
-
-# Load Balancers
-az network lb list --output table
+az network vnet list -o table
+az network vnet subnet list --vnet-name VNET -g RG -o table
+az network private-endpoint list -o table
+az network nsg list -o table
 ```
 
 ## Security Layers
 
-| Layer | Service | Purpose |
-|-------|---------|---------|
-| 4 | NSG | IP/port filtering |
-| 7 | Azure Firewall | Application rules, threat intel |
-| 7 | WAF | Web application protection |
-| Edge | DDoS Protection | Attack mitigation |
+| Layer | Service |
+|-------|---------|
+| L4 | NSG (IP/port) |
+| L7 | Azure Firewall, WAF |
+| Edge | DDoS Protection |
 
-## Service Details
-
-For deep documentation on specific services:
-
-- VNet design and peering -> [Virtual Network documentation](https://learn.microsoft.com/azure/virtual-network/virtual-networks-overview)
-- Private endpoints setup -> [Private Link documentation](https://learn.microsoft.com/azure/private-link/private-endpoint-overview)
-- Load balancing options -> [Load balancing options overview](https://learn.microsoft.com/azure/architecture/guide/technology-choices/load-balancing-overview)
+[VNet Docs](https://learn.microsoft.com/azure/virtual-network/virtual-networks-overview) · [Private Link](https://learn.microsoft.com/azure/private-link/private-endpoint-overview)

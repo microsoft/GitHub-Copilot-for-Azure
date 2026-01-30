@@ -84,23 +84,13 @@ psql "host=<server>.postgres.database.azure.com user='Database Readers' dbname=m
 ### Setup
 
 ```bash
-# Enable group sync
-az postgres flexible-server parameter set \
-  --resource-group <rg> \
-  --server-name <server> \
-  --name pgaadauth.enable_group_sync \
-  --value ON
-
-# Get group object ID
+az postgres flexible-server parameter set -g <rg> --server-name <server> --name pgaadauth.enable_group_sync --value ON
 GROUP_ID=$(az ad group show --group "Database Readers" --query id -o tsv)
-
-# Connect as admin
 export PGPASSWORD=$(az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv)
 psql "host=<server>.postgres.database.azure.com user=admin@domain.com dbname=postgres sslmode=require"
 ```
 
 ```sql
--- Create group role
 SELECT * FROM pgaadauth_create_principal_with_oid('Database Readers', '<group-id>', 'group', false, false);
 
 -- Grant permissions to the group (inherited by synced members)

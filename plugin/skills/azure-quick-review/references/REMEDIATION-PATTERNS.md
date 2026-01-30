@@ -10,41 +10,19 @@ This document provides remediation templates for frequently identified complianc
 
 **Azure CLI:**
 ```bash
-# Create private endpoint
-az network private-endpoint create \
-  --name pe-storage \
-  --resource-group <rg-name> \
-  --vnet-name <vnet-name> \
-  --subnet <subnet-name> \
-  --private-connection-resource-id $(az storage account show -n <storage-name> -g <rg-name> --query id -o tsv) \
-  --group-id blob \
-  --connection-name pe-storage-connection
-
-# Disable public access
-az storage account update \
-  --name <storage-name> \
-  --resource-group <rg-name> \
-  --public-network-access Disabled
+az network private-endpoint create --name pe-storage --resource-group <rg> \
+  --vnet-name <vnet> --subnet <subnet> --group-id blob \
+  --private-connection-resource-id <storage-resource-id>
+az storage account update -n <storage-name> -g <rg> --public-network-access Disabled
 ```
 
 **Bicep:**
 ```bicep
 resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
-  name: 'pe-${storageAccount.name}'
-  location: location
-  properties: {
-    subnet: {
-      id: subnet.id
-    }
-    privateLinkServiceConnections: [
-      {
-        name: 'pe-${storageAccount.name}-connection'
-        properties: {
-          privateLinkServiceId: storageAccount.id
-          groupIds: ['blob']
-        }
-      }
-    ]
+  name: 'pe-${storageAccount.name}', location: location
+  properties: { subnet: { id: subnet.id }
+    privateLinkServiceConnections: [{ name: 'pe-conn'
+      properties: { privateLinkServiceId: storageAccount.id, groupIds: ['blob'] }}]
   }
 }
 ```
@@ -67,18 +45,9 @@ az storage account blob-service-properties update \
 **Bicep:**
 ```bicep
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
-  parent: storageAccount
-  name: 'default'
-  properties: {
-    deleteRetentionPolicy: {
-      enabled: true
-      days: 7
-    }
-    containerDeleteRetentionPolicy: {
-      enabled: true
-      days: 7
-    }
-  }
+  parent: storageAccount, name: 'default'
+  properties: { deleteRetentionPolicy: { enabled: true, days: 7 }
+    containerDeleteRetentionPolicy: { enabled: true, days: 7 }}
 }
 ```
 
@@ -134,33 +103,17 @@ az keyvault update \
 
 **Azure CLI:**
 ```bash
-# Create Log Analytics workspace (if needed)
-az monitor log-analytics workspace create \
-  --resource-group <rg-name> \
-  --workspace-name <workspace-name>
-
-# Enable diagnostics
-az monitor diagnostic-settings create \
-  --name diag-vm \
-  --resource $(az vm show -g <rg-name> -n <vm-name> --query id -o tsv) \
-  --workspace $(az monitor log-analytics workspace show -g <rg-name> -n <workspace-name> --query id -o tsv) \
-  --metrics '[{"category": "AllMetrics", "enabled": true}]'
+az monitor log-analytics workspace create -g <rg> -n <workspace>
+az monitor diagnostic-settings create --name diag-vm --resource <vm-id> \
+  --workspace <workspace-id> --metrics '[{"category": "AllMetrics", "enabled": true}]'
 ```
 
 **Bicep:**
 ```bicep
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'diag-${vm.name}'
-  scope: vm
-  properties: {
-    workspaceId: logAnalyticsWorkspace.id
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
-    ]
-  }
+  name: 'diag-${vm.name}', scope: vm
+  properties: { workspaceId: logAnalyticsWorkspace.id
+    metrics: [{ category: 'AllMetrics', enabled: true }]}
 }
 ```
 
@@ -170,18 +123,8 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 
 **Azure CLI:**
 ```bash
-# Create Recovery Services vault (if needed)
-az backup vault create \
-  --resource-group <rg-name> \
-  --name <vault-name> \
-  --location <location>
-
-# Enable backup with default policy
-az backup protection enable-for-vm \
-  --resource-group <rg-name> \
-  --vault-name <vault-name> \
-  --vm $(az vm show -g <rg-name> -n <vm-name> --query id -o tsv) \
-  --policy-name DefaultPolicy
+az backup vault create -g <rg> -n <vault-name> -l <location>
+az backup protection enable-for-vm -g <rg> --vault-name <vault> --vm <vm-id> --policy-name DefaultPolicy
 ```
 
 ---
@@ -203,19 +146,9 @@ az aks update \
 **Bicep:**
 ```bicep
 resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-01-01' = {
-  name: clusterName
-  location: location
-  properties: {
-    securityProfile: {
-      defender: {
-        securityMonitoring: {
-          enabled: true
-        }
-        logAnalyticsWorkspaceResourceId: logAnalyticsWorkspace.id
-      }
-    }
-    // ... other properties
-  }
+  name: clusterName, location: location
+  properties: { securityProfile: { defender: {
+    securityMonitoring: { enabled: true }, logAnalyticsWorkspaceResourceId: workspace.id }}}
 }
 ```
 
@@ -269,21 +202,9 @@ resource sqlAudit 'Microsoft.Sql/servers/auditingSettings@2023-05-01-preview' = 
 
 **Azure CLI:**
 ```bash
-# Create private endpoint
-az network private-endpoint create \
-  --name pe-sql \
-  --resource-group <rg-name> \
-  --vnet-name <vnet-name> \
-  --subnet <subnet-name> \
-  --private-connection-resource-id $(az sql server show -g <rg-name> -n <server-name> --query id -o tsv) \
-  --group-id sqlServer \
-  --connection-name pe-sql-connection
-
-# Disable public access
-az sql server update \
-  --resource-group <rg-name> \
-  --name <server-name> \
-  --enable-public-network false
+az network private-endpoint create --name pe-sql -g <rg> --vnet-name <vnet> \
+  --subnet <subnet> --private-connection-resource-id <sql-id> --group-id sqlServer
+az sql server update -g <rg> -n <server> --enable-public-network false
 ```
 
 ---
@@ -346,16 +267,9 @@ az webapp config set \
 For multiple resources of the same type, use a loop:
 
 ```powershell
-# Example: Enable soft delete on all storage accounts
-$storageAccounts = az storage account list --query "[].{name:name, rg:resourceGroup}" -o json | ConvertFrom-Json
-
-foreach ($sa in $storageAccounts) {
-    Write-Host "Enabling soft delete on $($sa.name)..."
-    az storage account blob-service-properties update `
-        --account-name $sa.name `
-        --resource-group $sa.rg `
-        --enable-delete-retention true `
-        --delete-retention-days 7
+$accounts = az storage account list --query "[].{name:name, rg:resourceGroup}" -o json | ConvertFrom-Json
+foreach ($sa in $accounts) {
+  az storage account blob-service-properties update -n $sa.name -g $sa.rg --enable-delete-retention true --delete-retention-days 7
 }
 ```
 
