@@ -1,6 +1,9 @@
 ---
 name: azure-kusto
-description: Query and analyze big data in Azure Data Explorer (Kusto) using KQL. Use this skill for log analytics, time series analysis, telemetry insights, IoT data exploration, and real-time data investigation across large datasets with sub-second query performance.
+description: |
+  Query and analyze data in Azure Data Explorer (Kusto/ADX) using KQL for log analytics, telemetry, and time series analysis.
+  USE FOR: KQL queries, Kusto database queries, Azure Data Explorer, ADX clusters, log analytics, time series data, IoT telemetry, anomaly detection
+  DO NOT USE FOR: SQL databases (use azure-postgres), NoSQL queries (use azure-storage), Elasticsearch, AWS analytics tools
 ---
 
 # Azure Data Explorer (Kusto) Query & Analytics
