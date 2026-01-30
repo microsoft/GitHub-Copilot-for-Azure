@@ -158,7 +158,7 @@ npm run update:snapshots -- --testPathPattern=your-skill-name
 ### Loading Fixtures
 
 ```typescript
-const { loadFixtures, loadFixture } = require('../utils/fixtures');
+import { loadFixtures, loadFixture } from '../utils/fixtures';
 
 // Load all fixtures for a skill
 const fixtures = loadFixtures('azure-validation');
