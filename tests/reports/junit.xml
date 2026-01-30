@@ -1,73 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="33" failures="0" errors="0" time="0.829">
-  <testsuite name="azure-validation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:02:09" time="0.639" tests="11">
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.003">
+<testsuites name="jest tests" tests="60" failures="0" errors="0" time="3.248">
+  <testsuite name="azure-cost-optimization/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:38:39" time="2.732" tests="23">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.011">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="description mentions validation or pre-deployment" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Metadata" name="description mentions cost optimization or savings" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="has substantive content" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="has substantive content" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="contains naming constraints section" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="contains when to use section" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents storage account limits" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="documents prerequisites" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents key vault limits" time="0.001">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="documents required tools" time="0">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="includes validation checklist" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="documents required permissions" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="references MCP tools" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="references Azure Quick Review" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: valid names" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="mentions cost query and API" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: invalid names" time="0">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="includes output directory structure" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="key vault: valid names" time="0.001">
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="references best practices" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Skill Content" name="mentions Redis optimization" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Report Structure" name="documents report sections" time="0.004">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Report Structure" name="documents data classification" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Report Structure" name="includes audit trail requirements" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Steps and Instructions" name="documents step-by-step process" time="0.004">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Steps and Instructions" name="includes validation commands" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Steps and Instructions" name="includes cost query examples" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Steps and Instructions" name="mentions Azure Monitor metrics" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Safety and Best Practices" name="includes safety requirements" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Safety and Best Practices" name="warns about destructive operations" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Safety and Best Practices" name="mentions Portal links" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Unit Tests › Safety and Best Practices" name="documents common pitfalls" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="azure-validation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:02:09" time="0.66" tests="22">
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Azure storage account name&quot;" time="0.001">
+  <testsuite name="azure-cost-optimization/integration.test.ts" errors="0" failures="0" skipped="10" timestamp="2026-01-30T20:38:39" time="2.724" tests="10">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="invokes skill for cost optimization prompt" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the naming constraints for Azure Key Vault?&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="invokes skill for orphaned resources prompt" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Pre-deployment validation for my Bicep template&quot;" time="0.001">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="invokes skill for rightsizing prompt" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me validate Azure resource names before deploying&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="response mentions cost savings or optimization" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the character limits for Azure resources?&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="mentions required tools and permissions" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Check my Bicep file for naming errors&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="mentions Azure Quick Review for orphaned resources" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate naming conventions for Azure deployment&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="suggests Cost Management API for actual costs" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Run preflight checks before Azure deployment&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="works with Redis cost optimization prompt" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Azure storage naming validation rules&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="mentions report output location" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate Azure Key Vault name length&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Integration Tests" name="emphasizes safety for destructive operations" time="0">
+      <skipped/>
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
+  </testsuite>
+  <testsuite name="azure-cost-optimization/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:38:39" time="2.775" tests="27">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Optimize Azure costs for my subscription&quot;" time="0.004">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;How can I reduce my Azure spending?&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate a cost optimization report for Azure&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS S3 bucket naming&quot;" time="0.001">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Find orphaned resources in Azure&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Analyze my Azure subscription for cost savings&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Identify where I&apos;m overspending in Azure&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker?&quot;" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Find unused resources in my Azure subscription&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Optimize Redis costs in Azure&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate cost savings recommendations for Azure&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0.001">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Analyze Azure costs and suggest optimizations&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;What are my biggest Azure cost drivers?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="is case insensitive for Azure terms" time="0">
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me clean up unused Azure resources&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should Trigger" name="triggers on: &quot;Rightsize my Azure containers&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use AWS cost explorer?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Optimize my code performance&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS Lambda pricing&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure cost alerts in AWS&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Edge Cases" name="handles empty prompt" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
+    </testcase>
+    <testcase classname="azure-cost-optimization - Trigger Tests › Edge Cases" name="is case insensitive for Azure cost terms" time="0">
     </testcase>
   </testsuite>
 </testsuites>
