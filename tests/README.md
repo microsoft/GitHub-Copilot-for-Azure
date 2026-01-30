@@ -48,6 +48,7 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 | `utils/skill-loader.js` | Parses `SKILL.md` frontmatter and content |
 | `utils/trigger-matcher.js` | Tests if prompts should activate a skill |
 | `utils/fixtures.js` | Loads test data from `fixtures/` folders |
+| `utils/agent-runner.js` | Copilot SDK agent runner for integration tests |
 
 ---
 
@@ -129,6 +130,35 @@ test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {
 npm run update:snapshots -- --testPathPattern={skill-name}
 ```
 
+### 3. Integration Tests (`integration.test.js`)
+
+**Purpose:** Test skill behavior with a real Copilot agent session.
+
+**What it checks:**
+- ✅ Skill is invoked by the agent for relevant prompts
+- ✅ Agent response contains expected content
+- ✅ Azure MCP tool calls succeed
+
+**Prerequisites:**
+1. Install Copilot CLI: `npm install -g @github/copilot-cli`
+2. Authenticate: Run `copilot` and follow prompts
+
+**Example:**
+```javascript
+const { run, isSkillInvoked, doesAssistantMessageIncludeKeyword } = require('../utils/agent-runner');
+
+test('invokes skill for relevant prompt', async () => {
+  const agentMetadata = await run({
+    prompt: 'What role should I assign for Azure Container Registry access?'
+  });
+
+  expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
+  expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
+});
+```
+
+**Note:** Integration tests are skipped in CI (no auth) and when `SKIP_INTEGRATION_TESTS=true`.
+
 ---
 
 ## Running Tests Locally
@@ -144,7 +174,9 @@ npm install
 
 | Command | Use Case |
 |---------|----------|
-| `npm test` | Run all tests |
+| `npm test` | Run all tests (unit + trigger) |
+| `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
+| `npm run test:integration` | Run integration tests (requires Copilot CLI auth) |
 | `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run test:coverage` | Generate coverage report |
@@ -279,20 +311,22 @@ This updates the Skills Coverage Grid in this README.
 tests/
 ├── README.md                 # This file - developer guide
 ├── AGENTS.md                 # AI agent testing patterns
-├── package.json              # Dependencies (jest, jest-junit)
+├── package.json              # Dependencies (jest, jest-junit, @github/copilot-sdk)
 ├── jest.config.js            # Jest configuration
 ├── jest.setup.js             # Global setup, custom matchers
 │
 ├── _template/                # 📋 Copy this for new skills
 │   ├── unit.test.js          #    Metadata & logic tests
 │   ├── triggers.test.js      #    Prompt activation tests
+│   ├── integration.test.js   #    Real agent tests (optional)
 │   ├── fixtures/             #    Test data
 │   └── README.md             #    Template usage guide
 │
 ├── utils/                    # 🔧 Shared test utilities
 │   ├── skill-loader.js       #    Load & parse SKILL.md
 │   ├── trigger-matcher.js    #    Test prompt → skill matching
-│   └── fixtures.js           #    Load test fixtures
+│   ├── fixtures.js           #    Load test fixtures
+│   └── agent-runner.js       #    Copilot SDK agent runner
 │
 ├── scripts/                  # 📜 Helper scripts
 │   └── generate-coverage-grid.js    # Update README coverage table
