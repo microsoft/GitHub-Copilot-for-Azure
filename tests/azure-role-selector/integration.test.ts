@@ -17,7 +17,7 @@ import {
   shouldSkipIntegrationTests 
 } from '../utils/agent-runner';
 
-const SKILL_NAME: string = 'azure-role-selector';
+const SKILL_NAME = 'azure-role-selector';
 
 // Skip integration tests in CI or when SKIP_INTEGRATION_TESTS is set
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
