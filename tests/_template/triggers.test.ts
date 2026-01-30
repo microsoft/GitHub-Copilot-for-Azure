@@ -5,18 +5,18 @@
  * and does NOT trigger on unrelated prompts.
  * 
  * Uses snapshot testing + parameterized tests for comprehensive coverage.
- * Copy this file to /tests/{skill-name}/triggers.test.js
+ * Copy this file to /tests/{skill-name}/triggers.test.ts
  */
 
-const { TriggerMatcher } = require('../utils/trigger-matcher');
-const { loadSkill } = require('../utils/skill-loader');
+import { TriggerMatcher } from '../utils/trigger-matcher';
+import { loadSkill, LoadedSkill } from '../utils/skill-loader';
 
 // Replace with your skill name
 const SKILL_NAME = 'your-skill-name';
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
-  let triggerMatcher;
-  let skill;
+  let triggerMatcher: TriggerMatcher;
+  let skill: LoadedSkill;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
@@ -25,7 +25,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe('Should Trigger', () => {
     // Parameterized tests - prompts that SHOULD trigger this skill
-    const shouldTriggerPrompts = [
+    const shouldTriggerPrompts: string[] = [
       // Add prompts that should trigger your skill
       // 'How do I deploy to Azure?',
       // 'Configure my storage account',
@@ -44,7 +44,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe('Should NOT Trigger', () => {
     // Parameterized tests - prompts that should NOT trigger this skill
-    const shouldNotTriggerPrompts = [
+    const shouldNotTriggerPrompts: string[] = [
       // Add prompts that should NOT trigger your skill
       'What is the weather today?',
       'Help me write a poem',

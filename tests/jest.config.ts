@@ -1,5 +1,9 @@
-/** @type {import('jest').Config} */
-const config = {
+import type { Config } from 'jest';
+
+const config: Config = {
+  // Use ts-jest for TypeScript support
+  preset: 'ts-jest',
+  
   // Root directory for tests
   rootDir: '.',
   
@@ -12,11 +16,12 @@ const config = {
   // Ignore template folder in test runs (it's just examples)
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/_template/'
+    '/_template/',
+    '/dist/'
   ],
   
   // Setup file for shared utilities
-  setupFilesAfterEnv: ['./jest.setup.js'],
+  setupFilesAfterEnv: ['./jest.setup.ts'],
   
   // Coverage configuration
   collectCoverageFrom: [
@@ -46,8 +51,8 @@ const config = {
   // Fail fast in CI
   bail: process.env.CI ? 1 : 0,
   
-  // Test timeout (skills may have async operations)
-  testTimeout: 10000,
+  // Test timeout - longer for integration tests (agent sessions can take 60s+)
+  testTimeout: 120000,
   
   // Clear mocks between tests
   clearMocks: true,
@@ -62,7 +67,7 @@ const config = {
   displayName: {
     name: 'SKILLS',
     color: 'blue'
-  }
+  },
 };
 
-module.exports = config;
+export default config;

@@ -9,48 +9,34 @@
  * - Login: Run `copilot` and follow prompts to authenticate
  */
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import { CopilotClient, type SessionEvent } from '@github/copilot-sdk';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
-// Dynamically load the Copilot SDK (may be ESM-only)
-let CopilotClient = null;
-let sdkAvailable = false;
+export interface AgentMetadata {
+  events: SessionEvent[];
+}
 
-try {
-  // Try CommonJS require first
-  CopilotClient = require('@github/copilot-sdk').CopilotClient;
-  sdkAvailable = true;
-} catch {
-  // SDK not available - integration tests will be skipped
-  sdkAvailable = false;
+export interface TestConfig {
+  setup?: (workspace: string) => Promise<void>;
+  prompt: string;
+  shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
+}
+
+export interface KeywordOptions {
+  caseSensitive?: boolean;
 }
 
 /**
- * @typedef {Object} AgentMetadata
- * @property {Array} events - All session events captured during execution
- */
-
-/**
- * @typedef {Object} TestConfig
- * @property {Function} [setup] - Optional setup function (workspace) => Promise<void>
- * @property {string} prompt - The prompt to send to the agent
- * @property {Function} [shouldEarlyTerminate] - Optional early termination check
- */
-
-/**
  * Run an agent session with the given configuration
- * @param {TestConfig} config - Test configuration
- * @returns {Promise<AgentMetadata>} - Captured agent metadata
  */
-async function run(config) {
-  if (!sdkAvailable) {
-    throw new Error('@github/copilot-sdk not available. Use shouldSkipIntegrationTests() to skip tests.');
-  }
-  
+export async function run(config: TestConfig): Promise<AgentMetadata> {
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
-  let client = null;
-  let session = null;
+
+  // Declare client and session outside try block to ensure cleanup in finally
+  let client: CopilotClient | undefined;
+  let session: Awaited<ReturnType<CopilotClient['createSession']>> | undefined;
 
   try {
     // Run optional setup
@@ -78,24 +64,16 @@ async function run(config) {
       }
     });
 
-    const agentMetadata = { events: [] };
+    const agentMetadata: AgentMetadata = { events: [] };
 
-    const done = new Promise((resolve, reject) => {
-      session.on(async (event) => {
+    const done = new Promise<void>((resolve) => {
+      session!.on(async (event: SessionEvent) => {
         if (process.env.DEBUG) {
           console.log(`=== session event ${event.type}`);
         }
 
         if (event.type === 'session.idle') {
           resolve();
-          return;
-        }
-
-        if (event.type === 'session.error') {
-          if (process.env.DEBUG) {
-            console.error('Session error:', event.data.message);
-          }
-          reject(new Error(`Session error: ${event.data.message}`));
           return;
         }
 
@@ -106,7 +84,7 @@ async function run(config) {
         if (config.shouldEarlyTerminate) {
           if (config.shouldEarlyTerminate(agentMetadata)) {
             resolve();
-            session.abort();
+            session!.abort();
             return;
           }
         }
@@ -117,6 +95,8 @@ async function run(config) {
             console.log('Assistant.message:', event.data.content);
           } else if (event.type === 'tool.execution_start') {
             console.log('tool.execution_start:', event.data.toolName);
+          } else if (event.type === 'session.error') {
+            console.error('Session error:', event.data.message);
           }
         }
       });
@@ -130,20 +110,20 @@ async function run(config) {
     console.error('Agent runner error:', error);
     throw error;
   } finally {
-    // Cleanup session and client
-    if (session) {
-      try {
+    // Cleanup session and client (guarded if undefined)
+    try {
+      if (session) {
         await session.destroy();
-      } catch {
-        // Ignore cleanup errors
       }
+    } catch {
+      // Ignore session cleanup errors
     }
-    if (client) {
-      try {
+    try {
+      if (client) {
         await client.stop();
-      } catch {
-        // Ignore cleanup errors
       }
+    } catch {
+      // Ignore client cleanup errors
     }
     // Cleanup workspace
     try {
@@ -156,11 +136,8 @@ async function run(config) {
 
 /**
  * Check if a skill was invoked during the session
- * @param {AgentMetadata} agentMetadata - Captured metadata
- * @param {string} skillName - Name of the skill to check
- * @returns {boolean}
  */
-function isSkillInvoked(agentMetadata, skillName) {
+export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string): boolean {
   return agentMetadata.events
     .filter(event => event.type === 'tool.execution_start')
     .filter(event => event.data.toolName === 'skill')
@@ -172,11 +149,8 @@ function isSkillInvoked(agentMetadata, skillName) {
 
 /**
  * Check if all tool calls for a given tool were successful
- * @param {AgentMetadata} agentMetadata - Captured metadata
- * @param {string} toolName - Name of the tool to check
- * @returns {boolean}
  */
-function areToolCallsSuccess(agentMetadata, toolName) {
+export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName: string): boolean {
   const executionStartEvents = agentMetadata.events
     .filter(event => event.type === 'tool.execution_start')
     .filter(event => event.data.toolName === toolName);
@@ -194,25 +168,24 @@ function areToolCallsSuccess(agentMetadata, toolName) {
 
 /**
  * Check if assistant messages contain a keyword
- * @param {AgentMetadata} agentMetadata - Captured metadata
- * @param {string} keyword - Keyword to search for
- * @param {Object} [options] - Options
- * @param {boolean} [options.caseSensitive=false] - Case sensitive search
- * @returns {boolean}
  */
-function doesAssistantMessageIncludeKeyword(agentMetadata, keyword, options = {}) {
+export function doesAssistantMessageIncludeKeyword(
+  agentMetadata: AgentMetadata, 
+  keyword: string, 
+  options: KeywordOptions = {}
+): boolean {
   // Merge all messages and message deltas
-  const allMessages = {};
+  const allMessages: Record<string, string> = {};
   
   agentMetadata.events.forEach(event => {
-    if (event.type === 'assistant.message') {
+    if (event.type === 'assistant.message' && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
     }
-    if (event.type === 'assistant.message_delta') {
+    if (event.type === 'assistant.message_delta' && event.data.messageId) {
       if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent;
+        allMessages[event.data.messageId] += event.data.deltaContent ?? '';
       } else {
-        allMessages[event.data.messageId] = event.data.deltaContent;
+        allMessages[event.data.messageId] = event.data.deltaContent ?? '';
       }
     }
   });
@@ -227,11 +200,8 @@ function doesAssistantMessageIncludeKeyword(agentMetadata, keyword, options = {}
 
 /**
  * Get all tool calls made during the session
- * @param {AgentMetadata} agentMetadata - Captured metadata
- * @param {string} [toolName] - Optional filter by tool name
- * @returns {Array} - Array of tool call events
  */
-function getToolCalls(agentMetadata, toolName = null) {
+export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | null = null): SessionEvent[] {
   let calls = agentMetadata.events.filter(event => event.type === 'tool.execution_start');
   
   if (toolName) {
@@ -243,18 +213,7 @@ function getToolCalls(agentMetadata, toolName = null) {
 
 /**
  * Check if integration tests should be skipped
- * @returns {boolean}
  */
-function shouldSkipIntegrationTests() {
-  return !sdkAvailable || process.env.SKIP_INTEGRATION_TESTS === 'true' || process.env.CI === 'true';
+export function shouldSkipIntegrationTests(): boolean {
+  return process.env.SKIP_INTEGRATION_TESTS === 'true' || process.env.CI === 'true';
 }
-
-module.exports = {
-  run,
-  isSkillInvoked,
-  areToolCallsSuccess,
-  doesAssistantMessageIncludeKeyword,
-  getToolCalls,
-  shouldSkipIntegrationTests,
-  sdkAvailable
-};

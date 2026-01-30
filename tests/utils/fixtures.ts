@@ -4,17 +4,20 @@
  * Helper functions for loading and managing test fixtures.
  */
 
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
+
+export interface PromptFixtures {
+  shouldTrigger: string[];
+  shouldNotTrigger: string[];
+}
 
 /**
  * Load fixtures for a skill
- * @param {string} skillName - Name of the skill
- * @returns {object} - Parsed fixtures object
  */
-function loadFixtures(skillName) {
+export function loadFixtures(skillName: string): Record<string, unknown> {
   const fixturesPath = path.join(
-    global.TESTS_PATH || __dirname + '/..',
+    global.TESTS_PATH || path.join(__dirname, '..'),
     skillName,
     'fixtures'
   );
@@ -23,7 +26,7 @@ function loadFixtures(skillName) {
     return {};
   }
 
-  const fixtures = {};
+  const fixtures: Record<string, unknown> = {};
   const files = fs.readdirSync(fixturesPath);
 
   for (const file of files) {
@@ -38,7 +41,7 @@ function loadFixtures(skillName) {
         fixtures[name] = fs.readFileSync(filePath, 'utf-8');
       }
     } catch (error) {
-      console.warn(`Failed to load fixture ${file}: ${error.message}`);
+      console.warn(`Failed to load fixture ${file}: ${(error as Error).message}`);
     }
   }
 
@@ -47,14 +50,14 @@ function loadFixtures(skillName) {
 
 /**
  * Load a specific fixture file
- * @param {string} skillName - Name of the skill
- * @param {string} fixtureName - Name of the fixture file (without extension)
- * @param {string} extension - File extension (default: 'json')
- * @returns {*} - Parsed fixture content
  */
-function loadFixture(skillName, fixtureName, extension = 'json') {
+export function loadFixture<T = unknown>(
+  skillName: string, 
+  fixtureName: string, 
+  extension = 'json'
+): T {
   const fixturePath = path.join(
-    global.TESTS_PATH || __dirname + '/..',
+    global.TESTS_PATH || path.join(__dirname, '..'),
     skillName,
     'fixtures',
     `${fixtureName}.${extension}`
@@ -67,22 +70,23 @@ function loadFixture(skillName, fixtureName, extension = 'json') {
   const content = fs.readFileSync(fixturePath, 'utf-8');
 
   if (extension === 'json') {
-    return JSON.parse(content);
+    return JSON.parse(content) as T;
   }
 
-  return content;
+  return content as unknown as T;
 }
 
 /**
  * Create a fixture file for a skill
- * @param {string} skillName - Name of the skill
- * @param {string} fixtureName - Name of the fixture file
- * @param {*} content - Content to write
- * @param {string} extension - File extension (default: 'json')
  */
-function createFixture(skillName, fixtureName, content, extension = 'json') {
+export function createFixture(
+  skillName: string, 
+  fixtureName: string, 
+  content: unknown, 
+  extension = 'json'
+): void {
   const fixturesDir = path.join(
-    global.TESTS_PATH || __dirname + '/..',
+    global.TESTS_PATH || path.join(__dirname, '..'),
     skillName,
     'fixtures'
   );
@@ -95,19 +99,17 @@ function createFixture(skillName, fixtureName, content, extension = 'json') {
   const fixturePath = path.join(fixturesDir, `${fixtureName}.${extension}`);
   const fileContent = extension === 'json' 
     ? JSON.stringify(content, null, 2) 
-    : content;
+    : String(content);
 
   fs.writeFileSync(fixturePath, fileContent, 'utf-8');
 }
 
 /**
  * Load prompts from a fixture file
- * @param {string} skillName - Name of the skill
- * @returns {{shouldTrigger: string[], shouldNotTrigger: string[]}}
  */
-function loadPromptFixtures(skillName) {
+export function loadPromptFixtures(skillName: string): PromptFixtures {
   try {
-    const fixtures = loadFixture(skillName, 'prompts');
+    const fixtures = loadFixture<PromptFixtures>(skillName, 'prompts');
     return {
       shouldTrigger: fixtures.shouldTrigger || [],
       shouldNotTrigger: fixtures.shouldNotTrigger || []
@@ -116,10 +118,3 @@ function loadPromptFixtures(skillName) {
     return { shouldTrigger: [], shouldNotTrigger: [] };
   }
 }
-
-module.exports = {
-  loadFixtures,
-  loadFixture,
-  createFixture,
-  loadPromptFixtures
-};
