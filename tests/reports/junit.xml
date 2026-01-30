@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="36" failures="0" errors="0" time="2.642">
-  <testsuite name="appinsights-instrumentation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:08:36" time="2.211" tests="13">
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.007">
+<testsuites name="jest tests" tests="36" failures="0" errors="0" time="2.758">
+  <testsuite name="appinsights-instrumentation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:23:28" time="2.287" tests="13">
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
     </testcase>
     <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description mentions instrumentation or telemetry" time="0.001">
     </testcase>
@@ -9,15 +9,15 @@
     </testcase>
     <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="contains when to use section" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents prerequisites" time="0.001">
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents prerequisites" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents guidelines section" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions auto-instrumentation" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references manual instrumentation guides" time="0">
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references manual instrumentation guides" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions creating AppInsights resource" time="0.001">
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions creating AppInsights resource" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references example files" time="0.001">
     </testcase>
@@ -28,16 +28,16 @@
     <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists Python as supported" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="appinsights-instrumentation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:08:36" time="2.269" tests="23">
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my webapp to send telemetry to App Insights&quot;" time="0.004">
+  <testsuite name="appinsights-instrumentation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:23:28" time="2.35" tests="23">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my webapp to send telemetry to App Insights&quot;" time="0.003">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I instrument my app with Azure App Insights?&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I instrument my app with Azure App Insights?&quot;" time="0.004">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add AppInsights instrumentation to my web application&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add App Insights instrumentation to my Node.js app&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Application Insights for my Python webapp&quot;" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Application Insights for my Python webapp&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up telemetry monitoring in Azure&quot;" time="0">
     </testcase>
@@ -47,13 +47,13 @@
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How to enable App Insights auto-instrumentation?&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure telemetry for my Azure App Service&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure telemetry for my Azure App Service&quot;" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use AWS CloudWatch?&quot;" time="0">
     </testcase>
@@ -61,7 +61,7 @@
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure logging in Spring Boot&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure logging in Spring Boot&quot;" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Set up Datadog monitoring&quot;" time="0">
     </testcase>

@@ -350,10 +350,9 @@ tests/
 <!-- COVERAGE_GRID_START -->
 | Skill | Tests | Unit | Triggers | Integration | Coverage |
 |-------|-------|------|----------|-------------|----------|
-| appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
+| appinsights-instrumentation | ❌ | - | - | - | - |
 | azure-ai | ❌ | - | - | - | - |
 | azure-aigateway | ❌ | - | - | - | - |
-| azure-cost-estimation | ❌ | - | - | - | - |
 | azure-cost-optimization | ❌ | - | - | - | - |
 | azure-create-app | ❌ | - | - | - | - |
 | azure-deploy | ❌ | - | - | - | - |
@@ -368,7 +367,7 @@ tests/
 | azure-postgres | ❌ | - | - | - | - |
 | azure-quick-review | ❌ | - | - | - | - |
 | azure-resource-visualizer | ❌ | - | - | - | - |
-| azure-role-selector | ✅ | - | - | ✅ | - |
+| azure-role-selector | ❌ | - | - | - | - |
 | azure-security | ❌ | - | - | - | - |
 | azure-security-hardening | ❌ | - | - | - | - |
 | azure-storage | ❌ | - | - | - | - |
