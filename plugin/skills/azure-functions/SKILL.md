@@ -1,6 +1,6 @@
 ---
 name: azure-functions
-description: Serverless event-driven compute with Azure Functions - pay-per-execution, auto-scaling, multiple trigger types, and deployment workflows
+description: Serverless event-driven compute with Azure Functions - pay-per-execution, auto-scaling, multiple trigger types, and deployment workflows. USE FOR: deploy serverless functions, create Azure Functions, HTTP triggers, timer functions, event-driven processing, serverless APIs, webhooks, queue processors, deploy functions to Azure, configure Azure Functions, serverless compute. DO NOT USE FOR: container deployments (use azure-create-app), static website hosting (use azure-create-app), Kubernetes orchestration (use azure-create-app with AKS), VM provisioning
 ---
 
 # Azure Functions
