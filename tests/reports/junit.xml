@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="81" failures="0" errors="0" time="2.207">
-  <testsuite name="azure-aigateway/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:30:53" time="1.848" tests="51">
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up a gateway for my model&quot;" time="0.004">
+<testsuites name="jest tests" tests="81" failures="0" errors="0" time="2.604">
+  <testsuite name="azure-aigateway/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T21:48:56" time="2.219" tests="51">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up a gateway for my model&quot;" time="0.006">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up a gateway for my tools&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up a gateway for my agents&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add a gateway to my MCP server&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add a gateway to my MCP server&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Protect my AI model with a gateway&quot;" time="0">
     </testcase>
@@ -15,7 +15,7 @@
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Ratelimit my model requests&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Ratelimit my tool requests&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Ratelimit my tool requests&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add rate limiting to my model requests&quot;" time="0">
     </testcase>
@@ -23,35 +23,35 @@
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Enable semantic caching for my AI API&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I add semantic caching to Azure OpenAI?&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I add semantic caching to Azure OpenAI?&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure semantic caching for my gateway&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add content safety to my AI endpoint&quot;" time="0.001">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add content safety to my AI endpoint&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure content safety for my Azure AI model&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure content safety for my Azure AI model&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add content safety policy to gateway&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add my model behind gateway&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add my model behind gateway&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Import OpenAPI spec to Azure gateway&quot;" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add API to Azure gateway from swagger&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Convert my API to MCP with Azure gateway&quot;" time="0.001">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Convert my API to MCP with Azure gateway&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Expose my API as MCP server using gateway&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Expose my API as MCP server using gateway&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Deploy Azure API Management for AI&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure APIM for Azure OpenAI&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure APIM for Azure OpenAI&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Bootstrap Azure AI Gateway with APIM&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Bootstrap Azure AI Gateway&quot;" time="0.001">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Bootstrap Azure AI Gateway&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Load balance Azure AI models&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Load balance Azure AI models&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should Trigger" name="triggers on: &quot;Add failover for my AI models&quot;" time="0">
     </testcase>
@@ -65,21 +65,21 @@
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS API Gateway&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS API Gateway&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Set up Google Cloud API Gateway&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Use Kong for my API&quot;" time="0.001">
+    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Use Kong for my API&quot;" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my webapp to App Service&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Create an Azure storage account&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Create an Azure storage account&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Set up Azure SQL Database&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure virtual networks&quot;" time="0.001">
+    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure virtual networks&quot;" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Train a machine learning model&quot;" time="0">
+    <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Train a machine learning model&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Fine-tune my neural network&quot;" time="0">
     </testcase>
@@ -104,22 +104,22 @@
     <testcase classname="azure-aigateway - Trigger Tests › Edge Cases" name="recognizes MCP variations" time="0.001">
     </testcase>
   </testsuite>
-  <testsuite name="azure-aigateway/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:30:53" time="1.849" tests="30">
+  <testsuite name="azure-aigateway/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T21:48:56" time="2.22" tests="30">
     <testcase classname="azure-aigateway - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Metadata" name="description mentions AI Gateway and APIM" time="0.001">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="has substantive content" time="0">
+    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="has substantive content" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="contains overview section" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents Basicv2 SKU as default" time="0.001">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents semantic caching pattern" time="0">
+    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents semantic caching pattern" time="0.001">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents token rate limiting" time="0">
+    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents token rate limiting" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents content safety" time="0">
     </testcase>
@@ -127,7 +127,7 @@
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents load balancing with retry" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents MCP server conversion" time="0">
+    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents MCP server conversion" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="includes Azure AI Gateway repository link" time="0">
     </testcase>
@@ -135,21 +135,21 @@
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="includes Bicep templates" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="includes policy XML examples" time="0.001">
+    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="includes policy XML examples" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents deployment patterns" time="0">
+    <testcase classname="azure-aigateway - Unit Tests › Skill Content" name="documents deployment patterns" time="0.001">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › APIM Configuration" name="recommends Basicv2 SKU" time="0.001">
+    <testcase classname="azure-aigateway - Unit Tests › APIM Configuration" name="recommends Basicv2 SKU" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › APIM Configuration" name="documents SKU benefits" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › APIM Configuration" name="includes resource group creation" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › APIM Configuration" name="includes APIM service deployment" time="0.001">
+    <testcase classname="azure-aigateway - Unit Tests › APIM Configuration" name="includes APIM service deployment" time="0">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Policy Configuration" name="documents semantic caching parameters" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Policy Configuration" name="documents token limit parameters" time="0.001">
+    <testcase classname="azure-aigateway - Unit Tests › Policy Configuration" name="documents token limit parameters" time="0.004">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Policy Configuration" name="documents content safety categories" time="0">
     </testcase>
@@ -161,7 +161,7 @@
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Best Practices" name="recommends token metrics" time="0">
     </testcase>
-    <testcase classname="azure-aigateway - Unit Tests › Troubleshooting" name="includes troubleshooting section" time="0">
+    <testcase classname="azure-aigateway - Unit Tests › Troubleshooting" name="includes troubleshooting section" time="0.001">
     </testcase>
     <testcase classname="azure-aigateway - Unit Tests › Troubleshooting" name="documents common issues" time="0">
     </testcase>
