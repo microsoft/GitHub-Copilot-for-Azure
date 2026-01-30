@@ -1,59 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="46" failures="0" errors="0" time="0.673">
-  <testsuite name="appinsights-instrumentation/unit.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-30T00:43:57" time="0.369" tests="19">
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description mentions instrumentation or telemetry" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="has substantive content" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="contains usage guidelines section" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents supported frameworks" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references auto-instrumentation" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents manual instrumentation" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references example files" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references guides that explain configuration" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Framework-Specific Guidance" name="provides ASP.NET Core guidance" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Framework-Specific Guidance" name="provides Node.js guidance" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Framework-Specific Guidance" name="provides Python guidance" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Reference Files" name="mentions reference documentation" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Reference Files" name="references AUTO guide for App Service" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Reference Files" name="references framework-specific guides" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="documents Bicep deployment option" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="documents Azure CLI deployment option" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="references example Bicep file" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="references example PowerShell script" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="appinsights-instrumentation/triggers.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-30T00:43:57" time="0.492" tests="27">
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I instrument my webapp with AppInsights?&quot;" time="0.003">
+<testsuites name="jest tests" tests="46" failures="0" errors="0" time="0.311">
+  <testsuite name="appinsights-instrumentation/triggers.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-30T00:44:37" time="0.222" tests="27">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I instrument my webapp with AppInsights?&quot;" time="0.002">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add telemetry to my application using Azure AppInsights&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Azure Application Insights for my Node.js app&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Azure Application Insights for my Node.js app&quot;" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;I want to send telemetry data to Azure App Insights&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me set up instrumentation for my webapp&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me set up instrumentation for my webapp&quot;" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Enable monitoring for my application with AppInsights&quot;" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Enable monitoring for my application with AppInsights&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add Azure App Insights instrumentation to my Python application&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add Azure App Insights instrumentation to my Python application&quot;" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I auto-instrument my app in Azure App Service?&quot;" time="0">
     </testcase>
@@ -65,35 +25,75 @@
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I deploy to AWS Lambda?&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure my database connection&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me debug my code&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me debug my code&quot;" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What are the best practices for REST APIs?&quot;" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What are the best practices for REST APIs?&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I write unit tests?&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.002">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="is case insensitive for AppInsights" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="is case insensitive for AppInsights" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="recognizes alternative spellings" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="recognizes alternative spellings" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Framework-Specific Triggers" name="triggers on ASP.NET Core instrumentation requests" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Framework-Specific Triggers" name="triggers on ASP.NET Core instrumentation requests" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Framework-Specific Triggers" name="triggers on Node.js instrumentation requests" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Framework-Specific Triggers" name="triggers on Python instrumentation requests" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="appinsights-instrumentation/unit.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-30T00:44:37" time="0.053" tests="19">
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.001">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description mentions instrumentation or telemetry" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="has substantive content" time="0.001">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="contains usage guidelines section" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents supported frameworks" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references auto-instrumentation" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents manual instrumentation" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references example files" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references guides that explain configuration" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Framework-Specific Guidance" name="provides ASP.NET Core guidance" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Framework-Specific Guidance" name="provides Node.js guidance" time="0.001">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Framework-Specific Guidance" name="provides Python guidance" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Reference Files" name="mentions reference documentation" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Reference Files" name="references AUTO guide for App Service" time="0.001">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Reference Files" name="references framework-specific guides" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="documents Bicep deployment option" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="documents Azure CLI deployment option" time="0.001">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="references example Bicep file" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Deployment Options" name="references example PowerShell script" time="0.001">
     </testcase>
   </testsuite>
 </testsuites>
