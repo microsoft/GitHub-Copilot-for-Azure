@@ -4,6 +4,9 @@ const config: Config = {
   // Use ts-jest for TypeScript support
   preset: 'ts-jest',
   
+  // Use Node test environment
+  testEnvironment: 'node',
+  
   // Root directory for tests
   rootDir: '.',
   
@@ -62,6 +65,11 @@ const config: Config = {
     '^@utils/(.*)$': '<rootDir>/utils/$1',
     '^@fixtures/(.*)$': '<rootDir>/$1/fixtures'
   },
+  
+  // Transform ESM modules from node_modules (copilot-sdk is ESM-only)
+  transformIgnorePatterns: [
+    'node_modules/(?!(@github/copilot-sdk)/)'
+  ],
   
   // Display individual test results
   displayName: {

@@ -144,16 +144,20 @@ npm run update:snapshots -- --testPathPattern={skill-name}
 2. Authenticate: Run `copilot` and follow prompts
 
 **Example:**
-```javascript
-const { run, isSkillInvoked, doesAssistantMessageIncludeKeyword } = require('../utils/agent-runner');
+```typescript
+import { run, isSkillInvoked, doesAssistantMessageIncludeKeyword, shouldSkipIntegrationTests } from '../utils/agent-runner';
 
-test('invokes skill for relevant prompt', async () => {
-  const agentMetadata = await run({
-    prompt: 'What role should I assign for Azure Container Registry access?'
+const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+
+describeIntegration('azure-role-selector - Integration Tests', () => {
+  test('invokes skill for relevant prompt', async () => {
+    const agentMetadata = await run({
+      prompt: 'What role should I assign for Azure Container Registry access?'
+    });
+
+    expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
   });
-
-  expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
-  expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
 });
 ```
 
@@ -177,11 +181,38 @@ npm install
 | `npm test` | Run all tests (unit + trigger) |
 | `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
 | `npm run test:integration` | Run integration tests (requires Copilot CLI auth) |
+| `npm run test:ci` | Run tests for CI (excludes integration tests) |
 | `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run test:coverage` | Generate coverage report |
 | `npm run test:verbose` | Show individual test names |
 | `npm run update:snapshots` | Update Jest snapshots after intentional changes |
+
+### Integration Tests
+
+Integration tests run **automatically when possible** but skip gracefully when:
+- Running in CI (`CI=true`)
+- `@github/copilot-sdk` is not installed
+- Copilot CLI is not authenticated
+
+When skipped, a message explains why:
+```
+⏭️  Skipping integration tests: Running in CI environment
+```
+
+To run integration tests locally:
+
+```bash
+# 1. Ensure you're authenticated
+copilot --help  # Should show help, not login prompt
+
+# 2. Run tests (integration will run automatically if SDK is available)
+npm test
+```
+
+Environment variables:
+- `SKIP_INTEGRATION_TESTS=true` - Force skip integration tests
+- `CI=true` - Automatically set in CI; always skips integration tests
 
 ### Example: Test a Specific Skill
 
