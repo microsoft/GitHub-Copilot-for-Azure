@@ -49,13 +49,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test('mentions auto-instrumentation', () => {
       expect(skill.content).toContain('auto-instrument');
-      expect(skill.content).toContain('AUTO guide');
+      expect(skill.content).toContain('auto.md');
     });
 
     test('references manual instrumentation guides', () => {
-      expect(skill.content).toContain('ASPNETCORE guide');
-      expect(skill.content).toContain('NODEJS guide');
-      expect(skill.content).toContain('PYTHON guide');
+      expect(skill.content).toContain('aspnetcore.md');
+      expect(skill.content).toContain('nodejs.md');
+      expect(skill.content).toContain('python.md');
     });
 
     test('mentions creating AppInsights resource', () => {
