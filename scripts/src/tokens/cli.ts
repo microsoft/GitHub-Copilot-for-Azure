@@ -57,6 +57,7 @@ Examples:
   npm run tokens compare                  # Compare HEAD vs main
   npm run tokens compare -- --base HEAD~1 # Compare vs previous commit
   npm run tokens suggest                  # Analyze default directories (shows exceeded first)
+  npm run tokens suggest -- --json        # Output as JSON
   npm run tokens suggest -- docs/         # Analyze specific directory
 `);
 }

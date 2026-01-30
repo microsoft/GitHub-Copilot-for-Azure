@@ -107,18 +107,9 @@ az postgres flexible-server show --resource-group <rg> --name <server> --query f
 az postgres flexible-server firewall-rule list --resource-group <rg> --name <server>
 ```
 
-3. For private endpoint, verify NSG allows outbound to `AzureActiveDirectory` service tag:
-```bash
-# Check NSG rules
-az network nsg rule list --resource-group <rg> --nsg-name <nsg-name>
-```
+3. For private endpoint, verify NSG allows outbound to `AzureActiveDirectory` service tag
 
-4. Verify DNS resolution:
-```bash
-nslookup <server>.postgres.database.azure.com
-nslookup login.microsoftonline.com
-nslookup graph.microsoft.com
-```
+4. Verify DNS resolution for server and `login.microsoftonline.com`
 
 ---
 
@@ -208,94 +199,33 @@ az ad group member list --group "Group Name" --query "[].userPrincipalName" -o t
 
 **Solution:**
 
-1. Verify managed identity is enabled on the app:
+1. Verify managed identity is enabled:
 ```bash
-# For Container Apps
-az containerapp identity show --name <app> --resource-group <rg>
-
-# For App Service
-az webapp identity show --name <app> --resource-group <rg>
+az containerapp identity show --name <app> --resource-group <rg>  # Container Apps
+az webapp identity show --name <app> --resource-group <rg>        # App Service
 ```
 
-2. Ensure the correct role name is used (must match exactly what was created in PostgreSQL)
+2. Ensure role name matches exactly what was created in PostgreSQL
 
-3. Check application code uses Azure Identity SDK
-
-4. Verify managed identity object ID matches what's in PostgreSQL:
+3. Verify managed identity object ID matches database:
 ```bash
-# Get MI object ID
 az identity show --name <identity> --resource-group <rg> --query principalId -o tsv
-
-# Compare with database
-psql -c "SELECT * FROM pgaadauth_list_principals(false);"
 ```
 
 ---
 
 ## Diagnostic Commands Reference
 
-### Check Entra Admin Status
-```bash
-az postgres flexible-server microsoft-entra-admin list \
-  --resource-group <rg> \
-  --server-name <server>
-```
-
-### List All Entra-Mapped Roles
-```sql
-SELECT * FROM pgaadauth_list_principals(false);
-```
-
-### Check Role Permissions
-```sql
--- List all roles
-\du
-
--- Check grants on a database
-\l
-
--- Check table permissions
-\dp
-
--- Detailed permission check
-SELECT * FROM information_schema.role_table_grants WHERE grantee = 'user@domain.com';
-```
-
-### Verify Token
-```bash
-# Get token and check expiration
-az account get-access-token --resource-type oss-rdbms
-
-# Decode token (optional, for debugging)
-# The accessToken is a JWT - you can decode it at jwt.io to verify claims
-```
-
-### Test Network Connectivity
-```bash
-# DNS resolution
-nslookup <server>.postgres.database.azure.com
-nslookup login.microsoftonline.com
-nslookup graph.microsoft.com
-
-# TCP connectivity (port 5432)
-nc -zv <server>.postgres.database.azure.com 5432
-
-# Or using telnet
-telnet <server>.postgres.database.azure.com 5432
-```
-
-### Check Server Parameters
-```bash
-# Check group sync setting
-az postgres flexible-server parameter show \
-  --resource-group <rg> \
-  --server-name <server> \
-  --name pgaadauth.enable_group_sync
-```
+| Task | Command |
+|------|---------|
+| Check Entra admin | `az postgres flexible-server microsoft-entra-admin list --resource-group <rg> --server-name <server>` |
+| List Entra roles | `SELECT * FROM pgaadauth_list_principals(false);` |
+| List all roles | `\du` in psql |
+| Verify token | `az account get-access-token --resource-type oss-rdbms` |
+| DNS check | `nslookup <server>.postgres.database.azure.com` |
+| TCP check | `nc -zv <server>.postgres.database.azure.com 5432` |
+| Group sync setting | `az postgres flexible-server parameter show --resource-group <rg> --server-name <server> --name pgaadauth.enable_group_sync` |
 
 ## Still Having Issues?
 
-1. **Enable diagnostic logging** on the PostgreSQL server in Azure Portal
-2. **Check Azure Monitor logs** for authentication failures
-3. **Verify RBAC permissions** - you may need `Contributor` or specific PostgreSQL roles
-4. **Contact support** with diagnostic output from the commands above
+Enable diagnostic logging on the server, check Azure Monitor logs, verify RBAC permissions, or contact support with diagnostic output.

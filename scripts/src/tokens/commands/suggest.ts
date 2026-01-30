@@ -204,13 +204,88 @@ function printAnalysis(analysis: FileAnalysis & { limit: number; exceeded: boole
   }
 }
 
+interface SuggestSummary {
+  filesAnalyzed: number;
+  filesExceeded: number;
+  filesWithSuggestions: number;
+  totalPotentialSavings: number;
+  fixableBysuggestions: number;
+}
+
+function formatMarkdownSuggestReport(
+  analyses: (FileAnalysis & { limit: number; exceeded: boolean })[],
+  summary: SuggestSummary,
+  rootDir: string
+): string {
+  const lines: string[] = [
+    '## 📊 Token Optimization Suggestions\n',
+    `**Files analyzed:** ${summary.filesAnalyzed}`,
+    `**Files exceeding limits:** ${summary.filesExceeded}`,
+    `**Total potential savings:** ~${summary.totalPotentialSavings} tokens\n`
+  ];
+
+  if (analyses.length === 0) {
+    lines.push('✅ No files need optimization.');
+    return lines.join('\n');
+  }
+
+  const exceeded = analyses.filter(a => a.exceeded);
+  if (exceeded.length > 0) {
+    lines.push('### ⚠️ Files Exceeding Limits\n');
+    for (const a of exceeded) {
+      const relativePath = normalizePath(relative(rootDir, a.file));
+      const overBy = a.tokens - a.limit;
+      lines.push(`#### \`${relativePath}\``);
+      lines.push(`- **Tokens:** ${a.tokens} / ${a.limit} (over by ${overBy})`);
+      lines.push(`- **Potential savings:** ~${a.potentialSavings} tokens\n`);
+      
+      if (a.suggestions.length > 0) {
+        lines.push('| Line | Issue | Suggestion | Savings |');
+        lines.push('|------|-------|------------|---------|');
+        for (const s of a.suggestions) {
+          lines.push(`| ${s.line} | ${s.issue} | ${s.suggestion} | ~${s.estimatedSavings} |`);
+        }
+        lines.push('');
+      }
+    }
+  }
+
+  const withinLimit = analyses.filter(a => !a.exceeded && a.suggestions.length > 0);
+  if (withinLimit.length > 0) {
+    lines.push('### 💡 Files With Optimization Opportunities\n');
+    for (const a of withinLimit) {
+      const relativePath = normalizePath(relative(rootDir, a.file));
+      lines.push(`#### \`${relativePath}\``);
+      lines.push(`- **Tokens:** ${a.tokens} / ${a.limit}`);
+      lines.push(`- **Potential savings:** ~${a.potentialSavings} tokens\n`);
+      
+      if (a.suggestions.length > 0) {
+        lines.push('| Line | Issue | Suggestion | Savings |');
+        lines.push('|------|-------|------------|---------|');
+        for (const s of a.suggestions) {
+          lines.push(`| ${s.line} | ${s.issue} | ${s.suggestion} | ~${s.estimatedSavings} |`);
+        }
+        lines.push('');
+      }
+    }
+  }
+
+  return lines.join('\n');
+}
+
 export function suggest(rootDir: string, args: string[]): void {
-  const { positionals } = parseArgs({
+  const { values, positionals } = parseArgs({
     args,
-    options: {},
+    options: {
+      json: { type: 'boolean', default: false },
+      markdown: { type: 'boolean', default: false }
+    },
     strict: false,
     allowPositionals: true
   });
+
+  const jsonOutput = values.json ?? false;
+  const markdownOutput = values.markdown ?? false;
 
   const targetArg = positionals[0];
   const config = loadConfig(rootDir);
@@ -255,11 +330,17 @@ export function suggest(rootDir: string, args: string[]): void {
   }
   
   if (files.length === 0) {
-    console.log('No markdown files found.');
+    if (jsonOutput) {
+      console.log(JSON.stringify({ files: [], summary: null }, null, 2));
+    } else {
+      console.log('No markdown files found.');
+    }
     return;
   }
   
-  console.log(`\n🔍 Analyzing ${files.length} file(s)...\n`);
+  if (!jsonOutput && !markdownOutput) {
+    console.log(`\n🔍 Analyzing ${files.length} file(s)...\n`);
+  }
   
   const analyses: (FileAnalysis & { limit: number; exceeded: boolean })[] = [];
   let errorCount = 0;
@@ -273,7 +354,7 @@ export function suggest(rootDir: string, args: string[]): void {
     }
   }
   
-  if (errorCount > 0) {
+  if (errorCount > 0 && !jsonOutput) {
     console.error(`⚠️  Failed to analyze ${errorCount} file(s)\n`);
   }
   
@@ -286,25 +367,55 @@ export function suggest(rootDir: string, args: string[]): void {
   const toShow = files.length === 1 
     ? analyses 
     : [...exceeded, ...withinLimit];
+
+  const totalSavings = analyses.reduce((sum, a) => sum + a.potentialSavings, 0);
+  const filesWithSuggestions = analyses.filter(a => a.suggestions.length > 0).length;
+  const fixableCount = exceeded.filter(a => 
+    a.potentialSavings >= (a.tokens - a.limit)
+  ).length;
+
+  const summary = {
+    filesAnalyzed: analyses.length,
+    filesExceeded: exceeded.length,
+    filesWithSuggestions,
+    totalPotentialSavings: totalSavings,
+    fixableBysuggestions: fixableCount
+  };
+
+  if (jsonOutput) {
+    const report = {
+      timestamp: new Date().toISOString(),
+      summary,
+      files: toShow.map(a => ({
+        file: normalizePath(relative(rootDir, a.file)),
+        tokens: a.tokens,
+        limit: a.limit,
+        exceeded: a.exceeded,
+        overBy: a.exceeded ? a.tokens - a.limit : 0,
+        potentialSavings: a.potentialSavings,
+        suggestions: a.suggestions
+      }))
+    };
+    console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  if (markdownOutput) {
+    console.log(formatMarkdownSuggestReport(toShow, summary, rootDir));
+    return;
+  }
   
   toShow.forEach(a => printAnalysis(a, rootDir));
   
   if (files.length > 1) {
-    const totalSavings = analyses.reduce((sum, a) => sum + a.potentialSavings, 0);
-    const filesWithSuggestions = analyses.filter(a => a.suggestions.length > 0).length;
-    
     console.log(`\n${'═'.repeat(60)}`);
     console.log(`📊 SUMMARY`);
-    console.log(`   Files analyzed: ${analyses.length}`);
-    console.log(`   Files exceeding limits: ${exceeded.length}${exceeded.length > 0 ? ' ⚠️' : ''}`);
-    console.log(`   Files with suggestions: ${filesWithSuggestions}`);
-    console.log(`   Total potential savings: ~${totalSavings} tokens`);
+    console.log(`   Files analyzed: ${summary.filesAnalyzed}`);
+    console.log(`   Files exceeding limits: ${summary.filesExceeded}${summary.filesExceeded > 0 ? ' ⚠️' : ''}`);
+    console.log(`   Files with suggestions: ${summary.filesWithSuggestions}`);
+    console.log(`   Total potential savings: ~${summary.totalPotentialSavings} tokens`);
     
     if (exceeded.length > 0) {
-      const fixableCount = exceeded.filter(a => 
-        a.potentialSavings >= (a.tokens - a.limit)
-      ).length;
-      
       if (fixableCount > 0) {
         console.log(`\n   ✅ ${fixableCount} file(s) can be brought under limits with suggestions`);
       }

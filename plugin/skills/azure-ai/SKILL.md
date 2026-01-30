@@ -1,71 +1,31 @@
 ---
 name: azure-ai
-description: Azure AI Services including AI Search, Speech, Foundry, OpenAI, and Document Intelligence. Provides capabilities for full-text/vector/hybrid search, speech-to-text, text-to-speech, AI models, agents, and prompt flows.
+description: Azure AI Services including AI Search, Speech, Foundry, OpenAI, and Document Intelligence for search, speech, and AI model capabilities.
 ---
 
 # Azure AI Services
 
-## Services
+## Services Overview
 
-| Service | Use When | MCP Tools | CLI |
-|---------|----------|-----------|-----|
-| AI Search | Full-text, vector, hybrid search | `azure__search` | `az search` |
-| Speech | Speech-to-text, text-to-speech | `azure__speech` | - |
-| Foundry | AI models, agents, prompt flows | `azure__foundry` | `az ml` |
-| OpenAI | GPT models, embeddings, DALL-E | - | `az cognitiveservices` |
-| Document Intelligence | Form extraction, OCR | - | - |
+| Service | Use When | MCP Tool |
+|---------|----------|----------|
+| AI Search | Full-text, vector, hybrid search | `azure__search` |
+| Speech | Speech-to-text, text-to-speech | `azure__speech` |
+| Foundry | AI models, agents, prompt flows | `azure__foundry` |
+| OpenAI | GPT models, embeddings | `az cognitiveservices` |
 
-## MCP Server (Preferred)
+## MCP Commands
 
-When Azure MCP is enabled:
+**AI Search**: `search_index_list`, `search_index_get`, `search_query`
 
-### AI Search
-- `azure__search` with command `search_index_list` - List search indexes
-- `azure__search` with command `search_index_get` - Get index details
-- `azure__search` with command `search_query` - Query search index
+**Speech**: `speech_transcribe`, `speech_synthesize`
 
-### Speech
-- `azure__speech` with command `speech_transcribe` - Speech to text
-- `azure__speech` with command `speech_synthesize` - Text to speech
+**Foundry**: `foundry_model_list`, `foundry_deployment_list`, `foundry_agent_list`
 
-### Foundry
-- `azure__foundry` with command `foundry_model_list` - List AI models
-- `azure__foundry` with command `foundry_deployment_list` - List deployments
-- `azure__foundry` with command `foundry_agent_list` - List AI agents
+**Setup:** Run `/azure:setup` or `/mcp` to enable.
 
-**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+## External Documentation
 
-## AI Search Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| Full-text search | Linguistic analysis, stemming |
-| Vector search | Semantic similarity with embeddings |
-| Hybrid search | Combined keyword + vector |
-| AI enrichment | Entity extraction, OCR, sentiment |
-
-## Speech Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| Speech-to-text | Real-time and batch transcription |
-| Text-to-speech | Neural voices, SSML support |
-| Speaker diarization | Identify who spoke when |
-| Custom models | Domain-specific vocabulary |
-
-## Foundry Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| Model catalog | GPT-4, Llama, Mistral, custom |
-| AI agents | Multi-turn, tool calling, RAG |
-| Prompt flow | Orchestration, evaluation |
-| Fine-tuning | Custom model training |
-
-## Service Details
-
-For deep documentation on specific services:
-
-- AI Search indexing and queries -> [Azure AI Search documentation](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
-- Speech transcription patterns -> [Azure AI Speech documentation](https://learn.microsoft.com/azure/ai-services/speech-service/overview)
-- Foundry agents and flows -> [Azure AI Foundry documentation](https://learn.microsoft.com/azure/ai-studio/what-is-ai-studio)
+- [AI Search](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
+- [Speech](https://learn.microsoft.com/azure/ai-services/speech-service/overview)
+- [Foundry](https://learn.microsoft.com/azure/ai-studio/what-is-ai-studio)
