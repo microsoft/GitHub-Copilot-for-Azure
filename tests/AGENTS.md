@@ -18,13 +18,13 @@ Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 - What Azure services/tools it references
 
 ### Step 3: Update test files
-In each test file (`unit.test.js`, `triggers.test.js`), change:
-```javascript
+In each test file (`unit.test.ts`, `triggers.test.ts`), change:
+```typescript
 const SKILL_NAME = '{skill-name}';  // Must match the folder name exactly
 ```
 
 ### Step 4: Generate trigger prompts
-Based on the skill's description and content, add to `triggers.test.js`:
+Based on the skill's description and content, add to `triggers.test.ts`:
 
 **shouldTriggerPrompts** (at least 5) - prompts that mention:
 - The skill's primary Azure service (e.g., "Redis", "Cosmos DB", "Key Vault")
@@ -37,7 +37,7 @@ Based on the skill's description and content, add to `triggers.test.js`:
 - Different Azure services not covered by this skill
 
 ### Step 5: Add skill-specific unit tests
-In `unit.test.js`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
+In `unit.test.ts`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
 
 ### Step 6: Run and verify
 ```bash
@@ -69,8 +69,8 @@ This testing framework uses **Jest** to validate skill behavior across three tes
 
 | File | Purpose |
 |------|---------|
-| `unit.test.js` | Tests isolated skill logic and metadata |
-| `triggers.test.js` | Tests skill activation on prompts |
+| `unit.test.ts` | Tests isolated skill logic and metadata |
+| `triggers.test.ts` | Tests skill activation on prompts |
 | `fixtures/*.json` | Test data and mock responses |
 
 ### Directory Structure
@@ -95,7 +95,7 @@ Unit tests validate skill metadata and any extractable logic.
 
 Every skill should have these basic unit tests:
 
-```javascript
+```typescript
 describe('Skill Metadata', () => {
   test('has valid SKILL.md with required fields', () => {
     expect(skill.metadata.name).toBe(SKILL_NAME);
@@ -115,7 +115,7 @@ Trigger tests verify that prompts correctly activate (or don't activate) your sk
 
 Use `test.each` for testing multiple prompts:
 
-```javascript
+```typescript
 const shouldTriggerPrompts = [
   'How do I deploy to Azure App Service?',
   'Configure my Azure storage account',
@@ -135,7 +135,7 @@ test.each(shouldTriggerPrompts)(
 
 Snapshots catch unintended changes to trigger behavior:
 
-```javascript
+```typescript
 test('skill keywords match snapshot', () => {
   expect(triggerMatcher.getKeywords()).toMatchSnapshot();
 });
@@ -157,7 +157,7 @@ npm run update:snapshots -- --testPathPattern=your-skill-name
 
 ### Loading Fixtures
 
-```javascript
+```typescript
 const { loadFixtures, loadFixture } = require('../utils/fixtures');
 
 // Load all fixtures for a skill
