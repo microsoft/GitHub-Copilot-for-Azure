@@ -219,7 +219,7 @@ az webapp identity show --name <app> --resource-group <rg>
 
 2. Ensure the correct role name is used (must match exactly what was created in PostgreSQL)
 
-3. Check application code uses Azure Identity SDK - see `examples/` folder
+3. Check application code uses Azure Identity SDK
 
 4. Verify managed identity object ID matches what's in PostgreSQL:
 ```bash
