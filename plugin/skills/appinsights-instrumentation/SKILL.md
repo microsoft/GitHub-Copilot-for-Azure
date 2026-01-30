@@ -1,6 +1,11 @@
 ---
 name: appinsights-instrumentation
-description: 'Instrument a webapp to send useful telemetry data to Azure App Insights'
+description: |
+  Instrument web apps to send telemetry to Azure Application Insights. USE FOR: 
+  "add App Insights", "instrument my app", "set up monitoring", "add telemetry", 
+  "track requests", "ASP.NET Core telemetry", "Node.js monitoring". DO NOT USE FOR: 
+  querying logs (use azure-observability), creating alerts, or cost analysis.
+compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
 ---
 
 # AppInsights instrumentation
