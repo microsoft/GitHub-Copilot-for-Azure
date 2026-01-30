@@ -2,11 +2,14 @@
  * Agent Runner Utility
  * 
  * Executes real Copilot agent sessions for integration testing.
- * Adapted from PR #617's runner.ts pattern.
+ * Adapted from the project's existing runner.ts pattern.
  * 
  * Prerequisites:
  * - Install Copilot CLI: npm install -g @github/copilot-cli
  * - Login: Run `copilot` and follow prompts to authenticate
+ * 
+ * Security Note: The config.setup callback receives the workspace path
+ * and executes with full process permissions. Only use with trusted test code.
  */
 
 const fs = require('fs');
@@ -153,13 +156,17 @@ function isSkillInvoked(agentMetadata, skillName) {
 /**
  * Check if all tool calls for a given tool were successful
  * @param {AgentMetadata} agentMetadata - Captured metadata
- * @param {string} toolName - Name of the tool to check
+ * @param {string} [toolName] - Name of the tool to check; if omitted, checks all tools
  * @returns {boolean}
  */
-function areToolCallsSuccess(agentMetadata, toolName) {
-  const executionStartEvents = agentMetadata.events
-    .filter(event => event.type === 'tool.execution_start')
-    .filter(event => event.data.toolName === toolName);
+function areToolCallsSuccess(agentMetadata, toolName = null) {
+  let executionStartEvents = agentMetadata.events
+    .filter(event => event.type === 'tool.execution_start');
+
+  if (toolName != null) {
+    executionStartEvents = executionStartEvents
+      .filter(event => event.data.toolName === toolName);
+  }
   
   const executionCompleteEvents = agentMetadata.events
     .filter(event => event.type === 'tool.execution_complete');
