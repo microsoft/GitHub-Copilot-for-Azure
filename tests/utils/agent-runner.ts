@@ -50,8 +50,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   // Declare client and session outside try block to ensure cleanup in finally
-  let client;
-  let session;
+  let client: CopilotClient | undefined;
+  let session: Awaited<ReturnType<CopilotClient['createSession']>> | undefined;
 
   try {
     // Run optional setup
