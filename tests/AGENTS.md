@@ -185,55 +185,11 @@ const prompts = loadFixture('azure-validation', 'prompts');
 
 ---
 
-## Writing Integration Tests
-
-Integration tests run a real Copilot agent session to verify skill behavior.
-
-### Prerequisites
-
-1. Install Copilot CLI: `npm install -g @github/copilot-cli`
-2. Authenticate: Run `copilot` and follow prompts
-
-### Agent Runner Helpers
-
-| Helper | Purpose |
-|--------|---------|
-| `run(config)` | Execute agent session with prompt |
-| `isSkillInvoked(metadata, skillName)` | Check if skill was invoked |
-| `areToolCallsSuccess(metadata, toolName)` | Check if tool calls succeeded |
-| `doesAssistantMessageIncludeKeyword(metadata, keyword)` | Search response for keyword |
-| `shouldSkipIntegrationTests()` | Check if tests should be skipped |
-
-### Test with Workspace Setup
-
-```javascript
-test('works with project files', async () => {
-  const agentMetadata = await run({
-    setup: async (workspace) => {
-      const fs = require('fs');
-      const path = require('path');
-      fs.writeFileSync(path.join(workspace, 'main.bicep'), 'resource ...');
-    },
-    prompt: 'Validate my Bicep file'
-  });
-
-  expect(isSkillInvoked(agentMetadata, 'azure-validation')).toBe(true);
-});
-```
-
----
-
 ## Running Tests
 
 ### Local Development
 
 ```bash
-# Unit and trigger tests (fast, no auth)
-npm run test:unit
-
-# Integration tests (requires Copilot CLI auth)
-npm run test:integration
-
 # All tests
 npm test
 

@@ -1,0 +1,23 @@
+{
+  "name": "@github-copilot-for-azure/scripts",
+  "version": "1.0.0",
+  "description": "Development tools for the GitHub Copilot for Azure repository",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "tokens": "node --import tsx src/tokens/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^25.1.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

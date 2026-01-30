@@ -1,0 +1,68 @@
+/** @type {import('jest').Config} */
+const config = {
+  // Root directory for tests
+  rootDir: '.',
+  
+  // Test file patterns
+  testMatch: [
+    '**/*.test.js',
+    '**/*.test.ts'
+  ],
+  
+  // Ignore template folder in test runs (it's just examples)
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/_template/'
+  ],
+  
+  // Setup file for shared utilities
+  setupFilesAfterEnv: ['./jest.setup.js'],
+  
+  // Coverage configuration
+  collectCoverageFrom: [
+    '../plugin/skills/**/*.js',
+    '../plugin/skills/**/*.ts',
+    '!**/node_modules/**',
+    '!**/_template/**'
+  ],
+  coverageDirectory: './coverage',
+  coverageReporters: ['text', 'text-summary', 'html', 'json-summary'],
+  
+  // Reporter configuration for CI/Console/PR readability
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: './reports',
+      outputName: 'junit.xml',
+      ancestorSeparator: ' › ',
+      classNameTemplate: '{classname}',
+      titleTemplate: '{title}'
+    }]
+  ],
+  
+  // Verbose output for better readability
+  verbose: true,
+  
+  // Fail fast in CI
+  bail: process.env.CI ? 1 : 0,
+  
+  // Test timeout (skills may have async operations)
+  testTimeout: 10000,
+  
+  // Clear mocks between tests
+  clearMocks: true,
+  
+  // Module paths for easier imports
+  moduleNameMapper: {
+    '^@utils/(.*)$': '<rootDir>/utils/$1',
+    '^@fixtures/(.*)$': '<rootDir>/$1/fixtures'
+  },
+  
+  // Display individual test results
+  displayName: {
+    name: 'SKILLS',
+    color: 'blue'
+  }
+};
+
+module.exports = config;

@@ -92,12 +92,20 @@ jobs:
 
       - name: Test Report Summary
         if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Jest Results - All Skills
-          path: tests/reports/junit.xml
-          reporter: jest-junit
-          fail-on-error: true
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/junit.xml ]; then
+            # Parse junit.xml for summary
+            TESTS=$(grep -o 'tests="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')
+            FAILURES=$(grep -o 'failures="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')
+            ERRORS=$(grep -o 'errors="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Tests | $TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Failures | $FAILURES |" >> $GITHUB_STEP_SUMMARY
+            echo "| Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Coverage Summary
         if: always() && (inputs.coverage == true || github.event_name == 'push')
@@ -148,8 +156,15 @@ jobs:
         run: npm run coverage:grid
 
       - name: Commit README updates
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'docs: update skills coverage grid [skip ci]'
-          file_pattern: 'tests/README.md'
-          branch: main
+        continue-on-error: true
+        working-directory: .
+        run: |
+          if git diff --quiet tests/README.md; then
+            echo "No changes to README.md"
+            exit 0
+          fi
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add tests/README.md
+          git commit -m "docs: update skills coverage grid [skip ci]"
+          git push || echo "::warning::Could not push changes - branch protection may be enabled"

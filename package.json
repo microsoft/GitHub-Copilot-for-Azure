@@ -1,0 +1,14 @@
+{
+  "name": "github-copilot-for-azure",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Copilot plugin for Azure",
+  "scripts": {
+    "tokens": "cd scripts && npm run tokens --",
+    "test": "cd scripts && npm test",
+    "postinstall": "cd scripts && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

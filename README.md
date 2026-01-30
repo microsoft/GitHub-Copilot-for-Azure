@@ -23,13 +23,6 @@ You can use this repository to:
 * Upvote a feature or request a new one.
 * Search for potential work-arounds to problems you’re having.
 * Provide feedback on using GitHub Copilot for Azure.
+* Add features to our Copilot CLI and Claude plugins.
 
-### Contributing Skills
-
-New skills can be placed under `plugin/skills`.
-
-If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill:
-- Provide links to documentation
-- Describe any MCP or command line tools that should be included
-
-The only difference between the two agents is that the Creator expects you already know what scenarios the skill should address, while the Brainstormer will come up with scenarios for you.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to contribute, including local development setup.
