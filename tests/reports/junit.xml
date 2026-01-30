@@ -1,124 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="124" failures="0" errors="0" time="3.785">
-  <testsuite name="azure-validation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:21:40" time="3.03" tests="11">
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Metadata" name="description mentions validation or pre-deployment" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="has substantive content" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="contains naming constraints section" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents storage account limits" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="documents key vault limits" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="includes validation checklist" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Skill Content" name="references MCP tools" time="0.002">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: valid names" time="0.007">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="storage account: invalid names" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Unit Tests › Naming Rules Validation" name="key vault: valid names" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="appinsights-instrumentation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:21:40" time="3.086" tests="23">
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my webapp to send telemetry to App Insights&quot;" time="0.004">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I instrument my app with Azure App Insights?&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add AppInsights instrumentation to my web application&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add App Insights instrumentation to my Node.js app&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Application Insights for my Python webapp&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up telemetry monitoring in Azure&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my application to send data to App Insights&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add observability to my Azure web application&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How to enable App Insights auto-instrumentation?&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure telemetry for my Azure App Service&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use AWS CloudWatch?&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure logging in Spring Boot&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Set up Datadog monitoring&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.002">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="is case insensitive for Azure and App Insights terms" time="0.009">
-    </testcase>
-  </testsuite>
-  <testsuite name="azure-validation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:21:40" time="3.074" tests="22">
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate my Azure storage account name&quot;" time="0.006">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the naming constraints for Azure Key Vault?&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Pre-deployment validation for my Bicep template&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me validate Azure resource names before deploying&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the character limits for Azure resources?&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Check my Bicep file for naming errors&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate naming conventions for Azure deployment&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Run preflight checks before Azure deployment&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Azure storage naming validation rules&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should Trigger" name="triggers on: &quot;Validate Azure Key Vault name length&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS S3 bucket naming&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.003">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0.001">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
-    </testcase>
-    <testcase classname="azure-validation - Trigger Tests › Edge Cases" name="is case insensitive for Azure terms" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="azure-ai/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:21:43" time="0.212" tests="37">
+<testsuites name="jest tests" tests="55" failures="0" errors="0" time="0.97">
+  <testsuite name="azure-ai/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:25:07" time="0.875" tests="37">
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I set up Azure AI Search?&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me create a search index in Azure&quot;" time="0">
@@ -135,21 +17,21 @@
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Text to speech with Azure AI&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Transcribe audio with Azure Speech&quot;" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Transcribe audio with Azure Speech&quot;" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me with Azure speech synthesis&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;What is Azure AI Foundry?&quot;" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;What is Azure AI Foundry?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Deploy a model with Azure AI Foundry&quot;" time="0">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Deploy a model with Azure AI Foundry&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Create an AI agent in Azure Foundry&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I use prompt flows in Azure?&quot;" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I use prompt flows in Azure?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;List AI models in Azure Foundry&quot;" time="0">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;List AI models in Azure Foundry&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Deploy GPT-4 on Azure&quot;" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Deploy GPT-4 on Azure&quot;" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Use Azure OpenAI for embeddings&quot;" time="0">
     </testcase>
@@ -161,15 +43,15 @@
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Help me with Azure cognitive services&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Azure AI services&quot;" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Azure AI services&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
+    <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS Bedrock&quot;" time="0.013">
+    <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS Bedrock&quot;" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy to Google Cloud AI&quot;" time="0">
     </testcase>
@@ -177,61 +59,33 @@
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker?&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Create a Kubernetes cluster&quot;" time="0">
+    <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Create a Kubernetes cluster&quot;" time="0.003">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with Azure Virtual Machines&quot;" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure Azure Storage Account&quot;" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.002">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
     </testcase>
-    <testcase classname="azure-ai - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
+    <testcase classname="azure-ai - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
     </testcase>
     <testcase classname="azure-ai - Trigger Tests › Edge Cases" name="is case insensitive for Azure AI terms" time="0">
     </testcase>
   </testsuite>
-  <testsuite name="appinsights-instrumentation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:21:43" time="0.227" tests="13">
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description mentions instrumentation or telemetry" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="has substantive content" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="contains when to use section" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents prerequisites" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents guidelines section" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions auto-instrumentation" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references manual instrumentation guides" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions creating AppInsights resource" time="0.015">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references example files" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists ASP.NET Core as supported" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists Node.js as supported" time="0.002">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists Python as supported" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="azure-ai/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:21:43" time="0.195" tests="18">
-    <testcase classname="azure-ai - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0">
+  <testsuite name="azure-ai/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:25:08" time="0.051" tests="18">
+    <testcase classname="azure-ai - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.001">
     </testcase>
     <testcase classname="azure-ai - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0">
     </testcase>
     <testcase classname="azure-ai - Unit Tests › Skill Metadata" name="description mentions Azure AI services" time="0">
     </testcase>
-    <testcase classname="azure-ai - Unit Tests › Skill Content" name="has substantive content" time="0.001">
+    <testcase classname="azure-ai - Unit Tests › Skill Content" name="has substantive content" time="0">
     </testcase>
-    <testcase classname="azure-ai - Unit Tests › Skill Content" name="contains AI Search section" time="0">
+    <testcase classname="azure-ai - Unit Tests › Skill Content" name="contains AI Search section" time="0.001">
     </testcase>
     <testcase classname="azure-ai - Unit Tests › Skill Content" name="contains Speech section" time="0">
     </testcase>
@@ -249,13 +103,13 @@
     </testcase>
     <testcase classname="azure-ai - Unit Tests › Service Coverage" name="lists AI Search MCP commands" time="0">
     </testcase>
-    <testcase classname="azure-ai - Unit Tests › Service Coverage" name="lists Speech MCP commands" time="0">
+    <testcase classname="azure-ai - Unit Tests › Service Coverage" name="lists Speech MCP commands" time="0.001">
     </testcase>
-    <testcase classname="azure-ai - Unit Tests › Service Coverage" name="lists Foundry MCP commands" time="0.001">
+    <testcase classname="azure-ai - Unit Tests › Service Coverage" name="lists Foundry MCP commands" time="0.004">
     </testcase>
     <testcase classname="azure-ai - Unit Tests › Documentation Links" name="includes Azure AI Search documentation link" time="0">
     </testcase>
-    <testcase classname="azure-ai - Unit Tests › Documentation Links" name="includes Azure AI Speech documentation link" time="0">
+    <testcase classname="azure-ai - Unit Tests › Documentation Links" name="includes Azure AI Speech documentation link" time="0.001">
     </testcase>
     <testcase classname="azure-ai - Unit Tests › Documentation Links" name="includes Azure AI Foundry documentation link" time="0">
     </testcase>

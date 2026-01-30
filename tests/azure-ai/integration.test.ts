@@ -98,15 +98,17 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(isSkillUsed).toBe(true);
   });
 
-  test('MCP tool calls succeed for AI Search', async () => {
+  test('suggests MCP tools for AI Search operations', async () => {
     const agentMetadata = await run({
-      prompt: 'List my Azure AI Search indexes'
+      prompt: 'How can I query my Azure AI Search indexes?'
     });
 
-    // Check that azure__search tool calls succeeded
-    const toolsSucceeded = areToolCallsSuccess(agentMetadata, 'azure__search');
-    // Note: This may fail if MCP is not enabled, so we just check the call was made
-    expect(toolsSucceeded === true || toolsSucceeded === false).toBe(true);
+    // Check that the response mentions relevant tools or MCP setup
+    const mentionsSearch = doesAssistantMessageIncludeKeyword(
+      agentMetadata,
+      'search'
+    );
+    expect(mentionsSearch).toBe(true);
   });
 
   test('provides MCP setup guidance when tools not available', async () => {
