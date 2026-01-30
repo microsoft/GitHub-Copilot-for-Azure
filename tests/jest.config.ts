@@ -12,7 +12,8 @@ const config: Config = {
   
   // Test file patterns
   testMatch: [
-    '**/*.test.ts'
+    '**/*.test.ts',
+    '**/*.test.js'
   ],
   
   // Ignore template folder in test runs (it's just examples)
