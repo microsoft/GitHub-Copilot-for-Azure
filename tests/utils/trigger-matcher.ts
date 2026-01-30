@@ -5,24 +5,36 @@
  * the skill's description and keywords.
  */
 
+import { LoadedSkill } from './skill-loader';
+
+export interface TriggerResult {
+  triggered: boolean;
+  confidence: number;
+  reason: string;
+  matchedKeywords: string[];
+}
+
+export interface PromptTestResult extends TriggerResult {
+  prompt: string;
+}
+
 /**
  * TriggerMatcher class for testing skill activation
  */
-class TriggerMatcher {
-  /**
-   * @param {object} skill - Loaded skill object with metadata and content
-   */
-  constructor(skill) {
+export class TriggerMatcher {
+  private skill: LoadedSkill;
+  private keywords: string[];
+
+  constructor(skill: LoadedSkill) {
     this.skill = skill;
     this.keywords = this._extractKeywords();
   }
 
   /**
    * Extract trigger keywords from skill metadata and content
-   * @returns {string[]}
    */
-  _extractKeywords() {
-    const keywords = new Set();
+  private _extractKeywords(): string[] {
+    const keywords = new Set<string>();
     
     // Extract from name (split on hyphens)
     if (this.skill.metadata.name) {
@@ -62,18 +74,15 @@ class TriggerMatcher {
 
   /**
    * Get extracted keywords for snapshot testing
-   * @returns {string[]}
    */
-  getKeywords() {
+  getKeywords(): string[] {
     return this.keywords.sort();
   }
 
   /**
    * Test if a prompt should trigger this skill
-   * @param {string} prompt - User prompt to test
-   * @returns {{triggered: boolean, confidence: number, reason: string, matchedKeywords: string[]}}
    */
-  shouldTrigger(prompt) {
+  shouldTrigger(prompt: string): TriggerResult {
     if (!prompt || typeof prompt !== 'string') {
       return {
         triggered: false,
@@ -84,7 +93,7 @@ class TriggerMatcher {
     }
 
     const promptLower = prompt.toLowerCase();
-    const matchedKeywords = [];
+    const matchedKeywords: string[] = [];
 
     // Check for keyword matches
     for (const keyword of this.keywords) {
@@ -111,10 +120,8 @@ class TriggerMatcher {
 
   /**
    * Test multiple prompts and return results
-   * @param {string[]} prompts - Array of prompts to test
-   * @returns {Array<{prompt: string, triggered: boolean, confidence: number}>}
    */
-  testPrompts(prompts) {
+  testPrompts(prompts: string[]): PromptTestResult[] {
     return prompts.map(prompt => ({
       prompt,
       ...this.shouldTrigger(prompt)
@@ -124,14 +131,7 @@ class TriggerMatcher {
 
 /**
  * Create a trigger matcher for a skill
- * @param {object} skill - Loaded skill object
- * @returns {TriggerMatcher}
  */
-function createTriggerMatcher(skill) {
+export function createTriggerMatcher(skill: LoadedSkill): TriggerMatcher {
   return new TriggerMatcher(skill);
 }
-
-module.exports = {
-  TriggerMatcher,
-  createTriggerMatcher
-};
