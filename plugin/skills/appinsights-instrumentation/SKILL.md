@@ -1,6 +1,6 @@
 ---
 name: appinsights-instrumentation
-description: 'Instrument a webapp to send useful telemetry data to Azure App Insights'
+description: "Instrument a webapp to send telemetry data to Azure Application Insights for observability, monitoring, and diagnostics. USE FOR: add Application Insights, set up telemetry, instrument my app, enable APM, add monitoring to webapp, distributed tracing, track requests and exceptions, send telemetry to Azure. DO NOT USE FOR: querying logs or KQL (use azure-observability), creating alerts or dashboards (use azure-observability), deploying apps (use azure-deploy)."
 ---
 
 # AppInsights instrumentation
