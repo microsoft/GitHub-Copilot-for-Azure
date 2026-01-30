@@ -1,6 +1,9 @@
 ---
 name: azure-deployment-preflight
-description: Performs comprehensive preflight validation of Bicep deployments to Azure, including template syntax validation, what-if analysis, and permission checks. Use this skill before any deployment to Azure to preview changes, identify potential issues, and ensure the deployment will succeed. Activate when users mention deploying to Azure, validating Bicep files, checking deployment permissions, previewing infrastructure changes, running what-if, or preparing for azd provision.
+description: |
+  Performs comprehensive preflight validation of Bicep deployments to Azure, including template syntax validation, what-if analysis, and permission checks to preview changes and identify potential issues before deployment.
+  USE FOR: validating Bicep files, checking deployment permissions, running what-if analysis, previewing infrastructure changes, pre-deployment validation, azd provision checks, template syntax validation, deployment readiness checks
+  DO NOT USE FOR: actual deployments (use azure-deploy), creating Bicep files (use azure-create-app), monitoring deployed resources (use azure-observability), troubleshooting live resources (use azure-diagnostics)
 ---
 
 # Azure Deployment Preflight Validation
