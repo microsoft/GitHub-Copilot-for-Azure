@@ -107,7 +107,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     const skillDirectory = path.resolve(__dirname, '../../plugin/skills');
 
     session = await client.createSession({
-      model: 'claude-sonnet-4',
+      model: 'claude-sonnet-4.5',
       skillDirectories: [skillDirectory],
       mcpServers: {
         azure: {
