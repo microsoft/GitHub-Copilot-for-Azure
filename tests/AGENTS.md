@@ -40,13 +40,32 @@ Based on the skill's description and content, add to `triggers.test.js`:
 In `unit.test.js`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
 
 ### Step 6: Configure integration tests (optional)
-In `integration.test.js`, customize the prompts to test real agent behavior:
+In `integration.test.js`, customize the prompts to test real agent behavior.
+
+**Important:** Integration tests use dynamic SDK loading to handle ESM modules:
 ```javascript
+// Check if SDK is available before loading agent-runner
+let agentRunner = null;
+let sdkAvailable = false;
+
+try {
+  require.resolve('@github/copilot-sdk');
+  agentRunner = require('../utils/agent-runner');
+  sdkAvailable = true;
+} catch {
+  sdkAvailable = false;
+}
+
+const shouldSkip = () => !sdkAvailable || process.env.CI === 'true';
+
+// Then in tests:
 test('invokes skill for relevant prompt', async () => {
-  const agentMetadata = await run({
+  if (shouldSkip()) return;
+  
+  const agentMetadata = await agentRunner.run({
     prompt: 'Your test prompt that should trigger this skill'
   });
-  expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+  expect(agentRunner.isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 });
 ```
 
@@ -210,26 +229,33 @@ Integration tests run a real Copilot agent session to verify skill behavior.
 ### Basic Integration Test
 
 ```javascript
-const { 
-  run, 
-  isSkillInvoked, 
-  doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests 
-} = require('../utils/agent-runner');
+// Check if SDK is available before loading agent-runner (ESM module handling)
+let agentRunner = null;
+let sdkAvailable = false;
+
+try {
+  require.resolve('@github/copilot-sdk');
+  agentRunner = require('../utils/agent-runner');
+  sdkAvailable = true;
+} catch {
+  sdkAvailable = false;
+}
 
 const SKILL_NAME = 'azure-role-selector';
 
-// Skip in CI or when SKIP_INTEGRATION_TESTS is set
-const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+// Skip in CI, when SDK unavailable, or when SKIP_INTEGRATION_TESTS is set
+const shouldSkip = () => !sdkAvailable || process.env.CI === 'true' || process.env.SKIP_INTEGRATION_TESTS === 'true';
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describe(`${SKILL_NAME} - Integration Tests`, () => {
   test('invokes skill for relevant prompt', async () => {
-    const agentMetadata = await run({
+    if (shouldSkip()) return;
+    
+    const agentMetadata = await agentRunner.run({
       prompt: 'What role should I assign for blob storage access?'
     });
 
-    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
+    expect(agentRunner.isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    expect(agentRunner.doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
   });
 });
 ```
@@ -238,17 +264,18 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
 | Helper | Purpose |
 |--------|---------|
-| `run(config)` | Execute agent session with prompt |
-| `isSkillInvoked(metadata, skillName)` | Check if skill was invoked |
-| `areToolCallsSuccess(metadata, toolName)` | Check if tool calls succeeded |
-| `doesAssistantMessageIncludeKeyword(metadata, keyword)` | Search response for keyword |
-| `shouldSkipIntegrationTests()` | Check if tests should be skipped |
+| `agentRunner.run(config)` | Execute agent session with prompt |
+| `agentRunner.isSkillInvoked(metadata, skillName)` | Check if skill was invoked |
+| `agentRunner.areToolCallsSuccess(metadata, toolName)` | Check if tool calls succeeded |
+| `agentRunner.doesAssistantMessageIncludeKeyword(metadata, keyword)` | Search response for keyword |
 
 ### Test with Workspace Setup
 
 ```javascript
 test('works with project files', async () => {
-  const agentMetadata = await run({
+  if (shouldSkip()) return;
+  
+  const agentMetadata = await agentRunner.run({
     setup: async (workspace) => {
       const fs = require('fs');
       const path = require('path');
@@ -257,7 +284,7 @@ test('works with project files', async () => {
     prompt: 'Validate my Bicep file'
   });
 
-  expect(isSkillInvoked(agentMetadata, 'azure-validation')).toBe(true);
+  expect(agentRunner.isSkillInvoked(agentMetadata, 'azure-validation')).toBe(true);
 });
 ```
 
