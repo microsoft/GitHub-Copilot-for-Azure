@@ -1,8 +1,8 @@
-# Willie
+# Sensei
 
-> "Ach! There's nary a skill I've met yet I couldn't improve!" - Groundskeeper Willie
+> "A true master teaches not by telling, but by refining." - The Skill Sensei
 
-Willie automates the improvement of [Agent Skills](https://agentskills.io) frontmatter compliance using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
+Sensei automates the improvement of [Agent Skills](https://agentskills.io) frontmatter compliance using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with all tests passing.
 
 ## Table of Contents
 
@@ -31,7 +31,7 @@ This leads to **skill collision** - agents invoking the wrong skill for a given 
 
 ### The Solution
 
-Willie implements the "Ralph Wiggum" technique:
+Sensei implements the "Ralph Wiggum" technique:
 1. **Read** - Load the skill's current state and token count
 2. **Score** - Evaluate frontmatter compliance
 3. **Improve** - Add triggers, anti-triggers, compatibility
@@ -47,27 +47,27 @@ Willie implements the "Ralph Wiggum" technique:
 
 ### Single Skill
 ```
-Run willie on appinsights-instrumentation
+Run sensei on appinsights-instrumentation
 ```
 
 ### Single Skill (Fast Mode)
 ```
-Run willie on appinsights-instrumentation --skip-integration
+Run sensei on appinsights-instrumentation --skip-integration
 ```
 
 ### Multiple Skills
 ```
-Run willie on azure-security, azure-networking, azure-observability
+Run sensei on azure-security, azure-networking, azure-observability
 ```
 
 ### All Low-Adherence Skills
 ```
-Run willie on all Low-adherence skills
+Run sensei on all Low-adherence skills
 ```
 
 ### All Skills
 ```
-Run willie on all skills
+Run sensei on all skills
 ```
 
 ### Flags
@@ -118,7 +118,7 @@ npm test -- --testPathPattern=azure-validation
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  START: User invokes "Run willie on {skill-name}"       │
+│  START: User invokes "Run sensei on {skill-name}"       │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -366,16 +366,16 @@ const shouldNotTriggerPrompts = [
 # Undo last commit
 git reset --soft HEAD~1
 
-# Undo all willie commits for a skill
-git log --oneline | grep "willie: improve {skill-name}" | head -5
-git reset --hard {commit-before-willie}
+# Undo all sensei commits for a skill
+git log --oneline | grep "sensei: improve {skill-name}" | head -5
+git reset --hard {commit-before-sensei}
 ```
 
 ### Viewing Progress
 
 ```bash
-# See all willie improvements
-git log --oneline --grep="willie:"
+# See all sensei improvements
+git log --oneline --grep="sensei:"
 
 # See changes to a specific skill
 git log --oneline -p plugin/skills/{skill-name}/SKILL.md
@@ -385,9 +385,9 @@ git log --oneline -p plugin/skills/{skill-name}/SKILL.md
 
 ## Contributing
 
-### Improving the Willie Skill
+### Improving the Sensei Skill
 
-The Willie skill lives at `.github/skills/willie/`. To improve it:
+The Sensei skill lives at `.github/skills/sensei/`. To improve it:
 
 1. Edit `SKILL.md` for instruction changes
 2. Edit `references/*.md` for documentation changes
@@ -401,7 +401,7 @@ The Willie skill lives at `.github/skills/willie/`. To improve it:
 
 ### Reporting Issues
 
-If Willie produces unexpected results:
+If Sensei produces unexpected results:
 1. Note the skill name and starting state
 2. Capture the commit history: `git log --oneline -10`
 3. Open an issue with reproduction steps
@@ -417,7 +417,7 @@ If Willie produces unexpected results:
 
 ---
 
-*Willie - "If it's nae compliant, it will be!"*
+*Sensei - "The path to compliance begins with a single trigger."* 🥋
 
 ### Related Skills
 

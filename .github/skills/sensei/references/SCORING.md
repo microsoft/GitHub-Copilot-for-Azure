@@ -4,7 +4,7 @@ Detailed scoring criteria for evaluating skill frontmatter compliance.
 
 ## Overview
 
-Willie evaluates skills on two dimensions:
+Sensei evaluates skills on two dimensions:
 1. **Frontmatter Compliance** - Triggers, anti-triggers, description quality
 2. **Token Budget** - Staying within recommended limits
 

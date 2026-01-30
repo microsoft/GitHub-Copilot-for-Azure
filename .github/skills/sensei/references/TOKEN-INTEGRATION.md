@@ -1,6 +1,6 @@
 # Token Integration
 
-Willie integrates with the token management system to ensure skills stay within budget while improving frontmatter compliance.
+Sensei integrates with the token management system to ensure skills stay within budget while improving frontmatter compliance.
 
 ## Token Budgets
 
@@ -14,7 +14,7 @@ From the [skill-authoring](/.github/skills/skill-authoring) skill:
 
 ## Token Commands
 
-Willie uses the token CLI from `scripts/`:
+Sensei uses the token CLI from `scripts/`:
 
 ```bash
 # Count tokens in a file
@@ -80,7 +80,7 @@ For detailed optimization guidance, reference the [markdown-token-optimizer](/.g
 
 ## When to Apply Token Suggestions
 
-Willie captures token optimization suggestions but does **not** auto-apply them. The user decides:
+Sensei captures token optimization suggestions but does **not** auto-apply them. The user decides:
 
 **Apply immediately if:**
 - Skill exceeds soft limit (500 tokens)
@@ -101,7 +101,7 @@ Willie captures token optimization suggestions but does **not** auto-apply them.
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  WILLIE SUMMARY: appinsights-instrumentation                     ║
+║  SENSEI SUMMARY: appinsights-instrumentation                     ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  BEFORE                          AFTER                           ║
 ║  ──────                          ─────                           ║

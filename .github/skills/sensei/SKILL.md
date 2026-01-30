@@ -1,35 +1,35 @@
 ---
-name: willie
-description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run willie, willie help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, token optimization only (use markdown-token-optimizer), or non-frontmatter changes."
+name: sensei
+description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run sensei, sensei help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, token optimization only (use markdown-token-optimizer), or non-frontmatter changes."
 ---
 
-# Willie
+# Sensei
 
-> "Ach! There's nary a skill I've met yet I couldn't improve!" - Groundskeeper Willie
+> "A true master teaches not by telling, but by refining." - The Skill Sensei
 
 Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests, then checking token usage and prompting for action.
 
 ## Help
 
-When user says "willie help" or asks how to use willie, show this:
+When user says "sensei help" or asks how to use sensei, show this:
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  WILLIE - Skill Frontmatter Compliance Improver                  ║
+║  SENSEI - Skill Frontmatter Compliance Improver                  ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║                                                                  ║
 ║  USAGE:                                                          ║
-║    Run willie on <skill-name>              # Single skill        ║
-║    Run willie on <skill-name> --skip-integration  # Fast mode    ║
-║    Run willie on <skill1>, <skill2>, ...   # Multiple skills     ║
-║    Run willie on all Low-adherence skills  # Batch by score      ║
-║    Run willie on all skills                # All 26 skills       ║
+║    Run sensei on <skill-name>              # Single skill        ║
+║    Run sensei on <skill-name> --skip-integration  # Fast mode    ║
+║    Run sensei on <skill1>, <skill2>, ...   # Multiple skills     ║
+║    Run sensei on all Low-adherence skills  # Batch by score      ║
+║    Run sensei on all skills                # All 26 skills       ║
 ║                                                                  ║
 ║  EXAMPLES:                                                       ║
-║    Run willie on appinsights-instrumentation                     ║
-║    Run willie on azure-security --skip-integration               ║
-║    Run willie on azure-security, azure-networking                ║
-║    Run willie on all Low-adherence skills                        ║
+║    Run sensei on appinsights-instrumentation                     ║
+║    Run sensei on azure-security --skip-integration               ║
+║    Run sensei on azure-security, azure-networking                ║
+║    Run sensei on all Low-adherence skills                        ║
 ║                                                                  ║
 ║  WHAT IT DOES:                                                   ║
 ║    1. READ    - Load skill's SKILL.md, tests, and token count    ║
@@ -49,7 +49,7 @@ When user says "willie help" or asks how to use willie, show this:
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
 ║  MORE INFO:                                                      ║
-║    See .github/skills/willie/README.md for full documentation    ║
+║    See .github/skills/sensei/README.md for full documentation    ║
 ║                                                                  ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -65,22 +65,22 @@ When user says "willie help" or asks how to use willie, show this:
 
 ### Single Skill
 ```
-Run willie on azure-deploy
+Run sensei on azure-deploy
 ```
 
 ### Multiple Skills
 ```
-Run willie on azure-security, azure-networking, azure-observability
+Run sensei on azure-security, azure-networking, azure-observability
 ```
 
 ### By Adherence Level
 ```
-Run willie on all Low-adherence skills
+Run sensei on all Low-adherence skills
 ```
 
 ### All Skills
 ```
-Run willie on all skills
+Run sensei on all skills
 ```
 
 ## The Ralph Loop
@@ -139,7 +139,7 @@ Then update:
 
 **Commit Messages:**
 ```
-willie: improve {skill-name} frontmatter
+sensei: improve {skill-name} frontmatter
 ```
 
 ## Constraints

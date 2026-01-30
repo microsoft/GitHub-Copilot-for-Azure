@@ -219,7 +219,7 @@ description: |
 
 **Good commit message:**
 ```
-willie: improve appinsights-instrumentation frontmatter
+sensei: improve appinsights-instrumentation frontmatter
 
 - Added USE FOR trigger phrases: "add App Insights", "instrument my app", etc.
 - Added DO NOT USE FOR anti-triggers: querying logs, creating alerts
@@ -230,7 +230,7 @@ willie: improve appinsights-instrumentation frontmatter
 
 **Minimal commit message (also acceptable):**
 ```
-willie: improve appinsights-instrumentation frontmatter
+sensei: improve appinsights-instrumentation frontmatter
 ```
 
 ---
@@ -285,13 +285,13 @@ const shouldTriggerPrompts = [
 
 ---
 
-## Example 6: Willie Summary Output
+## Example 6: Sensei Summary Output
 
-After completing improvements, Willie displays a summary:
+After completing improvements, Sensei displays a summary:
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  WILLIE SUMMARY: appinsights-instrumentation                     ║
+║  SENSEI SUMMARY: appinsights-instrumentation                     ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  BEFORE                          AFTER                           ║
 ║  ──────                          ─────                           ║
@@ -318,7 +318,7 @@ When token optimizations are available:
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  WILLIE SUMMARY: azure-deploy                                    ║
+║  SENSEI SUMMARY: azure-deploy                                    ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  BEFORE                          AFTER                           ║
 ║  ──────                          ─────                           ║
@@ -345,13 +345,13 @@ When token optimizations are available:
 **If user chooses [I] Create issue:**
 
 Creates GitHub issue:
-- **Title:** `[willie] Token optimization suggestions for azure-deploy`
+- **Title:** `[sensei] Token optimization suggestions for azure-deploy`
 - **Labels:** `enhancement`, `skill-quality`
 - **Body:**
   ```markdown
   ## Summary
   
-  Willie improved `azure-deploy` frontmatter but identified token optimization opportunities.
+  Sensei improved `azure-deploy` frontmatter but identified token optimization opportunities.
   
   | Metric | Before | After |
   |--------|--------|-------|

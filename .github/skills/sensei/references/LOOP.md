@@ -202,9 +202,9 @@ cd tests && npm test -- --testPathPattern={skill-name}
 
 **Skip Integration Tests Flag:**
 
-When invoking Willie, you can skip integration tests for faster iteration:
+When invoking Sensei, you can skip integration tests for faster iteration:
 ```
-Run willie on azure-deploy --skip-integration
+Run sensei on azure-deploy --skip-integration
 ```
 
 This runs only unit and trigger tests, which are fast and don't require the Copilot SDK. Integration tests can be run separately after the loop completes.
@@ -250,7 +250,7 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 **Display format:**
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  WILLIE SUMMARY: {skill-name}                                    ║
+║  SENSEI SUMMARY: {skill-name}                                    ║
 ╠══════════════════════════════════════════════════════════════════╣
 ║  BEFORE                          AFTER                           ║
 ║  ──────                          ─────                           ║
@@ -280,7 +280,7 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 **Options:**
 ```
 Choose an action:
-  [C] Commit changes - Save improvements with "willie: improve {skill-name}"
+  [C] Commit changes - Save improvements with "sensei: improve {skill-name}"
   [I] Create issue   - Open GitHub issue with summary and suggestions
   [S] Skip           - Discard changes and move to next skill
 ```
@@ -289,7 +289,7 @@ Choose an action:
 ```bash
 git add plugin/skills/{skill-name}/SKILL.md
 git add tests/{skill-name}/
-git commit -m "willie: improve {skill-name} frontmatter
+git commit -m "sensei: improve {skill-name} frontmatter
 
 - Score: {before} → {after}
 - Tokens: {before} → {after}
@@ -299,7 +299,7 @@ git commit -m "willie: improve {skill-name} frontmatter
 
 **Issue flow:**
 Creates a GitHub issue with:
-- Title: `[willie] Token optimization suggestions for {skill-name}`
+- Title: `[sensei] Token optimization suggestions for {skill-name}`
 - Body: Summary table + unimplemented suggestions
 - Labels: `enhancement`, `skill-quality`
 
@@ -373,11 +373,11 @@ Skills: [skill-a, skill-b, skill-c]
 
 ## Progress Tracking
 
-Willie tracks progress via git commits. To review:
+Sensei tracks progress via git commits. To review:
 
 ```bash
-# See all willie improvements
-git log --oneline --grep="willie:"
+# See all sensei improvements
+git log --oneline --grep="sensei:"
 
 # See specific skill history
 git log --oneline -- plugin/skills/{skill-name}/SKILL.md
