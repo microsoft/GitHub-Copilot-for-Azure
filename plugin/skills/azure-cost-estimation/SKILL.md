@@ -270,7 +270,7 @@ Generate a markdown cost report with itemized breakdown.
 
 ### Report Structure
 
-See [references/COST-REPORT-TEMPLATE.md](references/COST-REPORT-TEMPLATE.md) for the complete report template and field descriptions.
+See [references/cost-report-template.md](references/cost-report-template.md) for the complete report template and field descriptions.
 
 **Key sections included in the report:**
 - **Summary**: Total monthly/yearly costs and resource count
@@ -329,14 +329,14 @@ python price_lookup.py --service "Virtual Machines" --sku "Standard_D4s_v3" --re
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | "Price not found" | SKU not available in region | Try different region or check SKU name |
-| "Resource type not supported" | Parser doesn't handle this type | Check [RESOURCE-MAPPINGS.md](references/RESOURCE-MAPPINGS.md) for supported types |
+| "Resource type not supported" | Parser doesn't handle this type | Check [resource-mappings.md](references/resource-mappings.md) for supported types |
 | "Parameter not resolved" | Template uses parameters without defaults | Provide parameter file with `--params` |
 | API rate limiting | Too many requests | Add delays between requests |
 | Incorrect total | Missing resources | Ensure all resources are in template |
 
 ## Supported Resource Types
 
-See [references/RESOURCE-MAPPINGS.md](references/RESOURCE-MAPPINGS.md) for the complete list of supported Azure resource types and their pricing API mappings.
+See [references/resource-mappings.md](references/resource-mappings.md) for the complete list of supported Azure resource types and their pricing API mappings.
 
 ## Customer-Specific Pricing (Enterprise Agreements)
 
