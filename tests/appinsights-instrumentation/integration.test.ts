@@ -16,7 +16,6 @@ import * as path from 'path';
 import { 
   run, 
   isSkillInvoked, 
-  areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests 
 } from '../utils/agent-runner';
@@ -49,7 +48,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(mentionsAutoInstrumentation).toBe(true);
   });
 
-  test('response mentions manual instrumentation for Node.js', async () => {
+  test('invokes skill for Node.js telemetry request', async () => {
     const agentMetadata = await run({
       setup: async (workspace: string) => {
         // Create a package.json to indicate Node.js project
@@ -65,7 +64,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(isSkillUsed).toBe(true);
   });
 
-  test('suggests creating AppInsights resource', async () => {
+  test('mentions App Insights in response', async () => {
     const agentMetadata = await run({
       prompt: 'Instrument my Python web app with Application Insights'
     });
