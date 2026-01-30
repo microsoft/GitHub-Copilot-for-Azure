@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="57" failures="0" errors="0" time="3.438">
-  <testsuite name="azure-create-app/integration.test.ts" errors="0" failures="0" skipped="7" timestamp="2026-01-30T20:39:03" time="2.748" tests="7">
+<testsuites name="jest tests" tests="57" failures="0" errors="0" time="3.246">
+  <testsuite name="azure-create-app/integration.test.ts" errors="0" failures="0" skipped="7" timestamp="2026-01-30T20:39:46" time="2.652" tests="7">
     <testcase classname="azure-create-app - Integration Tests" name="invokes skill for azure.yaml creation prompt" time="0">
       <skipped/>
     </testcase>
@@ -23,18 +23,80 @@
       <skipped/>
     </testcase>
   </testsuite>
-  <testsuite name="azure-create-app/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:39:03" time="2.87" tests="20">
-    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
+  <testsuite name="azure-create-app/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:39:46" time="2.717" tests="30">
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I prepare my app for Azure deployment?&quot;" time="0.006">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0">
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Create azure.yaml for my project&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="description mentions azd or Azure deployment" time="0.001">
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up azd for my application&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="description contains trigger phrases" time="0">
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate infrastructure files for Azure&quot;" time="0">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="has substantive content" time="0.001">
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure my app for Azure deployment&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="contains execution flow section" time="0">
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Make this application Azure-ready&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;I want to deploy to Azure, how do I start?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Initialize azd for my Azure project&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate Bicep templates for my app&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up Azure Developer CLI configuration&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Create azure.yaml and infrastructure&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Prepare for Azure with azd init&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I configure my project for Azure?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate Azure deployment configuration&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up my app to use Azure services&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS CloudFormation&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I set up Heroku?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker Compose?&quot;" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure Google Cloud Platform project&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with Kubernetes manifests&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is machine learning?&quot;" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.003">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Trigger Tests › Edge Cases" name="is case insensitive for Azure terms" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="azure-create-app/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:39:46" time="2.736" tests="20">
+    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.004">
+    </testcase>
+    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="description mentions azd or Azure deployment" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Unit Tests › Skill Metadata" name="description contains trigger phrases" time="0.001">
+    </testcase>
+    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="has substantive content" time="0">
+    </testcase>
+    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="contains execution flow section" time="0.001">
     </testcase>
     <testcase classname="azure-create-app - Unit Tests › Skill Content" name="documents azure.yaml configuration" time="0">
     </testcase>
@@ -42,9 +104,9 @@
     </testcase>
     <testcase classname="azure-create-app - Unit Tests › Skill Content" name="documents discovery analysis step" time="0">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="documents architecture planning step" time="0">
+    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="documents architecture planning step" time="0.001">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="documents infrastructure generation" time="0.001">
+    <testcase classname="azure-create-app - Unit Tests › Skill Content" name="documents infrastructure generation" time="0">
     </testcase>
     <testcase classname="azure-create-app - Unit Tests › Skill Content" name="references azure__azd MCP tool" time="0">
     </testcase>
@@ -58,73 +120,11 @@
     </testcase>
     <testcase classname="azure-create-app - Unit Tests › Execution Flow Steps" name="documents step 4: file generation" time="0.001">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Execution Flow Steps" name="documents step 5: validation (required)" time="0.001">
+    <testcase classname="azure-create-app - Unit Tests › Execution Flow Steps" name="documents step 5: validation (required)" time="0">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Execution Flow Steps" name="documents step 6: complete" time="0">
+    <testcase classname="azure-create-app - Unit Tests › Execution Flow Steps" name="documents step 6: complete" time="0.001">
     </testcase>
-    <testcase classname="azure-create-app - Unit Tests › Required Output Files" name="documents required files" time="0.001">
-    </testcase>
-  </testsuite>
-  <testsuite name="azure-create-app/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:39:03" time="3.036" tests="30">
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I prepare my app for Azure deployment?&quot;" time="0.003">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Create azure.yaml for my project&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up azd for my application&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate infrastructure files for Azure&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure my app for Azure deployment&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Make this application Azure-ready&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;I want to deploy to Azure, how do I start?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Initialize azd for my Azure project&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate Bicep templates for my app&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up Azure Developer CLI configuration&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Create azure.yaml and infrastructure&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Prepare for Azure with azd init&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I configure my project for Azure?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Generate Azure deployment configuration&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up my app to use Azure services&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS CloudFormation&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I set up Heroku?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use Docker Compose?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure Google Cloud Platform project&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with Kubernetes manifests&quot;" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is machine learning?&quot;" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.002">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
-    </testcase>
-    <testcase classname="azure-create-app - Trigger Tests › Edge Cases" name="is case insensitive for Azure terms" time="0">
+    <testcase classname="azure-create-app - Unit Tests › Required Output Files" name="documents required files" time="0">
     </testcase>
   </testsuite>
 </testsuites>
