@@ -62,5 +62,5 @@ If including executable scripts:
 
 ## Related Resources
 
-- Reference the [skill-authoring skill](.github/skills/skill-authoring/SKILL.md) for detailed guidelines
+- Reference the [skill-authoring skill](../skills/skill-authoring/SKILL.md) for detailed guidelines
 - Follow the [agentskills.io specification](https://agentskills.io/specification)
