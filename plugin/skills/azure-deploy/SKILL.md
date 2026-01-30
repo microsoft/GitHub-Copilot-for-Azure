@@ -180,3 +180,7 @@ azd down --force --purge
 ```
 
 WARNING: `azd down` permanently deletes ALL resources including databases with data, storage accounts with files, and Key Vaults with secrets.
+
+## Additional Resources
+
+- For detailed troubleshooting guidance for `azd` related commands, see [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md)
