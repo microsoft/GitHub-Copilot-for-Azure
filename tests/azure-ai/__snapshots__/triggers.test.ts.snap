@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Azure AI Services including AI Search, Speech, Foundry, OpenAI, and Document Intelligence. Provides capabilities for full-text/vector/hybrid search, speech-to-text, text-to-speech, AI models, agents, and prompt flows.",
+  "extractedKeywords": [
+    "agents",
+    "azure",
+    "capabilities",
+    "cli",
+    "deploy",
+    "document",
+    "flows",
+    "foundry",
+    "full-text",
+    "hybrid",
+    "including",
+    "intelligence",
+    "mcp",
+    "models",
+    "openai",
+    "prompt",
+    "provides",
+    "search",
+    "services",
+    "speech",
+    "speech-to-text",
+    "text-to-speech",
+    "vector",
+  ],
+  "name": "azure-ai",
+}
+`;
+
+exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "agents",
+  "azure",
+  "capabilities",
+  "cli",
+  "deploy",
+  "document",
+  "flows",
+  "foundry",
+  "full-text",
+  "hybrid",
+  "including",
+  "intelligence",
+  "mcp",
+  "models",
+  "openai",
+  "prompt",
+  "provides",
+  "search",
+  "services",
+  "speech",
+  "speech-to-text",
+  "text-to-speech",
+  "vector",
+]
+`;
