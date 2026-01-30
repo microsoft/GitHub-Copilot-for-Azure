@@ -1,6 +1,9 @@
 ---
 name: azure-aigateway
-description: Bootstrap and configure Azure API Management as an AI Gateway for securing, observing, and controlling AI models, tools (MCP Servers), and agents. Use this skill when setting up a gateway for models or tools, rate limiting model/tool requests, adding semantic caching, content safety, or load balancing to AI endpoints.
+description: |
+  Use for configuring Azure API Management (APIM) as AI Gateway to secure, observe, control AI models, MCP servers, agents. Helps with rate limit, semantic cache, content safety, load balance.
+  USE FOR: AI Gateway, APIM, setup gateway, configure, add gateway, model gateway, MCP, rate limit, token limit, semantic cache, content safety, load balance, OpenAPI import, convert API MCP.
+  DO NOT USE FOR: deploy models (microsoft-foundry), Functions (azure-functions), databases (azure-postgres).
 ---
 
 # Azure AI Gateway
