@@ -25,8 +25,6 @@ When Azure MCP is enabled, use these tools for PostgreSQL operations:
 - `azure__postgres` with command `postgres_server_param_get` - Get server parameters
 - `azure__postgres` with command `postgres_server_param_set` - Set server parameters
 
-**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
-
 ## CLI Commands (Fallback)
 
 ```bash
