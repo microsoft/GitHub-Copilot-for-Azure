@@ -371,7 +371,7 @@ tests/
 | azure-security | ❌ | - | - | - | - |
 | azure-security-hardening | ❌ | - | - | - | - |
 | azure-storage | ❌ | - | - | - | - |
-| azure-validation | ✅ | ✅ | ✅ | - | - |
+| azure-validation | ✅ | ✅ | ✅ | ✅ | - |
 | entra-app-registration | ❌ | - | - | - | - |
 | microsoft-foundry | ❌ | - | - | - | - |
 

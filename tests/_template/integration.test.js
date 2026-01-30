@@ -11,24 +11,13 @@
  * Run with: npm run test:integration -- --testPathPattern={skill-name}
  */
 
-// Check if SDK is available before loading agent-runner
-let agentRunner = null;
-let sdkAvailable = false;
-
-try {
-  require.resolve('@github/copilot-sdk');
-  agentRunner = require('../utils/agent-runner');
-  sdkAvailable = true;
-} catch {
-  sdkAvailable = false;
-}
+const agentRunner = require('../utils/agent-runner');
 
 // Replace with your skill name
 const SKILL_NAME = 'your-skill-name';
 
-// Skip integration tests in CI, when SDK unavailable, or when SKIP_INTEGRATION_TESTS is set
-const shouldSkip = () => !sdkAvailable || process.env.CI === 'true' || process.env.SKIP_INTEGRATION_TESTS === 'true';
-const describeIntegration = shouldSkip() ? describe.skip : describe;
+// Use centralized skip logic from agent-runner
+const describeIntegration = agentRunner.shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   

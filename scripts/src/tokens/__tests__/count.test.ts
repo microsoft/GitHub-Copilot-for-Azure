@@ -211,9 +211,13 @@ describe('count command', () => {
 
     it('handles absolute paths', () => {
       const { isAbsolute } = require('node:path');
+      const isWindows = process.platform === 'win32';
       
       expect(isAbsolute('/absolute/path')).toBe(true);
-      expect(isAbsolute('C:\\absolute\\path')).toBe(true);
+      // Windows-style paths are only absolute on Windows
+      if (isWindows) {
+        expect(isAbsolute('C:\\absolute\\path')).toBe(true);
+      }
       expect(isAbsolute('relative/path')).toBe(false);
     });
   });

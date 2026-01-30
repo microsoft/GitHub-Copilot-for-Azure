@@ -9,35 +9,16 @@
  * Run: npm run test:integration -- --testPathPattern=azure-validation
  */
 
-// Check if SDK is available before loading agent-runner
-let agentRunner = null;
-let sdkAvailable = false;
-
-try {
-  // Test if SDK can be resolved
-  require.resolve('@github/copilot-sdk');
-  agentRunner = require('../utils/agent-runner');
-  sdkAvailable = true;
-} catch {
-  sdkAvailable = false;
-}
+const agentRunner = require('../utils/agent-runner');
 
 const SKILL_NAME = 'azure-validation';
 
-// Helper to check if tests should skip
-const shouldSkip = () => !sdkAvailable || process.env.CI === 'true' || process.env.SKIP_INTEGRATION_TESTS === 'true';
+// Use centralized skip logic from agent-runner
+const describeIntegration = agentRunner.shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describe('azure-validation integration tests', () => {
-  // Skip all tests if integration testing requirements not met
-  beforeAll(() => {
-    if (shouldSkip()) {
-      console.log('Skipping integration tests - SDK not available, CI environment, or SKIP_INTEGRATION_TESTS set');
-    }
-  });
-
+describeIntegration('azure-validation integration tests', () => {
   describe('skill invocation', () => {
     test('invokes skill for storage account naming validation', async () => {
-      if (shouldSkip()) return;
 
       const agentMetadata = await agentRunner.run({
         prompt: 'Is mycompanyproductionstorage a valid Azure storage account name?'
@@ -47,8 +28,6 @@ describe('azure-validation integration tests', () => {
     }, 60000);
 
     test('invokes skill for key vault naming validation', async () => {
-      if (shouldSkip()) return;
-
       const agentMetadata = await agentRunner.run({
         prompt: 'Validate my Azure key vault name: my-application-keyvault-prod'
       });
@@ -57,8 +36,6 @@ describe('azure-validation integration tests', () => {
     }, 60000);
 
     test('invokes skill for Bicep validation requests', async () => {
-      if (shouldSkip()) return;
-
       const agentMetadata = await agentRunner.run({
         prompt: 'Can you validate my Bicep template before I deploy it?'
       });
@@ -67,8 +44,6 @@ describe('azure-validation integration tests', () => {
     }, 60000);
 
     test('invokes skill for pre-deployment checks', async () => {
-      if (shouldSkip()) return;
-
       const agentMetadata = await agentRunner.run({
         prompt: 'What should I validate before deploying to Azure?'
       });
@@ -79,8 +54,6 @@ describe('azure-validation integration tests', () => {
 
   describe('response quality', () => {
     test('mentions character limits for storage accounts', async () => {
-      if (shouldSkip()) return;
-
       const agentMetadata = await agentRunner.run({
         prompt: 'What are the naming rules for Azure storage accounts?'
       });
@@ -89,8 +62,6 @@ describe('azure-validation integration tests', () => {
     }, 60000);
 
     test('explains naming constraints for container registry', async () => {
-      if (shouldSkip()) return;
-
       const agentMetadata = await agentRunner.run({
         prompt: 'Validate my ACR name: my-container-registry'
       });
@@ -105,14 +76,13 @@ describe('azure-validation integration tests', () => {
 
   describe('tool calls', () => {
     test('tool calls succeed for quota check prompts', async () => {
-      if (shouldSkip()) return;
-
       const agentMetadata = await agentRunner.run({
         prompt: 'Check my Azure quota before deployment'
       });
 
-      if (agentMetadata.toolCalls && agentMetadata.toolCalls.length > 0) {
-        expect(agentRunner.areToolCallsSuccess(agentMetadata)).toBe(true);
+      const toolCalls = agentRunner.getToolCalls(agentMetadata);
+      if (toolCalls && toolCalls.length > 0) {
+        expect(agentRunner.areToolCallsSuccess(agentMetadata, 'skill')).toBe(true);
       }
     }, 60000);
   });
