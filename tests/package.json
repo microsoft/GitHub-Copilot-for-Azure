@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest",
     "test:unit": "jest --testPathIgnorePatterns=\"node_modules|_template|integration\"",
-    "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest --testPathPattern=integration --testPathIgnorePatterns=\"node_modules|_template\"",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=integration --testPathIgnorePatterns=\"node_modules|_template\"",
     "test:verbose": "jest --verbose",
     "test:coverage": "jest --coverage --testPathIgnorePatterns=\"node_modules|_template|integration\"",
     "test:ci": "jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",
@@ -19,6 +19,7 @@
     "@github/copilot-sdk": "^0.1.19",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.19",
+    "cross-env": "^7.0.3",
     "gray-matter": "^4.0.3",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
