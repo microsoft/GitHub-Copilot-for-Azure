@@ -12,10 +12,25 @@
  * and executes with full process permissions. Only use with trusted test code.
  */
 
-import { CopilotClient, type SessionEvent } from '@github/copilot-sdk';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+
+// SessionEvent type - defined locally to avoid import failures when SDK not installed
+export interface SessionEvent {
+  type: string;
+  data: {
+    messageId?: string;
+    content?: string;
+    deltaContent?: string;
+    toolName?: string;
+    toolCallId?: string;
+    arguments?: unknown;
+    success?: boolean;
+    message?: string;
+    [key: string]: unknown;
+  };
+}
 
 export interface AgentMetadata {
   events: SessionEvent[];
@@ -35,11 +50,14 @@ export interface KeywordOptions {
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
+  // Dynamically import the SDK to avoid failures when not installed
+  const { CopilotClient } = await import('@github/copilot-sdk');
+  
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   // Declare client and session outside try block to ensure cleanup in finally
-  let client: CopilotClient | undefined;
-  let session: Awaited<ReturnType<CopilotClient['createSession']>> | undefined;
+  let client: InstanceType<typeof CopilotClient> | undefined;
+  let session: Awaited<ReturnType<InstanceType<typeof CopilotClient>['createSession']>> | undefined;
 
   try {
     // Run optional setup

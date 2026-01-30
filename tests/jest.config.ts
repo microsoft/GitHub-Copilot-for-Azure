@@ -1,5 +1,14 @@
 import type { Config } from 'jest';
 
+// Check if @github/copilot-sdk is available
+let sdkAvailable = false;
+try {
+  require.resolve('@github/copilot-sdk');
+  sdkAvailable = true;
+} catch {
+  sdkAvailable = false;
+}
+
 const config: Config = {
   // Use ts-jest for TypeScript support
   preset: 'ts-jest',
@@ -17,7 +26,9 @@ const config: Config = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/_template/',
-    '/dist/'
+    '/dist/',
+    // Skip integration tests if SDK is not available
+    ...(sdkAvailable ? [] : ['integration.test.ts', 'integration.test.js'])
   ],
   
   // Setup file for shared utilities
