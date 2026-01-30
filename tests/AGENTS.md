@@ -11,6 +11,8 @@ When a user asks to scaffold, create, or add tests for a skill, follow these ste
 cp -r tests/_template tests/{skill-name}
 ```
 
+> **For AI Agents**: Do not add or change files outside of the new test directory.
+
 ### Step 2: Read the skill's SKILL.md
 Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 - The skill's name and description (from frontmatter)
