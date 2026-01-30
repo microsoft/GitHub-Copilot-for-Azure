@@ -39,6 +39,6 @@ Then ask the user for the desired value and set the environment variable:
 azd env set STORAGE_SKU <user-provided-value>
 ```
 
-During `azd provision`, azd would substitute `${STORAGE_SKU}` with the value from the environment and passes it to Bicep.
+During `azd provision`, azd will substitute `${STORAGE_SKU}` with the value from the environment and will pass it to Bicep.
 
 **Reference:** [Use environment variables in infrastructure files](https://learn.microsoft.com/azure/developer/azure-developer-cli/manage-environment-variables?tabs=bash#use-environment-variables-in-infrastructure-files)
