@@ -47,13 +47,20 @@ import {
   run, 
   isSkillInvoked, 
   doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests 
+  shouldSkipIntegrationTests,
+  getIntegrationSkipReason
 } from '../utils/agent-runner';
 
 const SKILL_NAME = '{skill-name}';
 
-// Integration tests are skipped by default - enable with RUN_INTEGRATION_TESTS=true
-const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+// Integration tests auto-skip if SDK unavailable or in CI
+const skipTests = shouldSkipIntegrationTests();
+const skipReason = getIntegrationSkipReason();
+if (skipTests && skipReason) {
+  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
+}
+
+const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test('invokes skill for relevant prompt', async () => {
@@ -65,19 +72,17 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 });
 ```
 
-**Note:** Integration tests are **skipped by default** and require:
-- Copilot CLI authentication (`copilot` command)
-- Environment variable: `RUN_INTEGRATION_TESTS=true`
+**Note:** Integration tests run automatically when SDK is available and authenticated. They skip gracefully in CI or when prerequisites are missing.
 
 ### Step 7: Run and verify
 ```bash
 cd tests
 
-# Run unit and trigger tests (default)
+# Run all tests (integration runs if SDK available)
 npm test -- --testPathPattern={skill-name}
 
-# Run integration tests (requires auth)
-RUN_INTEGRATION_TESTS=true npm run test:integration -- --testPathPattern={skill-name}
+# Skip integration tests explicitly
+SKIP_INTEGRATION_TESTS=true npm test -- --testPathPattern={skill-name}
 ```
 
 ### Step 8: Update coverage grid
@@ -238,13 +243,20 @@ import {
   run, 
   isSkillInvoked, 
   doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests 
+  shouldSkipIntegrationTests,
+  getIntegrationSkipReason
 } from '../utils/agent-runner';
 
 const SKILL_NAME = 'azure-role-selector';
 
-// Skip in CI or when SKIP_INTEGRATION_TESTS is set
-const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
+// Integration tests auto-skip if SDK unavailable or in CI
+const skipTests = shouldSkipIntegrationTests();
+const skipReason = getIntegrationSkipReason();
+if (skipTests && skipReason) {
+  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
+}
+
+const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test('invokes skill for relevant prompt', async () => {
@@ -293,14 +305,14 @@ test('works with project files', async () => {
 ### Local Development
 
 ```bash
-# Unit and trigger tests (fast, no auth) - default
-npm run test:unit
-
-# All tests (unit + trigger, integration skipped by default)
+# Run all tests (integration runs if SDK available, skips if not)
 npm test
 
-# Integration tests (requires Copilot CLI auth + env var)
-RUN_INTEGRATION_TESTS=true npm run test:integration
+# Unit and trigger tests only (always skips integration)
+npm run test:unit
+
+# Skip integration tests explicitly
+SKIP_INTEGRATION_TESTS=true npm test
 
 # Specific skill
 npm test -- --testPathPattern=azure-validation

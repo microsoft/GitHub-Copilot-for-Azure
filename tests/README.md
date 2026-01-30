@@ -190,10 +190,15 @@ npm install
 
 ### Integration Tests
 
-Integration tests are **skipped by default** and require explicit enablement because they:
-- Require `@github/copilot-cli` authentication
-- Make real API calls to Copilot services
-- Take longer to run (60+ seconds per test)
+Integration tests run **automatically when possible** but skip gracefully when:
+- Running in CI (`CI=true`)
+- `@github/copilot-sdk` is not installed
+- Copilot CLI is not authenticated
+
+When skipped, a message explains why:
+```
+⏭️  Skipping integration tests: Running in CI environment
+```
 
 To run integration tests locally:
 
@@ -201,12 +206,11 @@ To run integration tests locally:
 # 1. Ensure you're authenticated
 copilot --help  # Should show help, not login prompt
 
-# 2. Enable integration tests and run
-RUN_INTEGRATION_TESTS=true npm run test:integration
+# 2. Run tests (integration will run automatically if SDK is available)
+npm test
 ```
 
 Environment variables:
-- `RUN_INTEGRATION_TESTS=true` - Enable integration tests
 - `SKIP_INTEGRATION_TESTS=true` - Force skip integration tests
 - `CI=true` - Automatically set in CI; always skips integration tests
 

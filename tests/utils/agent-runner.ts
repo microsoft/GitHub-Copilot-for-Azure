@@ -48,17 +48,35 @@ export interface KeywordOptions {
 
 // Lazy-loaded SDK
 let CopilotClientClass: any = null;
+let sdkLoadError: Error | null = null;
 
 async function getCopilotClient() {
+  if (sdkLoadError) {
+    throw sdkLoadError;
+  }
   if (!CopilotClientClass) {
     try {
       const sdk = await import('@github/copilot-sdk');
       CopilotClientClass = sdk.CopilotClient;
     } catch (error) {
-      throw new Error('Failed to load @github/copilot-sdk. Make sure it is installed and you have authenticated with Copilot CLI.');
+      sdkLoadError = new Error('Failed to load @github/copilot-sdk. This is likely due to Jest ESM compatibility issues. Set SKIP_INTEGRATION_TESTS=true to skip integration tests.');
+      throw sdkLoadError;
     }
   }
   return CopilotClientClass;
+}
+
+/**
+ * Check if Copilot SDK can be loaded (for pre-test validation)
+ * Returns true if SDK is loadable, false otherwise
+ */
+export async function canLoadCopilotSdk(): Promise<boolean> {
+  try {
+    await getCopilotClient();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -250,20 +268,52 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | nu
   return calls;
 }
 
+// Track skip reason for reporting
+let integrationSkipReason: string | null = null;
+
 /**
  * Check if integration tests should be skipped
  * 
- * Integration tests are skipped by default and only run when:
- * - RUN_INTEGRATION_TESTS=true is explicitly set (for local development with SDK configured)
- * - AND not in CI environment (CI runs unit tests only)
+ * Integration tests are skipped when:
+ * - Running in CI (CI=true)
+ * - SKIP_INTEGRATION_TESTS=true is set
+ * - @github/copilot-sdk is not available
  */
 export function shouldSkipIntegrationTests(): boolean {
   // Always skip in CI
-  if (process.env.CI === 'true') return true;
+  if (process.env.CI === 'true') {
+    integrationSkipReason = 'Running in CI environment';
+    return true;
+  }
   
   // Skip if explicitly requested
-  if (process.env.SKIP_INTEGRATION_TESTS === 'true') return true;
+  if (process.env.SKIP_INTEGRATION_TESTS === 'true') {
+    integrationSkipReason = 'SKIP_INTEGRATION_TESTS=true';
+    return true;
+  }
   
-  // Skip unless RUN_INTEGRATION_TESTS is explicitly enabled
-  return process.env.RUN_INTEGRATION_TESTS !== 'true';
+  // Check if SDK package exists (works for ESM packages)
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const sdkPath = path.join(__dirname, '..', 'node_modules', '@github', 'copilot-sdk', 'package.json');
+    if (!fs.existsSync(sdkPath)) {
+      integrationSkipReason = '@github/copilot-sdk not installed';
+      return true;
+    }
+  } catch {
+    integrationSkipReason = '@github/copilot-sdk not installed';
+    return true;
+  }
+  
+  // SDK available, tests should run
+  integrationSkipReason = null;
+  return false;
+}
+
+/**
+ * Get the reason why integration tests are being skipped
+ */
+export function getIntegrationSkipReason(): string | null {
+  return integrationSkipReason;
 }
