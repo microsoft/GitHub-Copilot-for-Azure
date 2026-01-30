@@ -24,7 +24,7 @@ import {
 // Replace with your skill name
 const SKILL_NAME = 'your-skill-name';
 
-// Skip integration tests in CI or when SKIP_INTEGRATION_TESTS is set
+// Use centralized skip logic from agent-runner
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {

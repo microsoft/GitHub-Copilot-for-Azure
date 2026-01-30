@@ -9,25 +9,10 @@
  * - Login: Run `copilot` and follow prompts to authenticate
  */
 
-import { CopilotClient } from '@github/copilot-sdk';
+import { CopilotClient, type SessionEvent } from '@github/copilot-sdk';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-
-export interface SessionEvent {
-  type: string;
-  data: {
-    toolName?: string;
-    toolCallId?: string;
-    arguments?: unknown;
-    content?: string;
-    messageId?: string;
-    deltaContent?: string;
-    success?: boolean;
-    message?: string;
-    [key: string]: unknown;
-  };
-}
 
 export interface AgentMetadata {
   events: SessionEvent[];

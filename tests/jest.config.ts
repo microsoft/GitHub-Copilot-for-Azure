@@ -4,16 +4,13 @@ const config: Config = {
   // Use ts-jest for TypeScript support
   preset: 'ts-jest',
   
-  // Test environment
-  testEnvironment: 'node',
-  
   // Root directory for tests
   rootDir: '.',
   
   // Test file patterns
   testMatch: [
-    '**/*.test.ts',
-    '**/*.test.js'
+    '**/*.test.js',
+    '**/*.test.ts'
   ],
   
   // Ignore template folder in test runs (it's just examples)
@@ -24,7 +21,7 @@ const config: Config = {
   ],
   
   // Setup file for shared utilities
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  setupFilesAfterEnv: ['./jest.setup.ts'],
   
   // Coverage configuration
   collectCoverageFrom: [
@@ -71,13 +68,6 @@ const config: Config = {
     name: 'SKILLS',
     color: 'blue'
   },
-  
-  // Transform TypeScript files
-  transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.json'
-    }]
-  }
 };
 
 export default config;

@@ -329,7 +329,7 @@ tests/
 │   └── agent-runner.ts       #    Copilot SDK agent runner
 │
 ├── scripts/                  # 📜 Helper scripts
-│   └── generate-coverage-grid.ts    # Update README coverage table
+│   └── generate-coverage-grid.js    # Update README coverage table
 │
 ├── azure-validation/         # ✅ Example: fully tested skill
 │   ├── unit.test.ts
