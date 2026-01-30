@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Deploy applications to Azure using Azure Developer CLI (azd). USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "deploy my app", "azd up", etc.",
+  "extractedKeywords": [
+    "application",
+    "applications",
+    "azure",
+    "bicep",
+    "cli",
+    "deploy",
+    "developer",
+    "host",
+    "include",
+    "key vault",
+    "mcp",
+    "monitor",
+    "phrases",
+    "publish",
+    "skill",
+    "storage",
+    "their",
+    "this",
+    "trigger",
+    "users",
+    "using",
+    "want",
+    "when",
+  ],
+  "name": "azure-deploy",
+}
+`;
+
+exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "application",
+  "applications",
+  "azure",
+  "bicep",
+  "cli",
+  "deploy",
+  "developer",
+  "host",
+  "include",
+  "key vault",
+  "mcp",
+  "monitor",
+  "phrases",
+  "publish",
+  "skill",
+  "storage",
+  "their",
+  "this",
+  "trigger",
+  "users",
+  "using",
+  "want",
+  "when",
+]
+`;
