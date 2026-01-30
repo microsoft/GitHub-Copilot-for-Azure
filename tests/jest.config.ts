@@ -68,7 +68,7 @@ const config: Config = {
   
   // Transform ESM modules from node_modules (copilot-sdk is ESM-only)
   transformIgnorePatterns: [
-    'node_modules/(?!(@github/copilot-sdk)/)'
+    'node_modules/(?!(@github/copilot-sdk|@github/copilot)/)'
   ],
   
   // Display individual test results

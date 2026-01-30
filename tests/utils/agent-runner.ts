@@ -56,10 +56,25 @@ async function getCopilotClient() {
   }
   if (!CopilotClientClass) {
     try {
-      const sdk = await import('@github/copilot-sdk');
+      // Manually construct the SDK path to bypass Jest's module resolution
+      const sdkPath = path.join(__dirname, '..', 'node_modules', '@github', 'copilot-sdk', 'dist', 'index.js');
+      const { pathToFileURL } = await import('url');
+      const sdkUrl = pathToFileURL(sdkPath).href;
+      if (process.env.DEBUG) {
+        console.log('SDK path:', sdkPath);
+        console.log('SDK URL:', sdkUrl);
+      }
+      // Use eval to bypass Jest's static import() transformation
+      // eslint-disable-next-line no-eval
+      const dynamicImport = eval('(url) => import(url)');
+      const sdk = await dynamicImport(sdkUrl);
       CopilotClientClass = sdk.CopilotClient;
     } catch (error) {
-      sdkLoadError = new Error('Failed to load @github/copilot-sdk. This is likely due to Jest ESM compatibility issues. Set SKIP_INTEGRATION_TESTS=true to skip integration tests.');
+      const errorMsg = (error as Error).message + '\n' + (error as Error).stack;
+      if (process.env.DEBUG) {
+        console.error('SDK load error:', errorMsg);
+      }
+      sdkLoadError = new Error('Failed to load @github/copilot-sdk. Ensure Node.js has ESM support and the SDK is installed. Error: ' + errorMsg);
       throw sdkLoadError;
     }
   }
