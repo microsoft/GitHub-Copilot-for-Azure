@@ -1,79 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="36" failures="0" errors="0" time="2.758">
-  <testsuite name="appinsights-instrumentation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:23:28" time="2.287" tests="13">
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
+<testsuites name="jest tests" tests="30" failures="0" errors="0" time="0.2">
+  <testsuite name="appinsights-instrumentation/triggers.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-30T04:23:11" time="0.147" tests="21">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I add Application Insights to my app?&quot;" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description mentions instrumentation or telemetry" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up telemetry for my ASP.NET Core application&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="has substantive content" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add monitoring to my Node.js webapp&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="contains when to use section" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my app with App Insights&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents prerequisites" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Azure Monitor for my web application&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="documents guidelines section" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;I want to track requests and exceptions in my app&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions auto-instrumentation" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I send telemetry data to Azure?&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references manual instrumentation guides" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Enable distributed tracing in my application&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="mentions creating AppInsights resource" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add observability to my Azure hosted app&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="references example files" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists ASP.NET Core as supported" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists Node.js as supported" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Unit Tests › Supported Technologies" name="lists Python as supported" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="appinsights-instrumentation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T18:23:28" time="2.35" tests="23">
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my webapp to send telemetry to App Insights&quot;" time="0.003">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I instrument my app with Azure App Insights?&quot;" time="0.004">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add AppInsights instrumentation to my web application&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add App Insights instrumentation to my Node.js app&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure Application Insights for my Python webapp&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Set up telemetry monitoring in Azure&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Instrument my application to send data to App Insights&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Add observability to my Azure web application&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;How to enable App Insights auto-instrumentation?&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Configure telemetry for my Azure App Service&quot;" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should Trigger" name="triggers on: &quot;Enable APM with Application Insights&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use AWS CloudWatch?&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Query logs with KQL&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Create a dashboard in Azure Monitor&quot;" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the best pizza topping?&quot;" time="0">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Configure logging in Spring Boot&quot;" time="0.001">
-    </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Set up Datadog monitoring&quot;" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me with AWS CloudWatch&quot;" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.001">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
     </testcase>
     <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0">
     </testcase>
-    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="is case insensitive for Azure and App Insights terms" time="0">
+    <testcase classname="appinsights-instrumentation - Trigger Tests › Edge Cases" name="is case insensitive" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="appinsights-instrumentation/integration.test.js" errors="0" failures="0" skipped="3" timestamp="2026-01-30T04:23:11" time="0.011" tests="3">
+    <testcase classname="appinsights-instrumentation - Integration Tests" name="invokes skill for App Insights setup prompt" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Integration Tests" name="response mentions instrumentation steps" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Integration Tests" name="works with ASP.NET Core project" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+  <testsuite name="appinsights-instrumentation/unit.test.js" errors="0" failures="0" skipped="0" timestamp="2026-01-30T04:23:11" time="0.013" tests="6">
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Metadata" name="description contains trigger phrases" time="0.001">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="has substantive content" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="contains expected sections" time="0">
+    </testcase>
+    <testcase classname="appinsights-instrumentation - Unit Tests › Skill Content" name="covers supported platforms" time="0">
     </testcase>
   </testsuite>
 </testsuites>
