@@ -1,81 +1,58 @@
-# Recipe Selection Guide
+# Recipe Selection
 
-How to choose the right recipe for the Prepare → Validate → Deploy workflow.
+Choose the deployment recipe based on project needs and existing tooling.
 
 ## Quick Decision
 
-**Default to AZD** unless you have a specific reason to use another recipe.
+**Default: AZD** unless specific requirements indicate otherwise.
 
 ## Decision Criteria
 
-### Choose AZD Recipe When:
+| Choose | When |
+|--------|------|
+| **AZD** | New projects, multi-service apps, want simplest deployment (`azd up`) |
+| **AZCLI** | Existing az scripts, need imperative control, custom pipelines, AKS |
+| **Bicep** | IaC-first approach, no CLI wrapper needed, direct ARM deployment |
+| **Terraform** | Multi-cloud requirements, existing TF expertise, state management |
 
-- ✅ Starting a new Azure project
-- ✅ Want simplest deployment experience (`azd up`)
-- ✅ Multi-service applications (API + Web + Worker)
-- ✅ Need environment management (dev/staging/prod)
-- ✅ Want generated CI/CD pipelines
-- ✅ No existing IaC in project
-
-### Choose Bicep Recipe When:
-
-- Organization standardized on Bicep without AZD
-- Existing `az deployment` pipelines
-- Need direct ARM deployment control
-- Custom deployment orchestration requirements
-- Already have Bicep modules to reuse
-
-### Choose Terraform Recipe When:
-
-- Existing Terraform codebase in project
-- Team expertise is Terraform
-- Multi-cloud deployment requirements
-- Need Terraform state management features
-- Organization mandate for Terraform
-
-## Auto-Detection Signals
-
-During workspace analysis, look for these indicators:
+## Auto-Detection
 
 | Found in Workspace | Suggested Recipe |
 |--------------------|------------------|
-| `azure.yaml` | AZD (already configured) |
+| `azure.yaml` | AZD |
 | `*.tf` files | Terraform |
-| `./infra/*.bicep` (no azure.yaml) | Bicep |
-| None of above | AZD (default) |
+| `infra/*.bicep` (no azure.yaml) | Bicep or AZCLI |
+| Existing `az` scripts | AZCLI |
+| None | AZD (default) |
 
 ## Recipe Comparison
 
-| Feature | AZD | Bicep | Terraform |
-|---------|-----|-------|-----------|
-| Config file | azure.yaml | *.bicep | *.tf |
-| Deploy command | `azd up` | `az deployment` | `terraform apply` |
-| Dockerfile generation | ✅ Automatic | ❌ Manual | ❌ Manual |
-| Environment management | ✅ Built-in | ❌ Manual | ✅ Workspaces |
-| CI/CD generation | ✅ Built-in | ❌ Manual | ❌ Manual |
-| Multi-cloud | ❌ Azure only | ❌ Azure only | ✅ Yes |
-| State management | Azure | Azure | Configurable |
-| Learning curve | Low | Medium | Medium |
+| Feature | AZD | AZCLI | Bicep | Terraform |
+|---------|-----|-------|-------|-----------|
+| Config file | azure.yaml | scripts | *.bicep | *.tf |
+| Deploy command | `azd up` | `az` commands | `az deployment` | `terraform apply` |
+| Dockerfile gen | Auto | Manual | Manual | Manual |
+| Environment mgmt | Built-in | Manual | Manual | Workspaces |
+| CI/CD gen | Built-in | Manual | Manual | Manual |
+| Multi-cloud | No | No | No | Yes |
+| Learning curve | Low | Medium | Medium | Medium |
 
-## Recording Selection
+## Record Selection
 
-After selection, record in Preparation Manifest:
+Document in manifest:
 
 ```markdown
 ## Recipe: AZD
 
-### Selection Rationale
+**Rationale:**
 - New project, no existing IaC
 - Multi-service app (API + Web)
 - Team wants simplest deployment
 ```
 
-## Changing Recipe Later
+## Recipe References
 
-Switching recipes mid-project requires:
-
-1. Regenerating infrastructure files
-2. Potentially restructuring project
-3. Updating CI/CD pipelines
-
-**Recommendation**: Commit to a recipe early and stick with it.
+- [AZD Recipe](recipes/azd/)
+- [AZCLI Recipe](recipes/azcli/)
+- [Bicep Recipe](recipes/bicep/)
+- [Terraform Recipe](recipes/terraform/)

@@ -1,24 +1,34 @@
-# Generate azure.yaml
+# azure.yaml Generation
 
-Create `azure.yaml` in project root.
+Create `azure.yaml` in project root for AZD.
 
-## Basic Structure
+## Structure
 
 ```yaml
 name: <project-name>
 metadata:
-  template: <template-name>@0.0.1-beta
+  template: azd-init
 
 services:
   <service-name>:
     project: <path-to-source>
     language: <python|js|ts|java|dotnet|go>
-    host: <containerapp|appservice|function|staticwebapp>
+    host: <containerapp|appservice|function|staticwebapp|aks>
 ```
 
-## Service Configuration by Host Type
+## Host Types
 
-### Container Apps
+| Host | Azure Service | Use For |
+|------|---------------|---------|
+| `containerapp` | Container Apps | APIs, microservices, workers |
+| `appservice` | App Service | Traditional web apps |
+| `function` | Azure Functions | Serverless functions |
+| `staticwebapp` | Static Web Apps | SPAs, static sites |
+| `aks` | AKS | Kubernetes workloads |
+
+## Examples
+
+### Container App
 
 ```yaml
 services:
@@ -40,7 +50,7 @@ services:
     host: function
 ```
 
-### Static Web Apps
+### Static Web App
 
 ```yaml
 services:
