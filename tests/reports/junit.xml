@@ -1,43 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="43" failures="0" errors="0" time="2.302">
-  <testsuite name="azure-cost-estimation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:37:41" time="1.923" tests="33">
+<testsuites name="jest tests" tests="43" failures="0" errors="0" time="2.296">
+  <testsuite name="azure-cost-estimation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:38:15" time="1.905" tests="10">
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Metadata" name="description contains trigger phrases" time="0">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="has substantive content" time="0">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="contains expected sections" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="documents Bicep and ARM template support" time="0">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="documents cost calculation methods" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="documents supported resource types" time="0">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="includes pricing API information" time="0.001">
+    </testcase>
+    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="includes usage workflow" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="azure-cost-estimation/triggers.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:38:15" time="1.924" tests="33">
     <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;How much will this deployment cost?&quot;" time="0.005">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Estimate the cost of this Bicep template&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Estimate the cost of this Bicep template&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What&apos;s the monthly cost of this infrastructure?&quot;" time="0.001">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What&apos;s the monthly cost of this infrastructure?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Compare pricing across regions&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Compare pricing across regions&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Show me the cost breakdown for my Azure resources&quot;" time="0.001">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Show me the cost breakdown for my Azure resources&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Analyze costs before I deploy&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Analyze costs before I deploy&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What will my Azure bill be for this?&quot;" time="0">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Is this deployment within my budget?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Estimate Azure costs for my infrastructure&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Estimate Azure costs for my infrastructure&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Calculate Azure infrastructure costs from my ARM template&quot;" time="0.001">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Calculate Azure infrastructure costs from my ARM template&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the pricing estimates for this template?&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the pricing estimates for this template?&quot;" time="0.001">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;How much will it cost to run this in Azure?&quot;" time="0.001">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;How much will it cost to run this in Azure?&quot;" time="0">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Show me cost comparison between regions for this template&quot;" time="0">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;Estimate monthly Azure spending for my Bicep file&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the costs for deploying this infrastructure?&quot;" time="0.001">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should Trigger" name="triggers on: &quot;What are the costs for deploying this infrastructure?&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0.001">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
     </testcase>
-    <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use AWS Lambda?&quot;" time="0">
+    <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I use AWS Lambda?&quot;" time="0.001">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Deploy my application to Heroku&quot;" time="0">
     </testcase>
@@ -66,28 +88,6 @@
     <testcase classname="azure-cost-estimation - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
     </testcase>
     <testcase classname="azure-cost-estimation - Trigger Tests › Edge Cases" name="is case insensitive for cost-related terms" time="0">
-    </testcase>
-  </testsuite>
-  <testsuite name="azure-cost-estimation/unit.test.ts" errors="0" failures="0" skipped="0" timestamp="2026-01-30T20:37:41" time="1.926" tests="10">
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Metadata" name="has valid SKILL.md with required fields" time="0.005">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Metadata" name="description is concise and actionable" time="0">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Metadata" name="description contains trigger phrases" time="0">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="has substantive content" time="0">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="contains expected sections" time="0.001">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="documents Bicep and ARM template support" time="0">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="documents cost calculation methods" time="0.001">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="documents supported resource types" time="0">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="includes pricing API information" time="0">
-    </testcase>
-    <testcase classname="azure-cost-estimation - Unit Tests › Skill Content" name="includes usage workflow" time="0">
     </testcase>
   </testsuite>
 </testsuites>
