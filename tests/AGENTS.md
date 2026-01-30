@@ -102,7 +102,9 @@ This testing framework uses **Jest** to validate skill behavior across three tes
 | File | Purpose |
 |------|---------|
 | `unit.test.js` | Tests isolated skill logic and metadata |
-| `triggers.test.js` | Tests skill activation on prompts || `integration.test.js` | Tests real Copilot agent behavior (optional) || `fixtures/*.json` | Test data and mock responses |
+| `triggers.test.js` | Tests skill activation on prompts |
+| `integration.test.js` | Tests real Copilot agent behavior (optional) |
+| `fixtures/*.json` | Test data and mock responses |
 
 ### Directory Structure
 

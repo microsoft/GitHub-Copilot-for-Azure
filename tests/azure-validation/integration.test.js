@@ -111,7 +111,8 @@ describe('azure-validation integration tests', () => {
         prompt: 'Check my Azure quota before deployment'
       });
 
-      if (agentMetadata.toolCalls && agentMetadata.toolCalls.length > 0) {
+      const toolCalls = agentRunner.getToolCalls(agentMetadata);
+      if (toolCalls && toolCalls.length > 0) {
         expect(agentRunner.areToolCallsSuccess(agentMetadata)).toBe(true);
       }
     }, 60000);
