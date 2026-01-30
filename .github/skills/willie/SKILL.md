@@ -1,6 +1,6 @@
 ---
 name: willie
-description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run willie, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, or non-frontmatter changes."
+description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run willie, willie help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, or non-frontmatter changes."
 ---
 
 # Willie
@@ -8,6 +8,46 @@ description: "Iteratively improve skill frontmatter compliance using the Ralph l
 > "Ach! There's nary a skill I've met yet I couldn't improve!" - Groundskeeper Willie
 
 Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests.
+
+## Help
+
+When user says "willie help" or asks how to use willie, show this:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  WILLIE - Skill Frontmatter Compliance Improver                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║  USAGE:                                                          ║
+║    Run willie on <skill-name>              # Single skill        ║
+║    Run willie on <skill1>, <skill2>, ...   # Multiple skills     ║
+║    Run willie on all Low-adherence skills  # Batch by score      ║
+║    Run willie on all skills                # All 26 skills       ║
+║                                                                  ║
+║  EXAMPLES:                                                       ║
+║    Run willie on appinsights-instrumentation                     ║
+║    Run willie on azure-security, azure-networking                ║
+║    Run willie on all Low-adherence skills                        ║
+║                                                                  ║
+║  WHAT IT DOES:                                                   ║
+║    1. READ    - Load skill's SKILL.md and tests                  ║
+║    2. SCORE   - Check compliance (Low/Medium/Medium-High/High)   ║
+║    3. SCAFFOLD- Create tests from template if missing            ║
+║    4. IMPROVE - Add USE FOR triggers + DO NOT USE FOR            ║
+║    5. TEST    - Run tests, fix if needed                         ║
+║    6. COMMIT  - Save with "willie: improve <skill> frontmatter"  ║
+║    7. REPEAT  - Until Medium-High score + tests pass             ║
+║                                                                  ║
+║  TARGET SCORE: Medium-High                                       ║
+║    ✓ Description > 150 chars                                     ║
+║    ✓ Has "USE FOR:" trigger phrases                              ║
+║    ✓ Has "DO NOT USE FOR:" anti-triggers                         ║
+║                                                                  ║
+║  MORE INFO:                                                      ║
+║    See .github/skills/willie/README.md for full documentation    ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
 
 ## When to Use
 
