@@ -1,6 +1,7 @@
 ---
 name: azure-create-app
-description: Create Azure-ready application configurations using Azure Developer CLI (azd). USE THIS SKILL when users want to prepare their application for Azure deployment, create azure.yaml, generate infrastructure files, or set up azd projects. Trigger phrases include "prepare for Azure", "create azure.yaml", "set up azd", "generate infrastructure", "configure for Azure", "make this Azure-ready", "deploy to Azure", "azd init", etc.
+description: |
+  Create Azure-ready application configurations using Azure Developer CLI (azd). USE FOR: prepare for Azure, create azure.yaml, set up azd, generate infrastructure files, configure for Azure, make this Azure-ready, azd init, scaffold Azure project, generate Bicep templates, containerize for Azure. DO NOT USE FOR: deploying applications (use azure-deploy), troubleshooting deployment issues (use azure-diagnostics), managing existing resources (use azure-validation), cost analysis (use azure-cost-optimization).
 ---
 
 # Azure Create App Skill
