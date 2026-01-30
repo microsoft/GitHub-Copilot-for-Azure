@@ -1,6 +1,9 @@
 ---
 name: azure-ai
-description: Azure AI Services including AI Search, Speech, Foundry, OpenAI, and Document Intelligence. Provides capabilities for full-text/vector/hybrid search, speech-to-text, text-to-speech, AI models, agents, and prompt flows.
+description: |
+  Use for Azure AI: Search, Speech, Foundry, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, AI agents, prompt flows, OCR.
+  USE FOR: AI Search, query search, vector search, hybrid search, speech-to-text, text-to-speech, transcribe, AI agent, prompt flow, Foundry, OCR, convert text to speech.
+  DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources.
 ---
 
 # Azure AI Services
