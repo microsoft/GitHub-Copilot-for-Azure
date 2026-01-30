@@ -2,17 +2,16 @@
  * Unit Tests for {SKILL_NAME}
  * 
  * Test isolated skill logic and validation rules.
- * Copy this file to /tests/{skill-name}/unit.test.js
+ * Copy this file to /tests/{skill-name}/unit.test.ts
  */
 
-const path = require('path');
-const { loadSkill } = require('../utils/skill-loader');
+import { loadSkill, LoadedSkill } from '../utils/skill-loader';
 
 // Replace with your skill name
 const SKILL_NAME = 'your-skill-name';
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
-  let skill;
+  let skill: LoadedSkill;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);

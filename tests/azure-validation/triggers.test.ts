@@ -2,14 +2,14 @@
  * Trigger Tests for azure-validation
  */
 
-const { TriggerMatcher } = require('../utils/trigger-matcher');
-const { loadSkill } = require('../utils/skill-loader');
+import { TriggerMatcher } from '../utils/trigger-matcher';
+import { loadSkill, LoadedSkill } from '../utils/skill-loader';
 
 const SKILL_NAME = 'azure-validation';
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
-  let triggerMatcher;
-  let skill;
+  let triggerMatcher: TriggerMatcher;
+  let skill: LoadedSkill;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
@@ -17,7 +17,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe('Should Trigger', () => {
-    const shouldTriggerPrompts = [
+    const shouldTriggerPrompts: string[] = [
       'Validate my Azure storage account name',
       'What are the naming constraints for Azure Key Vault?',
       'Pre-deployment validation for my Bicep template',
@@ -40,7 +40,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe('Should NOT Trigger', () => {
-    const shouldNotTriggerPrompts = [
+    const shouldNotTriggerPrompts: string[] = [
       'What is the weather today?',
       'Help me write a poem',
       'Explain quantum computing',

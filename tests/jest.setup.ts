@@ -7,7 +7,8 @@
  * - Shared mock configurations
  */
 
-const path = require('path');
+import * as path from 'path';
+import { TriggerMatcher, TriggerResult } from './utils/trigger-matcher';
 
 // Make utils available globally for convenience
 global.SKILLS_PATH = path.resolve(__dirname, '../plugin/skills');
@@ -15,8 +16,8 @@ global.TESTS_PATH = __dirname;
 
 // Custom matcher: check if a skill should trigger on a prompt
 expect.extend({
-  toTriggerSkill(prompt, skillName, triggerMatcher) {
-    const result = triggerMatcher.shouldTrigger(prompt);
+  toTriggerSkill(prompt: string, skillName: string, triggerMatcher: TriggerMatcher) {
+    const result: TriggerResult = triggerMatcher.shouldTrigger(prompt);
     return {
       pass: result.triggered,
       message: () => 
@@ -27,8 +28,8 @@ expect.extend({
     };
   },
   
-  toNotTriggerSkill(prompt, skillName, triggerMatcher) {
-    const result = triggerMatcher.shouldTrigger(prompt);
+  toNotTriggerSkill(prompt: string, skillName: string, triggerMatcher: TriggerMatcher) {
+    const result: TriggerResult = triggerMatcher.shouldTrigger(prompt);
     return {
       pass: !result.triggered,
       message: () =>
@@ -54,11 +55,11 @@ if (!process.env.DEBUG) {
 }
 
 // Helper to get skill path
-global.getSkillPath = (skillName) => {
+global.getSkillPath = (skillName: string): string => {
   return path.join(global.SKILLS_PATH, skillName);
 };
 
 // Helper to get test fixtures path
-global.getFixturesPath = (skillName) => {
+global.getFixturesPath = (skillName: string): string => {
   return path.join(global.TESTS_PATH, skillName, 'fixtures');
 };

@@ -26,8 +26,8 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Test Execution                           │
 ├─────────────────────────────────────────────────────────────────┤
-│  jest.config.js     → Configures Jest (reporters, coverage)     │
-│  jest.setup.js      → Global test utilities & custom matchers   │
+│  jest.config.ts     → Configures Jest (reporters, coverage)     │
+│  jest.setup.ts      → Global test utilities & custom matchers   │
 │  utils/             → Shared helpers (skill-loader, mcp-mock)   │
 │  {skill}/           → Per-skill test files                      │
 └─────────────────────────────────────────────────────────────────┘
@@ -35,9 +35,9 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 
 ### Test Flow
 
-1. **Jest discovers tests** matching `**/*.test.js` (excluding `_template/`)
-2. **`jest.setup.js` runs first** - sets up global paths and custom matchers
-3. **Each test file loads its skill** via `utils/skill-loader.js`
+1. **Jest discovers tests** matching `**/*.test.ts` (excluding `_template/`)
+2. **`jest.setup.ts` runs first** - sets up global paths and custom matchers
+3. **Each test file loads its skill** via `utils/skill-loader.ts`
 4. **Tests execute** - validating metadata, triggers, and MCP interactions
 5. **Results output** to console (human-readable) and `reports/junit.xml` (CI)
 
@@ -45,10 +45,10 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 
 | Utility | Purpose |
 |---------|---------|
-| `utils/skill-loader.js` | Parses `SKILL.md` frontmatter and content |
-| `utils/trigger-matcher.js` | Tests if prompts should activate a skill |
-| `utils/fixtures.js` | Loads test data from `fixtures/` folders |
-| `utils/agent-runner.js` | Copilot SDK agent runner for integration tests |
+| `utils/skill-loader.ts` | Parses `SKILL.md` frontmatter and content |
+| `utils/trigger-matcher.ts` | Tests if prompts should activate a skill |
+| `utils/fixtures.ts` | Loads test data from `fixtures/` folders |
+| `utils/agent-runner.ts` | Copilot SDK agent runner for integration tests |
 
 ---
 
@@ -78,7 +78,7 @@ Run tests manually anytime during development (see [Running Tests Locally](#runn
 
 ## What Tests Validate
 
-### 1. Unit Tests (`unit.test.js`)
+### 1. Unit Tests (`unit.test.ts`)
 
 **Purpose:** Validate skill metadata and any embedded logic.
 
@@ -102,7 +102,7 @@ test('documents storage account limits', () => {
 });
 ```
 
-### 2. Trigger Tests (`triggers.test.js`)
+### 2. Trigger Tests (`triggers.test.ts`)
 
 **Purpose:** Verify the skill activates on correct prompts and ignores unrelated ones.
 
@@ -190,8 +190,8 @@ cd tests
 npm test -- --testPathPattern=azure-validation
 
 # Output:
-# PASS azure-validation/unit.test.js
-# PASS azure-validation/triggers.test.js
+# PASS azure-validation/unit.test.ts
+# PASS azure-validation/triggers.test.ts
 # Test Suites: 2 passed, 2 total
 ```
 
@@ -199,7 +199,7 @@ npm test -- --testPathPattern=azure-validation
 
 **Console output:**
 ```
-PASS SKILLS azure-validation/unit.test.js
+PASS SKILLS azure-validation/unit.test.ts
   azure-validation - Unit Tests
     Skill Metadata
       ✓ has valid SKILL.md with required fields (2 ms)
@@ -243,13 +243,13 @@ cp -r _template {skill-name}
 Edit each test file and change the `SKILL_NAME` constant:
 
 ```javascript
-// In unit.test.js, triggers.test.js, integration.test.js
+// In unit.test.ts, triggers.test.ts, integration.test.ts
 const SKILL_NAME = 'azure-redis';  // ← Change this to match your skill folder
 ```
 
 #### Step 3: Add Trigger Prompts
 
-In `triggers.test.js`, add prompts that should and should NOT trigger your skill:
+In `triggers.test.ts`, add prompts that should and should NOT trigger your skill:
 
 ```javascript
 const shouldTriggerPrompts = [
@@ -269,7 +269,7 @@ const shouldNotTriggerPrompts = [
 
 #### Step 4: Customize Unit Tests
 
-In `unit.test.js`, add tests specific to your skill's content:
+In `unit.test.ts`, add tests specific to your skill's content:
 
 ```javascript
 test('documents cache tiers', () => {
@@ -312,28 +312,28 @@ tests/
 ├── README.md                 # This file - developer guide
 ├── AGENTS.md                 # AI agent testing patterns
 ├── package.json              # Dependencies (jest, jest-junit, @github/copilot-sdk)
-├── jest.config.js            # Jest configuration
-├── jest.setup.js             # Global setup, custom matchers
+├── jest.config.ts            # Jest configuration
+├── jest.setup.ts             # Global setup, custom matchers
 │
 ├── _template/                # 📋 Copy this for new skills
-│   ├── unit.test.js          #    Metadata & logic tests
-│   ├── triggers.test.js      #    Prompt activation tests
-│   ├── integration.test.js   #    Real agent tests (optional)
+│   ├── unit.test.ts          #    Metadata & logic tests
+│   ├── triggers.test.ts      #    Prompt activation tests
+│   ├── integration.test.ts   #    Real agent tests (optional)
 │   ├── fixtures/             #    Test data
 │   └── README.md             #    Template usage guide
 │
 ├── utils/                    # 🔧 Shared test utilities
-│   ├── skill-loader.js       #    Load & parse SKILL.md
-│   ├── trigger-matcher.js    #    Test prompt → skill matching
-│   ├── fixtures.js           #    Load test fixtures
-│   └── agent-runner.js       #    Copilot SDK agent runner
+│   ├── skill-loader.ts       #    Load & parse SKILL.md
+│   ├── trigger-matcher.ts    #    Test prompt → skill matching
+│   ├── fixtures.ts           #    Load test fixtures
+│   └── agent-runner.ts       #    Copilot SDK agent runner
 │
 ├── scripts/                  # 📜 Helper scripts
 │   └── generate-coverage-grid.js    # Update README coverage table
 │
 ├── azure-validation/         # ✅ Example: fully tested skill
-│   ├── unit.test.js
-│   ├── triggers.test.js
+│   ├── unit.test.ts
+│   ├── triggers.test.ts
 │   └── __snapshots__/        # Jest snapshot files
 │
 ├── reports/                  # 📊 Generated test reports

@@ -17,9 +17,14 @@
   },
   "devDependencies": {
     "@github/copilot-sdk": "^0.1.19",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.19",
+    "gray-matter": "^4.0.3",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
-    "gray-matter": "^4.0.3"
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   },
   "jest-junit": {
     "outputDirectory": "./reports",

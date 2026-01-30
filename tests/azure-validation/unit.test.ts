@@ -2,13 +2,18 @@
  * Unit Tests for azure-validation
  */
 
-const path = require('path');
-const { loadSkill } = require('../utils/skill-loader');
+import { loadSkill, LoadedSkill } from '../utils/skill-loader';
 
 const SKILL_NAME = 'azure-validation';
 
+interface NamingRule {
+  minLength: number;
+  maxLength: number;
+  pattern: RegExp;
+}
+
 describe(`${SKILL_NAME} - Unit Tests`, () => {
-  let skill;
+  let skill: LoadedSkill;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
@@ -58,7 +63,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe('Naming Rules Validation', () => {
     // Test the documented naming rules
-    const namingRules = {
+    const namingRules: Record<string, NamingRule> = {
       storageAccount: {
         minLength: 3,
         maxLength: 24,
