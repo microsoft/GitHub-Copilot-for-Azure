@@ -1,0 +1,45 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`appinsights-instrumentation - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Instrument a webapp to send useful telemetry data to Azure App Insights",
+  "extractedKeywords": [
+    "app service",
+    "appinsights",
+    "azure",
+    "bicep",
+    "cli",
+    "container",
+    "data",
+    "insights",
+    "instrument",
+    "instrumentation",
+    "observability",
+    "send",
+    "telemetry",
+    "useful",
+    "webapp",
+  ],
+  "name": "appinsights-instrumentation",
+}
+`;
+
+exports[`appinsights-instrumentation - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "app service",
+  "appinsights",
+  "azure",
+  "bicep",
+  "cli",
+  "container",
+  "data",
+  "insights",
+  "instrument",
+  "instrumentation",
+  "observability",
+  "send",
+  "telemetry",
+  "useful",
+  "webapp",
+]
+`;
