@@ -32,12 +32,14 @@ This leads to **skill collision** - agents invoking the wrong skill for a given 
 ### The Solution
 
 Willie implements the "Ralph Wiggum" technique:
-1. **Read** - Load the skill's current state
+1. **Read** - Load the skill's current state and token count
 2. **Score** - Evaluate frontmatter compliance
 3. **Improve** - Add triggers, anti-triggers, compatibility
 4. **Verify** - Run tests to ensure changes work
-5. **Commit** - Save progress
-6. **Repeat** - Until target score reached
+5. **Check Tokens** - Analyze token usage, gather suggestions
+6. **Summary** - Display before/after with suggestions
+7. **Prompt** - Ask user: Commit, Create Issue, or Skip?
+8. **Repeat** - Until target score reached
 
 ---
 
@@ -109,6 +111,7 @@ npm test -- --testPathPattern=azure-validation
 ┌─────────────────────────────────────────────────────────┐
 │  1. READ: Load plugin/skills/{skill-name}/SKILL.md      │
 │           Load tests/{skill-name}/ (if exists)          │
+│           Count tokens (baseline for comparison)        │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
@@ -153,9 +156,23 @@ npm test -- --testPathPattern=azure-validation
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│  7. COMMIT:                                             │
-│     git add plugin/skills/{skill-name} tests/{skill-name│
-│     git commit -m "willie: improve {skill-name} ..."    │
+│  7. CHECK TOKENS:                                       │
+│     npm run tokens -- check plugin/skills/{skill-name}  │
+│     npm run tokens -- suggest (gather optimizations)    │
+└─────────────────────┬───────────────────────────────────┘
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│  8. SUMMARY: Display before/after comparison            │
+│     • Score change (Low → Medium-High)                  │
+│     • Token delta (+/- tokens)                          │
+│     • Unimplemented suggestions                         │
+└─────────────────────┬───────────────────────────────────┘
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│  9. PROMPT USER: Choose action                          │
+│     [C] Commit changes                                  │
+│     [I] Create GitHub issue with suggestions            │
+│     [S] Skip (discard changes)                          │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
               ┌───────────────┐
@@ -171,7 +188,7 @@ npm test -- --testPathPattern=azure-validation
 When running on multiple skills:
 1. Skills are processed sequentially
 2. Each skill goes through the full loop
-3. Commits happen after each skill completes
+3. User prompted after each skill: Commit, Create Issue, or Skip
 4. Summary report at the end shows all results
 
 ---
@@ -182,7 +199,8 @@ When running on multiple skills:
 |---------|---------|-------------|
 | Max iterations | 5 | Per-skill iteration limit before moving on |
 | Target score | Medium-High | Minimum compliance level |
-| Commit after | Each skill | When to commit changes |
+| Token soft limit | 500 | SKILL.md target token count |
+| User prompt | After each skill | Commit, Create Issue, or Skip |
 | Continue on failure | Yes | Process remaining skills if one fails |
 
 ---
@@ -227,6 +245,14 @@ To reach Medium-High, a skill must have:
 - ✅ Description > 150 characters
 - ✅ Explicit trigger phrases ("USE FOR:" or equivalent)
 - ✅ Anti-triggers ("DO NOT USE FOR:" or clear scope limitation)
+- ✅ SKILL.md < 500 tokens (soft limit, monitored)
+
+### Token Budget
+
+From [skill-authoring](/.github/skills/skill-authoring):
+- **SKILL.md:** < 500 tokens (soft), < 5000 (hard)
+- **references/*.md:** < 1000 tokens each
+- Check with: `cd scripts && npm run tokens -- check plugin/skills/{skill}/SKILL.md`
 
 ---
 
@@ -378,3 +404,8 @@ If Willie produces unexpected results:
 ---
 
 *Willie - "If it's nae compliant, it will be!"*
+
+### Related Skills
+
+- [markdown-token-optimizer](/.github/skills/markdown-token-optimizer) - Token analysis and optimization suggestions
+- [skill-authoring](/.github/skills/skill-authoring) - Guidelines for writing compliant Agent Skills

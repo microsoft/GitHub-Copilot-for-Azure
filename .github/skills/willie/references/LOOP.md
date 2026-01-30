@@ -18,7 +18,7 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
          ┌──────────────────┐
          │    1. READ       │◀──────────────────┐
          │  Load SKILL.md   │                   │
-         │  Load tests      │                   │
+         │  Count tokens    │                   │
          └────────┬─────────┘                   │
                   │                             │
                   ▼                             │
@@ -34,6 +34,24 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
          │  Tests pass?     │       │           │
          └────────┬─────────┘       │           │
                   │ YES             │           │
+                  ▼                 ▼           │
+         ┌──────────────────┐       │           │
+         │  6. CHECK TOKENS │       │           │
+         │  Get suggestions │       │           │
+         └────────┬─────────┘       │           │
+                  │                 │           │
+                  ▼                 │           │
+         ┌──────────────────┐       │           │
+         │  7. SUMMARY      │       │           │
+         │  Before/After    │       │           │
+         └────────┬─────────┘       │           │
+                  │                 │           │
+                  ▼                 │           │
+         ┌──────────────────┐       │           │
+         │  8. PROMPT USER  │       │           │
+         │  Commit/Issue?   │       │           │
+         └────────┬─────────┘       │           │
+                  │                 │           │
                   ▼                 │           │
          ┌──────────────────┐       │           │
          │    COMPLETE      │       │           │
@@ -59,14 +77,8 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
                                     │           │
                                     ▼           │
                            ┌──────────────────┐ │
-                           │   6. VERIFY      │ │
+                           │   5b. VERIFY     │ │
                            │   Run tests      │ │
-                           └────────┬─────────┘ │
-                                    │           │
-                                    ▼           │
-                           ┌──────────────────┐ │
-                           │   7. COMMIT      │ │
-                           │   Save progress  │ │
                            └────────┬─────────┘ │
                                     │           │
                                     ▼           │
@@ -77,7 +89,7 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
                                     ▼
                            ┌──────────────────┐
                            │    TIMEOUT       │
-                           │   Next skill     │
+                           │   → SUMMARY      │
                            └──────────────────┘
 ```
 
@@ -175,7 +187,7 @@ description: |
    - Include other cloud providers (AWS, GCP)
    - Include related but different Azure services
 
-### Step 6: VERIFY
+### Step 5b: VERIFY
 
 **Action:** Run tests to ensure changes work
 
@@ -193,28 +205,90 @@ cd tests && npm test -- --testPathPattern={skill-name}
 - Adjust frontmatter or test prompts
 - Re-run (counts as sub-iteration)
 
-### Step 7: COMMIT
+### Step 6: CHECK TOKENS
 
-**Action:** Save progress with descriptive commit
+**Action:** Analyze token usage and gather optimization suggestions
 
 **Commands:**
 ```bash
+cd scripts && npm run tokens -- check plugin/skills/{skill-name}/SKILL.md
+cd scripts && npm run tokens -- suggest plugin/skills/{skill-name}/SKILL.md
+```
+
+**Token Budgets** (from [skill-authoring](/.github/skills/skill-authoring)):
+- SKILL.md: < 500 tokens (soft limit), < 5000 (hard limit)
+- references/*.md: < 1000 tokens each
+
+**Capture:**
+- Current token count
+- Token delta from start
+- Optimization suggestions (for summary)
+
+**Note:** Token optimizations are captured but NOT automatically applied. The user decides whether to implement them or create an issue for follow-up.
+
+See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimization patterns.
+
+### Step 7: SUMMARY
+
+**Action:** Generate before/after comparison for user review
+
+**Display format:**
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  WILLIE SUMMARY: {skill-name}                                    ║
+╠══════════════════════════════════════════════════════════════════╣
+║  BEFORE                          AFTER                           ║
+║  ──────                          ─────                           ║
+║  Score: Low                      Score: Medium-High              ║
+║  Tokens: 623                     Tokens: 589                     ║
+║  Triggers: 0                     Triggers: 5                     ║
+║  Anti-triggers: 0                Anti-triggers: 3                ║
+║                                                                  ║
+║  SUGGESTIONS NOT IMPLEMENTED:                                    ║
+║  • Remove emoji decorations (-12 tokens)                         ║
+║  • Consolidate duplicate headings (-8 tokens)                    ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+**Captured metrics:**
+- Score change (Low → Medium-High)
+- Token delta (+/- tokens)
+- Trigger count change
+- Anti-trigger count change
+- Unimplemented token suggestions
+
+### Step 8: PROMPT USER
+
+**Action:** Ask user how to proceed with changes
+
+**Options:**
+```
+Choose an action:
+  [C] Commit changes - Save improvements with "willie: improve {skill-name}"
+  [I] Create issue   - Open GitHub issue with summary and suggestions
+  [S] Skip           - Discard changes and move to next skill
+```
+
+**Commit flow:**
+```bash
 git add plugin/skills/{skill-name}/SKILL.md
 git add tests/{skill-name}/
-git commit -m "willie: improve {skill-name} frontmatter"
+git commit -m "willie: improve {skill-name} frontmatter
+
+- Score: {before} → {after}
+- Tokens: {before} → {after}
+- Added USE FOR triggers
+- Added DO NOT USE FOR anti-triggers"
 ```
 
-**Commit message format:**
-```
-willie: improve {skill-name} frontmatter
+**Issue flow:**
+Creates a GitHub issue with:
+- Title: `[willie] Token optimization suggestions for {skill-name}`
+- Body: Summary table + unimplemented suggestions
+- Labels: `enhancement`, `skill-quality`
 
-- Added USE FOR trigger phrases
-- Added DO NOT USE FOR anti-triggers  
-- Updated test prompts to match
-- Score: Low → Medium-High
-```
-
-### Step 8: REPEAT or EXIT
+### Step 9: REPEAT or EXIT
 
 **Check:** Has the target been reached?
 

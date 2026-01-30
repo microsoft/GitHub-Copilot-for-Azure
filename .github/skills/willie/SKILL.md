@@ -1,13 +1,13 @@
 ---
 name: willie
-description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run willie, willie help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, or non-frontmatter changes."
+description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run willie, willie help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, token optimization only (use markdown-token-optimizer), or non-frontmatter changes."
 ---
 
 # Willie
 
 > "Ach! There's nary a skill I've met yet I couldn't improve!" - Groundskeeper Willie
 
-Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests.
+Automates skill frontmatter improvement using the [Ralph loop pattern](https://github.com/soderlind/ralph) - iteratively improving skills until they reach Medium-High compliance with passing tests, then checking token usage and prompting for action.
 
 ## Help
 
@@ -30,18 +30,21 @@ When user says "willie help" or asks how to use willie, show this:
 ║    Run willie on all Low-adherence skills                        ║
 ║                                                                  ║
 ║  WHAT IT DOES:                                                   ║
-║    1. READ    - Load skill's SKILL.md and tests                  ║
+║    1. READ    - Load skill's SKILL.md, tests, and token count    ║
 ║    2. SCORE   - Check compliance (Low/Medium/Medium-High/High)   ║
 ║    3. SCAFFOLD- Create tests from template if missing            ║
 ║    4. IMPROVE - Add USE FOR triggers + DO NOT USE FOR            ║
 ║    5. TEST    - Run tests, fix if needed                         ║
-║    6. COMMIT  - Save with "willie: improve <skill> frontmatter"  ║
-║    7. REPEAT  - Until Medium-High score + tests pass             ║
+║    6. TOKENS  - Check token budget, gather suggestions           ║
+║    7. SUMMARY - Show before/after with suggestions               ║
+║    8. PROMPT  - Ask: Commit, Create Issue, or Skip?              ║
+║    9. REPEAT  - Until Medium-High score + tests pass             ║
 ║                                                                  ║
 ║  TARGET SCORE: Medium-High                                       ║
 ║    ✓ Description > 150 chars                                     ║
 ║    ✓ Has "USE FOR:" trigger phrases                              ║
 ║    ✓ Has "DO NOT USE FOR:" anti-triggers                         ║
+║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
 ║  MORE INFO:                                                      ║
 ║    See .github/skills/willie/README.md for full documentation    ║
@@ -82,15 +85,17 @@ Run willie on all skills
 
 For each skill, execute this loop until score >= Medium-High AND tests pass:
 
-1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md` and existing tests
+1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md`, tests, and token count
 2. **SCORE** - Run rule-based compliance check (see [SCORING.md](references/SCORING.md))
-3. **CHECK** - If score >= Medium-High AND tests pass → COMPLETE, move to next skill
+3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
-8. **COMMIT** - `git add . && git commit -m "ralph: improve {skill-name} frontmatter"`
-9. **REPEAT** - Go to step 2 (max 5 iterations per skill)
+8. **TOKENS** - Check token budget, gather optimization suggestions
+9. **SUMMARY** - Display before/after comparison with unimplemented suggestions
+10. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
+11. **REPEAT** - Go to step 2 (max 5 iterations per skill)
 
 ## Scoring Criteria (Quick Reference)
 
@@ -140,11 +145,18 @@ willie: improve {skill-name} frontmatter
 - Only modify `plugin/skills/` (not `.github/skills/`)
 - Max 5 iterations per skill before moving on
 - Description must stay under 1024 characters
-- Tests must pass before committing
-- Commit after each successful skill improvement
+- SKILL.md should stay under 500 tokens (soft limit)
+- Tests must pass before prompting for action
+- User chooses: Commit, Create Issue, or Skip after each skill
 
 ## Reference Documentation
 
 - [SCORING.md](references/SCORING.md) - Detailed scoring criteria
 - [LOOP.md](references/LOOP.md) - Ralph loop workflow details
 - [EXAMPLES.md](references/EXAMPLES.md) - Before/after examples
+- [TOKEN-INTEGRATION.md](references/TOKEN-INTEGRATION.md) - Token budget integration
+
+## Related Skills
+
+- [markdown-token-optimizer](/.github/skills/markdown-token-optimizer) - Token analysis and optimization
+- [skill-authoring](/.github/skills/skill-authoring) - Skill writing guidelines

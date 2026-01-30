@@ -2,6 +2,24 @@
 
 Detailed scoring criteria for evaluating skill frontmatter compliance.
 
+## Overview
+
+Willie evaluates skills on two dimensions:
+1. **Frontmatter Compliance** - Triggers, anti-triggers, description quality
+2. **Token Budget** - Staying within recommended limits
+
+## Token Budgets
+
+From [skill-authoring](/.github/skills/skill-authoring):
+
+| File | Soft Limit | Hard Limit | Notes |
+|------|------------|------------|-------|
+| SKILL.md | 500 | 5000 | Keep lean, use references for detail |
+| references/*.md | 1000 | - | Each reference file |
+| Description | - | 1024 chars | Frontmatter description field |
+
+**Check with:** `cd scripts && npm run tokens -- check plugin/skills/{skill}/SKILL.md`
+
 ## Adherence Levels
 
 ### Low Adherence

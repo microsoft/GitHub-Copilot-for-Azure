@@ -1,6 +1,6 @@
 # Examples
 
-Before and after examples of frontmatter improvements.
+Before and after examples of frontmatter improvements, including token counts.
 
 ## Example 1: appinsights-instrumentation (Low → Medium-High)
 
@@ -13,6 +13,12 @@ name: appinsights-instrumentation
 description: 'Instrument a webapp to send useful telemetry data to Azure App Insights'
 ---
 ```
+
+**Metrics:**
+- Score: Low
+- Tokens: ~142
+- Triggers: 0
+- Anti-triggers: 0
 
 **Problems:**
 - ❌ Only 71 characters - too brief
@@ -47,6 +53,12 @@ description: |
   costs, or Azure Monitor metrics queries.
 ---
 ```
+
+**Metrics:**
+- Score: Medium-High ✅
+- Tokens: ~385 (under 500 budget ✅)
+- Triggers: 7
+- Anti-triggers: 4
 
 **Improvements:**
 - ✅ 385 characters - informative but under 1024 limit
@@ -270,3 +282,92 @@ const shouldTriggerPrompts = [
 ```
 
 **Problem:** Test prompts don't match the actual trigger phrases.
+
+---
+
+## Example 6: Willie Summary Output
+
+After completing improvements, Willie displays a summary:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  WILLIE SUMMARY: appinsights-instrumentation                     ║
+╠══════════════════════════════════════════════════════════════════╣
+║  BEFORE                          AFTER                           ║
+║  ──────                          ─────                           ║
+║  Score: Low                      Score: Medium-High              ║
+║  Tokens: 142                     Tokens: 385                     ║
+║  Triggers: 0                     Triggers: 7                     ║
+║  Anti-triggers: 0                Anti-triggers: 4                ║
+║                                                                  ║
+║  TOKEN STATUS: ✅ Under budget (385 < 500)                       ║
+║                                                                  ║
+║  SUGGESTIONS NOT IMPLEMENTED:                                    ║
+║  • (none - skill is under budget and clear)                      ║
+║                                                                  ║
+║  Choose an action:                                               ║
+║    [C] Commit changes                                            ║
+║    [I] Create GitHub issue with suggestions                      ║
+║    [S] Skip (discard changes)                                    ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Summary with Token Suggestions
+
+When token optimizations are available:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  WILLIE SUMMARY: azure-deploy                                    ║
+╠══════════════════════════════════════════════════════════════════╣
+║  BEFORE                          AFTER                           ║
+║  ──────                          ─────                           ║
+║  Score: Medium                   Score: Medium-High              ║
+║  Tokens: 623                     Tokens: 589                     ║
+║  Triggers: 4                     Triggers: 8                     ║
+║  Anti-triggers: 0                Anti-triggers: 3                ║
+║                                                                  ║
+║  TOKEN STATUS: ⚠️  Above soft limit (589 > 500)                  ║
+║                                                                  ║
+║  SUGGESTIONS NOT IMPLEMENTED:                                    ║
+║  • Remove bullet point decorators (-8 tokens)                    ║
+║  • Shorten "In order to deploy" → "To deploy" (-12 tokens)       ║
+║  • Consolidate example list into paragraph (-18 tokens)          ║
+║  Potential savings: ~38 tokens → 551 tokens                      ║
+║                                                                  ║
+║  Choose an action:                                               ║
+║    [C] Commit changes                                            ║
+║    [I] Create GitHub issue with suggestions                      ║
+║    [S] Skip (discard changes)                                    ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+**If user chooses [I] Create issue:**
+
+Creates GitHub issue:
+- **Title:** `[willie] Token optimization suggestions for azure-deploy`
+- **Labels:** `enhancement`, `skill-quality`
+- **Body:**
+  ```markdown
+  ## Summary
+  
+  Willie improved `azure-deploy` frontmatter but identified token optimization opportunities.
+  
+  | Metric | Before | After |
+  |--------|--------|-------|
+  | Score | Medium | Medium-High |
+  | Tokens | 623 | 589 |
+  | Status | ⚠️ Above soft limit | |
+  
+  ## Suggestions
+  
+  - [ ] Remove bullet point decorators (-8 tokens)
+  - [ ] Shorten "In order to deploy" → "To deploy" (-12 tokens)
+  - [ ] Consolidate example list into paragraph (-18 tokens)
+  
+  **Potential savings:** ~38 tokens → 551 tokens (under 500 soft limit)
+  
+  ## References
+  
+  - [OPTIMIZATION-PATTERNS.md](/.github/skills/markdown-token-optimizer/references/OPTIMIZATION-PATTERNS.md)
+  ```
