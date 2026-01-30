@@ -1,6 +1,9 @@
 ---
 name: azure-deploy
-description: Deploy applications to Azure using Azure Developer CLI (azd). USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure", "deploy my app", "azd up", etc.
+description: |
+  Deploy and publish applications to Azure using Azure Developer CLI (azd). Helps with deployment workflows, environment configuration, and troubleshooting deployment issues.
+  USE FOR: deploy to Azure, deploy my app, publish to Azure, host on Azure, run on Azure, azd up, azd deploy, deploy my application, publish my app, push to Azure, ship to Azure, go live on Azure, launch on Azure
+  DO NOT USE FOR: creating new Azure app structure (use azure-create-app), deploying to AWS/GCP/Google Cloud (use other cloud tools), generating azure.yaml (use azure-create-app)
 ---
 
 # Azure Deployment Skill
