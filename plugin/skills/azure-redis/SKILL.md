@@ -18,7 +18,6 @@ When Azure MCP is enabled, use these tools for Redis operations:
 ```bash
 az redis list --output table
 az redis show -n CACHE -g RG
-az redis list-keys -n CACHE -g RG
 ```
 
 ## Quick Reference
