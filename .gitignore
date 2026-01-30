@@ -406,3 +406,7 @@ token-metadata.json
 __test_fixtures__/
 __test_fixtures_*__/
 __integration_*__/
+
+# Test intermediate artifacts
+result-*.txt
+skill-invocation-test-summary.md
