@@ -1,6 +1,6 @@
 ---
 name: azure-cost-optimization
-description: Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. Use this skill when analyzing Azure spending, finding waste, rightsizing resources, or generating cost optimization reports.
+description: Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs, cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis costs. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation), deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)
 ---
 
 # Azure Cost Optimization Skill
