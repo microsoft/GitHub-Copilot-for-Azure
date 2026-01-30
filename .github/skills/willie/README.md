@@ -50,6 +50,11 @@ Willie implements the "Ralph Wiggum" technique:
 Run willie on appinsights-instrumentation
 ```
 
+### Single Skill (Fast Mode)
+```
+Run willie on appinsights-instrumentation --skip-integration
+```
+
 ### Multiple Skills
 ```
 Run willie on azure-security, azure-networking, azure-observability
@@ -64,6 +69,14 @@ Run willie on all Low-adherence skills
 ```
 Run willie on all skills
 ```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--skip-integration` | Skip integration tests for faster iteration (unit + trigger tests only) |
+
+> ⚠️ **Note:** Using `--skip-integration` speeds up the loop significantly but may miss runtime issues. Consider running full tests before final commit.
 
 ---
 
@@ -202,6 +215,7 @@ When running on multiple skills:
 | Token soft limit | 500 | SKILL.md target token count |
 | User prompt | After each skill | Commit, Create Issue, or Skip |
 | Continue on failure | Yes | Process remaining skills if one fails |
+| Skip integration | No | Use `--skip-integration` to run only unit/trigger tests |
 
 ---
 

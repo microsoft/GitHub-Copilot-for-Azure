@@ -20,12 +20,14 @@ When user says "willie help" or asks how to use willie, show this:
 ║                                                                  ║
 ║  USAGE:                                                          ║
 ║    Run willie on <skill-name>              # Single skill        ║
+║    Run willie on <skill-name> --skip-integration  # Fast mode    ║
 ║    Run willie on <skill1>, <skill2>, ...   # Multiple skills     ║
 ║    Run willie on all Low-adherence skills  # Batch by score      ║
 ║    Run willie on all skills                # All 26 skills       ║
 ║                                                                  ║
 ║  EXAMPLES:                                                       ║
 ║    Run willie on appinsights-instrumentation                     ║
+║    Run willie on azure-security --skip-integration               ║
 ║    Run willie on azure-security, azure-networking                ║
 ║    Run willie on all Low-adherence skills                        ║
 ║                                                                  ║
@@ -148,6 +150,14 @@ willie: improve {skill-name} frontmatter
 - SKILL.md should stay under 500 tokens (soft limit)
 - Tests must pass before prompting for action
 - User chooses: Commit, Create Issue, or Skip after each skill
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--skip-integration` | Skip integration tests for faster iteration. Only runs unit and trigger tests. |
+
+> ⚠️ Skipping integration tests speeds up the loop but may miss runtime issues. Consider running full tests before final commit.
 
 ## Reference Documentation
 

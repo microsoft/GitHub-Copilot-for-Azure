@@ -193,8 +193,23 @@ description: |
 
 **Command:**
 ```bash
+# Standard (unit + trigger tests only - fast)
+cd tests && npm test -- --testPathPattern={skill-name} --testPathIgnorePatterns=integration
+
+# With integration tests (slower, requires Copilot SDK)
 cd tests && npm test -- --testPathPattern={skill-name}
 ```
+
+**Skip Integration Tests Flag:**
+
+When invoking Willie, you can skip integration tests for faster iteration:
+```
+Run willie on azure-deploy --skip-integration
+```
+
+This runs only unit and trigger tests, which are fast and don't require the Copilot SDK. Integration tests can be run separately after the loop completes.
+
+> ⚠️ **Note:** Skipping integration tests may affect confidence in skill quality. Consider running full tests before final commit.
 
 **Expected outcome:**
 - All tests pass
