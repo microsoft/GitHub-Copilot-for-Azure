@@ -40,41 +40,49 @@ Based on the skill's description and content, add to `triggers.test.ts`:
 In `unit.test.ts`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
 
 ### Step 6: Configure integration tests (optional)
-In `integration.test.js`, customize the prompts to test real agent behavior.
+In `integration.test.ts`, customize the prompts to test real agent behavior.
 
-**Important:** Integration tests use dynamic SDK loading to handle ESM modules:
-```javascript
-// Check if SDK is available before loading agent-runner
-let agentRunner = null;
-let sdkAvailable = false;
+```typescript
+import { 
+  run, 
+  isSkillInvoked, 
+  doesAssistantMessageIncludeKeyword,
+  shouldSkipIntegrationTests,
+  getIntegrationSkipReason
+} from '../utils/agent-runner';
 
-try {
-  require.resolve('@github/copilot-sdk');
-  agentRunner = require('../utils/agent-runner');
-  sdkAvailable = true;
-} catch {
-  sdkAvailable = false;
+const SKILL_NAME = '{skill-name}';
+
+// Integration tests auto-skip if SDK unavailable or in CI
+const skipTests = shouldSkipIntegrationTests();
+const skipReason = getIntegrationSkipReason();
+if (skipTests && skipReason) {
+  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
 }
 
-const shouldSkip = () => !sdkAvailable || process.env.CI === 'true';
+const describeIntegration = skipTests ? describe.skip : describe;
 
-// Then in tests:
-test('invokes skill for relevant prompt', async () => {
-  if (shouldSkip()) return;
-  
-  const agentMetadata = await agentRunner.run({
-    prompt: 'Your test prompt that should trigger this skill'
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  test('invokes skill for relevant prompt', async () => {
+    const agentMetadata = await run({
+      prompt: 'Your test prompt that should trigger this skill'
+    });
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
   });
-  expect(agentRunner.isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 });
 ```
 
-**Note:** Integration tests require Copilot CLI authentication and are skipped in CI.
+**Note:** Integration tests run automatically when SDK is available and authenticated. They skip gracefully in CI or when prerequisites are missing.
 
 ### Step 7: Run and verify
 ```bash
 cd tests
+
+# Run all tests (integration runs if SDK available)
 npm test -- --testPathPattern={skill-name}
+
+# Skip integration tests explicitly
+SKIP_INTEGRATION_TESTS=true npm test -- --testPathPattern={skill-name}
 ```
 
 ### Step 8: Update coverage grid
@@ -230,34 +238,34 @@ Integration tests run a real Copilot agent session to verify skill behavior.
 
 ### Basic Integration Test
 
-```javascript
-// Check if SDK is available before loading agent-runner (ESM module handling)
-let agentRunner = null;
-let sdkAvailable = false;
-
-try {
-  require.resolve('@github/copilot-sdk');
-  agentRunner = require('../utils/agent-runner');
-  sdkAvailable = true;
-} catch {
-  sdkAvailable = false;
-}
+```typescript
+import { 
+  run, 
+  isSkillInvoked, 
+  doesAssistantMessageIncludeKeyword,
+  shouldSkipIntegrationTests,
+  getIntegrationSkipReason
+} from '../utils/agent-runner';
 
 const SKILL_NAME = 'azure-role-selector';
 
-// Skip in CI, when SDK unavailable, or when SKIP_INTEGRATION_TESTS is set
-const shouldSkip = () => !sdkAvailable || process.env.CI === 'true' || process.env.SKIP_INTEGRATION_TESTS === 'true';
+// Integration tests auto-skip if SDK unavailable or in CI
+const skipTests = shouldSkipIntegrationTests();
+const skipReason = getIntegrationSkipReason();
+if (skipTests && skipReason) {
+  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
+}
 
-describe(`${SKILL_NAME} - Integration Tests`, () => {
+const describeIntegration = skipTests ? describe.skip : describe;
+
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test('invokes skill for relevant prompt', async () => {
-    if (shouldSkip()) return;
-    
-    const agentMetadata = await agentRunner.run({
+    const agentMetadata = await run({
       prompt: 'What role should I assign for blob storage access?'
     });
 
-    expect(agentRunner.isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    expect(agentRunner.doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
   });
 });
 ```
@@ -297,14 +305,14 @@ test('works with project files', async () => {
 ### Local Development
 
 ```bash
-# Unit and trigger tests (fast, no auth)
+# Run all tests (integration runs if SDK available, skips if not)
+npm test
+
+# Unit and trigger tests only (always skips integration)
 npm run test:unit
 
-# Integration tests (requires Copilot CLI auth)
-npm run test:integration
-
-# All tests
-npm test
+# Skip integration tests explicitly
+SKIP_INTEGRATION_TESTS=true npm test
 
 # Specific skill
 npm test -- --testPathPattern=azure-validation

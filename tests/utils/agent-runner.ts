@@ -2,17 +2,35 @@
  * Agent Runner Utility
  * 
  * Executes real Copilot agent sessions for integration testing.
- * Adapted from PR #617's runner.ts pattern.
+ * Adapted from the project's existing runner.ts pattern.
  * 
  * Prerequisites:
  * - Install Copilot CLI: npm install -g @github/copilot-cli
  * - Login: Run `copilot` and follow prompts to authenticate
+ * 
+ * Security Note: The config.setup callback receives the workspace path
+ * and executes with full process permissions. Only use with trusted test code.
  */
 
-import { CopilotClient, type SessionEvent } from '@github/copilot-sdk';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+
+// Type definitions for the SDK (defined locally to avoid import issues)
+export interface SessionEvent {
+  type: string;
+  data: {
+    messageId?: string;
+    content?: string;
+    deltaContent?: string;
+    toolName?: string;
+    toolCallId?: string;
+    arguments?: unknown;
+    success?: boolean;
+    message?: string;
+    [key: string]: unknown;
+  };
+}
 
 export interface AgentMetadata {
   events: SessionEvent[];
@@ -28,15 +46,37 @@ export interface KeywordOptions {
   caseSensitive?: boolean;
 }
 
+// Lazy-loaded SDK
+let CopilotClientClass: any = null;
+let sdkLoadError: Error | null = null;
+
+async function getCopilotClient() {
+  if (sdkLoadError) {
+    throw sdkLoadError;
+  }
+  if (!CopilotClientClass) {
+    try {
+      const sdk = await import('@github/copilot-sdk');
+      CopilotClientClass = sdk.CopilotClient;
+    } catch (error) {
+      sdkLoadError = new Error('Failed to load @github/copilot-sdk. This is likely due to Jest ESM compatibility issues. Set SKIP_INTEGRATION_TESTS=true to skip integration tests.');
+      throw sdkLoadError;
+    }
+  }
+  return CopilotClientClass;
+}
+
 /**
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
+  const CopilotClient = await getCopilotClient();
+  
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   // Declare client and session outside try block to ensure cleanup in finally
-  let client: CopilotClient | undefined;
-  let session: Awaited<ReturnType<CopilotClient['createSession']>> | undefined;
+  let client: any;
+  let session: any;
 
   try {
     // Run optional setup
@@ -150,10 +190,14 @@ export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string):
 /**
  * Check if all tool calls for a given tool were successful
  */
-export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName: string): boolean {
-  const executionStartEvents = agentMetadata.events
-    .filter(event => event.type === 'tool.execution_start')
-    .filter(event => event.data.toolName === toolName);
+export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName: string | null = null): boolean {
+  let executionStartEvents = agentMetadata.events
+    .filter(event => event.type === 'tool.execution_start');
+
+  if (toolName != null) {
+    executionStartEvents = executionStartEvents
+      .filter(event => event.data.toolName === toolName);
+  }
   
   const executionCompleteEvents = agentMetadata.events
     .filter(event => event.type === 'tool.execution_complete');
@@ -211,9 +255,52 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | nu
   return calls;
 }
 
+// Track skip reason for reporting
+let integrationSkipReason: string | null = null;
+
 /**
  * Check if integration tests should be skipped
+ * 
+ * Integration tests are skipped when:
+ * - Running in CI (CI=true)
+ * - SKIP_INTEGRATION_TESTS=true is set
+ * - @github/copilot-sdk is not installed
  */
 export function shouldSkipIntegrationTests(): boolean {
-  return process.env.SKIP_INTEGRATION_TESTS === 'true' || process.env.CI === 'true';
+  // Always skip in CI
+  if (process.env.CI === 'true') {
+    integrationSkipReason = 'Running in CI environment';
+    return true;
+  }
+  
+  // Skip if explicitly requested
+  if (process.env.SKIP_INTEGRATION_TESTS === 'true') {
+    integrationSkipReason = 'SKIP_INTEGRATION_TESTS=true';
+    return true;
+  }
+  
+  // Check if SDK package exists
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const sdkPath = path.join(__dirname, '..', 'node_modules', '@github', 'copilot-sdk', 'package.json');
+    if (!fs.existsSync(sdkPath)) {
+      integrationSkipReason = '@github/copilot-sdk not installed';
+      return true;
+    }
+  } catch {
+    integrationSkipReason = '@github/copilot-sdk not installed';
+    return true;
+  }
+  
+  // SDK installed, tests should attempt to run
+  integrationSkipReason = null;
+  return false;
+}
+
+/**
+ * Get the reason why integration tests are being skipped
+ */
+export function getIntegrationSkipReason(): string | null {
+  return integrationSkipReason;
 }
