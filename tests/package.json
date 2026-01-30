@@ -12,7 +12,6 @@
     "test:ci": "jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",
     "test:watch": "jest --watch",
     "test:skill": "jest --testPathPattern",
-    "coverage:grid": "ts-node scripts/generate-coverage-grid.ts",
     "update:snapshots": "jest --updateSnapshot"
   },
   "devDependencies": {
