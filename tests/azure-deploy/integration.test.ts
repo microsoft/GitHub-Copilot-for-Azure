@@ -102,7 +102,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     expect(isSkillUsed).toBe(true);
     expect(containsDeployLinks).toBe(true);
-  }, 300000);
+  });
 
   test('creates discussion board and deploys to Azure', async () => {
     const agentMetadata = await run({
@@ -115,7 +115,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     expect(isSkillUsed).toBe(true);
     expect(containsDeployLinks).toBe(true);
-  }, 300000);
+  });
 
   test('creates todo list with frontend and API and deploys to Azure', async () => {
     const agentMetadata = await run({
@@ -128,5 +128,5 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     expect(isSkillUsed).toBe(true);
     expect(containsDeployLinks).toBe(true);
-  }, 300000);
+  });
 });
