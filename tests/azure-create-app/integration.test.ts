@@ -1,5 +1,5 @@
 /**
- * Integration Tests for azure-create-app
+ * Integration Tests for azure-prepare
  * 
  * Tests skill behavior with a real Copilot agent session.
  * Runs prompts multiple times to measure skill invocation rate.
@@ -17,7 +17,7 @@ import {
 } from "../utils/agent-runner";
 import * as fs from "fs";
 
-const SKILL_NAME = "azure-create-app";
+const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
@@ -34,7 +34,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   
-  test("invokes azure-create-app skill for azure.yaml creation prompt", async () => {
+  test("invokes azure-prepare skill for azure.yaml creation prompt", async () => {
     let successCount = 0;
     
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
@@ -61,7 +61,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 
-  test("invokes azure-create-app skill for azd init prompt", async () => {
+  test("invokes azure-prepare skill for azd init prompt", async () => {
     let successCount = 0;
     
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {

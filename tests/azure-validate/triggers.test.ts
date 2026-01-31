@@ -31,7 +31,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       'Is my app ready for Azure deployment?',
       'Validate my Bicep configuration',
       'Preview what changes will be made to Azure',
-      // Preflight validation (formerly azure-deployment-preflight)
+      // Validation
       'Validate my Bicep template before deploying to Azure',
       'Run a what-if analysis to preview changes before deploying my infrastructure',
       'Check my deployment permissions before running azd up',

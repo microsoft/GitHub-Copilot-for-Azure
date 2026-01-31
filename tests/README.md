@@ -385,9 +385,9 @@ tests/
 | azure-ai | ❌ | - | - | - | - |
 | azure-aigateway | ❌ | - | - | - | - |
 | azure-cost-optimization | ❌ | - | - | - | - |
-| azure-create-app | ❌ | - | - | - | - |
+| azure-prepare | ❌ | - | - | - | - |
 | azure-deploy | ❌ | - | - | - | - |
-| azure-deployment-preflight | ❌ | - | - | - | - |
+| azure-validate | ❌ | - | - | - | - |
 | azure-diagnostics | ❌ | - | - | - | - |
 | azure-functions | ❌ | - | - | - | - |
 | azure-keyvault-expiration-audit | ❌ | - | - | - | - |
