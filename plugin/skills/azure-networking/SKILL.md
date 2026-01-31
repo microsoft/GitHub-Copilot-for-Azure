@@ -1,6 +1,9 @@
 ---
 name: azure-networking
-description: Azure Networking Services including Virtual Networks, Private Endpoints, Load Balancers, Application Gateway, Front Door, and DNS. Covers hub-spoke topology, private endpoint patterns, and network security layers.
+description: |
+  Azure Networking Services including Virtual Networks, Private Endpoints, Load Balancers, Application Gateway, Front Door, and DNS. Covers hub-spoke topology, private endpoint patterns, and network security layers.
+  USE FOR: virtual network setup, private endpoint configuration, hub-spoke topology, VNet peering, network security groups, Azure firewall rules, load balancer setup, Application Gateway configuration, Azure Front Door, private link setup, DNS configuration, network isolation
+  DO NOT USE FOR: compute resource configuration (use azure-create-app), Azure Functions networking (use azure-functions), database networking within postgres/cosmos (use respective skills), cost analysis (use azure-cost-optimization), resource deployment (use azure-deploy)
 ---
 
 # Azure Networking Services
