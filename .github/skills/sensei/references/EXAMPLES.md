@@ -149,7 +149,7 @@ description: |
 
 **Status:**
 - ✅ Good trigger phrases
-- ❌ Missing anti-triggers (collision with azure-create-app, azure-deployment-preflight)
+- ❌ Missing anti-triggers (collision with azure-prepare, azure-validate)
 
 ### After (Medium-High Adherence)
 
@@ -161,8 +161,8 @@ description: |
   Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
   USE FOR: "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure",
   "azd up", "deploy my app", "push to Azure", "get this running in the cloud".
-  DO NOT USE FOR: initial project setup (use azure-create-app), validating Bicep
-  before deployment (use azure-deployment-preflight), or troubleshooting failed
+  DO NOT USE FOR: initial project setup (use azure-prepare), validating Bicep
+  before deployment (use azure-validate), or troubleshooting failed
   deployments (use azure-diagnostics).
 ---
 ```
@@ -207,8 +207,8 @@ description: |
 'Push to Heroku',
 
 // Related but different Azure services
-'Validate my Bicep template',        // → azure-deployment-preflight
-'Create an azure.yaml file',         // → azure-create-app
+'Validate my Bicep template',        // → azure-validate
+'Create an azure.yaml file',         // → azure-prepare
 'Why did my deployment fail?',       // → azure-diagnostics
 'How much will this deployment cost?', // → azure-cost-optimization
 ```
@@ -276,8 +276,8 @@ USE FOR: "deploy to Azure", "host on Azure"
 ```javascript
 // But triggers.test.ts has:
 const shouldTriggerPrompts = [
-  'Create a new Azure project',  // Wrong! This is azure-create-app
-  'Validate my Bicep file',      // Wrong! This is azure-deployment-preflight
+  'Create a new Azure project',  // Wrong! This is azure-prepare
+  'Validate my Bicep file',      // Wrong! This is azure-validate
 ];
 ```
 

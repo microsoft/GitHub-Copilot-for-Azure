@@ -214,8 +214,8 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 ### Medium-Adherence Skills
 
 1. `azure-deploy` (excellent triggers, missing anti-triggers)
-2. `azure-create-app`
-3. `azure-deployment-preflight`
+2. `azure-prepare`
+3. `azure-validate`
 4. `azure-postgres`
 5. `azure-functions`
 6. `azure-quick-review`

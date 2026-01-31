@@ -88,7 +88,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 
-  // Preflight validation tests (formerly azure-deployment-preflight)
+  // Validation tests
   test("invokes azure-validate skill for Bicep validation prompt", async () => {
     let successCount = 0;
     
