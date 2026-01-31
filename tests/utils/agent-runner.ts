@@ -40,6 +40,7 @@ export interface TestConfig {
   setup?: (workspace: string) => Promise<void>;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
+  nonInteractive?: boolean;
 }
 
 export interface KeywordOptions {
@@ -99,9 +100,12 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       await config.setup(testWorkspace);
     }
 
+    // Copilot client with yolo mode and non-interactive session.
+    // Longer chats but will have full conversation of skill. 
     client = new CopilotClient({
       logLevel: process.env.DEBUG ? 'all' : 'error',
-      cwd: testWorkspace
+      cwd: testWorkspace,
+      cliArgs: config.nonInteractive ? ['--yolo', '-p'] : []
     });
 
     const skillDirectory = path.resolve(__dirname, '../../plugin/skills');
@@ -318,4 +322,56 @@ export function shouldSkipIntegrationTests(): boolean {
  */
 export function getIntegrationSkipReason(): string | null {
   return integrationSkipReason;
+}
+
+/**
+ * Common Azure deployment link patterns
+ */
+const DEPLOY_LINK_PATTERNS = [
+  // Azure Portal resource links
+  /https:\/\/portal\.azure\.com\/#[@\/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/gi,
+  // Azure App Service URLs
+  /https?:\/\/[\w-]+\.azurewebsites\.net/gi,
+  // Azure Static Web Apps URLs
+  /https:\/\/[\w-]+\.azurestaticapps\.net/gi,
+  // Azure Functions URLs
+  /https:\/\/[\w-]+\.azurewebsites\.net\/api\/[\w-]+/gi,
+  // Azure Container Apps URLs
+  /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/gi,
+  // Azure Portal direct links
+  /https:\/\/portal\.azure\.com\/#blade\/[\w\/]+/gi,
+];
+
+/**
+ * Get all assistant messages from agent metadata
+ */
+function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
+  const allMessages: Record<string, string> = {};
+  
+  agentMetadata.events.forEach(event => {
+    if (event.type === 'assistant.message' && event.data.messageId && event.data.content) {
+      allMessages[event.data.messageId] = event.data.content;
+    }
+    if (event.type === 'assistant.message_delta' && event.data.messageId) {
+      if (allMessages[event.data.messageId]) {
+        allMessages[event.data.messageId] += event.data.deltaContent ?? '';
+      } else {
+        allMessages[event.data.messageId] = event.data.deltaContent ?? '';
+      }
+    }
+  });
+
+  return Object.values(allMessages).join('\n');
+}
+
+/**
+ * Check if the agent response contains any Azure deployment links
+ */
+export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
+  const content = getAllAssistantMessages(agentMetadata);
+  
+  return DEPLOY_LINK_PATTERNS.some(pattern => {
+    pattern.lastIndex = 0;
+    return pattern.test(content);
+  });
 }
