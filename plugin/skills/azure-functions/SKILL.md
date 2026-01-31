@@ -1,9 +1,13 @@
 ---
 name: azure-functions
 description: |
-  Serverless event-driven compute with Azure Functions. 
-  USE FOR: deploy functions, serverless API, create webhooks, timer triggers, HTTP trigger, queue trigger, event-driven, Durable Functions, Azure Functions, function app, azd deploy functions, func commands. 
-  DO NOT USE FOR: container apps (use azure-deploy), static sites only (use azure-deploy), Kubernetes (use AKS), virtual machines.
+  Build and deploy serverless Azure Functions with HTTP, timer, queue, and event triggers.
+  USE FOR: create Azure Function, HTTP trigger function, timer trigger, queue trigger,
+  Durable Functions, func new, func start, function app, serverless API, event-driven,
+  Azure Functions bindings, func deploy, local functions development, deploy Azure Function,
+  serverless compute, func commands, azd init functions, function bindings.
+  DO NOT USE FOR: container apps (use azure-deploy), web apps without functions
+  (use azure-deploy), Kubernetes (use AKS skills), static sites (use azure-deploy).
 ---
 
 # Azure Functions
