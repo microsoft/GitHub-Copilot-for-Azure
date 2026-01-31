@@ -41,7 +41,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await run({
-          prompt: "Deploy my application to Azure using azd up"
+          prompt: "Run azd up to deploy my already-prepared app to Azure"
         });
         
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
