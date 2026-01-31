@@ -19,6 +19,8 @@ Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 - What the skill does (from content)
 - What Azure services/tools it references
 
+> **Frontmatter Format Rule:** Descriptions over 200 characters MUST use multi-line YAML format (`|`) for maintainability. See [azure-ai](../plugin/skills/azure-ai/SKILL.md), [azure-functions](../plugin/skills/azure-functions/SKILL.md) for examples.
+
 ### Step 3: Update test files
 In each test file (`unit.test.ts`, `triggers.test.ts`), change:
 ```typescript

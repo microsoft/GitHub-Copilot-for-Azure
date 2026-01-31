@@ -122,6 +122,8 @@ description: |
 ---
 ```
 
+> **IMPORTANT:** Always use multi-line YAML format (`|`) for descriptions over 200 characters. Single-line descriptions become difficult to read, review, and maintain. See [azure-ai](../../plugin/skills/azure-ai/SKILL.md), [azure-functions](../../plugin/skills/azure-functions/SKILL.md) for examples.
+
 > Keep total description under 1024 characters.
 
 ## Test Scaffolding

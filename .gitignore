@@ -409,4 +409,4 @@ __integration_*__/
 
 # Test intermediate artifacts
 result-*.txt
-skill-invocation-test-summary.md
+skill-invocation-test-summary.mdtests/reports/junit.xml
