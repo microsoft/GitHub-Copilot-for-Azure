@@ -40,7 +40,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await run({
-          prompt: "How do I deploy an Azure Function with an HTTP trigger?"
+          prompt: "Create an HTTP-triggered Azure Function and run it locally with func start"
         });
         
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -67,7 +67,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await run({
-          prompt: "Create a timer-triggered Azure Function that runs every hour"
+          prompt: "Set up a timer trigger Azure Function using func new"
         });
         
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
