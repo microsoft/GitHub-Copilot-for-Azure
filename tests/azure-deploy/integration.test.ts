@@ -13,7 +13,8 @@ import {
   run, 
   isSkillInvoked, 
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason
+  getIntegrationSkipReason,
+  hasDeployLinks
 } from "../utils/agent-runner";
 import * as fs from "fs";
 
@@ -88,4 +89,44 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 
+  // Need to be logged into azd for these tests. 
+  // azd auth login
+  test('creates whiteboard application and deploys to Azure', async () => {
+    const agentMetadata = await run({
+      prompt: 'Create a whiteboard application and deploy to azure',
+      nonInteractive: true
+    });
+
+    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+    const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+    expect(isSkillUsed).toBe(true);
+    expect(containsDeployLinks).toBe(true);
+  });
+
+  test('creates discussion board and deploys to Azure', async () => {
+    const agentMetadata = await run({
+      prompt: 'Create a discussion board and deploy to Azure',
+      nonInteractive: true
+    });
+
+    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+    const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+    expect(isSkillUsed).toBe(true);
+    expect(containsDeployLinks).toBe(true);
+  });
+
+  test('creates todo list with frontend and API and deploys to Azure', async () => {
+    const agentMetadata = await run({
+      prompt: 'Create a todo list with frontend and API and deploy to Azure',
+      nonInteractive: true
+    });
+
+    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+    const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+    expect(isSkillUsed).toBe(true);
+    expect(containsDeployLinks).toBe(true);
+  });
 });
