@@ -16,6 +16,12 @@ Deploy to Azure using Azure Developer CLI (azd).
 | 2 | Deploy | `azd up --no-prompt` |
 | 3 | Verify | `azd show` |
 
+## Service-Specific Deployment
+
+| Service Type | Reference |
+|--------------|-----------|
+| Static Web Apps | [static-web-apps.md](static-web-apps.md) |
+
 ## Deployment Commands
 
 ### Full Deployment

@@ -182,12 +182,66 @@ resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2022-09-01' = {
 }
 ```
 
-## Deployment Token
+## Deployment
 
-For CI/CD pipelines:
+### Deployment with azd
+
+Azure Developer CLI uses the SWA CLI (`swa deploy`) for deployments:
+
+```bash
+azd up --no-prompt
+```
+
+The deployment token is automatically retrieved from the provisioned Static Web App resource.
+
+### Build Configuration
+
+For pure static sites (no build step required):
+
+```bicep
+buildProperties: {
+  appLocation: '/'
+  outputLocation: '/'
+  skipAppBuild: true
+}
+```
+
+For sites with build steps (React, Vue, Angular, etc.):
+
+```bicep
+buildProperties: {
+  appLocation: '/'
+  outputLocation: 'dist'  # or 'build' for React
+}
+```
+
+### Deployment Token
+
+For CI/CD pipelines, retrieve the deployment token:
 
 ```bicep
 output deploymentToken string = staticWebApp.listSecrets().properties.apiKey
 ```
 
 Store this token as a secret in GitHub Actions or Azure DevOps.
+
+To get the token via Azure CLI:
+
+```bash
+az staticwebapp secrets list --name <app-name> --query "properties.apiKey" -o tsv
+```
+
+### Direct Deployment with SWA CLI
+
+For manual deployments without azd:
+
+```bash
+# Install SWA CLI
+npm install -g @azure/static-web-apps-cli
+
+# Deploy to production
+swa deploy ./dist --deployment-token <token>
+
+# Deploy with skip build (pure static)
+swa deploy ./ --deployment-token <token> --no-build
+```

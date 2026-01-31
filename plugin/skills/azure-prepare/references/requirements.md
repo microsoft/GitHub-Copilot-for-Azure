@@ -36,6 +36,19 @@ Collect project requirements through conversation before making architecture dec
 | Industry regulations | Security controls |
 | Internal policies | Approval workflows |
 
+### 5. Region and Service Availability
+
+**IMPORTANT:** Not all Azure services are available in all regions. For Static Web Apps specifically:
+- Use regions like `eastus2`, `westus2`, `centralus`, `westeurope`, or `eastasia` for reliable availability
+- Avoid `eastus` as it may not have Static Web Apps capacity
+- Verify service availability: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/
+
+When selecting a region, consider:
+1. Service availability (especially for Static Web Apps, Container Apps, etc.)
+2. Data residency and compliance requirements
+3. Latency to primary users
+4. Pricing variations by region
+
 ## Gather via Conversation
 
 Ask user to confirm:

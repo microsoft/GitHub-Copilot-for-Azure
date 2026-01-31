@@ -8,6 +8,18 @@
 | Deploy failed | Check build/Docker errors |
 | Package failed | Verify Dockerfile and dependencies |
 | Quota exceeded | Request increase or change region |
+| Static Web Apps not available in region | Change region to eastus2, westus2, centralus, westeurope, or eastasia |
+| Request is missing pull request id | For Static Web Apps: Ensure using `azd deploy`, not GitHub Actions PR workflow |
+
+## Static Web Apps Errors
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| npm install fails for static site | `language: js` triggers build detection | Remove `language` field from azure.yaml for pure static sites |
+| Application Error after deployment | Incorrect outputLocation or missing index.html | Verify buildProperties.outputLocation matches build output; ensure index.html exists |
+| Deployment token invalid | Token expired or wrong app | Regenerate token: `az staticwebapp secrets list --name <app-name>` |
+
+See also: [Static Web Apps Deployment Guide](static-web-apps.md)
 
 ## Retry
 

@@ -52,6 +52,8 @@ services:
 
 ### Static Web App
 
+For static sites WITH build steps (React, Vue, Angular):
+
 ```yaml
 services:
   web:
@@ -60,6 +62,19 @@ services:
     host: staticwebapp
     dist: dist
 ```
+
+For pure static HTML sites (NO build step):
+
+```yaml
+services:
+  web:
+    project: ./src/web
+    host: staticwebapp
+    # Omit 'language' to skip build detection
+    # Omit 'dist' or set to '/' for in-place deployment
+```
+
+**Important:** For pure static sites, omit the `language` field to prevent azd from attempting to run package manager commands (like `npm install`). The Bicep template should include `skipAppBuild: true` in buildProperties.
 
 ### App Service
 
