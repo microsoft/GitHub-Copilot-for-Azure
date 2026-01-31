@@ -132,6 +132,7 @@ jobs:
     
     permissions:
       contents: write
+      pull-requests: write
 
     defaults:
       run:
@@ -155,16 +156,35 @@ jobs:
       - name: Generate coverage grid
         run: npm run coverage:grid
 
-      - name: Commit README updates
-        continue-on-error: true
+      - name: Create PR for README updates
         working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet tests/README.md; then
             echo "No changes to README.md"
             exit 0
           fi
+          
+          BRANCH="auto/update-coverage-grid-$(date +%Y%m%d-%H%M%S)"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
           git add tests/README.md
-          git commit -m "docs: update skills coverage grid [skip ci]"
-          git push || echo "::warning::Could not push changes - branch protection may be enabled"
+          git commit -m "docs: update skills coverage grid"
+          git push origin "$BRANCH"
+          
+          gh pr create \
+            --title "docs: Update skills coverage grid" \
+            --body "Automated PR to update the skills coverage grid in tests/README.md.
+
+          This PR was created by the test workflow after detecting changes to test coverage.
+
+          > [!NOTE]
+          > Copilot will review this PR automatically." \
+            --base main \
+            --head "$BRANCH"
+          
+          # Request Copilot code review
+          gh pr edit "$BRANCH" --add-reviewer "@me"
+          echo "::notice::Created PR from branch $BRANCH - Copilot review requested"
