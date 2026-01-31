@@ -101,7 +101,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     }
 
     // Copilot client with yolo mode and non-interactive session.
-    // Longer chats but will have full conversation of skill. 
+    // Enables longer chats with full conversation history for the skill.
     client = new CopilotClient({
       logLevel: process.env.DEBUG ? 'all' : 'error',
       cwd: testWorkspace,
@@ -329,17 +329,15 @@ export function getIntegrationSkipReason(): string | null {
  */
 const DEPLOY_LINK_PATTERNS = [
   // Azure Portal resource links
-  /https:\/\/portal\.azure\.com\/#[@\/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/gi,
+  /https:\/\/portal\.azure\.com\/#[@\/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/i,
   // Azure App Service URLs
-  /https?:\/\/[\w-]+\.azurewebsites\.net/gi,
+  /https?:\/\/[\w-]+\.azurewebsites\.net/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w-]+\.azurestaticapps\.net/gi,
-  // Azure Functions URLs
-  /https:\/\/[\w-]+\.azurewebsites\.net\/api\/[\w-]+/gi,
+  /https:\/\/[\w-]+\.azurestaticapps\.net/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/gi,
+  /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/i,
   // Azure Portal direct links
-  /https:\/\/portal\.azure\.com\/#blade\/[\w\/]+/gi,
+  /https:\/\/portal\.azure\.com\/#blade\/[\w\/]+/i,
 ];
 
 /**
@@ -370,8 +368,5 @@ function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
 export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
   const content = getAllAssistantMessages(agentMetadata);
   
-  return DEPLOY_LINK_PATTERNS.some(pattern => {
-    pattern.lastIndex = 0;
-    return pattern.test(content);
-  });
+  return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
 }
