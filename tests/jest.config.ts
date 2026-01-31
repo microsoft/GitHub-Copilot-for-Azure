@@ -55,7 +55,7 @@ const config: Config = {
   bail: process.env.CI ? 1 : 0,
   
   // Test timeout - longer for integration tests (agent sessions can take 60s+)
-  testTimeout: 10 * 60 * 1000, // 10 minutes
+  testTimeout: 20 * 60 * 1000, // 20 minutes
   
   // Clear mocks between tests
   clearMocks: true,

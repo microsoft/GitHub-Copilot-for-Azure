@@ -1,7 +1,7 @@
 const fs = require("fs");
 
-// Important: Run this script with tests/ folder as the working directory.
-// For example, node ./scripts/generate-skill-invocation-test-summary.js
+// Important: Run this script with the nested tests/ folder as the working directory.
+// For example, node ../scripts/generate-skill-invocation-test-summary.js
 
 /**
  * Merges the skill invocation test results for each skill into a summary document.
