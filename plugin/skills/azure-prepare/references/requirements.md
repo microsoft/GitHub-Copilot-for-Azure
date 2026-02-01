@@ -38,16 +38,20 @@ Collect project requirements through conversation before making architecture dec
 
 ### 5. Region and Service Availability
 
-**IMPORTANT:** Not all Azure services are available in all regions. For Static Web Apps specifically:
-- Use regions like `eastus2`, `westus2`, `centralus`, `westeurope`, or `eastasia` for reliable availability
-- Avoid `eastus` as it may not have Static Web Apps capacity
-- Verify service availability: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/
+Not all Azure services are available in all regions. When selecting a region, consider:
 
-When selecting a region, consider:
-1. Service availability (especially for Static Web Apps, Container Apps, etc.)
+**For Static Web Apps:**
+- Static Web Apps is a **non-regional service** - static content is globally distributed via CDN
+- The region parameter only controls where the **integrated API backend (Azure Functions)** is deployed
+- If provisioning fails due to capacity issues, try an alternative region for the API backend
+- Your static content will be served globally with low latency regardless of the region you select
+
+**General region considerations:**
+1. Service availability (check specific services at Azure regions page)
 2. Data residency and compliance requirements
-3. Latency to primary users
+3. Latency to primary users (for APIs and dynamic services)
 4. Pricing variations by region
+5. Capacity constraints (may vary over time)
 
 ## Gather via Conversation
 

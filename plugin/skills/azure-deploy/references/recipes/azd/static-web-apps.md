@@ -14,7 +14,7 @@ Azure Static Web Apps (SWA) deployment with `azd` uses the SWA CLI (`swa deploy`
 
 - Static Web App resource provisioned via `azd provision` or `azd up`
 - SWA CLI installed (automatically installed by azd if needed)
-- Valid Azure subscription with Static Web Apps available in the target region
+- Valid Azure subscription
 
 ## Deployment Command
 
@@ -161,22 +161,25 @@ on:
     branches: [main]     # Preview deployment
 ```
 
-### Issue: "Static Web Apps not available in eastus"
+### Issue: Provisioning fails in a specific region
 
-**Symptom:** Provisioning fails because Static Web Apps aren't available in the selected region.
+**Symptom:** Provisioning fails with errors related to the selected region.
 
-**Cause:** Not all Azure regions support Static Web Apps.
+**Cause:** While Static Web Apps is a non-regional service (static content is globally distributed), the serverless API backend (Azure Functions) must be provisioned in a specific region. Some regions may have capacity constraints or temporary availability issues.
 
-**Fix:** Update your `azure.yaml` or `.azure/<env>/.env` file to use a supported region:
+**Fix:** 
 
-Supported regions include:
-- `eastus2`
-- `westus2`
-- `centralus`
-- `westeurope`
-- `eastasia`
+**Important:** Static Web Apps static content is automatically served globally via Azure's CDN, regardless of the region you select. The region parameter only affects where the integrated Azure Functions API is deployed.
 
-Check current availability: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=static-apps
+If you encounter provisioning errors related to region capacity:
+
+1. Try a different region for your API backend
+2. Common regions with good availability include: `eastus2`, `westus2`, `centralus`, `westeurope`, `eastasia`
+3. Update your `azure.yaml` or `.azure/<env>/.env` file:
+
+```
+AZURE_LOCATION=westus2
+```
 
 ### Issue: Deployment succeeds but site shows "Application Error"
 
@@ -218,18 +221,29 @@ az staticwebapp secrets list \
 
 Store the token as a repository secret named `AZURE_STATIC_WEB_APPS_API_TOKEN`.
 
-## Region Availability
+## Region Selection
 
-Static Web Apps are not available in all Azure regions. Before provisioning:
+**Important:** Azure Static Web Apps is a **non-regional service**. Static content (HTML, CSS, JS, images) is automatically distributed globally via Azure's CDN infrastructure and served from the nearest point of presence, regardless of the region you select during provisioning.
 
-1. Check the Azure portal for current region availability
-2. Use established regions like `eastus2`, `westus2`, or `westeurope`
-3. If your preferred region doesn't support SWA, choose an alternative
+The region parameter you specify when creating a Static Web App controls:
+- **API/Functions location:** Where the integrated Azure Functions backend is deployed
+- **Staging environments:** Where preview/staging slots are hosted
+- **NOT the static content:** Static files are globally distributed
+
+### Selecting a Region
+
+When choosing a region, consider:
+
+1. **API latency:** Select a region close to your API's data sources or primary users
+2. **Capacity:** If provisioning fails due to capacity issues, try an alternative region
+3. **Data residency:** For compliance, choose a region that meets your requirements for the API backend
 
 Set region in `.azure/<env>/.env`:
 ```
-AZURE_LOCATION=eastus2
+AZURE_LOCATION=westus2
 ```
+
+**Note:** The region selection does not limit where your static content is served from. Your website will be globally available with low latency worldwide.
 
 ## Best Practices
 
@@ -239,6 +253,7 @@ AZURE_LOCATION=eastus2
 4. **Test builds locally** before deploying to ensure build configuration is correct
 5. **Use `staticwebapp.config.json`** for routing and authentication configuration
 6. **Enable Application Insights** for production deployments to monitor performance
+7. **Remember:** Static content is globally distributed regardless of region - the region parameter only affects the API backend location
 
 ## Verification
 

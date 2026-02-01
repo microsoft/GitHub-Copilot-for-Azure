@@ -8,7 +8,7 @@
 | Deploy failed | Check build/Docker errors |
 | Package failed | Verify Dockerfile and dependencies |
 | Quota exceeded | Request increase or change region |
-| Static Web Apps not available in region | Change region to eastus2, westus2, centralus, westeurope, or eastasia |
+| Provisioning fails in specific region | Try alternative region (capacity issue, not service unavailability). Static content is globally distributed regardless of region. |
 | Request is missing pull request id | For Static Web Apps: Ensure using `azd deploy`, not GitHub Actions PR workflow |
 
 ## Static Web Apps Errors

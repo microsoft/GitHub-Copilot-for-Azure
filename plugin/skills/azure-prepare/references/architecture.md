@@ -35,7 +35,7 @@ Select hosting stack and map components to Azure services.
 | Scheduled Task | Functions (Timer) | Container Apps Jobs |
 | Event Processor | Functions | Container Apps |
 
-**Note:** Static Web Apps are not available in all regions. Use regions like `eastus2`, `westus2`, `centralus`, `westeurope`, or `eastasia` for reliable availability. Check current region support at: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=static-apps
+**Note:** Static Web Apps is a non-regional service - static content is globally distributed via CDN. The region parameter only affects where the integrated API backend (Azure Functions) is deployed. If you encounter provisioning issues, try an alternative region for the API backend.
 
 ### Data
 
