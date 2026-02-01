@@ -76,6 +76,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
 **Note:** Integration tests run automatically when SDK is available and authenticated. They skip gracefully in CI or when prerequisites are missing.
 
+**File Path Convention:** When writing results to files, use relative paths from the `tests/` directory (e.g., `./result-${SKILL_NAME}.txt`), NOT `./tests/result-*.txt`. Tests run from the `tests/` directory.
+
 ### Step 7: Run and verify
 ```bash
 cd tests
