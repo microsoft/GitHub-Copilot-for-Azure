@@ -57,7 +57,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     
     const invocationRate = successCount / RUNS_PER_PROMPT;
     console.log(`${SKILL_NAME} invocation rate for AI Search prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./tests/result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for AI Search prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for AI Search prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 
@@ -84,7 +84,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     
     const invocationRate = successCount / RUNS_PER_PROMPT;
     console.log(`${SKILL_NAME} invocation rate for Azure OpenAI prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./tests/result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure OpenAI prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure OpenAI prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 
