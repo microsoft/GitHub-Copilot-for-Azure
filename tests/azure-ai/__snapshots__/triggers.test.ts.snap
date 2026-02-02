@@ -2,7 +2,7 @@
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Use for Azure AI: Search, Speech, Foundry, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, AI agents, prompt flows, OCR. USE FOR: AI Search, query search, vector search, hybrid search, speech-to-text, text-to-speech, transcribe, AI agent, prompt flow, Foundry, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources.",
+  "description": "Use for Azure AI: Search, Speech, Foundry, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, AI agents, prompt flows, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, AI agent, prompt flow, Foundry, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources.",
   "extractedKeywords": [
     "agent",
     "agents",
@@ -30,6 +30,7 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
     "query",
     "resources",
     "search",
+    "semantic",
     "speech",
     "speech-to-text",
     "text",
@@ -71,6 +72,7 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match
   "query",
   "resources",
   "search",
+  "semantic",
   "speech",
   "speech-to-text",
   "text",
