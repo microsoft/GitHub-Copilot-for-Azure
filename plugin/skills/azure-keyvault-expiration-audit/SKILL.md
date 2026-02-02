@@ -1,6 +1,12 @@
 ---
 name: azure-keyvault-expiration-audit
-description: Proactively monitor and audit Azure Key Vault resources for expired or soon-to-expire keys, secrets, and certificates. Use this skill for security compliance, preventing service disruptions, and maintaining key vault hygiene through expiration tracking and reporting.
+description: |
+  Audit Azure Key Vault resources for expired or expiring keys, secrets, and certificates.
+  USE FOR: expired certificates, expiring secrets, Key Vault audit, compliance report,
+  certificate expiration check, secrets without expiration, key rotation report,
+  "what's expiring in my Key Vault", security audit Key Vault, find expired keys.
+  DO NOT USE FOR: creating secrets (use azure-security), rotating credentials manually,
+  Key Vault access policies (use azure-security), or general Azure security guidance.
 ---
 
 # Key Vault Expiration Audit & Compliance
