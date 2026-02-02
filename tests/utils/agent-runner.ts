@@ -380,7 +380,7 @@ export function buildLogFilePath(): string {
 }
 
 function getTestName(): string {
-    try {``
+    try {
         // Jest provides expect.getState() with current test info
         const state = expect.getState();
         const testName = state.currentTestName ?? 'unknown-test';
