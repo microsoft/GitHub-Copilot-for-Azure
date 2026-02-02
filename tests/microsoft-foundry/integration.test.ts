@@ -102,28 +102,24 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     const agentName = `onboarding-buddy-${agentNameSuffix}`;
     const projectClient = new AIProjectClient(projectEndpoint, new DefaultAzureCredential());
     
-    try {
-      const _agentMetadata = await run({
-        prompt: `Create a Foundry agent called "${agentName}" in my foundry project ${projectEndpoint}, use gpt-4o as the model, and give it a generic system instruction suitable for onboarding a new team member in a professional environment for now.`,
-        nonInteractive: true
-      });
-      
-      // Verify if the agent is created in the Foundry project
-      const agentsIter = projectClient.agents.listAgents();
-      
-      // The agentId of the created agent
-      let targetAgentId: string | undefined = undefined;
-      for await (const agent of agentsIter) {
-        console.log("Found agent", agent.name)
-        if (agent.name === agentName) {
-          targetAgentId = agent.id;
-        }
+    const _agentMetadata = await run({
+      prompt: `Create a Foundry agent called "${agentName}" in my foundry project ${projectEndpoint}, use gpt-4o as the model, and give it a generic system instruction suitable for onboarding a new team member in a professional environment for now.`,
+      nonInteractive: true
+    });
+    
+    // Verify if the agent is created in the Foundry project
+    const agentsIter = projectClient.agents.listAgents();
+    
+    // The agentId of the created agent
+    let targetAgentId: string | undefined = undefined;
+    for await (const agent of agentsIter) {
+      console.log("Found agent", agent.name)
+      if (agent.name === agentName) {
+        targetAgentId = agent.id;
       }
-      expect(targetAgentId).not.toBe(undefined);
-      await projectClient.agents.deleteAgent(targetAgentId!);
-    } catch (error) {
-      console.error("Error while testing agent creation", error);
     }
+    expect(targetAgentId).not.toBe(undefined);
+    await projectClient.agents.deleteAgent(targetAgentId!);
   });
 
 });
