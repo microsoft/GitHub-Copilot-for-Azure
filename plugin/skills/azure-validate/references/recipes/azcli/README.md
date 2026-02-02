@@ -86,6 +86,12 @@ docker build -t <image>:test ./src/<service>
 
 Retrieve and validate Azure policies for the subscription:
 
+**Get subscription ID:**
+```bash
+az account show --query id -o tsv
+```
+
+**Validate policies:**
 ```
 mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
 ```
