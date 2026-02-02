@@ -102,10 +102,18 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     // Copilot client with yolo mode and non-interactive session.
     // Enables longer chats with full conversation history for the skill.
+    // -p must come first before other args.
+    let cliArgs: string[] = config.nonInteractive ? ['-p', '--yolo'] : [];
+    if (process.env.DEBUG)
+    {
+      cliArgs.push('--log-dir');
+      cliArgs.push(buildLogFilePath());
+    }
+    
     client = new CopilotClient({
       logLevel: process.env.DEBUG ? 'all' : 'error',
       cwd: testWorkspace,
-      cliArgs: config.nonInteractive ? ['--yolo', '-p'] : []
+      cliArgs: cliArgs,
     });
 
     const skillDirectory = path.resolve(__dirname, '../../plugin/skills');
@@ -145,17 +153,6 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
             resolve();
             session!.abort();
             return;
-          }
-        }
-
-        // Debug logging for selected events
-        if (process.env.DEBUG) {
-          if (event.type === 'assistant.message') {
-            console.log('Assistant.message:', event.data.content);
-          } else if (event.type === 'tool.execution_start') {
-            console.log('tool.execution_start:', event.data.toolName);
-          } else if (event.type === 'session.error') {
-            console.error('Session error:', event.data.message);
           }
         }
       });
@@ -369,4 +366,41 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
   const content = getAllAssistantMessages(agentMetadata);
   
   return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
+}
+
+const DEFAULT_REPORT_DIR = path.join(__dirname, '..', 'reports');
+const TIME_STAMP = new Date().toISOString().replace(/[:.]/g, '-');
+
+export function buildShareFilePath(): string {
+    return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), 'agent-metadata.md');
+}
+
+export function buildLogFilePath(): string {
+    return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName());
+}
+
+function getTestName(): string {
+    try {
+        // Jest provides expect.getState() with current test info
+        const state = expect.getState();
+        const testName = state.currentTestName ?? 'unknown-test';
+        // Sanitize for use as filename
+        return sanitizeFileName(testName);
+    } catch {
+        // Fallback if not running in Jest context
+        return `test-${Date.now()}`;
+    }
+}
+
+/**
+ * Sanitize a string for use as a filename
+ */
+function sanitizeFileName(name: string): string {
+    return name
+        .replace(/[<>:"/\\|?*]/g, '-') // Replace invalid chars
+        .replace(/\s+/g, '_')           // Replace spaces with underscores
+        .replace(/-+/g, '-')            // Collapse multiple dashes
+        .replace(/_+/g, '_')            // Collapse multiple underscores
+        .replace(/_-_/g, '-')          
+        .substring(0, 200);             // Limit length
 }
