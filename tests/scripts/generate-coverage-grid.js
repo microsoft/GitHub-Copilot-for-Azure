@@ -31,7 +31,7 @@ function getSkills() {
  * Check if a test file exists for a skill
  */
 function hasTestFile(skillName, testType) {
-  const testFile = path.join(TESTS_PATH, skillName, `${testType}.test.js`);
+  const testFile = path.join(TESTS_PATH, skillName, `${testType}.test.ts`);
   return fs.existsSync(testFile);
 }
 
