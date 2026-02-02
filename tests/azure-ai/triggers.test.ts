@@ -145,9 +145,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
     test('distinguishes between AI services and other Azure services', () => {
       const aiResult = triggerMatcher.shouldTrigger('Create an Azure AI Search index');
-      const functionResult = triggerMatcher.shouldTrigger('Create an Azure Function');
+      const functionResult = triggerMatcher.shouldTrigger('Create an azure app service');
       // AI Search should trigger, Function should not
       expect(aiResult.triggered).toBe(true);
+      expect(functionResult.triggered).toBe(false);
     });
   });
 });
