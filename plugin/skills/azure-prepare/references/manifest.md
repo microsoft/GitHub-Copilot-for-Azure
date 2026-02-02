@@ -19,7 +19,10 @@ Status: Prepared | Validated | Deployed
 | Classification | POC / Development / Production |
 | Scale | Small / Medium / Large |
 | Budget | Cost-Optimized / Balanced / Performance |
-| Primary Region | {region} |
+| **Subscription** | {subscription-name-or-id} |
+| **Location** | {azure-region} |
+
+> **Note**: Subscription and Location MUST be confirmed by the user before provisioning. Do NOT proceed to azure-deploy without these values.
 
 ---
 

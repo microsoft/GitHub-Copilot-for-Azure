@@ -5,6 +5,7 @@
   "description": "GitHub Copilot plugin for Azure",
   "scripts": {
     "tokens": "cd scripts && npm run tokens --",
+    "verify-local": "cd scripts && npm run verify-local",
     "test": "cd scripts && npm test",
     "postinstall": "cd scripts && npm install"
   },
