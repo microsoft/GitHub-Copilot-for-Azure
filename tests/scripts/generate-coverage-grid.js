@@ -31,7 +31,7 @@ function getSkills() {
  * Check if a test file exists for a skill
  */
 function hasTestFile(skillName, testType) {
-  const testFile = path.join(TESTS_PATH, skillName, `${testType}.test.js`);
+  const testFile = path.join(TESTS_PATH, skillName, `${testType}.test.ts`);
   return fs.existsSync(testFile);
 }
 
@@ -41,9 +41,9 @@ function hasTestFile(skillName, testType) {
 function hasTests(skillName) {
   const skillTestDir = path.join(TESTS_PATH, skillName);
   if (!fs.existsSync(skillTestDir)) return false;
-  
+
   const files = fs.readdirSync(skillTestDir);
-  return files.some(f => f.endsWith('.test.js'));
+  return files.some(f => f.endsWith('.test.ts'));
 }
 
 /**

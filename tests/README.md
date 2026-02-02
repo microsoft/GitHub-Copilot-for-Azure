@@ -381,30 +381,30 @@ tests/
 <!-- COVERAGE_GRID_START -->
 | Skill | Tests | Unit | Triggers | Integration | Coverage |
 |-------|-------|------|----------|-------------|----------|
-| appinsights-instrumentation | ❌ | - | - | - | - |
-| azure-ai | ❌ | - | - | - | - |
-| azure-aigateway | ❌ | - | - | - | - |
-| azure-cost-optimization | ❌ | - | - | - | - |
-| azure-create-app | ❌ | - | - | - | - |
-| azure-deploy | ❌ | - | - | - | - |
-| azure-deployment-preflight | ❌ | - | - | - | - |
-| azure-diagnostics | ❌ | - | - | - | - |
-| azure-functions | ❌ | - | - | - | - |
-| azure-keyvault-expiration-audit | ❌ | - | - | - | - |
-| azure-kusto | ❌ | - | - | - | - |
-| azure-networking | ❌ | - | - | - | - |
-| azure-nodejs-production | ❌ | - | - | - | - |
-| azure-observability | ❌ | - | - | - | - |
-| azure-postgres | ❌ | - | - | - | - |
-| azure-quick-review | ❌ | - | - | - | - |
-| azure-resource-visualizer | ❌ | - | - | - | - |
-| azure-role-selector | ❌ | - | - | - | - |
-| azure-security | ❌ | - | - | - | - |
-| azure-security-hardening | ❌ | - | - | - | - |
-| azure-storage | ❌ | - | - | - | - |
-| azure-validation | ✅ | ✅ | ✅ | ✅ | - |
-| entra-app-registration | ❌ | - | - | - | - |
-| microsoft-foundry | ❌ | - | - | - | - |
+| appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
+| azure-ai | ✅ | - | - | ✅ | - |
+| azure-aigateway | ✅ | - | - | ✅ | - |
+| azure-cost-estimation | ✅ | - | - | ✅ | - |
+| azure-cost-optimization | ✅ | - | - | ✅ | - |
+| azure-deploy | ✅ | - | - | ✅ | - |
+| azure-diagnostics | ✅ | - | - | ✅ | - |
+| azure-functions | ✅ | - | - | ✅ | - |
+| azure-keyvault-expiration-audit | ✅ | - | - | ✅ | - |
+| azure-kusto | ✅ | - | - | ✅ | - |
+| azure-networking | ✅ | - | - | ✅ | - |
+| azure-nodejs-production | ✅ | - | - | ✅ | - |
+| azure-observability | ✅ | - | - | ✅ | - |
+| azure-postgres | ✅ | - | - | ✅ | - |
+| azure-prepare | ✅ | - | - | ✅ | - |
+| azure-quick-review | ✅ | - | - | ✅ | - |
+| azure-resource-visualizer | ✅ | - | - | ✅ | - |
+| azure-role-selector | ✅ | - | - | ✅ | - |
+| azure-security | ✅ | - | - | ✅ | - |
+| azure-security-hardening | ✅ | - | - | ✅ | - |
+| azure-storage | ✅ | - | - | ✅ | - |
+| azure-validate | ✅ | ✅ | ✅ | ✅ | - |
+| entra-app-registration | ✅ | - | - | ✅ | - |
+| microsoft-foundry | ✅ | - | - | ✅ | - |
 
 **Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage
 <!-- COVERAGE_GRID_END -->
