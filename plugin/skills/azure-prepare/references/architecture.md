@@ -28,11 +28,14 @@ Select hosting stack and map components to Azure services.
 | Component Type | Primary Service | Alternatives |
 |----------------|-----------------|--------------|
 | SPA Frontend | Static Web Apps | Blob + CDN |
+| Pure Static Site | Static Web Apps | Blob + CDN |
 | SSR Web App | Container Apps | App Service |
 | REST/GraphQL API | Container Apps | App Service, Functions |
 | Background Worker | Container Apps | Functions |
 | Scheduled Task | Functions (Timer) | Container Apps Jobs |
 | Event Processor | Functions | Container Apps |
+
+**Note:** Static Web Apps is a non-regional service - static content is globally distributed via CDN. The region parameter only affects where the integrated API backend (Azure Functions) is deployed. If you encounter provisioning issues, try an alternative region for the API backend.
 
 ### Data
 
