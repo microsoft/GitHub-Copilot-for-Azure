@@ -31,6 +31,10 @@ Activate this skill when user wants to:
 5. Update `.azure/preparation-manifest.md` after each phase
 6. Invoke **azure-validate** before any deployment
 
+> **⛔ MANDATORY USER CONFIRMATION REQUIRED**
+>
+> You **MUST** use `ask_user` to prompt the user to confirm **Azure subscription** and **Azure location/region** BEFORE generating ANY artifacts (azure.yaml, Bicep, Terraform, etc.). Do NOT assume, guess, or auto-select these values. Do NOT proceed to artifact generation until the user has explicitly confirmed both. This is a blocking requirement.
+
 ---
 
 ## Steps
@@ -38,7 +42,7 @@ Activate this skill when user wants to:
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Analyze Workspace** — Determine path: new, add components, or modernize. If `azure.yaml` + `infra/` exist → skip to azure-validate | [analyze.md](references/analyze.md) |
-| 2 | **Gather Requirements** — Classification, scale, budget, compliance | [requirements.md](references/requirements.md) |
+| 2 | **Gather Requirements** — Classification, scale, budget, compliance, **subscription, location** (MUST prompt user) | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Components, technologies, dependencies, existing tooling | [scan.md](references/scan.md) |
 | 4 | **Select Recipe** — AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
 | 5 | **Plan Architecture** — Stack (Containers/Serverless/App Service) + service mapping | [architecture.md](references/architecture.md) |

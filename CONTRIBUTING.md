@@ -48,6 +48,8 @@ Install the Azure plugin:
 
 To develop and test skills locally, you'll need to link your cloned repository to the installed plugins folder. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
 
+> **Important:** Do NOT run `/plugin install azure@github-copilot-for-azure` when developing locally. The symlink setup below IS the installation. Running the install command would create a nested copy that shadows your local changes.
+
 ### 1. Fork and Clone the Repository
 
 ```bash
@@ -56,54 +58,98 @@ git clone https://github.com/YOUR-USERNAME/GitHub-Copilot-for-Azure.git
 cd GitHub-Copilot-for-Azure
 ```
 
-### 2. Create a Symlink to the Plugin Folder
+### 2. Install Dependencies
 
-Create a symbolic link from your cloned repository's `plugin` folder to the Copilot installed plugins directory. This allows your local changes to be picked up immediately.
+```bash
+cd scripts
+npm install
+cd ..
+```
+
+### 3. Set Up Local Development (Recommended)
+
+The easiest way to set up local development is using the provided scripts:
+
+```bash
+# From the repository root
+cd scripts
+
+# Create the symlink
+npm run local setup
+
+# Verify the setup is correct
+npm run local verify
+```
+
+The setup script will:
+- Create a symlink from `~/.copilot/installed-plugins/github-copilot-for-azure` to your local `plugin/` folder
+- Handle Windows junction fallback if admin privileges aren't available
+
+The verify script will:
+- Check for nested plugin installs (which shadow your local changes)
+- Test that file changes propagate correctly via the symlink
+- Compare file contents between local and installed locations
+
+Use `npm run local verify --fix` to automatically fix common issues.
+
+### 3b. Manual Symlink Setup (Alternative)
+
+If you prefer to create the symlink manually:
 
 #### Windows (Command Prompt - Run as Administrator)
 
 ```cmd
-mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure" "D:\dev\GitHub-Copilot-for-Azure\plugin"
+mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
 #### Windows (PowerShell - Run as Administrator)
 
 ```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Target "D:\dev\GitHub-Copilot-for-Azure\plugin"
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
 #### macOS / Linux
 
 ```bash
-ln -s ~/dev/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure
+ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure
 ```
 
 > **Note:** Replace the paths above with your actual cloned repository location.
 
-### 3. Verify the Symlink
+### 4. Reloading Skills After Changes
+
+After making changes to skills:
+
+1. **In an active Copilot CLI session**, run:
+   ```
+   /skills reload
+   ```
+   This reloads all skills without restarting the CLI.
+
+2. **Alternatively**, restart the GitHub Copilot CLI to pick up changes.
+
+> **Tip:** Use `/skills reload` for faster iteration during development.
+
+### 5. Verify the Symlink
 
 Verify that the symlink was created correctly:
 
-#### Windows (Command Prompt)
-```cmd
-dir "%USERPROFILE%\.copilot\installed-plugins"
-```
-
-#### Windows (PowerShell)
-```powershell
-Get-ChildItem "$env:USERPROFILE\.copilot\installed-plugins" | Format-List
-```
-
-#### macOS / Linux
 ```bash
+# Using the verify script (recommended)
+cd scripts
+npm run local verify
+
+# Or manually:
+# Windows (PowerShell)
+Get-ChildItem "$env:USERPROFILE\.copilot\installed-plugins" | Format-List
+
+# macOS / Linux
 ls -la ~/.copilot/installed-plugins/
 ```
 
 You should see `github-copilot-for-azure` pointing to your cloned repository's `plugin` folder.
 
-> **Note:** After making changes to skills or plugin files, you must restart GitHub Copilot CLI to pick up the new changes.
-
-### 4. Remove an Existing Symlink (If Needed)
+### 6. Remove an Existing Symlink (If Needed)
 
 If you need to remove or recreate a symlink:
 
@@ -122,7 +168,7 @@ Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azur
 rm ~/.copilot/installed-plugins/github-copilot-for-azure
 ```
 
-### 5. Testing Pull Requests Locally
+### 7. Testing Pull Requests Locally
 
 Once your symlink is set up, you can quickly test any open pull request by checking out its branch. This is especially useful during code review to verify changes work as expected.
 
@@ -145,7 +191,7 @@ This automatically:
 2. Creates a local branch tracking the PR
 3. Updates your symlinked plugin folder with the PR's changes
 
-After checking out, restart GitHub Copilot CLI to pick up the changes and test the skill or feature.
+After checking out, run `/skills reload` in your Copilot CLI session (or restart the CLI) to pick up the changes and test the skill or feature.
 
 #### Switching Back
 
@@ -396,9 +442,11 @@ For feature requests, include:
 
 After making changes to a skill:
 
-1. Restart GitHub Copilot CLI to reload the plugin
+1. Run `/skills reload` in your Copilot CLI session to reload all skills
 2. Test the skill by asking relevant questions
 3. Verify all referenced documentation and examples work
+
+> **Tip:** Use `/skills reload` instead of restarting the CLI for faster iteration during development.
 
 ### Debugging
 
