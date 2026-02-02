@@ -107,7 +107,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     if (process.env.DEBUG)
     {
       cliArgs.push('--log-dir');
-      cliArgs.push(`${buildLogFilePath()}`);
+      cliArgs.push(buildLogFilePath());
     }
     
     client = new CopilotClient({
