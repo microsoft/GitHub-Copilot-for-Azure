@@ -1,6 +1,9 @@
 ---
 name: entra-app-registration
-description: Expert in Microsoft Entra app registration. Use this skill to help with understanding OAuth protocol, Entra concepts, creating the first Entra app registration and integrating OAuth flow in an example console application.
+description: |
+  Guides Microsoft Entra ID app registration, OAuth 2.0 authentication, and MSAL integration.
+  USE FOR: create app registration, register Azure AD app, configure OAuth, set up authentication, add API permissions, generate service principal, MSAL example, console app auth, Entra ID setup, Azure AD authentication.
+  DO NOT USE FOR: Azure RBAC or role assignments (use azure-role-selector), Key Vault secrets (use azure-keyvault-expiration-audit), Azure resource security (use azure-security).
 ---
 
 ## Overview
@@ -41,6 +44,9 @@ Create an app registration in the Azure portal or using Azure CLI.
 4. Click "Register"
 
 **CLI Method:** See [references/CLI-COMMANDS.md](references/CLI-COMMANDS.md)
+**IaC Method:** See [references/BICEP-EXAMPLE.bicep](references/BICEP-EXAMPLE.bicep)
+
+It's highly recommended to use the IaC to manage Entra app registration if you already use IaC in your project, need a scalable solution for managing lots of app registrations or need fine-grained audit history of the configuration changes. 
 
 ### Step 2: Configure Authentication
 
