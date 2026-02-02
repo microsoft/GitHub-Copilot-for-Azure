@@ -6,7 +6,7 @@
   "scripts": {
     "test": "cross-env jest",
     "test:unit": "cross-env jest --testPathIgnorePatterns=\"node_modules|_template|integration\"",
-    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testMatch=\"**/*integration*.ts\" --testPathIgnorePatterns=\"node_modules|_template\"",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testMatch=\"**/*integration*.{ts,js}\" --testPathIgnorePatterns=\"node_modules|_template\"",
     "test:verbose": "cross-env jest --verbose",
     "test:coverage": "cross-env jest --coverage --testPathIgnorePatterns=\"node_modules|_template|integration\"",
     "test:ci": "cross-env jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",
