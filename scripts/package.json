@@ -6,6 +6,8 @@
   "scripts": {
     "build": "tsc",
     "tokens": "node --import tsx src/tokens/cli.ts",
+    "local": "node --import tsx src/local/cli.ts",
+    "verify-local": "node --import tsx src/verify-local.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

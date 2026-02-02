@@ -7,14 +7,16 @@ Deploy to Azure using Azure CLI.
 - `az` CLI installed → Run `mcp_azure_mcp_extension_cli_install` with `cli-type: az` if needed
 - `.azure/preparation-manifest.md` exists with status `Validated`
 - Bicep/ARM templates exist in `infra/`
+- **Subscription and location confirmed** → See [pre-deploy-checklist.md](../pre-deploy-checklist.md)
 
 ## Workflow
 
 | Step | Task | Command |
 |------|------|---------|
-| 1 | Deploy infrastructure | `az deployment sub create` |
-| 2 | Deploy application | Service-specific commands |
-| 3 | Verify | `az resource list` |
+| 1 | **[Pre-deploy checklist](../pre-deploy-checklist.md)** | Confirm subscription/location with user |
+| 2 | Deploy infrastructure | `az deployment sub create` |
+| 3 | Deploy application | Service-specific commands |
+| 4 | Verify | `az resource list` |
 
 ## Infrastructure Deployment
 

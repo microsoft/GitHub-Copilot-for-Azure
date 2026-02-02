@@ -8,15 +8,17 @@ Deploy to Azure using Terraform.
 - `.azure/preparation-manifest.md` exists with status `Validated`
 - Terraform initialized (`terraform init`)
 - Plan validated (`terraform plan`)
+- **Subscription and location confirmed** → See [pre-deploy-checklist.md](../pre-deploy-checklist.md)
 
 ## Workflow
 
 | Step | Task | Command |
 |------|------|---------|
-| 1 | Select workspace | `terraform workspace select <env>` |
-| 2 | Apply | `terraform apply tfplan` |
-| 3 | Get outputs | `terraform output` |
-| 4 | Deploy app | Service-specific commands |
+| 1 | **[Pre-deploy checklist](../pre-deploy-checklist.md)** | Confirm subscription/location with user |
+| 2 | Select workspace | `terraform workspace select <env>` |
+| 3 | Apply | `terraform apply tfplan` |
+| 4 | Get outputs | `terraform output` |
+| 5 | Deploy app | Service-specific commands |
 
 ## Deployment Commands
 
