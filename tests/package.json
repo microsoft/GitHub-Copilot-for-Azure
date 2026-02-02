@@ -4,16 +4,16 @@
   "description": "Test suite for Azure Copilot Skills",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:unit": "jest --testPathIgnorePatterns=\"node_modules|_template|integration\"",
-    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=integration --testPathIgnorePatterns=\"node_modules|_template\"",
-    "test:verbose": "jest --verbose",
-    "test:coverage": "jest --coverage --testPathIgnorePatterns=\"node_modules|_template|integration\"",
-    "test:ci": "jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",
-    "test:watch": "jest --watch",
-    "test:skill": "jest --testPathPattern",
+    "test": "cross-env jest",
+    "test:unit": "cross-env jest --testPathIgnorePatterns=\"node_modules|_template|integration\"",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testMatch=\"**/*integration*.ts\" --testPathIgnorePatterns=\"node_modules|_template\"",
+    "test:verbose": "cross-env jest --verbose",
+    "test:coverage": "cross-env jest --coverage --testPathIgnorePatterns=\"node_modules|_template|integration\"",
+    "test:ci": "cross-env jest --ci --reporters=default --reporters=jest-junit --testPathIgnorePatterns=\"node_modules|_template|integration\"",
+    "test:watch": "cross-env jest --watch",
+    "test:skill": "cross-env jest --testPathPattern",
     "coverage:grid": "node scripts/generate-coverage-grid.js",
-    "update:snapshots": "jest --updateSnapshot"
+    "update:snapshots": "cross-env jest --updateSnapshot"
   },
   "devDependencies": {
     "@github/copilot-sdk": "^0.1.19",
