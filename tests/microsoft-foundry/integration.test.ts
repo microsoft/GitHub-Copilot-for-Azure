@@ -9,13 +9,16 @@
  * 2. Run `copilot` and authenticate
  */
 
-import { 
-  run, 
-  isSkillInvoked, 
+import { randomUUID } from "crypto";
+import {
+  run,
+  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 import * as fs from "fs";
+import { AIProjectClient } from "@azure/ai-projects";
+import { DefaultAzureCredential } from "@azure/identity";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -33,16 +36,16 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  
+
   test("invokes microsoft-foundry skill for AI model deployment prompt", async () => {
     let successCount = 0;
-    
+
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await run({
           prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?"
         });
-        
+
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
           successCount++;
         }
@@ -54,7 +57,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         throw e;
       }
     }
-    
+
     const invocationRate = successCount / RUNS_PER_PROMPT;
     console.log(`${SKILL_NAME} invocation rate for model deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
     fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for model deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
@@ -63,13 +66,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   test("invokes microsoft-foundry skill for RAG application prompt", async () => {
     let successCount = 0;
-    
+
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await run({
           prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes"
         });
-        
+
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
           successCount++;
         }
@@ -81,11 +84,46 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         throw e;
       }
     }
-    
+
     const invocationRate = successCount / RUNS_PER_PROMPT;
     console.log(`${SKILL_NAME} invocation rate for RAG application prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
     fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for RAG application prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+  });
+
+  test("successfully creates a v1 agent in Foundry", async () => {
+    const projectEndpoint = process.env.FOUNDRY_PROJECT_ENDPOINT;
+    if (!projectEndpoint) {
+      console.log("Environment variable FOUNDRY_PROJECT_ENDPOINT not defined. Skipping test.");
+      return;
+    }
+
+    const agentNameSuffix = randomUUID().substring(0, 4);
+    const agentName = `onboarding-buddy-${agentNameSuffix}`;
+    const projectClient = new AIProjectClient(projectEndpoint, new DefaultAzureCredential());
+    
+    try {
+      const _agentMetadata = await run({
+        prompt: `Create a Foundry agent called "${agentName}" in my foundry project ${projectEndpoint}, use gpt-4o as the model, and give it a generic system instruction suitable for onboarding a new team member in a professional environment for now.`,
+        nonInteractive: true
+      });
+      
+      // Verify if the agent is created in the Foundry project
+      const agentsIter = projectClient.agents.listAgents();
+      
+      // The agentId of the created agent
+      let targetAgentId: string | undefined = undefined;
+      for await (const agent of agentsIter) {
+        console.log("Found agent", agent.name)
+        if (agent.name === agentName) {
+          targetAgentId = agent.id;
+        }
+      }
+      expect(targetAgentId).not.toBe(undefined);
+      await projectClient.agents.deleteAgent(targetAgentId!);
+    } catch (error) {
+      console.error("Error while testing agent creation", error);
+    }
   });
 
 });
