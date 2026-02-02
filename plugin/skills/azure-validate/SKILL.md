@@ -34,9 +34,10 @@ Activate this skill when user wants to:
 |---|--------|-----------|
 | 1 | **Load Manifest** — Read `.azure/preparation-manifest.md` for recipe. If missing → run azure-prepare first | — |
 | 2 | **Run Validation** — Load recipe-specific validation steps | [recipes/](references/recipes/) |
-| 3 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 4 | **Update Manifest** — Set status to `Validated` with results | — |
-| 5 | **Deploy** — Only after ALL validations pass → invoke **azure-deploy** | — |
+| 3 | **Policy Validation** — Retrieve and validate Azure policies for the subscription | — |
+| 4 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
+| 5 | **Update Manifest** — Set status to `Validated` with results | — |
+| 6 | **Deploy** — Only after ALL validations pass → invoke **azure-deploy** | — |
 
 ---
 

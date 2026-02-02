@@ -66,6 +66,19 @@ Use Bicep linter rules:
 az bicep lint --file ./infra/main.bicep
 ```
 
+### 6. Azure Policy Validation
+
+Retrieve and validate Azure policies for the subscription:
+
+```
+mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
+```
+
+**Review policy compliance:**
+- Check for any policy violations or non-compliant resources
+- Ensure deployment will comply with organizational policies
+- Address any policy conflicts before proceeding to deployment
+
 ## Checklist
 
 | Check | Command | Pass |
@@ -74,6 +87,7 @@ az bicep lint --file ./infra/main.bicep
 | Template valid | `az deployment validate` | ☐ |
 | What-if passes | `az deployment what-if` | ☐ |
 | Auth valid | `az account show` | ☐ |
+| Policies validated | MCP Policy tool | ☐ |
 
 ## References
 
