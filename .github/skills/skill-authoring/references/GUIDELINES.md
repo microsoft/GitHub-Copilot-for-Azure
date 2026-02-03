@@ -70,13 +70,33 @@ Skills use a three-tier loading model to manage context efficiently:
 my-skill/
 ├── SKILL.md              # Required: main instructions
 ├── references/           # Optional: detailed documentation
-│   ├── API-REFERENCE.md
-│   └── EXAMPLES.md
+│   ├── api-reference.md  # Lowercase with hyphens
+│   └── examples.md       # Lowercase with hyphens
+├── templates/            # Optional: output templates (for report generation)
+│   └── report-template.md
 ├── scripts/              # Optional: executable code
 │   └── helper.sh
 └── assets/               # Optional: templates, data files
     └── template.json
 ```
+
+### References Folder
+
+The `references/` folder contains detailed documentation that is loaded on-demand to keep the main SKILL.md file lean:
+
+- **Purpose**: Additional context, examples, troubleshooting guides, or technical details
+- **When to use**: When SKILL.md content exceeds token budget or when details are rarely needed
+- **Naming convention**: Use lowercase letters with hyphens (e.g., `api-reference.md`, `troubleshooting.md`)
+- **Examples**: `error-handling.md`, `validation-commands.md`, `oauth-flows.md`
+
+### Templates Folder
+
+The `templates/` folder contains structured output formats used when the skill generates reports or formatted responses:
+
+- **Purpose**: Predefined structures for consistent report generation
+- **When to use**: When the skill needs to format output in a specific way (e.g., cost reports, analysis summaries)
+- **Naming convention**: Use lowercase letters with hyphens (e.g., `report-template.md`, `cost-analysis.md`)
+- **Examples**: `redis-subscription-level-report.md`, `detailed-cache-analysis.md`
 
 ## Token Budget Guidelines
 

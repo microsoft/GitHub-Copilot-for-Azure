@@ -86,7 +86,7 @@ For each high-priority finding:
 2. Provide remediation options (Portal, CLI, Bicep)
 3. Estimate effort and impact
 
-See [references/REMEDIATION-PATTERNS.md](references/REMEDIATION-PATTERNS.md) for common fix templates.
+See [references/remediation-patterns.md](references/remediation-patterns.md) for common fix templates.
 
 ### Step 6: Present Summary
 
@@ -166,7 +166,7 @@ azqr supports 70+ Azure resource types including:
 
 ## Reference Documentation
 
-- [Recommendation Categories](references/RECOMMENDATIONS.md)
-- [Remediation Patterns](references/REMEDIATION-PATTERNS.md)
+- [Recommendation Categories](references/recommendations.md)
+- [Remediation Patterns](references/remediation-patterns.md)
 - [Azure Quick Review Documentation](https://azure.github.io/azqr/docs/)
 - [Azure Proactive Resiliency Library](https://aka.ms/aprl)
