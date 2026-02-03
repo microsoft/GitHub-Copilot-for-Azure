@@ -19,6 +19,11 @@ Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 - What the skill does (from content)
 - What Azure services/tools it references
 
+**Also check for references:** If the skill has a `references/` folder, note the structure:
+- `references/recipes/` - Multiple implementation approaches (azd, bicep, terraform)
+- `references/services/` - Multiple Azure services the skill supports
+- References load only when explicitly linked, so understand what paths SKILL.md links to
+
 ### Step 3: Update test files
 In each test file (`unit.test.ts`, `triggers.test.ts`), change:
 ```typescript

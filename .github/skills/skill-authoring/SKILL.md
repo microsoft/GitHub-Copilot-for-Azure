@@ -31,7 +31,17 @@ Frontmatter: `name` (lowercase-hyphens), `description` (WHAT + WHEN)
 
 ## Progressive Disclosure
 
-Metadata (~100 tokens) loads at startup. SKILL.md (<5000 tokens) loads on activation. References load on demand. Keep SKILL.md lean.
+Metadata (~100 tokens) loads at startup. SKILL.md (<5000 tokens) loads on activation. References load **only when explicitly linked** (not on activation). Keep SKILL.md lean.
+
+## Reference Loading
+
+References are JIT (just-in-time) loaded:
+- Only files explicitly linked via `[text](references/file.md)` load
+- Each file loads in full (not sections)
+- No caching between requests - write self-contained files
+- Use recipes/services patterns for multi-option skills
+
+See [REFERENCE-LOADING.md](references/REFERENCE-LOADING.md) for details.
 
 ## Validation
 
@@ -44,5 +54,6 @@ npm run tokens -- check plugin/skills/my-skill/SKILL.md
 ## Reference Documentation
 
 - [GUIDELINES.md](references/GUIDELINES.md) - Detailed writing guidelines
+- [REFERENCE-LOADING.md](references/REFERENCE-LOADING.md) - How references load and token efficiency
 - [CHECKLIST.md](references/CHECKLIST.md) - Pre-submission checklist
 - [agentskills.io/specification](https://agentskills.io/specification) - Official spec
