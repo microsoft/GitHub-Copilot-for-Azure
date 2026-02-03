@@ -55,8 +55,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test('includes Mermaid diagram examples', () => {
-      expect(skill.content).toContain('```mermaid');
+      expect(skill.content).toContain('Mermaid');
       expect(skill.content).toContain('graph TB');
+      expect(skill.content).toContain('graph LR');
     });
 
     test('defines quality standards', () => {
@@ -68,7 +69,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe('Diagram Generation Guidelines', () => {
     test('provides diagram structure guidelines', () => {
-      expect(skill.content).toContain('Diagram Structure Guidelines');
+      expect(skill.content).toContain('Key Diagram Requirements');
       expect(skill.content).toContain('subgraph');
       expect(skill.content).toContain('Resource Group');
     });
