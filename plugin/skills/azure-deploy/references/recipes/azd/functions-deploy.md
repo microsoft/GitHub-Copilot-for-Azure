@@ -116,7 +116,7 @@ az functionapp config appsettings set \
 
 ### Connection Strings (Avoid - Use Managed Identity)
 
-Prefer managed identity over connection strings for security:
+Prefer managed identity and managed identity connection strings over connection strings with secrets for security:
 
 ```bash
 # Instead of connection strings, use managed identity
