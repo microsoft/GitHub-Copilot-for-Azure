@@ -23,16 +23,17 @@ Detect layout first, then apply correct configuration:
 
 | Layout | Detection | `project` | `language` | `dist` |
 |--------|-----------|-----------|------------|--------|
-| Static in root | `index.html` in `public/` | `.` | (omit) | `public` |
-| Framework in root | `package.json` in root | `.` | `js` | framework output |
+| Static already in `public/` | `index.html` in `public/` | `.` | (omit) | `public` |
+| Static in root (needs copy) | `index.html` in root, no `public/` | `.` | `js` | `public` |
+| Framework in root | `package.json` with framework | `.` | `js` | framework output |
 | Static in subfolder | `index.html` in subfolder | `./src/web` | (omit) | `.` |
 | Framework in subfolder | `package.json` in subfolder | `./src/web` | `js` | framework output |
 
 > **Key rules:**
 > - `dist` is **relative to `project`** path
-> - Omit `language` for pure static in subfolder (no build step needed)
+> - Omit `language` only when static files are already in the correct output folder (e.g., `public/`)
 > - **SWA CLI limitation**: When `project: .`, cannot use `dist: .` - files must be in a separate folder
-> - For static files in root: add `package.json` with build script, use `language: js`
+> - For static files in root: add `package.json` with build script to copy files to `public/`, use `language: js`
 > - `language: html` and `language: static` are **NOT valid** - will fail
 
 ## azure.yaml Configuration
@@ -119,8 +120,6 @@ resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
 |-----|----------|
 | Free | 2 custom domains, 0.5GB storage, shared bandwidth |
 | Standard | 5 custom domains, 2GB storage, SLA, auth customization |
-
-## Region Availability
 
 ## Region Availability
 

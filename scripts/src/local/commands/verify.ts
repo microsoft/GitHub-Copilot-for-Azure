@@ -65,15 +65,22 @@ function getInstalledPluginPath(): string {
   return join(homedir(), '.copilot', 'installed-plugins', 'github-copilot-for-azure');
 }
 
-function readCopilotConfig(): CopilotConfig | null {
+interface ConfigReadResult {
+  config: CopilotConfig | null;
+  error?: string;
+  fileExists: boolean;
+}
+
+function readCopilotConfig(): ConfigReadResult {
   const configPath = getCopilotConfigPath();
   if (!existsSync(configPath)) {
-    return null;
+    return { config: null, fileExists: false };
   }
   try {
-    return JSON.parse(readFileSync(configPath, 'utf-8'));
-  } catch {
-    return null;
+    return { config: JSON.parse(readFileSync(configPath, 'utf-8')), fileExists: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { config: null, error: `Failed to parse config: ${message}`, fileExists: true };
   }
 }
 
@@ -96,12 +103,24 @@ function writeCopilotConfig(config: CopilotConfig): boolean {
  * Check Copilot CLI config for issues with azure plugin entries
  */
 function checkCopilotConfig(): ConfigCheckResult {
-  const config = readCopilotConfig();
-  if (!config) {
+  const result = readCopilotConfig();
+  
+  // If there was a parse error, fail the check and surface the error
+  if (result.error) {
+    return { 
+      passed: false, 
+      stalePlugins: [], 
+      misconfiguredPlugins: [], 
+      error: result.error 
+    };
+  }
+  
+  // No config file or no config content - nothing to check
+  if (!result.config) {
     return { passed: true, stalePlugins: [], misconfiguredPlugins: [] };
   }
 
-  const plugins = config.installed_plugins ?? [];
+  const plugins = result.config.installed_plugins ?? [];
   const stalePlugins: InstalledPlugin[] = [];
   const misconfiguredPlugins: InstalledPlugin[] = [];
   const expectedCachePath = getInstalledPluginPath();
@@ -144,8 +163,8 @@ function fixCopilotConfig(
   stalePlugins: InstalledPlugin[], 
   misconfiguredPlugins: InstalledPlugin[]
 ): boolean {
-  const config = readCopilotConfig();
-  if (!config || !config.installed_plugins) {
+  const result = readCopilotConfig();
+  if (!result.config || !result.config.installed_plugins) {
     return false;
   }
 
@@ -153,9 +172,9 @@ function fixCopilotConfig(
   const staleNames = new Set(stalePlugins.map(p => `${p.name}|${p.cache_path}`));
   
   // Filter out stale plugins and fix misconfigured ones
-  config.installed_plugins = config.installed_plugins
-    .filter(p => !staleNames.has(`${p.name}|${p.cache_path}`))
-    .map(p => {
+  result.config.installed_plugins = result.config.installed_plugins
+    .filter((p: InstalledPlugin) => !staleNames.has(`${p.name}|${p.cache_path}`))
+    .map((p: InstalledPlugin) => {
       // Fix misconfigured plugins
       const isMisconfigured = misconfiguredPlugins.some(
         mp => mp.name === p.name && mp.cache_path === p.cache_path
@@ -166,7 +185,7 @@ function fixCopilotConfig(
       return p;
     });
 
-  return writeCopilotConfig(config);
+  return writeCopilotConfig(result.config);
 }
 
 function generateMarkerContent(): string {
@@ -383,6 +402,9 @@ export function verify(rootDir: string, args: string[]): void {
   if (configCheck.passed) {
     console.log('   ✅ Plugin config is correct');
   } else {
+    if (configCheck.error) {
+      console.log(`   ❌ Failed to read config: ${configCheck.error}`);
+    }
     if (configCheck.stalePlugins.length > 0) {
       console.log('   ⚠️  Stale plugin entries found (cache_path does not exist):');
       for (const p of configCheck.stalePlugins) {
