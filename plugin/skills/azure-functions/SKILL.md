@@ -30,28 +30,6 @@ description: |
 > - Deployment guide: [azure-deploy/references/recipes/azd/functions-deploy.md](../azure-deploy/references/recipes/azd/functions-deploy.md)
 > - Service patterns: [azure-prepare/references/services/functions.md](../azure-prepare/references/services/functions.md)
 
-The content below is preserved for reference and existing projects.
-
-# Azure Functions
-
-> **⚠️ IMPORTANT: This skill is deprecated in favor of azure-prepare and azure-deploy**
->
-> **For new Azure Functions projects:**
-> 1. Use **azure-prepare** skill for project setup, template selection, and infrastructure generation
-> 2. Use **azure-validate** skill to validate the configuration
-> 3. Use **azure-deploy** skill for deployment to Azure
->
-> **Why use azure-prepare/azure-deploy:**
-> - Unified workflow for all Azure services including Functions
-> - Template-based approach with decision trees
-> - Better integration with other Azure services
-> - Consistent deployment patterns
->
-> **References:**
-> - Template selection: [azure-prepare/references/recipes/azd/functions-templates.md](../azure-prepare/references/recipes/azd/functions-templates.md)
-> - Deployment guide: [azure-deploy/references/recipes/azd/functions-deploy.md](../azure-deploy/references/recipes/azd/functions-deploy.md)
-> - Service patterns: [azure-prepare/references/services/functions.md](../azure-prepare/references/services/functions.md)
-
 ---
 
 ## Content Preserved for Reference
