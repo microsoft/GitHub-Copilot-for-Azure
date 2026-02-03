@@ -93,7 +93,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 
-  test.only("returns v1 model tag for a given model", async () => {
+  test("returns v1 model identifier for a given model", async () => {
     const projectEndpoint = process.env.FOUNDRY_PROJECT_ENDPOINT;
     if (!projectEndpoint) {
       console.log("Environment variable FOUNDRY_PROJECT_ENDPOINT not defined. Skipping test.");
