@@ -19,6 +19,8 @@ Use Azure Functions when your application needs:
 
 **CRITICAL**: Check for specific integration indicators IN ORDER before defaulting to HTTP.
 
+Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com/en-us/azure/azure-functions/functions-scenarios?tabs=mcp-tools%2Cmcp-tools-2&pivots=programming-language-csharp) and [official AZD gallery templates](https://azure.github.io/awesome-azd/?tags=msft&tags=functions).
+
 ```
 1. Is this an MCP server?
    Indicators: mcp_tool_trigger, MCPTrigger, @app.mcp_tool, "mcp" in project name
@@ -42,7 +44,31 @@ Use Azure Functions when your application needs:
    Indicators: staticwebapp.config.json, swa-cli, @azure/static-web-apps
    └─► YES → Use SWA+Functions Template (see Integration Templates below)
 
-6. DEFAULT -> Use HTTP Template by runtime
+6. Does it use Service Bus for messaging/queues?
+   Indicators: ServiceBusTrigger, @app.service_bus_queue, @app.service_bus_topic, service_bus_output
+   └─► YES → Use Service Bus Template: https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/
+
+7. Is it for orchestration or workflows?
+   Indicators: DurableOrchestrationTrigger, orchestrator, durable_functions, workflow, multi-step
+   └─► YES → Use Durable Functions Template: https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=durable
+
+8. Does it use Event Hubs for streaming?
+   Indicators: EventHubTrigger, @app.event_hub, event_hub_output, streaming
+   └─► YES → Use Event Hubs Template: https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/
+
+9. Does it use Event Grid for pub/sub?
+   Indicators: EventGridTrigger, @app.event_grid, event_grid_output, external events
+   └─► YES → Use Event Grid Template
+
+10. Is it for file processing with Blob Storage?
+    Indicators: BlobTrigger, @app.blob, blob_input, blob_output, file processing
+    └─► YES → Use Blob Template: https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=blob
+
+11. Is it for scheduled tasks or cron jobs?
+    Indicators: TimerTrigger, @app.schedule, cron, scheduled task, runs every
+    └─► YES → Use Timer Template: https://azure.github.io/awesome-azd/?tags=msft&tags=functions&name=timer
+
+12. DEFAULT -> Use HTTP Template by runtime
 ```
 
 ## MCP Server Templates
