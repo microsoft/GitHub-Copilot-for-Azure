@@ -11,7 +11,7 @@ Use Azure Functions when your application needs:
 - Message/queue processing
 - Real-time file processing
 - Serverless compute preference
-- Hosting http MCP servers and tools to be remotely consumed by AI agents
+- Hosting HTTP MCP servers and tools to be remotely consumed by AI agents
 - Real-time streaming and event processing
 - Orchestrations and workflows with multiple steps/tasks/functions
 
@@ -107,7 +107,7 @@ Use Azure Functions when your application needs:
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 
 # Initialize with template and environment name
-azd init -t <TEMPLATE> -e "$ENV_NAME"
+azd init -t <TEMPLATE> -e "$ENV_NAME" --no-prompt
 ```
 
 ## What azd Creates (Secure-by-Default)
