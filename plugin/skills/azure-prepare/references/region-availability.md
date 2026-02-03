@@ -19,11 +19,12 @@
 | ✅ Available | ❌ NOT Available (will FAIL) |
 |-------------|------------------------------|
 | `westus2` | `eastus` |
-| `westus3` | `eastus2` |
 | `centralus` | `northeurope` |
-| `westeurope` | `southeastasia` |
-| `eastasia` | `uksouth` |
-| `australiaeast` | `canadacentral` |
+| `eastus2` | `southeastasia` |
+| `westeurope` | `uksouth` |
+| `eastasia` | `canadacentral` |
+| | `australiaeast` |
+| | `westus3` |
 
 ---
 
@@ -66,11 +67,11 @@ These services are available in all major Azure regions — no special considera
 
 | Pattern | Recommended Regions |
 |---------|---------------------|
-| SWA only | `westus2`, `centralus`, `westeurope` |
-| SWA + backend services | `westus2`, `centralus`, `westeurope`, `australiaeast` |
-| Container Apps (no SWA) | `eastus2`, `westus2`, `centralus`, `westeurope` |
+| SWA only | `westus2`, `centralus`, `eastus2`, `westeurope` |
+| SWA + backend services | `westus2`, `centralus`, `eastus2`, `westeurope` |
+| Container Apps (no SWA) | `eastus`, `eastus2`, `westus2`, `centralus`, `westeurope` |
 | With Azure OpenAI | `eastus`, `eastus2`, `swedencentral` |
-| SWA + Azure OpenAI | `westus3` (limited overlap!) |
+| SWA + Azure OpenAI | `eastus2` (only overlap!) |
 
 ---
 

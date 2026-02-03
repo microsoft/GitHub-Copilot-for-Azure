@@ -86,14 +86,14 @@ Select hosting stack and map components to Azure services.
 
 ### Region Availability Quick Reference
 
-> **IMPORTANT:** Always consult [region-availability.md](region-availability.md) for the full matrix.
+> **IMPORTANT:** Always consult [region-availability.md](region-availability.md) for the authoritative matrix.
 
-| Service | Available Regions | NOT Available (common mistakes) |
-|---------|-------------------|--------------------------------|
-| Static Web Apps | `westus2`, `westus3`, `centralus`, `westeurope`, `eastasia`, `australiaeast` | ❌ `eastus`, ❌ `eastus2`, ❌ `northeurope` |
-| Container Apps | Most regions | — |
-| Azure OpenAI | Limited — varies by model | Many regions |
-| Cosmos DB | Most regions | — |
+| Service | Notes |
+|---------|-------|
+| Static Web Apps | Only 5 regions — check before recommending |
+| Azure OpenAI | Limited — varies by model |
+| Container Apps | Most regions |
+| Cosmos DB | Most regions |
 
 ### Example Prompt
 
@@ -102,15 +102,10 @@ If architecture includes Static Web Apps + Azure SQL:
 "Which Azure region do you want to deploy to?
 
 Based on your architecture (Static Web Apps, Azure SQL), these regions support all services:
-
-❯ 1. westus2 (Recommended)
-  2. centralus
-  3. westeurope
-  4. eastasia
-  5. australiaeast
+[Present regions from region-availability.md that support ALL selected services]
 ```
 
-> ⚠️ Note: `eastus` and `eastus2` are NOT in this list because Static Web Apps is not available there.
+> ⚠️ Consult [region-availability.md](region-availability.md) for valid regions per service.
 
 ---
 

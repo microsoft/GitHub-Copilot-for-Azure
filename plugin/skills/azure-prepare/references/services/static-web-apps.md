@@ -110,14 +110,11 @@ resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
 
 ## Region Availability
 
-> ⚠️ **LIMITED AVAILABILITY** — SWA is NOT available in many common regions. See [region-availability.md](../region-availability.md) for full matrix.
+## Region Availability
 
-**Available regions:** `westus2`, `westus3`, `centralus`, `westeurope`, `eastasia`, `australiaeast`
+> ⚠️ **LIMITED AVAILABILITY** — See [region-availability.md](../region-availability.md) for the authoritative list.
 
-**NOT available (will FAIL):**
-- ❌ `eastus` — NOT SUPPORTED
-- ❌ `eastus2` — NOT SUPPORTED  
-- ❌ `northeurope` — NOT SUPPORTED
+SWA is only available in 5 regions. Attempting to provision in unsupported regions (including `eastus`) will fail.
 
 ## Route Configuration
 
