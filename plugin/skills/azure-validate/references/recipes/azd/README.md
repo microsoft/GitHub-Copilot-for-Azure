@@ -107,10 +107,7 @@ azd env get-values | grep AZURE_SUBSCRIPTION_ID
 mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
 ```
 
-**Review policy compliance:**
-- Check for any policy violations or non-compliant resources
-- Ensure deployment will comply with organizational policies
-- Address any policy conflicts before proceeding to deployment
+**Review:** See [Policy Validation Guide](mdc:../policy-validation.md)
 
 ## References
 
