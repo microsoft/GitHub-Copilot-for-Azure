@@ -24,7 +24,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test('description is concise and actionable', () => {
-      // Descriptions should be 50-500 chars for readability
       expect(skill.metadata.description.length).toBeGreaterThan(50);
       expect(skill.metadata.description.length).toBeLessThan(1000);
     });

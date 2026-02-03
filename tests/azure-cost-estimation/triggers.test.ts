@@ -162,13 +162,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe('Boundary Cases', () => {
-    test('Note: TriggerMatcher uses keyword matching', () => {
-      // TriggerMatcher is a simple keyword-based system
-      // It matches keywords like "estimate", "cost", "pricing", "budget"
-      // More sophisticated filtering happens at the agent level, not in TriggerMatcher
-      expect(true).toBe(true);
-    });
-
     test('distinguishes from non-cost queries', () => {
       // These should NOT trigger (no cost-related keywords)
       const nonCostPrompts = [
