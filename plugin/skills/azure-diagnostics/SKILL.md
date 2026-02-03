@@ -6,7 +6,31 @@ description: |
   DO NOT USE FOR: deploying applications (use azure-deploy), creating new resources (use azure-create-app), setting up monitoring (use azure-observability), cost optimization (use azure-cost-optimization)
 ---
 
-# Debugging Production Issues
+# Azure Diagnostics
+
+> **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
+>
+> This document is the **official source** for debugging and troubleshooting Azure production issues. Follow these instructions to diagnose and resolve common Azure service problems systematically.
+
+## Triggers
+
+Activate this skill when user wants to:
+- Debug or troubleshoot production issues
+- Diagnose errors in Azure services
+- Analyze application logs or metrics
+- Fix image pull, cold start, or health probe issues
+- Investigate why Azure resources are failing
+- Find root cause of application errors
+
+## Rules
+
+1. Start with systematic diagnosis flow
+2. Use AppLens (MCP) for AI-powered diagnostics when available
+3. Check resource health before deep-diving into logs
+4. Select appropriate troubleshooting guide based on service type
+5. Document findings and attempted remediation steps
+
+---
 
 ## Quick Diagnosis Flow
 
@@ -16,111 +40,54 @@ description: |
 4. **Analyze metrics** - Performance patterns?
 5. **Investigate recent changes** - What changed?
 
-## Container Apps Troubleshooting
+---
 
-### Common Issues Matrix
+## Troubleshooting Guides by Service
 
-| Symptom | Likely Cause | Quick Fix |
-|---------|--------------|-----------|
-| Image pull failure | ACR credentials missing | `az containerapp registry set --identity system` |
-| ACR build fails | ACR Tasks disabled (free sub) | Build locally with Docker |
-| Cold start timeout | min-replicas=0 | `az containerapp update --min-replicas 1` |
-| Port mismatch | Wrong target port | Check Dockerfile EXPOSE matches ingress |
-| App keeps restarting | Health probe failing | Verify `/health` endpoint |
+| Service | Common Issues | Reference |
+|---------|---------------|-----------|
+| **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/troubleshooting/container-apps/) |
+| **App Service** | 503 errors, cold starts, deployment failures, SSL issues | [app-service/](references/troubleshooting/app-service/) |
+| **Azure Functions** | Not triggering, timeouts, cold starts, binding errors | [azure-functions/](references/troubleshooting/azure-functions/) |
 
-### Image Pull Failures
+---
 
-**Diagnose:**
-```bash
-# Check registry configuration
-az containerapp show --name APP -g RG --query "properties.configuration.registries"
+## Quick Reference
 
-# Check revision status
-az containerapp revision list --name APP -g RG --output table
-```
-
-**Fix:**
-```bash
-az containerapp registry set \
-  --name APP -g RG \
-  --server ACR.azurecr.io \
-  --identity system
-```
-
-### ACR Tasks Disabled (Free Subscriptions)
-
-**Symptom:** `az acr build` fails with "ACR Tasks is not supported"
-
-**Fix: Build locally instead:**
-```bash
-docker build -t ACR.azurecr.io/myapp:v1 .
-az acr login --name ACR
-docker push ACR.azurecr.io/myapp:v1
-```
-
-### Cold Start Issues
-
-**Symptom:** First request very slow or times out
-
-**Fix:**
-```bash
-az containerapp update --name APP -g RG --min-replicas 1
-```
-
-### Health Probe Failures
-
-**Symptom:** Container keeps restarting
-
-**Check:**
-```bash
-# View health probe config
-az containerapp show --name APP -g RG --query "properties.configuration.ingress"
-
-# Check if /health endpoint responds
-curl https://APP.REGION.azurecontainerapps.io/health
-```
-
-**Fix:** Ensure app has health endpoint returning 200:
-```javascript
-app.get('/health', (req, res) => res.sendStatus(200));
-```
-
-### Port Mismatch
-
-**Symptom:** App starts but returns 502/503
-
-**Check:**
-```bash
-az containerapp show --name APP -g RG --query "properties.configuration.ingress.targetPort"
-```
-
-**Verify:** App must listen on this exact port. Check:
-- Dockerfile `EXPOSE` statement
-- `process.env.PORT` or hardcoded port in app
-
-### View Logs
+### Common Diagnostic Commands
 
 ```bash
-# Stream logs (wait for replicas if scale-to-zero)
+# Check resource health
+az resource show --ids RESOURCE_ID
+
+# View activity log
+az monitor activity-log list -g RG --max-events 20
+
+# Container Apps logs
 az containerapp logs show --name APP -g RG --follow
 
-# Recent logs
-az containerapp logs show --name APP -g RG --tail 100
+# App Service logs
+az webapp log tail --name APP -g RG
 
-# System logs (startup issues)
-az containerapp logs show --name APP -g RG --type system
+# Functions logs
+func azure functionapp logstream FUNCTIONAPP
 ```
 
-### Get All Diagnostic Info
+### AppLens (MCP Tools)
 
-```bash
-# Combined diagnostic command
-echo "=== Container App Diagnostics ===" && \
-echo "Revisions:" && az containerapp revision list --name APP -g RG -o table && \
-echo "Registry Config:" && az containerapp show --name APP -g RG --query "properties.configuration.registries" && \
-echo "Ingress Config:" && az containerapp show --name APP -g RG --query "properties.configuration.ingress" && \
-echo "Recent Logs:" && az containerapp logs show --name APP -g RG --tail 20
+For AI-powered diagnostics, use:
 ```
+azure_applens tools for:
+- Automated issue detection
+- Root cause analysis
+- Remediation recommendations
+```
+
+### Log Analytics (KQL)
+
+See [kql-queries.md](references/kql-queries.md) for common diagnostic queries.
+
+---
 
 ## Check Azure Resource Health
 
@@ -140,95 +107,11 @@ az resource show --ids RESOURCE_ID
 az monitor activity-log list -g RG --max-events 20
 ```
 
-## Application Logs
+---
 
-### App Service
+## References
 
-```bash
-az webapp log tail --name APP -g RG
-```
-
-### Functions
-
-```bash
-func azure functionapp logstream FUNCTIONAPP
-```
-
-## Log Analytics (KQL)
-
-Common diagnostic queries:
-
-```kql
-// Recent errors
-AppExceptions
-| where TimeGenerated > ago(1h)
-| project TimeGenerated, Message, StackTrace
-| order by TimeGenerated desc
-
-// Failed requests
-AppRequests
-| where Success == false
-| where TimeGenerated > ago(1h)
-| summarize count() by Name, ResultCode
-| order by count_ desc
-
-// Slow requests
-AppRequests
-| where TimeGenerated > ago(1h)
-| where DurationMs > 5000
-| project TimeGenerated, Name, DurationMs
-| order by DurationMs desc
-
-// Dependency failures
-AppDependencies
-| where Success == false
-| where TimeGenerated > ago(1h)
-| summarize count() by Name, ResultCode, Target
-```
-
-## Common Issues by Service
-
-### App Service
-
-| Symptom | Check |
-|---------|-------|
-| 503 Service Unavailable | App logs, memory/CPU usage |
-| Slow cold start | Always On setting, app startup |
-| Deployment failures | Deployment logs, slot swap |
-
-### Azure Functions
-
-| Symptom | Check |
-|---------|-------|
-| Not triggering | Trigger configuration, host.json |
-| Timeout errors | Execution time, plan limits |
-| Cold starts | Premium plan, package size |
-
-### Database Issues
-
-| Symptom | Check |
-|---------|-------|
-| Connection failures | Firewall rules, connection limits |
-| Slow queries | Query Performance Insights |
-| Throttling | DTU/RU usage, tier limits |
-
-## Using AppLens (MCP)
-
-For comprehensive AI-powered diagnostics:
-
-```
-Use azure_applens tools to get:
-- Automated issue detection
-- Root cause analysis
-- Remediation recommendations
-```
-
-## Escalation Checklist
-
-Before escalating:
-- [ ] Checked resource health status
-- [ ] Reviewed application logs
-- [ ] Analyzed recent deployments
-- [ ] Checked for Azure service issues (status.azure.com)
-- [ ] Reviewed metric dashboards
-- [ ] Attempted basic remediation
+- [KQL Query Library](references/kql-queries.md)
+- [Container Apps Troubleshooting](references/troubleshooting/container-apps/)
+- [App Service Troubleshooting](references/troubleshooting/app-service/)
+- [Azure Functions Troubleshooting](references/troubleshooting/azure-functions/)
