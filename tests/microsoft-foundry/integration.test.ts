@@ -14,7 +14,10 @@ import {
   run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason
+  getIntegrationSkipReason,
+  doesAssistantMessageIncludeKeyword,
+  areToolCallsSuccess,
+  isSkillInvoked
 } from "../utils/agent-runner";
 import * as fs from "fs";
 import { AIProjectClient } from "@azure/ai-projects";
@@ -90,6 +93,32 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for RAG application prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
+  });
+
+  test("returns v1 model identifier for a given model", async () => {
+    const projectEndpoint = process.env.FOUNDRY_PROJECT_ENDPOINT;
+    if (!projectEndpoint) {
+      console.log("Environment variable FOUNDRY_PROJECT_ENDPOINT not defined. Skipping test.");
+      return;
+    }
+
+    // Foundry assigns a unique identifier to each model, which must be used when calling Foundry APIs.
+    // However, users may refer to a model in various ways (e.g. GPT 5, gpt-5, GPT-5, GPT5, etc.)
+    // The agent can list the models to help the user find the unique identifier for a model.
+    const agentMetadata = await run({
+      systemPrompt: {
+        mode: "append",
+        content: `Use ${projectEndpoint} as the project endpoint when calling Foundry tools.`
+      },
+      prompt: "What's the official name of GPT 5 in Foundry?",
+      nonInteractive: true
+    });
+
+    const areFoundryToolCallsSuccess = areToolCallsSuccess(agentMetadata, "azure-foundry");
+    const isCorrectModelNameInResponse = doesAssistantMessageIncludeKeyword(agentMetadata, "gpt-5", { caseSensitive: true });
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    expect(areFoundryToolCallsSuccess).toBe(true);
+    expect(isCorrectModelNameInResponse).toBe(true);
   });
 
   test("successfully creates a v1 agent in Foundry", async () => {

@@ -15,6 +15,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { type CopilotClient } from '@github/copilot-sdk';
 
 // Type definitions for the SDK (defined locally to avoid import issues)
 export interface SessionEvent {
@@ -41,6 +42,10 @@ export interface TestConfig {
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
   nonInteractive?: boolean;
+  systemPrompt?: {
+    mode: "append" | "replace",
+    content: string
+  }
 }
 
 export interface KeywordOptions {
@@ -294,7 +299,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   // Declare client and session outside try block to ensure cleanup in finally
-  let client: any;
+  let client: CopilotClient | undefined;
   let session: any;
 
   try {
@@ -317,7 +322,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       logLevel: process.env.DEBUG ? 'all' : 'error',
       cwd: testWorkspace,
       cliArgs: cliArgs,
-    });
+    }) as CopilotClient;
 
     const skillDirectory = path.resolve(__dirname, '../../plugin/skills');
 
@@ -331,7 +336,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
           args: ['-y', '@azure/mcp', 'server', 'start'],
           tools: ['*']
         }
-      }
+      },
+      systemMessage: config.systemPrompt
     });
 
     const agentMetadata: AgentMetadata = { events: [] };
