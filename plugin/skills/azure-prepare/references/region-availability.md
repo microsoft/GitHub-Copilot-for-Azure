@@ -1,0 +1,78 @@
+# Azure Region Availability Reference
+
+> **AUTHORITATIVE SOURCE** — Consult this file BEFORE recommending any region.
+
+## How to Use
+
+1. Check if your architecture includes any **limited availability** services below
+2. If yes → only offer regions that support ALL services
+3. If all services are "available everywhere" → offer common regions
+
+---
+
+## Services with LIMITED Region Availability
+
+### Azure Static Web Apps (SWA)
+
+⚠️ **NOT available in many common regions**
+
+| ✅ Available | ❌ NOT Available (will FAIL) |
+|-------------|------------------------------|
+| `westus2` | `eastus` |
+| `westus3` | `eastus2` |
+| `centralus` | `northeurope` |
+| `westeurope` | `southeastasia` |
+| `eastasia` | `uksouth` |
+| `australiaeast` | `canadacentral` |
+
+---
+
+### Azure OpenAI
+
+⚠️ **Very limited — varies by model**
+
+| Region | GPT-4o | GPT-4 | GPT-3.5 | Embeddings |
+|--------|:------:|:-----:|:-------:|:----------:|
+| `eastus` | ✅ | ✅ | ✅ | ✅ |
+| `eastus2` | ✅ | ✅ | ✅ | ✅ |
+| `westus` | ⚠️ | ⚠️ | ✅ | ✅ |
+| `westus3` | ✅ | ⚠️ | ✅ | ✅ |
+| `southcentralus` | ✅ | ✅ | ✅ | ✅ |
+| `swedencentral` | ✅ | ✅ | ✅ | ✅ |
+| `westeurope` | ⚠️ | ✅ | ✅ | ✅ |
+
+> Check https://learn.microsoft.com/azure/ai-services/openai/concepts/models for current model availability.
+
+---
+
+## Services Available in Most Regions
+
+These services are available in all major Azure regions — no special consideration needed:
+
+- **Container Apps**
+- **Azure Functions**
+- **App Service**
+- **Azure SQL Database**
+- **Cosmos DB**
+- **Key Vault**
+- **Storage Account**
+- **Service Bus**
+- **Event Grid**
+- **Application Insights / Log Analytics**
+
+---
+
+## Common Architecture Patterns
+
+| Pattern | Recommended Regions |
+|---------|---------------------|
+| SWA only | `westus2`, `centralus`, `westeurope` |
+| SWA + backend services | `westus2`, `centralus`, `westeurope`, `australiaeast` |
+| Container Apps (no SWA) | `eastus2`, `westus2`, `centralus`, `westeurope` |
+| With Azure OpenAI | `eastus`, `eastus2`, `swedencentral` |
+| SWA + Azure OpenAI | `westus3` (limited overlap!) |
+
+---
+
+**Last updated:** 2026-02-03
+

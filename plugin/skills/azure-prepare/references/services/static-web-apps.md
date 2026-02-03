@@ -10,41 +10,96 @@ Hosting patterns and best practices for Azure Static Web Apps.
 - Sites with serverless API backends
 - Documentation sites
 
-## Service Type in azure.yaml
-
-```yaml
-services:
-  my-web:
-    host: staticwebapp
-    project: ./src/web
-```
-
-## Bicep Resource Pattern
-
-```bicep
-resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
-  name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
-  location: location
-  sku: {
-    name: 'Standard'
-    tier: 'Standard'
-  }
-  properties: {
-    buildProperties: {
-      appLocation: '/'
-      apiLocation: 'api'
-      outputLocation: 'dist'
-    }
-  }
-}
-```
-
 ## Required Supporting Resources
 
 | Resource | Purpose |
 |----------|---------|
 | None required | Static Web Apps is fully managed |
 | Application Insights | Monitoring (optional) |
+
+## Project Structure Detection
+
+Detect layout first, then apply correct configuration:
+
+| Layout | Detection | `project` | `language` | `dist` |
+|--------|-----------|-----------|------------|--------|
+| Static in root | `index.html` in `public/` | `.` | (omit) | `public` |
+| Framework in root | `package.json` in root | `.` | `js` | framework output |
+| Static in subfolder | `index.html` in subfolder | `./src/web` | (omit) | `.` |
+| Framework in subfolder | `package.json` in subfolder | `./src/web` | `js` | framework output |
+
+> **Key rules:**
+> - `dist` is **relative to `project`** path
+> - Omit `language` for pure static (no build step)
+> - **For static files in root**: put files in `public/` folder (SWA CLI requires distinct dist folder)
+> - `language: html` and `language: static` are **NOT valid** - will fail
+
+## azure.yaml Configuration
+
+### Static files in root (no build)
+
+```yaml
+services:
+  web:
+    project: .
+    host: staticwebapp
+    dist: public            # SWA CLI requires distinct output folder
+```
+
+### Framework app (with build)
+
+```yaml
+services:
+  web:
+    project: .              # or ./src/web for subfolder
+    language: js            # triggers npm install && npm run build
+    host: staticwebapp
+    dist: dist              # framework output folder
+```
+
+## Framework Build Configuration
+
+| Framework | `dist` value |
+|-----------|--------------|
+| React (CRA) | `build` |
+| Vue / Vite | `dist` |
+| Angular | `dist/<project-name>` |
+| Next.js (static) | `out` |
+| Gatsby / Hugo | `public` |
+
+```yaml
+# React
+services:
+  web: { project: ., language: js, host: staticwebapp, dist: build }
+
+# Vue / Vite
+services:
+  web: { project: ., language: js, host: staticwebapp, dist: dist }
+
+# Angular (replace my-app with your project name)
+services:
+  web: { project: ., language: js, host: staticwebapp, dist: dist/my-app }
+
+# Next.js (static export)
+services:
+  web: { project: ., language: js, host: staticwebapp, dist: out }
+```
+
+## Bicep Resource Pattern
+
+```bicep
+resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
+  name: name
+  location: location
+  tags: union(tags, { 'azd-service-name': 'web' })  // Required for azd
+  sku: { name: 'Free', tier: 'Free' }
+  properties: {
+    stagingEnvironmentPolicy: 'Enabled'
+    allowConfigFileUpdates: true
+    buildProperties: { skipGithubActionWorkflowGeneration: true }
+  }
+}
+```
 
 ## SKU Selection
 
@@ -53,70 +108,16 @@ resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
 | Free | 2 custom domains, 0.5GB storage, shared bandwidth |
 | Standard | 5 custom domains, 2GB storage, SLA, auth customization |
 
-## Build Configuration
+## Region Availability
 
-### React
+> ⚠️ **LIMITED AVAILABILITY** — SWA is NOT available in many common regions. See [region-availability.md](../region-availability.md) for full matrix.
 
-```yaml
-buildProperties:
-  appLocation: '/'
-  outputLocation: 'build'
-```
+**Available regions:** `westus2`, `westus3`, `centralus`, `westeurope`, `eastasia`, `australiaeast`
 
-### Vue
-
-```yaml
-buildProperties:
-  appLocation: '/'
-  outputLocation: 'dist'
-```
-
-### Angular
-
-```yaml
-buildProperties:
-  appLocation: '/'
-  outputLocation: 'dist/my-app'
-```
-
-### Next.js (Static Export)
-
-```yaml
-buildProperties:
-  appLocation: '/'
-  outputLocation: 'out'
-```
-
-## API Integration
-
-Integrated Functions API:
-
-```
-project/
-├── src/           # Frontend
-└── api/           # Azure Functions API
-    ├── hello/
-    │   └── index.js
-    └── host.json
-```
-
-```bicep
-buildProperties: {
-  appLocation: 'src'
-  apiLocation: 'api'
-  outputLocation: 'dist'
-}
-```
-
-## Custom Domains
-
-```bicep
-resource customDomain 'Microsoft.Web/staticSites/customDomains@2022-09-01' = {
-  parent: staticWebApp
-  name: 'www.example.com'
-  properties: {}
-}
-```
+**NOT available (will FAIL):**
+- ❌ `eastus` — NOT SUPPORTED
+- ❌ `eastus2` — NOT SUPPORTED  
+- ❌ `northeurope` — NOT SUPPORTED
 
 ## Route Configuration
 
@@ -124,70 +125,16 @@ Create `staticwebapp.config.json`:
 
 ```json
 {
-  "routes": [
-    {
-      "route": "/api/*",
-      "allowedRoles": ["authenticated"]
-    }
-  ],
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": ["/api/*", "/*.{png,jpg,gif}"]
   },
   "responseOverrides": {
-    "404": {
-      "rewrite": "/404.html"
-    }
+    "404": { "rewrite": "/404.html" }
   }
 }
 ```
 
-## Authentication
+## Advanced Configuration
 
-Built-in providers:
-
-```json
-{
-  "routes": [
-    {
-      "route": "/admin/*",
-      "allowedRoles": ["admin"]
-    }
-  ],
-  "auth": {
-    "identityProviders": {
-      "azureActiveDirectory": {
-        "registration": {
-          "openIdIssuer": "https://login.microsoftonline.com/{tenant-id}",
-          "clientIdSettingName": "AAD_CLIENT_ID",
-          "clientSecretSettingName": "AAD_CLIENT_SECRET"
-        }
-      }
-    }
-  }
-}
-```
-
-## Environment Variables
-
-Application settings for the integrated API:
-
-```bicep
-resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2022-09-01' = {
-  parent: staticWebApp
-  name: 'appsettings'
-  properties: {
-    DATABASE_URL: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=db-url)'
-  }
-}
-```
-
-## Deployment Token
-
-For CI/CD pipelines:
-
-```bicep
-output deploymentToken string = staticWebApp.listSecrets().properties.apiKey
-```
-
-Store this token as a secret in GitHub Actions or Azure DevOps.
+See [swa-advanced.md](swa-advanced.md) for API integration, GitHub-linked deployments, custom domains, authentication, and environment variables.

@@ -1,0 +1,15 @@
+# SWA Deployment Test artifacts
+# Each test project generates these during deployment
+
+# Azure Developer CLI state
+.azure/
+
+# Build outputs (framework projects)
+dist/
+
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+# Vite cache
+.vite/
