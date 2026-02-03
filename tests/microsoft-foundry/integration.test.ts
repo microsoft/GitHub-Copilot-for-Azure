@@ -16,7 +16,8 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
   doesAssistantMessageIncludeKeyword,
-  areToolCallsSuccess
+  areToolCallsSuccess,
+  isSkillInvoked
 } from "../utils/agent-runner";
 import * as fs from "fs";
 import { AIProjectClient } from "@azure/ai-projects";
@@ -114,6 +115,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     const areFoundryToolCallsSuccess = areToolCallsSuccess(agentMetadata, "azure-foundry");
     const isCorrectModelNameInResponse = doesAssistantMessageIncludeKeyword(agentMetadata, "gpt-5", { caseSensitive: true });
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
     expect(areFoundryToolCallsSuccess).toBe(true);
     expect(isCorrectModelNameInResponse).toBe(true);
   });
