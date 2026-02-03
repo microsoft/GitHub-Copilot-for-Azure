@@ -107,7 +107,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         fs.cpSync("./appinsights-instrumentation/resources/aspnetcore-app/", workspace, { recursive: true });
       },
       prompt: "Add App Insights instrumentation to my C# web application in Azure App Service",
-      preserveWorkspace: true
     });
 
     // C# ASP.Net Core App Service apps are special since they can be auto-instrumented
@@ -118,7 +117,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(mentionsAutoInstrumentation).toBe(true);
   });
 
-  test.only("mentions App Insights in response", async () => {
+  test("mentions App Insights in response", async () => {
     let workspacePath: string | undefined;
     const agentMetadata = await run({
       setup: async (workspace: string) => {
