@@ -83,6 +83,209 @@ async function getCopilotClient() {
 }
 
 /**
+ * Generate a markdown report from agent metadata
+ */
+function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): string {
+  const lines: string[] = [];
+  
+  // User Prompt section
+  lines.push('# User Prompt');
+  lines.push('');
+  lines.push(config.prompt);
+  lines.push('');
+  
+  // Process events in chronological order
+  lines.push('# Assistant');
+  lines.push('');
+  
+  // Track message deltas to reconstruct full messages
+  const messageDeltas: Record<string, string> = {};
+  const reasoningDeltas: Record<string, string> = {};
+  const toolResults: Record<string, { success: boolean; content?: string; error?: string }> = {};
+  
+  // First pass: collect all tool results
+  for (const event of agentMetadata.events) {
+    if (event.type === 'tool.execution_complete') {
+      const toolCallId = event.data.toolCallId as string;
+      const result = event.data.result as { content?: string } | undefined;
+      const error = event.data.error as { message?: string } | undefined;
+      toolResults[toolCallId] = {
+        success: event.data.success as boolean,
+        content: result?.content,
+        error: error?.message
+      };
+    }
+  }
+  
+  // Second pass: generate output in order
+  for (const event of agentMetadata.events) {
+    switch (event.type) {
+      case 'assistant.message': {
+        const content = event.data.content as string;
+        if (content) {
+          lines.push(content);
+          lines.push('');
+        }
+        break;
+      }
+      
+      case 'assistant.message_delta': {
+        // Accumulate deltas for streaming - we'll use the final message instead
+        const messageId = event.data.messageId as string;
+        const deltaContent = event.data.deltaContent as string;
+        if (messageId && deltaContent) {
+          messageDeltas[messageId] = (messageDeltas[messageId] || '') + deltaContent;
+        }
+        break;
+      }
+      
+      case 'assistant.reasoning': {
+        const content = event.data.content as string;
+        if (content) {
+          lines.push('> **Reasoning:**');
+          lines.push('> ' + content.split('\n').join('\n> '));
+          lines.push('');
+        }
+        break;
+      }
+      
+      case 'assistant.reasoning_delta': {
+        // Accumulate reasoning deltas
+        const reasoningId = event.data.reasoningId as string;
+        const deltaContent = event.data.deltaContent as string;
+        if (reasoningId && deltaContent) {
+          reasoningDeltas[reasoningId] = (reasoningDeltas[reasoningId] || '') + deltaContent;
+        }
+        break;
+      }
+      
+      case 'tool.execution_start': {
+        const toolName = event.data.toolName as string;
+        const toolCallId = event.data.toolCallId as string;
+        const args = event.data.arguments;
+        
+        // Check if this is a skill invocation
+        if (toolName === 'skill') {
+          const argsStr = JSON.stringify(args);
+          // Extract skill name from arguments
+          const skillMatch = argsStr.match(/"skill"\s*:\s*"([^"]+)"/);
+          const skillName = skillMatch ? skillMatch[1] : 'unknown';
+          lines.push('```');
+          lines.push(`skill: ${skillName}`);
+          lines.push('```');
+        } else {
+          // Regular tool call
+          let argsJson = '{}';
+          try {
+            argsJson = JSON.stringify(args, null, 2);
+          } catch {
+            argsJson = String(args);
+          }
+          lines.push('```');
+          lines.push(`tool: ${toolName}`);
+          lines.push(`arguments: ${argsJson}`);
+          
+          // Add tool response if available
+          const result = toolResults[toolCallId];
+          if (result) {
+            if (result.success && result.content) {
+              let content = result.content;
+              if (content.length > 500) {
+                content = content.substring(0, 500) + '... (truncated)';
+              }
+              lines.push(`response: ${content}`);
+            } else if (!result.success && result.error) {
+              let error = result.error;
+              if (error.length > 500) {
+                error = error.substring(0, 500) + '... (truncated)';
+              }
+              lines.push(`error: ${error}`);
+            }
+          }
+          lines.push('```');
+        }
+        lines.push('');
+        break;
+      }
+      
+      case 'subagent.started': {
+        const agentName = event.data.agentName as string;
+        const agentDisplayName = event.data.agentDisplayName as string;
+        lines.push('```');
+        lines.push(`subagent.started: ${agentDisplayName || agentName}`);
+        lines.push('```');
+        lines.push('');
+        break;
+      }
+      
+      case 'subagent.completed': {
+        const agentName = event.data.agentName as string;
+        lines.push('```');
+        lines.push(`subagent.completed: ${agentName}`);
+        lines.push('```');
+        lines.push('');
+        break;
+      }
+      
+      case 'subagent.failed': {
+        const agentName = event.data.agentName as string;
+        const error = event.data.error as string;
+        let errorMsg = error || 'unknown error';
+        if (errorMsg.length > 500) {
+          errorMsg = errorMsg.substring(0, 500) + '... (truncated)';
+        }
+        lines.push('```');
+        lines.push(`subagent.failed: ${agentName}`);
+        lines.push(`error: ${errorMsg}`);
+        lines.push('```');
+        lines.push('');
+        break;
+      }
+      
+      case 'session.error': {
+        const message = event.data.message as string;
+        const errorType = event.data.errorType as string;
+        lines.push('```');
+        lines.push(`session.error: ${errorType || 'unknown'}`);
+        lines.push(`message: ${message || 'unknown error'}`);
+        lines.push('```');
+        lines.push('');
+        break;
+      }
+    }
+  }
+  
+  return lines.join('\n');
+}
+
+/**
+ * Write markdown report to file
+ */
+function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): void {
+  try {
+    const filePath = buildShareFilePath();
+    const dir = path.dirname(filePath);
+    
+    // Ensure directory exists
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    const markdown = generateMarkdownReport(config, agentMetadata);
+    fs.writeFileSync(filePath, markdown, 'utf-8');
+    
+    if (process.env.DEBUG) {
+      console.log(`Markdown report written to: ${filePath}`);
+    }
+  } catch (error) {
+    // Don't fail the test if report generation fails
+    if (process.env.DEBUG) {
+      console.error('Failed to write markdown report:', error);
+    }
+  }
+}
+
+/**
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
@@ -160,6 +363,9 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     await session.send({ prompt: config.prompt });
     await done;
+
+    // Generate markdown report
+    writeMarkdownReport(config, agentMetadata);
 
     return agentMetadata;
   } catch (error) {
