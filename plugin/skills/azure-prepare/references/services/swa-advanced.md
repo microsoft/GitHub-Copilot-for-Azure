@@ -101,8 +101,17 @@ resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2022-09-01' = {
 
 ## Deployment Token
 
-For CI/CD pipelines:
+> ⚠️ **Security Warning:** Do NOT expose deployment tokens in ARM/Bicep outputs. Deployment outputs are visible in Azure portal deployment history and logs.
 
+**Recommended approach** - retrieve token via Azure CLI and store directly in secret store:
+
+```bash
+# Get token and store in CI/CD secret (do not log)
+az staticwebapp secrets list --name <app-name> --query "properties.apiKey" -o tsv
+```
+
+**Do NOT do this** (exposes token in deployment outputs):
 ```bicep
-output deploymentToken string = staticWebApp.listSecrets().properties.apiKey
+// ❌ INSECURE - token visible in deployment history
+// output deploymentToken string = staticWebApp.listSecrets().properties.apiKey
 ```

@@ -30,20 +30,32 @@ Detect layout first, then apply correct configuration:
 
 > **Key rules:**
 > - `dist` is **relative to `project`** path
-> - Omit `language` for pure static (no build step)
-> - **For static files in root**: put files in `public/` folder (SWA CLI requires distinct dist folder)
+> - Omit `language` for pure static in subfolder (no build step needed)
+> - **SWA CLI limitation**: When `project: .`, cannot use `dist: .` - files must be in a separate folder
+> - For static files in root: add `package.json` with build script, use `language: js`
 > - `language: html` and `language: static` are **NOT valid** - will fail
 
 ## azure.yaml Configuration
 
-### Static files in root (no build)
+### Static files in root (requires build script)
+
+> ⚠️ SWA CLI cannot deploy from root to root. Add a package.json build script to copy files.
+
+```json
+{
+  "scripts": {
+    "build": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').readdirSync('.').filter(f=>/\\.(html|css|js)$/.test(f)).forEach(f=>require('fs').copyFileSync(f,'public/'+f))\""
+  }
+}
+```
 
 ```yaml
 services:
   web:
     project: .
+    language: js           # triggers npm run build
     host: staticwebapp
-    dist: public            # SWA CLI requires distinct output folder
+    dist: public
 ```
 
 ### Framework app (with build)

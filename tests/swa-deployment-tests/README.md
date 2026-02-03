@@ -4,18 +4,28 @@ Manual deployment tests for validating Static Web App configurations across diff
 
 ## Test Projects
 
-| # | Pattern | `project` | `language` | `dist` | Status |
-|---|---------|-----------|------------|--------|--------|
-| 01 | Static files in root | `.` | (omit) | `public` | ✅ Tested |
-| 02 | Framework app in root | `.` | `js` | `dist` | ✅ Tested |
-| 03 | Static files in subfolder | `./src/web` | (omit) | `.` | ✅ Tested |
-| 04 | Framework app in subfolder | `./src/web` | `js` | `dist` | ✅ Tested |
+| # | Pattern | `project` | `language` | `dist` | Notes |
+|---|---------|-----------|------------|--------|-------|
+| 01 | Static files in root | `.` | `js` | `public` | Uses package.json build script to copy files |
+| 02 | Framework app in root | `.` | `js` | `dist` | npm build creates dist/ |
+| 03 | Static files in subfolder | `./src/web` | (omit) | `.` | No build needed |
+| 04 | Framework app in subfolder | `./src/web` | `js` | `dist` | npm build creates dist/ |
 
 ## Key Finding
 
 **SWA CLI Limitation:** When `project: .`, you **cannot** use `dist: .`. The SWA CLI errors with "Current directory cannot be identical to or contained within artifact folders."
 
-**Solution for static files in root:** Put files in a `public/` folder and use `dist: public`.
+**Solution for static files in root:** Add a `package.json` with a build script to copy files:
+
+```json
+{
+  "scripts": {
+    "build": "node scripts/copy-to-public.js"
+  }
+}
+```
+
+Then use `language: js` in azure.yaml to trigger `npm run build`.
 
 ## Running Tests
 

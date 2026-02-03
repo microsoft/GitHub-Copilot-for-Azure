@@ -25,9 +25,15 @@ foreach ($test in $tests) {
     if (Test-Path $envPath) {
         Write-Host "  Removing $($test.Name)..." -ForegroundColor Gray
         Push-Location $testPath
-        azd down --force --purge --no-prompt 2>&1 | Out-Null
+        $output = azd down --force --purge --no-prompt 2>&1
+        $exitCode = $LASTEXITCODE
         Pop-Location
-        Write-Host "  ✅ $($test.Name) removed" -ForegroundColor Green
+        if ($exitCode -eq 0) {
+            Write-Host "  ✅ $($test.Name) removed" -ForegroundColor Green
+        } else {
+            Write-Host "  ❌ $($test.Name) removal failed (exit code: $exitCode)" -ForegroundColor Red
+            Write-Host $output -ForegroundColor Gray
+        }
     }
     else {
         Write-Host "  ⏭️ $($test.Name) not deployed, skipping" -ForegroundColor Gray

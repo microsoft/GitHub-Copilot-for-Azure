@@ -65,37 +65,54 @@ services:
 
 ### Static Web App (pure HTML/CSS - no build)
 
-For pure HTML sites without a build step:
+For pure HTML sites without a framework build step:
 
+**Static files in subfolder (recommended):**
 ```yaml
-# Static files in subfolder (recommended)
 services:
   web:
     project: ./src/web     # folder containing index.html
     host: staticwebapp
     dist: .                # works when project != root
+```
 
-# Static files in root - put in public/ folder
+**Static files in root - requires build script:**
+
+> ⚠️ **SWA CLI Limitation:** When `project: .`, you cannot use `dist: .`. Files must be copied to a separate output folder.
+
+Add a minimal `package.json` with a build script:
+```json
+{
+  "scripts": {
+    "build": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').readdirSync('.').filter(f=>/\\.(html|css|js)$/.test(f)).forEach(f=>require('fs').copyFileSync(f,'public/'+f))\""
+  }
+}
+```
+
+Then configure azure.yaml with `language: js` to trigger the build:
+```yaml
 services:
   web:
     project: .
+    language: js           # triggers npm install && npm run build
     host: staticwebapp
-    dist: public           # SWA CLI requires distinct output folder when project: .
+    dist: public
 ```
 
 ### SWA Project Structure Detection
 
 | Layout | Configuration |
 |--------|---------------|
-| Static in root | `project: .`, `dist: public` (put files in `public/` folder) |
+| Static in root | `project: .`, `language: js`, `dist: public` + package.json build script |
 | Framework in root | `project: .`, `language: js`, `dist: <output>` |
 | Static in subfolder | `project: ./path`, `dist: .` |
 | Framework in subfolder | `project: ./path`, `language: js`, `dist: <output>` |
 
 > **Key rules:**
 > - `dist` is **relative to `project`** path
-> - **SWA CLI limitation**: When `project: .`, cannot use `dist: .` - use a distinct folder
-> - Omit `language` for pure static sites (no build)
+> - **SWA CLI limitation**: When `project: .`, cannot use `dist: .` - must use a distinct folder
+> - For static files in root, add `package.json` with build script to copy files to dist folder
+> - Use `language: js` to trigger npm build even for pure static sites in root
 > - `language: html` and `language: static` are **NOT valid** - will fail
 
 ### SWA Bicep Requirement

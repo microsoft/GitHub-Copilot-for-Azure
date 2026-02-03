@@ -96,12 +96,21 @@ if (-not $SkipDeploy) {
                     Write-Host "  Installing npm dependencies in $npmDir..." -ForegroundColor Gray
                     Push-Location $npmDir
                     npm install --quiet 2>&1 | Out-Null
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Host "  ❌ npm install failed" -ForegroundColor Red
+                        Pop-Location
+                        continue
+                    }
                     Pop-Location
                 }
             }
             
             # Set up azd environment
             azd env new $test.EnvName --no-prompt 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  ❌ Failed to create azd environment" -ForegroundColor Red
+                continue
+            }
             azd env set AZURE_LOCATION $Location 2>&1 | Out-Null
             azd env set AZURE_SUBSCRIPTION_ID $SubscriptionId 2>&1 | Out-Null
             
