@@ -34,59 +34,60 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  
-  test("invokes azure-deploy skill for deployment prompt", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Run azd up to deploy my already-prepared app to Azure"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
+  describe("skill-invocation", () => {
+    test("invokes azure-deploy skill for deployment prompt", async () => {
+      let successCount = 0;
+      
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Run azd up to deploy my already-prepared app to Azure"
+          });
+          
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: any) {
+          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
         }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
       }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-  });
+      
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
 
-  test("invokes azure-deploy skill for publish to Azure prompt", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Publish my web app to Azure and configure the environment"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
+    test("invokes azure-deploy skill for publish to Azure prompt", async () => {
+      let successCount = 0;
+      
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Publish my web app to Azure and configure the environment"
+          });
+          
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: any) {
+          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
         }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
       }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+      
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
   });
 
   // Need to be logged into azd for these tests. 
