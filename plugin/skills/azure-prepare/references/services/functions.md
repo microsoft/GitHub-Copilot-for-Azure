@@ -11,6 +11,17 @@ Hosting patterns and best practices for Azure Functions.
 - Real-time file processing
 - Serverless compute preference
 
+## AZD Template Selection
+
+**IMPORTANT**: When using AZD recipe, select the appropriate template based on your project needs.
+
+See [functions-templates.md](../recipes/azd/functions-templates.md) for:
+- Template selection decision tree
+- MCP Server templates
+- Integration templates (Cosmos DB, SQL, AI)
+- HTTP function templates by runtime
+- Template initialization guidance
+
 ## Service Type in azure.yaml
 
 ```yaml

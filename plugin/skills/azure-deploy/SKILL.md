@@ -19,6 +19,7 @@ Activate this skill when user wants to:
 - Push updates to existing deployment
 - Run `azd up` or `az deployment`
 - Ship code to production
+- Deploy Azure Functions to the cloud
 
 ## Rules
 

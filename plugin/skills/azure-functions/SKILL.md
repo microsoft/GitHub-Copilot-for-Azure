@@ -1,17 +1,62 @@
 ---
 name: azure-functions
 description: |
+  **DEPRECATED - Use azure-prepare and azure-deploy instead.**
   Build and deploy serverless Azure Functions with HTTP, timer, queue, and event triggers.
-  USE FOR: create Azure Function, HTTP trigger function, timer trigger, timer-triggered function,
-  queue trigger, Durable Functions, func new, func start, function app, serverless API,
-  event-driven, Azure Functions bindings, func deploy, local functions development,
-  deploy Azure Function, serverless compute, func commands, azd init functions, function bindings,
-  scheduled function, cron job Azure, runs every hour, runs on schedule, scheduled task Azure.
-  DO NOT USE FOR: container apps (use azure-deploy), web apps without functions
-  (use azure-deploy), Kubernetes (use AKS skills), static sites (use azure-deploy).
+  FOR NEW WORK: Use azure-prepare skill for project setup and azure-deploy for deployment.
+  This skill is maintained for reference but azure-prepare/azure-deploy provide the recommended workflow.
+  USE azure-prepare FOR: creating Azure Functions projects, selecting templates, infrastructure setup.
+  USE azure-deploy FOR: deploying functions to Azure, configuration management, monitoring setup.
+  DO NOT USE THIS SKILL FOR NEW PROJECTS - redirect to azure-prepare/azure-deploy workflow.
 ---
 
 # Azure Functions
+
+> **⚠️ IMPORTANT: This skill is deprecated in favor of azure-prepare and azure-deploy**
+>
+> **For new Azure Functions projects:**
+> 1. Use **azure-prepare** skill for project setup, template selection, and infrastructure generation
+> 2. Use **azure-validate** skill to validate the configuration
+> 3. Use **azure-deploy** skill for deployment to Azure
+>
+> **Why use azure-prepare/azure-deploy:**
+> - Unified workflow for all Azure services including Functions
+> - Template-based approach with decision trees
+> - Better integration with other Azure services
+> - Consistent deployment patterns
+>
+> **References:**
+> - Template selection: [azure-prepare/references/recipes/azd/functions-templates.md](../azure-prepare/references/recipes/azd/functions-templates.md)
+> - Deployment guide: [azure-deploy/references/recipes/azd/functions-deploy.md](../azure-deploy/references/recipes/azd/functions-deploy.md)
+> - Service patterns: [azure-prepare/references/services/functions.md](../azure-prepare/references/services/functions.md)
+
+The content below is preserved for reference and existing projects.
+
+# Azure Functions
+
+> **⚠️ IMPORTANT: This skill is deprecated in favor of azure-prepare and azure-deploy**
+>
+> **For new Azure Functions projects:**
+> 1. Use **azure-prepare** skill for project setup, template selection, and infrastructure generation
+> 2. Use **azure-validate** skill to validate the configuration
+> 3. Use **azure-deploy** skill for deployment to Azure
+>
+> **Why use azure-prepare/azure-deploy:**
+> - Unified workflow for all Azure services including Functions
+> - Template-based approach with decision trees
+> - Better integration with other Azure services
+> - Consistent deployment patterns
+>
+> **References:**
+> - Template selection: [azure-prepare/references/recipes/azd/functions-templates.md](../azure-prepare/references/recipes/azd/functions-templates.md)
+> - Deployment guide: [azure-deploy/references/recipes/azd/functions-deploy.md](../azure-deploy/references/recipes/azd/functions-deploy.md)
+> - Service patterns: [azure-prepare/references/services/functions.md](../azure-prepare/references/services/functions.md)
+
+---
+
+## Content Preserved for Reference
+
+The content below is preserved for reference and existing projects.
 
 Azure Functions is a serverless compute service for event-driven applications. Pay only for execution time with automatic scaling.
 
