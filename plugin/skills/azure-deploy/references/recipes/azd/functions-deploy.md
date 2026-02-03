@@ -52,13 +52,6 @@ azd env set VNET_ENABLED false
 
 > ⚠️ **Important**: `azd env set` sets variables for the azd provisioning process, NOT application environment variables.
 
-### Application Settings
-
-Configure application environment variables via:
-1. **Bicep templates** - Define in resource app settings
-2. **Azure CLI** - `az functionapp config appsettings set`
-3. **local.settings.json** - Local development only
-
 ## Verify Deployment
 
 ### Check Function App Status
@@ -81,20 +74,7 @@ Monitor your Functions deployment through Azure Portal or use azd to view deploy
 
 ## CI/CD Integration
 
-### GitHub Actions
-
-For automated deployments, see [cicd/README.md](../cicd/README.md) for GitHub Actions integration.
-
-### Azure DevOps
-
-```yaml
-- task: AzureFunctionApp@1
-  inputs:
-    azureSubscription: '<service-connection>'
-    appType: 'functionAppLinux'
-    appName: '$(functionAppName)'
-    package: '$(System.DefaultWorkingDirectory)/**/*.zip'
-```
+For automated deployments with azd, see [cicd/README.md](../cicd/README.md) for GitHub Actions and Azure DevOps integration.
 
 ## Data Loss Warning
 
