@@ -99,7 +99,7 @@ Retrieve and validate Azure policies for the subscription:
 
 **Get subscription ID:**
 ```bash
-azd env get-values | grep AZURE_SUBSCRIPTION_ID
+az account show --query id -o tsv
 ```
 
 **Validate policies:**
@@ -107,7 +107,7 @@ azd env get-values | grep AZURE_SUBSCRIPTION_ID
 mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
 ```
 
-**Review:** See [Policy Validation Guide](mdc:../policy-validation.md)
+**Review:** See [Policy Validation Guide](../policy-validation.md)
 
 ## References
 

@@ -96,7 +96,7 @@ az account show --query id -o tsv
 mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
 ```
 
-**Review:** See [Policy Validation Guide](mdc:../policy-validation.md)
+**Review:** See [Policy Validation Guide](../policy-validation.md)
 
 ## References
 
