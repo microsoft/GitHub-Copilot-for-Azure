@@ -1,6 +1,9 @@
 ---
 name: azure-quick-review
-description: Performs Azure compliance assessments using Azure Quick Review (azqr) to identify resources that don't comply with Azure best practices. Use this skill when users ask to check compliance, assess Azure resources, run azqr, identify best practice violations, find orphaned resources, or review Azure resource configurations. Activate when users mention compliance scan, resource review, Azure assessment, or security posture evaluation.
+description: |
+  Performs Azure compliance assessments using Azure Quick Review (azqr) to identify resources that don't comply with Azure best practices.
+  USE FOR: run azqr, check Azure compliance, assess Azure resources, find best practice violations, identify orphaned resources, compliance scan, security posture evaluation, Azure resource review.
+  DO NOT USE FOR: Azure Advisor queries (use azure-observability), cost analysis (use azure-cost-optimization), security hardening (use azure-security-hardening), deploying resources (use azure-deploy).
 ---
 
 # Azure Quick Review Compliance Assessment
