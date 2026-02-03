@@ -10,7 +10,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-const isCI = process.env.CI === 'true' || process.env.CI === '1' || process.env.GITHUB_ACTIONS === 'true';
+const isCI = !!(process.env.CI || process.env.GITHUB_ACTIONS);
 
 // Get any additional args passed to the script
 const extraArgs = process.argv.slice(2);
@@ -25,10 +25,13 @@ const jestArgs = [
 console.log(`Running integration tests${isCI ? ' (CI mode)' : ''}...`);
 console.log(`jest ${jestArgs.join(' ')}\n`);
 
-// Set NODE_OPTIONS for ESM support
+// Set NODE_OPTIONS for ESM support (append to existing if present)
+const existingNodeOptions = process.env.NODE_OPTIONS || '';
 const env = {
   ...process.env,
-  NODE_OPTIONS: '--experimental-vm-modules'
+  NODE_OPTIONS: existingNodeOptions 
+    ? `${existingNodeOptions} --experimental-vm-modules`
+    : '--experimental-vm-modules'
 };
 
 // Run jest
@@ -39,7 +42,14 @@ const jest = spawn('npx', ['jest', ...jestArgs], {
   cwd: path.resolve(__dirname, '..')
 });
 
+jest.on('error', (err) => {
+  console.error('Failed to start jest:', err.message);
+  process.exit(1);
+});
+
 jest.on('close', (code) => {
+  const jestExitCode = code || 0;
+  
   // Show results table if not in CI
   if (!isCI) {
     console.log('\n');
@@ -48,10 +58,16 @@ jest.on('close', (code) => {
       cwd: path.resolve(__dirname, '..')
     });
     
+    results.on('error', (err) => {
+      console.error('Failed to display results:', err.message);
+      process.exit(jestExitCode);
+    });
+    
     results.on('close', () => {
-      process.exit(code);
+      // Always use jest exit code, not results script exit code
+      process.exit(jestExitCode);
     });
   } else {
-    process.exit(code);
+    process.exit(jestExitCode);
   }
 });

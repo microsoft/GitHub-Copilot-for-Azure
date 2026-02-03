@@ -144,6 +144,9 @@ function extractAttr(tagString, attrName) {
  * Format duration in human-readable format
  */
 function formatDuration(seconds) {
+  if (!seconds || seconds < 0 || !isFinite(seconds)) {
+    return '0ms';
+  }
   if (seconds < 1) {
     return `${Math.round(seconds * 1000)}ms`;
   } else if (seconds < 60) {
@@ -204,7 +207,9 @@ function printResultsTable(results) {
 
   // Summary stats
   const passed = results.totalTests - results.failures - results.errors;
-  const passRate = results.totalTests > 0 ? ((passed / results.totalTests) * 100).toFixed(1) : 0;
+  const passRate = results.totalTests > 0 
+    ? ((passed / results.totalTests) * 100).toFixed(1) 
+    : '0.0';
   const statusBg = results.failures > 0 || results.errors > 0 ? bgRed : bgGreen;
   const statusText = results.failures > 0 || results.errors > 0 ? ' FAIL ' : ' PASS ';
   
@@ -270,7 +275,7 @@ function main() {
   // Check if JUnit XML exists
   if (!fs.existsSync(REPORTS_PATH)) {
     console.error(`${colors.red}Error: No test results found at ${REPORTS_PATH}${colors.reset}`);
-    console.error(`${colors.dim}Run tests first with: npm test${colors.reset}`);
+    console.error(`${colors.dim}Run tests first with: npm run test:integration${colors.reset}`);
     process.exit(1);
   }
 
