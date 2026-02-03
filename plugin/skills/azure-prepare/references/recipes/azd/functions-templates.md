@@ -11,6 +11,9 @@ Use Azure Functions when your application needs:
 - Message/queue processing
 - Real-time file processing
 - Serverless compute preference
+- Hosting http MCP servers and tools to be remotely consumed by AI agents
+- Real-time streaming and event processing
+- Orchestrations and workflows with multiple steps/tasks/functions
 
 ## Template Selection Decision Tree
 
