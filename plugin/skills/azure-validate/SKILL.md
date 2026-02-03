@@ -1,6 +1,6 @@
 ---
 name: azure-validate
-description: Validate Azure deployment readiness. USE when checking if app is ready to deploy, validating azure.yaml/Bicep, running preflight checks, or troubleshooting deployment errors.
+description: "Validate Azure deployment readiness. USE FOR: check if app is ready to deploy, validate azure.yaml or Bicep configuration, run preflight checks, test deployment preview, what-if analysis, verify infrastructure configuration, troubleshoot deployment errors. DO NOT USE FOR: creating new apps (use azure-prepare), deploying (use azure-deploy)."
 ---
 
 # Azure Validate
