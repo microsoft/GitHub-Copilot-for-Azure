@@ -28,6 +28,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       'I need a custom role definition for my Azure storage account',
       'What Azure role should I use to give my function app access to Service Bus?',
       'Assign an Azure RBAC role to my identity for Cosmos DB read access',
+      'What is the least privilege role for reading from a storage queue?',
+      'I need to assign a role to my app service managed identity for database access',
+      'Generate Bicep code for assigning a role to my function app',
+      'Create a custom Azure role with specific permissions for my app',
+      'What role should I use for my identity to write to Event Hubs?',
+      'Help me find the minimal RBAC role for SQL Database read access',
+      'I want to assign a role to read secrets from Key Vault with least privilege',
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -48,6 +55,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       'Configure network security groups',
       'What is the best way to deploy my web app?',
       'How do I monitor my application performance?',
+      'How do I scale my Azure App Service?',
+      'Show me available pricing tiers for Azure SQL Database',
+      'Set up a service principal for my deployment pipeline',
+      'Configure firewall rules for my storage account',
+      'How do I enable encryption at rest?',
+      'Optimize my Azure costs',
+      'Deploy my app to Azure App Service',
     ];
 
     test.each(shouldNotTriggerPrompts)(
