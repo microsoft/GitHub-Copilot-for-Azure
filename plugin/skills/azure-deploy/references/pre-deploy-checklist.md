@@ -1,36 +1,126 @@
 # Pre-Deployment Checklist
 
-> **CRITICAL**: Before running ANY provisioning commands, you MUST complete this checklist.
+> **CRITICAL**: Before running ANY provisioning commands, you MUST complete this checklist IN ORDER.
+>
+> ⛔ **DO NOT** run `azd up` until ALL steps are complete. Trial-and-error wastes time and creates orphan resources.
 
-## 1. Verify Subscription
+## Step 1: Check Current Subscription
 
-Check current subscription:
 ```bash
-az account show --query "{name:name, id:id}" --output table
+az account show --query "{name:name, id:id}" -o json
 ```
 
-If not set or incorrect, list available subscriptions:
+## Step 2: Prompt User for Subscription
+
+**You MUST use `ask_user`** to confirm the subscription. Include the actual subscription name and ID from Step 1 in the choices.
+
+## Step 3: Create AZD Environment FIRST
+
+> ⚠️ **MANDATORY** — Create the environment BEFORE setting any variables or running `azd up`.
+>
+> ⛔ **DO NOT** manually create `.azure/` folder with `mkdir` or `New-Item`. Let `azd` create it.
+
+**For new projects (no azure.yaml):**
 ```bash
-az account list --output table
+azd init -e <environment-name>
 ```
 
-## 2. Prompt User for Confirmation
+**For existing projects (azure.yaml exists):**
+```bash
+azd env new <environment-name>
+```
 
-**You MUST ask the user to confirm:**
-1. Which Azure subscription to use
-2. Which Azure region/location to deploy to
+Both commands create:
+- `.azure/<env-name>/` folder with config files
+- Set the environment as default
 
-**Do NOT assume defaults. Do NOT skip this step.**
+The environment name becomes part of the resource group name (`rg-<env-name>`).
 
-## 3. Set Subscription and Location
+## Step 4: Check if Resource Group Already Exists
 
-After user confirms:
+> ⛔ **CRITICAL** — Skip this and you'll hit "Invalid resource group location" errors.
 
-**For AZD:**
+```bash
+az group show --name rg-<environment-name> --query "{location:location}" -o json 2>&1
+```
+
+**If RG exists:**
+- Use `ask_user` to offer choices:
+  1. Use existing RG location (show the location)
+  2. Choose a different environment name
+  3. Delete the existing RG and start fresh
+
+**If RG doesn't exist:** Proceed to location selection.
+
+## Step 5: Check for Tag Conflicts (AZD only)
+
+> ⛔ **CRITICAL** — AZD uses `azd-service-name` tags to find deployment targets. Duplicates cause failures.
+
+```bash
+az resource list --tag azd-service-name=<service-name> --query "[].{name:name,rg:resourceGroup}" -o json
+```
+
+Check for each service in `azure.yaml`. If conflicts exist in other resource groups, warn user.
+
+## Step 6: Prompt User for Location
+
+**You MUST use `ask_user`** with regions that support ALL services in the architecture.
+
+See [region-availability.md](../../azure-prepare/references/region-availability.md) for service-specific limitations.
+
+## Step 7: Set Environment Variables
+
+> ⚠️ **Set ALL variables BEFORE running `azd up`** — not during error recovery.
+
 ```bash
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <location>
 ```
+
+Verify settings:
+```bash
+azd env get-values
+```
+
+## Step 8: Only NOW Run Deployment
+
+```bash
+azd up --no-prompt
+```
+
+---
+
+## Quick Reference: Correct AZD Sequence
+
+```bash
+# 1. Create environment FIRST
+azd env new myapp-dev
+
+# 2. Set subscription
+azd env set AZURE_SUBSCRIPTION_ID 25fd0362-...
+
+# 3. Set location (after checking RG doesn't conflict)
+azd env set AZURE_LOCATION westus2
+
+# 4. Verify
+azd env get-values
+
+# 5. Deploy
+azd up --no-prompt
+```
+
+## Common Mistakes to Avoid
+
+| ❌ Wrong | ✅ Correct |
+|----------|-----------|
+| `azd up --location eastus2` | `azd env set AZURE_LOCATION eastus2` then `azd up` |
+| Running `azd up` without environment | `azd env new <name>` first |
+| Assuming location without checking RG | Check `az group show` before choosing |
+| Ignoring tag conflicts | Check `az resource list --tag` before deploy |
+
+---
+
+## Non-AZD Deployments
 
 **For Azure CLI / Bicep:**
 ```bash
@@ -43,11 +133,3 @@ az account set --subscription <subscription-id-or-name>
 az account set --subscription <subscription-id-or-name>
 # Set in terraform.tfvars or -var="location=<location>"
 ```
-
-## Common Locations
-
-`eastus`, `eastus2`, `westus2`, `westus3`, `centralus`, `westeurope`, `northeurope`, `uksouth`, `australiaeast`, `southeastasia`
-
-## Only Then Proceed
-
-After subscription and location are confirmed, proceed with deployment commands.

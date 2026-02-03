@@ -31,6 +31,7 @@ Activate this skill when user wants to:
 4. Follow linked references for best practices and guidance
 5. Update `.azure/preparation-manifest.md` after each phase
 6. Invoke **azure-validate** before any deployment
+7. ⛔ **Destructive actions require `ask_user`** — [global-rules](../_shared/global-rules.md)
 
 > **⛔ MANDATORY USER CONFIRMATION REQUIRED**
 >
