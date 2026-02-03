@@ -59,27 +59,6 @@ Configure application environment variables via:
 2. **Azure CLI** - `az functionapp config appsettings set`
 3. **local.settings.json** - Local development only
 
-## Direct Deployment with func CLI
-
-If you need to deploy directly without azd:
-
-```bash
-# Get function app name from azure.yaml or manifest
-FUNCTION_APP="<your-function-app-name>"
-
-# Deploy from project root
-func azure functionapp publish $FUNCTION_APP
-
-# Deploy with remote build (for TypeScript/compiled projects)
-func azure functionapp publish $FUNCTION_APP --build remote
-
-# Deploy with verbose output
-func azure functionapp publish $FUNCTION_APP --verbose
-
-# Upload local.settings.json to Azure
-func azure functionapp publish $FUNCTION_APP --publish-local-settings
-```
-
 ## Verify Deployment
 
 ### Check Function App Status
