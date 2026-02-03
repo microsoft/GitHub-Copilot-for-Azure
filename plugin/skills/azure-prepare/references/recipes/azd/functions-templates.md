@@ -42,7 +42,7 @@ Use Azure Functions when your application needs:
    Indicators: staticwebapp.config.json, swa-cli, @azure/static-web-apps
    └─► YES → Use SWA+Functions Template (see Integration Templates below)
 
-6. DEFAULT → Use HTTP Template by runtime
+6. DEFAULT -> Use HTTP Template by runtime
 ```
 
 ## MCP Server Templates

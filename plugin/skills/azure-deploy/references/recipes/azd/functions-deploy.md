@@ -80,51 +80,6 @@ func azure functionapp publish $FUNCTION_APP --verbose
 func azure functionapp publish $FUNCTION_APP --publish-local-settings
 ```
 
-## Deployment Slots (Premium/Dedicated Plans)
-
-For premium or dedicated plans with deployment slots:
-
-```bash
-# Deploy to staging slot
-func azure functionapp publish $FUNCTION_APP --slot staging
-
-# Swap slots after validation
-az functionapp deployment slot swap \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --slot staging
-```
-
-## Configuration Management
-
-### View Current Settings
-
-```bash
-az functionapp config appsettings list \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP
-```
-
-### Update Settings
-
-```bash
-az functionapp config appsettings set \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP \
-    --settings "MY_SETTING=value"
-```
-
-### Connection Strings (Avoid - Use Managed Identity)
-
-Prefer managed identity and managed identity connection strings over connection strings with secrets for security:
-
-```bash
-# Instead of connection strings, use managed identity
-az functionapp identity assign \
-    --name $FUNCTION_APP \
-    --resource-group $RESOURCE_GROUP
-```
-
 ## Verify Deployment
 
 ### Check Function App Status
