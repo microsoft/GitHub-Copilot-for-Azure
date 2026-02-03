@@ -83,6 +83,7 @@ Azure Functions is a serverless compute service for event-driven applications. P
 | Event Grid | Event-driven |
 | Cosmos DB | Change feed processing |
 | Service Bus | Enterprise messaging |
+| MCP Trigger | AI agent tools and MCP hosting |
 
 ---
 
