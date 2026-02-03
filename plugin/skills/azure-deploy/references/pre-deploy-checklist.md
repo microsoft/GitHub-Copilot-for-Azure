@@ -54,13 +54,13 @@ az group show --name rg-<environment-name> --query "{location:location}" -o json
 
 ## Step 5: Check for Tag Conflicts (AZD only)
 
-> ⛔ **CRITICAL** — AZD uses `azd-service-name` tags to find deployment targets. Duplicates cause failures.
+> ⚠️ AZD uses `azd-service-name` tags to find deployment targets **within the target resource group**. Multiple resources with the same tag in the same RG cause failures. Tags in other RGs are fine.
 
 ```bash
-az resource list --tag azd-service-name=<service-name> --query "[].{name:name,rg:resourceGroup}" -o json
+az resource list --resource-group rg-<env-name> --tag azd-service-name=<service-name> --query "[].name" -o table
 ```
 
-Check for each service in `azure.yaml`. If conflicts exist in other resource groups, warn user.
+Check for each service in `azure.yaml`. If duplicates exist **in the target RG**, delete or rename.
 
 ## Step 6: Prompt User for Location
 
@@ -116,7 +116,7 @@ azd up --no-prompt
 | `azd up --location eastus2` | `azd env set AZURE_LOCATION eastus2` then `azd up` |
 | Running `azd up` without environment | `azd env new <name>` first |
 | Assuming location without checking RG | Check `az group show` before choosing |
-| Ignoring tag conflicts | Check `az resource list --tag` before deploy |
+| Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env>` before deploy |
 
 ---
 

@@ -18,7 +18,7 @@ Deploy to Azure using Azure Developer CLI (azd).
 |------|------|---------|-------|
 | 1 | **Create environment** | `azd env new <name>` | MUST be first |
 | 2 | **Check RG exists** | `az group show --name rg-<name>` | Avoid location conflicts |
-| 3 | **Check tag conflicts** | `az resource list --tag azd-service-name=web` | Per service in azure.yaml |
+| 3 | **Check tag conflicts in RG** | `az resource list --resource-group rg-<name> --tag azd-service-name=web` | Per service |
 | 4 | **Confirm with user** | Use `ask_user` | Subscription AND location |
 | 5 | **Set subscription** | `azd env set AZURE_SUBSCRIPTION_ID <id>` | — |
 | 6 | **Set location** | `azd env set AZURE_LOCATION <region>` | — |
@@ -33,7 +33,7 @@ Deploy to Azure using Azure Developer CLI (azd).
 | `azd up` without `azd env new` | Prompts for input, fails with `--no-prompt` |
 | `mkdir .azure` then `azd env new` | Creates env folder structure incorrectly |
 | Setting AZURE_LOCATION without checking RG | "Invalid resource group location" if RG exists elsewhere |
-| Ignoring `azd-service-name` tag conflicts | "found '2' resources tagged with..." error |
+| Ignoring `azd-service-name` tag conflicts in same RG | "found '2' resources tagged with..." error |
 | `language: html` or `language: static` | Not valid - use `language: js` with `dist: .` for static sites |
 
 ## Deployment Commands
