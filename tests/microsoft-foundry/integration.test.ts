@@ -102,15 +102,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     const agentNameSuffix = randomUUID().substring(0, 4);
     const agentName = `onboarding-buddy-${agentNameSuffix}`;
     const projectClient = new AIProjectClient(projectEndpoint, new DefaultAzureCredential());
-    
+
     const _agentMetadata = await run({
       prompt: `Create a Foundry agent called "${agentName}" in my foundry project ${projectEndpoint}, use gpt-4o as the model, and give it a generic system instruction suitable for onboarding a new team member in a professional environment for now.`,
       nonInteractive: true
     });
-    
+
     // Verify if the agent is created in the Foundry project
     const agentsIter = projectClient.agents.listAgents();
-    
+
     // The agentId of the created agent
     let targetAgentId: string | undefined = undefined;
     for await (const agent of agentsIter) {

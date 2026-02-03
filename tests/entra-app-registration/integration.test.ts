@@ -9,9 +9,9 @@
  * 2. Run `copilot` and authenticate
  */
 
-import { 
-  run, 
-  isSkillInvoked, 
+import {
+  run,
+  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
@@ -34,15 +34,15 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("skill-invocation", () => {
-      test("invokes entra-app-registration skill for OAuth app registration prompt", async () => {
+    test("invokes entra-app-registration skill for OAuth app registration prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "How do I create a Microsoft Entra app registration for OAuth authentication?"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -54,7 +54,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for app registration prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for app registration prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
@@ -63,13 +63,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("invokes entra-app-registration skill for API permissions prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "Configure API permissions for my Entra ID application to access Microsoft Graph"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -81,7 +81,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for API permissions prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for API permissions prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);

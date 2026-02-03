@@ -9,9 +9,9 @@
  * 2. Run `copilot` and authenticate
  */
 
-import { 
-  run, 
-  isSkillInvoked, 
+import {
+  run,
+  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
@@ -34,15 +34,15 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("skill-invocation", () => {
-      test("invokes azure-functions skill for serverless function prompt", async () => {
+    test("invokes azure-functions skill for serverless function prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "Create an HTTP-triggered Azure Function and run it locally with func start"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -54,7 +54,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for HTTP trigger prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for HTTP trigger prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
@@ -63,13 +63,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("invokes azure-functions skill for timer trigger prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "Set up a timer trigger Azure Function using func new"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -81,7 +81,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for timer trigger prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for timer trigger prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
