@@ -52,7 +52,7 @@ Once connected as admin, create roles for other identities using SQL functions.
 
 Grant appropriate permissions to the new roles using GRANT statements.
 
-**See:** [scripts/az-commands.sh](scripts/az-commands.sh) for Azure CLI commands, [references/SQL-FUNCTIONS.md](SQL-FUNCTIONS.md) for SQL functions, and [references/PERMISSION-TEMPLATES.md](PERMISSION-TEMPLATES.md) for permission grants.
+**See:** [scripts/az-commands.sh](scripts/az-commands.sh) for Azure CLI commands, [references/sql-functions.md](sql-functions.md) for SQL functions, and [references/permission-templates.md](permission-templates.md) for permission grants.
 
 ## Setup Patterns
 
@@ -112,7 +112,7 @@ Diagnose and fix Entra authentication issues.
 - `FATAL: password authentication failed` - Wrong username format
 - `could not connect to server` - Network/firewall issues
 
-**See:** [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed diagnostic steps
+**See:** [troubleshooting.md](troubleshooting.md) for detailed diagnostic steps
 
 ---
 
@@ -165,7 +165,7 @@ Transition existing password-based roles to Entra ID authentication.
 ## References
 
 - [Azure CLI Commands](./scripts/az-commands.sh) - Token acquisition, identity lookups, admin management
-- [SQL Functions](SQL-FUNCTIONS.md) - Role creation, listing, security labels
-- [Permission Templates](PERMISSION-TEMPLATES.md) - Copy-paste SQL for common scenarios
-- [Group Sync Guide](GROUP-SYNC.md) - Group sync configuration details
-- [Troubleshooting Guide](TROUBLESHOOTING.md) - Detailed diagnostic steps
+- [SQL Functions](sql-functions.md) - Role creation, listing, security labels
+- [Permission Templates](permission-templates.md) - Copy-paste SQL for common scenarios
+- [Group Sync Guide](group-sync.md) - Group sync configuration details
+- [Troubleshooting Guide](troubleshooting.md) - Detailed diagnostic steps

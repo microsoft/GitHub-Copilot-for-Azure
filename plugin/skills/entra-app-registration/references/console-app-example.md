@@ -383,9 +383,9 @@ node console_app.js
 
 ## Next Steps
 
-- Review [OAUTH-FLOWS.md](OAUTH-FLOWS.md) for flow details
-- See [API-PERMISSIONS.md](API-PERMISSIONS.md) for permission setup
-- Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
+- Review [oauth-flows.md](oauth-flows.md) for flow details
+- See [api-permissions.md](api-permissions.md) for permission setup
+- Check [troubleshooting.md](troubleshooting.md) for common issues
 
 ## Additional Resources
 
