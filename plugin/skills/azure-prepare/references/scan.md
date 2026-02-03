@@ -19,11 +19,18 @@ Analyze workspace to identify components, technologies, and dependencies.
 | Pattern | Component Type |
 |---------|----------------|
 | React/Vue/Angular in package.json | SPA Frontend |
+| Only .html/.css/.js files, no package.json | Pure Static Site |
 | Express/Fastify/Koa | API Service |
 | Flask/FastAPI/Django | API Service |
 | Next.js/Nuxt | SSR Web App |
 | Celery/Bull/Agenda | Background Worker |
 | azure-functions SDK | Azure Function |
+
+**Pure Static Site Detection:**
+- No package.json, requirements.txt, or build configuration
+- Contains only HTML, CSS, JavaScript, and asset files
+- No framework dependencies (React, Vue, Angular, etc.)
+- ⚠️ For pure static sites, do NOT add `language` field to azure.yaml to avoid triggering build steps
 
 ### Existing Tooling
 
