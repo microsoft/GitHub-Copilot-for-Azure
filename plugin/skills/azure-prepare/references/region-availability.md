@@ -1,6 +1,8 @@
 # Azure Region Availability Reference
 
 > **AUTHORITATIVE SOURCE** — Consult this file BEFORE recommending any region.
+>
+> Official reference: https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/table
 
 ## How to Use
 
