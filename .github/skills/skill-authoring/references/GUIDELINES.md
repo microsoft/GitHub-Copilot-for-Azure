@@ -64,6 +64,18 @@ Skills use a three-tier loading model to manage context efficiently:
 2. **Move details to references/** - Only loaded when explicitly needed
 3. **Split large content** - Multiple smaller files > one large file
 
+### Critical: How References Load
+
+References load **only when explicitly linked** - NOT when the skill activates:
+
+- ✅ `See [error guide](references/errors.md)` → Agent loads `errors.md`
+- ❌ "Error docs are in references/" → Agent won't find or load files
+
+Per the [spec clarification](https://github.com/agentskills/agentskills/issues/97):
+- References are **re-read each time referenced** (no caching)
+- Write references as **self-contained units**
+- The **entire file** loads when referenced (not just sections)
+
 ## Directory Structure
 
 ```
@@ -97,6 +109,56 @@ The `templates/` folder contains structured output formats used when the skill g
 - **When to use**: When the skill needs to format output in a specific way (e.g., cost reports, analysis summaries)
 - **Naming convention**: Use lowercase letters with hyphens (e.g., `report-template.md`, `cost-analysis.md`)
 - **Examples**: `redis-subscription-level-report.md`, `detailed-cache-analysis.md`
+
+## Advanced: Recipes and Services Patterns
+
+For skills supporting multiple tools or cloud services, use structured subfolders:
+
+### Recipes Pattern
+
+Use when skill supports multiple implementation approaches (deployment tools, IaC options):
+
+```
+skill-name/
+├── SKILL.md
+└── references/
+    ├── recipes/
+    │   ├── azd/           # Azure Developer CLI
+    │   │   ├── README.md
+    │   │   └── errors.md
+    │   ├── bicep/         # Bicep IaC
+    │   │   ├── README.md
+    │   │   └── patterns.md
+    │   └── terraform/     # Terraform IaC
+    └── common.md          # Shared across recipes
+```
+
+**Link selectively in SKILL.md:**
+```markdown
+## Choose Deployment Method
+- [Azure Developer CLI](references/recipes/azd/README.md) - Recommended
+- [Bicep](references/recipes/bicep/README.md) - IaC-first
+- [Terraform](references/recipes/terraform/README.md) - Multi-cloud
+```
+
+This ensures only the chosen recipe loads, not all options.
+
+### Services Pattern
+
+Use when skill works with multiple cloud services:
+
+```
+skill-name/
+├── SKILL.md
+└── references/
+    └── services/
+        ├── container-apps.md
+        ├── static-web-apps.md
+        ├── functions.md
+        └── cosmos-db.md
+```
+
+Each service file should be self-contained with its own config, Bicep, and troubleshooting.
 
 ## Token Budget Guidelines
 
@@ -183,5 +245,7 @@ npm run tokens -- check
 
 - [Agent Skills Specification](https://agentskills.io/specification)
 - [What Are Skills](https://agentskills.io/what-are-skills)
+- [Reference Loading Clarification (Issue #97)](https://github.com/agentskills/agentskills/issues/97)
+- [Skill Token Limits (Issue #1130)](https://github.com/github/copilot-cli/issues/1130)
 - [Example Skills](https://github.com/anthropics/skills)
 - [Reference Library](https://github.com/agentskills/agentskills/tree/main/skills-ref)

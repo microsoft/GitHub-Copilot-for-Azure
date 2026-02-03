@@ -20,6 +20,16 @@ From [skill-authoring](/.github/skills/skill-authoring):
 
 **Check with:** `cd scripts && npm run tokens -- check plugin/skills/{skill}/SKILL.md`
 
+### Reference Loading Impact
+
+References load **only when explicitly linked** in SKILL.md, not on activation:
+- Use `[text](references/file.md)` to trigger loading
+- Each file loads in full (entire content, not sections)
+- No caching between requests
+- Structure with recipes/services patterns for multi-option skills
+
+See [skill-authoring REFERENCE-LOADING.md](/.github/skills/skill-authoring/references/REFERENCE-LOADING.md) for details.
+
 ## Adherence Levels
 
 ### Low Adherence
