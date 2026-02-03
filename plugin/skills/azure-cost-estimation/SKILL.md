@@ -1,6 +1,14 @@
 ---
 name: azure-cost-estimation
-description: Estimate Azure deployment costs before provisioning by analyzing Bicep and ARM templates. Supports VMs, Storage, SQL Database, App Service, AKS, Container Apps, and more. USE FOR: cost estimation, pricing estimates, how much will deployment cost, estimate Azure costs, calculate monthly costs, compare pricing across regions, analyze template costs, budget planning, infrastructure cost breakdown. DO NOT USE FOR: deploying resources (use azure-deploy), optimizing existing resources (use azure-cost-optimization), monitoring actual spending (use azure-observability), creating templates (use azure-create-app).
+description: |
+  Estimate Azure deployment costs before provisioning by analyzing Bicep and ARM templates.
+  Supports VMs, Storage, SQL Database, App Service, AKS, Container Apps, and more. USE FOR:
+  cost estimation, pricing estimates, how much will deployment cost, what will cost be,
+  estimate Azure costs, calculate monthly costs, monthly Azure costs, compare pricing across
+  regions, analyze template costs, budget planning, infrastructure cost breakdown, deployment
+  budget, cost breakdown. DO NOT USE FOR: deploying resources (use azure-deploy), optimizing
+  existing resources (use azure-cost-optimization), monitoring actual spending (use
+  azure-observability), creating templates (use azure-create-app).
 ---
 
 # Azure Cost Estimation
