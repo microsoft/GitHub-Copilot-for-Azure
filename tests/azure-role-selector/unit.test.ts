@@ -66,5 +66,59 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test('mentions Bicep', () => {
       expect(skill.content.toLowerCase()).toContain('bicep');
     });
+
+    test('mentions finding minimal role definition', () => {
+      expect(skill.content.toLowerCase()).toMatch(/minimal role|least privilege|role definition/);
+    });
+
+    test('mentions custom role creation', () => {
+      expect(skill.content.toLowerCase()).toContain('custom role');
+    });
+
+    test('includes azure__extension_cli_generate tool', () => {
+      expect(skill.content.toLowerCase()).toContain('azure__extension_cli_generate');
+    });
+
+    test('mentions azure__bicepschema tool', () => {
+      expect(skill.content.toLowerCase()).toContain('azure__bicepschema');
+    });
+
+    test('includes azure__get_azure_bestpractices tool', () => {
+      expect(skill.content.toLowerCase()).toContain('azure__get_azure_bestpractices');
+    });
+  });
+
+  describe('RBAC Role Assignment Workflow', () => {
+    test('describes workflow for finding roles', () => {
+      const content = skill.content.toLowerCase();
+      const hasWorkflow = content.includes('find') || content.includes('search') || content.includes('documentation');
+      expect(hasWorkflow).toBe(true);
+    });
+
+    test('mentions role assignment process', () => {
+      expect(skill.content.toLowerCase()).toMatch(/assign.*role|role.*assign/);
+    });
+
+    test('includes guidance for no built-in role scenario', () => {
+      const content = skill.content.toLowerCase();
+      const hasCustomRoleGuidance = content.includes('no built-in role') || content.includes('custom role');
+      expect(hasCustomRoleGuidance).toBe(true);
+    });
+  });
+
+  describe('Output Expectations', () => {
+    test('mentions generating CLI commands', () => {
+      expect(skill.content.toLowerCase()).toMatch(/cli command|generate.*command/);
+    });
+
+    test('mentions providing Bicep code snippet', () => {
+      expect(skill.content.toLowerCase()).toMatch(/bicep.*code|bicep.*snippet/);
+    });
+
+    test('references role assignment in Bicep', () => {
+      const content = skill.content.toLowerCase();
+      const hasBicepAssignment = content.includes('role assignment') && content.includes('bicep');
+      expect(hasBicepAssignment).toBe(true);
+    });
   });
 });
