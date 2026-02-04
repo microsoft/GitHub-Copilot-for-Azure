@@ -29,6 +29,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       'Which keys have expired in production Key Vault?',
       'Check certificate expiration dates in my vault',
       'List expiring secrets and keys in Azure Key Vault',
+      'What certificates need rotation in my Key Vault?',
+      'Scan my Key Vault for expired keys and certificates',
+      'Find all secrets expiring this month in Key Vault',
+      'Key Vault compliance audit for expiring resources',
+      'Check if any certificates in my vault are about to expire',
+      'Generate an expiration report for my Azure Key Vault',
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -53,6 +59,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       'How do I use Docker?',
       'Deploy to Kubernetes cluster',
       'Set up a database connection',
+      'Create a new storage account in Azure',
+      'Configure networking for my web app',
+      'Enable monitoring for my application',
+      'Set up backup for my SQL database',
+      'How do I optimize Azure costs?',
+      'Deploy my containerized application',
     ];
 
     test.each(shouldNotTriggerPrompts)(
