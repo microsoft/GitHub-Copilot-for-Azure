@@ -7,6 +7,8 @@
     "tokens": "cd scripts && npm run tokens --",
     "verify-local": "cd scripts && npm run verify-local",
     "test": "cd scripts && npm test",
+    "test:skills": "cd tests && npm test --",
+    "test:skills:integration": "cd tests && npm run test:integration --",
     "postinstall": "cd scripts && npm install"
   },
   "engines": {
