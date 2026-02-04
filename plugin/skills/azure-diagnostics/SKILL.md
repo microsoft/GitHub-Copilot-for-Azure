@@ -1,8 +1,8 @@
 ---
 name: azure-diagnostics
 description: |
-  Debug and troubleshoot production issues on Azure. Covers Container Apps diagnostics, App Service troubleshooting, log analysis with KQL, health checks, and common issue resolution for image pulls, cold starts, and health probes.
-  USE FOR: debug production issues, troubleshoot container apps, diagnose app service problems, analyze logs with KQL, fix image pull failures, resolve cold start issues, investigate health probe failures, check resource health, view application logs, find root cause of errors
+  Debug and troubleshoot production issues on Azure. Covers Container Apps diagnostics, log analysis with KQL, health checks, and common issue resolution for image pulls, cold starts, and health probes.
+  USE FOR: debug production issues, troubleshoot container apps, analyze logs with KQL, fix image pull failures, resolve cold start issues, investigate health probe failures, check resource health, view application logs, find root cause of errors
   DO NOT USE FOR: deploying applications (use azure-deploy), creating new resources (use azure-create-app), setting up monitoring (use azure-observability), cost optimization (use azure-cost-optimization)
 ---
 
@@ -46,9 +46,7 @@ Activate this skill when user wants to:
 
 | Service | Common Issues | Reference |
 |---------|---------------|-----------|
-| **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/troubleshooting/container-apps/) |
-| **App Service** | 503 errors, cold starts, deployment failures, SSL issues | [app-service/](references/troubleshooting/app-service/) |
-| **Azure Functions** | Not triggering, timeouts, cold starts, binding errors | [azure-functions/](references/troubleshooting/azure-functions/) |
+| **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/) |
 
 ---
 
@@ -65,25 +63,35 @@ az monitor activity-log list -g RG --max-events 20
 
 # Container Apps logs
 az containerapp logs show --name APP -g RG --follow
-
-# App Service logs
-az webapp log tail --name APP -g RG
-
-# Functions logs
-func azure functionapp logstream FUNCTIONAPP
 ```
 
 ### AppLens (MCP Tools)
 
 For AI-powered diagnostics, use:
 ```
-azure_applens tools for:
+mcp_azure_mcp_applens
+  intent: "diagnose issues with <resource-name>"
+  command: "diagnose"
+  parameters:
+    resourceId: "<resource-id>"
+
+Provides:
 - Automated issue detection
 - Root cause analysis
 - Remediation recommendations
 ```
 
-### Log Analytics (KQL)
+### Azure Monitor (MCP Tools)
+
+For querying logs and metrics:
+```
+mcp_azure_mcp_monitor
+  intent: "query logs for <resource-name>"
+  command: "logs_query"
+  parameters:
+    workspaceId: "<workspace-id>"
+    query: "<KQL-query>"
+```
 
 See [kql-queries.md](references/kql-queries.md) for common diagnostic queries.
 
@@ -94,7 +102,11 @@ See [kql-queries.md](references/kql-queries.md) for common diagnostic queries.
 ### Using MCP
 
 ```
-Use azure_resourcehealth_* tools to check resource availability status.
+mcp_azure_mcp_resourcehealth
+  intent: "check health status of <resource-name>"
+  command: "get"
+  parameters:
+    resourceId: "<resource-id>"
 ```
 
 ### Using CLI
@@ -112,6 +124,3 @@ az monitor activity-log list -g RG --max-events 20
 ## References
 
 - [KQL Query Library](references/kql-queries.md)
-- [Container Apps Troubleshooting](references/troubleshooting/container-apps/)
-- [App Service Troubleshooting](references/troubleshooting/app-service/)
-- [Azure Functions Troubleshooting](references/troubleshooting/azure-functions/)
