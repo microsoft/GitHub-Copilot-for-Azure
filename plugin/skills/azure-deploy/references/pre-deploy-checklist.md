@@ -6,6 +6,13 @@
 
 ## Step 1: Check Current Subscription
 
+Use the Azure MCP tool to get current subscription:
+
+```
+mcp_azure_mcp_subscription_list
+```
+
+**CLI fallback:**
 ```bash
 az account show --query "{name:name, id:id}" -o json
 ```
@@ -40,6 +47,16 @@ The environment name becomes part of the resource group name (`rg-<env-name>`).
 
 > ⛔ **CRITICAL** — Skip this and you'll hit "Invalid resource group location" errors.
 
+Use the Azure MCP tool to list resource groups:
+
+```
+mcp_azure_mcp_group_list
+  subscription: <subscription-id>
+```
+
+Then check if `rg-<environment-name>` exists in the results.
+
+**CLI fallback:**
 ```bash
 az group show --name rg-<environment-name> --query "{location:location}" -o json 2>&1
 ```

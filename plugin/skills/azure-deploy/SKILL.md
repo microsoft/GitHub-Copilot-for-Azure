@@ -37,6 +37,7 @@ Activate this skill when user wants to:
 | 3 | **Load Recipe** — Based on `recipe.type` in manifest | [recipes/](references/recipes/) |
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
 | 5 | **Handle Errors** — See recipe's `errors.md` | — |
+| 6 | **Verify Success** — Confirm deployment completed and endpoints are accessible | — |
 
 ## Recipes
 
@@ -46,3 +47,11 @@ Activate this skill when user wants to:
 | AZCLI | [recipes/azcli/](references/recipes/azcli/) |
 | Bicep | [recipes/bicep/](references/recipes/bicep/) |
 | Terraform | [recipes/terraform/](references/recipes/terraform/) |
+
+## MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `mcp_azure_mcp_subscription_list` | List available subscriptions |
+| `mcp_azure_mcp_group_list` | List resource groups in subscription |
+| `mcp_azure_mcp_azd` | Execute AZD commands |
