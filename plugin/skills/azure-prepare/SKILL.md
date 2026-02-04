@@ -31,10 +31,20 @@ Activate this skill when user wants to:
 4. Follow linked references for best practices and guidance
 5. Update `.azure/preparation-manifest.md` after each phase
 6. Invoke **azure-validate** before any deployment
+7. ⛔ **Destructive actions require `ask_user`** — [global-rules](../_shared/global-rules.md)
 
 > **⛔ MANDATORY USER CONFIRMATION REQUIRED**
 >
-> You **MUST** use `ask_user` to prompt the user to confirm **Azure subscription** and **Azure location/region** BEFORE generating ANY artifacts (azure.yaml, Bicep, Terraform, etc.). Do NOT assume, guess, or auto-select these values. Do NOT proceed to artifact generation until the user has explicitly confirmed both. This is a blocking requirement.
+> You **MUST** use `ask_user` to prompt the user to confirm:
+> - **Azure subscription** — Ask in Step 2 (Requirements) BEFORE architecture planning
+> - **Azure location/region** — Ask in Step 5 (Architecture) AFTER services are determined, filtered by service availability
+>
+> Do NOT assume, guess, or auto-select these values. Do NOT proceed to artifact generation until the user has explicitly confirmed both. This is a blocking requirement.
+>
+> **⚠️ CRITICAL: Before calling `ask_user` for subscription, you MUST:**
+> 1. Run `az account show --query "{name:name, id:id}" -o json` to get the current default
+> 2. Include the **actual subscription name and ID** in the choice text
+> 3. Example: `"Use current: jongdevdiv (25fd0362-...) (Recommended)"` — NOT generic `"Use default subscription"`
 
 ---
 
@@ -43,10 +53,10 @@ Activate this skill when user wants to:
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Analyze Workspace** — Determine path: new, add components, or modernize. If `azure.yaml` + `infra/` exist → skip to azure-validate | [analyze.md](references/analyze.md) |
-| 2 | **Gather Requirements** — Classification, scale, budget, compliance, **subscription, location** (MUST prompt user) | [requirements.md](references/requirements.md) |
+| 2 | **Gather Requirements** — Classification, scale, budget, compliance, **subscription** (MUST prompt user) | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Components, technologies, dependencies, existing tooling | [scan.md](references/scan.md) |
 | 4 | **Select Recipe** — AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
-| 5 | **Plan Architecture** — Stack (Containers/Serverless/App Service) + service mapping | [architecture.md](references/architecture.md) |
+| 5 | **Plan Architecture** — Stack + service mapping, then **select location** (MUST prompt user with regions that support all selected services) | [architecture.md](references/architecture.md) |
 | 6 | **Generate Artifacts** — Research best practices first, then generate | [generate.md](references/generate.md) |
 | 7 | **Create Manifest** — Document decisions in `.azure/preparation-manifest.md` | [manifest.md](references/manifest.md) |
 | 8 | **Validate** — Invoke **azure-validate** skill before deployment | — |
