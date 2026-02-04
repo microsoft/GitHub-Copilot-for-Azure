@@ -279,58 +279,35 @@ azd ai agent init --project-id "/subscriptions/abc123.../projects/my-project" -m
 
 #### Scenario B: New Foundry Project
 
-If the user needs a new Foundry project, first initialize the deployment template:
+If the user needs a new Foundry project, **use the `project/create` skill first** to create the project infrastructure.
+
+**Invoke the project creation skill:**
+
+See [../../project/create/create-foundry-project.md](../../project/create/create-foundry-project.md) for full instructions.
+
+**Quick summary of what the skill does:**
+1. Creates an empty project directory
+2. Initializes with: `azd init -t https://github.com/Azure-Samples/azd-ai-starter-basic -e <project-name> --no-prompt`
+3. Provisions infrastructure: `azd provision --no-prompt`
+4. Returns the project resource ID
+
+**After project creation, return to this skill and use Scenario A** with the new project resource ID:
 
 ```bash
+azd ai agent init --project-id "<new-project-resource-id>" -m <path-to-agent-yaml> --no-prompt
+```
+
+**Alternative: Combined project + agent initialization**
+
+If the user prefers to create the project and agent in a single deployment directory:
+
+```bash
+# In empty deployment directory
 azd init -t https://github.com/Azure-Samples/azd-ai-starter-basic -e <environment-name> --no-prompt
-```
-
-Replace `<environment-name>` with the user's answer from Step 2, question 3 (e.g., "customer-support-prod")
-
-**Example:**
-```bash
-azd init -t https://github.com/Azure-Samples/azd-ai-starter-basic -e customer-support-prod --no-prompt
-```
-
-**IMPORTANT:** This command REQUIRES the current directory to be empty.
-
-**What the flags do:**
-- `-e <environment-name>`: Provides the environment name upfront
-  - Environment name is used for resource group naming: `rg-<environment-name>`
-  - Must contain only alphanumeric characters and hyphens
-- `--no-prompt`: Uses default values for all other configuration
-  - Azure subscription: First available or default subscription
-  - Azure location: Default location (can set with `azd config set defaults.location northcentralus`)
-
-After initialization completes, run:
-
-```bash
 azd ai agent init -m <path-to-agent-yaml> --no-prompt
 ```
 
-Replace `<path-to-agent-yaml>` with the absolute path stored in Step 6 (e.g., `../customer-support-agent/agent.yaml`)
-
-**Example:**
-```bash
-azd ai agent init -m ../customer-support-agent/agent.yaml --no-prompt
-```
-
-**What the `--no-prompt` flag does:**
-- Uses default values for all configuration (no interactive prompts)
-- Model: gpt-4o-mini
-- Container resources: 2Gi memory, 1 CPU
-- Replicas: min 1, max 3
-
-**What this does:**
-- Reads the agent.yaml from the original agent directory
-- Copies agent files (main.py, requirements.txt, Dockerfile, etc.) to `src/` subdirectory in deployment folder
-- Registers the agent in azure.yaml under services
-- Provisions all required Azure infrastructure on next `azd up`:
-  - Foundry account and project
-  - Container Registry
-  - Application Insights
-  - Managed identity
-  - RBAC permissions
+This approach provisions all infrastructure (Foundry account, project, Container Registry, etc.) during `azd up`.
 
 ### Step 10: Review Configuration and Verify File Structure
 

@@ -16,10 +16,11 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
+| **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **agent/create** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [agent/create/create-ghcp-agent.md](agent/create/create-ghcp-agent.md) |
 | **agent/deploy** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [agent/deploy/deploy-agent.md](agent/deploy/deploy-agent.md) |
 
-> 💡 **Tip:** If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
+> 💡 **Tip:** For a complete onboarding flow: `project/create` → `agent/create` → `agent/deploy`. If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
 
 ## When to Use This Skill
 
