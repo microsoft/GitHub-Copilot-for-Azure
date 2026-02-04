@@ -1,13 +1,22 @@
 # AZD Validation Errors
 
-| Error | Fix |
-|-------|-----|
-| `Please run 'az login'` | `az login` |
-| `No environment selected` | `azd env select <name>` |
-| `Service not found` | Check service name in azure.yaml |
-| `Invalid azure.yaml` | Fix YAML syntax |
-| `Project path does not exist` | Fix service project path |
-| `Cannot connect to Docker daemon` | Start Docker Desktop |
+## Pre-Deployment Errors
+
+These errors can be caught **before** running `azd up`:
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| `Please run 'az login'` | Not authenticated | `az login` or `azd auth login` |
+| `No environment selected` | Missing azd environment | `azd env select <name>` or `azd env new <name>` |
+| `no default response for prompt 'Enter a unique environment name'` | No azd environment created | Run `azd env new <name>` FIRST |
+| `no default response for prompt 'Enter a value for the 'environmentName'` | Environment variables not set | Run `azd env set AZURE_ENV_NAME <name>` |
+| `Service not found` | Service name mismatch | Check service name in azure.yaml |
+| `Invalid azure.yaml` | YAML syntax error | Fix YAML syntax |
+| `Project path does not exist` | Wrong service project path | Fix service project path in azure.yaml |
+| `Cannot connect to Docker daemon` | Docker not running | Start Docker Desktop |
+| `Could not find a part of the path 'infra\main.bicep'` | Missing infrastructure files | Generate infra/ folder before `azd up` |
+| `Invalid resource group location '<loc>'. The Resource group already exists in location '<other>'` | RG exists in different region | Check RG location first with `az group show`, use that region or new env name |
+| `expecting only '1' resource tagged with 'azd-service-name: web', but found '2'` | Multiple resources with same tag **in the same RG** | Delete duplicate or rename service |
 
 ## Static Web App Errors
 
