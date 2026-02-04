@@ -21,6 +21,7 @@ Activate this skill when user wants to:
 - Set up Azure infrastructure for a project
 - Generate azure.yaml, Bicep, or Terraform files
 - Prepare code for Azure deployment
+- Prepare Azure Functions, serverless APIs, event-driven apps, and MCP servers or tools for AI agents
 
 ## Rules
 
