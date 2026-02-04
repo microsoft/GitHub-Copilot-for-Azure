@@ -4,8 +4,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-  schedule:
-    - cron: '0 0 * * 1'  # Weekly on Mondays
+    branches: [ "main" ]
 
 jobs:
   analyze:
@@ -19,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript' ]
+        language: [ 'javascript', 'python' ]
 
     steps:
     - name: Checkout repository
