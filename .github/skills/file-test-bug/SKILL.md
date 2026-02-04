@@ -19,7 +19,13 @@ Creates a GitHub issue in `microsoft/github-copilot-for-azure` for integration t
 3. Find test run directory (specified or most recent with matching logs)
 4. Read `agent-metadata.md` from `tests/reports/test-run-<timestamp>/<skillname>-<testname>/`
 5. For each failure, read the actual line of code from the test file using the location (file:line) from junit.xml
-6. Create issue via `github-mcp-server-create_issue`:
+6. **REQUIRED - Write diagnosis BEFORE creating issue:**
+   - Analyze the agent-metadata.md to understand what the agent did
+   - Compare agent behavior to what the test expected (from the assertion)
+   - Identify the root cause (skill issue, test issue, or model behavior)
+   - Write 2-3 sentences per failed test explaining WHY it failed
+   - Suggest potential fixes (update skill, update test, or update fixtures)
+7. Create issue via `github-mcp-server-create_issue`:
 
 ```
 owner: microsoft
@@ -30,6 +36,17 @@ body: |
   ## Failed Tests
   - <test-name>: <error message>
   
+  ## Diagnosis
+  
+  ### Root Cause
+  <1-2 sentences explaining WHY the test failed based on agent-metadata.md analysis>
+  
+  ### Analysis per Test
+  - **<test-name>**: <what agent did vs what test expected>
+  
+  ### Suggested Fix
+  <one of: update skill, update test assertions, provide test fixtures>
+
   ## Details
   ### <test-name>
   **Error:** <failure from junit.xml>

@@ -45,7 +45,8 @@ export interface TestConfig {
   systemPrompt?: {
     mode: "append" | "replace",
     content: string
-  }
+  };
+  preserveWorkspace?: boolean;
 }
 
 export interface KeywordOptions {
@@ -92,22 +93,22 @@ async function getCopilotClient() {
  */
 function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): string {
   const lines: string[] = [];
-  
+
   // User Prompt section
   lines.push('# User Prompt');
   lines.push('');
   lines.push(config.prompt);
   lines.push('');
-  
+
   // Process events in chronological order
   lines.push('# Assistant');
   lines.push('');
-  
+
   // Track message deltas to reconstruct full messages
   const messageDeltas: Record<string, string> = {};
   const reasoningDeltas: Record<string, string> = {};
   const toolResults: Record<string, { success: boolean; content?: string; error?: string }> = {};
-  
+
   // First pass: collect all tool results
   for (const event of agentMetadata.events) {
     if (event.type === 'tool.execution_complete') {
@@ -121,7 +122,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
       };
     }
   }
-  
+
   // Second pass: generate output in order
   for (const event of agentMetadata.events) {
     switch (event.type) {
@@ -133,7 +134,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         }
         break;
       }
-      
+
       case 'assistant.message_delta': {
         // Accumulate deltas for streaming - we'll use the final message instead
         const messageId = event.data.messageId as string;
@@ -143,7 +144,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         }
         break;
       }
-      
+
       case 'assistant.reasoning': {
         const content = event.data.content as string;
         if (content) {
@@ -153,7 +154,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         }
         break;
       }
-      
+
       case 'assistant.reasoning_delta': {
         // Accumulate reasoning deltas
         const reasoningId = event.data.reasoningId as string;
@@ -163,12 +164,12 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         }
         break;
       }
-      
+
       case 'tool.execution_start': {
         const toolName = event.data.toolName as string;
         const toolCallId = event.data.toolCallId as string;
         const args = event.data.arguments;
-        
+
         // Check if this is a skill invocation
         if (toolName === 'skill') {
           const argsStr = JSON.stringify(args);
@@ -189,7 +190,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
           lines.push('```');
           lines.push(`tool: ${toolName}`);
           lines.push(`arguments: ${argsJson}`);
-          
+
           // Add tool response if available
           const result = toolResults[toolCallId];
           if (result) {
@@ -212,7 +213,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         lines.push('');
         break;
       }
-      
+
       case 'subagent.started': {
         const agentName = event.data.agentName as string;
         const agentDisplayName = event.data.agentDisplayName as string;
@@ -222,7 +223,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         lines.push('');
         break;
       }
-      
+
       case 'subagent.completed': {
         const agentName = event.data.agentName as string;
         lines.push('```');
@@ -231,7 +232,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         lines.push('');
         break;
       }
-      
+
       case 'subagent.failed': {
         const agentName = event.data.agentName as string;
         const error = event.data.error as string;
@@ -246,7 +247,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
         lines.push('');
         break;
       }
-      
+
       case 'session.error': {
         const message = event.data.message as string;
         const errorType = event.data.errorType as string;
@@ -259,7 +260,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
       }
     }
   }
-  
+
   return lines.join('\n');
 }
 
@@ -270,15 +271,15 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
   try {
     const filePath = buildShareFilePath();
     const dir = path.dirname(filePath);
-    
+
     // Ensure directory exists
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     const markdown = generateMarkdownReport(config, agentMetadata);
     fs.writeFileSync(filePath, markdown, 'utf-8');
-    
+
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${filePath}`);
     }
@@ -295,7 +296,7 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
   const CopilotClient = await getCopilotClient();
-  
+
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
 
   // Declare client and session outside try block to ensure cleanup in finally
@@ -312,12 +313,11 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     // Enables longer chats with full conversation history for the skill.
     // -p must come first before other args.
     let cliArgs: string[] = config.nonInteractive ? ['-p', '--yolo'] : [];
-    if (process.env.DEBUG)
-    {
+    if (process.env.DEBUG) {
       cliArgs.push('--log-dir');
       cliArgs.push(buildLogFilePath());
     }
-    
+
     client = new CopilotClient({
       logLevel: process.env.DEBUG ? 'all' : 'error',
       cwd: testWorkspace,
@@ -395,7 +395,9 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     }
     // Cleanup workspace
     try {
-      fs.rmSync(testWorkspace, { recursive: true, force: true });
+      if (!config.preserveWorkspace) {
+        fs.rmSync(testWorkspace, { recursive: true, force: true });
+      }
     } catch {
       // Ignore cleanup errors
     }
@@ -426,7 +428,7 @@ export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName: stri
     executionStartEvents = executionStartEvents
       .filter(event => event.data.toolName === toolName);
   }
-  
+
   const executionCompleteEvents = agentMetadata.events
     .filter(event => event.type === 'tool.execution_complete');
 
@@ -442,13 +444,13 @@ export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName: stri
  * Check if assistant messages contain a keyword
  */
 export function doesAssistantMessageIncludeKeyword(
-  agentMetadata: AgentMetadata, 
-  keyword: string, 
+  agentMetadata: AgentMetadata,
+  keyword: string,
   options: KeywordOptions = {}
 ): boolean {
   // Merge all messages and message deltas
   const allMessages: Record<string, string> = {};
-  
+
   agentMetadata.events.forEach(event => {
     if (event.type === 'assistant.message' && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
@@ -475,11 +477,11 @@ export function doesAssistantMessageIncludeKeyword(
  */
 export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | null = null): SessionEvent[] {
   let calls = agentMetadata.events.filter(event => event.type === 'tool.execution_start');
-  
+
   if (toolName) {
     calls = calls.filter(event => event.data.toolName === toolName);
   }
-  
+
   return calls;
 }
 
@@ -490,23 +492,16 @@ let integrationSkipReason: string | null = null;
  * Check if integration tests should be skipped
  * 
  * Integration tests are skipped when:
- * - Running in CI (CI=true)
  * - SKIP_INTEGRATION_TESTS=true is set
  * - @github/copilot-sdk is not installed
  */
 export function shouldSkipIntegrationTests(): boolean {
-  // Always skip in CI
-  if (process.env.CI === 'true') {
-    integrationSkipReason = 'Running in CI environment';
-    return true;
-  }
-  
   // Skip if explicitly requested
   if (process.env.SKIP_INTEGRATION_TESTS === 'true') {
     integrationSkipReason = 'SKIP_INTEGRATION_TESTS=true';
     return true;
   }
-  
+
   // Check if SDK package exists
   try {
     const fs = require('fs');
@@ -520,7 +515,7 @@ export function shouldSkipIntegrationTests(): boolean {
     integrationSkipReason = '@github/copilot-sdk not installed';
     return true;
   }
-  
+
   // SDK installed, tests should attempt to run
   integrationSkipReason = null;
   return false;
@@ -554,7 +549,7 @@ const DEPLOY_LINK_PATTERNS = [
  */
 function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   const allMessages: Record<string, string> = {};
-  
+
   agentMetadata.events.forEach(event => {
     if (event.type === 'assistant.message' && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
@@ -576,7 +571,7 @@ function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
  */
 export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
   const content = getAllAssistantMessages(agentMetadata);
-  
+
   return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
 }
 
@@ -584,35 +579,35 @@ const DEFAULT_REPORT_DIR = path.join(__dirname, '..', 'reports');
 const TIME_STAMP = new Date().toISOString().replace(/[:.]/g, '-');
 
 export function buildShareFilePath(): string {
-    return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, '-')}.md`);
+  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, '-')}.md`);
 }
 
 export function buildLogFilePath(): string {
-    return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName());
+  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName());
 }
 
 function getTestName(): string {
-    try {
-        // Jest provides expect.getState() with current test info
-        const state = expect.getState();
-        const testName = state.currentTestName ?? 'unknown-test';
-        // Sanitize for use as filename
-        return sanitizeFileName(testName);
-    } catch {
-        // Fallback if not running in Jest context
-        return `test-${Date.now()}`;
-    }
+  try {
+    // Jest provides expect.getState() with current test info
+    const state = expect.getState();
+    const testName = state.currentTestName ?? 'unknown-test';
+    // Sanitize for use as filename
+    return sanitizeFileName(testName);
+  } catch {
+    // Fallback if not running in Jest context
+    return `test-${Date.now()}`;
+  }
 }
 
 /**
  * Sanitize a string for use as a filename
  */
 function sanitizeFileName(name: string): string {
-    return name
-        .replace(/[<>:"/\\|?*]/g, '-') // Replace invalid chars
-        .replace(/\s+/g, '_')           // Replace spaces with underscores
-        .replace(/-+/g, '-')            // Collapse multiple dashes
-        .replace(/_+/g, '_')            // Collapse multiple underscores
-        .replace(/_-_/g, '-')          
-        .substring(0, 200);             // Limit length
+  return name
+    .replace(/[<>:"/\\|?*]/g, '-') // Replace invalid chars
+    .replace(/\s+/g, '_')           // Replace spaces with underscores
+    .replace(/-+/g, '-')            // Collapse multiple dashes
+    .replace(/_+/g, '_')            // Collapse multiple underscores
+    .replace(/_-_/g, '-')
+    .substring(0, 200);             // Limit length
 }

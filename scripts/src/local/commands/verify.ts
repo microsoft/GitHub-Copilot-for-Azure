@@ -3,10 +3,11 @@
  * 
  * Verifies that local plugin files match the installed plugin by:
  * 1. Checking for nested plugin install (plugin/azure/ should not exist)
- * 2. Creating a temporary marker file in the local plugin
- * 3. Checking if it appears in the installed location
- * 4. Comparing content of key files between both locations
- * 5. Cleaning up the marker file
+ * 2. Checking Copilot CLI config for stale/misconfigured plugin entries
+ * 3. Creating a temporary marker file in the local plugin
+ * 4. Checking if it appears in the installed location
+ * 5. Comparing content of key files between both locations
+ * 6. Cleaning up the marker file
  */
 
 import { 
@@ -23,19 +24,30 @@ import { join, relative } from 'node:path';
 import { homedir } from 'node:os';
 import { setup } from './setup.js';
 
+interface InstalledPlugin {
+  name: string;
+  marketplace: string;
+  version?: string;
+  installed_at?: string;
+  enabled: boolean;
+  cache_path: string;
+}
+
+interface CopilotConfig {
+  installed_plugins?: InstalledPlugin[];
+  [key: string]: unknown;
+}
+
 interface VerifyOptions {
   fix: boolean;
   verbose: boolean;
 }
 
-interface VerifyResult {
-  success: boolean;
-  nestedInstallCheck: boolean;
-  markerTest: boolean;
-  fileMatches: number;
-  fileMismatches: number;
-  missingFiles: string[];
-  contentDiffs: string[];
+interface ConfigCheckResult {
+  passed: boolean;
+  stalePlugins: InstalledPlugin[];
+  misconfiguredPlugins: InstalledPlugin[];
+  error?: string;
 }
 
 function parseArgs(args: string[]): VerifyOptions {
@@ -45,8 +57,172 @@ function parseArgs(args: string[]): VerifyOptions {
   };
 }
 
+function getCopilotConfigPath(): string {
+  return join(homedir(), '.copilot', 'config.json');
+}
+
 function getInstalledPluginPath(): string {
   return join(homedir(), '.copilot', 'installed-plugins', 'github-copilot-for-azure');
+}
+
+interface ConfigReadResult {
+  config: CopilotConfig | null;
+  error?: string;
+  fileExists: boolean;
+}
+
+function readCopilotConfig(): ConfigReadResult {
+  const configPath = getCopilotConfigPath();
+  if (!existsSync(configPath)) {
+    return { config: null, fileExists: false };
+  }
+  try {
+    return { config: JSON.parse(readFileSync(configPath, 'utf-8')), fileExists: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { config: null, error: `Failed to parse config: ${message}`, fileExists: true };
+  }
+}
+
+function writeCopilotConfig(config: CopilotConfig): boolean {
+  const configPath = getCopilotConfigPath();
+  try {
+    // Backup first
+    const backupPath = configPath + '.bak';
+    if (existsSync(configPath)) {
+      writeFileSync(backupPath, readFileSync(configPath));
+    }
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check Copilot CLI config for issues with azure plugin entries
+ */
+function checkCopilotConfig(): ConfigCheckResult {
+  const result = readCopilotConfig();
+  
+  // If there was a parse error, fail the check and surface the error
+  if (result.error) {
+    return { 
+      passed: false, 
+      stalePlugins: [], 
+      misconfiguredPlugins: [], 
+      error: result.error 
+    };
+  }
+  
+  // No config file or no config content - nothing to check
+  if (!result.config) {
+    return { passed: true, stalePlugins: [], misconfiguredPlugins: [] };
+  }
+
+  const plugins = result.config.installed_plugins ?? [];
+  const stalePlugins: InstalledPlugin[] = [];
+  const misconfiguredPlugins: InstalledPlugin[] = [];
+  const expectedCachePath = getInstalledPluginPath();
+
+  // Helper to safely convert unknown plugin entry to InstalledPlugin
+  const toSafePlugin = (raw: unknown): InstalledPlugin | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const candidate = raw as Record<string, unknown>;
+    
+    // Validate required fields
+    if (typeof candidate.name !== 'string' || candidate.name.trim() === '') return null;
+    if (typeof candidate.cache_path !== 'string') return null;
+    
+    return {
+      name: candidate.name,
+      marketplace: typeof candidate.marketplace === 'string' ? candidate.marketplace : '',
+      cache_path: candidate.cache_path,
+      enabled: typeof candidate.enabled === 'boolean' ? candidate.enabled : false,
+      version: typeof candidate.version === 'string' ? candidate.version : undefined,
+      installed_at: typeof candidate.installed_at === 'string' ? candidate.installed_at : undefined,
+    };
+  };
+
+  for (const rawPlugin of plugins) {
+    const plugin = toSafePlugin(rawPlugin);
+    
+    // Skip malformed entries
+    if (!plugin) continue;
+    
+    if (plugin.name !== 'azure') continue;
+
+    // Check for stale plugins (cache_path doesn't exist)
+    if (!existsSync(plugin.cache_path)) {
+      stalePlugins.push(plugin);
+      continue;
+    }
+
+    // Check for misconfigured marketplace plugins
+    // The cache_path should point to the symlink root, not a subdirectory
+    if (plugin.marketplace === 'github-copilot-for-azure') {
+      const normalizedCache = plugin.cache_path.toLowerCase().replace(/\\/g, '/');
+      const normalizedExpected = expectedCachePath.toLowerCase().replace(/\\/g, '/');
+      
+      // If cache_path points to a subdirectory (e.g., .../github-copilot-for-azure/azure)
+      // instead of the root, it's misconfigured
+      if (normalizedCache !== normalizedExpected && 
+          normalizedCache.startsWith(normalizedExpected + '/')) {
+        misconfiguredPlugins.push(plugin);
+      }
+    }
+  }
+
+  return {
+    passed: stalePlugins.length === 0 && misconfiguredPlugins.length === 0,
+    stalePlugins,
+    misconfiguredPlugins,
+  };
+}
+
+/**
+ * Fix config issues by removing stale plugins and correcting cache paths
+ */
+function fixCopilotConfig(
+  stalePlugins: InstalledPlugin[], 
+  misconfiguredPlugins: InstalledPlugin[]
+): boolean {
+  const result = readCopilotConfig();
+  if (!result.config || !result.config.installed_plugins) {
+    return false;
+  }
+
+  const expectedCachePath = getInstalledPluginPath();
+  const staleNames = new Set(stalePlugins.map(p => `${p.name}|${p.cache_path}`));
+  
+  // Helper to check if entry is a valid plugin object
+  const isValidPlugin = (p: unknown): p is InstalledPlugin => {
+    if (!p || typeof p !== 'object') return false;
+    const candidate = p as Record<string, unknown>;
+    return typeof candidate.name === 'string' && typeof candidate.cache_path === 'string';
+  };
+
+  // Filter out stale plugins and fix misconfigured ones, preserving malformed entries
+  result.config.installed_plugins = (result.config.installed_plugins as unknown[])
+    .map((p: unknown) => {
+      // Skip malformed entries - leave them untouched
+      if (!isValidPlugin(p)) return p;
+      
+      // Remove stale plugins
+      if (staleNames.has(`${p.name}|${p.cache_path}`)) return null;
+      
+      // Fix misconfigured plugins
+      const isMisconfigured = misconfiguredPlugins.some(
+        mp => mp.name === p.name && mp.cache_path === p.cache_path
+      );
+      if (isMisconfigured) {
+        return { ...p, cache_path: expectedCachePath };
+      }
+      return p;
+    })
+    .filter((p: unknown): p is InstalledPlugin => p !== null) as InstalledPlugin[];
+
+  return writeCopilotConfig(result.config);
 }
 
 function generateMarkerContent(): string {
@@ -256,8 +432,33 @@ export function verify(rootDir: string, args: string[]): void {
     console.log(`   ❌ ${nestedCheck.error}`);
   }
 
-  // Test 2: Marker file test
-  console.log('\n🧪 Test 2: Marker File Propagation');
+  // Test 2: Check Copilot CLI config
+  console.log('\n🧪 Test 2: Copilot CLI Config Check');
+  const configCheck = checkCopilotConfig();
+  
+  if (configCheck.passed) {
+    console.log('   ✅ Plugin config is correct');
+  } else {
+    if (configCheck.error) {
+      console.log(`   ❌ Failed to read config: ${configCheck.error}`);
+    }
+    if (configCheck.stalePlugins.length > 0) {
+      console.log('   ⚠️  Stale plugin entries found (cache_path does not exist):');
+      for (const p of configCheck.stalePlugins) {
+        console.log(`      - ${p.name} (${p.marketplace || 'direct'}): ${p.cache_path}`);
+      }
+    }
+    if (configCheck.misconfiguredPlugins.length > 0) {
+      console.log('   ⚠️  Misconfigured plugin entries (wrong cache_path):');
+      for (const p of configCheck.misconfiguredPlugins) {
+        console.log(`      - ${p.name}: points to ${p.cache_path}`);
+        console.log(`        should be: ${installedPluginPath}`);
+      }
+    }
+  }
+
+  // Test 3: Marker file test
+  console.log('\n🧪 Test 3: Marker File Propagation');
   console.log('   Creating temporary marker file...');
   const markerResult = runMarkerTest(localPluginPath, installedPluginPath);
   
@@ -267,8 +468,8 @@ export function verify(rootDir: string, args: string[]): void {
     console.log(`   ❌ Failed: ${markerResult.error}`);
   }
 
-  // Test 3: File content comparison
-  console.log('\n🧪 Test 3: File Content Comparison');
+  // Test 4: File content comparison
+  console.log('\n🧪 Test 4: File Content Comparison');
   const comparison = runFileComparison(localPluginPath, installedPluginPath, options.verbose);
   
   console.log(`   📊 Results:`);
@@ -300,6 +501,7 @@ export function verify(rootDir: string, args: string[]): void {
 
   // Summary
   const allPassed = nestedCheck.passed &&
+                    configCheck.passed &&
                     markerResult.passed && 
                     comparison.mismatches.length === 0 && 
                     comparison.missing.length === 0;
@@ -325,6 +527,24 @@ export function verify(rootDir: string, args: string[]): void {
         }
       }
     }
+    if (!configCheck.passed) {
+      console.log('   ⚠️  Copilot CLI config has issues that prevent skills from loading.');
+      if (options.fix) {
+        console.log('\n   🔧 Fixing config...');
+        if (fixCopilotConfig(configCheck.stalePlugins, configCheck.misconfiguredPlugins)) {
+          console.log('   ✅ Config fixed');
+          if (configCheck.stalePlugins.length > 0) {
+            console.log(`      Removed ${configCheck.stalePlugins.length} stale plugin(s)`);
+          }
+          if (configCheck.misconfiguredPlugins.length > 0) {
+            console.log(`      Fixed ${configCheck.misconfiguredPlugins.length} cache path(s)`);
+          }
+          console.log('   ℹ️  Restart Copilot CLI or run /skills reload to apply changes');
+        } else {
+          console.log('   ❌ Failed to fix config');
+        }
+      }
+    }
     if (!markerResult.passed) {
       console.log('   The installed plugin is NOT properly linked to local repo.');
     }
@@ -332,8 +552,8 @@ export function verify(rootDir: string, args: string[]): void {
       console.log('   File content does not match between locations.');
     }
     
-    if (options.fix && !nestedCheck.passed) {
-      // Re-run verification after fixing nested install
+    if (options.fix && (!nestedCheck.passed || !configCheck.passed)) {
+      // Re-run verification after fixing issues
       console.log('\n   🔄 Re-running verification...\n');
       verify(rootDir, args.filter(a => a !== '--fix'));
       return;

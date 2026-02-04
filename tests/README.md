@@ -386,7 +386,7 @@ tests/
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-estimation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
-| azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
+| azure-deploy | ✅ | - | - | ✅ | - |
 | azure-diagnostics | ✅ | - | - | ✅ | - |
 | azure-functions | ✅ | - | - | ✅ | - |
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
