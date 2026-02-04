@@ -50,5 +50,6 @@ azd deploy api --no-prompt
 
 ## References
 
+- [Azure Functions deployment](mdc:functions-deploy.md)
 - [Verification steps](mdc:verify.md)
 - [Error handling](mdc:errors.md)

@@ -1,6 +1,6 @@
 ---
 name: azure-deploy
-description: "Execute Azure deployments after preparation and validation are complete. USE FOR: azd up, azd deploy, push to Azure, publish to Azure, ship to production, launch on Azure, go live, release to Azure, deploy web app, deploy container app, deploy static site, azd provision, infrastructure deployment, bicep deploy, terraform apply. DO NOT USE FOR: preparing new apps (use azure-prepare), validating before deploy (use azure-validate), Azure Functions specifically (use azure-functions)."
+description: "Execute Azure deployments after preparation and validation are complete. USE FOR: azd up, azd deploy, push to Azure, publish to Azure, ship to production, launch on Azure, go live, release to Azure, deploy web app, deploy container app, deploy static site, deploy Azure Functions, azd provision, infrastructure deployment, bicep deploy, terraform apply. DO NOT USE FOR: preparing new apps (use azure-prepare), validating before deploy (use azure-validate)."
 ---
 
 # Azure Deploy
@@ -19,6 +19,7 @@ Activate this skill when user wants to:
 - Push updates to existing deployment
 - Run `azd up` or `az deployment`
 - Ship code to production
+- Deploy Azure Functions to the cloud
 
 ## Rules
 
