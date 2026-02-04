@@ -18,7 +18,7 @@ const extraArgs = process.argv.slice(2);
 // Build jest command args
 const jestArgs = [
   '--testMatch=**/*integration*.ts',
-  '--testPathIgnorePatterns=node_modules|_template',
+  '--testPathIgnorePatterns=\"node_modules|_template\"',
   ...extraArgs
 ];
 
@@ -29,7 +29,7 @@ console.log(`jest ${jestArgs.join(' ')}\n`);
 const existingNodeOptions = process.env.NODE_OPTIONS || '';
 const env = {
   ...process.env,
-  NODE_OPTIONS: existingNodeOptions 
+  NODE_OPTIONS: existingNodeOptions
     ? `${existingNodeOptions} --experimental-vm-modules`
     : '--experimental-vm-modules'
 };
@@ -49,7 +49,7 @@ jest.on('error', (err) => {
 
 jest.on('close', (code) => {
   const jestExitCode = code || 0;
-  
+
   // Show results table if not in CI
   if (!isCI) {
     console.log('\n');
@@ -57,12 +57,12 @@ jest.on('close', (code) => {
       stdio: 'inherit',
       cwd: path.resolve(__dirname, '..')
     });
-    
+
     results.on('error', (err) => {
       console.error('Failed to display results:', err.message);
       process.exit(jestExitCode);
     });
-    
+
     results.on('close', () => {
       // Always use jest exit code, not results script exit code
       process.exit(jestExitCode);
