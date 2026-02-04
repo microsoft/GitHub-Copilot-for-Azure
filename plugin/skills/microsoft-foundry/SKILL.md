@@ -16,10 +16,10 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **create-ghcp-agent** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [create-ghcp-agent/README.md](create-ghcp-agent/README.md) |
-| **deploy-agent** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [deploy-agent/README.md](deploy-agent/README.md) |
+| **agent/create** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [agent/create/create-ghcp-agent.md](agent/create/create-ghcp-agent.md) |
+| **agent/deploy** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [agent/deploy/deploy-agent.md](agent/deploy/deploy-agent.md) |
 
-> 💡 **Tip:** If the user wants to **create AND deploy** an agent, start with `create-ghcp-agent` which can optionally invoke `deploy-agent` automatically.
+> 💡 **Tip:** If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
 
 ## When to Use This Skill
 
