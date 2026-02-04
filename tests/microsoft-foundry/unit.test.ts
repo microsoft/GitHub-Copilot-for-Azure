@@ -56,4 +56,116 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain('foundry_');
     });
   });
+
+  describe('Sub-Skills Reference', () => {
+    test('has Sub-Skills table', () => {
+      expect(skill.content).toContain('## Sub-Skills');
+    });
+
+    test('references agent/create sub-skill', () => {
+      expect(skill.content).toContain('agent/create');
+      expect(skill.content).toContain('create-ghcp-agent.md');
+    });
+
+    test('references agent/deploy sub-skill', () => {
+      expect(skill.content).toContain('agent/deploy');
+      expect(skill.content).toContain('deploy-agent.md');
+    });
+
+    test('references rbac sub-skill', () => {
+      expect(skill.content).toContain('rbac');
+      expect(skill.content).toContain('rbac/rbac.md');
+    });
+  });
+
+  describe('RBAC Sub-Skill Content', () => {
+    let rbacContent: string;
+
+    beforeAll(async () => {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const rbacPath = path.join(
+        __dirname,
+        '../../plugin/skills/microsoft-foundry/rbac/rbac.md'
+      );
+      rbacContent = await fs.readFile(rbacPath, 'utf-8');
+    });
+
+    test('has RBAC reference file', () => {
+      expect(rbacContent).toBeDefined();
+      expect(rbacContent.length).toBeGreaterThan(100);
+    });
+
+    test('contains Azure AI Foundry roles table', () => {
+      expect(rbacContent).toContain('Azure AI User');
+      expect(rbacContent).toContain('Azure AI Project Manager');
+      expect(rbacContent).toContain('Azure AI Account Owner');
+      expect(rbacContent).toContain('Azure AI Owner');
+    });
+
+    test('contains roles capability matrix', () => {
+      expect(rbacContent).toContain('Create Projects');
+      expect(rbacContent).toContain('Data Actions');
+      expect(rbacContent).toContain('Role Assignments');
+    });
+
+    test('contains Portal vs SDK/CLI warning', () => {
+      expect(rbacContent).toMatch(/portal.*but.*not.*sdk|cli/i);
+    });
+
+    test('contains all 6 RBAC workflows', () => {
+      expect(rbacContent).toContain('### 1. Setup User Permissions');
+      expect(rbacContent).toContain('### 2. Setup Developer Permissions');
+      expect(rbacContent).toContain('### 3. Audit Role Assignments');
+      expect(rbacContent).toContain('### 4. Validate Permissions');
+      expect(rbacContent).toContain('### 5. Configure Managed Identity Roles');
+      expect(rbacContent).toContain('### 6. Create Service Principal');
+    });
+
+    test('contains command patterns for each workflow', () => {
+      expect(rbacContent).toContain('Grant Alice access to my Foundry project');
+      expect(rbacContent).toContain('Make Bob a project manager');
+      expect(rbacContent).toContain('Who has access to my Foundry?');
+      expect(rbacContent).toContain('Can I deploy models?');
+      expect(rbacContent).toContain('Set up identity for my project');
+      expect(rbacContent).toContain('Create SP for CI/CD pipeline');
+    });
+
+    test('contains az role assignment commands', () => {
+      expect(rbacContent).toContain('az role assignment create');
+      expect(rbacContent).toContain('az role assignment list');
+    });
+
+    test('contains az ad sp commands for service principal', () => {
+      expect(rbacContent).toContain('az ad sp create-for-rbac');
+    });
+
+    test('contains managed identity roles for connected resources', () => {
+      expect(rbacContent).toContain('Storage Blob Data Reader');
+      expect(rbacContent).toContain('Storage Blob Data Contributor');
+      expect(rbacContent).toContain('Key Vault Secrets User');
+      expect(rbacContent).toContain('Search Index Data Reader');
+      expect(rbacContent).toContain('Search Index Data Contributor');
+    });
+
+    test('uses correct Foundry resource type', () => {
+      expect(rbacContent).toContain('Microsoft.CognitiveServices/accounts');
+    });
+
+    test('contains permission requirements table', () => {
+      expect(rbacContent).toContain('Permission Requirements by Action');
+      expect(rbacContent).toContain('Deploy models');
+      expect(rbacContent).toContain('Create projects');
+    });
+
+    test('contains error handling section', () => {
+      expect(rbacContent).toContain('Error Handling');
+      expect(rbacContent).toContain('Authorization failed');
+    });
+
+    test('contains both Bash and PowerShell examples', () => {
+      expect(rbacContent).toContain('#### Bash');
+      expect(rbacContent).toContain('#### PowerShell');
+    });
+  });
 });
