@@ -384,8 +384,8 @@ tests/
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost-estimation | ✅ | - | - | ✅ | - |
-| azure-cost-optimization | ✅ | - | - | ✅ | - |
+| azure-cost-estimation | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | - | - | ✅ | - |
 | azure-diagnostics | ✅ | - | - | ✅ | - |
 | azure-functions | ✅ | - | - | ✅ | - |
@@ -396,14 +396,14 @@ tests/
 | azure-observability | ✅ | - | - | ✅ | - |
 | azure-postgres | ✅ | - | - | ✅ | - |
 | azure-prepare | ✅ | - | - | ✅ | - |
-| azure-quick-review | ✅ | - | - | ✅ | - |
+| azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
 | azure-resource-visualizer | ✅ | - | - | ✅ | - |
 | azure-role-selector | ✅ | ✅ | ✅ | ✅ | - |
 | azure-security | ✅ | - | - | ✅ | - |
 | azure-security-hardening | ✅ | - | - | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
 | azure-validate | ✅ | ✅ | ✅ | ✅ | - |
-| entra-app-registration | ✅ | - | - | ✅ | - |
+| entra-app-registration | ✅ | ✅ | ✅ | ✅ | - |
 | microsoft-foundry | ✅ | ✅ | ✅ | ✅ | - |
 
 **Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage

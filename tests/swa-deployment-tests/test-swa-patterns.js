@@ -11,7 +11,7 @@
  *   node test-swa-patterns.js --subscription "your-sub-id" --skip-deploy
  */
 
-const { execSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -29,9 +29,23 @@ const subscriptionId = getArg('subscription');
 const location = getArg('location') || 'westus2';
 const skipDeploy = hasFlag('skip-deploy');
 
+// Validate inputs to prevent shell injection
+const validIdPattern = /^[a-zA-Z0-9-]+$/;
+const validLocationPattern = /^[a-z0-9]+$/;
+
 if (!subscriptionId) {
     console.error('Error: --subscription is required');
     console.error('Usage: node test-swa-patterns.js --subscription <subscription-id> [--location <region>] [--skip-deploy]');
+    process.exit(1);
+}
+
+if (!validIdPattern.test(subscriptionId)) {
+    console.error('Error: Invalid subscription ID format');
+    process.exit(1);
+}
+
+if (!validLocationPattern.test(location)) {
+    console.error('Error: Invalid location format');
     process.exit(1);
 }
 
@@ -42,9 +56,9 @@ const tests = [
         name: '01-static-root',
         envName: 'swa-test-01',
         pattern: 'Static files in root',
-        config: 'project: ., dist: public',
+        config: 'project: ., language: js, dist: public',
         path: path.join(scriptDir, '01-static-root'),
-        expectedContent: /Static.*root/i
+        expectedContent: /<title>.*Static.*<\/title>/i  // Check HTML title element
     },
     {
         name: '02-framework-root',
@@ -52,7 +66,7 @@ const tests = [
         pattern: 'Framework app in root',
         config: 'project: ., language: js, dist: dist',
         path: path.join(scriptDir, '02-framework-root'),
-        expectedContent: /Framework.*root/i
+        expectedContent: /<title>.*Framework.*<\/title>/i  // Check HTML title element
     },
     {
         name: '03-static-subfolder',
@@ -60,7 +74,7 @@ const tests = [
         pattern: 'Static files in subfolder',
         config: 'project: ./src/web, dist: .',
         path: path.join(scriptDir, '03-static-subfolder'),
-        expectedContent: /Static.*subfolder/i
+        expectedContent: /<title>.*Static.*<\/title>/i  // Check HTML title element
     },
     {
         name: '04-framework-subfolder',
@@ -68,24 +82,18 @@ const tests = [
         pattern: 'Framework app in subfolder',
         config: 'project: ./src/web, language: js, dist: dist',
         path: path.join(scriptDir, '04-framework-subfolder'),
-        expectedContent: /Framework.*subfolder/i
+        expectedContent: /<title>.*Framework.*<\/title>/i  // Check HTML title element
     }
 ];
 
 const results = [];
 
-function run(cmd, options = {}) {
-    try {
-        return execSync(cmd, { encoding: 'utf8', stdio: options.silent ? 'pipe' : 'inherit', ...options });
-    } catch (e) {
-        if (options.ignoreError) return e.stdout || '';
-        throw e;
-    }
-}
-
 function runSilent(cmd, cwd) {
-    const result = spawnSync(cmd, { shell: true, encoding: 'utf8', cwd, stdio: 'pipe' });
-    return { stdout: result.stdout, stderr: result.stderr, exitCode: result.status };
+    // Use array args to avoid shell injection
+    const args = cmd.split(' ');
+    const exe = args.shift();
+    const result = spawnSync(exe, args, { encoding: 'utf8', cwd, stdio: 'pipe' });
+    return { stdout: result.stdout || '', stderr: result.stderr || '', exitCode: result.status };
 }
 
 async function httpGet(url, timeout = 15000) {

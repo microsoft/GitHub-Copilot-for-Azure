@@ -81,7 +81,8 @@ mcp_azure_mcp_group_list
 
 Prompt user to confirm subscription and location before continuing.
 
-**Popular locations:** `eastus`, `eastus2`, `westus2`, `westus3`, `centralus`, `westeurope`, `northeurope`, `uksouth`, `australiaeast`, `southeastasia`
+Refer to the region availability reference to select a region supported by all services in this template:
+- [Region availability](../../../azure-prepare/references/region-availability.md)
 
 ```bash
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>

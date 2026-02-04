@@ -69,11 +69,11 @@ These services are available in all major Azure regions — no special considera
 
 | Pattern | Recommended Regions |
 |---------|---------------------|
-| SWA only | `westus2`, `centralus`, `eastus2`, `westeurope` |
-| SWA + backend services | `westus2`, `centralus`, `eastus2`, `westeurope` |
+| SWA only | `westus2`, `centralus`, `eastus2`, `westeurope`, `eastasia` |
+| SWA + backend services | `westus2`, `centralus`, `eastus2`, `westeurope`, `eastasia` |
 | Container Apps (no SWA) | `eastus`, `eastus2`, `westus2`, `centralus`, `westeurope` |
-| With Azure OpenAI | `eastus`, `eastus2`, `swedencentral` |
-| SWA + Azure OpenAI | `eastus2` (only overlap!) |
+| With Azure OpenAI (GPT-4o/4/3.5 + embeddings) | `eastus`, `eastus2`, `swedencentral` |
+| SWA + Azure OpenAI (GPT-4o/4/3.5 + embeddings) | `eastus2` (only region with full SWA + model overlap) |
 
 ---
 

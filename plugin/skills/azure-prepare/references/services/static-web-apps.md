@@ -45,12 +45,12 @@ Detect layout first, then apply correct configuration:
 ```json
 {
   "scripts": {
-    "build": "node -e \"const fs=require('fs'),path=require('path');const webExts=/\\.(html|css|js|png|jpe?g|gif|svg|ico|json|xml|txt|webmanifest|map|woff2?|ttf|eot)$/i;const skipDirs=['public','node_modules','.git','.azure','infra'];function copy(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){if(skipDirs.includes(e.name)||e.name.startsWith('.env'))continue;const sp=path.join(s,e.name),dp=path.join(d,e.name);if(e.isDirectory())copy(sp,dp);else if(webExts.test(e.name))fs.copyFileSync(sp,dp);}}copy('.','public');\""
+    "build": "node -e \"const fs=require('fs'),path=require('path');const webExts=/\\.(html|css|png|jpe?g|gif|svg|ico|xml|txt|webmanifest|woff2?|ttf|eot)$/i;const skipDirs=['public','node_modules','.git','.azure','infra','scripts'];const skipFiles=['package.json','package-lock.json','tsconfig.json','jest.config.js','.eslintrc.js'];function copy(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){if(skipDirs.includes(e.name)||skipFiles.includes(e.name)||e.name.startsWith('.env')||e.name.startsWith('.'))continue;const sp=path.join(s,e.name),dp=path.join(d,e.name);if(e.isDirectory())copy(sp,dp);else if(webExts.test(e.name))fs.copyFileSync(sp,dp);}}copy('.','public');\""
   }
 }
 ```
 
-> Note: This script copies only web assets (html, css, js, images, fonts, etc.) and excludes `infra/`, config files, and `.env*` files.
+> Note: This script copies only web assets (html, css, images, fonts, etc.) and excludes `package.json`, config files, `infra/`, `scripts/`, dotfiles, and `.env*` files. JS/JSON files are excluded to prevent publishing internal tooling.
 
 ```yaml
 services:
