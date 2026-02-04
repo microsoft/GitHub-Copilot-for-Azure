@@ -285,6 +285,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   // Declare client and session outside try block to ensure cleanup in finally
   let client: CopilotClient | undefined;
   let session: CopilotSession | undefined;
+  // Flag to prevent processing events after completion
+  let isComplete = false;
 
   try {
     // Run optional setup
@@ -330,11 +332,17 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     });
 
     session!.on(async (event: SessionEvent) => {
+      // Stop processing events if already complete
+      if (isComplete) {
+        return;
+      }
+
       if (process.env.DEBUG) {
         console.log(`=== session event ${event.type}`);
       }
 
       if (event.type === "session.idle") {
+        isComplete = true;
         if (resolveIdle) {
           resolveIdle();
           resolveIdle = null;
@@ -348,6 +356,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       // Check for early termination
       if (config.shouldEarlyTerminate) {
         if (config.shouldEarlyTerminate(agentMetadata)) {
+          isComplete = true;
           if (resolveIdle) {
             resolveIdle();
             resolveIdle = null;
@@ -372,9 +381,13 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     return agentMetadata;
   } catch (error) {
+    // Mark as complete to stop event processing
+    isComplete = true;
     console.error("Agent runner error:", error);
     throw error;
   } finally {
+    // Mark as complete before starting cleanup to prevent post-completion event processing
+    isComplete = true;
     // Cleanup session and client (guarded if undefined)
     try {
       if (session) {
