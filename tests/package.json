@@ -13,6 +13,7 @@
     "test:watch": "cross-env jest --watch",
     "test:skill": "cross-env jest --testPathPattern",
     "coverage:grid": "node scripts/generate-coverage-grid.js",
+    "report": "npx tsx scripts/generate-test-reports.ts",
     "results": "node scripts/show-test-results.js",
     "update:snapshots": "cross-env jest --updateSnapshot"
   },
