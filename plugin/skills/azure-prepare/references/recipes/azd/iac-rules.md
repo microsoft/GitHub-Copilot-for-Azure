@@ -44,7 +44,6 @@ All modules must accept:
 | Managed Identity | Follow least privilege |
 | Diagnostics | Enable logging |
 | API versions | Use latest |
-| Enterprise policies | Include `disableLocalAuth: true` for services that support it |
 
 ## Enterprise Policy Compliance
 
