@@ -26,9 +26,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: scripts/package.json
 
-      - name: Install dependencies
+      - name: Install scripts dependencies
         working-directory: ./scripts
         run: npm ci
+
+      - name: Install tests dependencies
+        working-directory: ./tests
+        run: npm ci
+
+      - name: Lint test
+        working-directory: ./tests
+        run: npm run lint
 
       - name: Check changed markdown files
         id: changed-files
