@@ -121,7 +121,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   // azd auth login
 
   // Static Web Apps (SWA)
-  describe("static-web-apps", () => {
+  describe("static-web-apps-deploy", () => {
     test('creates whiteboard application and deploys to Azure', async () => {
       const agentMetadata = await run({
         prompt: 'Create a static whiteboard web app and deploy to azure using my current subscription in eastus region.',
@@ -158,10 +158,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   // App Service
-  describe("app-service", () => {
+  describe("app-service-deploy", () => {
     test('creates discussion board and deploys to Azure', async () => {
       const agentMetadata = await run({
-        prompt: 'Create a discussion board application and deploy to Azure using my current subscription in eastus region.',
+        prompt: 'Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.',
         nonInteractive: true
       });
 
@@ -178,8 +178,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test('creates todo list with frontend and API and deploys to Azure', async () => {
       const agentMetadata = await run({
-        prompt: 'Create a todo list with frontend and API and deploy to Azure using my current subscription in eastus region.',
-        nonInteractive: true
+        prompt: 'Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.',
+        nonInteractive: true    
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -195,7 +195,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   // Azure Functions
-  describe("azure-functions", () => {
+  describe("azure-functions-deploy", () => {
     test('creates serverless HTTP API and deploys to Azure Functions', async () => {
       const agentMetadata = await run({
         prompt: 'Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus region.',
@@ -232,7 +232,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   // Azure Container Apps (ACA)
-  describe("azure-container-apps", () => {
+  describe("azure-container-apps-deploy", () => {
     test('creates containerized web application and deploys to Azure Container Apps', async () => {
       const agentMetadata = await run({
         prompt: 'Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus region.',
