@@ -51,29 +51,13 @@ export default tseslint.config(
         },
     },
     {
-        // CommonJS JavaScript files - allow Node.js globals and require
-        files: ["**/scripts/**/*.js"],
-        languageOptions: {
-            globals: {
-                console: "readonly",
-                process: "readonly",
-                module: "readonly",
-                require: "readonly",
-                __dirname: "readonly",
-                __filename: "readonly",
-            },
-        },
-        rules: {
-            "@typescript-eslint/no-require-imports": "off",
-        },
-    },
-    {
         ignores: [
             "node_modules/**",
             "dist/**",
             "reports/**",
             "**/resources/**",
             "**/__snapshots__/**",
+            "**/*.js",
         ],
     }
 );
