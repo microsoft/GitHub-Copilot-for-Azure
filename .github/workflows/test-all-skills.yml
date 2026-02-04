@@ -137,14 +137,14 @@ jobs:
       # See https://github.com/github/copilot-sdk/issues/343 for more details.
       - name: Setup Copilot CLI
         id: setup-copilot-cli
-        if: ${{ inputs.run-integration-tests }} && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
+        if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
         uses: mvkaran/setup-copilot-cli@v1
         with:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
       - name: Integration tests
         id: integration-tests
-        if: ${{ inputs.run-integration-tests }} && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
+        if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
         env:
           DEBUG: 1
           GH_HEAD_SHA: ${{ github.sha }}
@@ -170,7 +170,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload integration test results
-        if: ${{ inputs.run-integration-tests }} && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
+        if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
         uses: actions/upload-artifact@v4
         with:
           name: test-results-skill-invocation
