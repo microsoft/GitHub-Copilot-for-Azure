@@ -84,7 +84,7 @@ Add a minimal `package.json` with a build script:
 ```json
 {
   "scripts": {
-    "build": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').readdirSync('.').filter(f=>/\\.(html|css|js)$/.test(f)).forEach(f=>require('fs').copyFileSync(f,'public/'+f))\""
+    "build": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').readdirSync('.').filter(f=>/\\.(html|css|js|png|jpe?g|gif|svg|ico|json|xml|txt|webmanifest|map)$/i.test(f)).forEach(f=>require('fs').copyFileSync(f,'public/'+f))\""
   }
 }
 ```

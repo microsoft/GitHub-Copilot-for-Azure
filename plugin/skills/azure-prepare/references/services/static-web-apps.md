@@ -45,12 +45,12 @@ Detect layout first, then apply correct configuration:
 ```json
 {
   "scripts": {
-    "build": "node -e \"const fs=require('fs'),path=require('path');function copy(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){if(['public','node_modules','.git','.azure'].includes(e.name))continue;const sp=path.join(s,e.name),dp=path.join(d,e.name);e.isDirectory()?copy(sp,dp):fs.copyFileSync(sp,dp);}}copy('.','public');\""
+    "build": "node -e \"const fs=require('fs'),path=require('path');const webExts=/\\.(html|css|js|png|jpe?g|gif|svg|ico|json|xml|txt|webmanifest|map|woff2?|ttf|eot)$/i;const skipDirs=['public','node_modules','.git','.azure','infra'];function copy(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){if(skipDirs.includes(e.name)||e.name.startsWith('.env'))continue;const sp=path.join(s,e.name),dp=path.join(d,e.name);if(e.isDirectory())copy(sp,dp);else if(webExts.test(e.name))fs.copyFileSync(sp,dp);}}copy('.','public');\""
   }
 }
 ```
 
-> Note: This script recursively copies all files except `public/`, `node_modules/`, `.git/`, and `.azure/`.
+> Note: This script copies only web assets (html, css, js, images, fonts, etc.) and excludes `infra/`, config files, and `.env*` files.
 
 ```yaml
 services:

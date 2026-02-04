@@ -31,3 +31,21 @@ Before deployment, verify:
 ```bash
 azd <command> --debug
 ```
+
+## Pre-Flight Checks
+
+Before running `azd up`, verify:
+
+```bash
+# 1. Environment exists
+azd env list
+
+# 2. Environment variables set
+azd env get-values
+
+# 3. Resource group doesn't conflict
+az group show --name rg-<env-name> 2>&1
+
+# 4. No tag conflicts within target RG
+az resource list --resource-group rg-<env-name> --tag azd-service-name=<service> --query "[].name" -o table
+```

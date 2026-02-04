@@ -16,23 +16,7 @@
 | Package failed | Missing Dockerfile or deps | Verify Dockerfile exists and dependencies |
 | Quota exceeded | Subscription limits | Request increase or change region |
 
-## Pre-Flight Checks to Avoid Errors
-
-Before running `azd up`, verify:
-
-```bash
-# 1. Environment exists
-azd env list
-
-# 2. Environment variables set
-azd env get-values
-
-# 3. Resource group doesn't conflict
-az group show --name rg-<env-name> 2>&1
-
-# 4. No tag conflicts within target RG
-az resource list --resource-group rg-<env-name> --tag azd-service-name=<service> --query "[].name" -o table
-```
+> ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch these errors early. See [pre-deploy-checklist.md](../pre-deploy-checklist.md).
 
 ## Retry
 

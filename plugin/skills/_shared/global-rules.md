@@ -40,11 +40,3 @@ ask_user(
 - Azure region/location
 
 See [pre-deploy-checklist](../azure-deploy/references/pre-deploy-checklist.md).
-
----
-
-## Rule 3: Validate Before Deploy
-
-⛔ **ALWAYS run azure-validate** before any deployment.
-
-Do NOT deploy directly even if user says "just deploy it".
