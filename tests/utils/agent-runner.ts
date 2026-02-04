@@ -45,7 +45,8 @@ export interface TestConfig {
   systemPrompt?: {
     mode: "append" | "replace",
     content: string
-  }
+  };
+  preserveWorkspace?: boolean;
 }
 
 export interface KeywordOptions {
@@ -395,7 +396,9 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     }
     // Cleanup workspace
     try {
-      fs.rmSync(testWorkspace, { recursive: true, force: true });
+      if (!config.preserveWorkspace) {
+        fs.rmSync(testWorkspace, { recursive: true, force: true });
+      }
     } catch {
       // Ignore cleanup errors
     }

@@ -17,7 +17,6 @@ import {
   getIntegrationSkipReason,
   doesAssistantMessageIncludeKeyword,
   areToolCallsSuccess,
-  isSkillInvoked
 } from "../utils/agent-runner";
 import * as fs from "fs";
 import { AIProjectClient } from "@azure/ai-projects";
