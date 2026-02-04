@@ -7,8 +7,7 @@
  * 
  * Usage:
  *   npm run reports              # Process most recent test run
- *   npm run reports <folder>     # Process specific test run folder
- *   npm run reports <path>       # Process test run at absolute path
+ *   npm run reports <path>       # Process specific test run
  */
 
 import * as fs from 'fs';
@@ -16,206 +15,7 @@ import * as path from 'path';
 import { run } from '../utils/agent-runner';
 
 const REPORTS_PATH = path.resolve(__dirname, '../reports');
-
-const REPORT_TEMPLATE = `# Test Run Report Template
-
-## Instructions for Report Generation
-
-Generate a consolidated test run summary report following this template format.
-
-**Your Task:**
-- Combine all test results into one comprehensive report
-- Calculate totals across all tests (total tests, pass/fail counts, total duration, token usage)
-- Aggregate warnings and categorize them
-- List all deployed URLs from all tests
-- Include all skills and tools used across all tests
-- Generate recommendations based on all results
-- Create individual test result sections for each test
-- Use proper emojis and formatting as shown in the template below
-- Generate the report timestamp at the end
-- Omit optional sections if no data is available
-
----
-
-# Run Summary: [RUN_NAME]
-
-**Date:** [RUN_DATE]
-**Duration:** [DURATION]
-**Status:** [STATUS_EMOJI] [STATUS_TEXT]
-**Confidence:** [CONFIDENCE_EMOJI] [CONFIDENCE_LEVEL]
-
-## 📝 Test Prompt
-[Optional section - include if multiple test prompts]
-
-## 📊 Result Summary
-
-| Metric | Value |
-|--------|-------|
-| Total Tests | [NUMBER] |
-| Passed | [NUMBER] |
-| Failed | [NUMBER] |
-| Pass Rate | [PERCENTAGE] |
-| Total Retries | [NUMBER] |
-| Total Duration | [MS]ms ([SECONDS]s) |
-
-## 🎯 Confidence Level
-
-**Overall Confidence:** [EMOJI] [LEVEL] ([PERCENTAGE]%)
-
-| Factor | Impact |
-|--------|--------|
-| [FACTOR] | [+/- NUMBER] |
-
-**Confidence Indicators:**
-- [INDICATOR]
-
-## ⚠️ Warnings (Non-Blocking)
-
-> These issues were detected during execution but **did not prevent the task from completing**.
-> They are documented for awareness and potential optimization.
-
-### Warning Summary
-
-| Category | Count | Why It Didn't Matter |
-|----------|-------|---------------------|
-| [CATEGORY] | [NUMBER] | [EXPLANATION] |
-
-### Warning Details
-
-#### [CATEGORY NAME]
-
-**Why it didn't block success:** [EXPLANATION]
-
-- \`[ERROR MESSAGE]\`
-- *...and [NUMBER] more*
-
-## 🎯 Success Artifacts
-
-### 🌐 Deployed URLs
-
-| URL | Type | Skill | Status |
-|-----|------|-------|--------|
-| [[URL]]([URL]) | [TYPE] | [SKILL] | ✅ |
-
-### 📄 Generated Files & Reports
-[Optional section]
-
-| Path | Type | Skill |
-|------|------|-------|
-| \`[PATH]\` | [TYPE] | [SKILL] |
-
-### 🔌 Endpoints & Connection Info
-[Optional section]
-
-| Endpoint | Type | Skill |
-|----------|------|-------|
-| \`[ENDPOINT]\` | [TYPE] | [SKILL] |
-
-### 🎯 Skills Invoked
-
-| Skill | Type | Category |
-|-------|------|----------|
-| \`[SKILL]\` | [TYPE] | [CATEGORY] |
-
-### 🔧 Tools Invoked
-
-| Tool | Count | Actions |
-|------|-------|---------|
-| \`[TOOL]\` | [NUMBER]x | [ACTIONS] |
-
-### 🔌 Azure MCP Tools Used
-[Optional section]
-
-| Tool | Type | Category |
-|------|------|----------|
-| \`[TOOL]\` | [TYPE] | [CATEGORY] |
-
-## 📈 Token Usage
-
-| Metric | Value |
-|--------|-------|
-| Input Tokens | [NUMBER] |
-| Output Tokens | [NUMBER] |
-| Total Tokens | [NUMBER] |
-| Avg per Test | [NUMBER] |
-
-## 📋 Results by Skill
-
-| Skill | Passed | Failed | Retries | Status |
-|-------|--------|--------|---------|--------|
-| [SKILL] | [NUMBER] | [NUMBER] | [NUMBER] | [EMOJI] |
-
-## 📋 Individual Test Results
-[Optional section for multi-test runs]
-
-| # | Prompt | Status | Duration | Tokens | Retries |
-|---|--------|--------|----------|--------|---------|
-| [NUMBER] | [PROMPT_TRUNCATED] | [EMOJI] | [SECONDS]s | [NUMBER] | [NUMBER] |
-
-### Detailed Results
-
-<details>
-<summary><b>Test [NUMBER]:</b> [PROMPT_TRUNCATED] [EMOJI]</summary>
-
-**Prompt:** [FULL_PROMPT]
-
-| Attribute | Value |
-|-----------|-------|
-| Skill | \`[SKILL]\` |
-| Task Type | \`[TYPE]\` |
-| Status | [EMOJI] [STATUS] |
-| Outcome | [OUTCOME] |
-| Duration | [MS]ms ([SECONDS]s) |
-| Retries | [NUMBER] |
-| Input Tokens | [NUMBER] |
-| Output Tokens | [NUMBER] |
-| Total Tokens | [NUMBER] |
-
-**Deployed URLs:**
-- [[TYPE]] [URL]
-
-**Skills Invoked:**
-- \`[SKILL]\` ([CATEGORY])
-
-**Warnings:** [NUMBER] non-blocking issues detected
-
-</details>
-
-## 🔐 Azure Authentication
-
-- **Azure CLI:** [STATUS]
-
-> **Note:** [AUTH_NOTES]
-
-## 🚀 Further Optimization
-
-### Recommended Actions
-
-| Priority | Action | Benefit | Effort |
-|----------|--------|---------|--------|
-| [EMOJI] [PRIORITY] | [ACTION] | [BENEFIT] | [EFFORT] |
-
-### Details
-
-1. **[ACTION_TITLE]**
-   - [DETAIL]
-
-## 📚 Learnings
-
-### What Worked
-- [ITEM]
-
-### Areas for Improvement
-- [ITEM]
-
-### [SECTION_TITLE]
-[Optional section for special notes like "Auth Notes"]
-
-> [NOTE_CONTENT]
-
----
-*Generated at [TIMESTAMP]*
-`;
+const TEMPLATE_PATH = path.resolve(__dirname, 'report-template.md');
 
 /**
  * Get the most recent test run directory
@@ -233,44 +33,17 @@ function getMostRecentTestRun(): string | null {
 }
 
 /**
- * Process a test run directory
+ * Process a single markdown file and generate a report
  */
-async function processTestRun(runNameOrPath: string): Promise<void> {
-  // Check if it's already a full path
-  let runPath: string;
-  if (path.isAbsolute(runNameOrPath)) {
-    runPath = runNameOrPath;
-  } else {
-    runPath = path.join(REPORTS_PATH, runNameOrPath);
-  }
+async function processMarkdownFile(mdPath: string, reportTemplate: string): Promise<void> {
+  const content = fs.readFileSync(mdPath, 'utf-8');
+  const fileName = path.basename(mdPath, '.md');
   
-  if (!fs.existsSync(runPath)) {
-    console.error(`Error: Test run directory not found: ${runNameOrPath}`);
-    process.exit(1);
-  }
-  
-  const runName = path.basename(runPath);
-  const entries = fs.readdirSync(runPath, { withFileTypes: true });
-  const testDirs = entries.filter(e => e.isDirectory());
-  
-  // Collect all markdown content from test results
-  let allContent = '';
-  
-  testDirs.forEach(dir => {
-    const testPath = path.join(runPath, dir.name);
-    const markdownFiles = fs.readdirSync(testPath).filter(f => f.endsWith('.md'));
-    
-    markdownFiles.forEach(mdFile => {
-      const content = fs.readFileSync(path.join(testPath, mdFile), 'utf-8');
-      allContent += `\n## Test: ${dir.name} (${mdFile})\n\n${content}\n\n---\n`;
-    });
-  });
-  
-  console.log(`Running agent to generate consolidated report for ${runName}...\n`);
+  console.log(`  Processing: ${fileName}...`);
   
   // Use agent runner to generate report
   const config = {
-    prompt: `${REPORT_TEMPLATE}
+    prompt: `${reportTemplate}
 
 ---
 
@@ -278,7 +51,7 @@ async function processTestRun(runNameOrPath: string): Promise<void> {
 
 Use the following test results data to populate the template:
 
-${allContent}`
+${content}`
   };
   
   const agentMetadata = await run(config);
@@ -292,33 +65,88 @@ ${allContent}`
   }
   
   // Save the generated report
-  const reportPath = path.join(runPath, 'summary.md');
+  const outputPath = mdPath.replace('.md', '-report.md');
   const reportContent = assistantMessages.join('\n\n');
-  fs.writeFileSync(reportPath, reportContent, 'utf-8');
-  console.log(`\n✅ Report generated: ${reportPath}`);
+  fs.writeFileSync(outputPath, reportContent, 'utf-8');
+  console.log(`    ✅ Generated: ${path.basename(outputPath)}`);
+}
+
+/**
+ * Process a test run directory - generate reports for all .md files
+ */
+async function processTestRun(runPath: string): Promise<void> {
+  if (!fs.existsSync(runPath)) {
+    console.error(`Error: Path not found: ${runPath}`);
+    process.exit(1);
+  }
   
-  console.log('\nAgent report generation complete.');
+  if (!fs.statSync(runPath).isDirectory()) {
+    console.error(`Error: Path must be a directory`);
+    process.exit(1);
+  }
+  
+  const runName = path.basename(runPath);
+  console.log(`\nProcessing test run: ${runName}\n`);
+  
+  // Load the report template once
+  const reportTemplate = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
+  
+  // Find all markdown files recursively
+  const markdownFiles: string[] = [];
+  
+  function findMarkdownFiles(dir: string) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      
+      if (entry.isDirectory()) {
+        findMarkdownFiles(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.md') && !entry.name.endsWith('-report.md')) {
+        markdownFiles.push(fullPath);
+      }
+    }
+  }
+  
+  findMarkdownFiles(runPath);
+  
+  if (markdownFiles.length === 0) {
+    console.error(`Error: No markdown files found in directory: ${runPath}`);
+    process.exit(1);
+  }
+  
+  console.log(`Found ${markdownFiles.length} markdown file(s)\n`);
+  
+  // Process each markdown file
+  for (const mdFile of markdownFiles) {
+    await processMarkdownFile(mdFile, reportTemplate);
+  }
+  
+  console.log(`\n✅ Generated ${markdownFiles.length} report(s)`);
+  console.log('\nReport generation complete.');
 }
 
 // Main execution
 async function main() {
   const args = process.argv.slice(2);
   
-  let targetRun: string | null;
+  let targetPath: string;
   
   if (args.length === 0) {
     // No args - use most recent run
-    targetRun = getMostRecentTestRun();
-    if (!targetRun) {
+    const mostRecent = getMostRecentTestRun();
+    if (!mostRecent) {
       console.error('Error: No test run directories found');
       process.exit(1);
     }
+    targetPath = path.join(REPORTS_PATH, mostRecent);
+    console.log(`Using most recent test run: ${mostRecent}`);
   } else {
-    // Use provided argument (can be full path or folder name)
-    targetRun = args[0];
+    // Use provided argument
+    targetPath = path.isAbsolute(args[0]) ? args[0] : path.join(REPORTS_PATH, args[0]);
   }
   
-  await processTestRun(targetRun);
+  await processTestRun(targetPath);
 }
 
 if (require.main === module) {
