@@ -1,6 +1,6 @@
 ---
 name: azure-validate
-description: "**CRITICAL**: Must call this skill before deploying anything to Azure. Validates deployment readiness. USE FOR: check if app is ready to deploy, validate azure.yaml or Bicep configuration, run preflight checks, test deployment preview, what-if analysis, verify infrastructure configuration, troubleshoot deployment errors. DO NOT USE FOR: creating new apps (use azure-prepare), deploying (use azure-deploy)."
+description: "**CRITICAL**: Run azure-validate before deploying Azure resources. Validates Azure deployment readiness. USE FOR: assess if application is ready to deploy to Azure, validate azure.yaml or Bicep configuration files, run Azure preflight checks, review deployment previews and what-if analysis, verify Azure infrastructure configuration, troubleshoot Azure deployment errors. DO NOT USE FOR: creating new applications (use azure-prepare), executing deployments (use azure-deploy)."
 ---
 
 # Azure Validate

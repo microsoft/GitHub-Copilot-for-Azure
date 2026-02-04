@@ -125,7 +125,31 @@ function checkCopilotConfig(): ConfigCheckResult {
   const misconfiguredPlugins: InstalledPlugin[] = [];
   const expectedCachePath = getInstalledPluginPath();
 
-  for (const plugin of plugins) {
+  // Helper to safely convert unknown plugin entry to InstalledPlugin
+  const toSafePlugin = (raw: unknown): InstalledPlugin | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const candidate = raw as Record<string, unknown>;
+    
+    // Validate required fields
+    if (typeof candidate.name !== 'string' || candidate.name.trim() === '') return null;
+    if (typeof candidate.cache_path !== 'string') return null;
+    
+    return {
+      name: candidate.name,
+      marketplace: typeof candidate.marketplace === 'string' ? candidate.marketplace : '',
+      cache_path: candidate.cache_path,
+      enabled: typeof candidate.enabled === 'boolean' ? candidate.enabled : false,
+      version: typeof candidate.version === 'string' ? candidate.version : undefined,
+      installed_at: typeof candidate.installed_at === 'string' ? candidate.installed_at : undefined,
+    };
+  };
+
+  for (const rawPlugin of plugins) {
+    const plugin = toSafePlugin(rawPlugin);
+    
+    // Skip malformed entries
+    if (!plugin) continue;
+    
     if (plugin.name !== 'azure') continue;
 
     // Check for stale plugins (cache_path doesn't exist)

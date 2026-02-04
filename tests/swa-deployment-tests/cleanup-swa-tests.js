@@ -19,9 +19,9 @@ const tests = [
     { name: '04-framework-subfolder', envName: 'swa-test-04' }
 ];
 
-function runSilent(cmd, cwd) {
-    const result = spawnSync(cmd, { shell: true, encoding: 'utf8', cwd, stdio: 'pipe' });
-    return { stdout: result.stdout, stderr: result.stderr, exitCode: result.status };
+function runSilent(exe, args, cwd) {
+    const result = spawnSync(exe, args, { encoding: 'utf8', cwd, stdio: 'pipe' });
+    return { stdout: result.stdout || '', stderr: result.stderr || '', exitCode: result.status };
 }
 
 console.log('\n🧹 Cleaning up SWA test deployments...\n');
@@ -32,7 +32,7 @@ for (const test of tests) {
 
     if (fs.existsSync(envPath)) {
         console.log(`  Removing ${test.name}...`);
-        const result = runSilent('azd down --force --purge --no-prompt', testPath);
+        const result = runSilent('azd', ['down', '--force', '--purge', '--no-prompt'], testPath);
 
         if (result.exitCode === 0) {
             console.log(`  ✅ ${test.name} removed`);

@@ -30,7 +30,7 @@ const location = getArg('location') || 'westus2';
 const skipDeploy = hasFlag('skip-deploy');
 
 // Validate inputs to prevent shell injection
-const validIdPattern = /^[a-zA-Z0-9-]+$/;
+const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const validLocationPattern = /^[a-z0-9]+$/;
 
 if (!subscriptionId) {
@@ -39,8 +39,8 @@ if (!subscriptionId) {
     process.exit(1);
 }
 
-if (!validIdPattern.test(subscriptionId)) {
-    console.error('Error: Invalid subscription ID format');
+if (!guidPattern.test(subscriptionId)) {
+    console.error('Error: Invalid subscription ID format. Must be a GUID (e.g., 12345678-1234-1234-1234-123456789abc)');
     process.exit(1);
 }
 
@@ -88,10 +88,7 @@ const tests = [
 
 const results = [];
 
-function runSilent(cmd, cwd) {
-    // Use array args to avoid shell injection
-    const args = cmd.split(' ');
-    const exe = args.shift();
+function runSilent(exe, args, cwd) {
     const result = spawnSync(exe, args, { encoding: 'utf8', cwd, stdio: 'pipe' });
     return { stdout: result.stdout || '', stderr: result.stderr || '', exitCode: result.status };
 }
@@ -141,7 +138,7 @@ async function deploy() {
             if (fs.existsSync(packageJsonPath)) {
                 const npmDir = path.dirname(packageJsonPath);
                 console.log(`  Installing npm dependencies in ${path.relative(cwd, npmDir) || '.'}...`);
-                const npmResult = runSilent('npm install --quiet', npmDir);
+                const npmResult = runSilent('npm', ['install', '--quiet'], npmDir);
                 if (npmResult.exitCode !== 0) {
                     console.log('  ❌ npm install failed');
                     continue;
@@ -150,18 +147,18 @@ async function deploy() {
         }
 
         // Set up azd environment
-        let result = runSilent(`azd env new ${test.envName} --no-prompt`, cwd);
+        let result = runSilent('azd', ['env', 'new', test.envName, '--no-prompt'], cwd);
         if (result.exitCode !== 0) {
             console.log('  ❌ Failed to create azd environment');
             continue;
         }
 
-        runSilent(`azd env set AZURE_LOCATION ${location}`, cwd);
-        runSilent(`azd env set AZURE_SUBSCRIPTION_ID ${subscriptionId}`, cwd);
+        runSilent('azd', ['env', 'set', 'AZURE_LOCATION', location], cwd);
+        runSilent('azd', ['env', 'set', 'AZURE_SUBSCRIPTION_ID', subscriptionId], cwd);
 
         // Deploy
         console.log('  Deploying...');
-        result = runSilent('azd up --no-prompt', cwd);
+        result = runSilent('azd', ['up', '--no-prompt'], cwd);
 
         if (result.exitCode === 0) {
             console.log('  ✅ Deployment succeeded');
@@ -193,7 +190,7 @@ async function generateReport() {
         }
 
         // Get URL from azd env
-        const envResult = runSilent('azd env get-values', cwd);
+        const envResult = runSilent('azd', ['env', 'get-values'], cwd);
         const urlMatch = envResult.stdout.match(/WEB_URI="(https:\/\/[^"]+)"/);
         const url = urlMatch ? urlMatch[1] : null;
 
