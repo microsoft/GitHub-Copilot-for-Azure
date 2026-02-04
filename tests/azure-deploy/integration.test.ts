@@ -88,175 +88,183 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
+
+    test("invokes azure-deploy skill for Azure Functions deployment prompt", async () => {
+      let successCount = 0;
+      
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Deploy my Azure Functions app to the cloud using azd"
+          });
+          
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: any) {
+          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+      
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for Functions deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Functions deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
   });
 
   // Need to be logged into azd for these tests. 
   // azd auth login
 
   // Static Web Apps (SWA)
-  test('creates whiteboard application and deploys to Azure', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a static whiteboard web app and deploy to azure using my current subscription in eastus region.',
-      nonInteractive: true
+  describe("static-web-apps-deploy", () => {
+    test('creates whiteboard application and deploys to Azure', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a static whiteboard web app and deploy to azure using my current subscription in eastus region.',
+        nonInteractive: true
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
+    test('creates static portfolio website and deploys to Azure', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a static portfolio website and deploy to Azure using my current subscription in eastus region.',
+        nonInteractive: true
+      });
 
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
-  });
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-  test('creates static portfolio website and deploys to Azure', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a static portfolio website and deploy to Azure using my current subscription in eastus region.',
-      nonInteractive: true
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
-
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
   });
 
   // App Service
-  test('creates discussion board and deploys to Azure', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a discussion board application and deploy to Azure using my current subscription in eastus region.',
-      nonInteractive: true
+  describe("app-service-deploy", () => {
+    test('creates discussion board and deploys to Azure', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.',
+        nonInteractive: true
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
+    test('creates todo list with frontend and API and deploys to Azure', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.',
+        nonInteractive: true    
+      });
 
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
-  });
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-  test('creates todo list with frontend and API and deploys to Azure', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a todo list with frontend and API and deploy to Azure using my current subscription in eastus region.',
-      nonInteractive: true
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
-
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
   });
 
   // Azure Functions
-  test('creates serverless HTTP API and deploys to Azure Functions', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus region.',
-      nonInteractive: true
+  describe("azure-functions-deploy", () => {
+    test('creates serverless HTTP API and deploys to Azure Functions', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus region.',
+        nonInteractive: true
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
+    test('creates event-driven function app and deploys to Azure Functions', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus region.',
+        nonInteractive: true
+      });
 
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
-  });
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-  test('creates event-driven function app and deploys to Azure Functions', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus region.',
-      nonInteractive: true
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
-
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
   });
 
   // Azure Container Apps (ACA)
-  test('creates containerized web application and deploys to Azure Container Apps', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus region.',
-      nonInteractive: true
+  describe("azure-container-apps-deploy", () => {
+    test('creates containerized web application and deploys to Azure Container Apps', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus region.',
+        nonInteractive: true
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
+    test('creates simple containerized Node.js app and deploys to Azure Container Apps', async () => {
+      const agentMetadata = await run({
+        prompt: 'Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus region.',
+        nonInteractive: true
+      });
 
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
-  });
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-  test('creates simple containerized Node.js app and deploys to Azure Container Apps', async () => {
-    const agentMetadata = await run({
-      prompt: 'Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus region.',
-      nonInteractive: true
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
     });
-
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-    const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
-    const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-    expect(isSkillUsed).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
-    expect(containsDeployLinks).toBe(true);
-  });
-
-  test("invokes azure-deploy skill for Azure Functions deployment prompt", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Deploy my Azure Functions app to the cloud using azd"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
-        }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
-      }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for Functions deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Functions deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 });
