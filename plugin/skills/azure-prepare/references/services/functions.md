@@ -233,7 +233,7 @@ services:
 ```bicep
 module functionApp './modules/function-app.bicep' = {
   params: {
-    serviceName: 'api'    # Must match azure.yaml service name
+    serviceName: 'api'    // Must match azure.yaml service name
     // ...
   }
 }
