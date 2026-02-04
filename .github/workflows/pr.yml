@@ -5,6 +5,33 @@ on:
     branches: [main]
 
 jobs:
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comparison
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package.json
+
+      - name: Install tests dependencies
+        working-directory: ./tests
+        run: npm ci
+
+      - name: Lint test
+        working-directory: ./tests
+        run: npm run lint
+
   # Token limit check and comparison for markdown files
   token-check:
     name: Token Analysis
@@ -29,14 +56,6 @@ jobs:
       - name: Install scripts dependencies
         working-directory: ./scripts
         run: npm ci
-
-      - name: Install tests dependencies
-        working-directory: ./tests
-        run: npm ci
-
-      - name: Lint test
-        working-directory: ./tests
-        run: npm run lint
 
       - name: Check changed markdown files
         id: changed-files
