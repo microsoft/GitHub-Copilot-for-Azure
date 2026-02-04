@@ -94,7 +94,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       // If your skill triggers on 'azure', it should also trigger on 'AZURE'
       const result1 = triggerMatcher.shouldTrigger("azure");
       const result2 = triggerMatcher.shouldTrigger("AZURE");
-      expect(result1).toBe(result2);
+      expect(result1.triggered).toBe(result2.triggered);
     });
   });
 });
