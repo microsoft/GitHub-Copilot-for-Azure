@@ -100,4 +100,4 @@ Use `ask_user` tool to confirm each of these with the user:
 
 ## Document in Manifest
 
-Record all requirements in `.azure/preparation-manifest.md` immediately after gathering.
+Record all requirements in `.azure/plan.md` immediately after gathering.

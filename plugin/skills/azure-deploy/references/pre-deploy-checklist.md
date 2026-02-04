@@ -89,10 +89,7 @@ See [region-availability.md](region-availability.md) for service-specific limita
 
 > ⚠️ **Set ALL variables BEFORE running `azd up`** — not during error recovery.
 
-```bash
-azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
-azd env set AZURE_LOCATION <location>
-```
+See [recipes/azd/environment.md](recipes/azd/environment.md) for environment setup.
 
 Verify settings:
 ```bash

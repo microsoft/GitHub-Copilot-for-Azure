@@ -7,7 +7,7 @@ Deploy to Azure using Azure Developer CLI (azd).
 ## Prerequisites
 
 - `azd` CLI installed → Run `mcp_azure_mcp_extension_cli_install` with `cli-type: azd` if needed
-- `.azure/preparation-manifest.md` exists with status `Validated`
+- `.azure/plan.md` exists with status `Validated`
 - `azure.yaml` exists and validated
 - Infrastructure files exist:
   - For Bicep: `infra/main.bicep`
@@ -16,14 +16,12 @@ Deploy to Azure using Azure Developer CLI (azd).
 
 ## Workflow
 
-> ⛔ **CRITICAL**: Follow this sequence EXACTLY. Do NOT skip steps or reorder.
-
-| Step | Task | Command | Notes |
-|------|------|---------|-------|
-| 1 | **Create environment** | `azd env new <name>` | MUST be first |
-| 2 | **Check RG exists** | `az group show --name rg-<name>` | Avoid location conflicts |
-| 3 | **Check tag conflicts in RG** | `az resource list --resource-group rg-<name> --tag azd-service-name=web` | Per service |
-| 4 | **Confirm with user** | Use `ask_user` | Subscription AND location |
+| Step | Task | Reference |
+|------|------|-----------|
+| 1 | **Set up environment** | [environment.md](environment.md) — Check/create AZD environment |
+| 2 | **Configure subscription & location** | Prompt user, run `azd env set` |
+| 3 | **Deploy** | `azd up --no-prompt` |
+| 4 | **Verify** | [verify.md](verify.md) |
 | 5 | **Set subscription** | `azd env set AZURE_SUBSCRIPTION_ID <id>` | — |
 | 6 | **Set location** | `azd env set AZURE_LOCATION <region>` | — |
 | 7 | **Verify settings** | `azd env get-values` | Confirm before deploy |
@@ -74,5 +72,7 @@ azd deploy api --no-prompt
 
 - [Pre-deploy checklist](../../pre-deploy-checklist.md) — **REQUIRED reading**
 - [Azure Functions deployment](functions-deploy.md)
+- [Verification steps](verify.md)
+- [Environment setup](environment.md) — **Start here**
 - [Verification steps](verify.md)
 - [Error handling](errors.md)

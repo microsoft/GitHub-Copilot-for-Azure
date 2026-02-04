@@ -5,7 +5,7 @@ Deploy to Azure using Terraform.
 ## Prerequisites
 
 - Terraform CLI installed
-- `.azure/preparation-manifest.md` exists with status `Validated`
+- `.azure/plan.md` exists with status `Validated`
 - Terraform initialized (`terraform init`)
 - Plan validated (`terraform plan`)
 - **Subscription and location confirmed** → See [pre-deploy-checklist.md](../../pre-deploy-checklist.md)

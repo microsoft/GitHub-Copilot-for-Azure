@@ -1,0 +1,74 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands.
+USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it.
+DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate).
+",
+  "extractedKeywords": [
+    "after",
+    "apps",
+    "azure",
+    "azure-prepare",
+    "azure-validate",
+    "before",
+    "bicep",
+    "building",
+    "cli",
+    "commands",
+    "creating",
+    "deploy",
+    "deployment",
+    "execute",
+    "final",
+    "infrastructure",
+    "live",
+    "preparation",
+    "production",
+    "provision",
+    "provisioning",
+    "push",
+    "runs",
+    "ship",
+    "step",
+    "terraform",
+    "validating",
+    "validation",
+  ],
+  "name": "azure-deploy",
+}
+`;
+
+exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "after",
+  "apps",
+  "azure",
+  "azure-prepare",
+  "azure-validate",
+  "before",
+  "bicep",
+  "building",
+  "cli",
+  "commands",
+  "creating",
+  "deploy",
+  "deployment",
+  "execute",
+  "final",
+  "infrastructure",
+  "live",
+  "preparation",
+  "production",
+  "provision",
+  "provisioning",
+  "push",
+  "runs",
+  "ship",
+  "step",
+  "terraform",
+  "validating",
+  "validation",
+]
+`;

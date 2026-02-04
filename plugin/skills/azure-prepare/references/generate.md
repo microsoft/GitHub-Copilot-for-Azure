@@ -2,16 +2,18 @@
 
 Generate infrastructure and configuration files based on selected recipe.
 
-## CRITICAL: Research Before Generating
+## CRITICAL: Research Must Be Complete
 
-**DO NOT generate any files without first researching best practices.**
+**DO NOT generate any files without first completing the [Research Components](research.md) step.**
 
-### Research Checklist
+The research step loads service-specific references and invokes related skills to gather best practices. Apply all research findings to generated artifacts.
 
-1. Load the selected recipe's README.md
-2. Follow the recipe's "Before Generation" checklist
-3. Apply all researched rules to generated files
-4. Document which best practices were applied
+## Research Checklist
+
+1. ✅ Completed [Research Components](research.md) step
+2. ✅ Loaded all relevant `services/*.md` references
+3. ✅ Invoked related skills for specialized guidance
+4. ✅ Documented findings in manifest
 
 ## Generation Order
 
@@ -41,7 +43,7 @@ Load the appropriate recipe for detailed generation steps:
 ```
 project-root/
 ├── .azure/
-│   └── preparation-manifest.md
+│   └── plan.md
 ├── infra/
 │   ├── main.bicep (or main.tf)
 │   └── modules/
