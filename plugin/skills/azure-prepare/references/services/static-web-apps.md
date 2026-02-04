@@ -45,10 +45,12 @@ Detect layout first, then apply correct configuration:
 ```json
 {
   "scripts": {
-    "build": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').readdirSync('.').filter(f=>/\\.(html|css|js)$/.test(f)).forEach(f=>require('fs').copyFileSync(f,'public/'+f))\""
+    "build": "node -e \"const fs=require('fs'),path=require('path');function copy(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){if(['public','node_modules','.git','.azure'].includes(e.name))continue;const sp=path.join(s,e.name),dp=path.join(d,e.name);e.isDirectory()?copy(sp,dp):fs.copyFileSync(sp,dp);}}copy('.','public');\""
   }
 }
 ```
+
+> Note: This script recursively copies all files except `public/`, `node_modules/`, `.git/`, and `.azure/`.
 
 ```yaml
 services:

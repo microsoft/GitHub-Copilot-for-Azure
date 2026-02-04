@@ -77,7 +77,9 @@ Select hosting stack and map components to Azure services.
    - This is the authoritative source — do NOT guess or use outdated knowledge
    - Pay special attention to services with limited availability (SWA, Azure OpenAI)
 3. **Find intersection** of regions that support ALL required services
-4. **Check for existing azd configuration**: Run `azd env get-values 2>$null | Select-String "AZURE_LOCATION"` to check if a location is already configured
+4. **Check for existing azd configuration**: Run one of the following to check if a location is already configured:
+   - **Bash**: `azd env get-values 2>/dev/null | grep AZURE_LOCATION`
+   - **PowerShell**: `azd env get-values 2>$null | Select-String "AZURE_LOCATION"`
 5. **Use `ask_user`** to present ONLY valid regions:
    - If azd env has a location configured AND it's valid for all services, show it as the default
    - Question: "Which Azure region do you want to deploy to? Based on your architecture ({list services}), these regions support all required services:"
