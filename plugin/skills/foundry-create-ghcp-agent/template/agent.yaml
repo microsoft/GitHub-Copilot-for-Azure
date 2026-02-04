@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/AgentSchema/refs/heads/main/schemas/v1.0/ContainerAgent.yaml
+
+kind: hosted
+name: copilot-hosted-agent
+description: |
+    A GitHub Copilot agent hosted on Azure AI Foundry that provides AI-powered assistance using GitHub Copilot's API. This agent can answer questions, help with coding tasks, and provide technical assistance through streaming responses. It maintains session state for multi-turn conversations.
+metadata:
+    authors:
+        - Azure AI Team
+    example:
+        - content: What is the difference between async and await in Python?
+          role: user
+    tags:
+        - AI Agent Hosting
+        - Azure AI AgentServer
+        - GitHub Copilot
+        - Conversational AI
+        - Code Assistant
+protocols:
+    - protocol: responses
+      version: v1
+environment_variables:
+    - name: GITHUB_TOKEN
+      value: <your_github_personal_access_token_here>
+template:
+  name: CopilotHostedAgent
+  kind: hosted
+  protocols:
+    - protocol: responses
+      version: v1
+  environment_variables:
+    - name: GITHUB_TOKEN
+      value: <your_github_personal_access_token_here>
+resources:
+  - kind: model
+    id: gpt-4o-mini
+    name: chat

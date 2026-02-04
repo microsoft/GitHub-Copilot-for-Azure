@@ -1,0 +1,899 @@
+---
+name: foundry-create-ghcp-agent
+description: Create a new GitHub Copilot hosted agent from your custom skills using the copilot-hosted-agent template
+---
+
+# foundry-create-ghcp-agent
+
+This skill creates a customized GitHub Copilot agent that can be hosted on Azure AI Foundry. It uses bundled template files (included with this skill) and integrates your custom Claude Code skills, creating a fully configured deployment structure.
+
+**Note**: Template files (main.py, Dockerfile, agent.yaml, requirements.txt, azure.yaml) are bundled in the `template/` directory within this skill, so no external dependencies are required.
+
+## What This Skill Does
+
+1. **Collects user input** - Gathers information about your agent, skills location, and deployment preferences
+2. **Validates inputs** - Ensures all requirements are met before creating files
+3. **Creates deployment structure** - Generates a complete deployment directory with all necessary files
+4. **Copies your skills** - Integrates your custom skills into the agent
+5. **Configures environment** - Sets up GitHub PAT and customizes configuration files
+6. **Optionally deploys** - Can invoke the deploy-agent-to-foundry skill for immediate deployment
+
+## Workflow
+
+### Phase 1: User Input Collection
+
+Use AskUserQuestion to gather required information:
+
+**Question 1: Skills Directory Path**
+- Header: "Skills path"
+- Question: "What is the absolute path to the directory containing your skills?"
+- Options:
+  - "Current directory (.claude/skills)" - Use the skills in the current project
+  - "Custom path" - Specify a different directory path
+- Validation:
+  - Directory must exist
+  - Must contain subdirectories with SKILL.md files
+  - At least one valid skill must be present
+
+**Question 2: Agent Name**
+- Header: "Agent name"
+- Question: "What should your agent be named?"
+- Options:
+  - "Generate from skills" - Create name based on first skill
+  - "Custom name" - Specify your own name
+- Validation:
+  - Must follow kebab-case pattern: `^[a-z0-9]+(-[a-z0-9]+)*$`
+  - Must not conflict with existing directory: `<agent-name>-deployment`
+  - Examples: `my-agent`, `support-bot`, `dev-assistant`
+
+**Question 3: Agent Description**
+- Header: "Description"
+- Question: "Provide a brief description of what your agent does."
+- Options:
+  - "Auto-generate" - Create description from skills
+  - "Custom description" - Write your own
+- Used in agent.yaml and README files
+
+**Question 4: GitHub PAT**
+- Header: "GitHub token"
+- Question: "Enter your GitHub Personal Access Token (required for Copilot API access)."
+- Options:
+  - "Enter token" - Provide token directly
+  - "Skip for now" - Will need to add manually later
+- Validation:
+  - Must start with 'ghp_' or 'github_pat_'
+  - Warn if token appears invalid
+
+**Question 5: Deployment Preference**
+- Header: "Deploy now?"
+- Question: "Would you like to deploy your agent to Azure AI Foundry now?"
+- Options:
+  - "Yes, deploy immediately" - Invoke deploy-agent-to-foundry after creation
+  - "No, I'll deploy later" - Just create the structure
+- Requires: Azure subscription, azd CLI installed
+
+### Phase 2: Input Validation
+
+Before creating any files, validate all inputs:
+
+1. **Skills Directory Validation**
+   ```bash
+   # Check directory exists
+   ls "<skills-path>"
+
+   # Find SKILL.md files
+   find "<skills-path>" -name "SKILL.md" -type f
+   ```
+   - If no SKILL.md files found, show error with directory structure requirements
+   - Extract skill names from SKILL.md frontmatter for later use
+
+2. **Agent Name Validation**
+   ```bash
+   # Check pattern
+   echo "<agent-name>" | grep -E '^[a-z0-9]+(-[a-z0-9]+)*$'
+
+   # Check for conflicts
+   ls -d "<agent-name>-deployment" 2>/dev/null
+   ```
+   - If pattern invalid, explain kebab-case with examples
+   - If directory exists, suggest alternatives
+
+3. **GitHub PAT Validation**
+   ```bash
+   echo "<token>" | grep -E '^(ghp_|github_pat_)'
+   ```
+   - Warn if format appears invalid but allow user to proceed
+
+4. **Template Validation**
+   - Verify bundled template files exist in skill directory
+   - Template files are located at: `${SKILL_DIR}/template/`
+   - Required files: main.py, Dockerfile, agent.yaml, requirements.txt, azure.yaml
+
+### Phase 3: Directory Structure Creation
+
+Create the deployment directory structure:
+
+```bash
+mkdir -p "<agent-name>-deployment/src/<agent-name>/skills"
+```
+
+The final structure will be:
+```
+<agent-name>-deployment/
+├── src/
+│   └── <agent-name>/
+│       ├── main.py
+│       ├── agent.yaml
+│       ├── Dockerfile
+│       ├── requirements.txt
+│       ├── README.md
+│       └── skills/
+│           ├── skill-1/
+│           │   └── SKILL.md
+│           ├── skill-2/
+│           │   └── SKILL.md
+│           └── ...
+├── azure.yaml
+└── README.md
+```
+
+**Important**: The `infra/` directory is NOT created by this skill. It will be generated by `azd init` during deployment.
+
+### Phase 4: File Operations
+
+#### Copy Template Files (No Modifications Needed)
+
+These files work as-is because main.py auto-discovers skills from the skills/ directory:
+
+```bash
+# Get the skill directory (where this SKILL.md is located)
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Copy main.py (auto-discovers skills from SKILLS_DIR)
+cp "${SKILL_DIR}/template/main.py" "<agent-name>-deployment/src/<agent-name>/main.py"
+
+# Copy Dockerfile (already configured to copy skills/)
+cp "${SKILL_DIR}/template/Dockerfile" "<agent-name>-deployment/src/<agent-name>/Dockerfile"
+
+# Copy requirements.txt (contains correct dependencies)
+cp "${SKILL_DIR}/template/requirements.txt" "<agent-name>-deployment/src/<agent-name>/requirements.txt"
+```
+
+**Note**: All template files are bundled within this skill at `${SKILL_DIR}/template/`, so no external template directory is needed.
+
+#### Copy User Skills
+
+```bash
+# Copy all skills from user directory
+cp -r "<user-skills-path>"/* "<agent-name>-deployment/src/<agent-name>/skills/"
+```
+
+The main.py file will automatically discover these skills because of this code (main.py:24-25, 78):
+```python
+SKILLS_DIR = (CURRENT_DIR / 'skills').resolve()
+# ...
+"skill_directories": [str(SKILLS_DIR)]
+```
+
+#### Generate Customized agent.yaml
+
+Use the Write tool to create agent.yaml with customizations:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/AgentSchema/refs/heads/main/schemas/v1.0/ContainerAgent.yaml
+
+kind: hosted
+name: <agent-name>
+description: |
+    <user-description>
+
+    This agent includes the following custom skills:
+    - <skill-1-name>: <skill-1-description>
+    - <skill-2-name>: <skill-2-description>
+    ...
+metadata:
+    authors:
+        - <generated-from-user-info>
+    example:
+        - content: <example-from-first-skill>
+          role: user
+    tags:
+        - AI Agent Hosting
+        - Azure AI AgentServer
+        - GitHub Copilot
+        - Custom Skills
+protocols:
+    - protocol: responses
+      version: v1
+environment_variables:
+    - name: GITHUB_TOKEN
+      value: <user-github-pat>
+```
+
+**Note:** The GitHub PAT is placed directly in agent.yaml for simplicity. Do NOT create a separate .env file.
+
+#### Generate azure.yaml
+
+Use the Write tool to create azure.yaml with customizations:
+
+```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+requiredVersions:
+    extensions:
+        azure.ai.agents: '>=0.1.0-preview'
+name: <agent-name>-deployment
+services:
+    <agent-name>:
+        project: src/<agent-name>
+        host: azure.ai.agent
+        language: docker
+        docker:
+            remoteBuild: true
+        config:
+            container:
+                resources:
+                    cpu: "1"
+                    memory: 2Gi
+                scale:
+                    maxReplicas: 3
+                    minReplicas: 1
+infra:
+    provider: bicep
+    path: ./infra
+```
+
+#### Generate Agent README.md
+
+Use the Write tool to create `src/<agent-name>/README.md`:
+
+```markdown
+# <agent-name>
+
+<user-description>
+
+## Included Skills
+
+This agent includes the following custom Claude Code skills:
+
+### <skill-1-name>
+<skill-1-description>
+
+### <skill-2-name>
+<skill-2-description>
+
+...
+
+## Setup
+
+### Prerequisites
+
+- Python 3.9 or higher
+- GitHub Personal Access Token with Copilot access
+- Azure AI Foundry project (for deployment)
+
+### Local Development
+
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Set your GitHub token (already configured in agent.yaml):
+   ```bash
+   # Token is already set in agent.yaml environment_variables section
+   # For local testing, you can also export it:
+   export GITHUB_TOKEN=your_token_here
+   ```
+
+3. Run the agent locally:
+   ```bash
+   python main.py
+   ```
+
+## Skills Management
+
+Skills are automatically discovered from the `skills/` directory. Each skill should:
+- Be in its own subdirectory
+- Contain a `SKILL.md` file with the skill definition
+- Follow the Claude Code skill format
+
+To add new skills:
+1. Copy skill directories into `skills/`
+2. Restart the agent (main.py auto-discovers skills)
+
+To remove skills:
+1. Delete the skill directory from `skills/`
+2. Restart the agent
+
+## Deployment
+
+This agent can be deployed to Azure AI Foundry. See the main README.md in the deployment root for instructions.
+
+## How It Works
+
+This agent uses GitHub Copilot's API to provide AI-powered assistance. The main.py file:
+- Initializes a Copilot client
+- Auto-discovers skills from the skills/ directory (line 24-25)
+- Passes skills to every Copilot session (line 78)
+- Handles streaming and non-streaming responses
+- Maintains session state for multi-turn conversations
+
+## Troubleshooting
+
+**Skills not loading:**
+- Check that each skill directory contains a valid SKILL.md file
+- Verify the skills/ directory path is correct
+- Review main.py logs for skill discovery issues
+
+**GitHub token issues:**
+- Ensure GITHUB_TOKEN is set in agent.yaml environment_variables section
+- Verify token has Copilot API access
+- Check token format (should start with 'ghp_' or 'github_pat_')
+
+**Local testing fails:**
+- Verify all dependencies are installed
+- Check Python version (3.9+)
+- Review error logs for missing imports
+```
+
+#### Generate Deployment README.md
+
+Use the Write tool to create `README.md` at deployment root:
+
+```markdown
+# <agent-name>-deployment
+
+Azure AI Foundry deployment package for the <agent-name> agent.
+
+## Overview
+
+This directory contains everything needed to deploy your custom GitHub Copilot agent to Azure AI Foundry. The agent includes your custom Claude Code skills and provides AI-powered assistance through the Copilot API.
+
+## Agent Description
+
+<user-description>
+
+## Included Skills
+
+- <skill-1-name>
+- <skill-2-name>
+- ...
+
+See `src/<agent-name>/README.md` for detailed skill information.
+
+## Prerequisites
+
+Before deploying, ensure you have:
+
+1. **Azure Subscription** - Active Azure account with permissions to create resources
+2. **Azure Developer CLI (azd)** - Install from https://aka.ms/azd-install
+3. **GitHub Personal Access Token** - Token with Copilot API access
+4. **Docker** - For local testing (optional)
+
+## Quick Start
+
+### Option 1: Deploy with Claude Code Skill
+
+If you have the deploy-agent-to-foundry skill available:
+
+```bash
+cd <agent-name>-deployment
+# Use the /deploy-agent-to-foundry skill in Claude Code
+```
+
+### Option 2: Manual Deployment
+
+1. Initialize Azure Developer environment:
+   ```bash
+   cd <agent-name>-deployment
+   azd init -t https://github.com/Azure-Samples/azd-ai-starter-basic
+   ```
+
+2. Initialize the AI agent:
+   ```bash
+   azd ai agent init -m src/<agent-name>/agent.yaml
+   ```
+
+3. Deploy to Azure:
+   ```bash
+   azd up
+   ```
+
+4. Follow the prompts to:
+   - Select Azure subscription
+   - Choose Azure location
+   - Create or select AI Foundry project
+
+## Project Structure
+
+```
+<agent-name>-deployment/
+├── src/<agent-name>/          # Agent source code
+│   ├── main.py                # Agent implementation
+│   ├── agent.yaml             # Agent configuration (includes GitHub token)
+│   ├── Dockerfile             # Container configuration
+│   ├── requirements.txt       # Python dependencies
+│   └── skills/                # Custom Claude Code skills
+├── azure.yaml                 # Azure deployment configuration
+├── infra/                     # Azure infrastructure (created by azd init)
+└── README.md                  # This file
+```
+
+## Configuration
+
+### Environment Variables
+
+The agent requires a GitHub Personal Access Token. This is configured directly in `src/<agent-name>/agent.yaml` under the `environment_variables` section:
+
+```yaml
+environment_variables:
+  - name: GITHUB_TOKEN
+    value: your_token_here
+```
+
+**Note**: The token is placed directly in agent.yaml for simplicity during development.
+
+### Agent Configuration
+
+The agent is configured in `src/<agent-name>/agent.yaml`:
+- **name**: <agent-name>
+- **description**: <user-description>
+- **protocols**: Responses v1 (GitHub Copilot protocol)
+- **environment_variables**: GITHUB_TOKEN from Azure Key Vault
+
+## Local Testing
+
+Test your agent locally before deploying:
+
+```bash
+cd src/<agent-name>
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set GitHub token
+export GITHUB_TOKEN=your_token_here
+
+# Run the agent
+python main.py
+```
+
+## Deployment Management
+
+### View Deployment Status
+
+```bash
+azd show
+```
+
+### Update the Agent
+
+After making changes to your agent:
+
+```bash
+azd deploy
+```
+
+### View Logs
+
+```bash
+azd monitor
+```
+
+### Delete Deployment
+
+```bash
+azd down
+```
+
+## Skills Management
+
+Your agent automatically discovers skills from the `src/<agent-name>/skills/` directory. To add or modify skills:
+
+1. Edit skill files in `src/<agent-name>/skills/`
+2. Redeploy: `azd deploy`
+
+No code changes needed - main.py auto-discovers skills!
+
+## Troubleshooting
+
+### Deployment Issues
+
+**azd command not found:**
+- Install Azure Developer CLI: https://aka.ms/azd-install
+
+**Authentication errors:**
+- Run `azd auth login` to authenticate with Azure
+
+**GitHub token errors:**
+- Verify token in agent.yaml environment_variables section
+- Ensure token has Copilot API access
+- Check token format (starts with 'ghp_' or 'github_pat_')
+
+### Agent Issues
+
+**Skills not loading:**
+- Check skill directory structure in `src/<agent-name>/skills/`
+- Verify each skill has a SKILL.md file
+- Review deployment logs: `azd monitor`
+
+**Agent not responding:**
+- Check Azure AI Foundry project status
+- Verify agent deployment: `azd show`
+- Review container logs in Azure Portal
+
+## Additional Resources
+
+- [Azure AI Foundry Documentation](https://learn.microsoft.com/azure/ai-foundry/)
+- [Azure Developer CLI Documentation](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
+- [GitHub Copilot API Documentation](https://docs.github.com/en/copilot)
+- [Claude Code Skills Documentation](https://docs.anthropic.com/claude/docs/skills)
+
+## Support
+
+For issues with:
+- **Agent deployment**: Check Azure AI Foundry documentation
+- **Skills**: Review Claude Code skills documentation
+- **This template**: See the copilot-hosted-agent example
+
+---
+
+Generated by foundry-create-ghcp-agent (Claude Code)
+```
+
+### Phase 5: Validation
+
+Verify the agent was created successfully:
+
+```bash
+# Check all required files exist
+ls -la "<agent-name>-deployment/src/<agent-name>/"
+ls -la "<agent-name>-deployment/"
+
+# Count skills
+find "<agent-name>-deployment/src/<agent-name>/skills" -name "SKILL.md" -type f | wc -l
+
+# Validate YAML syntax (if yamllint available)
+yamllint "<agent-name>-deployment/src/<agent-name>/agent.yaml" 2>/dev/null || echo "YAML validation skipped"
+yamllint "<agent-name>-deployment/azure.yaml" 2>/dev/null || echo "YAML validation skipped"
+
+# Check agent.yaml contains token
+grep "GITHUB_TOKEN" "<agent-name>-deployment/src/<agent-name>/agent.yaml"
+```
+
+Display validation results:
+- ✓ All required files created
+- ✓ Skills copied: <count> skills
+- ✓ Configuration files valid
+- ✓ GitHub token configured
+
+### Phase 6: Summary & Next Steps
+
+Display a comprehensive summary:
+
+```
+Agent Created Successfully!
+
+Agent Name: <agent-name>
+Location: <full-path-to-agent-name-deployment>
+Skills Included: <count>
+
+Skills:
+- <skill-1-name>: <brief-description>
+- <skill-2-name>: <brief-description>
+...
+
+Next Steps:
+<based-on-deployment-preference>
+```
+
+If user chose to deploy later:
+```
+To deploy your agent:
+
+Option 1 (Recommended):
+  cd <agent-name>-deployment
+  # Use /deploy-agent-to-foundry in Claude Code
+
+Option 2 (Manual):
+  cd <agent-name>-deployment
+  azd init -t https://github.com/Azure-Samples/azd-ai-starter-basic
+  azd ai agent init -m src/<agent-name>/agent.yaml
+  azd up
+
+Local Testing:
+  cd <agent-name>-deployment/src/<agent-name>
+  pip install -r requirements.txt
+  export GITHUB_TOKEN=<your-token>
+  python main.py
+```
+
+### Phase 7: Optional Deployment
+
+If user chose to deploy immediately:
+
+1. **Create empty azd deployment directory:**
+   ```bash
+   mkdir "<agent-name>-azd"
+   cd "<agent-name>-azd"
+   ```
+
+2. **Initialize azd with starter template:**
+   ```bash
+   azd init -t https://github.com/Azure-Samples/azd-ai-starter-basic -e <environment-name> --no-prompt
+   ```
+
+3. **Copy agent files to azd directory:**
+   ```bash
+   # Create the src directory structure
+   mkdir -p "src/<agent-name>"
+   
+   # Copy all agent files from the deployment directory
+   cp -r "../<agent-name>-deployment/src/<agent-name>/"* "src/<agent-name>/"
+   ```
+
+4. **Update azure.yaml to include the agent service:**
+   Add the agent service configuration to the azure.yaml file.
+
+5. **Deploy to Azure:**
+   ```bash
+   azd up --no-prompt
+   ```
+
+6. **Display deployment results:**
+   - Show the output from azd up
+   - Include the agent URL and connection details
+   - Run `azd env get-values` to show environment values
+
+### Phase 8: Cleanup
+
+After successful deployment, clean up the temporary agent deployment directory:
+
+```bash
+# Remove the intermediate deployment directory (no longer needed)
+rm -rf "<agent-name>-deployment"
+```
+
+**What remains after cleanup:**
+- `<agent-name>-azd/` - The deployed Azure environment (keep this!)
+  - Contains the agent source in `src/<agent-name>/`
+  - Contains Azure infrastructure in `infra/`
+  - Contains deployment state in `.azure/`
+
+**Note:** Only perform cleanup after confirming deployment was successful. The azd directory contains everything needed to manage, update, and redeploy the agent.
+
+## Error Handling
+
+### Validation Errors
+
+**Skills directory not found:**
+```
+Error: Skills directory not found at <path>
+
+Please provide a valid path to a directory containing skills.
+Each skill should be in its own subdirectory with a SKILL.md file.
+
+Example structure:
+  skills/
+  ├── skill-1/
+  │   └── SKILL.md
+  └── skill-2/
+      └── SKILL.md
+```
+
+**No valid skills found:**
+```
+Error: No valid skills found in <path>
+
+The directory must contain subdirectories with SKILL.md files.
+Found directories but no SKILL.md files.
+
+Please ensure each skill has a SKILL.md file with proper frontmatter.
+```
+
+**Invalid agent name:**
+```
+Error: Invalid agent name "<name>"
+
+Agent name must follow kebab-case format:
+- All lowercase letters
+- Numbers allowed
+- Hyphens to separate words
+- No spaces or special characters
+
+Valid examples:
+- my-agent
+- support-bot
+- dev-assistant-v2
+
+Invalid examples:
+- MyAgent (uppercase)
+- my_agent (underscores)
+- my agent (spaces)
+```
+
+**Directory conflict:**
+```
+Error: Directory already exists: <agent-name>-deployment
+
+Please choose a different agent name or remove the existing directory.
+
+Suggestions:
+- <agent-name>-2
+- <agent-name>-new
+- my-<agent-name>
+```
+
+**Invalid GitHub PAT:**
+```
+Warning: GitHub token format appears invalid
+
+Expected format:
+- Classic token: starts with 'ghp_'
+- Fine-grained token: starts with 'github_pat_'
+
+Your token starts with: <first-4-chars>
+
+Generate a token at: https://github.com/settings/tokens
+
+Continue anyway? (Token will be saved as provided)
+```
+
+**Template not found:**
+```
+Error: Template files not found
+
+Template files should be bundled with this skill at:
+${SKILL_DIR}/template/
+
+Required files: main.py, Dockerfile, agent.yaml, requirements.txt, azure.yaml
+
+This may indicate a corrupted skill installation. Please reinstall the skill.
+```
+
+### File Operation Errors
+
+**Copy failures:**
+```
+Error: Failed to copy <file>
+
+Possible causes:
+- Insufficient permissions
+- Disk space full
+- File is locked or in use
+
+Please check permissions and disk space, then try again.
+```
+
+**YAML generation errors:**
+```
+Error: Failed to generate <file.yaml>
+
+The YAML content could not be written or validated.
+Please check the error details above and try again.
+```
+
+### Recovery
+
+If an error occurs during creation:
+
+1. **Before Phase 4 (file operations)**: Safe to retry immediately
+2. **During Phase 4**: Offer cleanup option
+   ```
+   Error occurred during agent creation.
+
+   Partial files may have been created at:
+   <agent-name>-deployment/
+
+   Would you like to:
+   - Clean up and retry
+   - Keep partial files for inspection
+   - Cancel
+   ```
+
+3. **Cleanup command:**
+   ```bash
+   rm -rf "<agent-name>-deployment"
+   ```
+
+## Key Design Decisions
+
+### Auto-Discovery Architecture
+
+The template's main.py automatically discovers skills (lines 24-25, 78):
+```python
+SKILLS_DIR = (CURRENT_DIR / 'skills').resolve()
+# ...
+"skill_directories": [str(SKILLS_DIR)]
+```
+
+**Benefits:**
+- No code modifications needed
+- Any skills copied to skills/ are automatically available
+- Easy to add/remove skills (just edit directory)
+- Main.py remains unchanged across all custom agents
+
+### No Infrastructure Files
+
+The `infra/` directory is intentionally NOT created because:
+- `azd init` generates it with environment-specific settings
+- Copying a template infra/ might include hardcoded values
+- Reduces maintenance burden (Azure handles infrastructure templates)
+- Prevents conflicts with Azure-managed configurations
+
+### Integration with deploy-agent-to-foundry
+
+Rather than duplicating deployment logic:
+- Create the agent structure ready for deployment
+- Optionally invoke existing deploy-agent-to-foundry skill
+- Maintains separation of concerns (creation vs deployment)
+- User can deploy now or later
+- Reuses tested deployment workflow
+
+## Implementation Notes
+
+### Tools to Use
+
+- **AskUserQuestion**: For all user input collection (5 questions)
+- **Bash**: For file operations (mkdir, cp, ls, find, grep, validation)
+- **Write**: For generating customized files (agent.yaml, azure.yaml, READMEs)
+- **Read**: For extracting skill information from SKILL.md files
+- **Grep**: For finding SKILL.md files and extracting frontmatter
+- **Skill**: For optional deployment (invoke deploy-agent-to-foundry)
+
+### Execution Flow
+
+1. Collect all inputs upfront (Phase 1)
+2. Validate everything before file operations (Phase 2)
+3. Create directories (Phase 3)
+4. Perform all file operations (Phase 4)
+5. Validate creation (Phase 5)
+6. Show summary (Phase 6)
+7. Optionally deploy (Phase 7)
+
+### Progress Indicators
+
+Show clear progress throughout:
+```
+Step 1/7: Collecting information...
+Step 2/7: Validating inputs...
+Step 3/7: Creating directory structure...
+Step 4/7: Copying files and generating configurations...
+Step 5/7: Validating agent creation...
+Step 6/7: Agent created successfully!
+Step 7/7: Deploying to Azure... (if selected)
+```
+
+## Testing Checklist
+
+Before considering this skill complete:
+
+- [ ] Skills directory validation works
+- [ ] Agent name validation enforces kebab-case
+- [ ] GitHub PAT validation warns on invalid format
+- [ ] Directory conflict detection works
+- [ ] Template files copy correctly
+- [ ] Skills copy to correct location
+- [ ] agent.yaml generates with correct substitutions
+- [ ] azure.yaml generates with correct substitutions
+- [ ] agent.yaml contains GitHub token in environment_variables
+- [ ] READMEs generate with skill information
+- [ ] Validation reports correct file counts
+- [ ] Optional deployment invokes deploy-agent-to-foundry
+- [ ] Error messages are clear and actionable
+- [ ] Cleanup works if errors occur
+
+## Success Criteria
+
+The skill is successful when:
+1. User can create a working agent in under 5 minutes
+2. Agent structure is correctly generated with all required files
+3. Skills are properly integrated and auto-discovered
+4. All configuration files are valid YAML
+5. GitHub token is correctly configured
+6. README files provide clear documentation
+7. Optional deployment works seamlessly
+8. Error messages guide users through issues
+9. Local testing works (python main.py)
+10. Deployed agent includes all skills
