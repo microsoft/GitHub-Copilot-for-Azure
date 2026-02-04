@@ -1,0 +1,6 @@
+name: swa-test-static-subfolder
+services:
+  web:
+    project: ./src/web
+    host: staticwebapp
+    dist: .

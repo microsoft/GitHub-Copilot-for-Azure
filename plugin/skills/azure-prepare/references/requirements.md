@@ -1,6 +1,8 @@
 # Requirements Gathering
 
-> **⛔ BLOCKING REQUIREMENT**: You MUST complete ALL sections in this document, including subscription and location selection, BEFORE proceeding to Step 3 (Scan Codebase) or any artifact generation. Do NOT skip or assume values.
+> **⛔ BLOCKING REQUIREMENT**: You MUST complete ALL sections in this document, including subscription selection, BEFORE proceeding to Step 3 (Scan Codebase). Do NOT skip or assume values.
+>
+> **Note**: Location/region selection happens AFTER architecture planning (Step 5) so we can filter regions by service availability.
 
 Collect project requirements through conversation before making architecture decisions.
 
@@ -38,33 +40,48 @@ Collect project requirements through conversation before making architecture dec
 | Industry regulations | Security controls |
 | Internal policies | Approval workflows |
 
-### 5. Azure Subscription & Location
+### 5. Azure Subscription
 
 > **⛔ BLOCKING REQUIREMENT — DO NOT SKIP**
 >
-> You **MUST** use the `ask_user` tool to prompt the user for subscription and location. Do NOT:
-> - Assume or guess which subscription to use
-> - Auto-select a subscription based on name patterns (e.g., "personal", "dev")
-> - Proceed to artifact generation without explicit user confirmation
-> - Use `az` or `azd` commands to set subscription/location without user approval
+> You **MUST** detect and display the current subscription BEFORE asking the user to choose.
+> Do NOT show generic options like "Use default subscription" — you MUST show the actual subscription name and ID.
 >
-> **STOP HERE** until the user has confirmed both subscription AND location.
+> **Note**: Location selection happens in Step 5 (Architecture) after services are determined.
 
 **Subscription Selection:**
-1. First, run `az account show --query "{name:name, id:id}" -o tsv` to get the current default subscription
-2. Use `ask_user` with the current subscription shown in the question, e.g.:
-   - Question: "Which Azure subscription do you want to use? Your current default is: **{subscription-name}** (`{subscription-id}`)"
-   - Choices: ["Use current: {subscription-name} (Recommended)", "Let me choose a different subscription"]
+
+1. **FIRST: Detect the current subscription** (do this BEFORE calling ask_user):
+   ```powershell
+   # For existing azd projects:
+   azd env get-values 2>$null | Select-String "AZURE_SUBSCRIPTION_ID"
+   
+   # For az CLI default:
+   az account show --query "{name:name, id:id}" -o json
+   ```
+
+2. **THEN: Use `ask_user` with the ACTUAL subscription name/ID in the prompt:**
+   
+   ✅ **CORRECT** (shows actual values):
+   ```
+   Question: "Which Azure subscription would you like to deploy to?"
+   Choices: [
+     "Use current: jongdevdiv (25fd0362-aa79-488b-b37b-d6e892009fdf) (Recommended)",
+     "Let me specify a different subscription"
+   ]
+   ```
+   
+   ❌ **WRONG** (generic - do NOT do this):
+   ```
+   Choices: [
+     "Use default subscription",    // ← WRONG: doesn't show the actual name
+     "Let me specify a subscription"
+   ]
+   ```
+
 3. If user wants a different subscription, run `az account list --output table` and ask again with the list
 4. Wait for explicit user selection before proceeding
 5. Record the confirmed subscription ID in the manifest
-
-**Location Selection:**
-1. Use `ask_user` to ask: "Which Azure region/location do you prefer?" with common choices
-2. Suggested choices: `eastus`, `westus2`, `westeurope`, `northeurope`, `southeastasia`
-3. Consider mentioning factors: data residency, latency, service availability, cost
-4. Wait for explicit user selection before proceeding
-5. Record the confirmed location in the manifest
 
 ## Gather via Conversation
 
@@ -73,12 +90,13 @@ Use `ask_user` tool to confirm each of these with the user:
 1. Project classification (POC/Dev/Prod)
 2. Expected scale
 3. Budget constraints
-4. Compliance requirements
+4. Compliance requirements (including data residency preferences)
 5. Architecture preferences (if any)
 6. **Azure subscription** — REQUIRED, must use `ask_user`, do NOT auto-select
-7. **Azure location/region** — REQUIRED, must use `ask_user`, do NOT assume
 
-**Do not assume defaults without confirmation. Do NOT proceed to Step 3 or artifact generation until items 6 and 7 are confirmed by the user.**
+**Do not assume defaults without confirmation. Do NOT proceed to Step 3 until subscription is confirmed by the user.**
+
+> **Note**: Location/region selection is deferred to Step 5 (Architecture) so we can present only regions that support all selected Azure services.
 
 ## Document in Manifest
 
