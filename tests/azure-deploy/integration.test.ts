@@ -47,8 +47,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-        } catch (e: any) {
-          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
           }
@@ -74,8 +74,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-        } catch (e: any) {
-          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
           }
@@ -101,8 +101,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-        } catch (e: any) {
-          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
           }
@@ -122,15 +122,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Static Web Apps (SWA)
   describe("static-web-apps-deploy", () => {
-    test('creates whiteboard application and deploys to Azure', async () => {
+    test("creates whiteboard application and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a static whiteboard web app and deploy to azure using my current subscription in eastus region.',
+        prompt: "Create a static whiteboard web app and deploy to azure using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -139,15 +139,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(containsDeployLinks).toBe(true);
     });
 
-    test('creates static portfolio website and deploys to Azure', async () => {
+    test("creates static portfolio website and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a static portfolio website and deploy to Azure using my current subscription in eastus region.',
+        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -159,15 +159,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // App Service
   describe("app-service-deploy", () => {
-    test('creates discussion board and deploys to Azure', async () => {
+    test("creates discussion board and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.',
+        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -176,15 +176,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(containsDeployLinks).toBe(true);
     });
 
-    test('creates todo list with frontend and API and deploys to Azure', async () => {
+    test("creates todo list with frontend and API and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.',
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.",
         nonInteractive: true    
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -196,15 +196,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Azure Functions
   describe("azure-functions-deploy", () => {
-    test('creates serverless HTTP API and deploys to Azure Functions', async () => {
+    test("creates serverless HTTP API and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus region.',
+        prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -213,15 +213,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(containsDeployLinks).toBe(true);
     });
 
-    test('creates event-driven function app and deploys to Azure Functions', async () => {
+    test("creates event-driven function app and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
-        prompt: 'Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus region.',
+        prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -233,15 +233,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Azure Container Apps (ACA)
   describe("azure-container-apps-deploy", () => {
-    test('creates containerized web application and deploys to Azure Container Apps', async () => {
+    test("creates containerized web application and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus region.',
+        prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
@@ -250,15 +250,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(containsDeployLinks).toBe(true);
     });
 
-    test('creates simple containerized Node.js app and deploys to Azure Container Apps', async () => {
+    test("creates simple containerized Node.js app and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
-        prompt: 'Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus region.',
+        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus region.",
         nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, 'azure-validate');
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, 'azure-prepare');
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(isSkillUsed).toBe(true);

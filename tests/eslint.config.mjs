@@ -40,6 +40,7 @@ export default tseslint.config(
             "prefer-const": "error",
             "no-var": "error",
             "eqeqeq": ["error", "always", { null: "ignore" }],
+            "quotes": ["error", "double", { "avoidEscape": true }],
         },
     },
     {
@@ -47,6 +48,23 @@ export default tseslint.config(
         files: ["**/utils/**/*.ts", "**/scripts/**/*.ts"],
         rules: {
             "no-console": "off",
+        },
+    },
+    {
+        // CommonJS JavaScript files - allow Node.js globals and require
+        files: ["**/scripts/**/*.js"],
+        languageOptions: {
+            globals: {
+                console: "readonly",
+                process: "readonly",
+                module: "readonly",
+                require: "readonly",
+                __dirname: "readonly",
+                __filename: "readonly",
+            },
+        },
+        rules: {
+            "@typescript-eslint/no-require-imports": "off",
         },
     },
     {

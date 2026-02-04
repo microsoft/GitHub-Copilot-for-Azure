@@ -12,26 +12,10 @@
  * and executes with full process permissions. Only use with trusted test code.
  */
 
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import { type CopilotClient } from '@github/copilot-sdk';
-
-// Type definitions for the SDK (defined locally to avoid import issues)
-export interface SessionEvent {
-  type: string;
-  data: {
-    messageId?: string;
-    content?: string;
-    deltaContent?: string;
-    toolName?: string;
-    toolCallId?: string;
-    arguments?: unknown;
-    success?: boolean;
-    message?: string;
-    [key: string]: unknown;
-  };
-}
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { type CopilotSession, type CopilotClient, type SessionEvent } from "@github/copilot-sdk";
 
 export interface AgentMetadata {
   events: SessionEvent[];
@@ -54,8 +38,8 @@ export interface KeywordOptions {
 }
 
 // Lazy-loaded SDK
-let CopilotClientClass: any = null;
-let sdkLoadError: Error | null = null;
+let CopilotClientClass: typeof CopilotClient | undefined;
+let sdkLoadError: Error | undefined;
 
 async function getCopilotClient() {
   if (sdkLoadError) {
@@ -64,24 +48,23 @@ async function getCopilotClient() {
   if (!CopilotClientClass) {
     try {
       // Manually construct the SDK path to bypass Jest's module resolution
-      const sdkPath = path.join(__dirname, '..', 'node_modules', '@github', 'copilot-sdk', 'dist', 'index.js');
-      const { pathToFileURL } = await import('url');
+      const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "dist", "index.js");
+      const { pathToFileURL } = await import("url");
       const sdkUrl = pathToFileURL(sdkPath).href;
       if (process.env.DEBUG) {
-        console.log('SDK path:', sdkPath);
-        console.log('SDK URL:', sdkUrl);
+        console.log("SDK path:", sdkPath);
+        console.log("SDK URL:", sdkUrl);
       }
       // Use eval to bypass Jest's static import() transformation
-      // eslint-disable-next-line no-eval
-      const dynamicImport = eval('(url) => import(url)');
+      const dynamicImport = eval("(url) => import(url)");
       const sdk = await dynamicImport(sdkUrl);
       CopilotClientClass = sdk.CopilotClient;
     } catch (error) {
-      const errorMsg = (error as Error).message + '\n' + (error as Error).stack;
+      const errorMsg = (error as Error).message + "\n" + (error as Error).stack;
       if (process.env.DEBUG) {
-        console.error('SDK load error:', errorMsg);
+        console.error("SDK load error:", errorMsg);
       }
-      sdkLoadError = new Error('Failed to load @github/copilot-sdk. Ensure Node.js has ESM support and the SDK is installed. Error: ' + errorMsg);
+      sdkLoadError = new Error("Failed to load @github/copilot-sdk. Ensure Node.js has ESM support and the SDK is installed. Error: " + errorMsg);
       throw sdkLoadError;
     }
   }
@@ -95,14 +78,14 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
   const lines: string[] = [];
 
   // User Prompt section
-  lines.push('# User Prompt');
-  lines.push('');
+  lines.push("# User Prompt");
+  lines.push("");
   lines.push(config.prompt);
-  lines.push('');
+  lines.push("");
 
   // Process events in chronological order
-  lines.push('# Assistant');
-  lines.push('');
+  lines.push("# Assistant");
+  lines.push("");
 
   // Track message deltas to reconstruct full messages
   const messageDeltas: Record<string, string> = {};
@@ -111,7 +94,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
 
   // First pass: collect all tool results
   for (const event of agentMetadata.events) {
-    if (event.type === 'tool.execution_complete') {
+    if (event.type === "tool.execution_complete") {
       const toolCallId = event.data.toolCallId as string;
       const result = event.data.result as { content?: string } | undefined;
       const error = event.data.error as { message?: string } | undefined;
@@ -126,68 +109,68 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
   // Second pass: generate output in order
   for (const event of agentMetadata.events) {
     switch (event.type) {
-      case 'assistant.message': {
+      case "assistant.message": {
         const content = event.data.content as string;
         if (content) {
           lines.push(content);
-          lines.push('');
+          lines.push("");
         }
         break;
       }
 
-      case 'assistant.message_delta': {
+      case "assistant.message_delta": {
         // Accumulate deltas for streaming - we'll use the final message instead
         const messageId = event.data.messageId as string;
         const deltaContent = event.data.deltaContent as string;
         if (messageId && deltaContent) {
-          messageDeltas[messageId] = (messageDeltas[messageId] || '') + deltaContent;
+          messageDeltas[messageId] = (messageDeltas[messageId] || "") + deltaContent;
         }
         break;
       }
 
-      case 'assistant.reasoning': {
+      case "assistant.reasoning": {
         const content = event.data.content as string;
         if (content) {
-          lines.push('> **Reasoning:**');
-          lines.push('> ' + content.split('\n').join('\n> '));
-          lines.push('');
+          lines.push("> **Reasoning:**");
+          lines.push("> " + content.split("\n").join("\n> "));
+          lines.push("");
         }
         break;
       }
 
-      case 'assistant.reasoning_delta': {
+      case "assistant.reasoning_delta": {
         // Accumulate reasoning deltas
         const reasoningId = event.data.reasoningId as string;
         const deltaContent = event.data.deltaContent as string;
         if (reasoningId && deltaContent) {
-          reasoningDeltas[reasoningId] = (reasoningDeltas[reasoningId] || '') + deltaContent;
+          reasoningDeltas[reasoningId] = (reasoningDeltas[reasoningId] || "") + deltaContent;
         }
         break;
       }
 
-      case 'tool.execution_start': {
+      case "tool.execution_start": {
         const toolName = event.data.toolName as string;
         const toolCallId = event.data.toolCallId as string;
         const args = event.data.arguments;
 
         // Check if this is a skill invocation
-        if (toolName === 'skill') {
+        if (toolName === "skill") {
           const argsStr = JSON.stringify(args);
           // Extract skill name from arguments
           const skillMatch = argsStr.match(/"skill"\s*:\s*"([^"]+)"/);
-          const skillName = skillMatch ? skillMatch[1] : 'unknown';
-          lines.push('```');
+          const skillName = skillMatch ? skillMatch[1] : "unknown";
+          lines.push("```");
           lines.push(`skill: ${skillName}`);
-          lines.push('```');
+          lines.push("```");
         } else {
           // Regular tool call
-          let argsJson = '{}';
+          let argsJson = "{}";
           try {
             argsJson = JSON.stringify(args, null, 2);
           } catch {
             argsJson = String(args);
           }
-          lines.push('```');
+          lines.push("```");
           lines.push(`tool: ${toolName}`);
           lines.push(`arguments: ${argsJson}`);
 
@@ -197,71 +180,71 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
             if (result.success && result.content) {
               let content = result.content;
               if (content.length > 500) {
-                content = content.substring(0, 500) + '... (truncated)';
+                content = content.substring(0, 500) + "... (truncated)";
               }
               lines.push(`response: ${content}`);
             } else if (!result.success && result.error) {
               let error = result.error;
               if (error.length > 500) {
-                error = error.substring(0, 500) + '... (truncated)';
+                error = error.substring(0, 500) + "... (truncated)";
               }
               lines.push(`error: ${error}`);
             }
           }
-          lines.push('```');
+          lines.push("```");
         }
-        lines.push('');
+        lines.push("");
         break;
       }
 
-      case 'subagent.started': {
+      case "subagent.started": {
         const agentName = event.data.agentName as string;
         const agentDisplayName = event.data.agentDisplayName as string;
-        lines.push('```');
+        lines.push("```");
         lines.push(`subagent.started: ${agentDisplayName || agentName}`);
-        lines.push('```');
-        lines.push('');
+        lines.push("```");
+        lines.push("");
         break;
       }
 
-      case 'subagent.completed': {
+      case "subagent.completed": {
         const agentName = event.data.agentName as string;
-        lines.push('```');
+        lines.push("```");
         lines.push(`subagent.completed: ${agentName}`);
-        lines.push('```');
-        lines.push('');
+        lines.push("```");
+        lines.push("");
         break;
       }
 
-      case 'subagent.failed': {
+      case "subagent.failed": {
         const agentName = event.data.agentName as string;
         const error = event.data.error as string;
-        let errorMsg = error || 'unknown error';
+        let errorMsg = error || "unknown error";
         if (errorMsg.length > 500) {
-          errorMsg = errorMsg.substring(0, 500) + '... (truncated)';
+          errorMsg = errorMsg.substring(0, 500) + "... (truncated)";
         }
-        lines.push('```');
+        lines.push("```");
         lines.push(`subagent.failed: ${agentName}`);
         lines.push(`error: ${errorMsg}`);
-        lines.push('```');
-        lines.push('');
+        lines.push("```");
+        lines.push("");
         break;
       }
 
-      case 'session.error': {
+      case "session.error": {
         const message = event.data.message as string;
         const errorType = event.data.errorType as string;
-        lines.push('```');
-        lines.push(`session.error: ${errorType || 'unknown'}`);
-        lines.push(`message: ${message || 'unknown error'}`);
-        lines.push('```');
-        lines.push('');
+        lines.push("```");
+        lines.push(`session.error: ${errorType || "unknown"}`);
+        lines.push(`message: ${message || "unknown error"}`);
+        lines.push("```");
+        lines.push("");
         break;
       }
     }
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -278,7 +261,7 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
     }
 
     const markdown = generateMarkdownReport(config, agentMetadata);
-    fs.writeFileSync(filePath, markdown, 'utf-8');
+    fs.writeFileSync(filePath, markdown, "utf-8");
 
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${filePath}`);
@@ -286,7 +269,7 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
   } catch (error) {
     // Don't fail the test if report generation fails
     if (process.env.DEBUG) {
-      console.error('Failed to write markdown report:', error);
+      console.error("Failed to write markdown report:", error);
     }
   }
 }
@@ -297,11 +280,11 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
 export async function run(config: TestConfig): Promise<AgentMetadata> {
   const CopilotClient = await getCopilotClient();
 
-  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-test-'));
+  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
 
   // Declare client and session outside try block to ensure cleanup in finally
   let client: CopilotClient | undefined;
-  let session: any;
+  let session: CopilotSession | undefined;
 
   try {
     // Run optional setup
@@ -312,29 +295,29 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     // Copilot client with yolo mode and non-interactive session.
     // Enables longer chats with full conversation history for the skill.
     // -p must come first before other args.
-    let cliArgs: string[] = config.nonInteractive ? ['-p', '--yolo'] : [];
+    const cliArgs: string[] = config.nonInteractive ? ["-p", "--yolo"] : [];
     if (process.env.DEBUG) {
-      cliArgs.push('--log-dir');
+      cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
 
-    client = new CopilotClient({
-      logLevel: process.env.DEBUG ? 'all' : 'error',
+    client = new CopilotClient!({
+      logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
     }) as CopilotClient;
 
-    const skillDirectory = path.resolve(__dirname, '../../plugin/skills');
+    const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
     session = await client.createSession({
-      model: 'claude-sonnet-4.5',
+      model: "claude-sonnet-4.5",
       skillDirectories: [skillDirectory],
       mcpServers: {
         azure: {
-          type: 'stdio',
-          command: 'npx',
-          args: ['-y', '@azure/mcp', 'server', 'start'],
-          tools: ['*']
+          type: "stdio",
+          command: "npx",
+          args: ["-y", "@azure/mcp", "server", "start"],
+          tools: ["*"]
         }
       },
       systemMessage: config.systemPrompt
@@ -348,7 +331,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
           console.log(`=== session event ${event.type}`);
         }
 
-        if (event.type === 'session.idle') {
+        if (event.type === "session.idle") {
           resolve();
           return;
         }
@@ -360,7 +343,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
         if (config.shouldEarlyTerminate) {
           if (config.shouldEarlyTerminate(agentMetadata)) {
             resolve();
-            session!.abort();
+            void session!.abort();
             return;
           }
         }
@@ -375,7 +358,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     return agentMetadata;
   } catch (error) {
-    console.error('Agent runner error:', error);
+    console.error("Agent runner error:", error);
     throw error;
   } finally {
     // Cleanup session and client (guarded if undefined)
@@ -409,8 +392,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
  */
 export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string): boolean {
   return agentMetadata.events
-    .filter(event => event.type === 'tool.execution_start')
-    .filter(event => event.data.toolName === 'skill')
+    .filter(event => event.type === "tool.execution_start")
+    .filter(event => event.data.toolName === "skill")
     .some(event => {
       const args = event.data.arguments;
       return JSON.stringify(args).includes(skillName);
@@ -420,17 +403,17 @@ export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string):
 /**
  * Check if all tool calls for a given tool were successful
  */
-export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName: string | null = null): boolean {
+export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName?: string): boolean {
   let executionStartEvents = agentMetadata.events
-    .filter(event => event.type === 'tool.execution_start');
+    .filter(event => event.type === "tool.execution_start");
 
-  if (toolName != null) {
+  if (toolName) {
     executionStartEvents = executionStartEvents
       .filter(event => event.data.toolName === toolName);
   }
 
   const executionCompleteEvents = agentMetadata.events
-    .filter(event => event.type === 'tool.execution_complete');
+    .filter(event => event.type === "tool.execution_complete");
 
   return executionStartEvents.length > 0 && executionStartEvents.every(startEvent => {
     const toolCallId = startEvent.data.toolCallId;
@@ -452,14 +435,14 @@ export function doesAssistantMessageIncludeKeyword(
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
-    if (event.type === 'assistant.message' && event.data.messageId && event.data.content) {
+    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
     }
-    if (event.type === 'assistant.message_delta' && event.data.messageId) {
+    if (event.type === "assistant.message_delta" && event.data.messageId) {
       if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? '';
+        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
       } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? '';
+        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
       }
     }
   });
@@ -475,8 +458,8 @@ export function doesAssistantMessageIncludeKeyword(
 /**
  * Get all tool calls made during the session
  */
-export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | null = null): SessionEvent[] {
-  let calls = agentMetadata.events.filter(event => event.type === 'tool.execution_start');
+export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): SessionEvent[] {
+  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
 
   if (toolName) {
     calls = calls.filter(event => event.data.toolName === toolName);
@@ -486,7 +469,7 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName: string | nu
 }
 
 // Track skip reason for reporting
-let integrationSkipReason: string | null = null;
+let integrationSkipReason: string | undefined;
 
 /**
  * Check if integration tests should be skipped
@@ -497,34 +480,32 @@ let integrationSkipReason: string | null = null;
  */
 export function shouldSkipIntegrationTests(): boolean {
   // Skip if explicitly requested
-  if (process.env.SKIP_INTEGRATION_TESTS === 'true') {
-    integrationSkipReason = 'SKIP_INTEGRATION_TESTS=true';
+  if (process.env.SKIP_INTEGRATION_TESTS === "true") {
+    integrationSkipReason = "SKIP_INTEGRATION_TESTS=true";
     return true;
   }
 
   // Check if SDK package exists
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const sdkPath = path.join(__dirname, '..', 'node_modules', '@github', 'copilot-sdk', 'package.json');
+    const fs = require("fs");
+    const path = require("path");
+    const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "package.json");
     if (!fs.existsSync(sdkPath)) {
-      integrationSkipReason = '@github/copilot-sdk not installed';
+      integrationSkipReason = "@github/copilot-sdk not installed";
       return true;
     }
   } catch {
-    integrationSkipReason = '@github/copilot-sdk not installed';
+    integrationSkipReason = "@github/copilot-sdk not installed";
     return true;
   }
 
-  // SDK installed, tests should attempt to run
-  integrationSkipReason = null;
   return false;
 }
 
 /**
  * Get the reason why integration tests are being skipped
  */
-export function getIntegrationSkipReason(): string | null {
+export function getIntegrationSkipReason(): string | undefined {
   return integrationSkipReason;
 }
 
@@ -533,7 +514,7 @@ export function getIntegrationSkipReason(): string | null {
  */
 const DEPLOY_LINK_PATTERNS = [
   // Azure Portal resource links
-  /https:\/\/portal\.azure\.com\/#[@\/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/i,
+  /https:\/\/portal\.azure\.com\/#[@/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/i,
   // Azure App Service URLs
   /https?:\/\/[\w-]+\.azurewebsites\.net/i,
   // Azure Static Web Apps URLs
@@ -541,7 +522,7 @@ const DEPLOY_LINK_PATTERNS = [
   // Azure Container Apps URLs
   /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/i,
   // Azure Portal direct links
-  /https:\/\/portal\.azure\.com\/#blade\/[\w\/]+/i,
+  /https:\/\/portal\.azure\.com\/#blade\/[\w/]+/i,
 ];
 
 /**
@@ -551,19 +532,19 @@ function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
-    if (event.type === 'assistant.message' && event.data.messageId && event.data.content) {
+    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
     }
-    if (event.type === 'assistant.message_delta' && event.data.messageId) {
+    if (event.type === "assistant.message_delta" && event.data.messageId) {
       if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? '';
+        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
       } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? '';
+        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
       }
     }
   });
 
-  return Object.values(allMessages).join('\n');
+  return Object.values(allMessages).join("\n");
 }
 
 /**
@@ -575,11 +556,11 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
   return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
 }
 
-const DEFAULT_REPORT_DIR = path.join(__dirname, '..', 'reports');
-const TIME_STAMP = new Date().toISOString().replace(/[:.]/g, '-');
+const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
+const TIME_STAMP = new Date().toISOString().replace(/[:.]/g, "-");
 
 export function buildShareFilePath(): string {
-  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, '-')}.md`);
+  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
 }
 
 export function buildLogFilePath(): string {
@@ -590,7 +571,7 @@ function getTestName(): string {
   try {
     // Jest provides expect.getState() with current test info
     const state = expect.getState();
-    const testName = state.currentTestName ?? 'unknown-test';
+    const testName = state.currentTestName ?? "unknown-test";
     // Sanitize for use as filename
     return sanitizeFileName(testName);
   } catch {
@@ -604,10 +585,10 @@ function getTestName(): string {
  */
 function sanitizeFileName(name: string): string {
   return name
-    .replace(/[<>:"/\\|?*]/g, '-') // Replace invalid chars
-    .replace(/\s+/g, '_')           // Replace spaces with underscores
-    .replace(/-+/g, '-')            // Collapse multiple dashes
-    .replace(/_+/g, '_')            // Collapse multiple underscores
-    .replace(/_-_/g, '-')
+    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
+    .replace(/\s+/g, "_")           // Replace spaces with underscores
+    .replace(/-+/g, "-")            // Collapse multiple dashes
+    .replace(/_+/g, "_")            // Collapse multiple underscores
+    .replace(/_-_/g, "-")
     .substring(0, 200);             // Limit length
 }
