@@ -10,6 +10,17 @@ description: |
 
 This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, RAG (Retrieval-Augmented Generation) applications, AI agent creation, evaluation workflows, and troubleshooting.
 
+## Sub-Skills
+
+This skill includes specialized sub-skills for specific workflows. **Use these instead of the main skill when they match your task:**
+
+| Sub-Skill | When to Use | Reference |
+|-----------|-------------|-----------|
+| **agent/create** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [agent/create/create-ghcp-agent.md](agent/create/create-ghcp-agent.md) |
+| **agent/deploy** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [agent/deploy/deploy-agent.md](agent/deploy/deploy-agent.md) |
+
+> 💡 **Tip:** If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
+
 ## When to Use This Skill
 
 Use this skill when the user wants to:
