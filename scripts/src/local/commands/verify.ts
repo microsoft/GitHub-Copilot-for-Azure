@@ -195,10 +195,22 @@ function fixCopilotConfig(
   const expectedCachePath = getInstalledPluginPath();
   const staleNames = new Set(stalePlugins.map(p => `${p.name}|${p.cache_path}`));
   
-  // Filter out stale plugins and fix misconfigured ones
-  result.config.installed_plugins = result.config.installed_plugins
-    .filter((p: InstalledPlugin) => !staleNames.has(`${p.name}|${p.cache_path}`))
-    .map((p: InstalledPlugin) => {
+  // Helper to check if entry is a valid plugin object
+  const isValidPlugin = (p: unknown): p is InstalledPlugin => {
+    if (!p || typeof p !== 'object') return false;
+    const candidate = p as Record<string, unknown>;
+    return typeof candidate.name === 'string' && typeof candidate.cache_path === 'string';
+  };
+
+  // Filter out stale plugins and fix misconfigured ones, preserving malformed entries
+  result.config.installed_plugins = (result.config.installed_plugins as unknown[])
+    .map((p: unknown) => {
+      // Skip malformed entries - leave them untouched
+      if (!isValidPlugin(p)) return p;
+      
+      // Remove stale plugins
+      if (staleNames.has(`${p.name}|${p.cache_path}`)) return null;
+      
       // Fix misconfigured plugins
       const isMisconfigured = misconfiguredPlugins.some(
         mp => mp.name === p.name && mp.cache_path === p.cache_path
@@ -207,7 +219,8 @@ function fixCopilotConfig(
         return { ...p, cache_path: expectedCachePath };
       }
       return p;
-    });
+    })
+    .filter((p: unknown): p is InstalledPlugin => p !== null) as InstalledPlugin[];
 
   return writeCopilotConfig(result.config);
 }

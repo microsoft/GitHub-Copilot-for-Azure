@@ -95,8 +95,7 @@ jobs:
           cat combined-report.md >> $GITHUB_STEP_SUMMARY
 
       - name: Comment on PR
-        if: steps.changed-files.outputs.any_changed == 'true'
-        continue-on-error: true  # Fork PRs have restricted permissions
+        if: steps.changed-files.outputs.any_changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |

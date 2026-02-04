@@ -39,30 +39,16 @@ az account show
 
 ### Deploy All Tests
 
-**Node.js (cross-platform):**
 ```bash
 node test-swa-patterns.js --subscription "<your-subscription-id>"
 node test-swa-patterns.js --subscription "<your-subscription-id>" --location westus2
 node test-swa-patterns.js --subscription "<your-subscription-id>" --skip-deploy  # report only
 ```
 
-**PowerShell:**
-```powershell
-.\test-swa-patterns.ps1 -SubscriptionId "<your-subscription-id>"
-.\test-swa-patterns.ps1 -SubscriptionId "<your-subscription-id>" -Location westus2
-.\test-swa-patterns.ps1 -SubscriptionId "<your-subscription-id>" -SkipDeploy  # report only
-```
-
 ### Clean Up
 
-**Node.js (cross-platform):**
 ```bash
 node cleanup-swa-tests.js
-```
-
-**PowerShell:**
-```powershell
-.\cleanup-swa-tests.ps1
 ```
 
 ## Expected Results

@@ -25,7 +25,7 @@ These errors can be caught **before** running `azd up`:
 | `language 'html' is not supported` | Invalid language value | Omit `language` for pure static sites |
 | `language 'static' is not supported` | Invalid language value | Omit `language` for pure static sites |
 | `dist folder not found` | Wrong dist path or missing build | Check `dist` is relative to `project`; add `language: js` if build needed |
-| `LocationNotAvailableForResourceType` | SWA not in region | See [region-availability.md](../../../../../azure-prepare/references/region-availability.md) for valid regions |
+| `LocationNotAvailableForResourceType` | SWA not in region | See [region-availability.md](../../../../azure-prepare/references/region-availability.md) for valid regions |
 
 ## SWA Path Validation
 
