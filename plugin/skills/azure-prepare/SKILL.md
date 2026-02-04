@@ -31,6 +31,7 @@ Activate this skill when user wants to:
 4. Follow linked references for best practices and guidance
 5. Update `.azure/preparation-manifest.md` after each phase
 6. Invoke **azure-validate** before any deployment
+7. **ALWAYS use `azd init -t <template>`** when a matching template exists in the decision tree
 
 > **⛔ MANDATORY USER CONFIRMATION REQUIRED**
 >

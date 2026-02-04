@@ -54,7 +54,12 @@ Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com
 
 8. Does it use Event Hubs for streaming?
    Indicators: EventHubTrigger, @app.event_hub, event_hub_output, streaming
-   └─► YES → Use Event Hubs Template: https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/
+   └─► YES → Use Event Hubs Template:
+       | Runtime | Template Command |
+       |---------|-----------------|
+       | .NET | `azd init -t Azure-Samples/functions-quickstart-dotnet-azd-eventhub` |
+       | Python | `azd init -t Azure-Samples/functions-quickstart-python-azd-eventhub` |
+       | TypeScript/JS | No template yet. Use .NET or Python template infra, adapt azure.yaml for Node.js |
 
 9. Does it use Event Grid for pub/sub?
    Indicators: EventGridTrigger, @app.event_grid, event_grid_output, external events
@@ -167,6 +172,201 @@ When using azd templates, the following resources are created:
 | Event Grid | Event-driven |
 | Cosmos DB | Change feed processing |
 | Service Bus | Enterprise messaging |
+
+## TypeScript .funcignore Configuration
+
+When deploying TypeScript Azure Functions, configure `.funcignore` based on your build approach:
+
+### Remote Build (Recommended)
+
+**Remote build** uploads TypeScript source code and lets Azure's Oryx build system compile it remotely.
+
+**Correct `.funcignore` for remote build:**
+```
+*.js.map
+.git*
+.vscode
+__azurite_db*__.json
+__blobstorage__
+__queuestorage__
+local.settings.json
+test
+node_modules/
+```
+
+**Critical rules:**
+- ✅ **MUST exclude** `node_modules/` - prevents uploading local binaries with incorrect permissions
+- ✅ **MUST NOT exclude** `*.ts` files - Oryx needs source code
+- ✅ **MUST NOT exclude** `tsconfig.json` - Oryx needs compilation config
+
+**Common errors:**
+```
+Error: sh: 1: tsc: Permission denied
+```
+**Root cause:** Local `node_modules/` uploaded with wrong permissions, or TypeScript source excluded.
+
+**Reference:** [TypeScript .funcignore fix PR](https://github.com/Azure-Samples/remote-mcp-functions-typescript/pull/35)
+
+### Local Build (Alternative)
+
+**Local build** compiles TypeScript locally and uploads only JavaScript files.
+
+**`.funcignore` for local build:**
+```
+*.ts
+tsconfig.json
+.git*
+.vscode
+local.settings.json
+test
+```
+
+**azure.yaml configuration:**
+```yaml
+services:
+  functions:
+    project: ./src/functions
+    language: js  # Use 'js' not 'ts' for local build
+    host: function
+    hooks:
+      prepackage:
+        shell: sh
+        run: npm run build
+```
+
+## Enterprise Policy Compliance
+
+Many Azure enterprise environments enforce security policies that require disabling local authentication methods. Templates may need to be updated to comply with these policies.
+
+### Required Bicep Properties
+
+When generating infrastructure code, **always include** these security properties to comply with common enterprise policies:
+
+#### Event Hubs Namespace
+```bicep
+resource eventHubNamespace 'Microsoft.EventHub/namespaces@2024-01-01' = {
+  name: eventHubNamespaceName
+  location: location
+  sku: {
+    name: 'Standard'
+    tier: 'Standard'
+  }
+  properties: {
+    disableLocalAuth: true  // REQUIRED for enterprise policy compliance
+  }
+}
+```
+
+#### Storage Account
+```bicep
+resource storage 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    allowSharedKeyAccess: false  // REQUIRED for enterprise policy compliance
+  }
+}
+```
+
+#### Application Insights
+```bicep
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    DisableLocalAuth: true  // REQUIRED for enterprise policy compliance
+  }
+}
+```
+
+#### Service Bus Namespace
+```bicep
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
+  name: serviceBusNamespaceName
+  location: location
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    disableLocalAuth: true  // REQUIRED for enterprise policy compliance
+  }
+}
+```
+
+### Common Policy Errors
+
+**Error:**
+```
+RequestDisallowedByPolicy: Resource 'evhns-xxx' was disallowed by policy.
+Reasons: 'Local authentication methods are not allowed.'
+```
+
+**Solution:** Add `disableLocalAuth: true` to the resource properties in Bicep.
+
+## Application Insights Identity-Based Authentication
+
+When `DisableLocalAuth: true` is set on Application Insights (required by enterprise policies), you must configure identity-based authentication.
+
+### Requirements
+
+1. **Managed Identity**: Function App must have a system-assigned or user-assigned managed identity
+2. **RBAC Role**: Assign `Monitoring Metrics Publisher` role to the identity on the Application Insights resource
+3. **App Setting**: Configure authentication string
+
+### Bicep Configuration
+
+```bicep
+// Assign Monitoring Metrics Publisher role to Function App identity
+resource appInsightsRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(functionApp.id, monitoringMetricsPublisherRole, appInsights.id)
+  scope: appInsights
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb') // Monitoring Metrics Publisher
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Add authentication app setting
+resource functionAppSettings 'Microsoft.Web/sites/config@2023-01-01' = {
+  name: 'appsettings'
+  parent: functionApp
+  properties: {
+    APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD'
+    APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.properties.ConnectionString
+    // ... other settings
+  }
+}
+```
+
+### User-Assigned Managed Identity
+
+If using a user-assigned managed identity:
+
+```bicep
+APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'ClientId=${userAssignedIdentity.properties.clientId};Authorization=AAD'
+```
+
+### Troubleshooting
+
+**Symptom:** No traces appearing in Application Insights after deployment.
+
+**Common causes:**
+1. ❌ Missing `APPLICATIONINSIGHTS_AUTHENTICATION_STRING` app setting
+2. ❌ Missing `Monitoring Metrics Publisher` role assignment
+3. ❌ Incorrect client ID in authentication string (for user-assigned identity)
+
+**Verification:**
+1. Check Function App has managed identity enabled
+2. Check role assignment exists on Application Insights resource
+3. Check app setting is configured correctly
+4. Wait 5-10 minutes for propagation
 
 ## Next Steps
 
