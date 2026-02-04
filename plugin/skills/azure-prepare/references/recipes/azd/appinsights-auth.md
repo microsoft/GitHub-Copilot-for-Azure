@@ -4,121 +4,72 @@ When `DisableLocalAuth: true` is set on Application Insights (required by enterp
 
 ## Requirements
 
-1. **Managed Identity**: Function App must have a system-assigned or user-assigned managed identity
-2. **RBAC Role**: Assign `Monitoring Metrics Publisher` role to the identity on the Application Insights resource
-3. **App Setting**: Configure authentication string
+1. **Managed Identity**: Function App must have managed identity enabled
+2. **RBAC Role**: `Monitoring Metrics Publisher` role on Application Insights
+3. **App Setting**: `APPLICATIONINSIGHTS_AUTHENTICATION_STRING`
 
 ## Bicep Configuration
 
-### System-Assigned Managed Identity
+### System-Assigned Identity
 
 ```bicep
-// 1. Enable managed identity on Function App
+// 1. Enable managed identity
 resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
   name: functionAppName
-  location: location
-  identity: {
-    type: 'SystemAssigned'
-  }
-  // ... other properties
+  identity: { type: 'SystemAssigned' }
 }
 
-// 2. Assign Monitoring Metrics Publisher role to Function App identity
-resource appInsightsRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(functionApp.id, monitoringMetricsPublisherRole, appInsights.id)
+// 2. Assign role
+resource appInsightsRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(functionApp.id, appInsights.id)
   scope: appInsights
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb') // Monitoring Metrics Publisher
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
     principalId: functionApp.identity.principalId
     principalType: 'ServicePrincipal'
   }
 }
 
-// 3. Add authentication app setting
+// 3. Add app setting
 resource functionAppSettings 'Microsoft.Web/sites/config@2023-01-01' = {
   name: 'appsettings'
   parent: functionApp
   properties: {
     APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD'
     APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.properties.ConnectionString
-    // ... other settings
   }
 }
 ```
 
-### User-Assigned Managed Identity
+### User-Assigned Identity
 
-For user-assigned managed identity, include the client ID:
+For user-assigned identity, include client ID in authentication string:
 
 ```bicep
-// 1. Enable user-assigned identity
-resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
-  name: functionAppName
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${userAssignedIdentity.id}': {}
-    }
-  }
-}
-
-// 2. Assign role (same as system-assigned)
-resource appInsightsRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(functionApp.id, appInsights.id, 'MonitoringMetricsPublisher')
-  scope: appInsights
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
-    principalId: userAssignedIdentity.properties.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// 3. Add authentication string with client ID
-resource functionAppSettings 'Microsoft.Web/sites/config@2023-01-01' = {
-  name: 'appsettings'
-  parent: functionApp
-  properties: {
-    APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'ClientId=${userAssignedIdentity.properties.clientId};Authorization=AAD'
-    APPLICATIONINSIGHTS_CONNECTION_STRING: appInsights.properties.ConnectionString
-    // ... other settings
-  }
-}
+APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'ClientId=${userIdentity.properties.clientId};Authorization=AAD'
 ```
 
 ## Troubleshooting
 
-**Symptom:** No traces appearing in Application Insights after deployment.
+**Symptom:** No traces in Application Insights
 
-**Common causes:**
-1. ❌ Missing `APPLICATIONINSIGHTS_AUTHENTICATION_STRING` app setting
-2. ❌ Missing `Monitoring Metrics Publisher` role assignment
-3. ❌ Incorrect client ID in authentication string (for user-assigned identity)
-4. ❌ Managed identity not enabled on Function App
-
-**Verification Steps:**
-
-Check identity exists:
+**Verify:**
 ```bash
-az functionapp identity show -g <resource-group> -n <function-app-name>
-```
+# Check identity
+az functionapp identity show -g <rg> -n <app>
 
-Check app setting exists:
-```bash
-az functionapp config appsettings list -g <resource-group> -n <function-app-name> \
+# Check app setting
+az functionapp config appsettings list -g <rg> -n <app> \
   --query "[?name=='APPLICATIONINSIGHTS_AUTHENTICATION_STRING']"
-```
 
-Check role assignment exists:
-```bash
-az role assignment list \
-  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Insights/components/<app-insights-name> \
+# Check role
+az role assignment list --scope <app-insights-resource-id> \
   --query "[?roleDefinitionName=='Monitoring Metrics Publisher']"
 ```
 
-**Wait 5-10 minutes** for propagation, then test the function.
+Wait 5-10 minutes for propagation after deployment.
 
 ## See Also
 
-- [enterprise-policy.md](enterprise-policy.md) - Enterprise policy compliance requirements
-- [iac-rules.md](iac-rules.md) - IAC rules and security requirements
+- [enterprise-policy.md](enterprise-policy.md) - Policy compliance requirements
+- [iac-rules.md](iac-rules.md) - IAC security rules
