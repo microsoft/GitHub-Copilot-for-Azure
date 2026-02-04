@@ -43,15 +43,23 @@ async function processMarkdownFile(mdPath: string, reportTemplate: string): Prom
   
   // Use agent runner to generate report
   const config = {
-    prompt: `${reportTemplate}
+    prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
+
+CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
+
+Here is the template to follow:
+
+${reportTemplate}
 
 ---
 
 ## Test Results Data
 
-Use the following test results data to populate the template:
+${content}
 
-${content}`
+---
+
+OUTPUT THE REPORT NOW (starting with the # heading):`
   };
   
   const agentMetadata = await run(config);

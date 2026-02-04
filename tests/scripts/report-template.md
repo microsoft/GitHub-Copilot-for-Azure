@@ -1,32 +1,32 @@
 # Test Report Template
 
-## Instructions for Report Generation
+## CRITICAL INSTRUCTIONS
 
-Generate a test report following this template format.
+**YOU MUST OUTPUT THE REPORT DIRECTLY - DO NOT describe what you're doing or what the report contains.**
 
-**Your Task:**
-- Summarize the test execution and results
-- Extract key metrics (status, duration, token usage, retries)
-- Categorize and explain any warnings encountered
-- List all deployed URLs and created resources
-- Document skills and tools that were invoked
-- Provide actionable recommendations
-- Use proper emojis and formatting as shown in the template below
-- Generate the report timestamp at the end
-- Omit optional sections if no data is available
+**FORMAT REQUIREMENTS:**
+- Start immediately with the markdown report (starting with the # heading)
+- Do NOT include any preamble, explanation, or meta-commentary
+- Do NOT say "I've created a report" or "Here is the report"
+- ONLY output the actual report content itself
+- Follow the exact structure below, replacing [PLACEHOLDERS] with actual data
+- Use the exact emojis and formatting shown
+- Omit optional sections only if truly no data is available
 
 ---
 
 # Test Report: [TEST_NAME]
 
-**Date:** [RUN_DATE]
-**Duration:** [DURATION]
-**Status:** [STATUS_EMOJI] [STATUS_TEXT]
+**Date:** [RUN_DATE]  
+**Duration:** [DURATION]  
+**Status:** [STATUS_EMOJI] [STATUS_TEXT]  
 **Confidence:** [CONFIDENCE_EMOJI] [CONFIDENCE_LEVEL]
 
 ## 📝 Test Prompt
 
+```
 [PROMPT_TEXT]
+```
 
 ## 📊 Result Summary
 
