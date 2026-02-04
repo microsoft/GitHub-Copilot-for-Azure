@@ -5,10 +5,10 @@
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from '../utils/trigger-matcher';
-import { loadSkill, LoadedSkill } from '../utils/skill-loader';
+import { TriggerMatcher } from "../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = 'azure-keyvault-expiration-audit';
+const SKILL_NAME = "azure-keyvault-expiration-audit";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -19,22 +19,22 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe('Should Trigger', () => {
+  describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      'Show me expired certificates in my Key Vault',
-      'Check what secrets are expiring in the next 30 days',
-      'Audit my Key Vault for compliance',
-      'Find secrets without expiration dates',
-      'Generate a security report for my Key Vault expirations',
-      'Which keys have expired in production Key Vault?',
-      'Check certificate expiration dates in my vault',
-      'List expiring secrets and keys in Azure Key Vault',
-      'What certificates need rotation in my Key Vault?',
-      'Scan my Key Vault for expired keys and certificates',
-      'Find all secrets expiring this month in Key Vault',
-      'Key Vault compliance audit for expiring resources',
-      'Check if any certificates in my vault are about to expire',
-      'Generate an expiration report for my Azure Key Vault',
+      "Show me expired certificates in my Key Vault",
+      "Check what secrets are expiring in the next 30 days",
+      "Audit my Key Vault for compliance",
+      "Find secrets without expiration dates",
+      "Generate a security report for my Key Vault expirations",
+      "Which keys have expired in production Key Vault?",
+      "Check certificate expiration dates in my vault",
+      "List expiring secrets and keys in Azure Key Vault",
+      "What certificates need rotation in my Key Vault?",
+      "Scan my Key Vault for expired keys and certificates",
+      "Find all secrets expiring this month in Key Vault",
+      "Key Vault compliance audit for expiring resources",
+      "Check if any certificates in my vault are about to expire",
+      "Generate an expiration report for my Azure Key Vault",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -48,23 +48,23 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe('Should NOT Trigger', () => {
+  describe("Should NOT Trigger", () => {
     // Prompts that should NOT trigger - avoid matching >= 2 keywords
     const shouldNotTriggerPrompts: string[] = [
-      'What is the weather today?',
-      'Help me write a poem',
-      'Explain quantum computing',
-      'Help me with AWS Secrets Manager',
-      'Write a Python script',
-      'How do I use Docker?',
-      'Deploy to Kubernetes cluster',
-      'Set up a database connection',
-      'Create a new storage account in Azure',
-      'Configure networking for my web app',
-      'Enable monitoring for my application',
-      'Set up backup for my SQL database',
-      'How do I optimize Azure costs?',
-      'Deploy my containerized application',
+      "What is the weather today?",
+      "Help me write a poem",
+      "Explain quantum computing",
+      "Help me with AWS Secrets Manager",
+      "Write a Python script",
+      "How do I use Docker?",
+      "Deploy to Kubernetes cluster",
+      "Set up a database connection",
+      "Create a new storage account in Azure",
+      "Configure networking for my web app",
+      "Enable monitoring for my application",
+      "Set up backup for my SQL database",
+      "How do I optimize Azure costs?",
+      "Deploy my containerized application",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -76,12 +76,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe('Trigger Keywords Snapshot', () => {
-    test('skill keywords match snapshot', () => {
+  describe("Trigger Keywords Snapshot", () => {
+    test("skill keywords match snapshot", () => {
       expect(triggerMatcher.getKeywords()).toMatchSnapshot();
     });
 
-    test('skill description triggers match snapshot', () => {
+    test("skill description triggers match snapshot", () => {
       expect({
         name: skill.metadata.name,
         description: skill.metadata.description,
@@ -90,21 +90,21 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    test('handles empty prompt', () => {
-      const result = triggerMatcher.shouldTrigger('');
+  describe("Edge Cases", () => {
+    test("handles empty prompt", () => {
+      const result = triggerMatcher.shouldTrigger("");
       expect(result.triggered).toBe(false);
     });
 
-    test('handles very long prompt', () => {
-      const longPrompt = 'Key Vault expiration '.repeat(100);
+    test("handles very long prompt", () => {
+      const longPrompt = "Key Vault expiration ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
-      expect(typeof result.triggered).toBe('boolean');
+      expect(typeof result.triggered).toBe("boolean");
     });
 
-    test('is case insensitive', () => {
-      const result1 = triggerMatcher.shouldTrigger('EXPIRED CERTIFICATES KEY VAULT');
-      const result2 = triggerMatcher.shouldTrigger('expired certificates key vault');
+    test("is case insensitive", () => {
+      const result1 = triggerMatcher.shouldTrigger("EXPIRED CERTIFICATES KEY VAULT");
+      const result2 = triggerMatcher.shouldTrigger("expired certificates key vault");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

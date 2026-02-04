@@ -5,7 +5,7 @@
  * the skill's description and keywords.
  */
 
-import { LoadedSkill } from './skill-loader';
+import { LoadedSkill } from "./skill-loader";
 
 export interface TriggerResult {
   triggered: boolean;
@@ -38,7 +38,7 @@ export class TriggerMatcher {
     
     // Extract from name (split on hyphens)
     if (this.skill.metadata.name) {
-      this.skill.metadata.name.split('-').forEach(word => {
+      this.skill.metadata.name.split("-").forEach(word => {
         if (word.length > 2) keywords.add(word.toLowerCase());
       });
     }
@@ -47,7 +47,7 @@ export class TriggerMatcher {
     if (this.skill.metadata.description) {
       const descWords = this.skill.metadata.description
         .toLowerCase()
-        .replace(/[^\w\s-]/g, ' ')
+        .replace(/[^\w\s-]/g, " ")
         .split(/\s+/)
         .filter(word => word.length > 3);
       descWords.forEach(word => keywords.add(word));
@@ -55,11 +55,11 @@ export class TriggerMatcher {
 
     // Common Azure-related keywords to look for in content
     const azureKeywords = [
-      'azure', 'storage', 'cosmos', 'sql', 'redis', 'keyvault', 'key vault',
-      'function', 'app service', 'container', 'aks', 'kubernetes',
-      'bicep', 'terraform', 'deploy', 'monitor', 'diagnostic',
-      'security', 'rbac', 'identity', 'entra', 'authentication',
-      'cli', 'mcp', 'validation', 'networking', 'observability'
+      "azure", "storage", "cosmos", "sql", "redis", "keyvault", "key vault",
+      "function", "app service", "container", "aks", "kubernetes",
+      "bicep", "terraform", "deploy", "monitor", "diagnostic",
+      "security", "rbac", "identity", "entra", "authentication",
+      "cli", "mcp", "validation", "networking", "observability"
     ];
 
     const contentLower = this.skill.content.toLowerCase();
@@ -83,11 +83,11 @@ export class TriggerMatcher {
    * Test if a prompt should trigger this skill
    */
   shouldTrigger(prompt: string): TriggerResult {
-    if (!prompt || typeof prompt !== 'string') {
+    if (!prompt || typeof prompt !== "string") {
       return {
         triggered: false,
         confidence: 0,
-        reason: 'Empty or invalid prompt',
+        reason: "Empty or invalid prompt",
         matchedKeywords: []
       };
     }

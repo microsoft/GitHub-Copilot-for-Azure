@@ -2,7 +2,7 @@
  * Global type declarations for test utilities
  */
 
-import { TriggerMatcher } from './utils/trigger-matcher';
+import { TriggerMatcher } from "./utils/trigger-matcher";
 
 declare global {
   var SKILLS_PATH: string;
