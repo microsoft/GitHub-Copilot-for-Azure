@@ -15,6 +15,7 @@ Azure Developer CLI workflow for preparing Azure deployments.
 |----------|-----------|
 | azure.yaml | [azure-yaml.md](azure-yaml.md) |
 | AZD IAC rules | [iac-rules.md](iac-rules.md) |
+| Azure Functions templates | [functions-templates.md](functions-templates.md) |
 | Bicep best practices | `mcp_bicep_get_bicep_best_practices` |
 | Bicep resource schema | `mcp_bicep_get_az_resource_type_schema` |
 | Azure Verified Modules | `mcp_bicep_list_avm_metadata` |
