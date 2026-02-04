@@ -32,7 +32,7 @@ After architecture planning, research each selected component to gather best pra
 | Key Vault | [key-vault/README.md](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
 | Managed Identity | — | `azure-security`, `entra-app-registration` |
 | **Observability** | | |
-| Application Insights | — | `azure-observability`, `appinsights-instrumentation` |
+| Application Insights | [app-insights/README.md](services/app-insights/README.md) | `appinsights-instrumentation` (invoke for instrumentation) |
 | Log Analytics | — | `azure-observability`, `azure-kusto` |
 | **AI Services** | | |
 | Azure OpenAI | — | `microsoft-foundry`, `azure-ai` |
