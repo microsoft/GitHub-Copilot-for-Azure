@@ -1,50 +1,50 @@
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
   // Use ts-jest for TypeScript support
-  preset: 'ts-jest',
+  preset: "ts-jest",
 
   // Use Node test environment
-  testEnvironment: 'node',
+  testEnvironment: "node",
 
   // Root directory for tests
-  rootDir: '.',
+  rootDir: ".",
 
   // Test file patterns
   testMatch: [
-    '**/*.test.js',
-    '**/*.test.ts'
+    "**/*.test.js",
+    "**/*.test.ts"
   ],
 
   // Ignore template folder in test runs (it's just examples)
   testPathIgnorePatterns: [
-    '/node_modules/',
-    '/_template/',
-    '/dist/'
+    "/node_modules/",
+    "/_template/",
+    "/dist/"
   ],
 
   // Setup file for shared utilities
-  setupFilesAfterEnv: ['./jest.setup.ts'],
+  setupFilesAfterEnv: ["./jest.setup.ts"],
 
   // Coverage configuration
   collectCoverageFrom: [
-    '../plugin/skills/**/*.js',
-    '../plugin/skills/**/*.ts',
-    '!**/node_modules/**',
-    '!**/_template/**'
+    "../plugin/skills/**/*.js",
+    "../plugin/skills/**/*.ts",
+    "!**/node_modules/**",
+    "!**/_template/**"
   ],
-  coverageDirectory: './coverage',
-  coverageReporters: ['text', 'text-summary', 'html', 'json-summary'],
+  coverageDirectory: "./coverage",
+  coverageReporters: ["text", "text-summary", "html", "json-summary"],
 
   // Reporter configuration for CI/Console/PR readability
   reporters: [
-    'default',
-    ['jest-junit', {
-      outputDirectory: './reports',
-      outputName: 'junit.xml',
-      ancestorSeparator: ' › ',
-      classNameTemplate: '{classname}',
-      titleTemplate: '{title}'
+    "default",
+    ["jest-junit", {
+      outputDirectory: "./reports",
+      outputName: "junit.xml",
+      ancestorSeparator: " › ",
+      classNameTemplate: "{classname}",
+      titleTemplate: "{title}"
     }]
   ],
 
@@ -62,19 +62,19 @@ const config: Config = {
 
   // Module paths for easier imports
   moduleNameMapper: {
-    '^@utils/(.*)$': '<rootDir>/utils/$1',
-    '^@fixtures/(.*)$': '<rootDir>/$1/fixtures'
+    "^@utils/(.*)$": "<rootDir>/utils/$1",
+    "^@fixtures/(.*)$": "<rootDir>/$1/fixtures"
   },
 
   // Transform ESM modules from node_modules (copilot-sdk is ESM-only)
   transformIgnorePatterns: [
-    'node_modules/(?!(@github/copilot-sdk|@github/copilot)/)'
+    "node_modules/(?!(@github/copilot-sdk|@github/copilot)/)"
   ],
 
   // Display individual test results
   displayName: {
-    name: 'SKILLS',
-    color: 'blue'
+    name: "SKILLS",
+    color: "blue"
   },
 };
 
