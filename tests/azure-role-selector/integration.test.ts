@@ -98,4 +98,48 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     expect(mentionsKeyVaultRole).toBe(true);
   });
 
+  test('generates CLI commands for role assignment', async () => {
+    let agentMetadata;
+    try {
+      agentMetadata = await run({
+        prompt: 'Generate Azure CLI command to assign Storage Blob Data Contributor role to my managed identity'
+      });
+    } catch (e: any) {
+      if (e.message?.includes('Failed to load @github/copilot-sdk')) {
+        console.log('⏭️  SDK not loadable, skipping test');
+        return;
+      }
+      throw e;
+    }
+
+    const isSkillUsed = isSkillInvoked(agentMetadata, 'azure-role-selector');
+    const mentionsCLI = doesAssistantMessageIncludeKeyword(agentMetadata, 'az role assignment');
+    const areCliToolCallsSuccess = areToolCallsSuccess(agentMetadata, 'azure__extension_cli_generate');
+
+    expect(isSkillUsed).toBe(true);
+    expect(mentionsCLI || areCliToolCallsSuccess).toBe(true);
+  });
+
+  test('provides Bicep code for role assignment', async () => {
+    let agentMetadata;
+    try {
+      agentMetadata = await run({
+        prompt: 'Show me Bicep code to assign Contributor role to a managed identity on a storage account'
+      });
+    } catch (e: any) {
+      if (e.message?.includes('Failed to load @github/copilot-sdk')) {
+        console.log('⏭️  SDK not loadable, skipping test');
+        return;
+      }
+      throw e;
+    }
+
+    const isSkillUsed = isSkillInvoked(agentMetadata, 'azure-role-selector');
+    const mentionsBicep = doesAssistantMessageIncludeKeyword(agentMetadata, 'bicep') || 
+                          doesAssistantMessageIncludeKeyword(agentMetadata, 'roleAssignment');
+
+    expect(isSkillUsed).toBe(true);
+    expect(mentionsBicep).toBe(true);
+  });
+
 });
