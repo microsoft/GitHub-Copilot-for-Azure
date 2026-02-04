@@ -69,7 +69,7 @@ services:
 3. No local build step needed
 
 **Required `.funcignore`:**
-```
+```gitignore
 node_modules/     # MUST exclude to avoid permission errors
 *.js.map
 .git*
@@ -104,7 +104,7 @@ services:
 3. Faster deployment, but requires local Node.js setup
 
 **Required `.funcignore`:**
-```
+```gitignore
 *.ts              # Exclude source files
 tsconfig.json     # Exclude config
 node_modules/

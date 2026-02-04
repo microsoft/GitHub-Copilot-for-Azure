@@ -7,7 +7,7 @@ When deploying TypeScript Azure Functions, configure `.funcignore` based on your
 **Remote build** uploads TypeScript source code and lets Azure's Oryx build system compile it remotely.
 
 **Correct `.funcignore` for remote build:**
-```
+```gitignore
 *.js.map
 .git*
 .vscode
@@ -37,7 +37,7 @@ Error: sh: 1: tsc: Permission denied
 **Local build** compiles TypeScript locally and uploads only JavaScript files.
 
 **`.funcignore` for local build:**
-```
+```gitignore
 *.ts
 tsconfig.json
 .git*
