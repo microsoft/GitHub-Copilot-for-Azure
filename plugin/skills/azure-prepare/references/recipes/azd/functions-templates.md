@@ -54,7 +54,12 @@ Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com
 
 8. Does it use Event Hubs for streaming?
    Indicators: EventHubTrigger, @app.event_hub, event_hub_output, streaming
-   └─► YES → Use Event Hubs Template: https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/
+   └─► YES → Use Event Hubs Template:
+       | Runtime | Template Command |
+       |---------|-----------------|
+       | .NET | `azd init -t Azure-Samples/functions-quickstart-dotnet-azd-eventhub` |
+       | Python | `azd init -t Azure-Samples/functions-quickstart-python-azd-eventhub` |
+       | TypeScript/JS | No template yet. Use .NET or Python template infra, adapt azure.yaml for Node.js |
 
 9. Does it use Event Grid for pub/sub?
    Indicators: EventGridTrigger, @app.event_grid, event_grid_output, external events
@@ -167,6 +172,18 @@ When using azd templates, the following resources are created:
 | Event Grid | Event-driven |
 | Cosmos DB | Change feed processing |
 | Service Bus | Enterprise messaging |
+
+## TypeScript Functions
+
+For TypeScript Functions deployment, see:
+- **[typescript-funcignore.md](typescript-funcignore.md)** - `.funcignore` configuration for remote and local builds
+- **[azure-yaml.md](azure-yaml.md)** - Azure.yaml configuration with TypeScript examples
+
+## Enterprise Policy Compliance
+
+For enterprise environments with security policies requiring identity-based authentication:
+- **[enterprise-policy.md](enterprise-policy.md)** - Required Bicep properties (disableLocalAuth, etc.)
+- **[appinsights-auth.md](appinsights-auth.md)** - Application Insights identity-based authentication setup
 
 ## Next Steps
 

@@ -45,6 +45,20 @@ All modules must accept:
 | Diagnostics | Enable logging |
 | API versions | Use latest |
 
+## Enterprise Policy Compliance
+
+Many organizations enforce Azure policies requiring identity-based authentication. **Always include** `disableLocalAuth: true` or `allowSharedKeyAccess: false` in generated Bicep to ensure compliance.
+
+**Required properties:**
+- Event Hubs: `disableLocalAuth: true`
+- Service Bus: `disableLocalAuth: true`
+- Storage Account: `allowSharedKeyAccess: false`
+- Application Insights: `DisableLocalAuth: true` (note capital D)
+
+**For detailed examples and Application Insights authentication setup**, see:
+- [enterprise-policy.md](enterprise-policy.md) - Full Bicep examples for all services
+- [appinsights-auth.md](appinsights-auth.md) - Application Insights identity-based authentication with RBAC
+
 ## Container Resources
 
 ```bicep

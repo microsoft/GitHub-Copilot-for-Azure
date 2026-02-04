@@ -50,6 +50,70 @@ services:
     host: function
 ```
 
+### Azure Functions - TypeScript
+
+TypeScript Functions support **two deployment approaches**:
+
+#### Remote Build (Recommended)
+```yaml
+services:
+  functions:
+    project: ./src/functions
+    language: ts  # Use 'ts' for remote build
+    host: function
+```
+
+**How it works:**
+1. Uploads TypeScript source (`.ts` files) and `tsconfig.json`
+2. Azure's Oryx build system compiles TypeScript remotely
+3. No local build step needed
+
+**Required `.funcignore`:**
+```gitignore
+node_modules/     # MUST exclude to avoid permission errors
+*.js.map
+.git*
+.vscode
+local.settings.json
+test
+```
+
+**Common error if misconfigured:**
+```
+Error: sh: 1: tsc: Permission denied
+```
+
+**Fix:** Ensure `.funcignore` excludes `node_modules/` and does NOT exclude `*.ts` or `tsconfig.json`.
+
+#### Local Build (Alternative)
+```yaml
+services:
+  functions:
+    project: ./src/functions
+    language: js  # Use 'js' for local build
+    host: function
+    hooks:
+      prepackage:
+        shell: sh
+        run: npm run build
+```
+
+**How it works:**
+1. `npm run build` compiles TypeScript locally before packaging
+2. Uploads compiled JavaScript files only
+3. Faster deployment, but requires local Node.js setup
+
+**Required `.funcignore`:**
+```gitignore
+*.ts              # Exclude source files
+tsconfig.json     # Exclude config
+node_modules/
+.git*
+.vscode
+local.settings.json
+test
+```
+
 ### Static Web App
 
 ```yaml
