@@ -9,7 +9,6 @@
 
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { jest } from "@jest/globals";
 import { TriggerMatcher, TriggerResult } from "./utils/trigger-matcher";
 
 const __filename = fileURLToPath(import.meta.url);
