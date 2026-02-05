@@ -42,7 +42,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("description clarifies what NOT to use it for", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toMatch(/do not\s+use for/);
-      expect(description).toMatch(/cost estimation|cost-estimation/);
+      expect(description).toMatch(/deploying|diagnostics|security/);
     });
   });
 

@@ -4,23 +4,20 @@ exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot ski
 {
   "description": "Analyze Azure resource groups and generate detailed Mermaid architecture diagrams showing the relationships between individual resources.
 USE FOR: create architecture diagram, visualize Azure resources, show resource relationships, generate Mermaid diagram, analyze resource group, diagram my resources, architecture visualization, resource topology, map Azure infrastructure
-DO NOT USE FOR: creating/modifying resources (use azure-deploy), cost analysis (use azure-cost-estimation), security scanning (use azure-security), performance troubleshooting (use azure-diagnostics), code generation (use relevant service skill)
+DO NOT USE FOR: creating/modifying resources (use azure-deploy), security scanning (use azure-security), performance troubleshooting (use azure-diagnostics), code generation (use relevant service skill)
 ",
   "extractedKeywords": [
     "aks",
-    "analysis",
     "analyze",
     "app service",
     "architecture",
     "azure",
-    "azure-cost-estimation",
     "azure-deploy",
     "azure-diagnostics",
     "azure-security",
     "between",
     "cli",
     "code",
-    "cost",
     "create",
     "creating",
     "detailed",
@@ -66,19 +63,16 @@ DO NOT USE FOR: creating/modifying resources (use azure-deploy), cost analysis (
 exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "aks",
-  "analysis",
   "analyze",
   "app service",
   "architecture",
   "azure",
-  "azure-cost-estimation",
   "azure-deploy",
   "azure-diagnostics",
   "azure-security",
   "between",
   "cli",
   "code",
-  "cost",
   "create",
   "creating",
   "detailed",

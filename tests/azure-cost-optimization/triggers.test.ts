@@ -75,7 +75,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Explain quantum computing",
       "What is machine learning?",
       
-      // Cost estimation (different skill)
+      // Cost estimation (not optimization)
       "Estimate the cost of a new VM",
       "How much will it cost to deploy this app?",
       "What's the price of Container Apps?",
