@@ -267,7 +267,7 @@ _NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstorm
 | After updating skill description/triggers | `Run sensei on <skill-name>` |
 | Fast iteration (skip integration tests) | `Run sensei on <skill-name> --skip-integration` |
 | Audit multiple skills | `Run sensei on <skill1>, <skill2>` |
-| Audit all low-compliance skills | `Run sensei on all Low-adherence skills` |
+| Audit all Low-adherence skills | `Run sensei on all Low-adherence skills` |
 
 #### Usage
 
@@ -299,7 +299,7 @@ description: "Execute Azure deployments after preparation and validation are com
 | Has "DO NOT USE FOR:" | ✅ | 3 anti-triggers with redirects |
 | Description < 1024 chars | ✅ | ~540 chars |
 | SKILL.md < 500 tokens | ✅ | ~450 tokens estimate |
-| Tests exist | ⚠️ | Only integration tests, missing triggers.test.ts |
+| Tests exist | ✅ | Unit, trigger, and integration tests |
 
 ### **Score: Medium-High** ✅
 ```
@@ -336,7 +336,8 @@ The scaffolded tests include parameterized test cases for:
 After sensei completes, run integration tests to verify skill invocation:
 
 ```bash
-npm run test:integration -- --testPathPattern=azure-<skillname>
+cd tests
+npm run test:integration -- --testPathPattern=<skillname>
 ```
 
 **Example output:**
@@ -362,8 +363,8 @@ Sensei evaluates skills against these compliance levels:
 
 | Score | Requirements |
 |-------|--------------|
-| **Low** | Description < 150 chars, no explicit triggers, no anti-triggers |
-| **Medium** | Description > 150 chars, has trigger keywords/phrases |
+| **Low** | Description < 150 chars (always Low), OR missing explicit triggers/anti-triggers |
+| **Medium** | Description ≥ 150 chars, has trigger keywords/phrases, may lack full `USE FOR:`/`DO NOT USE FOR:` structure |
 | **Medium-High** ⭐ | Has `USE FOR:` triggers AND `DO NOT USE FOR:` anti-triggers |
 | **High** | Medium-High + `compatibility` field documenting requirements |
 
