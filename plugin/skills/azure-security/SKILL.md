@@ -140,11 +140,23 @@ System.out.println(secret.getValue());
 
 **Go** - Key Vault Secrets:
 ```go
-cred, _ := azidentity.NewDefaultAzureCredential(nil)
-client, _ := azsecrets.NewClient("https://VAULT.vault.azure.net/", cred, nil)
+package main
 
-resp, _ := client.GetSecret(context.Background(), "secret-name", "", nil)
-fmt.Println(*resp.Value)
+import (
+    "context"
+    "fmt"
+
+    "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+    "github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
+)
+
+func main() {
+    cred, _ := azidentity.NewDefaultAzureCredential(nil)
+    client, _ := azsecrets.NewClient("https://VAULT.vault.azure.net/", cred, nil)
+
+    resp, _ := client.GetSecret(context.Background(), "secret-name", "", nil)
+    fmt.Println(*resp.Value)
+}
 ```
 
 **Rust** - Key Vault Secrets:
