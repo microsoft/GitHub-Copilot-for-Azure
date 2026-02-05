@@ -45,13 +45,13 @@ const testConfigs = {
     },
     unit: {
         description: "unit tests",
-        jestArgs: ['--testPathIgnorePatterns="node_modules|_template|integration"']
+        jestArgs: ["--testPathIgnorePatterns=\"node_modules|_template|integration\""]
     },
     integration: {
         description: "integration tests",
         jestArgs: [
             "--testMatch=**/*integration*.ts",
-            '--testPathIgnorePatterns="node_modules|_template"'
+            "--testPathIgnorePatterns=\"node_modules|_template\""
         ]
     },
     verbose: {
@@ -60,7 +60,7 @@ const testConfigs = {
     },
     coverage: {
         description: "tests with coverage",
-        jestArgs: ["--coverage", '--testPathIgnorePatterns="node_modules|_template|integration"']
+        jestArgs: ["--coverage", "--testPathIgnorePatterns=\"node_modules|_template|integration\""]
     },
     ci: {
         description: "tests in CI mode",
@@ -68,7 +68,7 @@ const testConfigs = {
             "--ci",
             "--reporters=default",
             "--reporters=jest-junit",
-            '--testPathIgnorePatterns="node_modules|_template|integration"'
+            "--testPathIgnorePatterns=\"node_modules|_template|integration\""
         ]
     },
     watch: {
@@ -94,7 +94,7 @@ const config = testConfigs[testType];
 // Handle skill type which requires a pattern
 if (config.requiresPattern && extraArgs.length === 0) {
     console.error(`Test type "${testType}" requires a pattern argument.`);
-    console.error(`Example: node run-tests.js skill azure-ai`);
+    console.error("Example: node run-tests.js skill azure-ai");
     process.exit(1);
 }
 
