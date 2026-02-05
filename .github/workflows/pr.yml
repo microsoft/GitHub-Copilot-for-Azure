@@ -59,7 +59,7 @@ jobs:
 
       - name: Check changed markdown files
         id: changed-files
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             **/*.md
@@ -175,7 +175,7 @@ jobs:
 
       - name: Check changed skill files
         id: changed-skills
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             plugin/skills/**/SKILL.md
