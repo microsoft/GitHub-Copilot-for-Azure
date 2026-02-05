@@ -105,13 +105,10 @@ Confirm all services build/package successfully:
 azd package --no-prompt
 ```
 
-### 8. Azure Policy Validation
-
-See [Policy Validation Guide](../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
-
 ## References
 
 - [Error handling](mdc:errors.md)
+- [Policy validation](../policy-validation.md)
 
 ## Next
 
