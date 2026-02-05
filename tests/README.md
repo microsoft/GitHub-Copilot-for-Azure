@@ -232,8 +232,8 @@ npm test -- --testPathPattern=azure-validation
 # Test Suites: 2 passed, 2 total
 ```
 
-## Example: Test a Specific Subset of a Test
-To run SWA tests from deploy integration tests. 
+### Example: Test a Specific Subset of a Test
+To run only the SWA tests from the deploy integration test suite: 
 
 ```bash
 cd tests
