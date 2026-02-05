@@ -180,7 +180,8 @@ npm install
 |---------|----------|
 | `npm test` | Run all tests (unit + trigger) |
 | `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
-| `npm run test:integration` | Run integration tests (requires Copilot CLI auth) |
+| `npm run test:integration` | Run all integration tests (requires Copilot CLI auth) |
+| `npm run test:integration -- --testPathPattern=<skill-name-to-test>` | Run integration test on a given skill |
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
 | `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
 | `npm test -- --testNamePattern=skill-invocation` | Run tests for all skills |
@@ -413,7 +414,6 @@ tests/
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost-estimation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | - | - | ✅ | - |

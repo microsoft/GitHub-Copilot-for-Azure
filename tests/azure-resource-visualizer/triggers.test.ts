@@ -75,7 +75,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Deploy my application",
       "Provision new infrastructure",
       
-      // Cost analysis (use azure-cost-estimation)
+      // Cost analysis
       "What will my costs be?",
       "Analyze my spending",
       "How much does this cost?",
