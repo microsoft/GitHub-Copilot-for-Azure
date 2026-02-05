@@ -237,6 +237,22 @@ sensei: improve appinsights-instrumentation frontmatter
 
 ## Anti-Pattern Examples
 
+### ❌ Don't Do This: Single-Line Long Description
+
+```yaml
+description: Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
+```
+
+**Problem:** Single-line descriptions over 200 characters are hard to read, review, and maintain. Use multi-line YAML format (`|`) instead:
+
+```yaml
+description: |
+  Identify and quantify cost savings across Azure subscriptions by analyzing actual costs,
+  utilization metrics, and generating actionable optimization recommendations. USE FOR:
+  optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings.
+  DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
+```
+
 ### ❌ Don't Do This: Overly Long Description
 
 ```yaml

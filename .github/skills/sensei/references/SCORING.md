@@ -120,6 +120,8 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 | Ideal | 300-600 chars |
 | Max | 1024 chars |
 
+**Format Rule:** Descriptions over 200 characters MUST use multi-line YAML format (`|`) for maintainability.
+
 ### 3. Trigger Phrase Detection
 
 **Positive indicators** (case-insensitive):
