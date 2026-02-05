@@ -2,8 +2,8 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
 
-const tsFiles = ["scripts/**/*.ts", "utils/**/*.ts"];
-const jsFiles = ["scripts/**/*.js", "utils/**/*.js"];
+const tsFiles = ["**/*.ts"];
+const jsFiles = ["**/*.js", "**/*.mjs"];
 
 // Shared rules for both TS and JS
 const sharedRules = {
@@ -45,6 +45,7 @@ export default tseslint.config(
             "reports/**",
             "**/resources/**",
             "**/__snapshots__/**",
+            "swa-deployment-tests/**"
         ],
     },
     // TypeScript files - use TypeScript parser with project
