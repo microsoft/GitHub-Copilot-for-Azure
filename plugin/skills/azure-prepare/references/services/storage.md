@@ -206,4 +206,4 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 | SAS Tokens | Time-limited, scoped access without sharing keys |
 | Private Endpoint | Secure access over private network |
 
-For comprehensive security guidance, see: [data-protection](../../_shared/security/data-protection.md), [network-security](../../_shared/security/network-security.md)
+For comprehensive security guidance, see: [security.md](../security.md)

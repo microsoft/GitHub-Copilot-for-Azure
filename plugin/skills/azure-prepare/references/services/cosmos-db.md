@@ -195,4 +195,4 @@ properties: {
 | Firewall | IP-based access control |
 | Private Endpoint | Secure access over private network |
 
-For comprehensive security guidance, see: [data-protection](../../_shared/security/data-protection.md), [network-security](../../_shared/security/network-security.md)
+For comprehensive security guidance, see: [security.md](../security.md)

@@ -1,6 +1,6 @@
 ---
 name: appinsights-instrumentation
-description: 'Instrument a webapp to send useful telemetry data to Azure App Insights'
+description: 'Foo Instrument a webapp to send useful telemetry data to Azure App Insights'
 ---
 
 # AppInsights instrumentation

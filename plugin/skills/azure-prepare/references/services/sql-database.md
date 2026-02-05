@@ -200,4 +200,4 @@ ALTER ROLE db_datawriter ADD MEMBER [my-container-app];
 | Always Encrypted | Client-side encryption for sensitive columns |
 | Entra ID Auth | Microsoft Entra authentication (recommended) |
 
-For comprehensive security guidance, see: [data-protection](../../_shared/security/data-protection.md), [identity-access](../../_shared/security/identity-access.md)
+For comprehensive security guidance, see: [security.md](../security.md)

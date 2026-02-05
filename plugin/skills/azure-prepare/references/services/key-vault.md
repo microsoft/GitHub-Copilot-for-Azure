@@ -216,7 +216,7 @@ resource kvEventSubscription 'Microsoft.EventGrid/eventSubscriptions@2023-12-15-
 | Soft Delete | Recover deleted vaults and secrets |
 | Purge Protection | Prevent permanent deletion during retention period |
 
-For comprehensive security guidance, see: [data-protection](../../_shared/security/data-protection.md)
+For comprehensive security guidance, see: [security.md](../security.md)
 
 ## Best Practices
 

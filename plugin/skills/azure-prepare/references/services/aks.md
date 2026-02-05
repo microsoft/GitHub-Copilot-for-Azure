@@ -258,4 +258,4 @@ properties: {
 | Network Policy | Control traffic between pods (Calico/Azure) |
 | Private Cluster | Disable public API server endpoint |
 
-For comprehensive security guidance, see: [identity-access](../../_shared/security/identity-access.md), [network-security](../../_shared/security/network-security.md)
+For comprehensive security guidance, see: [security.md](../security.md)

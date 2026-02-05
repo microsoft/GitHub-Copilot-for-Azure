@@ -32,7 +32,6 @@ Activate this skill when user wants to:
 5. Update `.azure/preparation-manifest.md` after each phase
 6. Invoke **azure-validate** before any deployment
 7. ⛔ **Destructive actions require `ask_user`** — [global-rules](../_shared/global-rules.md)
-8. Apply security hardening — [identity-access](../_shared/security/identity-access.md), [network-security](../_shared/security/network-security.md), [data-protection](../_shared/security/data-protection.md), [monitoring-defender](../_shared/security/monitoring-defender.md)
 
 > **⛔ MANDATORY USER CONFIRMATION REQUIRED**
 >
@@ -59,8 +58,9 @@ Activate this skill when user wants to:
 | 4 | **Select Recipe** — AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
 | 5 | **Plan Architecture** — Stack + service mapping, then **select location** (MUST prompt user with regions that support all selected services) | [architecture.md](references/architecture.md) |
 | 6 | **Generate Artifacts** — Research best practices first, then generate | [generate.md](references/generate.md) |
-| 7 | **Create Manifest** — Document decisions in `.azure/preparation-manifest.md` | [manifest.md](references/manifest.md) |
-| 8 | **Validate** — Invoke **azure-validate** skill before deployment | — |
+| 7 | **Harden Security** — Apply best practices | [security.md](references/security.md) |
+| 8 | **Create Manifest** — Document decisions in `.azure/preparation-manifest.md` | [manifest.md](references/manifest.md) |
+| 9 | **Validate** — Invoke **azure-validate** skill before deployment | — |
 
 ---
 
