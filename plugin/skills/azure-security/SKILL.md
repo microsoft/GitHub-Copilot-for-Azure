@@ -108,7 +108,7 @@ from azure.keyvault.secrets import SecretClient
 
 client = SecretClient(vault_url="https://VAULT.vault.azure.net/", credential=DefaultAzureCredential())
 secret = client.get_secret("secret-name")
-print(secret.value)
+# Use secret.value securely - do not log secrets
 ```
 
 **JavaScript** - Key Vault Secrets:
@@ -118,14 +118,14 @@ import { SecretClient } from "@azure/keyvault-secrets";
 
 const client = new SecretClient("https://VAULT.vault.azure.net/", new DefaultAzureCredential());
 const secret = await client.getSecret("secret-name");
-console.log(secret.value);
+// Use secret.value securely - do not log secrets
 ```
 
 **C#** - Key Vault Secrets:
 ```csharp
 var client = new SecretClient(new Uri("https://VAULT.vault.azure.net/"), new DefaultAzureCredential());
 KeyVaultSecret secret = await client.GetSecretAsync("secret-name");
-Console.WriteLine(secret.Value);
+// Use secret.Value securely - do not log secrets
 ```
 
 **Java** - Key Vault Secrets:
@@ -135,7 +135,7 @@ SecretClient client = new SecretClientBuilder()
     .credential(new DefaultAzureCredentialBuilder().build())
     .buildClient();
 KeyVaultSecret secret = client.getSecret("secret-name");
-System.out.println(secret.getValue());
+// Use secret.getValue() securely - do not log secrets
 ```
 
 **Go** - Key Vault Secrets:
@@ -144,7 +144,6 @@ package main
 
 import (
     "context"
-    "fmt"
 
     "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
     "github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
@@ -155,7 +154,7 @@ func main() {
     client, _ := azsecrets.NewClient("https://VAULT.vault.azure.net/", cred, nil)
 
     resp, _ := client.GetSecret(context.Background(), "secret-name", "", nil)
-    fmt.Println(*resp.Value)
+    // Use *resp.Value securely - do not log secrets
 }
 ```
 
@@ -167,5 +166,5 @@ use azure_security_keyvault_secrets::SecretClient;
 let credential = DeveloperToolsCredential::new(None)?;
 let client = SecretClient::new("https://VAULT.vault.azure.net/", credential.clone(), None)?;
 let secret = client.get_secret("secret-name", None).await?.into_model()?;
-println!("{:?}", secret.value);
+// Use secret.value securely - do not log secrets
 ```
