@@ -91,7 +91,7 @@ jobs:
           fi
           npm run test:integration -- --testPathPattern="azure-deploy" $TEST_ARGS
       
-      # Todo: Generate a report to for test details
+      # Todo: Generate a report to give test details
       # - name: Upload integration test results
       #   uses: actions/upload-artifact@v4
       #   with:
