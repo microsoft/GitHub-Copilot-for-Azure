@@ -84,19 +84,7 @@ terraform state list
 
 ### 9. Azure Policy Validation
 
-Retrieve and validate Azure policies for the subscription:
-
-**Get subscription ID:**
-```bash
-az account show --query id -o tsv
-```
-
-**Validate policies:**
-```
-mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
-```
-
-**Review:** See [Policy Validation Guide](../policy-validation.md)
+See [Policy Validation Guide](../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
 
 ## References
 

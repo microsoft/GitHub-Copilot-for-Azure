@@ -1,5 +1,25 @@
 # Azure Policy Validation
 
+## How to Validate Policies
+
+### 1. Get Subscription ID
+
+Retrieve your current Azure subscription ID:
+
+```bash
+az account show --query id -o tsv
+```
+
+### 2. Validate Policies
+
+Call the Azure MCP Policy tool to retrieve policies for your subscription:
+
+```
+mcp_azure_mcp_policy(command: "list", parameters: { subscription_id: "<subscription-id>" })
+```
+
+Replace `<subscription-id>` with the actual subscription ID obtained from step 1.
+
 ## Review Policy Compliance
 
 When validating Azure policies for your subscription:
