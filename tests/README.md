@@ -183,6 +183,8 @@ npm install
 | `npm run test:integration` | Run integration tests (requires Copilot CLI auth) |
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
 | `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
+| `npm test -- --testNamePattern=skill-invocation` | Run tests for all skills |
+| `npm test -- --testNamePattern=static-web-apps-deploy` | Run tests for SWA deploy |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run test:coverage` | Generate coverage report |
 | `npm run test:verbose` | Show individual test names |
@@ -205,6 +207,8 @@ To run integration tests locally:
 ```bash
 # 1. Ensure you're authenticated
 copilot --help  # Should show help, not login prompt
+az login
+azd auth login
 
 # 2. Run tests (integration will run automatically if SDK is available)
 npm test
@@ -224,6 +228,18 @@ npm test -- --testPathPattern=azure-validation
 # PASS azure-validation/unit.test.ts
 # PASS azure-validation/triggers.test.ts
 # Test Suites: 2 passed, 2 total
+```
+
+## Example: Test a Specific Subset of a Test
+To run SWA tests from deploy integration tests. 
+
+```bash
+cd tests
+npm test -- --testNamePattern=static-web-apps-deploy
+
+# Output:
+# PASS azure-deploy/integration.test.ts
+# Test Suites: 1 passed, 1 total
 ```
 
 ### Reading Test Output
