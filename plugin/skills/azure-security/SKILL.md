@@ -76,4 +76,4 @@ For deep documentation on specific services:
 
 ## Azure SDKs
 
-For programmatic access using Azure Identity and Key Vault SDKs, see [SDK Usage Guide](references/sdk-usage.md).
+For building applications that interact with Azure security services programmatically, Azure provides SDK packages in multiple languages (.NET, Java, JavaScript, Python, Go, Rust). See [SDK Usage Guide](references/sdk-usage.md) for package names, installation commands, and quick start examples.
