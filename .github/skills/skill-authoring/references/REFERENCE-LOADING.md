@@ -58,20 +58,6 @@ Choose your approach:
 <!-- Not all recipes (~900 tokens) -->
 ```
 
-### Avoid Reference Chains
-
-```
-❌ Bad: Multiple hops
-SKILL.md → guide.md → details.md → advanced.md
-
-✅ Good: Flat structure
-SKILL.md → guide.md
-SKILL.md → details.md
-SKILL.md → advanced.md
-```
-
-Spec recommends: **One level deep from SKILL.md**
-
 ## Self-Contained Reference Example
 
 ```markdown
