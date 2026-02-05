@@ -249,3 +249,13 @@ properties: {
   }
 }
 ```
+
+## Security Features
+
+| Feature | Description |
+|---------|-------------|
+| Workload Identity | Secure pod access to Azure services without secrets |
+| Network Policy | Control traffic between pods (Calico/Azure) |
+| Private Cluster | Disable public API server endpoint |
+
+For comprehensive security guidance, see: [security.md](../security.md)
