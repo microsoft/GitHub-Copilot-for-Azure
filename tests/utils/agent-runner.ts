@@ -264,8 +264,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     // Copilot client with yolo mode
     const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
-    if (process.env.DEBUG)
-    {
+    if (process.env.DEBUG) {
       cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
@@ -340,6 +339,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     // Send follow-up if non-interactive
     if (config.nonInteractive) {
+      isComplete = false;
       await session.send({ prompt: "Go with recommended options." });
       await waitForIdle();
     }
