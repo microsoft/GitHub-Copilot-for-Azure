@@ -184,7 +184,7 @@ npm install
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
 | `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
 | `npm test -- --testNamePattern=skill-invocation` | Run tests for all skills |
-| `npm test -- --testNamePattern=static-web-apps-deploy` | Run tests for SWA deploy |
+| `npm test -- --testPathPattern=azure-deploy --testNamePattern=static-web-apps-deploy` | Run tests for SWA deploy |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run test:coverage` | Generate coverage report |
 | `npm run test:verbose` | Show individual test names |
@@ -208,6 +208,8 @@ To run integration tests locally:
 # 1. Ensure you're authenticated
 copilot --help  # Should show help, not login prompt
 az login
+az account list --output table
+az account set --subscription "x"   # Select a default subscription from the table. 
 azd auth login
 
 # 2. Run tests (integration will run automatically if SDK is available)
@@ -235,7 +237,7 @@ To run SWA tests from deploy integration tests.
 
 ```bash
 cd tests
-npm test -- --testNamePattern=static-web-apps-deploy
+npm test -- --testPathPattern=azure-deploy --testNamePattern=static-web-apps-deploy
 
 # Output:
 # PASS azure-deploy/integration.test.ts
@@ -255,6 +257,16 @@ PASS SKILLS azure-validation/unit.test.ts
 
 **CI output:** JUnit XML at `tests/reports/junit.xml` - parsed by GitHub Actions for PR annotations.
 
+**Debug Mode:** When enviorment variable `DEBUG=1` is set logs will be recorded at `test/reports/test-run-{time}`
+
+
+### Generating Report
+You can generate a report on the **Debug** logs using:
+
+| Command | Use Case |
+|---------|----------|
+| `npm run report` | Generates a report of the most recent debug logs. |
+| `npm run report path/to/directory` | Generates a report on the logs in the directory passed in. |
 ---
 
 ## Adding Tests for a New Skill
