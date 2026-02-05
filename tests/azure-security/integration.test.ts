@@ -100,7 +100,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
           if (e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -128,7 +127,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
           if (e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -156,7 +154,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
           if (e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
