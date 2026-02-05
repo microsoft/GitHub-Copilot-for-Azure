@@ -49,9 +49,6 @@ expect.extend({
 if (!process.env.DEBUG) {
   global.console = {
     ...console,
-    log: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
     // Keep warn and error for test debugging
     warn: console.warn,
     error: console.error
