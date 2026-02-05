@@ -31,7 +31,6 @@ When Azure MCP is enabled:
 - `azure__role` with command `role_definition_list` - List role definitions
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
-
 ## CLI Fallback
 
 ```bash
@@ -73,3 +72,88 @@ For deep documentation on specific services:
 - Key Vault best practices -> [Key Vault documentation](https://learn.microsoft.com/azure/key-vault/general/overview)
 - Managed identity patterns -> [Managed identities documentation](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview)
 - RBAC configuration -> `azure-role-selector` skill or [Azure RBAC documentation](https://learn.microsoft.com/azure/role-based-access-control/overview)
+
+## Azure SDKs
+
+### Identity (Authentication)
+
+All Azure SDKs use their language's Identity library for credential-free authentication via `DefaultAzureCredential` or managed identity.
+
+| Language | Package | Install |
+|----------|---------|---------|
+| .NET | `Azure.Identity` | `dotnet add package Azure.Identity` |
+| Java | `azure-identity` | Maven: `com.azure:azure-identity` |
+| JavaScript | `@azure/identity` | `npm install @azure/identity` |
+| Python | `azure-identity` | `pip install azure-identity` |
+| Go | `azidentity` | `go get github.com/Azure/azure-sdk-for-go/sdk/azidentity` |
+| Rust | `azure_identity` | `cargo add azure_identity` |
+
+### Key Vault SDKs
+
+| Language | Secrets | Keys | Certificates |
+|----------|---------|------|--------------|
+| .NET | `Azure.Security.KeyVault.Secrets` | `Azure.Security.KeyVault.Keys` | `Azure.Security.KeyVault.Certificates` |
+| Java | `azure-security-keyvault-secrets` | `azure-security-keyvault-keys` | `azure-security-keyvault-certificates` |
+| JavaScript | `@azure/keyvault-secrets` | `@azure/keyvault-keys` | `@azure/keyvault-certificates` |
+| Python | `azure-keyvault-secrets` | `azure-keyvault-keys` | `azure-keyvault-certificates` |
+| Go | `azsecrets` | `azkeys` | `azcertificates` |
+| Rust | `azure_security_keyvault_secrets` | `azure_security_keyvault_keys` | `azure_security_keyvault_certificates` |
+
+### Quick Start Examples
+
+**Python** - Key Vault Secrets:
+```python
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+
+client = SecretClient(vault_url="https://VAULT.vault.azure.net/", credential=DefaultAzureCredential())
+secret = client.get_secret("secret-name")
+print(secret.value)
+```
+
+**JavaScript** - Key Vault Secrets:
+```javascript
+import { DefaultAzureCredential } from "@azure/identity";
+import { SecretClient } from "@azure/keyvault-secrets";
+
+const client = new SecretClient("https://VAULT.vault.azure.net/", new DefaultAzureCredential());
+const secret = await client.getSecret("secret-name");
+console.log(secret.value);
+```
+
+**C#** - Key Vault Secrets:
+```csharp
+var client = new SecretClient(new Uri("https://VAULT.vault.azure.net/"), new DefaultAzureCredential());
+KeyVaultSecret secret = client.GetSecret("secret-name");
+Console.WriteLine(secret.Value);
+```
+
+**Java** - Key Vault Secrets:
+```java
+SecretClient client = new SecretClientBuilder()
+    .vaultUrl("https://VAULT.vault.azure.net/")
+    .credential(new DefaultAzureCredentialBuilder().build())
+    .buildClient();
+KeyVaultSecret secret = client.getSecret("secret-name");
+System.out.println(secret.getValue());
+```
+
+**Go** - Key Vault Secrets:
+```go
+cred, _ := azidentity.NewDefaultAzureCredential(nil)
+client, _ := azsecrets.NewClient("https://VAULT.vault.azure.net/", cred, nil)
+
+resp, _ := client.GetSecret(context.Background(), "secret-name", "", nil)
+fmt.Println(*resp.Value)
+```
+
+**Rust** - Key Vault Secrets:
+```rust
+use azure_identity::DeveloperToolsCredential;
+use azure_security_keyvault_secrets::SecretClient;
+
+let credential = DeveloperToolsCredential::new(None)?;
+let client = SecretClient::new("https://VAULT.vault.azure.net/", credential.clone(), None)?;
+let secret = client.get_secret("secret-name", None).await?.into_model()?;
+println!("{:?}", secret.value);
+```
