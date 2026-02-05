@@ -191,3 +191,13 @@ CREATE USER [my-container-app] FROM EXTERNAL PROVIDER;
 ALTER ROLE db_datareader ADD MEMBER [my-container-app];
 ALTER ROLE db_datawriter ADD MEMBER [my-container-app];
 ```
+
+## Security Features
+
+| Feature | Description |
+|---------|-------------|
+| TDE | Transparent Data Encryption (enabled by default) |
+| Always Encrypted | Client-side encryption for sensitive columns |
+| Entra ID Auth | Microsoft Entra authentication (recommended) |
+
+For comprehensive security guidance, see: [data-protection](../../_shared/security/data-protection.md), [identity-access](../../_shared/security/identity-access.md)

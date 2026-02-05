@@ -186,3 +186,13 @@ properties: {
   enableMultipleWriteLocations: true
 }
 ```
+
+## Security Features
+
+| Feature | Description |
+|---------|-------------|
+| Encryption | Server-side encryption at rest (enabled by default) |
+| Firewall | IP-based access control |
+| Private Endpoint | Secure access over private network |
+
+For comprehensive security guidance, see: [data-protection](../../_shared/security/data-protection.md), [network-security](../../_shared/security/network-security.md)
