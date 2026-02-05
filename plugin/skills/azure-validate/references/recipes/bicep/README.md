@@ -79,7 +79,6 @@ az bicep lint --file ./infra/main.bicep
 ## References
 
 - [Error handling](mdc:errors.md)
-- [Policy validation](../policy-validation.md)
 
 ## Next
 

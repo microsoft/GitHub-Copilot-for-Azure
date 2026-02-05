@@ -85,7 +85,6 @@ terraform state list
 ## References
 
 - [Error handling](mdc:errors.md)
-- [Policy validation](../policy-validation.md)
 
 ## Next
 

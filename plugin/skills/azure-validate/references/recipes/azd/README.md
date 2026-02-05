@@ -108,7 +108,6 @@ azd package --no-prompt
 ## References
 
 - [Error handling](mdc:errors.md)
-- [Policy validation](../policy-validation.md)
 
 ## Next
 
