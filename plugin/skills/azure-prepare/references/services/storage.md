@@ -197,3 +197,13 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 | Hot | Frequent access | Higher storage, lower access |
 | Cool | Infrequent access (30+ days) | Lower storage, higher access |
 | Archive | Rare access (180+ days) | Lowest storage, highest access |
+
+## Security Features
+
+| Feature | Description |
+|---------|-------------|
+| Encryption | Server-side encryption at rest (enabled by default) |
+| SAS Tokens | Time-limited, scoped access without sharing keys |
+| Private Endpoint | Secure access over private network |
+
+For comprehensive security guidance, see: [security.md](../security.md)
