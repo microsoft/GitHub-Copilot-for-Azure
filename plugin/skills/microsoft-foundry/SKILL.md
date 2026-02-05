@@ -20,6 +20,8 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **agent/create** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [agent/create/create-ghcp-agent.md](agent/create/create-ghcp-agent.md) |
 | **agent/deploy** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [agent/deploy/deploy-agent.md](agent/deploy/deploy-agent.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
+| **troubleshooting/diagnose-429-errors** | Diagnosing and resolving HTTP 429 rate limiting errors. Use when encountering "Rate limit exceeded" errors, quota issues, or planning capacity. Covers quota analysis, retry strategies, and multi-region scaling. | [troubleshooting/diagnose-429-errors.md](troubleshooting/diagnose-429-errors.md) |
+| **troubleshooting/check-model-availability** | Checking regional availability of AI models. Use when planning deployments, validating model support in regions, or troubleshooting "model not found" errors. Helps select optimal regions and compare model availability. | [troubleshooting/check-model-availability.md](troubleshooting/check-model-availability.md) |
 
 > 💡 **Tip:** For a complete onboarding flow: `project/create` → `agent/create` → `agent/deploy`. If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
 
@@ -33,6 +35,8 @@ Use this skill when the user wants to:
 - **Evaluate agent performance** using built-in evaluators
 - **Set up monitoring** and continuous evaluation for production agents
 - **Troubleshoot issues** with deployments, agents, or evaluations
+- **Diagnose rate limiting** (HTTP 429) errors and optimize quota usage
+- **Check model availability** across regions for deployment planning
 
 ## Prerequisites
 
