@@ -292,9 +292,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       await config.setup(testWorkspace);
     }
 
-    // Copilot client with yolo mode and non-interactive session.
-    // Enables longer chats with full conversation history for the skill.
-    // -p must come first before other args.
+    // Copilot client with yolo mode
     const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
     if (process.env.DEBUG)
     {
