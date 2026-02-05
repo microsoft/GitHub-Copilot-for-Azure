@@ -1,11 +1,14 @@
 import type { Config } from "jest";
 
 const config: Config = {
-  // Use ts-jest for TypeScript support
-  preset: "ts-jest",
+  // Use ts-jest ESM preset for ESM-only packages like @github/copilot-sdk
+  preset: "ts-jest/presets/default-esm",
 
   // Use Node test environment
   testEnvironment: "node",
+
+  // Treat .ts files as ESM
+  extensionsToTreatAsEsm: [".ts"],
 
   // Root directory for tests
   rootDir: ".",
@@ -62,14 +65,20 @@ const config: Config = {
 
   // Module paths for easier imports
   moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",  // Handle ESM .js extension imports
     "^@utils/(.*)$": "<rootDir>/utils/$1",
     "^@fixtures/(.*)$": "<rootDir>/$1/fixtures"
   },
 
-  // Transform ESM modules from node_modules (copilot-sdk is ESM-only)
-  transformIgnorePatterns: [
-    "node_modules/(?!(@github/copilot-sdk|@github/copilot)/)"
-  ],
+  // ts-jest configuration for ESM
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        useESM: true,
+      },
+    ],
+  },
 
   // Display individual test results
   displayName: {

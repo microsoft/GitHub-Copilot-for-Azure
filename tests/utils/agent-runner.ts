@@ -15,7 +15,11 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { type CopilotSession, type CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+import { fileURLToPath } from "url";
+import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface AgentMetadata {
   events: SessionEvent[];
@@ -35,40 +39,6 @@ export interface TestConfig {
 
 export interface KeywordOptions {
   caseSensitive?: boolean;
-}
-
-// Lazy-loaded SDK
-let CopilotClientClass: typeof CopilotClient | undefined;
-let sdkLoadError: Error | undefined;
-
-async function getCopilotClient() {
-  if (sdkLoadError) {
-    throw sdkLoadError;
-  }
-  if (!CopilotClientClass) {
-    try {
-      // Manually construct the SDK path to bypass Jest's module resolution
-      const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "dist", "index.js");
-      const { pathToFileURL } = await import("url");
-      const sdkUrl = pathToFileURL(sdkPath).href;
-      if (process.env.DEBUG) {
-        console.log("SDK path:", sdkPath);
-        console.log("SDK URL:", sdkUrl);
-      }
-      // Use eval to bypass Jest's static import() transformation
-      const dynamicImport = eval("(url) => import(url)");
-      const sdk = await dynamicImport(sdkUrl);
-      CopilotClientClass = sdk.CopilotClient;
-    } catch (error) {
-      const errorMsg = (error as Error).message + "\n" + (error as Error).stack;
-      if (process.env.DEBUG) {
-        console.error("SDK load error:", errorMsg);
-      }
-      sdkLoadError = new Error("Failed to load @github/copilot-sdk. Ensure Node.js has ESM support and the SDK is installed. Error: " + errorMsg);
-      throw sdkLoadError;
-    }
-  }
-  return CopilotClientClass;
 }
 
 /**
@@ -278,8 +248,6 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
-  const CopilotClient = await getCopilotClient();
-
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
 
   // Declare client and session outside try block to ensure cleanup in finally
@@ -302,7 +270,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       cliArgs.push(buildLogFilePath());
     }
 
-    client = new CopilotClient!({
+    client = new CopilotClient({
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
@@ -514,8 +482,6 @@ export function shouldSkipIntegrationTests(): boolean {
 
   // Check if SDK package exists
   try {
-    const fs = require("fs");
-    const path = require("path");
     const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "package.json");
     if (!fs.existsSync(sdkPath)) {
       integrationSkipReason = "@github/copilot-sdk not installed";

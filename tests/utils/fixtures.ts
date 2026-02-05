@@ -6,6 +6,10 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface PromptFixtures {
   shouldTrigger: string[];
@@ -52,8 +56,8 @@ export function loadFixtures(skillName: string): Record<string, unknown> {
  * Load a specific fixture file
  */
 export function loadFixture<T = unknown>(
-  skillName: string, 
-  fixtureName: string, 
+  skillName: string,
+  fixtureName: string,
   extension = "json"
 ): T {
   const fixturePath = path.join(
@@ -80,9 +84,9 @@ export function loadFixture<T = unknown>(
  * Create a fixture file for a skill
  */
 export function createFixture(
-  skillName: string, 
-  fixtureName: string, 
-  content: unknown, 
+  skillName: string,
+  fixtureName: string,
+  content: unknown,
   extension = "json"
 ): void {
   const fixturesDir = path.join(
@@ -97,8 +101,8 @@ export function createFixture(
   }
 
   const fixturePath = path.join(fixturesDir, `${fixtureName}.${extension}`);
-  const fileContent = extension === "json" 
-    ? JSON.stringify(content, null, 2) 
+  const fileContent = extension === "json"
+    ? JSON.stringify(content, null, 2)
     : String(content);
 
   fs.writeFileSync(fixturePath, fileContent, "utf-8");

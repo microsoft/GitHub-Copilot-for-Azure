@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "ESNext",
     "outDir": "./dist",
     "rootDir": "./",
     "strict": true,
@@ -9,8 +9,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
-    "types": ["jest", "node"],
+    "moduleResolution": "bundler",
+    "types": [
+      "jest",
+      "node"
+    ],
     "declaration": true
   },
   "include": [

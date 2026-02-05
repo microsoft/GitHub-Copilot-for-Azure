@@ -9,13 +9,17 @@
  * Run with: npm run coverage:grid
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const SKILLS_PATH = path.resolve(__dirname, '../../plugin/skills');
-const TESTS_PATH = path.resolve(__dirname, '..');
-const README_PATH = path.resolve(__dirname, '../README.md');
-const COVERAGE_PATH = path.resolve(__dirname, '../coverage/coverage-summary.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const SKILLS_PATH = path.resolve(__dirname, "../../plugin/skills");
+const TESTS_PATH = path.resolve(__dirname, "..");
+const README_PATH = path.resolve(__dirname, "../README.md");
+const COVERAGE_PATH = path.resolve(__dirname, "../coverage/coverage-summary.json");
 
 /**
  * Get list of all skills
@@ -43,7 +47,7 @@ function hasTests(skillName) {
   if (!fs.existsSync(skillTestDir)) return false;
 
   const files = fs.readdirSync(skillTestDir);
-  return files.some(f => f.endsWith('.test.ts'));
+  return files.some(f => f.endsWith(".test.ts"));
 }
 
 /**
@@ -53,9 +57,9 @@ function loadCoverage() {
   if (!fs.existsSync(COVERAGE_PATH)) {
     return null;
   }
-  
+
   try {
-    return JSON.parse(fs.readFileSync(COVERAGE_PATH, 'utf-8'));
+    return JSON.parse(fs.readFileSync(COVERAGE_PATH, "utf-8"));
   } catch {
     return null;
   }
@@ -66,19 +70,19 @@ function loadCoverage() {
  */
 function getSkillCoverage(skillName, coverageData) {
   if (!coverageData) return null;
-  
+
   // Look for files matching the skill
   const skillPattern = `plugin/skills/${skillName}`;
   let totalStatements = 0;
   let coveredStatements = 0;
-  
+
   for (const [filePath, data] of Object.entries(coverageData)) {
     if (filePath.includes(skillPattern) && data.statements) {
       totalStatements += data.statements.total;
       coveredStatements += data.statements.covered;
     }
   }
-  
+
   if (totalStatements === 0) return null;
   return Math.round((coveredStatements / totalStatements) * 100);
 }
@@ -89,36 +93,36 @@ function getSkillCoverage(skillName, coverageData) {
 function generateGrid() {
   const skills = getSkills();
   const coverageData = loadCoverage();
-  
+
   const rows = [];
-  
+
   for (const skill of skills) {
     const hasAnyTests = hasTests(skill);
-    const hasUnit = hasTestFile(skill, 'unit');
-    const hasTriggers = hasTestFile(skill, 'triggers');
-    const hasIntegration = hasTestFile(skill, 'integration');
+    const hasUnit = hasTestFile(skill, "unit");
+    const hasTriggers = hasTestFile(skill, "triggers");
+    const hasIntegration = hasTestFile(skill, "integration");
     const coverage = getSkillCoverage(skill, coverageData);
-    
+
     rows.push({
       skill,
-      tests: hasAnyTests ? '✅' : '❌',
-      unit: hasUnit ? '✅' : '-',
-      triggers: hasTriggers ? '✅' : '-',
-      integration: hasIntegration ? '✅' : '-',
-      coverage: coverage !== null ? `${coverage}%` : '-'
+      tests: hasAnyTests ? "✅" : "❌",
+      unit: hasUnit ? "✅" : "-",
+      triggers: hasTriggers ? "✅" : "-",
+      integration: hasIntegration ? "✅" : "-",
+      coverage: coverage !== null ? `${coverage}%` : "-"
     });
   }
-  
+
   // Generate markdown table
-  let table = '| Skill | Tests | Unit | Triggers | Integration | Coverage |\n';
-  table += '|-------|-------|------|----------|-------------|----------|\n';
-  
+  let table = "| Skill | Tests | Unit | Triggers | Integration | Coverage |\n";
+  table += "|-------|-------|------|----------|-------------|----------|\n";
+
   for (const row of rows) {
     table += `| ${row.skill} | ${row.tests} | ${row.unit} | ${row.triggers} | ${row.integration} | ${row.coverage} |\n`;
   }
-  
-  table += `\n**Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage`;
-  
+
+  table += "\n**Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage";
+
   return table;
 }
 
@@ -126,53 +130,51 @@ function generateGrid() {
  * Update README.md with new coverage grid
  */
 function updateReadme() {
-  let readme = fs.readFileSync(README_PATH, 'utf-8');
-  
-  const startMarker = '<!-- COVERAGE_GRID_START -->';
-  const endMarker = '<!-- COVERAGE_GRID_END -->';
-  
+  const readme = fs.readFileSync(README_PATH, "utf-8");
+
+  const startMarker = "<!-- COVERAGE_GRID_START -->";
+  const endMarker = "<!-- COVERAGE_GRID_END -->";
+
   const startIndex = readme.indexOf(startMarker);
   const endIndex = readme.indexOf(endMarker);
-  
+
   if (startIndex === -1 || endIndex === -1) {
-    console.error('Coverage grid markers not found in README.md');
+    console.error("Coverage grid markers not found in README.md");
     process.exit(1);
   }
-  
+
   const grid = generateGrid();
-  const newContent = readme.substring(0, startIndex + startMarker.length) + 
-    '\n' + grid + '\n' + 
+  const newContent = readme.substring(0, startIndex + startMarker.length) +
+    "\n" + grid + "\n" +
     readme.substring(endIndex);
-  
+
   fs.writeFileSync(README_PATH, newContent);
-  console.log('README.md updated with coverage grid');
+  console.log("README.md updated with coverage grid");
 }
 
 /**
  * Print coverage grid to console
  */
 function printGrid() {
-  console.log('\n=== Skills Coverage Grid ===\n');
+  console.log("\n=== Skills Coverage Grid ===\n");
   console.log(generateGrid());
-  
+
   const skills = getSkills();
   const tested = skills.filter(s => hasTests(s)).length;
   console.log(`\nSummary: ${tested}/${skills.length} skills have tests`);
 }
 
 // Main execution
-if (require.main === module) {
-  const args = process.argv.slice(2);
-  
-  if (args.includes('--print')) {
-    printGrid();
-  } else {
-    updateReadme();
-    printGrid();
-  }
+const args = process.argv.slice(2);
+
+if (args.includes("--print")) {
+  printGrid();
+} else {
+  updateReadme();
+  printGrid();
 }
 
-module.exports = {
+export {
   getSkills,
   hasTests,
   hasTestFile,
