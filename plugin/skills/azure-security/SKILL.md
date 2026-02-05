@@ -124,7 +124,7 @@ console.log(secret.value);
 **C#** - Key Vault Secrets:
 ```csharp
 var client = new SecretClient(new Uri("https://VAULT.vault.azure.net/"), new DefaultAzureCredential());
-KeyVaultSecret secret = client.GetSecret("secret-name");
+KeyVaultSecret secret = await client.GetSecretAsync("secret-name");
 Console.WriteLine(secret.Value);
 ```
 
