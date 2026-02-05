@@ -295,10 +295,10 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     // Copilot client with yolo mode and non-interactive session.
     // Enables longer chats with full conversation history for the skill.
     // -p must come first before other args.
-    let cliArgs: string[] = config.nonInteractive ? ['--yolo'] : [];
+    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
     if (process.env.DEBUG)
     {
-      cliArgs.push('--log-dir');
+      cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
 
@@ -354,7 +354,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
             resolveIdle();
             resolveIdle = null;
           }
-          session!.abort();
+          void session!.abort();
           return;
         }
       }
