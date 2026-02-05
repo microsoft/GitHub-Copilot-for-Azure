@@ -504,18 +504,15 @@ export function getIntegrationSkipReason(): string | undefined {
 
 /**
  * Common Azure deployment link patterns
+ * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
  */
 const DEPLOY_LINK_PATTERNS = [
-  // Azure Portal resource links
-  /https:\/\/portal\.azure\.com\/#[@/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/i,
-  // Azure App Service URLs
-  /https?:\/\/[\w-]+\.azurewebsites\.net/i,
+  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w-]+\.azurestaticapps\.net/i,
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/i,
-  // Azure Portal direct links
-  /https:\/\/portal\.azure\.com\/#blade\/[\w/]+/i,
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
 ];
 
 /**

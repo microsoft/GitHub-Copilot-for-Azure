@@ -124,7 +124,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a static whiteboard web app and deploy to azure using my current subscription in eastus region.",
+        prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
@@ -141,7 +141,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("creates static portfolio website and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus region.",
+        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
@@ -161,7 +161,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("app-service-deploy", () => {
     test("creates discussion board and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.",
+        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
@@ -178,7 +178,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("creates todo list with frontend and API and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.",
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
         nonInteractive: true    
       });
 
@@ -198,7 +198,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("azure-functions-deploy", () => {
     test("creates serverless HTTP API and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
-        prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus region.",
+        prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
@@ -215,7 +215,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("creates event-driven function app and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
-        prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus region.",
+        prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
@@ -235,7 +235,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("azure-container-apps-deploy", () => {
     test("creates containerized web application and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
-        prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus region.",
+        prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
@@ -252,7 +252,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("creates simple containerized Node.js app and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
-        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus region.",
+        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region.",
         nonInteractive: true
       });
 
