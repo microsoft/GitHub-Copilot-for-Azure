@@ -66,6 +66,10 @@ Use Bicep linter rules:
 az bicep lint --file ./infra/main.bicep
 ```
 
+### 6. Azure Policy Validation
+
+See [Policy Validation Guide](../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+
 ## Checklist
 
 | Check | Command | Pass |
