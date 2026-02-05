@@ -51,9 +51,21 @@ cd scripts
 npm run tokens -- check plugin/skills/my-skill/SKILL.md
 ```
 
+### Integrity Checks
+
+When reviewing or authoring skills, verify:
+1. **No broken links** - All referenced files exist
+2. **No orphaned references** - All reference files are linked
+3. **Token budgets** - References under 1000 tokens (split if exceeded)
+4. **No duplicates** - Consolidate repeated content
+
+See [VALIDATION.md](references/VALIDATION.md) for detailed procedures.
+
 ## Reference Documentation
 
-- [GUIDELINES.md](references/GUIDELINES.md) - Detailed writing guidelines
-- [REFERENCE-LOADING.md](references/REFERENCE-LOADING.md) - How references load and token efficiency
-- [CHECKLIST.md](references/CHECKLIST.md) - Pre-submission checklist
+- [Guidelines](references/guidelines/README.md) - Detailed writing guidelines
+- [Token Budgets](references/token-budgets.md) - Limits and splitting guidance
+- [Reference Loading](references/REFERENCE-LOADING.md) - How references load
+- [Checklist](references/CHECKLIST.md) - Pre-submission checklist
+- [Validation](references/VALIDATION.md) - Link and reference validation
 - [agentskills.io/specification](https://agentskills.io/specification) - Official spec
