@@ -224,6 +224,7 @@ Environment variables:
 
 ```bash
 cd tests
+env:DEBUG="1"
 npm test -- --testPathPattern=azure-validation
 
 # Output:
