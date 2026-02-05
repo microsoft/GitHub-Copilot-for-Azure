@@ -150,7 +150,7 @@ BinaryData data = blob.downloadContent();
 cred, _ := azidentity.NewDefaultAzureCredential(nil)
 client, _ := azblob.NewClient("https://ACCOUNT.blob.core.windows.net/", cred, nil)
 
-resp, _ := client.DownloadStream(context.TODO(), "my-container", "my-blob.txt", nil)
+resp, _ := client.DownloadStream(context.Background(), "my-container", "my-blob.txt", nil)
 data, _ := io.ReadAll(resp.Body)
 ```
 
