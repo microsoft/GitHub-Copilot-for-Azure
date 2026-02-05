@@ -8,10 +8,14 @@
  * Run with: npm run results
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const REPORTS_PATH = path.resolve(__dirname, '../reports/junit.xml');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const REPORTS_PATH = path.resolve(__dirname, "../reports/junit.xml");
 
 // ANSI color codes for terminal output
 const colors = {
@@ -67,12 +71,12 @@ function parseJunitXml(xmlContent) {
   // Parse each testsuite (use negative lookahead to avoid matching <testsuites>)
   const suiteRegex = /<testsuite(?!s)[^>]*>[\s\S]*?<\/testsuite>/g;
   let suiteMatch;
-  
+
   while ((suiteMatch = suiteRegex.exec(xmlContent)) !== null) {
     const suiteXml = suiteMatch[0];
     const suiteAttrsMatch = suiteXml.match(/<testsuite[^>]*>/);
     if (!suiteAttrsMatch) continue;
-    
+
     const suiteAttrs = suiteAttrsMatch[0];
     const suite = {
       name: extractAttr(suiteAttrs, 'name') || 'Unknown Suite',
@@ -87,12 +91,12 @@ function parseJunitXml(xmlContent) {
     // Parse testcases within this suite
     const testcaseRegex = /<testcase[^>]*>[\s\S]*?<\/testcase>|<testcase[^/]*\/>/g;
     let testMatch;
-    
+
     while ((testMatch = testcaseRegex.exec(suiteXml)) !== null) {
       const testXml = testMatch[0];
       const testAttrsMatch = testXml.match(/<testcase[^>]*>/);
       if (!testAttrsMatch) continue;
-      
+
       const testAttrs = testAttrsMatch[0];
       const testcase = {
         classname: extractAttr(testAttrs, 'classname') || '',
@@ -198,7 +202,7 @@ function pad(str, len, align = 'left') {
  */
 function printResultsTable(results) {
   const { green, red, yellow, cyan, bright, reset, dim, bgGreen, bgRed } = colors;
-  
+
   console.log('\n');
   console.log(`${bright}╔══════════════════════════════════════════════════════════════════════════════╗${reset}`);
   console.log(`${bright}║                           TEST RESULTS SUMMARY                               ║${reset}`);
@@ -207,12 +211,12 @@ function printResultsTable(results) {
 
   // Summary stats
   const passed = results.totalTests - results.failures - results.errors;
-  const passRate = results.totalTests > 0 
-    ? ((passed / results.totalTests) * 100).toFixed(1) 
+  const passRate = results.totalTests > 0
+    ? ((passed / results.totalTests) * 100).toFixed(1)
     : '0.0';
   const statusBg = results.failures > 0 || results.errors > 0 ? bgRed : bgGreen;
   const statusText = results.failures > 0 || results.errors > 0 ? ' FAIL ' : ' PASS ';
-  
+
   console.log(`  ${statusBg}${bright}${statusText}${reset}  ${dim}Total:${reset} ${results.totalTests}  ${green}Passed:${reset} ${passed}  ${red}Failed:${reset} ${results.failures}  ${yellow}Errors:${reset} ${results.errors}  ${dim}(${passRate}% pass rate)${reset}`);
   console.log(`  ${dim}Duration: ${formatDuration(results.time)}${reset}`);
   console.log('');
@@ -220,7 +224,7 @@ function printResultsTable(results) {
   // Table header
   const colWidths = { status: 6, test: 55, time: 10 };
   const totalWidth = colWidths.status + colWidths.test + colWidths.time + 6;
-  
+
   console.log(`  ${dim}${'─'.repeat(totalWidth)}${reset}`);
   console.log(`  ${bright}${pad('Status', colWidths.status)}${reset} │ ${bright}${pad('Test', colWidths.test)}${reset} │ ${bright}${pad('Time', colWidths.time, 'right')}${reset}`);
   console.log(`  ${dim}${'─'.repeat(totalWidth)}${reset}`);
@@ -230,28 +234,28 @@ function printResultsTable(results) {
     // Suite header
     const suiteName = suite.name.replace(/\.test\.ts$/, '').replace(/\//g, ' › ');
     console.log(`  ${cyan}${bright}${suiteName}${reset}`);
-    
+
     for (const test of suite.testcases) {
       const { icon, color } = getStatusDisplay(test.status);
       const statusStr = `  ${color}${icon}${reset}   `;
       const testName = truncate(test.name, colWidths.test);
       const timeStr = formatDuration(test.time);
-      
+
       console.log(`  ${statusStr} │ ${pad(testName, colWidths.test)} │ ${pad(timeStr, colWidths.time, 'right')}`);
     }
     console.log(`  ${dim}${'─'.repeat(totalWidth)}${reset}`);
   }
 
   // Failed tests details
-  const failedTests = results.suites.flatMap(s => 
+  const failedTests = results.suites.flatMap(s =>
     s.testcases.filter(t => t.status === 'failed' || t.status === 'error')
   );
-  
+
   if (failedTests.length > 0) {
     console.log('');
     console.log(`${red}${bright}FAILED TESTS:${reset}`);
     console.log('');
-    
+
     for (const test of failedTests) {
       console.log(`  ${red}✗${reset} ${test.name}`);
       if (test.failure) {
@@ -281,15 +285,16 @@ function main() {
 
   const xmlContent = fs.readFileSync(REPORTS_PATH, 'utf-8');
   const results = parseJunitXml(xmlContent);
-  
+
   printResultsTable(results);
-  
+
   // Exit with appropriate code
   process.exit(results.failures > 0 || results.errors > 0 ? 1 : 0);
 }
 
-if (require.main === module) {
+// Run main when executed directly (ESM equivalent of require.main === module)
+if (process.argv[1] === __filename) {
   main();
 }
 
-module.exports = { parseJunitXml, printResultsTable };
+export { parseJunitXml, printResultsTable };

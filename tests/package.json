@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Test suite for Azure Copilot Skills",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "cross-env jest",
     "test:unit": "cross-env jest --testPathIgnorePatterns=\"node_modules|_template|integration\"",

@@ -12,7 +12,11 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { run } from "../utils/agent-runner";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const REPORTS_PATH = path.resolve(__dirname, "../reports");
 const TEMPLATE_PATH = path.resolve(__dirname, "report-template.md");
@@ -157,9 +161,7 @@ async function main() {
   await processTestRun(targetPath);
 }
 
-if (require.main === module) {
-  main().catch(error => {
-    console.error("Error:", error);
-    process.exit(1);
-  });
-}
+main().catch(error => {
+  console.error("Error:", error);
+  process.exit(1);
+});
