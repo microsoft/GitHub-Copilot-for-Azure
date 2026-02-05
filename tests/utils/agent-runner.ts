@@ -292,11 +292,10 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       await config.setup(testWorkspace);
     }
 
-    // Copilot client with yolo mode and non-interactive session.
-    // Enables longer chats with full conversation history for the skill.
-    // -p must come first before other args.
-    const cliArgs: string[] = config.nonInteractive ? ["-p", "--yolo"] : [];
-    if (process.env.DEBUG) {
+    // Copilot client with yolo mode
+    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
+    if (process.env.DEBUG)
+    {
       cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
@@ -324,34 +323,49 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     });
 
     const agentMetadata: AgentMetadata = { events: [] };
+    let resolveIdle: (() => void) | null = null;
 
-    const done = new Promise<void>((resolve) => {
-      session!.on(async (event: SessionEvent) => {
-        if (process.env.DEBUG) {
-          console.log(`=== session event ${event.type}`);
+    const waitForIdle = () => new Promise<void>((resolve) => {
+      resolveIdle = resolve;
+    });
+
+    session!.on(async (event: SessionEvent) => {
+      if (process.env.DEBUG) {
+        console.log(`=== session event ${event.type}`);
+      }
+
+      if (event.type === "session.idle") {
+        if (resolveIdle) {
+          resolveIdle();
+          resolveIdle = null;
         }
+        return;
+      }
 
-        if (event.type === "session.idle") {
-          resolve();
+      // Capture all events
+      agentMetadata.events.push(event);
+
+      // Check for early termination
+      if (config.shouldEarlyTerminate) {
+        if (config.shouldEarlyTerminate(agentMetadata)) {
+          if (resolveIdle) {
+            resolveIdle();
+            resolveIdle = null;
+          }
+          void session!.abort();
           return;
         }
-
-        // Capture all events
-        agentMetadata.events.push(event);
-
-        // Check for early termination
-        if (config.shouldEarlyTerminate) {
-          if (config.shouldEarlyTerminate(agentMetadata)) {
-            resolve();
-            void session!.abort();
-            return;
-          }
-        }
-      });
+      }
     });
 
     await session.send({ prompt: config.prompt });
-    await done;
+    await waitForIdle();
+
+    // Send follow-up if non-interactive
+    if (config.nonInteractive) {
+      await session.send({ prompt: "Go with recommended options." });
+      await waitForIdle();
+    }
 
     // Generate markdown report
     writeMarkdownReport(config, agentMetadata);
