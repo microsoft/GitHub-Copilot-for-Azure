@@ -11,6 +11,45 @@ Secure Azure resources following Zero Trust principles.
 
 ---
 
+## Security Services
+
+| Service | Use When | MCP Tools | CLI |
+|---------|----------|-----------|-----|
+| Key Vault | Secrets, keys, certificates | `azure__keyvault` | `az keyvault` |
+| Managed Identity | Credential-free authentication | — | `az identity` |
+| RBAC | Role-based access control | `azure__role` | `az role` |
+| Entra ID | Identity and access management | — | `az ad` |
+| Defender | Threat protection, security posture | — | `az security` |
+
+### MCP Tools (Preferred)
+
+When Azure MCP is enabled:
+
+**Key Vault:**
+- `azure__keyvault` with command `keyvault_list` — List Key Vaults
+- `azure__keyvault` with command `keyvault_secret_list` — List secrets
+- `azure__keyvault` with command `keyvault_secret_get` — Get secret value
+
+**RBAC:**
+- `azure__role` with command `role_assignment_list` — List role assignments
+- `azure__role` with command `role_definition_list` — List role definitions
+
+### CLI Quick Reference
+
+```bash
+# Key Vault
+az keyvault list --output table
+az keyvault secret list --vault-name VAULT --output table
+
+# RBAC
+az role assignment list --output table
+
+# Managed Identity
+az identity list --output table
+```
+
+---
+
 ## Identity and Access
 
 ### Checklist
@@ -48,8 +87,9 @@ az role assignment create \
 
 | Role | Use When |
 |------|----------|
-| Reader | View-only access |
+| Owner | Full access + assign roles |
 | Contributor | Full access except IAM |
+| Reader | View-only access |
 | Key Vault Secrets User | Read secrets only |
 | Storage Blob Data Reader | Read blobs only |
 
@@ -176,3 +216,12 @@ Use Microsoft Defender for Cloud for:
 3. **Configure alerts** — Set up notifications for security events
 4. **Diagnostic logs** — Enable for all resources, send to Log Analytics
 5. **Audit logging** — Track administrative actions and access
+
+---
+
+## Further Reading
+
+- [Key Vault documentation](https://learn.microsoft.com/azure/key-vault/general/overview)
+- [Managed identities documentation](https://learn.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview)
+- [Azure RBAC documentation](https://learn.microsoft.com/azure/role-based-access-control/overview)
+- [Microsoft Defender for Cloud](https://learn.microsoft.com/azure/defender-for-cloud/defender-for-cloud-introduction)
