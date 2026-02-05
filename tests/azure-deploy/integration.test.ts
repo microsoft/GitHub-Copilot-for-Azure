@@ -9,9 +9,9 @@
  * 2. Run `copilot` and authenticate
  */
 
-import { 
-  run, 
-  isSkillInvoked, 
+import {
+  run,
+  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
   hasDeployLinks
@@ -32,18 +32,19 @@ if (skipTests && skipReason) {
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;
+const deployTestTimeoutMs = 1800000;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("skill-invocation", () => {
     test("invokes azure-deploy skill for deployment prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "Run azd up to deploy my already-prepared app to Azure"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -55,7 +56,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
@@ -64,13 +65,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("invokes azure-deploy skill for publish to Azure prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "Publish my web app to Azure and configure the environment"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -82,7 +83,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for publish prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
@@ -91,13 +92,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("invokes azure-deploy skill for Azure Functions deployment prompt", async () => {
       let successCount = 0;
-      
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
             prompt: "Deploy my Azure Functions app to the cloud using azd"
           });
-          
+
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
@@ -109,7 +110,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-      
+
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for Functions deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Functions deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
@@ -137,7 +138,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
 
     test("creates static portfolio website and deploys to Azure", async () => {
       const agentMetadata = await run({
@@ -154,7 +155,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
   });
 
   // App Service
@@ -174,12 +175,12 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API and deploys to Azure", async () => {
       const agentMetadata = await run({
         prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
-        nonInteractive: true    
+        nonInteractive: true
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -191,7 +192,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
   });
 
   // Azure Functions
@@ -211,7 +212,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
 
     test("creates event-driven function app and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
@@ -228,7 +229,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
   });
 
   // Azure Container Apps (ACA)
@@ -248,7 +249,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
@@ -265,6 +266,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
-    });
+    }, deployTestTimeoutMs);
   });
 });
