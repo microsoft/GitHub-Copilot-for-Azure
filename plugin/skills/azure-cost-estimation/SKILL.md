@@ -1,6 +1,14 @@
 ---
 name: azure-cost-estimation
-description: Estimate Azure deployment costs before provisioning by analyzing Bicep and ARM templates. Supports VMs, Storage, SQL Database, App Service, AKS, Container Apps, and more. USE FOR: cost estimation, pricing estimates, how much will deployment cost, estimate Azure costs, calculate monthly costs, compare pricing across regions, analyze template costs, budget planning, infrastructure cost breakdown. DO NOT USE FOR: deploying resources (use azure-deploy), optimizing existing resources (use azure-cost-optimization), monitoring actual spending (use azure-observability), creating templates (use azure-create-app).
+description: |
+  Estimate Azure deployment costs before provisioning by analyzing Bicep and ARM templates.
+  Supports VMs, Storage, SQL Database, App Service, AKS, Container Apps, and more. USE FOR:
+  cost estimation, pricing estimates, how much will deployment cost, what will cost be,
+  estimate Azure costs, calculate monthly costs, monthly Azure costs, compare pricing across
+  regions, analyze template costs, budget planning, infrastructure cost breakdown, deployment
+  budget, cost breakdown. DO NOT USE FOR: deploying resources (use azure-deploy), optimizing
+  existing resources (use azure-cost-optimization), monitoring actual spending (use
+  azure-observability), creating templates (use azure-create-app).
 ---
 
 # Azure Cost Estimation
@@ -270,7 +278,7 @@ Generate a markdown cost report with itemized breakdown.
 
 ### Report Structure
 
-See [references/COST-REPORT-TEMPLATE.md](references/COST-REPORT-TEMPLATE.md) for the complete report template and field descriptions.
+See [references/cost-report-template.md](references/cost-report-template.md) for the complete report template and field descriptions.
 
 **Key sections included in the report:**
 - **Summary**: Total monthly/yearly costs and resource count
@@ -329,14 +337,14 @@ python price_lookup.py --service "Virtual Machines" --sku "Standard_D4s_v3" --re
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | "Price not found" | SKU not available in region | Try different region or check SKU name |
-| "Resource type not supported" | Parser doesn't handle this type | Check [RESOURCE-MAPPINGS.md](references/RESOURCE-MAPPINGS.md) for supported types |
+| "Resource type not supported" | Parser doesn't handle this type | Check [resource-mappings.md](references/resource-mappings.md) for supported types |
 | "Parameter not resolved" | Template uses parameters without defaults | Provide parameter file with `--params` |
 | API rate limiting | Too many requests | Add delays between requests |
 | Incorrect total | Missing resources | Ensure all resources are in template |
 
 ## Supported Resource Types
 
-See [references/RESOURCE-MAPPINGS.md](references/RESOURCE-MAPPINGS.md) for the complete list of supported Azure resource types and their pricing API mappings.
+See [references/resource-mappings.md](references/resource-mappings.md) for the complete list of supported Azure resource types and their pricing API mappings.
 
 ## Customer-Specific Pricing (Enterprise Agreements)
 

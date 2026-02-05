@@ -9,9 +9,9 @@
  * 2. Run `copilot` and authenticate
  */
 
-import { 
-  run, 
-  isSkillInvoked, 
+import {
+  run,
+  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
@@ -33,114 +33,114 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  
-  test("invokes azure-validate skill for deployment readiness check", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Check if my app is ready to deploy to Azure"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
-        }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
-      }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for readiness check: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for readiness check: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-  });
+  describe("skill-invocation", () => {
+    test("invokes azure-validate skill for deployment readiness check", async () => {
+      let successCount = 0;
 
-  test("invokes azure-validate skill for azure.yaml validation prompt", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Validate my azure.yaml configuration before deploying"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
-        }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
-      }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for azure.yaml validation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for azure.yaml validation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-  });
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Check if my app is ready to deploy to Azure"
+          });
 
-  // Preflight validation tests (formerly azure-deployment-preflight)
-  test("invokes azure-validate skill for Bicep validation prompt", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Validate my Bicep template before deploying to Azure"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
         }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
       }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for Bicep validation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Bicep validation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-  });
 
-  test("invokes azure-validate skill for what-if analysis prompt", async () => {
-    let successCount = 0;
-    
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await run({
-          prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
-        });
-        
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for readiness check: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for readiness check: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+
+    test("invokes azure-validate skill for azure.yaml validation prompt", async () => {
+      let successCount = 0;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Validate my azure.yaml configuration before deploying"
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
         }
-      } catch (e: any) {
-        if (e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
       }
-    }
-    
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    console.log(`${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-  });
 
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for azure.yaml validation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for azure.yaml validation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+
+    // Preflight validation tests (formerly azure-deployment-preflight)
+    test("invokes azure-validate skill for Bicep validation prompt", async () => {
+      let successCount = 0;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Validate my Bicep template before deploying to Azure"
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for Bicep validation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Bicep validation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+
+    test("invokes azure-validate skill for what-if analysis prompt", async () => {
+      let successCount = 0;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+  });
 });

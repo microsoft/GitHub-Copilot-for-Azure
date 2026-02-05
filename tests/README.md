@@ -382,29 +382,29 @@ tests/
 | Skill | Tests | Unit | Triggers | Integration | Coverage |
 |-------|-------|------|----------|-------------|----------|
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
-| azure-ai | ✅ | - | - | ✅ | - |
-| azure-aigateway | ✅ | - | - | ✅ | - |
-| azure-cost-estimation | ✅ | - | - | ✅ | - |
-| azure-cost-optimization | ✅ | - | - | ✅ | - |
-| azure-deploy | ✅ | - | - | ✅ | - |
+| azure-ai | ✅ | ✅ | ✅ | ✅ | - |
+| azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cost-estimation | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
+| azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | - | - | ✅ | - |
 | azure-functions | ✅ | - | - | ✅ | - |
-| azure-keyvault-expiration-audit | ✅ | - | - | ✅ | - |
+| azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
 | azure-networking | ✅ | - | - | ✅ | - |
 | azure-nodejs-production | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
 | azure-postgres | ✅ | - | - | ✅ | - |
 | azure-prepare | ✅ | - | - | ✅ | - |
-| azure-quick-review | ✅ | - | - | ✅ | - |
+| azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
 | azure-resource-visualizer | ✅ | - | - | ✅ | - |
-| azure-role-selector | ✅ | - | - | ✅ | - |
+| azure-role-selector | ✅ | ✅ | ✅ | ✅ | - |
 | azure-security | ✅ | - | - | ✅ | - |
 | azure-security-hardening | ✅ | - | - | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
 | azure-validate | ✅ | ✅ | ✅ | ✅ | - |
-| entra-app-registration | ✅ | - | - | ✅ | - |
-| microsoft-foundry | ✅ | - | - | ✅ | - |
+| entra-app-registration | ✅ | ✅ | ✅ | ✅ | - |
+| microsoft-foundry | ✅ | ✅ | ✅ | ✅ | - |
 
 **Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage
 <!-- COVERAGE_GRID_END -->

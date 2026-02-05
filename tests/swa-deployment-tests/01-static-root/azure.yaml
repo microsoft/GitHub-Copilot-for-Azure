@@ -1,0 +1,7 @@
+name: swa-test-static-root
+services:
+  web:
+    project: .
+    language: js
+    host: staticwebapp
+    dist: public

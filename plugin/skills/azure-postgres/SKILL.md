@@ -70,7 +70,7 @@ https://portal.azure.com/#resource/subscriptions/abc123.../resourceGroups/myrg/p
 
 ### Complete Setup Guide
 
-**[→ Microsoft Entra ID Authentication Setup Guide](./references/ENTRA-RBAC-OVERVIEW.md)**
+**[→ Microsoft Entra ID Authentication Setup Guide](./references/entra-rbac-overview.md)**
 
 This guide covers:
 - Enabling Entra ID authentication on PostgreSQL servers
@@ -84,11 +84,11 @@ Use these patterns based on your scenario:
 
 | Scenario | Guide Link | Use When |
 |----------|------------|----------|
-| **Developer Access** | [Pattern 1](./references/ENTRA-RBAC-OVERVIEW.md#pattern-1-developer-user-access) | Grant developers access with their Azure identity |
-| **App Authentication** | [Pattern 2](./references/ENTRA-RBAC-OVERVIEW.md#pattern-2-managed-identity-for-applications) | Passwordless access for Azure-hosted apps (Container Apps, App Service, Functions) |
-| **Team Access** | [Pattern 3](./references/ENTRA-RBAC-OVERVIEW.md#pattern-3-group-based-access-control) | Manage permissions via Azure AD groups |
-| **Connection Issues** | [Troubleshooting](./references/TROUBLESHOOTING.md) | Diagnose authentication and connection failures |
-| **Migration** | [Pattern 5](./references/ENTRA-RBAC-OVERVIEW.md#pattern-5-migration-from-password-auth) | Transition from password to Entra ID authentication |
+| **Developer Access** | [Pattern 1](./references/entra-rbac-overview.md#pattern-1-developer-user-access) | Grant developers access with their Azure identity |
+| **App Authentication** | [Pattern 2](./references/entra-rbac-overview.md#pattern-2-managed-identity-for-applications) | Passwordless access for Azure-hosted apps (Container Apps, App Service, Functions) |
+| **Team Access** | [Pattern 3](./references/entra-rbac-overview.md#pattern-3-group-based-access-control) | Manage permissions via Azure AD groups |
+| **Connection Issues** | [Troubleshooting](./references/troubleshooting.md) | Diagnose authentication and connection failures |
+| **Migration** | [Pattern 5](./references/entra-rbac-overview.md#pattern-5-migration-from-password-auth) | Transition from password to Entra ID authentication |
 
 ## Service Tiers
 
@@ -104,15 +104,15 @@ Use these patterns based on your scenario:
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| `role does not exist` | Role not created in database | Run `pgaadauth_create_principal` - [see guide](./references/ENTRA-RBAC-OVERVIEW.md) |
+| `role does not exist` | Role not created in database | Run `pgaadauth_create_principal` - [see guide](./references/entra-rbac-overview.md) |
 | `password authentication failed` | Token expired (5-60 min validity) | Get fresh token: `az account get-access-token --resource-type oss-rdbms` |
-| `permission denied` | Role lacks permissions | Run `GRANT` statements - [see templates](./references/PERMISSION-TEMPLATES.md) |
+| `permission denied` | Role lacks permissions | Run `GRANT` statements - [see templates](./references/permission-templates.md) |
 | Connection timeout | Firewall blocking access | Add firewall rule: `az postgres flexible-server firewall-rule create` |
 | Guest user login fails | Wrong UPN format | Use full UPN with `#EXT#` tag from Azure AD |
 
 ## References
 
-- [Microsoft Entra ID Authentication Setup](./references/ENTRA-RBAC-OVERVIEW.md) - Complete passwordless authentication guide
-- [SQL Functions](./references/SQL-FUNCTIONS.md) - Entra ID role management functions
-- [Permission Templates](./references/PERMISSION-TEMPLATES.md) - Common permission patterns
-- [Troubleshooting](./references/TROUBLESHOOTING.md) - Connection and auth issues
+- [Microsoft Entra ID Authentication Setup](./references/entra-rbac-overview.md) - Complete passwordless authentication guide
+- [SQL Functions](./references/sql-functions.md) - Entra ID role management functions
+- [Permission Templates](./references/permission-templates.md) - Common permission patterns
+- [Troubleshooting](./references/troubleshooting.md) - Connection and auth issues

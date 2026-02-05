@@ -7,11 +7,15 @@
  * - Shared mock configurations
  */
 
-import * as path from 'path';
-import { TriggerMatcher, TriggerResult } from './utils/trigger-matcher';
+import * as path from "path";
+import { fileURLToPath } from "url";
+import { TriggerMatcher, TriggerResult } from "./utils/trigger-matcher";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Make utils available globally for convenience
-global.SKILLS_PATH = path.resolve(__dirname, '../plugin/skills');
+global.SKILLS_PATH = path.resolve(__dirname, "../plugin/skills");
 global.TESTS_PATH = __dirname;
 
 // Custom matcher: check if a skill should trigger on a prompt
@@ -20,14 +24,14 @@ expect.extend({
     const result: TriggerResult = triggerMatcher.shouldTrigger(prompt);
     return {
       pass: result.triggered,
-      message: () => 
+      message: () =>
         result.triggered
           ? `Expected prompt "${prompt}" NOT to trigger skill "${skillName}"`
           : `Expected prompt "${prompt}" to trigger skill "${skillName}". ` +
-            `Confidence: ${result.confidence}. Reason: ${result.reason}`
+          `Confidence: ${result.confidence}. Reason: ${result.reason}`
     };
   },
-  
+
   toNotTriggerSkill(prompt: string, skillName: string, triggerMatcher: TriggerMatcher) {
     const result: TriggerResult = triggerMatcher.shouldTrigger(prompt);
     return {
@@ -36,7 +40,7 @@ expect.extend({
         !result.triggered
           ? `Expected prompt "${prompt}" to trigger skill "${skillName}"`
           : `Expected prompt "${prompt}" NOT to trigger skill "${skillName}", ` +
-            `but it matched with confidence ${result.confidence}`
+          `but it matched with confidence ${result.confidence}`
     };
   }
 });
@@ -61,5 +65,5 @@ global.getSkillPath = (skillName: string): string => {
 
 // Helper to get test fixtures path
 global.getFixturesPath = (skillName: string): string => {
-  return path.join(global.TESTS_PATH, skillName, 'fixtures');
+  return path.join(global.TESTS_PATH, skillName, "fixtures");
 };
