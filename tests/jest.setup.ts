@@ -7,11 +7,11 @@
  * - Shared mock configurations
  */
 
-import * as path from 'path';
-import { TriggerMatcher, TriggerResult } from './utils/trigger-matcher';
+import * as path from "path";
+import { TriggerMatcher, TriggerResult } from "./utils/trigger-matcher";
 
 // Make utils available globally for convenience
-global.SKILLS_PATH = path.resolve(__dirname, '../plugin/skills');
+global.SKILLS_PATH = path.resolve(__dirname, "../plugin/skills");
 global.TESTS_PATH = __dirname;
 
 // Custom matcher: check if a skill should trigger on a prompt
@@ -61,5 +61,5 @@ global.getSkillPath = (skillName: string): string => {
 
 // Helper to get test fixtures path
 global.getFixturesPath = (skillName: string): string => {
-  return path.join(global.TESTS_PATH, skillName, 'fixtures');
+  return path.join(global.TESTS_PATH, skillName, "fixtures");
 };

@@ -4,8 +4,8 @@
  * Helper functions for loading and managing test fixtures.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 export interface PromptFixtures {
   shouldTrigger: string[];
@@ -17,9 +17,9 @@ export interface PromptFixtures {
  */
 export function loadFixtures(skillName: string): Record<string, unknown> {
   const fixturesPath = path.join(
-    global.TESTS_PATH || path.join(__dirname, '..'),
+    global.TESTS_PATH || path.join(__dirname, ".."),
     skillName,
-    'fixtures'
+    "fixtures"
   );
 
   if (!fs.existsSync(fixturesPath)) {
@@ -35,10 +35,10 @@ export function loadFixtures(skillName: string): Record<string, unknown> {
     const name = path.basename(file, ext);
 
     try {
-      if (ext === '.json') {
-        fixtures[name] = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      } else if (ext === '.txt' || ext === '.md') {
-        fixtures[name] = fs.readFileSync(filePath, 'utf-8');
+      if (ext === ".json") {
+        fixtures[name] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      } else if (ext === ".txt" || ext === ".md") {
+        fixtures[name] = fs.readFileSync(filePath, "utf-8");
       }
     } catch (error) {
       console.warn(`Failed to load fixture ${file}: ${(error as Error).message}`);
@@ -54,12 +54,12 @@ export function loadFixtures(skillName: string): Record<string, unknown> {
 export function loadFixture<T = unknown>(
   skillName: string, 
   fixtureName: string, 
-  extension = 'json'
+  extension = "json"
 ): T {
   const fixturePath = path.join(
-    global.TESTS_PATH || path.join(__dirname, '..'),
+    global.TESTS_PATH || path.join(__dirname, ".."),
     skillName,
-    'fixtures',
+    "fixtures",
     `${fixtureName}.${extension}`
   );
 
@@ -67,9 +67,9 @@ export function loadFixture<T = unknown>(
     throw new Error(`Fixture not found: ${fixturePath}`);
   }
 
-  const content = fs.readFileSync(fixturePath, 'utf-8');
+  const content = fs.readFileSync(fixturePath, "utf-8");
 
-  if (extension === 'json') {
+  if (extension === "json") {
     return JSON.parse(content) as T;
   }
 
@@ -83,12 +83,12 @@ export function createFixture(
   skillName: string, 
   fixtureName: string, 
   content: unknown, 
-  extension = 'json'
+  extension = "json"
 ): void {
   const fixturesDir = path.join(
-    global.TESTS_PATH || path.join(__dirname, '..'),
+    global.TESTS_PATH || path.join(__dirname, ".."),
     skillName,
-    'fixtures'
+    "fixtures"
   );
 
   // Ensure fixtures directory exists
@@ -97,11 +97,11 @@ export function createFixture(
   }
 
   const fixturePath = path.join(fixturesDir, `${fixtureName}.${extension}`);
-  const fileContent = extension === 'json' 
+  const fileContent = extension === "json" 
     ? JSON.stringify(content, null, 2) 
     : String(content);
 
-  fs.writeFileSync(fixturePath, fileContent, 'utf-8');
+  fs.writeFileSync(fixturePath, fileContent, "utf-8");
 }
 
 /**
@@ -109,7 +109,7 @@ export function createFixture(
  */
 export function loadPromptFixtures(skillName: string): PromptFixtures {
   try {
-    const fixtures = loadFixture<PromptFixtures>(skillName, 'prompts');
+    const fixtures = loadFixture<PromptFixtures>(skillName, "prompts");
     return {
       shouldTrigger: fixtures.shouldTrigger || [],
       shouldNotTrigger: fixtures.shouldNotTrigger || []

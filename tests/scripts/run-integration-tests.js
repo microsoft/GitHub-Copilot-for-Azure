@@ -18,7 +18,7 @@ const extraArgs = process.argv.slice(2);
 // Build jest command args
 const jestArgs = [
   '--testMatch=**/*integration*.ts',
-  '--testPathIgnorePatterns=\"node_modules|_template\"',
+  '--testPathIgnorePatterns="node_modules|_template"',
   ...extraArgs
 ];
 
