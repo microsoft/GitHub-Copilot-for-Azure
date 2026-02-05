@@ -77,7 +77,7 @@ For deep documentation on specific services:
 
 ### Identity (Authentication)
 
-All Azure SDKs use their language's Identity library for credential-free authentication via `DefaultAzureCredential` or managed identity.
+All Azure SDKs use their language's Identity library for credential-free authentication via `DefaultAzureCredential` or managed identity. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
 
 | Language | Package | Install |
 |----------|---------|---------|

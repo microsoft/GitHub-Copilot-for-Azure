@@ -104,6 +104,8 @@ For deep documentation on specific services:
 
 ### Quick Start Examples
 
+All examples use `DefaultAzureCredential` for authentication. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+
 **Python** - Blob Storage:
 ```python
 from azure.identity import DefaultAzureCredential
