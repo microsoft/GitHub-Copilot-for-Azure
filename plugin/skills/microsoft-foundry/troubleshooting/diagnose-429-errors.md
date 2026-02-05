@@ -1,6 +1,6 @@
 # Diagnose Rate Limiting (429 Errors) in Microsoft Foundry
 
-This reference provides guidance for diagnosing and resolving HTTP 429 (Rate Limit Exceeded) errors in Microsoft Foundry, including quota analysis, usage patterns, and retry strategies.
+Guide for diagnosing and resolving HTTP 429 (Rate Limit Exceeded) errors in Microsoft Foundry through systematic quota analysis, usage pattern identification, and scaling strategies.
 
 ## Quick Reference
 
@@ -13,20 +13,17 @@ This reference provides guidance for diagnosing and resolving HTTP 429 (Rate Lim
 
 ## When to Use
 
-Use this reference when the user encounters:
+Use this reference when encountering:
 
-- **"Rate limit exceeded"** errors (HTTP 429)
-- **Model deployment failures** due to capacity
-- **Slow or throttled** API responses
-- **Quota planning** for production workloads
-- **Retry strategy optimization**
-- Questions like "Why am I getting rate limited?"
+- **HTTP 429 errors** - "Rate limit exceeded" or "Too Many Requests"
+- **Quota planning** - Capacity planning for production workloads
+- **Throttled responses** - Slow API responses or deployment failures due to capacity
+- **Retry optimization** - Implementing or improving retry strategies
+- Questions like "Why am I getting rate limited?" or "How do I handle 429 errors?"
 
-## Understanding Rate Limiting in Microsoft Foundry
+## Understanding Rate Limiting
 
-### Rate Limit Types
-
-Microsoft Foundry enforces several types of rate limits:
+Microsoft Foundry enforces multiple rate limit types:
 
 | Limit Type | Scope | Description |
 |------------|-------|-------------|
@@ -36,109 +33,76 @@ Microsoft Foundry enforces several types of rate limits:
 | **Burst Limits** | Deployment | Short-term spike allowance |
 | **Regional Capacity** | Region | Shared capacity across subscriptions |
 
-### Common Error Messages
-
+**Typical Error Messages:**
 ```
 Rate limit is exceeded. Try again in X seconds.
 HTTP 429: Too Many Requests
-TooManyRequests: Rate limit reached for requests
 RetryAfter: 60
 ```
 
-## Workflows
+## Diagnostic Workflow
 
-### 1. Check Current Quota and Usage
+Follow this systematic approach to diagnose and resolve rate limiting:
 
-Diagnose if you're hitting quota limits by checking current usage and limits.
+### 1. Check Current Quota Usage
 
-**Command Pattern:** "Check my current quota usage"
+Determine if you're hitting quota limits.
 
-#### Bash
+**Bash:**
 ```bash
-# Check all quota usage for a Foundry resource
+# Check all quota usage
 az cognitiveservices usage list \
   --name <foundry-resource-name> \
   --resource-group <resource-group> \
+  --query "[].{Name:name.value, Current:currentValue, Limit:limit}" \
   --output table
 
-# Get detailed usage with JSON output
-az cognitiveservices usage list \
-  --name <foundry-resource-name> \
-  --resource-group <resource-group> \
-  --output json | jq '.[] | {name: .name.value, currentValue: .currentValue, limit: .limit}'
-
-# Check specific deployment quota
+# Check specific deployment capacity
 az cognitiveservices account deployment show \
   --name <foundry-resource-name> \
   --resource-group <resource-group> \
   --deployment-name <deployment-name> \
-  --query "{name:name, capacity:properties.sku.capacity, model:properties.model.name}" \
-  --output table
-```
-
-#### PowerShell
-```powershell
-# Check quota usage
-az cognitiveservices usage list `
-  --name <foundry-resource-name> `
-  --resource-group <resource-group> `
-  --output table
-
-# Parse with PowerShell
-az cognitiveservices usage list `
-  --name <foundry-resource-name> `
-  --resource-group <resource-group> `
-  --output json | ConvertFrom-Json | Select-Object @{N='Name';E={$_.name.value}}, currentValue, limit
+  --query "{name:name, capacity:properties.sku.capacity, model:properties.model.name}"
 ```
 
 **What to Look For:**
-- `currentValue` approaching `limit` indicates quota exhaustion
-- `limit` of 0 or null indicates no quota assigned
-- Multiple deployments sharing quota may compete for capacity
+- `currentValue` approaching `limit` → quota exhaustion
+- `limit` of 0 or null → no quota assigned
+- Multiple deployments → may be competing for shared quota
 
-### 2. Analyze Recent 429 Errors
+### 2. Analyze 429 Error Patterns
 
-Review Azure Monitor logs to understand rate limiting patterns.
+Review recent errors to identify patterns.
 
-**Command Pattern:** "Show me recent rate limit errors"
-
-#### Using Azure Monitor (Portal)
-
-1. Navigate to your Foundry resource in Azure Portal
-2. Go to **Monitoring** > **Logs**
-3. Run this KQL query:
-
+**Azure Monitor KQL Query:**
 ```kql
 AzureDiagnostics
 | where ResourceProvider == "MICROSOFT.COGNITIVESERVICES"
 | where ResultType == "429"
 | where TimeGenerated > ago(24h)
-| project TimeGenerated, OperationName, ResultType, DurationMs, CallerIPAddress
+| project TimeGenerated, OperationName, DurationMs
 | order by TimeGenerated desc
 ```
 
-#### Using Azure CLI
+**Or via CLI:**
 ```bash
-# Query Azure Monitor logs for 429 errors
 az monitor log-analytics query \
   --workspace <workspace-id> \
-  --analytics-query "AzureDiagnostics | where ResourceProvider == 'MICROSOFT.COGNITIVESERVICES' | where ResultType == '429' | where TimeGenerated > ago(24h) | project TimeGenerated, OperationName, ResultType | order by TimeGenerated desc" \
+  --analytics-query "AzureDiagnostics | where ResultType == '429' | where TimeGenerated > ago(24h)" \
   --output table
 ```
 
-**Patterns to Identify:**
-- **Consistent 429s**: Indicates sustained over-quota usage
-- **Burst 429s**: Temporary spikes, may need burst quota increase
-- **Time-of-day patterns**: Identifies peak usage periods
-- **Specific operations**: Some endpoints may be more limited
+**Pattern Identification:**
+- **Consistent 429s** → sustained over-quota usage, need quota increase
+- **Burst 429s** → temporary spikes, implement queuing or burst quota
+- **Time-of-day patterns** → identify peak usage for scaling
+- **Specific operations** → some endpoints may have tighter limits
 
-### 3. Check Deployment Capacity
+### 3. Verify Deployment Capacity
 
-Verify your deployment has sufficient capacity allocated.
+Ensure sufficient capacity is allocated.
 
-**Command Pattern:** "What's my deployment capacity?"
-
-#### Bash
+**Bash:**
 ```bash
 # List all deployments with capacity
 az cognitiveservices account deployment list \
@@ -146,276 +110,146 @@ az cognitiveservices account deployment list \
   --resource-group <resource-group> \
   --query "[].{Name:name, Model:properties.model.name, Capacity:properties.sku.capacity, Status:properties.provisioningState}" \
   --output table
-
-# Check specific deployment details
-az cognitiveservices account deployment show \
-  --name <foundry-resource-name> \
-  --resource-group <resource-group> \
-  --deployment-name <deployment-name> \
-  --output json | jq '{name: .name, model: .properties.model.name, capacity: .properties.sku.capacity, rateLimit: .properties.rateLimits}'
 ```
 
 **Capacity Guidelines:**
 - Capacity units vary by model (e.g., 1K TPM per unit for GPT-4)
-- Minimum capacity: 1 unit
-- Maximum capacity: Region and quota dependent
-- Dynamic quota allows flexible scaling within limits
+- Minimum: 1 unit
+- Maximum: Region and quota dependent
 
-### 4. Implement Retry Logic with Exponential Backoff
+### 4. Implement Retry Logic
 
 Proper retry handling reduces error impact and respects rate limits.
 
-**Command Pattern:** "How should I handle 429 errors in my code?"
+**Core Pattern:**
+- Always check `Retry-After` header first
+- Use exponential backoff (1s → 2s → 4s → 8s → 16s)
+- Add jitter to prevent thundering herd
+- Set max retries (3-5 recommended)
+- Log retry attempts for monitoring
 
-#### Python Example
-```python
-import time
-import random
-from azure.core.exceptions import HttpResponseError
+**For detailed code examples**, see [RETRY_EXAMPLES.md](RETRY_EXAMPLES.md) for Python, C#, and JavaScript implementations.
 
-def call_with_retry(func, max_retries=5, base_delay=1):
-    """
-    Call a function with exponential backoff retry logic for 429 errors.
+### 5. Scale Capacity
 
-    Args:
-        func: Function to call
-        max_retries: Maximum number of retry attempts
-        base_delay: Initial delay in seconds
-    """
-    for attempt in range(max_retries):
-        try:
-            return func()
-        except HttpResponseError as e:
-            if e.status_code == 429:
-                if attempt == max_retries - 1:
-                    raise  # Last attempt, re-raise the error
+Choose appropriate scaling strategy based on diagnosis.
 
-                # Get Retry-After header if available
-                retry_after = e.response.headers.get('Retry-After')
-                if retry_after:
-                    delay = int(retry_after)
-                else:
-                    # Exponential backoff: 1s, 2s, 4s, 8s, 16s
-                    delay = base_delay * (2 ** attempt)
-                    # Add jitter to prevent thundering herd
-                    delay += random.uniform(0, 1)
+#### Option A: Request Quota Increase
 
-                print(f"Rate limited. Retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})")
-                time.sleep(delay)
-            else:
-                raise  # Not a 429 error, re-raise
+For sustained high usage:
 
-# Usage example
-response = call_with_retry(lambda: client.chat.completions.create(...))
-```
-
-**Best Practices:**
-- **Always check Retry-After header** - Respect server-provided wait time
-- **Use exponential backoff** - Double delay on each retry
-- **Add jitter** - Randomize delays to prevent synchronized retries
-- **Set max retries** - Prevent infinite loops (3-5 retries recommended)
-- **Log retry attempts** - Monitor retry patterns
-
-### 5. Request Quota Increase
-
-If you consistently hit limits, request a quota increase.
-
-**Command Pattern:** "Request quota increase for my deployment"
-
-#### Steps to Request Increase
-
-1. **Navigate to Azure Portal**:
-   - Go to your Foundry resource
-   - Select **Quotas** under **Resource Management**
-
-2. **Identify the Quota to Increase**:
+1. **Check current limits:**
    ```bash
-   # Check current quota limits
    az cognitiveservices usage list \
      --name <foundry-resource-name> \
      --resource-group <resource-group> \
-     --query "[?name.value=='TokensPerMinute' || name.value=='RequestsPerMinute'].{Quota:name.value, Current:currentValue, Limit:limit}" \
-     --output table
+     --query "[?name.value=='TokensPerMinute'].{Current:currentValue, Limit:limit}"
    ```
 
-3. **Submit Quota Increase Request**:
-   - In Azure Portal > Quotas, click **Request quota increase**
-   - Select the model and deployment
-   - Specify new quota amount
-   - Provide business justification
-   - Submit request
+2. **Submit request** via Azure Portal → Resource → Quotas → Request increase
 
-4. **Monitor Request Status**:
-   - Check **Support > Support Requests** in Azure Portal
-   - Typical approval time: 24-48 hours
-   - May require escalation for large increases
+**Quota Recommendations:**
 
-**Quota Increase Guidelines:**
-
-| Scenario | Recommended Action |
-|----------|-------------------|
-| Development/Testing | Start with 10K TPM, increase as needed |
+| Scenario | Recommended TPM |
+|----------|----------------|
+| Development/Testing | 10K TPM |
 | Production (Low Traffic) | 50K-100K TPM |
 | Production (Medium Traffic) | 100K-500K TPM |
-| Production (High Traffic) | 500K+ TPM, consider multiple regions |
-| Burst Workloads | Request Dynamic Quota for automatic scaling |
+| Production (High Traffic) | 500K+ TPM, consider multi-region |
 
-### 6. Scale Across Multiple Deployments
+#### Option B: Multi-Region Deployment
 
-Distribute load across multiple deployments to increase effective capacity.
+For burst workloads or geographic distribution:
 
-**Command Pattern:** "Deploy models to multiple regions"
-
-#### Multi-Region Strategy
-
+**Deploy to multiple regions:**
 ```bash
-# Deploy to primary region (East US)
+# Deploy to primary region
 az cognitiveservices account deployment create \
-  --name foundry-eastus \
-  --resource-group rg-eastus \
+  --name foundry-eastus --resource-group rg-eastus \
   --deployment-name gpt-4o-eastus \
-  --model-name gpt-4o \
-  --model-version "2024-05-13" \
-  --model-format OpenAI \
-  --sku-capacity 30 \
-  --sku-name Standard
+  --model-name gpt-4o --model-version "2024-05-13" \
+  --sku-capacity 30
 
-# Deploy to secondary region (West Europe)
+# Deploy to secondary region
 az cognitiveservices account deployment create \
-  --name foundry-westeurope \
-  --resource-group rg-westeurope \
+  --name foundry-westeurope --resource-group rg-westeurope \
   --deployment-name gpt-4o-westeurope \
-  --model-name gpt-4o \
-  --model-version "2024-05-13" \
-  --model-format OpenAI \
-  --sku-capacity 30 \
-  --sku-name Standard
-
-# Deploy to tertiary region (Southeast Asia)
-az cognitiveservices account deployment create \
-  --name foundry-southeastasia \
-  --resource-group rg-southeastasia \
-  --deployment-name gpt-4o-southeastasia \
-  --model-name gpt-4o \
-  --model-version "2024-05-13" \
-  --model-format OpenAI \
-  --sku-capacity 30 \
-  --sku-name Standard
+  --model-name gpt-4o --model-version "2024-05-13" \
+  --sku-capacity 30
 ```
 
-**Load Balancing Pattern (Python):**
-
-```python
-import random
-from azure.ai.inference import ChatCompletionsClient
-from azure.core.credentials import AzureKeyCredential
-
-# Define multiple endpoints
-endpoints = [
-    {"url": "https://foundry-eastus.cognitiveservices.azure.com", "key": "key1"},
-    {"url": "https://foundry-westeurope.cognitiveservices.azure.com", "key": "key2"},
-    {"url": "https://foundry-southeastasia.cognitiveservices.azure.com", "key": "key3"},
-]
-
-def get_client_with_fallback():
-    """Try endpoints in order until one succeeds."""
-    # Shuffle for load distribution
-    shuffled = random.sample(endpoints, len(endpoints))
-
-    for endpoint in shuffled:
-        try:
-            client = ChatCompletionsClient(
-                endpoint=endpoint["url"],
-                credential=AzureKeyCredential(endpoint["key"])
-            )
-            # Test connection
-            return client
-        except Exception as e:
-            print(f"Failed to connect to {endpoint['url']}: {e}")
-            continue
-
-    raise Exception("All endpoints failed")
-
-# Usage
-client = get_client_with_fallback()
-response = call_with_retry(lambda: client.complete(...))
-```
-
-**Benefits of Multi-Region Deployment:**
+**Benefits:**
 - Increased total capacity (quota per region)
 - Geographic redundancy and failover
 - Reduced latency for global users
-- Better burst handling
+
+**For load balancing patterns**, see [RETRY_EXAMPLES.md](RETRY_EXAMPLES.md#multi-region-load-balancing).
 
 ## Diagnostic Checklist
 
-Use this checklist to diagnose rate limiting issues:
+Use this checklist when troubleshooting 429 errors:
 
-- [ ] **Check current quota usage** - Are you at or near limits?
-- [ ] **Review 429 error logs** - When and how often do errors occur?
-- [ ] **Verify deployment capacity** - Is capacity allocated correctly?
-- [ ] **Check retry logic** - Are retries implementing exponential backoff?
-- [ ] **Identify usage patterns** - Are there specific peak times?
+- [ ] **Check quota usage** - At or near limits?
+- [ ] **Review error logs** - When and how often?
+- [ ] **Verify deployment capacity** - Allocated correctly?
+- [ ] **Check retry logic** - Exponential backoff implemented?
+- [ ] **Identify usage patterns** - Peak times or constant load?
+- [ ] **Review request sizes** - Token counts optimal?
+- [ ] **Check concurrent requests** - Exceeding limits?
 - [ ] **Consider multi-region** - Would distributed load help?
-- [ ] **Review request sizes** - Are token counts optimal?
-- [ ] **Check concurrent requests** - Are you exceeding concurrent limits?
 
-## Common Issues and Resolutions
+## Common Issues & Quick Fixes
 
 | Issue | Cause | Resolution |
 |-------|-------|------------|
-| Constant 429 errors | Sustained over-quota usage | Request quota increase or scale across regions |
-| Intermittent 429 errors | Burst traffic exceeds limits | Implement request queuing or Dynamic Quota |
-| 429 only during peak hours | Time-based load spike | Scale up capacity during peak times |
-| 429 with low usage | Deployment not scaled properly | Increase deployment capacity |
-| Retry-After header very high | Severe rate limit violation | Reduce request rate, check for loops/bugs |
+| Constant 429 errors | Sustained over-quota | Request quota increase or scale to multiple regions |
+| Intermittent 429s | Burst traffic | Implement request queuing or burst quota |
+| 429 during peak hours only | Time-based spike | Scale up capacity during peak times |
+| 429 with low usage | Deployment not scaled | Increase deployment capacity units |
+| High Retry-After values | Severe rate violation | Check for request loops/bugs, reduce rate |
 | 429 on specific operations | Operation-specific limits | Check operation quotas separately |
-| No 429 but slow responses | Approaching but not exceeding limits | Proactively increase quota |
+| No 429 but slow responses | Approaching limits | Proactively increase quota before hitting limit |
 
 ## Best Practices
 
 ### Capacity Planning
 
-1. **Monitor baseline usage** - Track TPM/RPM over time
-2. **Plan for growth** - Request 20-30% more quota than needed
+1. **Monitor baseline** - Track TPM/RPM over time
+2. **Plan for growth** - Request 20-30% more quota than current need
 3. **Test at scale** - Load test before production launch
 4. **Set up alerts** - Alert at 70-80% quota usage
 
-### Code Optimization
-
-```python
-# Optimize token usage
-def optimize_prompt(text, max_tokens=4000):
-    """Truncate input to stay within token limits."""
-    # Approximate: 1 token ≈ 4 characters
-    max_chars = max_tokens * 4
-    if len(text) > max_chars:
-        return text[:max_chars] + "..."
-    return text
-
-# Batch similar requests
-def batch_requests(requests, batch_size=10):
-    """Process requests in batches to avoid overwhelming the API."""
-    for i in range(0, len(requests), batch_size):
-        batch = requests[i:i+batch_size]
-        results = [call_with_retry(lambda: process(req)) for req in batch]
-        # Brief pause between batches
-        time.sleep(1)
-        yield results
-```
-
-### Monitoring and Alerting
-
+**Sample alert:**
 ```bash
-# Set up Azure Monitor alert for high 429 rate
 az monitor metrics alert create \
   --name "High-Rate-Limit-Errors" \
   --resource <foundry-resource-id> \
   --condition "count HttpErrors where ResultType == 429 > 10" \
-  --window-size 5m \
-  --evaluation-frequency 1m \
-  --action <action-group-id>
+  --window-size 5m --evaluation-frequency 1m
 ```
+
+### Request Optimization
+
+**Token Usage:**
+- Monitor token consumption per request
+- Truncate input to stay within limits (1 token ≈ 4 characters)
+- Use shorter system prompts when possible
+
+**Batch Processing:**
+- Process requests in batches (e.g., 10 at a time)
+- Add brief pauses between batches (1-2 seconds)
+- Spread load over time rather than bursts
+
+### Monitoring Strategy
+
+**Key Metrics to Track:**
+- Total requests per minute (RPM)
+- Total tokens per minute (TPM)
+- 429 error rate and frequency
+- Retry success rate
+- P95/P99 latency
+
+**Set up dashboards** in Azure Monitor to visualize these metrics and identify trends before they become issues.
 
 ## Additional Resources
 
@@ -423,3 +257,4 @@ az monitor metrics alert create \
 - [Dynamic Quota Management](https://learn.microsoft.com/azure/cognitive-services/openai/how-to/dynamic-quota)
 - [Monitoring OpenAI Models](https://learn.microsoft.com/azure/cognitive-services/openai/how-to/monitoring)
 - [Rate Limiting Best Practices](https://learn.microsoft.com/azure/architecture/best-practices/retry-service-specific#azure-openai)
+- **Code Examples**: See [RETRY_EXAMPLES.md](RETRY_EXAMPLES.md) for implementation patterns
