@@ -48,7 +48,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Deploy my application to Heroku",
       "What is the best pizza topping?",
       "Configure logging in Spring Boot",
-      "Set up Datadog monitoring",
+      "Create a React component",
     ];
 
     test.each(shouldNotTriggerPrompts)(
