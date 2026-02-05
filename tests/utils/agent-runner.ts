@@ -540,16 +540,12 @@ export function getIntegrationSkipReason(): string | undefined {
  * Common Azure deployment link patterns
  */
 const DEPLOY_LINK_PATTERNS = [
-  // Azure Portal resource links
-  /https:\/\/portal\.azure\.com\/#[@/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/i,
-  // Azure App Service URLs
-  /https?:\/\/[\w-]+\.azurewebsites\.net/i,
+  // Azure App Service + Azure Function URLs
+  /https?:\/\/[\w.-]+\.azurewebsites\.net/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w-]+\.azurestaticapps\.net/i,
+  /https:\/\/[\w.-]+\.azurestaticapps\.net/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/i,
-  // Azure Portal direct links
-  /https:\/\/portal\.azure\.com\/#blade\/[\w/]+/i,
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io/i
 ];
 
 /**
