@@ -79,9 +79,24 @@ export default tseslint.config(
     // JavaScript files - no TypeScript project needed
     {
         files: jsFiles,
-        ...eslint.configs.recommended,
+        extends: [
+            eslint.configs.recommended,
+        ],
         plugins: {
             jest,
+        },
+        languageOptions: {
+            globals: {
+                console: "readonly",
+                process: "readonly",
+                __dirname: "readonly",
+                __filename: "readonly",
+                Buffer: "readonly",
+                setTimeout: "readonly",
+                setInterval: "readonly",
+                clearTimeout: "readonly",
+                clearInterval: "readonly",
+            },
         },
         rules: {
             ...sharedRules,

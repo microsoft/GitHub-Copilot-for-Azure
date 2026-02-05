@@ -32,7 +32,7 @@ const __dirname = path.dirname(__filename);
 const isCI = !!(process.env.CI || process.env.GITHUB_ACTIONS);
 
 // Parse arguments
-// The first two args are "nod" and path to this script file.
+// The first two args are "node" and path to this script file.
 const args = process.argv.slice(2);
 const testType = args[0] && !args[0].startsWith("-") ? args[0] : "all";
 const extraArgs = args[0] && !args[0].startsWith("-") ? args.slice(1) : args;
