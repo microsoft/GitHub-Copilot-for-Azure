@@ -2,11 +2,58 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
 
+const tsFiles = ["scripts/**/*.ts", "utils/**/*.ts"];
+const jsFiles = ["scripts/**/*.js", "utils/**/*.js"];
+
+// Shared rules for both TS and JS
+const sharedRules = {
+    // ESM enforcement - prohibit CommonJS syntax
+    "no-restricted-syntax": [
+        "error",
+        {
+            selector: "MemberExpression[object.name='module'][property.name='exports']",
+            message: "Use ESM 'export' instead of 'module.exports'"
+        },
+        {
+            selector: "MemberExpression[object.name='exports']",
+            message: "Use ESM 'export' instead of 'exports.x'"
+        }
+    ],
+
+    // Jest rules
+    "jest/expect-expect": "error",
+    "jest/no-disabled-tests": "warn",
+    "jest/no-focused-tests": "error",
+    "jest/valid-expect": "error",
+    "jest/no-identical-title": "error",
+    "jest/no-duplicate-hooks": "error",
+
+    // General rules
+    "no-console": "off",
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": ["error", "always", { null: "ignore" }],
+    "quotes": ["error", "double", { "avoidEscape": true }],
+};
+
 export default tseslint.config(
-    eslint.configs.recommended,
-    ...tseslint.configs.recommended,
+    // Global ignores
     {
-        files: ["**/*.ts"],
+        ignores: [
+            "node_modules/**",
+            "dist/**",
+            "reports/**",
+            "**/resources/**",
+            "**/__snapshots__/**",
+        ],
+    },
+    // TypeScript files - use TypeScript parser with project
+    {
+        files: tsFiles,
+        extends: [
+            eslint.configs.recommended,
+            ...tseslint.configs.recommended,
+        ],
         plugins: {
             jest,
         },
@@ -17,7 +64,7 @@ export default tseslint.config(
             },
         },
         rules: {
-            // TypeScript rules
+            ...sharedRules,
             "@typescript-eslint/no-unused-vars": ["error", {
                 argsIgnorePattern: "^_",
                 varsIgnorePattern: "^_"
@@ -25,39 +72,23 @@ export default tseslint.config(
             "@typescript-eslint/no-floating-promises": "error",
             "@typescript-eslint/await-thenable": "error",
             "@typescript-eslint/no-explicit-any": "error",
-            "@typescript-eslint/no-require-imports": "off",
-
-            // Jest rules
-            "jest/expect-expect": "error",
-            "jest/no-disabled-tests": "warn",
-            "jest/no-focused-tests": "error",
-            "jest/valid-expect": "error",
-            "jest/no-identical-title": "error",
-            "jest/no-duplicate-hooks": "error",
-
-            // General rules
-            "no-console": "off",
-            "prefer-const": "error",
-            "no-var": "error",
-            "eqeqeq": ["error", "always", { null: "ignore" }],
-            "quotes": ["error", "double", { "avoidEscape": true }],
+            "@typescript-eslint/no-require-imports": "error",
         },
     },
+    // JavaScript files - no TypeScript project needed
     {
-        // Relaxed rules for utility files that legitimately use console
-        files: ["**/utils/**/*.ts", "**/scripts/**/*.ts"],
+        files: jsFiles,
+        ...eslint.configs.recommended,
+        plugins: {
+            jest,
+        },
         rules: {
-            "no-console": "off",
+            ...sharedRules,
+            // Prohibit require() in JS files
+            "no-restricted-globals": ["error", {
+                name: "require",
+                message: "Use ESM 'import' instead of 'require()'"
+            }],
         },
-    },
-    {
-        ignores: [
-            "node_modules/**",
-            "dist/**",
-            "reports/**",
-            "**/resources/**",
-            "**/__snapshots__/**",
-            "**/*.js",
-        ],
     }
 );

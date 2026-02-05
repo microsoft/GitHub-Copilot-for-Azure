@@ -18,8 +18,8 @@
     "results": "node scripts/show-test-results.js",
     "update:snapshots": "cross-env jest --updateSnapshot",
     "mergeSkillInvocationTestResult": "node scripts/generate-skill-invocation-test-summary.js",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint": "eslint scripts utils",
+    "lint:fix": "eslint scripts utils --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
