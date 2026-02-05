@@ -149,11 +149,24 @@ BinaryData data = blob.downloadContent();
 
 **Go** - Blob Storage:
 ```go
-cred, _ := azidentity.NewDefaultAzureCredential(nil)
-client, _ := azblob.NewClient("https://ACCOUNT.blob.core.windows.net/", cred, nil)
+package main
 
-resp, _ := client.DownloadStream(context.Background(), "my-container", "my-blob.txt", nil)
-data, _ := io.ReadAll(resp.Body)
+import (
+    "context"
+    "io"
+
+    "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+    "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+)
+
+func main() {
+    cred, _ := azidentity.NewDefaultAzureCredential(nil)
+    client, _ := azblob.NewClient("https://ACCOUNT.blob.core.windows.net/", cred, nil)
+
+    resp, _ := client.DownloadStream(context.Background(), "my-container", "my-blob.txt", nil)
+    data, _ := io.ReadAll(resp.Body)
+    _ = data // Use data as needed
+}
 ```
 
 **Rust** - Blob Storage:
