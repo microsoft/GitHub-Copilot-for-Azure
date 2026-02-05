@@ -29,6 +29,8 @@ When Azure MCP is enabled:
 - `azure__keyvault` with command `keyvault_list` — List Key Vaults
 - `azure__keyvault` with command `keyvault_secret_list` — List secrets
 - `azure__keyvault` with command `keyvault_secret_get` — Get secret value
+- `azure__keyvault` with command `keyvault_key_list` — List keys
+- `azure__keyvault` with command `keyvault_certificate_list` — List certificates
 
 **RBAC:**
 - `azure__role` with command `role_assignment_list` — List role assignments
