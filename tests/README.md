@@ -180,11 +180,11 @@ npm install
 |---------|----------|
 | `npm test` | Run all tests (unit + trigger) |
 | `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
-| `npm run test:integration` | Run integration tests (requires Copilot CLI auth) |
+| `npm run test:integration` | Run integration tests (requires Copilot CLI auth, az auth, azd auth) |
+| `npm run test:integration -- azure-deploy` | Run integration tests for a specific skill |
+| `npm run test:integration -- azure-deploy static-web-apps-deploy` | Run integration tests for a specific describe group |
+| `npm run test:skill -- azure-ai` | Run all tests for a specific skill |
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
-| `npm test -- --testPathPattern=azure-validation` | Run tests for one skill |
-| `npm test -- --testNamePattern=skill-invocation` | Run tests for all skills |
-| `npm test -- --testPathPattern=azure-deploy --testNamePattern=static-web-apps-deploy` | Run tests for SWA deploy |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run test:coverage` | Generate coverage report |
 | `npm run test:verbose` | Show individual test names |
@@ -225,7 +225,7 @@ Environment variables:
 ```bash
 cd tests
 env:DEBUG="1"
-npm test -- --testPathPattern=azure-validation
+npm run test:skill -- azure-validation
 
 # Output:
 # PASS azure-validation/unit.test.ts
@@ -238,7 +238,7 @@ To run only the SWA tests from the deploy integration test suite:
 
 ```bash
 cd tests
-npm test -- --testPathPattern=azure-deploy --testNamePattern=static-web-apps-deploy
+npm run test:integration -- azure-deploy static-web-apps-deploy
 
 # Output:
 # PASS azure-deploy/integration.test.ts
