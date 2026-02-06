@@ -1,14 +1,37 @@
 /**
  * Setup Command
  * 
- * Creates a symlink from ~/.copilot/installed-plugins/github-copilot-for-azure
- * to the local plugin directory for development.
+ * Configures ~/.copilot/config.json to point the azure plugin's cache_path
+ * directly at the local plugin directory for development.
  */
 
-import { existsSync, lstatSync, mkdirSync, rmSync, symlinkSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { homedir, platform } from 'node:os';
-import { execSync } from 'node:child_process';
+import { homedir } from 'node:os';
+
+const MARKETPLACE_NAME = 'github-copilot-for-azure';
+const PLUGIN_NAME = 'azure';
+
+interface Marketplace {
+  source: {
+    source: string;
+    repo: string;
+  };
+}
+
+interface InstalledPlugin {
+  name: string;
+  marketplace: string;
+  installed_at: string;
+  enabled: boolean;
+  cache_path: string;
+}
+
+interface CopilotConfig {
+  marketplaces?: Record<string, Marketplace>;
+  installed_plugins?: InstalledPlugin[];
+  [key: string]: unknown;
+}
 
 interface SetupOptions {
   force: boolean;
@@ -20,70 +43,93 @@ function parseArgs(args: string[]): SetupOptions {
   };
 }
 
-function getInstalledPluginsDir(): string {
-  return join(homedir(), '.copilot', 'installed-plugins');
+function getCopilotDir(): string {
+  return join(homedir(), '.copilot');
 }
 
-function getInstalledPluginPath(): string {
-  return join(getInstalledPluginsDir(), 'github-copilot-for-azure');
+function getCopilotConfigPath(): string {
+  return join(getCopilotDir(), 'config.json');
 }
 
-function isSymlink(path: string): boolean {
+function readCopilotConfig(): CopilotConfig | null {
+  const configPath = getCopilotConfigPath();
+  if (!existsSync(configPath)) {
+    return null;
+  }
   try {
-    return lstatSync(path).isSymbolicLink();
+    return JSON.parse(readFileSync(configPath, 'utf-8'));
   } catch {
-    return false;
+    return null;
   }
 }
 
-function isAdmin(): boolean {
-  if (platform() !== 'win32') return true;
+function writeCopilotConfig(config: CopilotConfig): boolean {
+  const configPath = getCopilotConfigPath();
+  const copilotDir = getCopilotDir();
   
   try {
-    execSync('net session', { stdio: 'ignore' });
+    // Ensure .copilot directory exists
+    if (!existsSync(copilotDir)) {
+      mkdirSync(copilotDir, { recursive: true });
+    }
+    
+    // Backup first
+    const backupPath = configPath + '.bak';
+    if (existsSync(configPath)) {
+      writeFileSync(backupPath, readFileSync(configPath));
+    }
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
     return true;
   } catch {
     return false;
   }
 }
 
-function createSymlink(target: string, link: string): void {
-  const isWindows = platform() === 'win32';
+function getExpectedMarketplace(): Marketplace {
+  return {
+    source: {
+      source: 'github',
+      repo: 'microsoft/github-copilot-for-azure',
+    },
+  };
+}
+
+function createExpectedPlugin(cachePath: string): InstalledPlugin {
+  return {
+    name: PLUGIN_NAME,
+    marketplace: MARKETPLACE_NAME,
+    installed_at: new Date().toISOString(),
+    enabled: true,
+    cache_path: cachePath,
+  };
+}
+
+function normalizePath(path: string): string {
+  return path.toLowerCase().replace(/\\/g, '/');
+}
+
+function isMarketplaceCorrect(config: CopilotConfig): boolean {
+  const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
+  if (!marketplace) return false;
   
-  if (isWindows) {
-    // On Windows, use mklink /D via cmd for directory symlinks
-    // This requires admin privileges or Developer Mode enabled
-    try {
-      execSync(`mklink /D "${link}" "${target}"`, { 
-        shell: 'cmd.exe',
-        stdio: 'pipe' 
-      });
-    } catch (error) {
-      // Try junction as fallback (doesn't require admin)
-      try {
-        execSync(`mklink /J "${link}" "${target}"`, { 
-          shell: 'cmd.exe',
-          stdio: 'pipe' 
-        });
-        console.log('   ℹ️  Created as junction (admin not available)');
-      } catch {
-        throw new Error(
-          'Failed to create symlink. On Windows, either:\n' +
-          '   1. Run as Administrator, or\n' +
-          '   2. Enable Developer Mode in Settings > Privacy & Security > For developers'
-        );
-      }
-    }
-  } else {
-    symlinkSync(target, link, 'dir');
-  }
+  const expected = getExpectedMarketplace();
+  return marketplace.source?.source === expected.source.source &&
+         marketplace.source?.repo === expected.source.repo;
+}
+
+function isPluginCorrect(config: CopilotConfig, expectedCachePath: string): boolean {
+  const plugins = config.installed_plugins ?? [];
+  const plugin = plugins.find(p => p.name === PLUGIN_NAME && p.marketplace === MARKETPLACE_NAME);
+  
+  if (!plugin) return false;
+  
+  return normalizePath(plugin.cache_path) === normalizePath(expectedCachePath) && plugin.enabled;
 }
 
 export function setup(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
   const localPluginPath = join(rootDir, 'plugin');
-  const installedPluginsDir = getInstalledPluginsDir();
-  const installedPluginPath = getInstalledPluginPath();
+  const configPath = getCopilotConfigPath();
 
   console.log('\n🔧 Local Development Setup\n');
   console.log('────────────────────────────────────────────────────────────');
@@ -99,73 +145,106 @@ export function setup(rootDir: string, args: string[]): void {
   }
   console.log('   ✅ Exists');
 
-  // Ensure installed-plugins directory exists
-  console.log(`\n📁 Installed plugins directory:`);
-  console.log(`   ${installedPluginsDir}`);
-  if (!existsSync(installedPluginsDir)) {
-    console.log('   📂 Creating...');
-    mkdirSync(installedPluginsDir, { recursive: true });
-  }
-  console.log('   ✅ Ready');
-
-  // Check if target already exists
-  console.log(`\n📁 Target symlink path:`);
-  console.log(`   ${installedPluginPath}`);
-
-  if (existsSync(installedPluginPath)) {
-    if (isSymlink(installedPluginPath)) {
-      const currentTarget = realpathSync(installedPluginPath);
-      const normalizedCurrent = currentTarget.toLowerCase().replace(/\\/g, '/');
-      const normalizedLocal = realpathSync(localPluginPath).toLowerCase().replace(/\\/g, '/');
-      
-      if (normalizedCurrent === normalizedLocal) {
-        console.log('   ✅ Already linked to local repo\n');
-        console.log('────────────────────────────────────────────────────────────');
-        console.log('\n✅ Setup complete! Already configured correctly.\n');
-        return;
-      }
-      
-      console.log(`   ⚠️  Linked to different location: ${currentTarget}`);
-      if (!options.force) {
-        console.log('\n   Use --force to replace existing symlink.\n');
-        process.exitCode = 1;
-        return;
-      }
-      console.log('   🔄 Removing existing symlink...');
-      rmSync(installedPluginPath);
-    } else {
-      console.log('   ⚠️  Exists but is not a symlink (regular directory/file)');
-      if (!options.force) {
-        console.log('\n   Use --force to replace (will delete existing!).\n');
-        process.exitCode = 1;
-        return;
-      }
-      console.log('   🔄 Removing existing directory...');
-      rmSync(installedPluginPath, { recursive: true });
-    }
-  } else {
-    console.log('   📂 Does not exist (will create)');
-  }
-
-  // Create symlink
-  console.log('\n🔗 Creating symlink...');
+  // Read or create config
+  console.log(`\n📄 Copilot config:`);
+  console.log(`   ${configPath}`);
   
-  if (platform() === 'win32' && !isAdmin()) {
-    console.log('   ℹ️  Not running as admin, will try junction fallback');
+  let config = readCopilotConfig();
+  const configExisted = config !== null;
+  
+  if (!config) {
+    console.log('   📂 Creating new config...');
+    config = {};
+  } else {
+    console.log('   ✅ Exists');
   }
 
-  try {
-    createSymlink(localPluginPath, installedPluginPath);
-    console.log('   ✅ Symlink created');
-  } catch (error) {
-    console.log(`   ❌ Failed: ${error instanceof Error ? error.message : error}\n`);
-    process.exitCode = 1;
+  // Check if already configured correctly
+  const marketplaceOk = isMarketplaceCorrect(config);
+  const pluginOk = isPluginCorrect(config, localPluginPath);
+
+  if (marketplaceOk && pluginOk) {
+    console.log('\n✅ Already configured correctly!');
+    console.log('────────────────────────────────────────────────────────────');
+    console.log('\n✅ Setup complete! Config is already pointing to local repo.\n');
     return;
   }
 
+  // Show what needs to be updated
+  console.log('\n📝 Configuration changes needed:');
+  
+  if (!marketplaceOk) {
+    console.log(`   • Add/update marketplace: ${MARKETPLACE_NAME}`);
+  }
+  
+  if (!pluginOk) {
+    const existingPlugin = config.installed_plugins?.find(
+      p => p.name === PLUGIN_NAME && p.marketplace === MARKETPLACE_NAME
+    );
+    if (existingPlugin) {
+      console.log(`   • Update plugin cache_path from:`);
+      console.log(`     ${existingPlugin.cache_path}`);
+      console.log(`     to: ${localPluginPath}`);
+    } else {
+      console.log(`   • Add plugin: ${PLUGIN_NAME}`);
+    }
+  }
+
+  // Check if force is needed when config already exists with different values
+  if (configExisted && !options.force && (!marketplaceOk || !pluginOk)) {
+    const existingPlugin = config.installed_plugins?.find(
+      p => p.name === PLUGIN_NAME
+    );
+    if (existingPlugin && normalizePath(existingPlugin.cache_path) !== normalizePath(localPluginPath)) {
+      console.log('\n   ⚠️  Plugin already exists with different cache_path.');
+      console.log('   Use --force to update.\n');
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  // Update marketplace
+  if (!config.marketplaces) {
+    config.marketplaces = {};
+  }
+  config.marketplaces[MARKETPLACE_NAME] = getExpectedMarketplace();
+
+  // Update installed_plugins
+  if (!config.installed_plugins) {
+    config.installed_plugins = [];
+  }
+
+  // Find and update or add the plugin
+  const existingPluginIndex = config.installed_plugins.findIndex(
+    p => p.name === PLUGIN_NAME && p.marketplace === MARKETPLACE_NAME
+  );
+
+  if (existingPluginIndex >= 0) {
+    // Update existing plugin
+    config.installed_plugins[existingPluginIndex] = {
+      ...config.installed_plugins[existingPluginIndex],
+      cache_path: localPluginPath,
+      enabled: true,
+    };
+  } else {
+    // Remove any other azure plugins first
+    config.installed_plugins = config.installed_plugins.filter(p => p.name !== PLUGIN_NAME);
+    // Add new plugin
+    config.installed_plugins.push(createExpectedPlugin(localPluginPath));
+  }
+
+  // Write config
+  console.log('\n💾 Writing config...');
+  if (!writeCopilotConfig(config)) {
+    console.log('   ❌ Failed to write config\n');
+    process.exitCode = 1;
+    return;
+  }
+  console.log('   ✅ Config updated');
+
   console.log('\n────────────────────────────────────────────────────────────');
   console.log('\n✅ Setup complete!\n');
-  console.log('   Your local plugin is now linked. Changes to skills will be');
-  console.log('   picked up by Copilot CLI (restart CLI after changes).\n');
+  console.log('   Your config now points to the local plugin. Changes to skills');
+  console.log('   will be picked up by Copilot CLI (restart CLI after changes).\n');
   console.log('   Run "npm run local verify" to confirm the setup.\n');
 }

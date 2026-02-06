@@ -1,28 +1,34 @@
 /**
  * Verify Command
  * 
- * Verifies that local plugin files match the installed plugin by:
+ * Verifies that the Copilot config.json is correctly configured to use
+ * the local plugin by:
  * 1. Checking for nested plugin install (plugin/azure/ should not exist)
- * 2. Checking Copilot CLI config for stale/misconfigured plugin entries
- * 3. Creating a temporary marker file in the local plugin
- * 4. Checking if it appears in the installed location
- * 5. Comparing content of key files between both locations
- * 6. Cleaning up the marker file
+ * 2. Checking the marketplace entry exists with correct source
+ * 3. Checking the installed_plugins entry has correct cache_path
+ * 4. Verifying the plugin directory exists and has expected content
  */
 
 import { 
   existsSync, 
   readFileSync, 
   writeFileSync, 
-  unlinkSync, 
   readdirSync, 
-  statSync,
-  realpathSync,
   rmSync
 } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { setup } from './setup.js';
+
+const MARKETPLACE_NAME = 'github-copilot-for-azure';
+const PLUGIN_NAME = 'azure';
+
+interface Marketplace {
+  source?: {
+    source?: string;
+    repo?: string;
+  };
+}
 
 interface InstalledPlugin {
   name: string;
@@ -34,6 +40,7 @@ interface InstalledPlugin {
 }
 
 interface CopilotConfig {
+  marketplaces?: Record<string, Marketplace>;
   installed_plugins?: InstalledPlugin[];
   [key: string]: unknown;
 }
@@ -41,13 +48,6 @@ interface CopilotConfig {
 interface VerifyOptions {
   fix: boolean;
   verbose: boolean;
-}
-
-interface ConfigCheckResult {
-  passed: boolean;
-  stalePlugins: InstalledPlugin[];
-  misconfiguredPlugins: InstalledPlugin[];
-  error?: string;
 }
 
 function parseArgs(args: string[]): VerifyOptions {
@@ -59,10 +59,6 @@ function parseArgs(args: string[]): VerifyOptions {
 
 function getCopilotConfigPath(): string {
   return join(homedir(), '.copilot', 'config.json');
-}
-
-function getInstalledPluginPath(): string {
-  return join(homedir(), '.copilot', 'installed-plugins', 'github-copilot-for-azure');
 }
 
 interface ConfigReadResult {
@@ -84,191 +80,72 @@ function readCopilotConfig(): ConfigReadResult {
   }
 }
 
-function writeCopilotConfig(config: CopilotConfig): boolean {
-  const configPath = getCopilotConfigPath();
-  try {
-    // Backup first
-    const backupPath = configPath + '.bak';
-    if (existsSync(configPath)) {
-      writeFileSync(backupPath, readFileSync(configPath));
-    }
-    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    return true;
-  } catch {
-    return false;
-  }
+function normalizePath(path: string): string {
+  return path.toLowerCase().replace(/\\/g, '/');
 }
 
-/**
- * Check Copilot CLI config for issues with azure plugin entries
- */
-function checkCopilotConfig(): ConfigCheckResult {
-  const result = readCopilotConfig();
+interface MarketplaceCheckResult {
+  passed: boolean;
+  exists: boolean;
+  hasCorrectSource: boolean;
+  actual?: Marketplace;
+}
+
+function checkMarketplace(config: CopilotConfig): MarketplaceCheckResult {
+  const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
   
-  // If there was a parse error, fail the check and surface the error
-  if (result.error) {
-    return { 
-      passed: false, 
-      stalePlugins: [], 
-      misconfiguredPlugins: [], 
-      error: result.error 
-    };
-  }
-  
-  // No config file or no config content - nothing to check
-  if (!result.config) {
-    return { passed: true, stalePlugins: [], misconfiguredPlugins: [] };
+  if (!marketplace) {
+    return { passed: false, exists: false, hasCorrectSource: false };
   }
 
-  const plugins = result.config.installed_plugins ?? [];
-  const stalePlugins: InstalledPlugin[] = [];
-  const misconfiguredPlugins: InstalledPlugin[] = [];
-  const expectedCachePath = getInstalledPluginPath();
-
-  // Helper to safely convert unknown plugin entry to InstalledPlugin
-  const toSafePlugin = (raw: unknown): InstalledPlugin | null => {
-    if (!raw || typeof raw !== 'object') return null;
-    const candidate = raw as Record<string, unknown>;
-    
-    // Validate required fields
-    if (typeof candidate.name !== 'string' || candidate.name.trim() === '') return null;
-    if (typeof candidate.cache_path !== 'string') return null;
-    
-    return {
-      name: candidate.name,
-      marketplace: typeof candidate.marketplace === 'string' ? candidate.marketplace : '',
-      cache_path: candidate.cache_path,
-      enabled: typeof candidate.enabled === 'boolean' ? candidate.enabled : false,
-      version: typeof candidate.version === 'string' ? candidate.version : undefined,
-      installed_at: typeof candidate.installed_at === 'string' ? candidate.installed_at : undefined,
-    };
-  };
-
-  for (const rawPlugin of plugins) {
-    const plugin = toSafePlugin(rawPlugin);
-    
-    // Skip malformed entries
-    if (!plugin) continue;
-    
-    if (plugin.name !== 'azure') continue;
-
-    // Check for stale plugins (cache_path doesn't exist)
-    if (!existsSync(plugin.cache_path)) {
-      stalePlugins.push(plugin);
-      continue;
-    }
-
-    // Check for misconfigured marketplace plugins
-    // The cache_path should point to the symlink root, not a subdirectory
-    if (plugin.marketplace === 'github-copilot-for-azure') {
-      const normalizedCache = plugin.cache_path.toLowerCase().replace(/\\/g, '/');
-      const normalizedExpected = expectedCachePath.toLowerCase().replace(/\\/g, '/');
-      
-      // If cache_path points to a subdirectory (e.g., .../github-copilot-for-azure/azure)
-      // instead of the root, it's misconfigured
-      if (normalizedCache !== normalizedExpected && 
-          normalizedCache.startsWith(normalizedExpected + '/')) {
-        misconfiguredPlugins.push(plugin);
-      }
-    }
-  }
+  const hasCorrectSource = 
+    marketplace.source?.source === 'github' &&
+    marketplace.source?.repo === 'microsoft/github-copilot-for-azure';
 
   return {
-    passed: stalePlugins.length === 0 && misconfiguredPlugins.length === 0,
-    stalePlugins,
-    misconfiguredPlugins,
+    passed: hasCorrectSource,
+    exists: true,
+    hasCorrectSource,
+    actual: marketplace,
   };
 }
 
-/**
- * Fix config issues by removing stale plugins and correcting cache paths
- */
-function fixCopilotConfig(
-  stalePlugins: InstalledPlugin[], 
-  misconfiguredPlugins: InstalledPlugin[]
-): boolean {
-  const result = readCopilotConfig();
-  if (!result.config || !result.config.installed_plugins) {
-    return false;
+interface PluginCheckResult {
+  passed: boolean;
+  exists: boolean;
+  hasCorrectCachePath: boolean;
+  isEnabled: boolean;
+  actual?: InstalledPlugin;
+  expectedCachePath: string;
+}
+
+function checkPlugin(config: CopilotConfig, expectedCachePath: string): PluginCheckResult {
+  const plugins = config.installed_plugins ?? [];
+  const plugin = plugins.find(
+    p => p.name === PLUGIN_NAME && p.marketplace === MARKETPLACE_NAME
+  );
+
+  if (!plugin) {
+    return { 
+      passed: false, 
+      exists: false, 
+      hasCorrectCachePath: false, 
+      isEnabled: false,
+      expectedCachePath,
+    };
   }
 
-  const expectedCachePath = getInstalledPluginPath();
-  const staleNames = new Set(stalePlugins.map(p => `${p.name}|${p.cache_path}`));
-  
-  // Helper to check if entry is a valid plugin object
-  const isValidPlugin = (p: unknown): p is InstalledPlugin => {
-    if (!p || typeof p !== 'object') return false;
-    const candidate = p as Record<string, unknown>;
-    return typeof candidate.name === 'string' && typeof candidate.cache_path === 'string';
+  const hasCorrectCachePath = normalizePath(plugin.cache_path) === normalizePath(expectedCachePath);
+  const isEnabled = plugin.enabled === true;
+
+  return {
+    passed: hasCorrectCachePath && isEnabled,
+    exists: true,
+    hasCorrectCachePath,
+    isEnabled,
+    actual: plugin,
+    expectedCachePath,
   };
-
-  // Filter out stale plugins and fix misconfigured ones, preserving malformed entries
-  result.config.installed_plugins = (result.config.installed_plugins as unknown[])
-    .map((p: unknown) => {
-      // Skip malformed entries - leave them untouched
-      if (!isValidPlugin(p)) return p;
-      
-      // Remove stale plugins
-      if (staleNames.has(`${p.name}|${p.cache_path}`)) return null;
-      
-      // Fix misconfigured plugins
-      const isMisconfigured = misconfiguredPlugins.some(
-        mp => mp.name === p.name && mp.cache_path === p.cache_path
-      );
-      if (isMisconfigured) {
-        return { ...p, cache_path: expectedCachePath };
-      }
-      return p;
-    })
-    .filter((p: unknown): p is InstalledPlugin => p !== null) as InstalledPlugin[];
-
-  return writeCopilotConfig(result.config);
-}
-
-function generateMarkerContent(): string {
-  return `# Verification Marker
-# Generated: ${new Date().toISOString()}
-# Random: ${Math.random().toString(36).substring(2, 15)}
-# This file is used to verify symlink setup and should be auto-deleted.
-`;
-}
-
-function getAllFiles(dir: string, baseDir: string = dir): string[] {
-  const files: string[] = [];
-  
-  try {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const fullPath = join(dir, entry.name);
-      const relativePath = relative(baseDir, fullPath);
-      
-      // Skip hidden files and node_modules
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') {
-        continue;
-      }
-      
-      if (entry.isDirectory()) {
-        files.push(...getAllFiles(fullPath, baseDir));
-      } else if (entry.isFile() && entry.name.endsWith('.md')) {
-        files.push(relativePath);
-      }
-    }
-  } catch {
-    // Directory doesn't exist or can't be read
-  }
-  
-  return files;
-}
-
-function compareFiles(file1: string, file2: string): boolean {
-  try {
-    const content1 = readFileSync(file1, 'utf-8');
-    const content2 = readFileSync(file2, 'utf-8');
-    return content1 === content2;
-  } catch {
-    return false;
-  }
 }
 
 function checkNestedInstall(localPath: string): { passed: boolean; error?: string } {
@@ -289,93 +166,61 @@ function checkNestedInstall(localPath: string): { passed: boolean; error?: strin
   return { passed: true };
 }
 
-function runMarkerTest(localPath: string, installedPath: string): { passed: boolean; error?: string } {
-  const markerFileName = '.copilot-verify-marker.md';
-  const localMarker = join(localPath, markerFileName);
-  const installedMarker = join(installedPath, markerFileName);
-  const markerContent = generateMarkerContent();
-
-  try {
-    // Create marker in local
-    writeFileSync(localMarker, markerContent, 'utf-8');
-
-    // Check if it appears in installed
-    if (!existsSync(installedMarker)) {
-      unlinkSync(localMarker);
-      return { passed: false, error: 'Marker file not visible in installed location' };
-    }
-
-    // Verify content matches
-    const installedContent = readFileSync(installedMarker, 'utf-8');
-    if (installedContent !== markerContent) {
-      unlinkSync(localMarker);
-      return { passed: false, error: 'Marker content mismatch between locations' };
-    }
-
-    // Clean up
-    unlinkSync(localMarker);
-    
-    // Verify cleanup propagated
-    if (existsSync(installedMarker)) {
-      return { passed: false, error: 'Marker deletion did not propagate' };
-    }
-
-    return { passed: true };
-  } catch (error) {
-    // Ensure cleanup
-    try { unlinkSync(localMarker); } catch { /* ignore */ }
-    return { 
-      passed: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    };
+function checkPluginContent(pluginPath: string, verbose: boolean): { passed: boolean; details: string[] } {
+  const details: string[] = [];
+  
+  if (!existsSync(pluginPath)) {
+    return { passed: false, details: ['Plugin directory does not exist'] };
   }
-}
 
-function runFileComparison(
-  localPath: string, 
-  installedPath: string, 
-  verbose: boolean
-): { matches: number; mismatches: string[]; missing: string[] } {
-  const localFiles = getAllFiles(localPath);
-  const matches: string[] = [];
-  const mismatches: string[] = [];
-  const missing: string[] = [];
+  // Check for essential files
+  const essentialPaths = [
+    'README.md',
+    'skills',
+  ];
 
-  for (const file of localFiles) {
-    const localFile = join(localPath, file);
-    const installedFile = join(installedPath, file);
-
-    if (!existsSync(installedFile)) {
-      missing.push(file);
-    } else if (compareFiles(localFile, installedFile)) {
-      matches.push(file);
+  let allExist = true;
+  for (const path of essentialPaths) {
+    const fullPath = join(pluginPath, path);
+    if (existsSync(fullPath)) {
+      if (verbose) {
+        details.push(`✅ ${path}`);
+      }
     } else {
-      mismatches.push(file);
+      details.push(`❌ Missing: ${path}`);
+      allExist = false;
     }
   }
 
-  if (verbose && matches.length > 0) {
-    console.log('\n   ✅ Matching files:');
-    for (const file of matches.slice(0, 5)) {
-      console.log(`      ${file}`);
-    }
-    if (matches.length > 5) {
-      console.log(`      ... and ${matches.length - 5} more`);
+  // Count skills
+  const skillsPath = join(pluginPath, 'skills');
+  if (existsSync(skillsPath)) {
+    try {
+      const skills = readdirSync(skillsPath, { withFileTypes: true })
+        .filter(d => d.isDirectory() && !d.name.startsWith('_'))
+        .map(d => d.name);
+      details.push(`📦 ${skills.length} skills found`);
+      if (verbose && skills.length > 0) {
+        const preview = skills.slice(0, 5).join(', ');
+        details.push(`   ${preview}${skills.length > 5 ? `, ... (+${skills.length - 5} more)` : ''}`);
+      }
+    } catch {
+      details.push('⚠️  Could not enumerate skills');
     }
   }
 
-  return { matches: matches.length, mismatches, missing };
+  return { passed: allExist, details };
 }
 
 export function verify(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
   const localPluginPath = join(rootDir, 'plugin');
-  const installedPluginPath = getInstalledPluginPath();
+  const configPath = getCopilotConfigPath();
 
   console.log('\n🔍 Verifying Local Plugin Setup\n');
   console.log('────────────────────────────────────────────────────────────');
 
-  // Check paths exist
+  // Check local plugin exists
   console.log(`\n📁 Local plugin:`);
   console.log(`   ${localPluginPath}`);
   if (!existsSync(localPluginPath)) {
@@ -385,13 +230,23 @@ export function verify(rootDir: string, args: string[]): void {
   }
   console.log('   ✅ Exists');
 
-  console.log(`\n📁 Installed plugin:`);
-  console.log(`   ${installedPluginPath}`);
-  if (!existsSync(installedPluginPath)) {
-    console.log('   ❌ Not found\n');
+  // Check config file
+  console.log(`\n📄 Copilot config:`);
+  console.log(`   ${configPath}`);
+  
+  const configResult = readCopilotConfig();
+  
+  if (configResult.error) {
+    console.log(`   ❌ ${configResult.error}`);
+    process.exitCode = 1;
+    return;
+  }
+  
+  if (!configResult.config) {
+    console.log('   ❌ Config file not found');
     if (options.fix) {
-      console.log('   🔧 Running setup with --fix...\n');
-      setup(rootDir, ['--force']);
+      console.log('\n   🔧 Running setup...\n');
+      setup(rootDir, []);
       return;
     }
     console.log('   Run "npm run local setup" or use --fix to create.\n');
@@ -399,26 +254,6 @@ export function verify(rootDir: string, args: string[]): void {
     return;
   }
   console.log('   ✅ Exists');
-
-  // Show resolved paths
-  try {
-    const resolvedLocal = realpathSync(localPluginPath);
-    const resolvedInstalled = realpathSync(installedPluginPath);
-    console.log(`\n📍 Resolved paths:`);
-    console.log(`   Local:     ${resolvedLocal}`);
-    console.log(`   Installed: ${resolvedInstalled}`);
-    
-    const normalizedLocal = resolvedLocal.toLowerCase().replace(/\\/g, '/');
-    const normalizedInstalled = resolvedInstalled.toLowerCase().replace(/\\/g, '/');
-    
-    if (normalizedLocal === normalizedInstalled) {
-      console.log('   ✅ Paths resolve to same location (symlink working)');
-    } else {
-      console.log('   ⚠️  Paths resolve to different locations');
-    }
-  } catch (error) {
-    console.log(`\n   ⚠️  Could not resolve paths: ${error}`);
-  }
 
   console.log('\n────────────────────────────────────────────────────────────');
 
@@ -432,83 +267,70 @@ export function verify(rootDir: string, args: string[]): void {
     console.log(`   ❌ ${nestedCheck.error}`);
   }
 
-  // Test 2: Check Copilot CLI config
-  console.log('\n🧪 Test 2: Copilot CLI Config Check');
-  const configCheck = checkCopilotConfig();
+  // Test 2: Check marketplace configuration
+  console.log('\n🧪 Test 2: Marketplace Configuration');
+  const marketplaceCheck = checkMarketplace(configResult.config);
   
-  if (configCheck.passed) {
-    console.log('   ✅ Plugin config is correct');
+  if (marketplaceCheck.passed) {
+    console.log(`   ✅ Marketplace "${MARKETPLACE_NAME}" is correctly configured`);
   } else {
-    if (configCheck.error) {
-      console.log(`   ❌ Failed to read config: ${configCheck.error}`);
+    if (!marketplaceCheck.exists) {
+      console.log(`   ❌ Marketplace "${MARKETPLACE_NAME}" not found in config`);
+    } else {
+      console.log(`   ❌ Marketplace has incorrect source configuration`);
+      if (marketplaceCheck.actual?.source) {
+        console.log(`      Current: source="${marketplaceCheck.actual.source.source}", repo="${marketplaceCheck.actual.source.repo}"`);
+      }
+      console.log(`      Expected: source="github", repo="microsoft/github-copilot-for-azure"`);
     }
-    if (configCheck.stalePlugins.length > 0) {
-      console.log('   ⚠️  Stale plugin entries found (cache_path does not exist):');
-      for (const p of configCheck.stalePlugins) {
-        console.log(`      - ${p.name} (${p.marketplace || 'direct'}): ${p.cache_path}`);
+  }
+
+  // Test 3: Check plugin configuration
+  console.log('\n🧪 Test 3: Plugin Configuration');
+  const pluginCheck = checkPlugin(configResult.config, localPluginPath);
+  
+  if (pluginCheck.passed) {
+    console.log(`   ✅ Plugin "${PLUGIN_NAME}" is correctly configured`);
+    console.log(`      cache_path: ${pluginCheck.actual?.cache_path}`);
+  } else {
+    if (!pluginCheck.exists) {
+      console.log(`   ❌ Plugin "${PLUGIN_NAME}" not found in installed_plugins`);
+    } else {
+      if (!pluginCheck.hasCorrectCachePath) {
+        console.log(`   ❌ Plugin cache_path is incorrect`);
+        console.log(`      Current:  ${pluginCheck.actual?.cache_path}`);
+        console.log(`      Expected: ${pluginCheck.expectedCachePath}`);
+      }
+      if (!pluginCheck.isEnabled) {
+        console.log(`   ⚠️  Plugin is disabled`);
       }
     }
-    if (configCheck.misconfiguredPlugins.length > 0) {
-      console.log('   ⚠️  Misconfigured plugin entries (wrong cache_path):');
-      for (const p of configCheck.misconfiguredPlugins) {
-        console.log(`      - ${p.name}: points to ${p.cache_path}`);
-        console.log(`        should be: ${installedPluginPath}`);
-      }
-    }
   }
 
-  // Test 3: Marker file test
-  console.log('\n🧪 Test 3: Marker File Propagation');
-  console.log('   Creating temporary marker file...');
-  const markerResult = runMarkerTest(localPluginPath, installedPluginPath);
+  // Test 4: Check plugin content
+  console.log('\n🧪 Test 4: Plugin Content Check');
+  const contentCheck = checkPluginContent(localPluginPath, options.verbose);
   
-  if (markerResult.passed) {
-    console.log('   ✅ Marker file created, visible, and cleaned up correctly');
+  if (contentCheck.passed) {
+    console.log('   ✅ Plugin directory has expected structure');
   } else {
-    console.log(`   ❌ Failed: ${markerResult.error}`);
+    console.log('   ❌ Plugin directory structure issues:');
   }
-
-  // Test 4: File content comparison
-  console.log('\n🧪 Test 4: File Content Comparison');
-  const comparison = runFileComparison(localPluginPath, installedPluginPath, options.verbose);
-  
-  console.log(`   📊 Results:`);
-  console.log(`      Matching files:    ${comparison.matches}`);
-  console.log(`      Content mismatch:  ${comparison.mismatches.length}`);
-  console.log(`      Missing files:     ${comparison.missing.length}`);
-
-  if (comparison.mismatches.length > 0) {
-    console.log('\n   ⚠️  Files with content differences:');
-    for (const file of comparison.mismatches.slice(0, 5)) {
-      console.log(`      ${file}`);
-    }
-    if (comparison.mismatches.length > 5) {
-      console.log(`      ... and ${comparison.mismatches.length - 5} more`);
-    }
-  }
-
-  if (comparison.missing.length > 0) {
-    console.log('\n   ⚠️  Files missing from installed location:');
-    for (const file of comparison.missing.slice(0, 5)) {
-      console.log(`      ${file}`);
-    }
-    if (comparison.missing.length > 5) {
-      console.log(`      ... and ${comparison.missing.length - 5} more`);
-    }
+  for (const detail of contentCheck.details) {
+    console.log(`      ${detail}`);
   }
 
   console.log('\n────────────────────────────────────────────────────────────');
 
   // Summary
   const allPassed = nestedCheck.passed &&
-                    configCheck.passed &&
-                    markerResult.passed && 
-                    comparison.mismatches.length === 0 && 
-                    comparison.missing.length === 0;
+                    marketplaceCheck.passed &&
+                    pluginCheck.passed &&
+                    contentCheck.passed;
 
   if (allPassed) {
     console.log('\n✅ VERIFICATION PASSED\n');
-    console.log('   Local plugin is correctly linked to installed location.');
+    console.log('   Config is correctly pointing to local plugin.');
     console.log('   Changes to skills will be picked up by Copilot CLI.\n');
   } else {
     console.log('\n❌ VERIFICATION FAILED\n');
@@ -527,42 +349,27 @@ export function verify(rootDir: string, args: string[]): void {
         }
       }
     }
-    if (!configCheck.passed) {
-      console.log('   ⚠️  Copilot CLI config has issues that prevent skills from loading.');
+    
+    if (!marketplaceCheck.passed || !pluginCheck.passed) {
+      console.log('   ⚠️  Config needs to be updated.');
       if (options.fix) {
-        console.log('\n   🔧 Fixing config...');
-        if (fixCopilotConfig(configCheck.stalePlugins, configCheck.misconfiguredPlugins)) {
-          console.log('   ✅ Config fixed');
-          if (configCheck.stalePlugins.length > 0) {
-            console.log(`      Removed ${configCheck.stalePlugins.length} stale plugin(s)`);
-          }
-          if (configCheck.misconfiguredPlugins.length > 0) {
-            console.log(`      Fixed ${configCheck.misconfiguredPlugins.length} cache path(s)`);
-          }
-          console.log('   ℹ️  Restart Copilot CLI or run /skills reload to apply changes');
-        } else {
-          console.log('   ❌ Failed to fix config');
-        }
+        console.log('\n   🔧 Running setup to fix config...\n');
+        setup(rootDir, ['--force']);
+        
+        // Re-verify after fix
+        console.log('\n   🔄 Re-running verification...\n');
+        verify(rootDir, args.filter(a => a !== '--fix'));
+        return;
       }
     }
-    if (!markerResult.passed) {
-      console.log('   The installed plugin is NOT properly linked to local repo.');
-    }
-    if (comparison.mismatches.length > 0 || comparison.missing.length > 0) {
-      console.log('   File content does not match between locations.');
+    
+    if (!contentCheck.passed) {
+      console.log('   ⚠️  Plugin directory is missing expected content.');
     }
     
-    if (options.fix && (!nestedCheck.passed || !configCheck.passed)) {
-      // Re-run verification after fixing issues
-      console.log('\n   🔄 Re-running verification...\n');
-      verify(rootDir, args.filter(a => a !== '--fix'));
-      return;
-    } else if (options.fix) {
-      console.log('\n   🔧 Attempting to fix with setup --force...\n');
-      setup(rootDir, ['--force']);
-    } else {
+    if (!options.fix) {
       console.log('\n   Run "npm run local verify --fix" to attempt automatic fixes.');
-      console.log('   Or manually remove plugin/azure/ and re-run setup.\n');
+      console.log('   Or run "npm run local setup --force" to reconfigure.\n');
     }
     
     process.exitCode = 1;

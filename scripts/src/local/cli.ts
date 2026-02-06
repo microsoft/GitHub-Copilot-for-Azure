@@ -5,8 +5,8 @@
  * Tools for setting up and verifying local plugin development.
  * 
  * Usage:
- *   npm run local setup    # Create symlink from installed-plugins to local repo
- *   npm run local verify   # Verify files match between local and installed
+ *   npm run local setup    # Configure Copilot to use local plugin folder
+ *   npm run local verify   # Verify config points to local plugin
  *   npm run local help     # Show help
  */
 
@@ -30,14 +30,20 @@ function printHelp(): void {
 Usage: npm run local <command> [options]
 
 Commands:
-  setup     Create symlink from ~/.copilot/installed-plugins to local repo
-  verify    Verify local files match installed plugin (content comparison)
+  setup     Configure ~/.copilot/config.json to use local plugin folder
+  verify    Verify config is correctly pointing to local plugin
   help      Show this help message
 
+Options:
+  --force, -f    Force update even if config already has different values
+  --fix          Automatically fix issues found during verification
+  --verbose, -v  Show detailed output
+
 Examples:
-  npm run local setup             # Set up symlink for local development
-  npm run local verify            # Verify files are in sync
-  npm run local verify -- --fix   # Re-create symlink if verification fails
+  npm run local setup             # Configure Copilot to use local plugin
+  npm run local setup -- --force  # Force update existing config
+  npm run local verify            # Verify config is correct
+  npm run local verify -- --fix   # Automatically fix config issues
 `);
 }
 
