@@ -1,6 +1,6 @@
 # What is a Skill?
 
-Agent skills are modular packages of domain-specific knowledge that extend an AI agent's capabilities. Defined in SKILL.md files with frontmatter metadata and markdown instructions, they allow agents to handle specialized tasks—like Azure deployments or diagnostics—by loading relevant context on-demand when triggered by user queries. The generally provide guidance and step-by-step workflows to address particular scenarios.
+Agent skills are modular packages of domain-specific knowledge that extend an AI agent's capabilities. Defined in SKILL.md files with frontmatter metadata and markdown instructions, they allow agents to handle specialized tasks—like Azure deployments or diagnostics—by loading relevant context on-demand when triggered by user queries. They generally provide guidance and step-by-step workflows to address particular scenarios.
 
 # Comparison with Agents and Tools
 
