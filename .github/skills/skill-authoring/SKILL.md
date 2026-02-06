@@ -58,8 +58,9 @@ When reviewing or authoring skills, verify:
 2. **No orphaned references** - All reference files are linked
 3. **Token budgets** - References under 1000 tokens (split if exceeded)
 4. **No duplicates** - Consolidate repeated content
+5. **No out-of-place guidance** - Service-specific content belongs in service-specific references
 
-See [VALIDATION.md](references/VALIDATION.md) for detailed procedures.
+See [Validation](references/validation/README.md) for detailed procedures.
 
 ## Reference Documentation
 
@@ -67,5 +68,5 @@ See [VALIDATION.md](references/VALIDATION.md) for detailed procedures.
 - [Token Budgets](references/token-budgets.md) - Limits and splitting guidance
 - [Reference Loading](references/REFERENCE-LOADING.md) - How references load
 - [Checklist](references/CHECKLIST.md) - Pre-submission checklist
-- [Validation](references/VALIDATION.md) - Link and reference validation
+- [Validation](references/validation/README.md) - Link and reference validation
 - [agentskills.io/specification](https://agentskills.io/specification) - Official spec
