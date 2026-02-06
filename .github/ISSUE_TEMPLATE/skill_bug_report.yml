@@ -4,7 +4,7 @@ description: Report a bug related to Azure skills in GitHub Copilot for Azure
 type: "Bug"
 labels:
   - "bug"
-  - "skill"
+  - "skills"
 body:
   - type: checkboxes
     id: pre-flight
