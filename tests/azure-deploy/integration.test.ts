@@ -125,7 +125,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region..",
+        prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
       });
@@ -143,7 +143,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("creates static portfolio website and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region..",
+        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
       });
