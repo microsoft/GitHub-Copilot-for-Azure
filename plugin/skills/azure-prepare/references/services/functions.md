@@ -65,7 +65,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   properties: {
     serverFarmId: functionAppPlan.id
     siteConfig: {
-      linuxFxVersion: 'Node|20'
+      linuxFxVersion: 'Node|22'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -182,13 +182,13 @@ module.exports = async function (context, req) {
 
 **Latest GA Versions (as of 2026):**
 
-| Language | FUNCTIONS_WORKER_RUNTIME | Recommended linuxFxVersion | Notes |
-|----------|-------------------------|---------------------------|-------|
-| Node.js | `node` | `Node\|20` or `Node\|24` | Node 18 EOL in 2025 |
-| Python | `python` | `Python\|3.11`, `Python\|3.12`, or `Python\|3.13` | Python 3.10 EOL Oct 2026 |
-| .NET | `dotnet` | `DOTNET\|8.0` or `DOTNET\|9` | .NET 9 EOL Nov 2026 |
-| Java | `java` | `Java\|17`, `Java\|21`, or `Java\|25` | Use LTS versions |
-| PowerShell | `powershell` | `PowerShell\|7.4` | PowerShell 7.2+ supported |
+| Language | FUNCTIONS_WORKER_RUNTIME | Supported linuxFxVersion | Recommended (Latest LTS) | Notes |
+|----------|-------------------------|-------------------------|------------------------|-------|
+| Node.js | `node` | `Node\|18`, `Node\|20`, `Node\|22` | `Node\|22` | Node 18 EOL in 2025 |
+| Python | `python` | `Python\|3.11`, `Python\|3.12`, `Python\|3.13` | `Python\|3.13` | Python 3.10 EOL Oct 2026 |
+| .NET | `dotnet` | `DOTNET\|8.0`, `DOTNET\|9`, `DOTNET\|10` | `DOTNET\|10` | .NET 9 EOL Nov 2026 |
+| Java | `java` | `Java\|17`, `Java\|21`, `Java\|25` | `Java\|21` (LTS) | Use LTS versions |
+| PowerShell | `powershell` | `PowerShell\|7.2`, `PowerShell\|7.4` | `PowerShell\|7.4` | PowerShell 7.2+ supported |
 
 ## Cold Start Mitigation
 
@@ -225,7 +225,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
       runtime: {
         name: 'node'
-        version: '20'
+        version: '22'
       }
     }
   }
