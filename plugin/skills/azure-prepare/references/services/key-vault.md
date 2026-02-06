@@ -119,19 +119,26 @@ secrets: [
 
 ## SDK Access
 
-### Node.js
+### SDK Packages
+
+| Language | Secrets | Keys | Certificates |
+|----------|---------|------|--------------|
+| .NET | `Azure.Security.KeyVault.Secrets` | `Azure.Security.KeyVault.Keys` | `Azure.Security.KeyVault.Certificates` |
+| Java | `azure-security-keyvault-secrets` | `azure-security-keyvault-keys` | `azure-security-keyvault-certificates` |
+| JavaScript | `@azure/keyvault-secrets` | `@azure/keyvault-keys` | `@azure/keyvault-certificates` |
+| Python | `azure-keyvault-secrets` | `azure-keyvault-keys` | `azure-keyvault-certificates` |
+| Go | `azsecrets` | `azkeys` | `azcertificates` |
+| Rust | `azure_security_keyvault_secrets` | `azure_security_keyvault_keys` | `azure_security_keyvault_certificates` |
+
+### JavaScript
 
 ```javascript
-const { SecretClient } = require("@azure/keyvault-secrets");
-const { DefaultAzureCredential } = require("@azure/identity");
+import { DefaultAzureCredential } from "@azure/identity";
+import { SecretClient } from "@azure/keyvault-secrets";
 
-const client = new SecretClient(
-  process.env.KEY_VAULT_URL,
-  new DefaultAzureCredential()
-);
-
+const client = new SecretClient(process.env.KEY_VAULT_URL, new DefaultAzureCredential());
 const secret = await client.getSecret("database-connection-string");
-console.log(secret.value);
+// Use secret.value securely - do not log secrets
 ```
 
 ### Python
@@ -140,25 +147,71 @@ console.log(secret.value);
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
-client = SecretClient(
-    vault_url=os.environ["KEY_VAULT_URL"],
-    credential=DefaultAzureCredential()
-)
-
+client = SecretClient(vault_url=os.environ["KEY_VAULT_URL"], credential=DefaultAzureCredential())
 secret = client.get_secret("database-connection-string")
-print(secret.value)
+# Use secret.value securely - do not log secrets
 ```
 
-### .NET
+### C#
 
 ```csharp
-var client = new SecretClient(
-    new Uri(Environment.GetEnvironmentVariable("KEY_VAULT_URL")),
-    new DefaultAzureCredential()
-);
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
+var client = new SecretClient(new Uri(Environment.GetEnvironmentVariable("KEY_VAULT_URL")), new DefaultAzureCredential());
 KeyVaultSecret secret = await client.GetSecretAsync("database-connection-string");
-Console.WriteLine(secret.Value);
+// Use secret.Value securely - do not log secrets
+```
+
+### Java
+
+```java
+import com.azure.identity.*;
+import com.azure.security.keyvault.secrets.*;
+import com.azure.security.keyvault.secrets.models.*;
+
+SecretClient client = new SecretClientBuilder()
+    .vaultUrl(System.getenv("KEY_VAULT_URL"))
+    .credential(new DefaultAzureCredentialBuilder().build())
+    .buildClient();
+KeyVaultSecret secret = client.getSecret("database-connection-string");
+// Use secret.getValue() securely - do not log secrets
+```
+
+### Go
+
+```go
+package main
+
+import (
+    "context"
+    "os"
+
+    "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+    "github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
+)
+
+func main() {
+    cred, _ := azidentity.NewDefaultAzureCredential(nil)
+    client, _ := azsecrets.NewClient(os.Getenv("KEY_VAULT_URL"), cred, nil)
+
+    resp, _ := client.GetSecret(context.Background(), "database-connection-string", "", nil)
+    // Use *resp.Value securely - do not log secrets
+}
+```
+
+### Rust
+
+Note: Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+
+```rust
+use azure_identity::DeveloperToolsCredential;
+use azure_security_keyvault_secrets::SecretClient;
+
+let credential = DeveloperToolsCredential::new(None)?;
+let client = SecretClient::new(std::env::var("KEY_VAULT_URL")?, credential.clone(), None)?;
+let secret = client.get_secret("database-connection-string", None).await?.into_model()?;
+// Use secret.value securely - do not log secrets
 ```
 
 ## Environment Variables
@@ -207,6 +260,16 @@ resource kvEventSubscription 'Microsoft.EventGrid/eventSubscriptions@2023-12-15-
   }
 }
 ```
+
+## Security Features
+
+| Feature | Description |
+|---------|-------------|
+| RBAC | Role-based access control for fine-grained permissions |
+| Soft Delete | Recover deleted vaults and secrets |
+| Purge Protection | Prevent permanent deletion during retention period |
+
+For comprehensive security guidance, see: [security.md](../security.md)
 
 ## Best Practices
 

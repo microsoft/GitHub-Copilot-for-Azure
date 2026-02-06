@@ -15,7 +15,11 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { type CopilotSession, type CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+import { fileURLToPath } from "url";
+import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface AgentMetadata {
   events: SessionEvent[];
@@ -35,40 +39,6 @@ export interface TestConfig {
 
 export interface KeywordOptions {
   caseSensitive?: boolean;
-}
-
-// Lazy-loaded SDK
-let CopilotClientClass: typeof CopilotClient | undefined;
-let sdkLoadError: Error | undefined;
-
-async function getCopilotClient() {
-  if (sdkLoadError) {
-    throw sdkLoadError;
-  }
-  if (!CopilotClientClass) {
-    try {
-      // Manually construct the SDK path to bypass Jest's module resolution
-      const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "dist", "index.js");
-      const { pathToFileURL } = await import("url");
-      const sdkUrl = pathToFileURL(sdkPath).href;
-      if (process.env.DEBUG) {
-        console.log("SDK path:", sdkPath);
-        console.log("SDK URL:", sdkUrl);
-      }
-      // Use eval to bypass Jest's static import() transformation
-      const dynamicImport = eval("(url) => import(url)");
-      const sdk = await dynamicImport(sdkUrl);
-      CopilotClientClass = sdk.CopilotClient;
-    } catch (error) {
-      const errorMsg = (error as Error).message + "\n" + (error as Error).stack;
-      if (process.env.DEBUG) {
-        console.error("SDK load error:", errorMsg);
-      }
-      sdkLoadError = new Error("Failed to load @github/copilot-sdk. Ensure Node.js has ESM support and the SDK is installed. Error: " + errorMsg);
-      throw sdkLoadError;
-    }
-  }
-  return CopilotClientClass;
 }
 
 /**
@@ -278,13 +248,13 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
  * Run an agent session with the given configuration
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
-  const CopilotClient = await getCopilotClient();
-
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
 
   // Declare client and session outside try block to ensure cleanup in finally
   let client: CopilotClient | undefined;
   let session: CopilotSession | undefined;
+  // Flag to prevent processing events after completion
+  let isComplete = false;
 
   try {
     // Run optional setup
@@ -292,16 +262,14 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       await config.setup(testWorkspace);
     }
 
-    // Copilot client with yolo mode and non-interactive session.
-    // Enables longer chats with full conversation history for the skill.
-    // -p must come first before other args.
-    const cliArgs: string[] = config.nonInteractive ? ["-p", "--yolo"] : [];
+    // Copilot client with yolo mode
+    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
     if (process.env.DEBUG) {
       cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
 
-    client = new CopilotClient!({
+    client = new CopilotClient({
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
@@ -324,43 +292,70 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     });
 
     const agentMetadata: AgentMetadata = { events: [] };
+    let resolveIdle: (() => void) | null = null;
 
-    const done = new Promise<void>((resolve) => {
-      session!.on(async (event: SessionEvent) => {
-        if (process.env.DEBUG) {
-          console.log(`=== session event ${event.type}`);
+    const waitForIdle = () => new Promise<void>((resolve) => {
+      resolveIdle = resolve;
+    });
+
+    session!.on(async (event: SessionEvent) => {
+      // Stop processing events if already complete
+      if (isComplete) {
+        return;
+      }
+
+      if (process.env.DEBUG) {
+        console.log(`=== session event ${event.type}`);
+      }
+
+      if (event.type === "session.idle") {
+        isComplete = true;
+        if (resolveIdle) {
+          resolveIdle();
+          resolveIdle = null;
         }
+        return;
+      }
 
-        if (event.type === "session.idle") {
-          resolve();
+      // Capture all events
+      agentMetadata.events.push(event);
+
+      // Check for early termination
+      if (config.shouldEarlyTerminate) {
+        if (config.shouldEarlyTerminate(agentMetadata)) {
+          isComplete = true;
+          if (resolveIdle) {
+            resolveIdle();
+            resolveIdle = null;
+          }
+          void session!.abort();
           return;
         }
-
-        // Capture all events
-        agentMetadata.events.push(event);
-
-        // Check for early termination
-        if (config.shouldEarlyTerminate) {
-          if (config.shouldEarlyTerminate(agentMetadata)) {
-            resolve();
-            void session!.abort();
-            return;
-          }
-        }
-      });
+      }
     });
 
     await session.send({ prompt: config.prompt });
-    await done;
+    await waitForIdle();
+
+    // Send follow-up if non-interactive
+    if (config.nonInteractive) {
+      isComplete = false;
+      await session.send({ prompt: "Go with recommended options." });
+      await waitForIdle();
+    }
 
     // Generate markdown report
     writeMarkdownReport(config, agentMetadata);
 
     return agentMetadata;
   } catch (error) {
+    // Mark as complete to stop event processing
+    isComplete = true;
     console.error("Agent runner error:", error);
     throw error;
   } finally {
+    // Mark as complete before starting cleanup to prevent post-completion event processing
+    isComplete = true;
     // Cleanup session and client (guarded if undefined)
     try {
       if (session) {
@@ -487,8 +482,6 @@ export function shouldSkipIntegrationTests(): boolean {
 
   // Check if SDK package exists
   try {
-    const fs = require("fs");
-    const path = require("path");
     const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "package.json");
     if (!fs.existsSync(sdkPath)) {
       integrationSkipReason = "@github/copilot-sdk not installed";
@@ -511,18 +504,15 @@ export function getIntegrationSkipReason(): string | undefined {
 
 /**
  * Common Azure deployment link patterns
+ * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
  */
 const DEPLOY_LINK_PATTERNS = [
-  // Azure Portal resource links
-  /https:\/\/portal\.azure\.com\/#[@/]resource\/subscriptions\/[a-f0-9-]+\/resourceGroups\/[\w-]+/i,
-  // Azure App Service URLs
-  /https?:\/\/[\w-]+\.azurewebsites\.net/i,
+  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w-]+\.azurestaticapps\.net/i,
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w-]+\.[\w-]+\.azurecontainerapps\.io/i,
-  // Azure Portal direct links
-  /https:\/\/portal\.azure\.com\/#blade\/[\w/]+/i,
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
 ];
 
 /**

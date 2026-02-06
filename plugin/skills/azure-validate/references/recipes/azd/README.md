@@ -89,7 +89,11 @@ azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <location>
 ```
 
-### 6. Provision Preview
+### 6. Azure Policy Validation
+
+See [Policy Validation Guide](../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+
+### 7. Provision Preview
 
 Validate IaC is ready:
 
@@ -97,7 +101,7 @@ Validate IaC is ready:
 azd provision --preview --no-prompt
 ```
 
-### 7. Package Validation
+### 8. Package Validation
 
 Confirm all services build/package successfully:
 

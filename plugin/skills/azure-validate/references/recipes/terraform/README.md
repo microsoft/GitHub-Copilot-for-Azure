@@ -82,6 +82,10 @@ Verify state is accessible:
 terraform state list
 ```
 
+### 9. Azure Policy Validation
+
+See [Policy Validation Guide](../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+
 ## References
 
 - [Error handling](mdc:errors.md)

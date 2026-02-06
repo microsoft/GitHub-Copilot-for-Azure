@@ -255,6 +255,132 @@ _NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstorm
 - **Follow the [Agent Skills Specification](https://agentskills.io/specification)**
 - See [.github/skills/skill-authoring/SKILL.md](.github/skills/skill-authoring/SKILL.md) for detailed guidelines
 
+### Running Sensei for Compliance
+
+**Sensei** is an automated tool that improves skill frontmatter compliance using the Ralph loop pattern. It iteratively refines skills until they reach **Medium-High** compliance with passing tests.
+
+#### When to Run Sensei
+
+| Use Case | Command |
+|----------|---------|
+| Before committing a new skill | `Run sensei on <skill-name>` |
+| After updating skill description/triggers | `Run sensei on <skill-name>` |
+| Fast iteration (skip integration tests) | `Run sensei on <skill-name> --skip-integration` |
+| Audit multiple skills | `Run sensei on <skill1>, <skill2>` |
+| Audit all Low-adherence skills | `Run sensei on all Low-adherence skills` |
+
+#### Usage
+
+In your Copilot CLI session, invoke the sensei skill:
+
+```
+Run sensei on azure-deploy
+```
+
+Sensei will analyze the skill and produce an assessment:
+
+```
+## 📊 SENSEI ASSESSMENT: azure-deploy
+
+### Current State
+
+**Frontmatter:**
+name: azure-deploy
+description: "Execute Azure deployments after preparation and validation are complete.
+  USE FOR: azd up, azd deploy, push to Azure, publish to Azure, ship to production...
+  DO NOT USE FOR: preparing new apps (use azure-prepare), validating before deploy..."
+
+### Scoring
+
+| Criteria | Status | Notes |
+|----------|--------|-------|
+| Description > 150 chars | ✅ | ~540 chars |
+| Has "USE FOR:" triggers | ✅ | 14 trigger phrases |
+| Has "DO NOT USE FOR:" | ✅ | 3 anti-triggers with redirects |
+| Description < 1024 chars | ✅ | ~540 chars |
+| SKILL.md < 500 tokens | ✅ | ~450 tokens estimate |
+| Tests exist | ✅ | Unit, trigger, and integration tests |
+
+### **Score: Medium-High** ✅
+```
+
+After improvements, sensei displays a before/after summary:
+
+```
+## 📊 SENSEI SUMMARY: azure-deploy
+
+| Aspect | Before | After |
+|--------|--------|-------|
+| **Score** | Medium-High | Medium-High ✅ |
+| **Test Files** | 1 (integration only) | 3 (unit + triggers + integration) |
+| **Tests Passing** | N/A | 43/43 ✅ |
+```
+
+Sensei then prompts you to **Commit**, **Create Issue**, or **Skip**.
+
+#### Test Scaffolding
+
+If tests don't exist for your skill, sensei automatically scaffolds them from the `tests/_template/` directory:
+
+- `triggers.test.ts` - Tests that verify skill triggers on appropriate prompts
+- `unit.test.ts` - Tests for skill metadata and content validation
+
+The scaffolded tests include parameterized test cases for:
+- **Should Trigger** prompts - phrases that should activate the skill
+- **Should NOT Trigger** prompts - phrases that should not activate (anti-triggers)
+
+> **Note:** Tests must pass before sensei prompts for action. Review and adjust the generated test prompts to match your skill's actual triggers.
+
+#### Running Integration Tests
+
+After sensei completes, run integration tests to verify skill invocation:
+
+```bash
+cd tests
+npm run test:integration -- --testPathPattern=<skillname>
+```
+
+**Example output:**
+
+```
+PASS azure-deploy/integration.test.ts
+  azure-deploy - Integration Tests
+    ✓ invokes azure-deploy skill for deployment prompt
+    ✓ invokes azure-deploy skill for publish to Azure prompt
+    ✓ creates whiteboard application and deploys to Azure
+    ✓ creates discussion board and deploys to Azure
+    ✓ creates todo list with frontend and API and deploys to Azure
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+```
+
+> **Prerequisites:** Integration tests require `@github/copilot-cli` installed and authenticated. Some tests may require `azd auth login`.
+
+#### Scoring Metrics
+
+Sensei evaluates skills against these compliance levels:
+
+| Score | Requirements |
+|-------|--------------|
+| **Low** | Description < 150 chars (always Low), OR missing explicit triggers/anti-triggers |
+| **Medium** | Description ≥ 150 chars, has trigger keywords/phrases, may lack full `USE FOR:`/`DO NOT USE FOR:` structure |
+| **Medium-High** ⭐ | Has `USE FOR:` triggers AND `DO NOT USE FOR:` anti-triggers |
+| **High** | Medium-High + `compatibility` field documenting requirements |
+
+**Target: Medium-High** - All skills should have explicit triggers and anti-triggers.
+
+**Token Budgets:**
+
+| File | Soft Limit | Hard Limit |
+|------|------------|------------|
+| SKILL.md | 500 tokens | 5000 tokens |
+| Description | — | 1024 chars |
+
+---
+
+> **📚 Reference:** See [sensei skill](.github/skills/sensei/SKILL.md) for full documentation, including the complete Ralph loop workflow and detailed scoring criteria. Related: [skill-authoring](.github/skills/skill-authoring/SKILL.md), [markdown-token-optimizer](.github/skills/markdown-token-optimizer/SKILL.md).
+
 ### Token Management
 
 #### Why Token Limits?
