@@ -254,8 +254,6 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   // Declare client and session outside try block to ensure cleanup in finally
   let client: CopilotClient | undefined;
   let session: CopilotSession | undefined;
-  // Flag to prevent processing events after completion
-  let isComplete = false;
 
   try {
     // Run optional setup
@@ -332,13 +330,9 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     return agentMetadata;
   } catch (error) {
-    // Mark as complete to stop event processing
-    isComplete = true;
     console.error("Agent runner error:", error);
     throw error;
   } finally {
-    // Mark as complete before starting cleanup to prevent post-completion event processing
-    isComplete = true;
     // Cleanup session and client (guarded if undefined)
     try {
       if (session) {
