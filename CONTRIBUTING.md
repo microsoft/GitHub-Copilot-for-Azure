@@ -99,19 +99,19 @@ If you prefer to create the symlink manually:
 #### Windows (Command Prompt - Run as Administrator)
 
 ```cmd
-mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
+mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure\azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
 #### Windows (PowerShell - Run as Administrator)
 
 ```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure\azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
 #### macOS / Linux
 
 ```bash
-ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure
+ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure/azure
 ```
 
 > **Note:** Replace the paths above with your actual cloned repository location.
