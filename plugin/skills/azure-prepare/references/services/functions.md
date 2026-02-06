@@ -33,6 +33,8 @@ services:
 
 ## Bicep Resource Pattern
 
+> **⚠️ IMPORTANT**: Always use Flex Consumption plan (FC1) for new Azure Functions deployments.
+
 ```bicep
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: '${resourcePrefix}func${uniqueHash}'
@@ -43,26 +45,27 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   kind: 'StorageV2'
 }
 
-resource functionAppPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
+resource functionAppPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: '${resourcePrefix}-funcplan-${uniqueHash}'
   location: location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'FC1'
+    tier: 'FlexConsumption'
   }
+  kind: 'functionapp,linux'
   properties: {
     reserved: true
   }
 }
 
-resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
+resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
   location: location
   kind: 'functionapp,linux'
   properties: {
     serverFarmId: functionAppPlan.id
     siteConfig: {
-      linuxFxVersion: 'Node|18'
+      linuxFxVersion: 'Node|20'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -96,15 +99,19 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
 |----------|---------|
 | Storage Account | Function runtime state |
 | Application Insights | Monitoring |
-| App Service Plan | Hosting (Consumption or Premium) |
+| App Service Plan | Hosting (Flex Consumption recommended) |
 
 ## Hosting Plans
 
-| Plan | Use Case | Scaling |
-|------|----------|---------|
-| Consumption (Y1) | Variable workloads, cost optimization | Auto, scale to zero |
-| Premium (EP1-EP3) | No cold starts, VNET, longer execution | Auto, min instances |
-| Dedicated | Predictable load, existing App Service | Manual or auto |
+> **💡 ALWAYS USE FLEX CONSUMPTION** for new deployments. All azd templates use Flex Consumption by default.
+
+| Plan | Scaling | VNET Support | Use Case |
+|------|---------|--------------|----------|
+| **Flex Consumption (FC1)** ⭐ | Auto, pay-per-execution | ✅ | **Recommended for all new projects** |
+| Premium (EP1-EP3) | Auto, pre-warmed instances | ✅ | Long-running, consistent load, no cold starts |
+| Dedicated (B1-P3v3) | Manual or auto | ✅ | Predictable workloads, shared App Service |
+
+> **⚠️ NOTE**: Traditional Consumption (Y1) is being phased out. Use Flex Consumption instead.
 
 ## Trigger Types
 
@@ -167,19 +174,70 @@ module.exports = async function (context, req) {
 
 ## Runtime Stacks
 
-| Language | FUNCTIONS_WORKER_RUNTIME | linuxFxVersion |
-|----------|-------------------------|----------------|
-| Node.js | `node` | `Node\|18` |
-| Python | `python` | `Python\|3.11` |
-| .NET | `dotnet` | `DOTNET\|8.0` |
-| Java | `java` | `Java\|17` |
+> **⚠️ ALWAYS QUERY OFFICIAL DOCUMENTATION**
+>
+> Do NOT use hardcoded versions. Query for latest GA versions:
+>
+> **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
+
+**Latest GA Versions (as of 2026):**
+
+| Language | FUNCTIONS_WORKER_RUNTIME | Recommended linuxFxVersion | Notes |
+|----------|-------------------------|---------------------------|-------|
+| Node.js | `node` | `Node\|20` or `Node\|24` | Node 18 EOL in 2025 |
+| Python | `python` | `Python\|3.11`, `Python\|3.12`, or `Python\|3.13` | Python 3.10 EOL Oct 2026 |
+| .NET | `dotnet` | `DOTNET\|8.0` or `DOTNET\|9` | .NET 9 EOL Nov 2026 |
+| Java | `java` | `Java\|17`, `Java\|21`, or `Java\|25` | Use LTS versions |
+| PowerShell | `powershell` | `PowerShell\|7.4` | PowerShell 7.2+ supported |
 
 ## Cold Start Mitigation
+
+### Flex Consumption - Always Ready Instances
+
+Configure always-ready instances in Flex Consumption for critical workloads:
+
+```bicep
+resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
+  name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
+  location: location
+  kind: 'functionapp,linux'
+  properties: {
+    serverFarmId: functionAppPlan.id
+    functionAppConfig: {
+      deployment: {
+        storage: {
+          type: 'blobContainer'
+          value: '${storageAccount.properties.primaryEndpoints.blob}deploymentpackage'
+          authentication: {
+            type: 'SystemAssignedIdentity'
+          }
+        }
+      }
+      scaleAndConcurrency: {
+        alwaysReady: [
+          {
+            name: 'http'
+            instanceCount: 2
+          }
+        ]
+        maximumInstanceCount: 100
+        instanceMemoryMB: 2048
+      }
+      runtime: {
+        name: 'node'
+        version: '20'
+      }
+    }
+  }
+}
+```
+
+### Premium Plan - Minimum Instances
 
 For Premium plan, configure minimum instances:
 
 ```bicep
-resource functionAppPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
+resource functionAppPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: '${resourcePrefix}-funcplan-${uniqueHash}'
   location: location
   sku: {
