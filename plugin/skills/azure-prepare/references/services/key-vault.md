@@ -117,7 +117,7 @@ secrets: [
 ]
 ```
 
-## SDK Access
+## Connection Patterns
 
 ### SDK Packages
 

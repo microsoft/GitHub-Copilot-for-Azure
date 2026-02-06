@@ -135,7 +135,7 @@ resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-0
 }
 ```
 
-## SDK Access
+## Connection Patterns
 
 ### SDK Packages
 
