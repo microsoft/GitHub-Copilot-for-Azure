@@ -72,9 +72,85 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain('deploy-agent.md');
     });
 
+    test('references quota sub-skill', () => {
+      expect(skill.content).toContain('quota');
+      expect(skill.content).toContain('quota/quota.md');
+    });
+
     test('references rbac sub-skill', () => {
       expect(skill.content).toContain('rbac');
       expect(skill.content).toContain('rbac/rbac.md');
+    });
+  });
+
+  describe('Quota Sub-Skill Content', () => {
+    let quotaContent: string;
+
+    beforeAll(async () => {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const quotaPath = path.join(
+        __dirname,
+        '../../plugin/skills/microsoft-foundry/quota/quota.md'
+      );
+      quotaContent = await fs.readFile(quotaPath, 'utf-8');
+    });
+
+    test('has quota reference file', () => {
+      expect(quotaContent).toBeDefined();
+      expect(quotaContent.length).toBeGreaterThan(100);
+    });
+
+    test('contains quota management workflows', () => {
+      expect(quotaContent).toContain('### 1. View Current Quota Usage');
+      expect(quotaContent).toContain('### 2. Check Quota Before Deployment');
+      expect(quotaContent).toContain('### 3. Request Quota Increase');
+      expect(quotaContent).toContain('### 4. Monitor Quota Across Multiple Deployments');
+      expect(quotaContent).toContain('### 5. Troubleshoot Quota-Related Deployment Failures');
+    });
+
+    test('explains quota types', () => {
+      expect(quotaContent).toContain('Deployment Quota (TPM)');
+      expect(quotaContent).toContain('Region Quota');
+      expect(quotaContent).toContain('Deployment Slots');
+    });
+
+    test('contains command patterns for each workflow', () => {
+      expect(quotaContent).toContain('Show me my current quota usage');
+      expect(quotaContent).toContain('Do I have enough quota');
+      expect(quotaContent).toContain('Request quota increase');
+      expect(quotaContent).toContain('Show all my deployments');
+    });
+
+    test('contains az cognitiveservices commands', () => {
+      expect(quotaContent).toContain('az cognitiveservices usage list');
+      expect(quotaContent).toContain('az cognitiveservices account deployment');
+    });
+
+    test('references foundry MCP tools', () => {
+      expect(quotaContent).toContain('foundry_models_deployments_list');
+      expect(quotaContent).toMatch(/foundry_[a-z_]+/);
+    });
+
+    test('contains error troubleshooting', () => {
+      expect(quotaContent).toContain('QuotaExceeded');
+      expect(quotaContent).toContain('InsufficientQuota');
+      expect(quotaContent).toContain('DeploymentLimitReached');
+    });
+
+    test('includes best practices', () => {
+      expect(quotaContent).toContain('## Best Practices');
+      expect(quotaContent).toContain('Capacity Planning');
+      expect(quotaContent).toContain('Quota Optimization');
+    });
+
+    test('contains both Bash and PowerShell examples', () => {
+      expect(quotaContent).toContain('##### Bash');
+      expect(quotaContent).toContain('##### PowerShell');
+    });
+
+    test('uses correct Foundry resource type', () => {
+      expect(quotaContent).toContain('Microsoft.CognitiveServices/accounts');
     });
   });
 
