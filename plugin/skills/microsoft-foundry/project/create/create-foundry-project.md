@@ -34,15 +34,103 @@ When you create a new Foundry project, Azure provisions:
 
 ## Prerequisites
 
-Before using this skill, ensure you have:
+Before creating a Foundry project, verify the following prerequisites. Run CLI checks automatically to confirm readiness.
 
-### Required Software
-- **Azure CLI** - For Azure authentication (`az login`)
-- **Azure Developer CLI (azd)** - For infrastructure provisioning
+### Step 0: Verify Prerequisites
 
-### Required Permissions
-- **Contributor** on the Azure subscription
-- **Azure AI Owner** role (or equivalent for creating Foundry resources)
+Run these checks in order. If any fail, resolve before proceeding.
+
+#### 0.1 Check Azure CLI Installation
+
+```bash
+az version
+```
+
+**Expected:** Version output (e.g., `"azure-cli": "2.x.x"`)
+
+**If NOT installed:**
+- Windows: `winget install Microsoft.AzureCLI`
+- macOS: `brew install azure-cli`
+- Linux: `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash`
+- Direct download: https://aka.ms/installazurecli
+
+STOP and ask user to install Azure CLI before continuing.
+
+#### 0.2 Check Azure Login and Subscription
+
+```bash
+az account show --query "{Name:name, SubscriptionId:id, State:state}" -o table
+```
+
+**Expected:** Shows active subscription with `State: Enabled`
+
+**If NOT logged in or no subscription:**
+
+```bash
+az login
+```
+
+Complete browser authentication, then verify subscription:
+
+```bash
+az account list --query "[?state=='Enabled'].{Name:name, SubscriptionId:id, IsDefault:isDefault}" -o table
+```
+
+**If no active subscription appears:**
+- User needs an Azure account with active subscription
+- Create free account at: https://azure.microsoft.com/free/
+- STOP and inform user to create/activate subscription
+
+#### 0.3 Set Default Subscription
+
+**If user has multiple subscriptions, ask which to use, then set:**
+
+```bash
+az account set --subscription "<subscription-name-or-id>"
+```
+
+**Verify the default:**
+
+```bash
+az account show --query name -o tsv
+```
+
+#### 0.4 Check Role Permissions
+
+```bash
+az role assignment list --assignee "$(az ad signed-in-user show --query id -o tsv)" --query "[?contains(roleDefinitionName, 'Owner') || contains(roleDefinitionName, 'Contributor') || contains(roleDefinitionName, 'Azure AI')].{Role:roleDefinitionName, Scope:scope}" -o table
+```
+
+**Expected:** At least one of:
+- `Owner` or `Contributor` at subscription or resource group scope
+- `Azure AI Owner` for creating Foundry resources
+
+**If insufficient permissions:**
+- Request subscription administrator to:
+  1. Assign `Contributor` role, OR
+  2. Create a Foundry resource and grant `Azure AI Owner` on that resource
+- Alternative: Use an existing Foundry resource (skip to project creation on existing account)
+- STOP and inform user to request appropriate permissions
+
+### Prerequisites Summary
+
+| Requirement | Check Command | Resolution |
+|-------------|---------------|------------|
+| Azure CLI | `az version` | Install from https://aka.ms/installazurecli |
+| Azure Account | `az account show` | Create at https://azure.microsoft.com/free/ |
+| Active Subscription | `az account list` | Activate or create subscription |
+| Default Subscription | `az account set` | Set to desired subscription |
+| Sufficient Role | `az role assignment list` | Request Owner/Contributor from admin |
+| Azure Developer CLI (azd) | `azd version` | Install from https://aka.ms/azure-dev/install |
+
+### Required Permissions Detail
+
+| Role | Permission Level | Can Create Foundry Resources |
+|------|------------------|------------------------------|
+| Owner | Full control | ✅ Yes |
+| Contributor | Read/Write resources | ✅ Yes |
+| Azure AI Owner | AI-specific admin | ✅ Yes |
+| Reader | Read-only | ❌ No - request elevated access |
 
 ## Step-by-Step Workflow
 
