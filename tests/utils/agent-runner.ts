@@ -254,6 +254,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   // Declare client and session outside try block to ensure cleanup in finally
   let client: CopilotClient | undefined;
   let session: CopilotSession | undefined;
+  // Flag to prevent processing events after completion
+  let isComplete = false;
 
   try {
     // Run optional setup
@@ -294,11 +296,17 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     const done = new Promise<void>((resolve) => {
       session!.on(async (event: SessionEvent) => {
+        // Stop processing events if already complete
+        if (isComplete) {
+          return;
+        }
+
         if (process.env.DEBUG) {
           console.log(`=== session event ${event.type}`);
         }
 
         if (event.type === "session.idle") {
+          isComplete = true;
           resolve();
           return;
         }
@@ -309,6 +317,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
         // Check for early termination
         if (config.shouldEarlyTerminate) {
           if (config.shouldEarlyTerminate(agentMetadata)) {
+            isComplete = true;
             resolve();
             void session!.abort();
             return;
@@ -322,6 +331,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     // Send follow-up prompts
     for (const followUpPrompt of config.followUp ?? []) {
+      isComplete = false;
       await session.sendAndWait({ prompt: followUpPrompt });
     }
 
@@ -330,9 +340,13 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     return agentMetadata;
   } catch (error) {
+    // Mark as complete to stop event processing
+    isComplete = true;
     console.error("Agent runner error:", error);
     throw error;
   } finally {
+    // Mark as complete before starting cleanup to prevent post-completion event processing
+    isComplete = true;
     // Cleanup session and client (guarded if undefined)
     try {
       if (session) {
