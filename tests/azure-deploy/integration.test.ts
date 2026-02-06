@@ -120,13 +120,14 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Need to be logged into azd for these tests. 
   // azd auth login
-
+  const FOLLOW_UP_PROMPT = ["Go with recommended options."];
   // Static Web Apps (SWA)
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true
+        prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region..",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -142,8 +143,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("creates static portfolio website and deploys to Azure", async () => {
       const agentMetadata = await run({
-        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true
+        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region..",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -163,7 +165,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("creates discussion board and deploys to Azure", async () => {
       const agentMetadata = await run({
         prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
-        nonInteractive: true
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -180,7 +182,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("creates todo list with frontend and API and deploys to Azure", async () => {
       const agentMetadata = await run({
         prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
-        nonInteractive: true
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -200,7 +202,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("creates serverless HTTP API and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
         prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -217,7 +219,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("creates event-driven function app and deploys to Azure Functions", async () => {
       const agentMetadata = await run({
         prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
-        nonInteractive: true
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -237,7 +239,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("creates containerized web application and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
         prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region.",
-        nonInteractive: true
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -254,7 +256,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("creates simple containerized Node.js app and deploys to Azure Container Apps", async () => {
       const agentMetadata = await run({
         prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region.",
-        nonInteractive: true
+        followUp: FOLLOW_UP_PROMPT
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
