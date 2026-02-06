@@ -1,8 +1,8 @@
 ---
 name: microsoft-foundry
 description: |
-  Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents, manage RBAC permissions and role assignments.
-  USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, RBAC, role assignment, managed identity, service principal, permissions.
+  Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents, manage RBAC permissions and role assignments, troubleshoot rate limiting and quota issues.
+  USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, RBAC, role assignment, managed identity, service principal, permissions, troubleshoot rate limiting errors, 429 errors, quota and capacity planning, model availability.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app).
 ---
 
