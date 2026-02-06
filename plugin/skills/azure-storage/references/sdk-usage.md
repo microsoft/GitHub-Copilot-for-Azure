@@ -15,14 +15,14 @@ SDK packages and quick start examples for Azure Storage services.
 
 ## Installation Commands
 
-| Language | Install Blob SDK |
-|----------|------------------|
-| .NET | `dotnet add package Azure.Storage.Blobs` |
-| Java | Maven: `com.azure:azure-storage-blob` |
-| JavaScript | `npm install @azure/storage-blob` |
-| Python | `pip install azure-storage-blob` |
-| Go | `go get github.com/Azure/azure-sdk-for-go/sdk/storage/azblob` |
-| Rust | `cargo add azure_storage_blob` |
+| Language | Install Blob SDK + Identity |
+|----------|-----------------------------|
+| .NET | `dotnet add package Azure.Storage.Blobs` `dotnet add package Azure.Identity` |
+| Java | Maven: `com.azure:azure-storage-blob` `com.azure:azure-identity` |
+| JavaScript | `npm install @azure/storage-blob @azure/identity` |
+| Python | `pip install azure-storage-blob azure-identity` |
+| Go | `go get github.com/Azure/azure-sdk-for-go/sdk/storage/azblob github.com/Azure/azure-sdk-for-go/sdk/azidentity` |
+| Rust | `cargo add azure_storage_blob azure_identity` |
 
 ## Quick Start Examples
 
