@@ -1,6 +1,9 @@
 ---
 name: microsoft-foundry
-description: "Orchestrates Microsoft Foundry workflows for model deployment, RAG, AI agents, evaluation, RBAC, and quota management. USE FOR: Microsoft Foundry, deploy model, knowledge index, create agent, quota, capacity, TPM, deployment failure, QuotaExceeded. DO NOT USE FOR: Azure Functions, App Service."
+description: |
+  Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents.
+  USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure.
+  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
 ---
 
 # Microsoft Foundry Skill
@@ -16,8 +19,6 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **agent/create** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [agent/create/create-ghcp-agent.md](agent/create/create-ghcp-agent.md) |
 | **agent/deploy** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [agent/deploy/deploy-agent.md](agent/deploy/deploy-agent.md) |
-| **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
-| **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
 > 💡 **Tip:** For a complete onboarding flow: `project/create` → `agent/create` → `agent/deploy`. If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
 

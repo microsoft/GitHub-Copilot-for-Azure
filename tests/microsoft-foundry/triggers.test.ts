@@ -29,6 +29,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Set up agent monitoring and continuous evaluation in Foundry",
       "Help me with Microsoft Foundry model deployment",
       "How to use knowledge index for RAG in Azure AI Foundry?",
+      "Create a new Azure AI Foundry project",
+      "Set up a Foundry project for my AI agents",
+      "How do I onboard to Microsoft Foundry and create a project?",
+      "Provision Foundry infrastructure with azd",
+      "I need a new Foundry project to host my models",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -81,6 +86,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure my PostgreSQL database", // Use azure-postgres
       "Help me with Kubernetes pods", // Use azure-aks
       "How do I write Python code?", // Generic programming
+      "How do I configure a timer-based cron job in my web app?", // Use azure-functions
+      "Host my static website on a cloud platform", // Use azure-create-app
     ];
 
     test.each(shouldNotTriggerPrompts)(
