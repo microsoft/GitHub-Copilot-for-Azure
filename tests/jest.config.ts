@@ -26,7 +26,10 @@ const config: Config = {
     "/dist/"
   ],
 
-  // Setup file for shared utilities
+  // Global setup — runs once before any worker starts
+  globalSetup: "./jest.globalSetup.ts",
+
+  // Setup file for shared utilities (runs in every worker)
   setupFilesAfterEnv: ["./jest.setup.ts"],
 
   // Coverage configuration

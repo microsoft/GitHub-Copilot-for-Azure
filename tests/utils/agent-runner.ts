@@ -547,7 +547,7 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
 }
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
-const TIME_STAMP = new Date().toISOString().replace(/[:.]/g, "-");
+const TIME_STAMP = global.START_TIMESTAMP.replace(/[:.]/g, "-");
 
 export function buildShareFilePath(): string {
   return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);

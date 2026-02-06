@@ -17,6 +17,8 @@ const __dirname = path.dirname(__filename);
 // Make utils available globally for convenience
 global.SKILLS_PATH = path.resolve(__dirname, "../plugin/skills");
 global.TESTS_PATH = __dirname;
+// Reads the single timestamp set by globalSetup (shared across all parallel workers)
+global.START_TIMESTAMP = process.env.START_TIMESTAMP || new Date().toISOString();
 
 // Custom matcher: check if a skill should trigger on a prompt
 expect.extend({
