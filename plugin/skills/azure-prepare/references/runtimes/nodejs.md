@@ -1,25 +1,14 @@
----
-name: azure-nodejs-production
-description: Configure Express/Node.js applications for production deployment on Azure. Covers trust proxy settings, cookie configuration, health checks, port binding, and Dockerfile best practices for Container Apps and App Service.
----
+# Node.js/Express Production Configuration for Azure
 
-# Express/Node.js Production Configuration for Azure
-
-## Overview
-
-When deploying Express/Node.js apps to Azure (Container Apps, App Service), you MUST configure production settings that aren't needed locally.
+Configure Express/Node.js applications for production deployment on Azure Container Apps and App Service.
 
 ## Required Production Settings
 
 ### 1. Trust Proxy (CRITICAL)
 
-Azure load balancers and reverse proxies sit in front of your app. Without trust proxy, you'll get:
-- Wrong client IP addresses
-- HTTPS detection failures
-- Cookie issues
+Azure load balancers and reverse proxies sit in front of your app. Without trust proxy, you'll get wrong client IPs, HTTPS detection failures, and cookie issues.
 
 ```javascript
-// app.js or server.js
 const app = express();
 
 // REQUIRED for Azure - trust the Azure load balancer
@@ -34,7 +23,6 @@ app.set('trust proxy', true);
 Azure's infrastructure requires specific cookie settings:
 
 ```javascript
-// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -49,22 +37,18 @@ app.use(session({
 ```
 
 **Key settings:**
-- `sameSite: 'lax'` - Required for cookies to work through Azure's proxy
-- `secure: true` - Only in production (HTTPS)
-- `httpOnly: true` - Prevent XSS attacks
+- `sameSite: 'lax'` — Required for cookies through Azure's proxy
+- `secure: true` — Only in production (HTTPS)
+- `httpOnly: true` — Prevent XSS attacks
 
 ### 3. Health Check Endpoint
 
 Azure Container Apps and App Service check your app's health:
 
 ```javascript
-// Add health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
-
-// Or minimal version
-app.get('/health', (req, res) => res.sendStatus(200));
 ```
 
 **Configure in Container Apps:**
@@ -81,7 +65,6 @@ az containerapp update \
 Azure sets the port via environment variable:
 
 ```javascript
-// Listen on Azure's port or default to 3000
 const port = process.env.PORT || process.env.WEBSITES_PORT || 3000;
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
@@ -98,9 +81,10 @@ const isAzure = process.env.WEBSITE_SITE_NAME || process.env.CONTAINER_APP_NAME;
 
 if (isProduction || isAzure) {
   app.set('trust proxy', 1);
-  // Enable production-only settings
 }
 ```
+
+---
 
 ## Complete Production Configuration
 
@@ -110,8 +94,6 @@ const express = require('express');
 const session = require('express-session');
 
 const app = express();
-
-// Environment
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Trust Azure load balancer
@@ -166,6 +148,8 @@ app.listen(port, '0.0.0.0', () => {
 });
 ```
 
+---
+
 ## Dockerfile for Azure
 
 ```dockerfile
@@ -194,6 +178,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["node", "app.js"]
 ```
 
+---
+
 ## Common Issues
 
 ### Cookies Not Setting
@@ -209,11 +195,7 @@ CMD ["node", "app.js"]
 
 **Symptom:** `req.ip` returns Azure internal IP
 
-**Fix:**
-```javascript
-app.set('trust proxy', 1);
-// Now req.ip returns actual client IP
-```
+**Fix:** `app.set('trust proxy', 1);`
 
 ### HTTPS Redirect Loop
 
@@ -221,19 +203,12 @@ app.set('trust proxy', 1);
 
 **Fix:**
 ```javascript
-// Check x-forwarded-proto, not req.secure
-// Use a trusted host instead of the untrusted Host header to avoid open redirects
-const TRUSTED_HOST = process.env.APP_PUBLIC_HOSTNAME; // e.g. "myapp.contoso.com"
+const TRUSTED_HOST = process.env.APP_PUBLIC_HOSTNAME;
 
 app.use((req, res, next) => {
   if (req.get('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
-    const host = TRUSTED_HOST;
-    if (!host) {
-      // If no trusted host is configured, skip redirect to avoid using untrusted Host header
-      return next();
-    }
-    // Optionally enforce an allowlist here for extra safety
-    return res.redirect(`https://${host}${req.originalUrl}`);
+    if (!TRUSTED_HOST) return next();
+    return res.redirect(`https://${TRUSTED_HOST}${req.originalUrl}`);
   }
   next();
 });
@@ -248,10 +223,20 @@ app.use((req, res, next) => {
 2. Check app starts within startup probe timeout
 3. Verify port matches container configuration
 
+---
+
 ## Environment Variables
 
-Set these in Azure:
+> ⚠️ **Important distinction**: `azd env set` vs Application Environment Variables
+>
+> **`azd env set`** sets variables for the **azd provisioning process**, NOT application runtime. These are used by azd and Bicep during deployment.
+>
+> **Application environment variables** must be configured via:
+> 1. **Bicep templates** — Define in the resource's `env` property
+> 2. **Azure CLI** — Use `az containerapp update --set-env-vars`
+> 3. **azure.yaml** — Use the `env` section in service configuration
 
+**Azure CLI:**
 ```bash
 az containerapp update \
   --name APP \
@@ -262,34 +247,17 @@ az containerapp update \
     PORT=3000
 ```
 
-> ⚠️ **Important distinction**: `azd env set` vs Application Environment Variables
->
-> **`azd env set`** sets variables for the **azd provisioning process**, NOT application runtime environment variables. These are used by azd and Bicep during deployment (e.g., `AZURE_LOCATION`, `AZURE_SUBSCRIPTION_ID`).
->
-> **Application environment variables** (like `NODE_ENV`, `SESSION_SECRET`) must be configured in one of these ways:
-> 1. **In Bicep templates** - Define in the resource's `env` property
-> 2. **Via Azure CLI** - Use `az containerapp update --set-env-vars` (shown above)
-> 3. **In azure.yaml** - Use the `env` section in service configuration
-
-**Setting azd provisioning parameters:**
-```bash
-# These are for azd/Bicep configuration, NOT application runtime
-azd env set AZURE_LOCATION eastus
-azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
-```
-
-**Setting application environment variables in azure.yaml:**
+**azure.yaml:**
 ```yaml
 services:
   api:
     host: containerapp
-    # Application runtime environment variables
     env:
       NODE_ENV: production
       PORT: "3000"
 ```
 
-**Setting application environment variables in Bicep:**
+**Bicep:**
 ```bicep
 env: [
   { name: 'NODE_ENV', value: 'production' }

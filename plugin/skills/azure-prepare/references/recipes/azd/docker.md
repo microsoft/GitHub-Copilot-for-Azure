@@ -106,3 +106,11 @@ __pycache__
 - Multi-stage builds for compiled languages
 - Non-root user when possible
 - Include health check endpoint in app
+
+## Runtime-Specific Configuration
+
+For production settings specific to each runtime:
+
+| Runtime | Reference |
+|---------|-----------| 
+| Node.js/Express | [runtimes/nodejs.md](../../runtimes/nodejs.md) |

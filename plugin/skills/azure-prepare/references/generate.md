@@ -58,6 +58,14 @@ project-root/
 - Managed Identity for service auth
 - HTTPS only, TLS 1.2+
 
+### Runtime Configuration
+
+Apply language-specific production settings for containerized apps:
+
+| Runtime | Reference |
+|---------|-----------|
+| Node.js/Express | [runtimes/nodejs.md](runtimes/nodejs.md) |
+
 ## After Generation
 
 1. Update manifest with generated file list
