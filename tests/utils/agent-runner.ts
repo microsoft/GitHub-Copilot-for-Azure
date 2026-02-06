@@ -30,6 +30,7 @@ export interface TestConfig {
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
   nonInteractive?: boolean;
+  followUp?: string[];
   systemPrompt?: {
     mode: "append" | "replace",
     content: string
@@ -292,56 +293,46 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     });
 
     const agentMetadata: AgentMetadata = { events: [] };
-    let resolveIdle: (() => void) | null = null;
 
-    const waitForIdle = () => new Promise<void>((resolve) => {
-      resolveIdle = resolve;
-    });
-
-    session!.on(async (event: SessionEvent) => {
-      // Stop processing events if already complete
-      if (isComplete) {
-        return;
-      }
-
-      if (process.env.DEBUG) {
-        console.log(`=== session event ${event.type}`);
-      }
-
-      if (event.type === "session.idle") {
-        isComplete = true;
-        if (resolveIdle) {
-          resolveIdle();
-          resolveIdle = null;
-        }
-        return;
-      }
-
-      // Capture all events
-      agentMetadata.events.push(event);
-
-      // Check for early termination
-      if (config.shouldEarlyTerminate) {
-        if (config.shouldEarlyTerminate(agentMetadata)) {
-          isComplete = true;
-          if (resolveIdle) {
-            resolveIdle();
-            resolveIdle = null;
-          }
-          void session!.abort();
+    const done = new Promise<void>((resolve) => {
+      session!.on(async (event: SessionEvent) => {
+        // Stop processing events if already complete
+        if (isComplete) {
           return;
         }
-      }
+
+        if (process.env.DEBUG) {
+          console.log(`=== session event ${event.type}`);
+        }
+
+        if (event.type === "session.idle") {
+          isComplete = true;
+          resolve();
+          return;
+        }
+
+        // Capture all events
+        agentMetadata.events.push(event);
+
+        // Check for early termination
+        if (config.shouldEarlyTerminate) {
+          if (config.shouldEarlyTerminate(agentMetadata)) {
+            isComplete = true;
+            resolve();
+            void session!.abort();
+            return;
+          }
+        }
+      });
     });
 
     await session.send({ prompt: config.prompt });
-    await waitForIdle();
+    await done;
 
-    // Send follow-up if non-interactive
-    if (config.nonInteractive) {
+    // Send follow-up prompts
+    for (const followUpPrompt of config.followUp ?? []) {
       isComplete = false;
-      await session.send({ prompt: "Go with recommended options." });
-      await waitForIdle();
+      await session.sendAndWait({ prompt: followUpPrompt });
     }
 
     // Generate markdown report
