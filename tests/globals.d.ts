@@ -7,7 +7,6 @@ import { TriggerMatcher } from "./utils/trigger-matcher";
 declare global {
   var SKILLS_PATH: string;
   var TESTS_PATH: string;
-  var START_TIMESTAMP: string;
   function getSkillPath(skillName: string): string;
   function getFixturesPath(skillName: string): string;
 
