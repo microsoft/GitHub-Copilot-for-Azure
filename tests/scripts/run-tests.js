@@ -15,11 +15,13 @@
  *   skill       - Run tests for a specific skill (requires pattern arg)
  * 
  * Examples:
- *   node run-tests.js                    # Run all tests
- *   node run-tests.js unit               # Run unit tests
- *   node run-tests.js integration        # Run integration tests
- *   node run-tests.js skill azure-ai     # Run tests for azure-ai skill
- *   node run-tests.js unit --verbose     # Run unit tests with verbose flag
+ *   node run-tests.js                                                  # Run all tests
+ *   node run-tests.js unit                                             # Run unit tests
+ *   node run-tests.js integration                                      # Run integration tests
+ *   node run-tests.js integration azure-deploy                         # Run integration tests for azure-deploy
+ *   node run-tests.js integration azure-deploy static-web-apps-deploy  # Run integration tests for a sub group
+ *   node run-tests.js skill azure-ai                                   # Run tests for azure-ai skill
+ *   node run-tests.js unit --verbose                                   # Run unit tests with verbose flag
  */
 
 import { spawn } from "child_process";
@@ -52,7 +54,8 @@ const testConfigs = {
         jestArgs: [
             "--testMatch=**/*integration*.ts",
             "--testPathIgnorePatterns=\"node_modules|_template\""
-        ]
+        ],
+        optionalPattern: true
     },
     verbose: {
         description: "all tests (verbose)",
@@ -104,6 +107,15 @@ let jestArgs = [...config.jestArgs];
 // For skill type, append the pattern to --testPathPattern
 if (config.requiresPattern && extraArgs.length > 0) {
     jestArgs = [`--testPathPattern=${extraArgs[0]}`, ...extraArgs.slice(1)];
+} else if (config.optionalPattern && extraArgs.length > 0 && !extraArgs[0].startsWith("-")) {
+    const skillPattern = extraArgs[0];
+    const remaining = extraArgs.slice(1);
+    // If there's a second positional arg (not a flag), use it as --testNamePattern
+    if (remaining.length > 0 && !remaining[0].startsWith("-")) {
+        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern=${remaining[0]}`, ...remaining.slice(1)];
+    } else {
+        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, ...remaining];
+    }
 } else {
     jestArgs = [...jestArgs, ...extraArgs];
 }
