@@ -46,9 +46,9 @@ Install the Azure plugin:
 
 ## Local Development Setup
 
-To develop and test skills locally, you'll need to link your cloned repository to the installed plugins folder. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
+To develop and test skills locally, you'll configure Copilot to load the plugin directly from your cloned repository. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
 
-> **Important:** Do NOT run `/plugin install azure@github-copilot-for-azure` when developing locally. The symlink setup below IS the installation. Running the install command would create a nested copy that shadows your local changes.
+> **Note:** You do not need to run `/plugin install azure@github-copilot-for-azure` when developing locally, but it is OK if you do. The setup below configures Copilot to use your local folder whether or not the plugin is already installed.
 
 ### 1. Fork and Clone the Repository
 
@@ -74,47 +74,52 @@ The easiest way to set up local development is using the provided scripts:
 # From the repository root
 cd scripts
 
-# Create the symlink
+# Configure Copilot to use local plugin
 npm run local setup
 
 # Verify the setup is correct
 npm run local verify
 ```
 
-The setup script will:
-- Create a symlink from `~/.copilot/installed-plugins/github-copilot-for-azure` to your local `plugin/` folder
-- Handle Windows junction fallback if admin privileges aren't available
+The setup script will update `~/.copilot/config.json` to:
+- Add the `github-copilot-for-azure` marketplace entry
+- "Install" the `azure` plugin.
+- Set the plugin's `cache_path` to point directly to your local `plugin/` folder
 
 The verify script will:
 - Check for nested plugin installs (which shadow your local changes)
-- Test that file changes propagate correctly via the symlink
-- Compare file contents between local and installed locations
+- Verify the marketplace and plugin configuration is correct
+- Confirm the plugin directory has the expected structure
 
 Use `npm run local verify --fix` to automatically fix common issues.
 
-### 3b. Manual Symlink Setup (Alternative)
+### 3b. Manual Configuration (Alternative)
 
-If you prefer to create the symlink manually:
+If you prefer to configure manually, edit `~/.copilot/config.json`:
 
-#### Windows (Command Prompt - Run as Administrator)
-
-```cmd
-mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
+```json
+{
+  "marketplaces": {
+    "github-copilot-for-azure": {
+      "source": {
+        "source": "github",
+        "repo": "microsoft/github-copilot-for-azure"
+      }
+    }
+  },
+  "installed_plugins": [
+    {
+      "name": "azure",
+      "marketplace": "github-copilot-for-azure",
+      "installed_at": "2026-02-02T18:23:33.259Z",
+      "enabled": true,
+      "cache_path": "C:\\path\\to\\GitHub-Copilot-for-Azure\\plugin"
+    }
+  ]
+}
 ```
 
-#### Windows (PowerShell - Run as Administrator)
-
-```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
-```
-
-#### macOS / Linux
-
-```bash
-ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure
-```
-
-> **Note:** Replace the paths above with your actual cloned repository location.
+> **Note:** Replace `cache_path` with the actual path to your cloned repository's `plugin` folder. Use double backslashes on Windows or forward slashes on macOS/Linux.
 
 ### 4. Reloading Skills After Changes
 
@@ -130,43 +135,33 @@ After making changes to skills:
 
 > **Tip:** Use `/skills reload` for faster iteration during development.
 
-### 5. Verify the Symlink
+### 5. Verify the Configuration
 
-Verify that the symlink was created correctly:
+Verify that the configuration is correct:
 
 ```bash
 # Using the verify script (recommended)
 cd scripts
 npm run local verify
 
-# Or manually:
+# Or manually check config.json:
 # Windows (PowerShell)
-Get-ChildItem "$env:USERPROFILE\.copilot\installed-plugins" | Format-List
+Get-Content "$env:USERPROFILE\.copilot\config.json" | ConvertFrom-Json | ConvertTo-Json -Depth 10
 
 # macOS / Linux
-ls -la ~/.copilot/installed-plugins/
+cat ~/.copilot/config.json | jq .
 ```
 
-You should see `github-copilot-for-azure` pointing to your cloned repository's `plugin` folder.
+You should see the `azure` plugin with `cache_path` pointing to your cloned repository's `plugin` folder.
 
-### 6. Remove an Existing Symlink (If Needed)
+### 6. Reset Configuration (If Needed)
 
-If you need to remove or recreate a symlink:
+If you need to reset the configuration or switch back to using the marketplace version:
 
-#### Windows (Command Prompt - Run as Administrator)
-```cmd
-rmdir "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure"
-```
-
-#### Windows (PowerShell - Run as Administrator)
-```powershell
-Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Force
-```
-
-#### macOS / Linux
-```bash
-rm ~/.copilot/installed-plugins/github-copilot-for-azure
-```
+1. Edit `~/.copilot/config.json`
+2. Remove the `azure` entry from `installed_plugins`
+3. Optionally remove the `github-copilot-for-azure` entry from `marketplaces`
+4. Run `/plugin install azure@github-copilot-for-azure` to install from the marketplace
 
 ### 7. Testing Pull Requests Locally
 
