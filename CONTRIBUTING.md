@@ -206,20 +206,51 @@ git checkout main
 
 Skills are the core building blocks of GitHub Copilot for Azure. Each skill provides domain-specific knowledge and capabilities.
 
+> Please see [SKILL_BACKGROUND.md](SKILL_BACKGROUND.md) for background information on skills and general approaches to developing them, then return to this document for information specific to this repo.
+
+When implementing Azure skills it is useful to keep in mind the lifecycle of an Azure-based application and the different operations involved in each:
+
+- Development (creating applications that use Azure services)
+  - choosing services
+  - implementing best practices
+  - accessing services from code
+  - standing up one-off service instances
+- Deployment (getting those applications running in Azure)
+  - preparation
+  - validation
+  - deployment
+- Maintenance (keeping them running in a secure and optimal fashion)
+  - service review
+  - cost optimization
+  - compliance/security checks
+  - validating best practices
+  - production diagnostics
+
+When creating a skill try to identify the high-level operations that it should be involved in, and then include guidance and explicit steps to help that operation succeed. This approach may mean that the "same" information appears in multiple skills; for example, we may need a skill to provide best practices around RBAC during development, and a separate skill to validate that RBAC is being used properly as part of maintenance. The two skills will contain similar information but be designed around different operations.
+
 ### Skill Structure
 
 Skills are located under `plugin/skills/`. Each skill folder should contain:
 
 ```
 plugin/skills/your-skill-name/
-├── SKILL.md              # Main skill definition (required)
-├── LICENSE.txt           # License file (if applicable)
-├── references/           # Additional reference documentation
-│   └── *.md
-├── examples/             # Example code and templates
-│   └── *
-└── scripts/              # Helper scripts
-    └── *
+├── SKILL.md              ◄── Primary skill definition (frontmatter + workflow)
+│   ├── ---
+│   │   name: your-skill-name
+│   │   description: |
+│   │     **WORKFLOW SKILL** - [description]
+│   │     USE FOR: [triggers]
+│   │     DO NOT USE FOR: [anti-triggers]
+│   │     INVOKES: [mcp tools]
+│   │   ---
+│   └── [Workflow body with steps]
+│
+├── references/           ◄── Supplemental materials (deep-dive docs)
+│   ├── services/             • Service-specific guidance
+│   ├── recipes/              • Step-by-step procedures
+│   └── patterns/             • Reusable patterns
+│
+└── scripts/              ◄── Automation scripts
 ```
 
 ### Creating a New Skill
