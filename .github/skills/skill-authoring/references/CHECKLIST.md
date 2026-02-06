@@ -36,6 +36,7 @@ See [Token Budgets](token-budgets.md) for detailed limits.
 - [ ] All files in `references/` are linked from SKILL.md or other references (no orphans)
 - [ ] References >1000 tokens are split into folder with README.md
 - [ ] Duplicate content is consolidated into shared references
+- [ ] No out-of-place guidance (service-specific content in generic sections)
 
 ## Content Quality
 
