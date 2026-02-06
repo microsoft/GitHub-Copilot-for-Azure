@@ -6,9 +6,8 @@ description: |
   optimize Azure costs, reduce Azure spending, reduce Azure expenses, analyze Azure costs,
   find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs,
   cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis
-  costs. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation),
-  deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics),
-  security issues (use azure-security)
+  costs. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics
+  (use azure-diagnostics), security issues (use azure-security)
 ---
 
 # Azure Cost Optimization Skill
