@@ -50,6 +50,8 @@ To develop and test skills locally, you'll configure Copilot to load the plugin 
 
 > **Note:** You do not need to run `/plugin install azure@github-copilot-for-azure` when developing locally, but it is OK if you do. The setup below configures Copilot to use your local folder whether or not the plugin is already installed.
 
+> **⚠️ Warning:** Do NOT run `/plugin uninstall azure` or `/plugin update azure` while using the local setup. These commands may delete or overwrite files in your local repository since `cache_path` points directly to your cloned repo's `plugin/` folder. To stop using the local plugin, follow the [Reset Configuration](#6-reset-configuration-if-needed) instructions instead.
+
 ### 1. Fork and Clone the Repository
 
 ```bash
