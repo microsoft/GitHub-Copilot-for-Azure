@@ -61,16 +61,17 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
-    // NOTE: This test was already failing in main with the original prompt.
-    // Skipping to unblock the SDK tests added in this PR.
-    // TODO: Fix or remove this test in a separate PR.
+    // NOTE: This test was already failing in main (0% invocation) but passed
+    // because the SDK couldn't load (ESM not configured). Now that ESM works,
+    // this test actually runs and fails. Skip until prompt is fixed.
+    // See: https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/XXX
     test.skip("invokes azure-storage skill for storage tiers prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await run({
-            prompt: "What are the Azure Blob Storage access tiers like hot, cool, and archive?"
+            prompt: "What are the different Azure Storage access tiers and when should I use them?"
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
