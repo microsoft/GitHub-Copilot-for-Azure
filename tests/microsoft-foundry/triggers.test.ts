@@ -47,6 +47,35 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe('Should Trigger - RBAC Sub-Skill', () => {
+    // RBAC-specific prompts that SHOULD trigger this skill
+    const rbacTriggerPrompts: string[] = [
+      'Grant Alice role assignment access to my Microsoft Foundry project',
+      'Assign Azure AI User role to a user in Foundry',
+      'Make Bob a project manager in Azure AI Foundry',
+      'Who has role assignment access to my Microsoft Foundry resource?',
+      'Audit role assignments on my Foundry account',
+      'Can I deploy models to Foundry? Check my permissions',
+      'Validate my permissions on the Foundry project',
+      'Set up managed identity for my Foundry project',
+      'Configure managed identity roles for Storage access',
+      'Create a service principal for Foundry CI/CD pipeline',
+      'Set up service principal for Microsoft Foundry automation',
+      'Assign Azure AI Owner role to developer',
+      'List all RBAC assignments on my Foundry resource',
+      'Setup developer permissions for Foundry',
+    ];
+
+    test.each(rbacTriggerPrompts)(
+      'triggers on RBAC prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
   describe('Should NOT Trigger', () => {
     // Prompts that should NOT trigger - completely unrelated topics
     const shouldNotTriggerPrompts: string[] = [
