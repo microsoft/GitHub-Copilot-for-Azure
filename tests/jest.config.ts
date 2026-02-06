@@ -26,6 +26,9 @@ const config: Config = {
     "/dist/"
   ],
 
+  // Global setup — runs once before any worker starts
+  globalSetup: "./jest.globalSetup.ts",
+  
   // Setup file for shared utilities
   setupFilesAfterEnv: ["./jest.setup.ts"],
 
