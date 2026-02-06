@@ -209,9 +209,22 @@ git checkout main
 
 Skills are the core building blocks of GitHub Copilot for Azure. Each skill provides domain-specific knowledge and capabilities.
 
-### High Level Design
+### What is a Skill?
 
-When implementing skills it is useful to keep in mind the lifecycle of an Azure-based application and the different operations involved in each:
+Agent skills are modular packages of domain-specific knowledge that extend an AI agent's capabilities. Defined in SKILL.md files with frontmatter metadata and markdown instructions, they allow agents to handle specialized tasks—like Azure deployments or diagnostics—by loading relevant context on-demand when triggered by user queries. The generally provide guidance and step-by-step workflows to address particular scenarios.
+
+### Comparison with Tools
+
+- **Skills** provide knowledge and instructions—they tell the agent how to approach a problem, what best practices to follow, and when to use certain techniques. They're static markdown documents loaded as context.
+- **MCP Tools** provide capabilities and actions—they let the agent actually do things like query Azure resources, read files, or execute commands. They're executable functions that return data.
+
+They're complementary: a skill might instruct the agent to "use the mcp_azure_mcp_cosmos tool to list databases" as part of a larger workflow while providing guidance on how to interpret results and handle edge cases. Skills are the "brain" (knowledge), MCP tools are the "hands" (actions).
+
+A skill may encourage or even require the use of certain tools, but should not duplicate the functionality of a tool or simply list tool descriptions.
+
+### High-Level Design
+
+When implementing Azure skills it is useful to keep in mind the lifecycle of an Azure-based application and the different operations involved in each:
 
 - Development (creating applications that use Azure services)
   - choosing services
