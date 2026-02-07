@@ -61,11 +61,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
-    // NOTE: This test was already failing in main (0% invocation) but passed
-    // because the SDK couldn't load (ESM not configured). Now that ESM works,
-    // this test actually runs and fails. Skip until prompt is fixed.
-    // See: https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/XXX
-    test.skip("invokes azure-storage skill for storage tiers prompt", async () => {
+    test("invokes azure-storage skill for storage tiers prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
