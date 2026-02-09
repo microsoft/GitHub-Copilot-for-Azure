@@ -2,12 +2,16 @@
 
 Deploy to Azure using Azure Developer CLI (azd).
 
+> 💡 **Note:** azd supports both Bicep and Terraform as IaC providers. The deployment workflow is identical regardless of which you use.
+
 ## Prerequisites
 
 - `azd` CLI installed → Run `mcp_azure_mcp_extension_cli_install` with `cli-type: azd` if needed
 - `.azure/preparation-manifest.md` exists with status `Validated`
 - `azure.yaml` exists and validated
-- `infra/main.bicep` exists (or other IaC)
+- Infrastructure files exist:
+  - For Bicep: `infra/main.bicep`
+  - For Terraform: `infra/*.tf` files with `azure.yaml` having `infra.provider: terraform`
 - **Subscription and location confirmed** → See [pre-deploy-checklist.md](../../pre-deploy-checklist.md)
 
 ## Workflow
