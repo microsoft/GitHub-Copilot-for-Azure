@@ -221,6 +221,25 @@ Use Microsoft Defender for Cloud for:
 
 ---
 
+## Azure Identity SDK
+
+All Azure SDKs use their language's Identity library for credential-free authentication via `DefaultAzureCredential` or managed identity. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+
+| Language | Package | Install |
+|----------|---------|---------|
+| .NET | `Azure.Identity` | `dotnet add package Azure.Identity` |
+| Java | `azure-identity` | Maven: `com.azure:azure-identity` |
+| JavaScript | `@azure/identity` | `npm install @azure/identity` |
+| Python | `azure-identity` | `pip install azure-identity` |
+| Go | `azidentity` | `go get github.com/Azure/azure-sdk-for-go/sdk/azidentity` |
+| Rust | `azure_identity` | `cargo add azure_identity` |
+
+For Key Vault SDK examples, see: [key-vault.md](services/key-vault.md)
+
+For Storage SDK examples, see: [storage.md](services/storage.md)
+
+---
+
 ## Further Reading
 
 - [Key Vault documentation](https://learn.microsoft.com/azure/key-vault/general/overview)
