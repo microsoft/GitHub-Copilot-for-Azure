@@ -250,6 +250,7 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
  */
 export async function run(config: TestConfig): Promise<AgentMetadata> {
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+  const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
 
   // Declare client and session outside try block to ensure cleanup in finally
   let client: CopilotClient | undefined;
@@ -332,7 +333,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     // Send follow-up prompts
     for (const followUpPrompt of config.followUp ?? []) {
       isComplete = false;
-      await session.sendAndWait({ prompt: followUpPrompt });
+      await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
     }
 
     // Generate markdown report
