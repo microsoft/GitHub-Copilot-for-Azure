@@ -1,0 +1,47 @@
+id: task-03-endpoint-health
+name: Diagnose endpoint not responding
+description: Deployed model endpoint returns errors despite Succeeded state
+
+inputs:
+  prompt: |
+    My deployment shows 'Succeeded' but when I try to call the endpoint,
+    I get connection timeout errors. The endpoint doesn't respond at all.
+
+  context:
+    provisioning_state: "Succeeded"
+    symptom: "Connection timeout"
+    resource_group: "my-rg"
+    deployment_name: "gpt-4o-prod"
+
+expected:
+  output_contains:
+    - "endpoint"
+    - "test"
+    - "curl"
+
+  diagnostic_steps:
+    - "Test endpoint directly"
+    - "Check Azure service status"
+    - "Verify credentials"
+
+  commands_suggested:
+    - pattern: "curl"
+      required: true
+      reason: "Should test endpoint directly"
+
+    - pattern: "az cognitiveservices account keys"
+      required: false
+      reason: "May need to verify API key"
+
+  escalation_criteria:
+    - "Check Azure status page"
+    - "Contact Azure support if persistent"
+
+graders:
+  - name: contains_key_terms
+    type: code
+    config:
+      assertions:
+        - "'endpoint' in output.lower()"
+        - "'curl' in output.lower() or 'test' in output.lower()"
+        - "'status' in output.lower() or 'azure' in output.lower()"

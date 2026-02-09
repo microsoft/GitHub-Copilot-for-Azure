@@ -1,0 +1,107 @@
+name: check-deployment-health-triggers
+description: Trigger accuracy tests for the check-deployment-health skill
+skill: check-deployment-health
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 300
+  parallel: false
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+# ========================================
+# TRIGGER ACCURACY TESTS
+# ========================================
+# Verify the skill activates on the right prompts
+
+shouldTriggerPrompts:
+  # Deployment status issues
+  - "my deployment is failing"
+  - "deployment stuck in creating state"
+  - "deployment has been stuck for 30 minutes"
+  - "check deployment health"
+  - "deployment shows errors"
+  - "my deployment failed"
+  - "provisioning error on my deployment"
+  - "deployment not working"
+
+  # Inference/endpoint issues
+  - "model not responding to requests"
+  - "inference endpoint not working"
+  - "endpoint returning errors"
+  - "model endpoint is down"
+  - "inference failing"
+  - "can't get responses from my deployment"
+
+  # Degraded performance
+  - "deployment degraded performance"
+  - "deployment latency is high"
+  - "my model is responding slowly"
+  - "deployment has high error rate"
+
+  # Health monitoring
+  - "how to check if my deployment is healthy"
+  - "monitor deployment health"
+  - "is my deployment working correctly"
+  - "check deployment status"
+  - "what's the state of my deployment"
+
+  # Specific provisioning states
+  - "deployment stuck in updating"
+  - "deployment timeout"
+  - "provisioning stuck"
+  - "deployment in creating state too long"
+
+shouldNotTriggerPrompts:
+  # Model availability (→ check-model-availability)
+  - "is gpt-4 available in east us"
+  - "check model availability"
+  - "what models are available in my region"
+  - "can I deploy gpt-4o in west europe"
+  - "which regions have gpt-4"
+
+  # Rate limiting/429 errors (→ diagnose-429-errors)
+  - "getting 429 errors"
+  - "rate limit exceeded"
+  - "need more quota"
+  - "too many requests error"
+  - "how to handle rate limits"
+  - "increase my TPM limit"
+
+  # Deploying models (→ microsoft-foundry)
+  - "deploy a model"
+  - "create a new deployment"
+  - "set up gpt-4o deployment"
+  - "deploy gpt-4 to my project"
+
+  # RBAC permissions (→ microsoft-foundry rbac)
+  - "assign RBAC role"
+  - "give access to my deployment"
+  - "permission denied error"
+  - "authentication error"
+
+  # General queries (not troubleshooting)
+  - "what is Azure AI Foundry"
+  - "list my deployments"
+  - "how does deployment work"
+
+# ========================================
+# QUALITY THRESHOLDS
+# ========================================
+
+quality_thresholds:
+  trigger_accuracy: 0.85  # 85% of should/shouldn't trigger tests pass
+
+# ========================================
+# METADATA
+# ========================================
+
+metadata:
+  skill_path: "plugin/skills/microsoft-foundry/troubleshooting/check-deployment-health.md"
+  skill_type: "troubleshooting"
+  domain: "Azure AI Foundry"
+  related_skills:
+    - "check-model-availability"
+    - "diagnose-429-errors"
+    - "microsoft-foundry"

@@ -1,0 +1,49 @@
+id: task-02-failed-deployment
+name: Diagnose failed deployment with InsufficientQuota
+description: Deployment failed due to quota exhaustion
+
+inputs:
+  prompt: |
+    My deployment failed with this error:
+    {
+      "error": {
+        "code": "InsufficientQuota",
+        "message": "The subscription does not have enough quota to fulfill this request."
+      }
+    }
+    What should I do?
+
+  context:
+    error_code: "InsufficientQuota"
+    deployment_state: "Failed"
+    resource_group: "my-rg"
+    deployment_name: "gpt-4o-prod"
+
+expected:
+  output_contains:
+    - "quota"
+    - "capacity"
+
+  resolution_options:
+    - "Request quota increase"
+    - "Try different region"
+    - "Check current quota usage"
+
+  references_suggested:
+    - pattern: "deployment-states.md"
+
+  concepts_explained:
+    - "InsufficientQuota meaning"
+    - "Regional capacity"
+    - "Quota increase process"
+
+  should_ask_user:
+    - "Which resolution option to pursue"
+
+graders:
+  - name: contains_key_terms
+    type: code
+    config:
+      assertions:
+        - "'quota' in output.lower()"
+        - "'region' in output.lower() or 'capacity' in output.lower()"

@@ -1,0 +1,50 @@
+id: task-01-stuck-deployment
+name: Diagnose deployment stuck in Creating state
+description: User's deployment has been stuck in Creating state for too long
+
+inputs:
+  prompt: |
+    My gpt-4o deployment has been stuck in 'Creating' state for 30 minutes.
+    The deployment name is 'gpt-4o-prod' in resource group 'my-rg'.
+    What's going on and how do I fix it?
+
+  context:
+    resource_group: "my-rg"
+    deployment_name: "gpt-4o-prod"
+    resource_name: "my-foundry-resource"
+    provisioning_state: "Creating"
+    duration: "30 minutes"
+
+expected:
+  output_contains:
+    - "provisioning"
+    - "Creating"
+    - "status"
+    - "wait"
+
+  commands_suggested:
+    - pattern: "az cognitiveservices account deployment show"
+      required: true
+      reason: "Must check deployment status"
+
+    - pattern: "--query.*provisioningState"
+      required: false
+      reason: "Should query the provisioning state"
+
+  concepts_explained:
+    - "Normal deployment duration (5-15 minutes)"
+    - "When to be concerned (>30 minutes)"
+    - "Check Azure status"
+
+  should_not_contain:
+    - "delete the deployment"  # Should not suggest deletion as first step
+    - "create a new deployment"  # Should diagnose first
+
+graders:
+  - name: contains_key_terms
+    type: code
+    config:
+      assertions:
+        - "'provisioning' in output.lower() or 'creating' in output.lower()"
+        - "'status' in output.lower() or 'check' in output.lower()"
+        - "'wait' in output.lower() or 'azure status' in output.lower()"
