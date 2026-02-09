@@ -15,7 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { run, TestConfig } from "../utils/agent-runner";
+import { run, type TestConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
