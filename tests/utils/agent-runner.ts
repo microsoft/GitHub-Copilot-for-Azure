@@ -256,6 +256,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   let session: CopilotSession | undefined;
   // Flag to prevent processing events after completion
   let isComplete = false;
+  // Declare metadata outside try block to ensure report generation in finally
+  const agentMetadata: AgentMetadata = { events: [] };
 
   try {
     // Run optional setup
@@ -291,8 +293,6 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       },
       systemMessage: config.systemPrompt
     });
-
-    const agentMetadata: AgentMetadata = { events: [] };
 
     const done = new Promise<void>((resolve) => {
       session!.on(async (event: SessionEvent) => {
@@ -332,11 +332,8 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     // Send follow-up prompts
     for (const followUpPrompt of config.followUp ?? []) {
       isComplete = false;
-      await session.sendAndWait({ prompt: followUpPrompt });
+      await session.sendAndWait({ prompt: followUpPrompt }, 1800000);
     }
-
-    // Generate markdown report
-    writeMarkdownReport(config, agentMetadata);
 
     return agentMetadata;
   } catch (error) {
@@ -347,6 +344,12 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
   } finally {
     // Mark as complete before starting cleanup to prevent post-completion event processing
     isComplete = true;
+    // Generate markdown report (even if there was an error/timeout)
+    try {
+      writeMarkdownReport(config, agentMetadata);
+    } catch {
+      // Ignore report generation errors
+    }
     // Cleanup session and client (guarded if undefined)
     try {
       if (session) {
