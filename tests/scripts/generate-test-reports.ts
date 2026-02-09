@@ -3,7 +3,7 @@
 /**
  * Test Reports Generator
  * 
- * Reads agent runner test results and uses Copilot to summarize them.
+ * Reads all markdown files in each subdirectory and generates ONE consolidated report per subdirectory.
  * 
  * Usage:
  *   npm run reports              # Process most recent test run
@@ -37,15 +37,42 @@ function getMostRecentTestRun(): string | undefined {
 }
 
 /**
- * Process a single markdown file and generate a report
+ * Process a single subdirectory - generate ONE consolidated report for all .md files in it
  */
-async function processMarkdownFile(mdPath: string, reportTemplate: string): Promise<void> {
-  const content = fs.readFileSync(mdPath, "utf-8");
-  const fileName = path.basename(mdPath, ".md");
+async function processSubdirectory(subdirPath: string, reportTemplate: string): Promise<void> {
+  const subdirName = path.basename(subdirPath);
+  
+  // Find all markdown files in this subdirectory (non-recursive)
+  const markdownFiles: string[] = [];
+  const entries = fs.readdirSync(subdirPath, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.endsWith("-report.md")) {
+      markdownFiles.push(path.join(subdirPath, entry.name));
+    }
+  }
 
-  console.log(`  Processing: ${fileName}...`);
+  if (markdownFiles.length === 0) {
+    console.log(`  ⚠️  No markdown files found in ${subdirName}, skipping...`);
+    return;
+  }
 
-  // Use agent runner to generate report
+  console.log(`\n  Processing: ${subdirName} (${markdownFiles.length} file(s))`);
+
+  // Consolidate all markdown content from this subdirectory
+  let consolidatedContent = "";
+  for (const mdFile of markdownFiles) {
+    const fileName = path.basename(mdFile, ".md");
+    const content = fs.readFileSync(mdFile, "utf-8");
+    
+    console.log(`    Reading: ${fileName}...`);
+    
+    consolidatedContent += `\n## ${fileName}\n\n${content}\n`;
+  }
+
+  console.log(`    Generating report...`);
+
+  // Use agent runner to generate consolidated report for this subdirectory
   const config = {
     prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
 
@@ -59,7 +86,7 @@ ${reportTemplate}
 
 ## Test Results Data
 
-${content}
+${consolidatedContent}
 
 ---
 
@@ -76,15 +103,16 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
     }
   }
 
-  // Save the generated report
-  const outputPath = mdPath.replace(".md", "-report.md");
+  // Save the consolidated report in the subdirectory
+  const outputPath = path.join(subdirPath, `${subdirName}-consolidated-report.md`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
-  console.log(`    ✅ Generated: ${path.basename(outputPath)}`);
+  
+  console.log(`    ✅ Generated: ${subdirName}-consolidated-report.md`);
 }
 
 /**
- * Process a test run directory - generate reports for all .md files
+ * Process a test run directory - generate ONE consolidated report per subdirectory
  */
 async function processTestRun(runPath: string): Promise<void> {
   if (!fs.existsSync(runPath)) {
@@ -103,38 +131,27 @@ async function processTestRun(runPath: string): Promise<void> {
   // Load the report template once
   const reportTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
 
-  // Find all markdown files recursively
-  const markdownFiles: string[] = [];
+  // Find all subdirectories in the test run
+  const entries = fs.readdirSync(runPath, { withFileTypes: true });
+  const subdirectories = entries
+    .filter(entry => entry.isDirectory())
+    .map(entry => path.join(runPath, entry.name));
 
-  function findMarkdownFiles(dir: string) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-
-      if (entry.isDirectory()) {
-        findMarkdownFiles(fullPath);
-      } else if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.endsWith("-report.md")) {
-        markdownFiles.push(fullPath);
-      }
-    }
-  }
-
-  findMarkdownFiles(runPath);
-
-  if (markdownFiles.length === 0) {
-    console.error(`Error: No markdown files found in directory: ${runPath}`);
+  if (subdirectories.length === 0) {
+    console.error(`Error: No subdirectories found in: ${runPath}`);
     process.exit(1);
   }
 
-  console.log(`Found ${markdownFiles.length} markdown file(s)\n`);
+  console.log(`Found ${subdirectories.length} subdirectorie(s)\n`);
 
-  // Process each markdown file
-  for (const mdFile of markdownFiles) {
-    await processMarkdownFile(mdFile, reportTemplate);
+  // Process each subdirectory
+  let reportCount = 0;
+  for (const subdir of subdirectories) {
+    await processSubdirectory(subdir, reportTemplate);
+    reportCount++;
   }
 
-  console.log(`\n✅ Generated ${markdownFiles.length} report(s)`);
+  console.log(`\n✅ Processed ${reportCount} subdirectorie(s)`);
   console.log("\nReport generation complete.");
 }
 
