@@ -4,11 +4,27 @@ description: |
   Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents, manage RBAC permissions and role assignments, troubleshoot rate limiting and quota issues.
   USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, RBAC, role assignment, managed identity, service principal, permissions, troubleshooting: rate limiting errors, model availability.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
+  INVOKES: `azure__foundry` (deployments, models), `mcp__plugin_azure_azure__quota` (usage), `azure__monitor` (logs), `azure__role` (RBAC) MCP tools for execution.
+  FOR SINGLE OPERATIONS: Use MCP tools directly for queries.
 ---
 
 # Microsoft Foundry Skill
 
 This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, RAG (Retrieval-Augmented Generation) applications, AI agent creation, evaluation workflows, and troubleshooting.
+
+## MCP Tools Used in This Skill
+
+| Step | Tool | Command | Purpose |
+|------|------|---------|---------|
+| 1 | `azure__foundry` | `foundry_resource_get` | List Foundry resources |
+| 2 | `azure__foundry` | `foundry_models_list` | Browse model catalog |
+| 3 | `azure__foundry` | `foundry_models_deploy` | Deploy models |
+| 3 | `azure__foundry` | `foundry_deployment_list` | Check deployment status |
+| Troubleshooting | `mcp__plugin_azure_azure__quota` | `quota_usage_check` | Check quota usage |
+| Troubleshooting | `azure__monitor` | `monitor_logs_query` | Query logs for errors |
+| Permissions | `azure__role` | `role_assignment_list` | Check RBAC assignments |
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or use CLI fallback commands documented throughout this skill.
 
 ## Sub-Skills
 
@@ -22,6 +38,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 | **troubleshooting/diagnose-429-errors** | Diagnosing and resolving HTTP 429 rate limiting errors. Use when encountering "Rate limit exceeded" errors, quota issues, or planning capacity. Covers quota analysis, retry strategies, and multi-region scaling. | [troubleshooting/diagnose-429-errors.md](troubleshooting/diagnose-429-errors.md) |
 | **troubleshooting/check-model-availability** | Checking regional availability of AI models. Use when planning deployments, validating model support in regions, or troubleshooting "model not found" errors. Helps select optimal regions and compare model availability. | [troubleshooting/check-model-availability.md](troubleshooting/check-model-availability.md) |
+| **troubleshooting/check-deployment-health** | Diagnosing deployment health issues, monitoring deployed models, troubleshooting inference failures. Use when deployments fail, get stuck, or show degraded performance after initial provisioning. | [troubleshooting/check-deployment-health.md](troubleshooting/check-deployment-health.md) |
 
 > 💡 **Tip:** For a complete onboarding flow: `project/create` → `agent/create` → `agent/deploy`. If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
 
@@ -65,9 +82,15 @@ A developer new to Microsoft Foundry wants to explore available models and deplo
 
 First, help the user discover their Microsoft Foundry resources.
 
-**Using Azure CLI:**
+**Using MCP Tools (Preferred):**
 
-##### Bash
+Use `azure__foundry` MCP tool with command `foundry_resource_get`:
+- Parameters: `subscription` (optional), `resource-group` (optional)
+- Returns: List of Foundry resources with names, locations, and endpoints
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+**CLI Fallback:**
 ```bash
 # List all Microsoft Foundry resources in subscription
 az resource list \
@@ -81,10 +104,6 @@ az resource list \
   --resource-type "Microsoft.CognitiveServices/accounts" \
   --output table
 ```
-
-**Using MCP Tools:**
-
-Use the `foundry_resource_get` MCP tool to get detailed information about a specific Foundry resource, or to list all resources if no name is provided.
 
 #### Step 2: Browse Model Catalog
 
@@ -114,9 +133,23 @@ When listing models, explain to users:
 
 Guide users through deploying a model to their Foundry resource.
 
-**Using Azure CLI:**
+**Using MCP Tools (Preferred):**
 
-##### Bash
+Use `azure__foundry` MCP tool with command `foundry_models_deploy`:
+- Parameters:
+  - `resource-group`: Resource group name
+  - `deployment`: Deployment name (e.g., "gpt-4o-deployment")
+  - `model-name`: Model to deploy (e.g., "gpt-4o")
+  - `model-version`: Specific version (e.g., "2024-05-13")
+  - `sku-capacity`: Capacity units (TPM in thousands)
+  - `scale-type`: Scaling type (e.g., "Standard")
+  - `azure-ai-services`: Foundry resource name
+
+To verify deployment status, use `foundry_deployment_list` command.
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+**CLI Fallback:**
 ```bash
 # Deploy a model (e.g., gpt-4o)
 az cognitiveservices account deployment create \
@@ -135,18 +168,6 @@ az cognitiveservices account deployment show \
   --resource-group <resource-group-name> \
   --deployment-name gpt-4o-deployment
 ```
-
-**Using MCP Tools:**
-
-Use the `foundry_models_deploy` MCP tool with parameters:
-- `resource-group`: Resource group name
-- `deployment`: Deployment name
-- `model-name`: Model to deploy (e.g., "gpt-4o")
-- `model-format`: Format (e.g., "OpenAI")
-- `azure-ai-services`: Foundry resource name
-- `model-version`: Specific version
-- `sku-capacity`: Capacity units
-- `scale-type`: Scaling type
 
 **Deployment Verification:**
 Explain that when deployment completes, `provisioningState` should be `Succeeded`. If it fails, common issues include:
@@ -518,7 +539,17 @@ Check evaluation run status to identify issues. For SDK implementation, see [lan
 
 **Resolution:**
 
-##### Bash
+**Using MCP Tools (Preferred):**
+
+Use `mcp__plugin_azure_azure__quota` MCP tool with command `quota_usage_check`:
+- Parameters:
+  - `region`: Region to check (e.g., "eastus2")
+  - `resource-types`: "Microsoft.CognitiveServices/accounts"
+- Returns: Current quota usage vs. limit for model deployments
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+**CLI Fallback:**
 ```bash
 # Check current quota usage
 az cognitiveservices usage list \
@@ -527,10 +558,6 @@ az cognitiveservices usage list \
 
 # Request quota increase (manual process in portal)
 echo "Request quota increase in Azure Portal under Quotas section"
-```
-
-# Request quota increase (manual process in portal)
-Write-Output "Request quota increase in Azure Portal under Quotas section"
 ```
 
 **Best Practices:**

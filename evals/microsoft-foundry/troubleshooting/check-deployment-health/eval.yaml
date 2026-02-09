@@ -1,0 +1,137 @@
+name: check-deployment-health-eval
+description: Evaluation suite for the check-deployment-health skill in Microsoft Foundry
+skill: check-deployment-health
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 300
+  parallel: false
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+graders:
+  - type: code
+    name: output_check
+    config:
+      assertions:
+        - "len(output) > 50"
+
+  - type: regex
+    name: pattern_check
+    config:
+      must_match: []
+      must_not_match: []
+
+metrics:
+  - name: task_completion
+    weight: 1.0
+    threshold: 0.8
+
+# Reference task files via glob patterns
+tasks:
+  - "tasks/*.yaml"
+
+# ========================================
+# TRIGGER ACCURACY TESTS
+# ========================================
+
+shouldTriggerPrompts:
+  # Deployment status issues
+  - "my deployment is failing"
+  - "deployment stuck in creating state"
+  - "deployment has been stuck for 30 minutes"
+  - "check deployment health"
+  - "deployment shows errors"
+  - "my deployment failed"
+  - "provisioning error on my deployment"
+  - "deployment not working"
+
+  # Inference/endpoint issues
+  - "model not responding to requests"
+  - "inference endpoint not working"
+  - "endpoint returning errors"
+  - "model endpoint is down"
+  - "inference failing"
+
+  # Degraded performance
+  - "deployment degraded performance"
+  - "deployment latency is high"
+  - "my model is responding slowly"
+
+  # Health monitoring
+  - "how to check if my deployment is healthy"
+  - "monitor deployment health"
+  - "check deployment status"
+
+shouldNotTriggerPrompts:
+  # Model availability (→ check-model-availability)
+  - "is gpt-4 available in east us"
+  - "check model availability"
+  - "what models are available in my region"
+
+  # Rate limiting/429 errors (→ diagnose-429-errors)
+  - "getting 429 errors"
+  - "rate limit exceeded"
+  - "need more quota"
+
+  # Deploying models (→ microsoft-foundry)
+  - "deploy a model"
+  - "create a new deployment"
+
+  # RBAC permissions (→ microsoft-foundry rbac)
+  - "assign RBAC role"
+  - "permission denied error"
+
+# ========================================
+# NEGATIVE TESTS
+# ========================================
+
+negative_tests:
+  - id: neg-01-rate-limiting
+    name: Should not trigger for 429 errors
+    prompt: "I'm getting 429 rate limit errors from my deployment"
+    should_trigger: false
+    correct_skill: "diagnose-429-errors"
+
+  - id: neg-02-model-availability
+    name: Should not trigger for availability checks
+    prompt: "Is GPT-4 available in West Europe?"
+    should_trigger: false
+    correct_skill: "check-model-availability"
+
+  - id: neg-03-new-deployment
+    name: Should not trigger for creating new deployments
+    prompt: "How do I deploy GPT-4o to my project?"
+    should_trigger: false
+    correct_skill: "microsoft-foundry"
+
+# ========================================
+# QUALITY THRESHOLDS
+# ========================================
+
+quality_thresholds:
+  trigger_accuracy: 0.85
+  task_completion: 0.80
+  command_accuracy: 0.95
+
+# ========================================
+# METADATA
+# ========================================
+
+metadata:
+  skill_path: "plugin/skills/microsoft-foundry/troubleshooting"
+  skill_type: "troubleshooting"
+  domain: "Azure AI Foundry"
+  complexity: "medium"
+  requires_context: true
+  mcp_tools:
+    - "foundry_deployment_list"
+    - "monitor_metrics_query"
+    - "monitor_logs_query"
+  cli_tools:
+    - "az cognitiveservices"
+    - "az monitor"
+  references:
+    - "references/deployment-states.md"
+    - "references/health-indicators.md"
