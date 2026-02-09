@@ -1,6 +1,6 @@
 ---
 name: deploy-model-optimal-region
-description: Intelligently deploys Azure OpenAI models to optimal regions by analyzing capacity across all available regions. Handles authentication verification, project selection, capacity validation, and deployment execution. Use when deploying models where region availability and capacity matter. Automatically checks current region first and only shows alternatives if needed.
+description: Intelligently deploys Azure OpenAI models to optimal regions by analyzing capacity across all available regions. Automatically checks current region first and shows alternatives if needed. USE FOR: quick deployment, optimal region, best region, automatic region selection, fast setup, multi-region capacity check, high availability deployment, deploy to best location. DO NOT USE FOR: custom SKU selection (use customize-deployment), specific version selection (use customize-deployment), custom capacity configuration (use customize-deployment), PTU deployments (use customize-deployment).
 ---
 
 # Deploy Model to Optimal Region
@@ -434,38 +434,38 @@ fi
 echo "Deploying with capacity: $DEPLOY_CAPACITY TPM (50% of available: $SELECTED_CAPACITY TPM)"
 ```
 
-**Create deployment using ARM REST API:**
+**Create deployment using Azure CLI:**
 
-⚠️ **Important:** The Azure CLI command `az cognitiveservices account deployment create` with `--sku-name "GlobalStandard"` silently fails (exits with success but does not create the deployment). Use ARM REST API via `az rest` instead.
-
-See `_TECHNICAL_NOTES.md` Section 4 for details on this CLI limitation.
+> 💡 **Note:** The Azure CLI now supports GlobalStandard SKU deployments directly. Use the native `az cognitiveservices account deployment create` command.
 
 *Bash version:*
 ```bash
-echo "Creating deployment via ARM REST API..."
+echo "Creating deployment..."
 
-bash scripts/deploy_via_rest.sh \
-  "$SUBSCRIPTION_ID" \
-  "$RESOURCE_GROUP" \
-  "$ACCOUNT_NAME" \
-  "$DEPLOYMENT_NAME" \
-  "$MODEL_NAME" \
-  "$MODEL_VERSION" \
-  "$DEPLOY_CAPACITY"
+az cognitiveservices account deployment create \
+  --name "$ACCOUNT_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --deployment-name "$DEPLOYMENT_NAME" \
+  --model-name "$MODEL_NAME" \
+  --model-version "$MODEL_VERSION" \
+  --model-format "OpenAI" \
+  --sku-name "GlobalStandard" \
+  --sku-capacity "$DEPLOY_CAPACITY"
 ```
 
 *PowerShell version:*
 ```powershell
-Write-Host "Creating deployment via ARM REST API..."
+Write-Host "Creating deployment..."
 
-& .\scripts\deploy_via_rest.ps1 `
-  -SubscriptionId $SUBSCRIPTION_ID `
-  -ResourceGroup $RESOURCE_GROUP `
-  -AccountName $ACCOUNT_NAME `
-  -DeploymentName $DEPLOYMENT_NAME `
-  -ModelName $MODEL_NAME `
-  -ModelVersion $MODEL_VERSION `
-  -Capacity $DEPLOY_CAPACITY
+az cognitiveservices account deployment create `
+  --name $ACCOUNT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --deployment-name $DEPLOYMENT_NAME `
+  --model-name $MODEL_NAME `
+  --model-version $MODEL_VERSION `
+  --model-format "OpenAI" `
+  --sku-name "GlobalStandard" `
+  --sku-capacity $DEPLOY_CAPACITY
 ```
 
 **Monitor deployment progress:**

@@ -159,38 +159,50 @@ az rest --method GET \
 
 **Required Operation:** Deploy a model with GlobalStandard SKU
 
-**CLI Gap:** `az cognitiveservices account deployment create` does NOT support GlobalStandard SKU
+**CLI Support Status:** ✅ **NOW SUPPORTED** - The Azure CLI has been updated to support GlobalStandard SKU deployments.
 
-**CLI Command Attempted:**
+**Updated Command:**
 ```bash
 az cognitiveservices account deployment create \
-  --name "banide-1031-resource" \
-  --resource-group "bani_oai_rg" \
-  --deployment-name "gpt-4o-test" \
+  --name "account-name" \
+  --resource-group "resource-group" \
+  --deployment-name "gpt-4o-deployment" \
   --model-name "gpt-4o" \
   --model-version "2024-11-20" \
   --model-format "OpenAI" \
-  --scale-settings-scale-type "GlobalStandard" \
-  --scale-settings-capacity 50
+  --sku-name "GlobalStandard" \
+  --sku-capacity 50
 ```
 
 **Result:**
-- ❌ **Silently fails** - Command exits with success (exit code 0) but deployment is NOT created
-- ❌ **No error message** - Appears to succeed but deployment doesn't exist
-- ✅ **Only "Standard" and "Manual" are supported** - As documented in `--scale-settings-scale-type` help
+- ✅ **Now works correctly** - Deployment is created successfully
+- ✅ **Native CLI support** - No need for REST API workaround
+- ✅ **Proper error handling** - Returns meaningful errors on failure
 
-**API Used:**
+**Historical Note (Deprecated):**
+
+Prior to the CLI update, the `--sku-name "GlobalStandard"` parameter silently failed:
+- ❌ Command exited with success (exit code 0) but deployment was NOT created
+- ❌ No error message - Appeared to succeed but deployment didn't exist
+- ✅ Only "Standard" and "Manual" were supported at that time
+
+This required using ARM REST API as a workaround:
+
+**Old API Workaround (No Longer Needed):**
 ```
 PUT /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/deployments/{deploymentName}
 ?api-version=2024-10-01
 ```
 
-**Implementation - Using Bash Script:**
+**Implementation - Old Bash Script (Deprecated):**
 
-Created `scripts/deploy_via_rest.sh` to encapsulate the complex ARM REST API call:
+The `scripts/deploy_via_rest.sh` script was created to work around the CLI limitation:
 
 ```bash
 #!/bin/bash
+# This script is NO LONGER NEEDED - Azure CLI now supports GlobalStandard
+# Kept for historical reference only
+
 # Usage: deploy_via_rest.sh <subscription-id> <resource-group> <account-name> <deployment-name> <model-name> <model-version> <capacity>
 
 SUBSCRIPTION_ID="$1"
@@ -225,14 +237,14 @@ EOF
 az rest --method PUT --url "$API_URL" --body "$PAYLOAD"
 ```
 
-**Why a Script Instead of Inline:**
-- **JSON payload construction** - Complex, requires proper escaping and variable substitution
+**Why the Old Script Was Used:**
+- **JSON payload construction** - Complex, required proper escaping and variable substitution
 - **Error-prone** - Easy to make mistakes with quotes and formatting
-- **Reusable** - Script can be called multiple times with different parameters
-- **Testable** - Can be tested independently
+- **Reusable** - Script could be called multiple times with different parameters
+- **Testable** - Could be tested independently
 - **Follows pattern** - Similar to `azure-postgres` scripts for complex operations
 
-**Payload Structure:**
+**Payload Structure (Historical):**
 ```json
 {
   "properties": {
@@ -255,11 +267,14 @@ az rest --method PUT --url "$API_URL" --body "$PAYLOAD"
 - UX Code: `azure-ai-foundry/app/api/resolvers/createOrUpdateModelDeploymentResolver.ts:38-60`
 - UX Code: `azure-ai-foundry/app/routes/api/createModelDeployment.ts:125-161`
 - UX Code: `azure-ai-foundry/app/hooks/useModelDeployment.ts:211-235`
-- Testing: Verified 2026-02-05 with successful deployment creation
+- Original Testing: Verified 2026-02-05 with REST API workaround
+- CLI Update Verified: 2026-02-09 with native CLI support
 
-**Date Verified:** 2026-02-05
+**Date Original Workaround Created:** 2026-02-05
 
-**Rationale:** The Azure CLI's `az cognitiveservices account deployment create` command has not been updated to support GlobalStandard SKU. While it accepts the parameter without error, it fails to create the deployment. The UX uses ARM REST API directly via PUT requests, which properly supports GlobalStandard. This is a known CLI limitation and requires using the ARM API directly.
+**Date CLI Updated:** 2026 (exact date unknown, confirmed working as of 2026-02-09)
+
+**Rationale for Change:** The Azure CLI's `az cognitiveservices account deployment create` command has been updated to properly support GlobalStandard SKU. The previous limitation no longer exists, and the native CLI command should now be used instead of the REST API workaround. This simplifies the implementation and aligns with standard Azure CLI patterns used across other Azure skills.
 
 ---
 
@@ -299,11 +314,13 @@ az rest --method PUT --url "$API_URL" --body "$PAYLOAD"
 - Permission granting with error recovery
 
 **Applied in This Skill:**
-- **`scripts/deploy_via_rest.sh`** - Bash script for ARM REST API deployment
-  - Encapsulates complex JSON payload construction
-  - Provides proper error handling and validation
+- **DEPRECATED: `scripts/deploy_via_rest.sh`** - Bash script for ARM REST API deployment
+  - ⚠️ **No longer needed** - Azure CLI now supports GlobalStandard natively
+  - Originally encapsulated complex JSON payload construction
+  - Provided proper error handling and validation
   - 50 lines with parameter validation
-  - Follows `azure-postgres` pattern for CLI wrappers
+  - Followed `azure-postgres` pattern for CLI wrappers
+  - **Use native CLI command instead** (see SKILL.md Phase 7)
 
 **Why Minimal Scripts (Option B):**
 - **Deployment operation is complex** - JSON payload construction is error-prone
@@ -654,16 +671,21 @@ Please select an alternative region from the available list.
 
 ## Future Considerations
 
-### When CLI Commands Become Available
+### CLI Updates - Capacity Checking Commands
 
 **Monitor for CLI updates that might add:**
 - `az cognitiveservices model capacity list` - Query capacity across regions
 - `az cognitiveservices deployment options get` - Get deployment configuration
 - `az cognitiveservices deployment validate` - Pre-validate deployment before creating
 
-**Action Items:**
-1. Update skill to use native CLI commands
-2. Remove `az rest` usage where possible
+**Current Status:**
+- ✅ **GlobalStandard SKU deployment** - Now supported natively (as of 2026)
+- ❌ **Capacity checking** - Still requires REST API
+- ❌ **Deployment options** - Still requires REST API
+
+**Action Items When CLI Commands Become Available:**
+1. Update skill to use native CLI commands for capacity checking
+2. Remove `az rest` usage for capacity queries where possible
 3. Update `_TECHNICAL_NOTES.md` to reflect CLI availability
 4. Test backward compatibility
 
@@ -746,6 +768,8 @@ Please select an alternative region from the available list.
 | 2026-02-05 | Documented CLI gaps | Audit requirement | - |
 | 2026-02-05 | Added design decisions | Architecture documentation | - |
 | 2026-02-05 | Added UX code references | Traceability to source implementation | - |
+| 2026-02-09 | Updated to use native CLI for GlobalStandard | Azure CLI now supports GlobalStandard SKU | - |
+| 2026-02-09 | Deprecated REST API workaround scripts | Native CLI support available | - |
 
 ---
 
