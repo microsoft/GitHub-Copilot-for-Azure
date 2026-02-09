@@ -7,7 +7,7 @@ This sub-skill orchestrates quota and capacity management workflows for Microsof
 | Property | Value |
 |----------|-------|
 | **MCP Tools** | `foundry_models_deployments_list`, `model_quota_list`, `model_catalog_list` |
-| **CLI Commands** | `az cognitiveservices usage`, `az cognitiveservices account deployment` |
+| **CLI Commands** | `az rest` (Management API), `az cognitiveservices account deployment` |
 | **Resource Type** | `Microsoft.CognitiveServices/accounts` |
 
 ## When to Use
@@ -74,7 +74,7 @@ Microsoft Foundry uses four quota types:
 
 **Command Pattern:** "Show my Microsoft Foundry quota usage"
 
-**Using MCP Tools:**
+**Recommended Approach - Use MCP Tools:**
 ```
 foundry_models_deployments_list(
   resource-group="<rg>",
@@ -83,26 +83,27 @@ foundry_models_deployments_list(
 ```
 Returns: Deployment names, models, SKU capacity (TPM), provisioning state
 
-**Using Azure CLI:**
+**Alternative - Use Azure CLI:**
 ```bash
-# Check quota usage
-az cognitiveservices usage list \
-  --name <resource-name> \
-  --resource-group <rg> \
-  --output table
-
-# See deployment details
+# List all deployments with capacity
 az cognitiveservices account deployment list \
   --name <resource-name> \
   --resource-group <rg> \
-  --query '[].{Name:name, Model:properties.model.name, Capacity:sku.capacity}' \
+  --query '[].{Name:name, Model:properties.model.name, Capacity:sku.capacity, SKU:sku.name}' \
+  --output table
+
+# Get regional quota via REST API (more reliable)
+subId=$(az account show --query id -o tsv)
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/locations/eastus/usages?api-version=2023-05-01" \
+  --query "value[?contains(name.value,'OpenAI')].{Name:name.value, Used:currentValue, Limit:limit, Available:(limit-currentValue)}" \
   --output table
 ```
 
 **Interpreting Results:**
-- `currentValue`: Currently allocated quota (sum of all deployments)
-- `limit`: Maximum quota available in region
-- `available`: `limit - currentValue`
+- `Used` (currentValue): Currently allocated quota
+- `Limit`: Maximum quota available in region
+- `Available`: Calculated as `limit - currentValue`
 
 ### 2. Find Best Region for Model Deployment
 
@@ -321,17 +322,20 @@ az cognitiveservices account deployment show \
 ## Quick Commands
 
 ```bash
-# View quota for specific model
-az cognitiveservices usage list \
-  --name <resource-name> \
-  --resource-group <rg> \
-  --output json | jq '.[] | select(.name.value | contains("GPT-4"))'
+# View quota for specific model using REST API
+subId=$(az account show --query id -o tsv)
+region="eastus"  # Change to your region
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/locations/$region/usages?api-version=2023-05-01" \
+  --query "value[?contains(name.value,'gpt-4')].{Name:name.value, Used:currentValue, Limit:limit, Available:(limit-currentValue)}" \
+  --output table
 
-# Calculate available quota
-az cognitiveservices usage list \
+# List all deployments with capacity
+az cognitiveservices account deployment list \
   --name <resource-name> \
   --resource-group <rg> \
-  --output json | jq '.[] | {name: .name.value, available: (.limit - .currentValue)}'
+  --query '[].{Name:name, Model:properties.model.name, Capacity:sku.capacity}' \
+  --output table
 
 # Delete deployment to free quota
 az cognitiveservices account deployment delete \
