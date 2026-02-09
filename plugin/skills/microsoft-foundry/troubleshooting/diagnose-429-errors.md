@@ -4,8 +4,8 @@ description: |
   **TROUBLESHOOTING SKILL** - Diagnose and resolve HTTP 429 rate limiting errors in Microsoft Foundry (Azure AI Foundry / Azure OpenAI).
   USE FOR: 429 error, rate limit exceeded, RateLimitReached, Too Many Requests, throttled, quota exceeded, token rate limit, TPM limit, RPM limit, retry after, capacity planning, "exceeded the token rate limit", deployment scaling, burst limits, multi-region scaling.
   DO NOT USE FOR: model deployment from scratch (use microsoft-foundry), authentication errors (use microsoft-foundry rbac), model availability checks (use check-model-availability).
-  INVOKES: `az cognitiveservices` CLI, `az rest` API, `az monitor` CLI.
-  FOR SINGLE OPERATIONS: Use `az cognitiveservices usage list` directly for simple quota checks.
+  INVOKES: `azure__foundry` (deployment details), `mcp__plugin_azure_azure__quota` (usage), `azure__monitor` (log queries) MCP tools for diagnostics.
+  FOR CLI USERS: Azure CLI fallback documented for each step.
 ---
 
 # Diagnose Rate Limiting (429 Errors) in Microsoft Foundry
@@ -21,6 +21,7 @@ Guide for diagnosing and resolving HTTP 429 (Rate Limit Exceeded) errors in Micr
 | **Key CLI Commands** | `az cognitiveservices usage list --location`, `deployment show` → check `rateLimits` |
 | **Critical Check** | Verify `properties.rateLimits` for actual TPM/RPM (not just `sku.capacity`) |
 | **Update Method** | Use `az rest --method PUT` (no CLI `update` command exists) |
+| **Solution Selection** | Use AskUserQuestion to present options (scale, retry, multi-region, quota increase) |
 | **Best For** | Debugging rate limits, capacity planning, quota vs allocation issues |
 
 ## When to Use
@@ -30,6 +31,8 @@ Guide for diagnosing and resolving HTTP 429 (Rate Limit Exceeded) errors in Micr
 - **Throttled responses** — Slow API responses or deployment failures due to capacity
 - **Retry optimization** — Implementing or improving retry strategies
 - Questions like "Why am I getting rate limited?" or "How do I handle 429 errors?"
+
+**Workflow:** Diagnose → Present solution options via AskUserQuestion → Execute chosen solution
 
 ## Understanding Rate Limiting
 
@@ -58,6 +61,16 @@ For SKU type details (GlobalStandard, DataZoneStandard, etc.), see [references/s
 
 ### Step 1: Check Deployment Rate Limits
 
+**Using MCP Tools (Preferred):**
+
+Use `azure__foundry` MCP tool with command `foundry_deployment_list`:
+- Parameters: `resource-group`, `azure-ai-services` (resource name)
+- Query fields: `name`, `model`, `sku.capacity`, `rateLimits`
+- Returns: Deployment configuration with TPM/RPM limits
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+**CLI Fallback:**
 ```bash
 az cognitiveservices account deployment show \
   --name <foundry-resource-name> \
@@ -71,6 +84,17 @@ az cognitiveservices account deployment show \
 
 ### Step 2: Check Regional Quota
 
+**Using MCP Tools (Preferred):**
+
+Use `mcp__plugin_azure_azure__quota` MCP tool with command `quota_usage_check`:
+- Parameters:
+  - `region`: Region to check (e.g., "eastus2")
+  - `resource-types`: "Microsoft.CognitiveServices/accounts"
+- Returns: Quota usage showing current allocation vs. regional limit
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+**CLI Fallback:**
 ```bash
 az cognitiveservices usage list \
   --location <region> \
@@ -82,6 +106,18 @@ az cognitiveservices usage list \
 
 ### Step 3: Analyze Error Patterns
 
+**Using MCP Tools (Preferred):**
+
+Use `azure__monitor` MCP tool with command `monitor_logs_query`:
+- Parameters:
+  - `workspace`: Log Analytics workspace ID
+  - `analytics-query`: "AzureDiagnostics | where ResultType == '429' | where TimeGenerated > ago(24h)"
+  - `timespan`: "P1D" (past day)
+- Returns: 429 error records with timestamps and patterns
+
+**If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+**CLI Fallback:**
 ```bash
 az monitor log-analytics query \
   --workspace <workspace-id> \
@@ -103,9 +139,15 @@ For cross-deployment TPM analysis, see [references/tpm-analysis-script.md](refer
 
 For code examples (Python, C#, JavaScript), see [references/RETRY_EXAMPLES.md](references/RETRY_EXAMPLES.md).
 
-### Step 5: Scale Capacity
+### Step 5: Present Solutions to User
 
-For scaling strategies (REST API, quota increase, multi-region), see [references/scaling-strategies.md](references/scaling-strategies.md).
+**IMPORTANT:** Use `AskUserQuestion` to present solution options (scale, retry, quota increase, multi-region) rather than dictating a fix.
+
+For detailed guidance on structuring solution questions with examples for different scenarios, see [references/solution-selection.md](references/solution-selection.md).
+
+### Step 6: Execute Chosen Solution
+
+Based on the user's selection, proceed with the appropriate strategy. See [references/scaling-strategies.md](references/scaling-strategies.md) for implementation steps.
 
 ## Common Issues & Quick Fixes
 
@@ -129,5 +171,6 @@ For scaling strategies (REST API, quota increase, multi-region), see [references
 - [ ] Verify retry logic uses exponential backoff with jitter
 - [ ] Analyze all deployments for shared quota contention
 - [ ] Consider multi-region scaling if at regional limits
+- [ ] **Present solution options to user via AskUserQuestion (don't dictate the fix)**
 
 For best practices (capacity planning, monitoring, optimization), see [references/best-practices.md](references/best-practices.md).
