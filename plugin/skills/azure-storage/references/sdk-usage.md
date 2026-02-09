@@ -28,7 +28,7 @@ SDK packages and quick start examples for Azure Storage services.
 
 All examples use `DefaultAzureCredential` for authentication. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
 
-**Python** - Blob Storage:
+**Python** - Upload Blob:
 ```python
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
@@ -36,21 +36,21 @@ from azure.storage.blob import BlobServiceClient
 service = BlobServiceClient(account_url="https://ACCOUNT.blob.core.windows.net/", credential=DefaultAzureCredential())
 container = service.get_container_client("my-container")
 blob = container.get_blob_client("my-blob.txt")
-data = blob.download_blob().readall()
+blob.upload_blob(b"Hello, Azure Storage!", overwrite=True)
 ```
 
-**JavaScript** - Blob Storage:
+**JavaScript** - Upload Blob:
 ```javascript
 import { DefaultAzureCredential } from "@azure/identity";
 import { BlobServiceClient } from "@azure/storage-blob";
 
 const client = new BlobServiceClient("https://ACCOUNT.blob.core.windows.net/", new DefaultAzureCredential());
 const container = client.getContainerClient("my-container");
-const blob = container.getBlobClient("my-blob.txt");
-const data = await blob.download();
+const blob = container.getBlockBlobClient("my-blob.txt");
+await blob.uploadData(Buffer.from("Hello, Azure Storage!"));
 ```
 
-**C#** - Blob Storage:
+**C#** - Upload Blob:
 ```csharp
 using Azure.Identity;
 using Azure.Storage.Blobs;
@@ -58,10 +58,10 @@ using Azure.Storage.Blobs;
 var client = new BlobServiceClient(new Uri("https://ACCOUNT.blob.core.windows.net/"), new DefaultAzureCredential());
 var container = client.GetBlobContainerClient("my-container");
 var blob = container.GetBlobClient("my-blob.txt");
-var response = await blob.DownloadAsync();
+await blob.UploadAsync(BinaryData.FromString("Hello, Azure Storage!"), overwrite: true);
 ```
 
-**Java** - Blob Storage:
+**Java** - Upload Blob:
 ```java
 import com.azure.identity.*;
 import com.azure.storage.blob.*;
@@ -73,16 +73,15 @@ BlobServiceClient client = new BlobServiceClientBuilder()
     .buildClient();
 BlobContainerClient container = client.getBlobContainerClient("my-container");
 BlobClient blob = container.getBlobClient("my-blob.txt");
-BinaryData data = blob.downloadContent();
+blob.upload(BinaryData.fromString("Hello, Azure Storage!"), true);
 ```
 
-**Go** - Blob Storage:
+**Go** - Upload Blob:
 ```go
 package main
 
 import (
     "context"
-    "io"
 
     "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
     "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -92,13 +91,12 @@ func main() {
     cred, _ := azidentity.NewDefaultAzureCredential(nil)
     client, _ := azblob.NewClient("https://ACCOUNT.blob.core.windows.net/", cred, nil)
 
-    resp, _ := client.DownloadStream(context.Background(), "my-container", "my-blob.txt", nil)
-    data, _ := io.ReadAll(resp.Body)
-    _ = data // Use data as needed
+    data := []byte("Hello, Azure Storage!")
+    _, _ = client.UploadBuffer(context.Background(), "my-container", "my-blob.txt", data, nil)
 }
 ```
 
-**Rust** - Blob Storage:
+**Rust** - Upload Blob:
 ```rust
 use azure_identity::DeveloperToolsCredential;
 use azure_storage_blob::{BlobClient, BlobClientOptions};
@@ -111,7 +109,6 @@ let blob_client = BlobClient::new(
     Some(credential),
     Some(BlobClientOptions::default()),
 )?;
-let response = blob_client.download(None).await?;
-let (_, _, body) = response.deconstruct();
-let data = body.collect().await?.to_vec();
+let data = b"Hello, Azure Storage!";
+blob_client.upload(None, data.to_vec().into()).await?;
 ```

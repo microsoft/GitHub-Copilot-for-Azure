@@ -159,13 +159,14 @@ const client = new BlobServiceClient(
     new DefaultAzureCredential()
 );
 const container = client.getContainerClient("uploads");
-const blob = container.getBlobClient("my-file.txt");
-const data = await blob.download();
+const blob = container.getBlockBlobClient("my-file.txt");
+await blob.uploadData(Buffer.from("Hello, Azure Storage!"));
 ```
 
 ### Python
 
 ```python
+import os
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 
@@ -175,7 +176,7 @@ service = BlobServiceClient(
 )
 container = service.get_container_client("uploads")
 blob = container.get_blob_client("my-file.txt")
-data = blob.download_blob().readall()
+blob.upload_blob(b"Hello, Azure Storage!", overwrite=True)
 ```
 
 ### C#
@@ -184,13 +185,14 @@ data = blob.download_blob().readall()
 using Azure.Identity;
 using Azure.Storage.Blobs;
 
+var accountName = Environment.GetEnvironmentVariable("AZURE_STORAGE_ACCOUNT");
 var client = new BlobServiceClient(
-    new Uri($"https://{Environment.GetEnvironmentVariable("AZURE_STORAGE_ACCOUNT")}.blob.core.windows.net"),
+    new Uri($"https://{accountName}.blob.core.windows.net"),
     new DefaultAzureCredential()
 );
 var container = client.GetBlobContainerClient("uploads");
 var blob = container.GetBlobClient("my-file.txt");
-var response = await blob.DownloadAsync();
+await blob.UploadAsync(BinaryData.FromString("Hello, Azure Storage!"), overwrite: true);
 ```
 
 ### Java
@@ -206,7 +208,7 @@ BlobServiceClient client = new BlobServiceClientBuilder()
     .buildClient();
 BlobContainerClient container = client.getBlobContainerClient("uploads");
 BlobClient blob = container.getBlobClient("my-file.txt");
-BinaryData data = blob.downloadContent();
+blob.upload(BinaryData.fromString("Hello, Azure Storage!"), true);
 ```
 
 ### Go
@@ -216,7 +218,6 @@ package main
 
 import (
     "context"
-    "io"
     "os"
 
     "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -229,8 +230,8 @@ func main() {
         "https://"+os.Getenv("AZURE_STORAGE_ACCOUNT")+".blob.core.windows.net",
         cred, nil,
     )
-    resp, _ := client.DownloadStream(context.Background(), "uploads", "my-file.txt", nil)
-    data, _ := io.ReadAll(resp.Body)
+    data := []byte("Hello, Azure Storage!")
+    _, _ = client.UploadBuffer(context.Background(), "uploads", "my-file.txt", data, nil)
 }
 ```
 
@@ -250,7 +251,8 @@ let blob_client = BlobClient::new(
     Some(credential),
     Some(BlobClientOptions::default()),
 )?;
-let response = blob_client.download(None).await?;
+let data = b"Hello, Azure Storage!";
+blob_client.upload(None, data.to_vec().into()).await?;
 ```
 
 ## Managed Identity Access

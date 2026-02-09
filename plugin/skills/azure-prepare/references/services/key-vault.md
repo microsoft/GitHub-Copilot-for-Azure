@@ -144,6 +144,7 @@ const secret = await client.getSecret("database-connection-string");
 ### Python
 
 ```python
+import os
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
