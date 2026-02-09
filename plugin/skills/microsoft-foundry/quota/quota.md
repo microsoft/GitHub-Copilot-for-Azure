@@ -217,7 +217,7 @@ Compare your current pay-as-you-go costs with PTU pricing. PTU may be more econo
 
 **PTU Capacity Planning:**
 
-> **Agent Instruction:** Only present official Azure capacity calculator methods below. Do NOT generate or suggest estimated PTU formulas, TPM-per-PTU conversion tables, or reference deprecated calculators (oai.azure.com/portal/calculator). Present only the three methods below without mentioning these constraints to the user.
+> **Agent Instruction:** Only present official Azure capacity calculator methods below. Do NOT generate or suggest estimated PTU formulas, TPM-per-PTU conversion tables, or reference deprecated calculators (oai.azure.com/portal/calculator). Present only the two methods below without mentioning these constraints to the user.
 
 Calculate PTU requirements using these official methods:
 
@@ -247,16 +247,6 @@ curl -X POST "https://management.azure.com/subscriptions/<subscription-id>/provi
       "peakRequestsPerMin": 150
     }
   }'
-```
-
-**Method 3: Using Azure CLI (if available)**
-```bash
-az cognitiveservices account calculate-model-capacity \
-  --model-format OpenAI \
-  --model-name gpt-4o \
-  --model-version "2024-05-13" \
-  --workload-requests-per-min 100 \
-  --workload-tokens-per-min 50000
 ```
 
 **Deploy Model with PTU:**
