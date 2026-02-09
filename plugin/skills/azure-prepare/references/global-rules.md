@@ -38,5 +38,3 @@ ask_user(
 ⛔ **ALWAYS use `ask_user`** to confirm:
 - Azure subscription (show actual name and ID)
 - Azure region/location
-
-See [pre-deploy-checklist](../azure-deploy/references/pre-deploy-checklist.md).

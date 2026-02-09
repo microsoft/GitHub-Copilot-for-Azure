@@ -24,7 +24,7 @@ Activate this skill when user wants to:
 1. Run after azure-prepare and azure-validate
 2. Manifest must exist with status `Validated`
 3. **Pre-deploy checklist required** — [pre-deploy-checklist](references/pre-deploy-checklist.md)
-4. ⛔ **Destructive actions require `ask_user`** — [global-rules](../_shared/global-rules.md)
+4. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
 
 ---
 

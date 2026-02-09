@@ -18,7 +18,7 @@ description: "**CRITICAL**: Run azure-validate before deploying Azure resources.
 
 1. Run after azure-prepare, before azure-deploy
 2. All checks must pass—do not deploy with failures
-3. ⛔ **Destructive actions require `ask_user`** — [global-rules](../_shared/global-rules.md)
+3. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
 
 ## Steps
 
