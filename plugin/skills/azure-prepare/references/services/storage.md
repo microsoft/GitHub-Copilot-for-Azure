@@ -137,35 +137,122 @@ resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-0
 
 ## Connection Patterns
 
-### Node.js
+### SDK Packages
+
+| Language | Blob | Queue | File Share | Data Lake |
+|----------|------|-------|------------|-----------|
+| .NET | `Azure.Storage.Blobs` | `Azure.Storage.Queues` | `Azure.Storage.Files.Shares` | `Azure.Storage.Files.DataLake` |
+| Java | `azure-storage-blob` | `azure-storage-queue` | `azure-storage-file-share` | `azure-storage-file-datalake` |
+| JavaScript | `@azure/storage-blob` | `@azure/storage-queue` | `@azure/storage-file-share` | `@azure/storage-file-datalake` |
+| Python | `azure-storage-blob` | `azure-storage-queue` | `azure-storage-file-share` | `azure-storage-file-datalake` |
+| Go | `azblob` | `azqueue` | `azfile` | `azdatalake` |
+| Rust | `azure_storage_blob` | `azure_storage_queue` | - | - |
+
+### JavaScript
 
 ```javascript
-const { BlobServiceClient } = require("@azure/storage-blob");
+import { DefaultAzureCredential } from "@azure/identity";
+import { BlobServiceClient } from "@azure/storage-blob";
 
-const blobServiceClient = BlobServiceClient.fromConnectionString(
-  process.env.AZURE_STORAGE_CONNECTION_STRING
+const client = new BlobServiceClient(
+    `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net`,
+    new DefaultAzureCredential()
 );
-const containerClient = blobServiceClient.getContainerClient("uploads");
+const container = client.getContainerClient("uploads");
+const blob = container.getBlockBlobClient("my-file.txt");
+await blob.uploadData(Buffer.from("Hello, Azure Storage!"));
 ```
 
 ### Python
 
 ```python
+import os
+from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 
-blob_service_client = BlobServiceClient.from_connection_string(
-    os.environ["AZURE_STORAGE_CONNECTION_STRING"]
+service = BlobServiceClient(
+    account_url=f"https://{os.environ['AZURE_STORAGE_ACCOUNT']}.blob.core.windows.net",
+    credential=DefaultAzureCredential()
 )
-container_client = blob_service_client.get_container_client("uploads")
+container = service.get_container_client("uploads")
+blob = container.get_blob_client("my-file.txt")
+blob.upload_blob(b"Hello, Azure Storage!", overwrite=True)
 ```
 
-### .NET
+### C#
 
 ```csharp
-var blobServiceClient = new BlobServiceClient(
-    Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING")
+using Azure.Identity;
+using Azure.Storage.Blobs;
+
+var accountName = Environment.GetEnvironmentVariable("AZURE_STORAGE_ACCOUNT");
+var client = new BlobServiceClient(
+    new Uri($"https://{accountName}.blob.core.windows.net"),
+    new DefaultAzureCredential()
 );
-var containerClient = blobServiceClient.GetBlobContainerClient("uploads");
+var container = client.GetBlobContainerClient("uploads");
+var blob = container.GetBlobClient("my-file.txt");
+await blob.UploadAsync(BinaryData.FromString("Hello, Azure Storage!"), overwrite: true);
+```
+
+### Java
+
+```java
+import com.azure.identity.*;
+import com.azure.storage.blob.*;
+import com.azure.core.util.BinaryData;
+
+BlobServiceClient client = new BlobServiceClientBuilder()
+    .endpoint("https://" + System.getenv("AZURE_STORAGE_ACCOUNT") + ".blob.core.windows.net")
+    .credential(new DefaultAzureCredentialBuilder().build())
+    .buildClient();
+BlobContainerClient container = client.getBlobContainerClient("uploads");
+BlobClient blob = container.getBlobClient("my-file.txt");
+blob.upload(BinaryData.fromString("Hello, Azure Storage!"), true);
+```
+
+### Go
+
+```go
+package main
+
+import (
+    "context"
+    "os"
+
+    "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+    "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+)
+
+func main() {
+    cred, _ := azidentity.NewDefaultAzureCredential(nil)
+    client, _ := azblob.NewClient(
+        "https://"+os.Getenv("AZURE_STORAGE_ACCOUNT")+".blob.core.windows.net",
+        cred, nil,
+    )
+    data := []byte("Hello, Azure Storage!")
+    _, _ = client.UploadBuffer(context.Background(), "uploads", "my-file.txt", data, nil)
+}
+```
+
+### Rust
+
+Note: Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+
+```rust
+use azure_identity::DeveloperToolsCredential;
+use azure_storage_blob::{BlobClient, BlobClientOptions};
+
+let credential = DeveloperToolsCredential::new(None)?;
+let blob_client = BlobClient::new(
+    &format!("https://{}.blob.core.windows.net/", std::env::var("AZURE_STORAGE_ACCOUNT")?),
+    "uploads",
+    "my-file.txt",
+    Some(credential),
+    Some(BlobClientOptions::default()),
+)?;
+let data = b"Hello, Azure Storage!";
+blob_client.upload(None, data.to_vec().into()).await?;
 ```
 
 ## Managed Identity Access
