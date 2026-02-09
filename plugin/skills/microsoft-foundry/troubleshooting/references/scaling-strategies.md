@@ -4,7 +4,9 @@ Choose appropriate scaling strategy based on diagnosis.
 
 ## Option A: Scale Deployment Capacity (Within Existing Quota)
 
-If you have available regional quota, scale your deployment directly. **Note:** Azure CLI doesn't have a deployment `update` command - use REST API instead.
+If you have available regional quota, scale your deployment directly.
+
+**Note:** Currently, there is no direct Azure CLI command or MCP tool to update deployment capacity. Use the REST API as shown below. An MCP tool for deployment updates may be added in the future.
 
 **Via REST API:**
 ```bash
@@ -74,6 +76,18 @@ az cognitiveservices account deployment show \
 For sustained high usage:
 
 1. **Check current limits:**
+
+   **Using MCP Tools (Preferred):**
+
+   Use `mcp__plugin_azure_azure__quota` MCP tool with command `quota_usage_check`:
+   - Parameters:
+     - `region`: Region to check (e.g., "eastus2")
+     - `resource-types`: "Microsoft.CognitiveServices/accounts"
+   - Filter results for specific model (e.g., "gpt-5.1")
+
+   **If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
+
+   **CLI Fallback:**
    ```bash
    # Check regional quota for specific model
    az cognitiveservices usage list \

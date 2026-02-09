@@ -7,7 +7,9 @@
 3. **Test at scale** - Load test before production launch
 4. **Set up alerts** - Alert at 70-80% quota usage
 
-**Sample alert:**
+**Sample alert (infrastructure setup):**
+
+Use Azure CLI for one-time infrastructure configuration:
 ```bash
 az monitor metrics alert create \
   --name "High-Rate-Limit-Errors" \
