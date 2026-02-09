@@ -19,16 +19,13 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **agent/create** | Creating a custom GitHub Copilot hosted agent with your own skills for deployment to Azure AI Foundry. Use when building new agents from custom skills. | [agent/create/create-ghcp-agent.md](agent/create/create-ghcp-agent.md) |
 | **agent/deploy** | Deploying Python-based agent-framework agents to Azure AI Foundry as hosted, managed services. Use when you have an agent ready to deploy. | [agent/deploy/deploy-agent.md](agent/deploy/deploy-agent.md) |
-| **models/deploy/deploy-model-optimal-region** | Intelligently deploying Azure OpenAI models to optimal regions by analyzing capacity across all available regions. Use when deploying models where region availability and capacity matter. Automatically checks current region first and shows alternatives if needed. | [models/deploy/deploy-model-optimal-region/SKILL.md](models/deploy/deploy-model-optimal-region/SKILL.md) |
-| **models/deploy/customize-deployment** | Interactive guided deployment with full customization control: step-by-step selection of model version, SKU (GlobalStandard/Standard/ProvisionedManaged), capacity, RAI policy (content filter), and advanced options (dynamic quota, priority processing, spillover). Use when you need precise control over all deployment configuration aspects. | [models/deploy/customize-deployment/SKILL.md](models/deploy/customize-deployment/SKILL.md) |
+| **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
 > 💡 **Tip:** For a complete onboarding flow: `project/create` → `agent/create` → `agent/deploy`. If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
 
-> 💡 **Model Deployment Flow Selection:**
-> - **Quick deployment to optimal region**: Use `models/deploy/deploy-model-optimal-region` for automatic region selection and quick setup with defaults
-> - **Customized deployment with full control**: Use `models/deploy/customize-deployment` for step-by-step guided configuration of version, SKU, capacity, RAI policy, and advanced options
+> 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
 ## When to Use This Skill
 

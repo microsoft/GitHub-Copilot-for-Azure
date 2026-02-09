@@ -1,4 +1,4 @@
-# Examples: deploy-model-optimal-region
+# Examples: preset
 
 Real-world scenarios demonstrating different workflows through the skill.
 
