@@ -555,6 +555,19 @@ echo "SKU: GlobalStandard"
 echo "Capacity: $(format_capacity $DEPLOY_CAPACITY)"
 echo "Endpoint: $ENDPOINT"
 echo ""
+
+# Generate direct link to deployment in Azure AI Foundry portal
+DEPLOYMENT_URL=$(bash "$(dirname "$0")/scripts/generate_deployment_url.sh" \
+  --subscription "$SUBSCRIPTION_ID" \
+  --resource-group "$RESOURCE_GROUP" \
+  --foundry-resource "$ACCOUNT_NAME" \
+  --project "$PROJECT_NAME" \
+  --deployment "$DEPLOYMENT_NAME")
+
+echo "🔗 View in Azure AI Foundry Portal:"
+echo ""
+echo "$DEPLOYMENT_URL"
+echo ""
 echo "═══════════════════════════════════════════"
 echo ""
 
@@ -574,7 +587,7 @@ echo "  --output table"
 echo ""
 
 echo "Next steps:"
-echo "• Test in Azure AI Foundry playground"
+echo "• Click the link above to test in Azure AI Foundry playground"
 echo "• Integrate into your application"
 echo "• Set up monitoring and alerts"
 ```
