@@ -1,6 +1,6 @@
-# Customize-Deployment Examples
+# customize Examples
 
-This document provides walkthrough examples for common deployment scenarios using the customize-deployment skill.
+This document provides walkthrough examples for common deployment scenarios using the customize skill.
 
 ## Table of Contents
 
@@ -598,7 +598,7 @@ Error: QuotaExceeded - Insufficient quota for requested capacity
 
 3. Try different SKU (e.g., Standard instead of GlobalStandard)
 
-4. Check other regions with deploy-model-optimal-region skill
+4. Check other regions with preset skill
 ```
 
 ### Scenario: Can't Select Specific Version

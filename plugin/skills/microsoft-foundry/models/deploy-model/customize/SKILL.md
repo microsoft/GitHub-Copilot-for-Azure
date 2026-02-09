@@ -1,7 +1,7 @@
 ---
-name: customize-deployment
+name: customize
 description: |
-  Interactive guided deployment flow for Azure OpenAI models with full customization control. Step-by-step selection of model version, SKU (GlobalStandard/Standard/ProvisionedManaged), capacity, RAI policy (content filter), and advanced options (dynamic quota, priority processing, spillover). USE FOR: custom deployment, customize model deployment, choose version, select SKU, set capacity, configure content filter, RAI policy, deployment options, detailed deployment, advanced deployment, PTU deployment, provisioned throughput. DO NOT USE FOR: quick deployment to optimal region (use deploy-model-optimal-region).
+  Interactive guided deployment flow for Azure OpenAI models with full customization control. Step-by-step selection of model version, SKU (GlobalStandard/Standard/ProvisionedManaged), capacity, RAI policy (content filter), and advanced options (dynamic quota, priority processing, spillover). USE FOR: custom deployment, customize model deployment, choose version, select SKU, set capacity, configure content filter, RAI policy, deployment options, detailed deployment, advanced deployment, PTU deployment, provisioned throughput. DO NOT USE FOR: quick deployment to optimal region (use preset).
 ---
 
 # Customize Model Deployment
@@ -30,11 +30,11 @@ Use this skill when you need **precise control** over deployment configuration:
 - ✅ **Enable advanced features** (dynamic quota, priority processing, spillover)
 - ✅ **PTU deployments** (Provisioned Throughput Units)
 
-**Alternative:** Use `deploy-model-optimal-region` for quick deployment to the best available region with automatic configuration.
+**Alternative:** Use `preset` for quick deployment to the best available region with automatic configuration.
 
-### Comparison: customize-deployment vs deploy-model-optimal-region
+### Comparison: customize vs preset
 
-| Feature | customize-deployment | deploy-model-optimal-region |
+| Feature | customize | preset |
 |---------|---------------------|----------------------------|
 | **Focus** | Full customization control | Optimal region selection |
 | **Version Selection** | User chooses from available | Uses latest automatically |
@@ -1122,7 +1122,7 @@ az cognitiveservices account deployment create \
 
 ## Related Skills
 
-- **deploy-model-optimal-region** - Quick deployment to best region with automatic configuration
+- **preset** - Quick deployment to best region with automatic configuration
 - **microsoft-foundry** - Parent skill for all Azure AI Foundry operations
 - **quota** - Manage quotas and capacity
 - **rbac** - Manage permissions and access control
