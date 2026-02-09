@@ -110,9 +110,21 @@ if (config.requiresPattern && extraArgs.length > 0) {
 } else if (config.optionalPattern && extraArgs.length > 0 && !extraArgs[0].startsWith("-")) {
     const skillPattern = extraArgs[0];
     const remaining = extraArgs.slice(1);
-    // If there's a second positional arg (not a flag), use it as --testNamePattern
+    // Collect all consecutive positional args (non-flag) into a single --testNamePattern value
     if (remaining.length > 0 && !remaining[0].startsWith("-")) {
-        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern=${remaining[0]}`, ...remaining.slice(1)];
+        const positionalArgs = [];
+        const flagArgs = [];
+        let foundFlag = false;
+        for (const arg of remaining) {
+            if (arg.startsWith("-") || foundFlag) {
+                foundFlag = true;
+                flagArgs.push(arg);
+            } else {
+                positionalArgs.push(arg);
+            }
+        }
+        const testNamePattern = positionalArgs.join(" ");
+        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern="${testNamePattern}"`, ...flagArgs];
     } else {
         jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, ...remaining];
     }
