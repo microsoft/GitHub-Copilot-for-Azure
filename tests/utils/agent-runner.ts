@@ -622,9 +622,198 @@ function getTestName(): string {
  */
 function sanitizeFileName(name: string): string {
   return name
-    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
+    .replace(/[<>:"\/\\|?*]/g, "-") // Replace invalid chars
     .replace(/\s+/g, "_")           // Replace spaces with underscores
     .replace(/-+/g, "-")            // Collapse multiple dashes
     .replace(/_+/g, "_")            // Collapse multiple underscores
     .substring(0, 200);             // Limit length
+}
+
+// ─── Multi-turn conversation support ─────────────────────────────────────────
+
+export interface ConversationPrompt {
+  prompt: string;
+  label?: string;
+}
+
+export interface ConversationConfig {
+  setup?: (workspace: string) => Promise<void>;
+  prompts: ConversationPrompt[];
+  nonInteractive?: boolean;
+  preserveWorkspace?: boolean;
+  systemPrompt?: {
+    mode: "append" | "replace";
+    content: string;
+  };
+  /** Maximum total LLM turns across all prompts. Session aborts if exceeded. */
+  maxTurns?: number;
+  /** Maximum `azd up` invocations across all prompts. Session aborts if exceeded. */
+  maxDeployAttempts?: number;
+}
+
+export interface ConversationResult {
+  /** Per-prompt metadata (events collected between session.idle boundaries) */
+  turns: AgentMetadata[];
+  /** All events merged across all turns */
+  aggregate: AgentMetadata;
+  /** Workspace path — preserved when config.preserveWorkspace is true */
+  workspace: string;
+}
+
+/**
+ * Count occurrences of a tool being called across events
+ */
+function countToolCalls(events: SessionEvent[], toolName: string): number {
+  return events.filter(
+    e => e.type === "tool.execution_start" && e.data.toolName === toolName
+  ).length;
+}
+
+/**
+ * Count LLM turns (assistant messages) across events
+ */
+function countLlmTurns(events: SessionEvent[]): number {
+  return events.filter(
+    e => e.type === "assistant.message" || e.type === "assistant.message_delta"
+  ).reduce((ids, e) => {
+    const id = e.data.messageId as string | undefined;
+    if (id) ids.add(id);
+    return ids;
+  }, new Set<string>()).size;
+}
+
+/**
+ * Run a multi-turn conversation within a single agent session.
+ *
+ * Sends each prompt sequentially, waits for session.idle between turns,
+ * and collects per-turn + aggregate AgentMetadata. Supports limits on
+ * total LLM turns and azd deploy attempts.
+ */
+export async function runConversation(config: ConversationConfig): Promise<ConversationResult> {
+  if (config.prompts.length === 0) {
+    throw new Error("runConversation requires at least one prompt");
+  }
+
+  const CopilotClient = await getCopilotClient();
+  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+
+  let client: CopilotClient | undefined;
+  let session: CopilotSession | undefined;
+
+  const turns: AgentMetadata[] = [];
+  const aggregate: AgentMetadata = { events: [] };
+
+  try {
+    if (config.setup) {
+      await config.setup(testWorkspace);
+    }
+
+    const cliArgs: string[] = config.nonInteractive ? ["-p", "--yolo"] : [];
+    if (process.env.DEBUG) {
+      cliArgs.push("--log-dir");
+      cliArgs.push(buildLogFilePath());
+    }
+
+    client = new CopilotClient!({
+      logLevel: process.env.DEBUG ? "all" : "error",
+      cwd: testWorkspace,
+      cliArgs: cliArgs,
+    }) as CopilotClient;
+
+    const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
+
+    session = await client.createSession({
+      model: "claude-sonnet-4.5",
+      skillDirectories: [skillDirectory],
+      mcpServers: {
+        azure: {
+          type: "stdio",
+          command: "npx",
+          args: ["-y", "@azure/mcp", "server", "start"],
+          tools: ["*"]
+        }
+      },
+      systemMessage: config.systemPrompt
+    });
+
+    let aborted = false;
+
+    for (let i = 0; i < config.prompts.length; i++) {
+      if (aborted) break;
+
+      const turnMetadata: AgentMetadata = { events: [] };
+      const promptEntry = config.prompts[i];
+      const label = promptEntry.label ?? `Turn ${i + 1}`;
+
+      if (process.env.DEBUG) {
+        console.log(`\n=== ${label}: "${promptEntry.prompt.substring(0, 80)}..."`);
+      }
+
+      const done = new Promise<void>((resolve) => {
+        session!.on(async (event: SessionEvent) => {
+          if (process.env.DEBUG) {
+            console.log(`=== [${label}] session event ${event.type}`);
+          }
+
+          if (event.type === "session.idle") {
+            resolve();
+            return;
+          }
+
+          turnMetadata.events.push(event);
+          aggregate.events.push(event);
+
+          // Check turn limits
+          if (config.maxTurns && countLlmTurns(aggregate.events) > config.maxTurns) {
+            console.warn(`⚠️  Max LLM turns (${config.maxTurns}) exceeded — aborting`);
+            aborted = true;
+            resolve();
+            void session!.abort();
+            return;
+          }
+
+          // Check deploy attempt limits (azd up / azd deploy / azd provision)
+          if (config.maxDeployAttempts) {
+            const azdCalls = aggregate.events.filter(
+              e => e.type === "tool.execution_start" &&
+                JSON.stringify(e.data.arguments ?? {}).match(/azd\s+(up|deploy|provision)/i)
+            ).length;
+            if (azdCalls > config.maxDeployAttempts) {
+              console.warn(`⚠️  Max deploy attempts (${config.maxDeployAttempts}) exceeded — aborting`);
+              aborted = true;
+              resolve();
+              void session!.abort();
+              return;
+            }
+          }
+        });
+      });
+
+      await session.send({ prompt: promptEntry.prompt });
+      await done;
+
+      turns.push(turnMetadata);
+
+      if (process.env.DEBUG) {
+        console.log(`=== [${label}] completed with ${turnMetadata.events.length} events`);
+      }
+    }
+
+    return { turns, aggregate, workspace: testWorkspace };
+  } catch (error) {
+    console.error("Conversation runner error:", error);
+    throw error;
+  } finally {
+    try {
+      if (session) await session.destroy();
+    } catch { /* ignore */ }
+    try {
+      if (client) await client.stop();
+    } catch { /* ignore */ }
+    try {
+      if (!config.preserveWorkspace) {
+        fs.rmSync(testWorkspace, { recursive: true, force: true });
+      }
+    } catch { /* ignore */ }
+  }
 }
