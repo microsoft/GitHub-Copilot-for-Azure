@@ -122,6 +122,7 @@ if (config.requiresPattern && extraArgs.length > 0) {
 
 console.log(`Running ${config.description}${isCI ? " (CI mode)" : ""}...`);
 console.log(`jest ${jestArgs.join(" ")}\n`);
+console.log("Env:NODE_OPTIONS", process.env.NODE_OPTIONS);
 
 // Set NODE_OPTIONS for ESM support (append to existing if present)
 const existingNodeOptions = process.env.NODE_OPTIONS || "";
