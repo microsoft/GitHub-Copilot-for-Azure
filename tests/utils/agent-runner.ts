@@ -332,9 +332,9 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
     // Send follow-up prompts
     for (const followUpPrompt of config.followUp ?? []) {
       isComplete = false;
-      await session.sendAndWait({ prompt: followUpPrompt });
+      await session.sendAndWait({ prompt: followUpPrompt }, 1800000);
     }
-
+    
     // Generate markdown report
     writeMarkdownReport(config, agentMetadata);
 

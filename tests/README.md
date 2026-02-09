@@ -183,6 +183,7 @@ npm install
 | `npm run test:integration` | Run integration tests (requires Copilot CLI auth, az auth, azd auth) |
 | `npm run test:integration -- azure-deploy` | Run integration tests for a specific skill |
 | `npm run test:integration -- azure-deploy static-web-apps-deploy` | Run integration tests for a specific describe group |
+| `npm run test:integration -- azure-deploy "creates simple containerized Node.js"` | Run a specific test |
 | `npm run test:skill -- azure-ai` | Run all tests for a specific skill |
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
 | `npm run test:watch` | Re-run tests on file changes |

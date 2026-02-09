@@ -112,7 +112,7 @@ if (config.requiresPattern && extraArgs.length > 0) {
     const remaining = extraArgs.slice(1);
     // If there's a second positional arg (not a flag), use it as --testNamePattern
     if (remaining.length > 0 && !remaining[0].startsWith("-")) {
-        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern=${remaining[0]}`, ...remaining.slice(1)];
+        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
     } else {
         jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, ...remaining];
     }
