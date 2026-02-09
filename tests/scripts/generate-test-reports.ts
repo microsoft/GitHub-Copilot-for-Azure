@@ -3,7 +3,9 @@
 /**
  * Test Reports Generator
  * 
- * Reads all markdown files in each subdirectory and generates ONE consolidated report per subdirectory.
+ * Reads all markdown files in each subdirectory and generates:
+ * 1. ONE consolidated report per subdirectory
+ * 2. ONE master report combining all subdirectory reports (if multiple reports exist)
  * 
  * Usage:
  *   npm run reports              # Process most recent test run
@@ -21,6 +23,12 @@ const __dirname = path.dirname(__filename);
 const REPORTS_PATH = path.resolve(__dirname, "../reports");
 const TEMPLATE_PATH = path.resolve(__dirname, "report-template.md");
 
+// Constants
+const TEST_RUN_PREFIX = "test-run-";
+const REPORT_SUFFIX = "-report.md";
+const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
+const MASTER_REPORT_SUFFIX = "-MASTER-REPORT.md";
+
 /**
  * Get the most recent test run directory
  */
@@ -28,7 +36,7 @@ function getMostRecentTestRun(): string | undefined {
   const entries = fs.readdirSync(REPORTS_PATH, { withFileTypes: true });
 
   const testRuns = entries
-    .filter(entry => entry.isDirectory() && entry.name.startsWith("test-run-"))
+    .filter(entry => entry.isDirectory() && entry.name.startsWith(TEST_RUN_PREFIX))
     .map(entry => entry.name)
     .sort()
     .reverse();
@@ -39,7 +47,7 @@ function getMostRecentTestRun(): string | undefined {
 /**
  * Process a single subdirectory - generate ONE consolidated report for all .md files in it
  */
-async function processSubdirectory(subdirPath: string, reportTemplate: string): Promise<void> {
+async function processSubdirectory(subdirPath: string, reportTemplate: string): Promise<string | null> {
   const subdirName = path.basename(subdirPath);
   
   // Find all markdown files in this subdirectory (non-recursive)
@@ -47,14 +55,14 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string): 
   const entries = fs.readdirSync(subdirPath, { withFileTypes: true });
   
   for (const entry of entries) {
-    if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.endsWith("-report.md")) {
+    if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.endsWith(REPORT_SUFFIX)) {
       markdownFiles.push(path.join(subdirPath, entry.name));
     }
   }
 
   if (markdownFiles.length === 0) {
     console.log(`  ⚠️  No markdown files found in ${subdirName}, skipping...`);
-    return;
+    return null;
   }
 
   console.log(`\n  Processing: ${subdirName} (${markdownFiles.length} file(s))`);
@@ -104,11 +112,79 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   }
 
   // Save the consolidated report in the subdirectory
-  const outputPath = path.join(subdirPath, `${subdirName}-consolidated-report.md`);
+  const outputPath = path.join(subdirPath, `${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
   
-  console.log(`    ✅ Generated: ${subdirName}-consolidated-report.md`);
+  console.log(`    ✅ Generated: ${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
+  
+  return outputPath;
+}
+
+/**
+ * Generate a master consolidated report from all subdirectory reports
+ */
+async function generateMasterReport(reportPaths: string[], runPath: string, runName: string): Promise<void> {
+  console.log(`\n\n📊 Generating master consolidated report from ${reportPaths.length} subdirectory reports...\n`);
+
+  // Read all generated reports
+  let allReportsContent = "";
+  for (const reportPath of reportPaths) {
+    const subdirName = path.basename(path.dirname(reportPath));
+    const content = fs.readFileSync(reportPath, "utf-8");
+    
+    console.log(`  Reading: ${subdirName} report...`);
+    
+    allReportsContent += `\n# ${subdirName}\n\n${content}\n\n---\n\n`;
+  }
+
+  console.log(`\n  Generating master report...`);
+
+  // Use agent runner to generate master consolidated report
+  const config = {
+    prompt: `You are a master test report aggregator. You will receive multiple test reports and combine them into one comprehensive summary.
+
+CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
+
+## Your Task
+
+Create a master consolidated report that combines all the individual subdirectory reports below. The report should:
+
+1. **Overall Summary Section**: Aggregate total results across all reports (total tests, pass/fail counts, success rate)
+2. **Structure**: Follow a similar markdown structure to the individual reports
+3. **High-Level Findings**: Include any warnings, errors, or important findings across all reports (no need for specific test details)
+4. **Token Usage**: Aggregate and report total token usage across all reports
+5. **Subdirectory Breakdown**: Brief summary of results per subdirectory/skill area
+
+Be concise but comprehensive. Focus on the big picture and actionable insights.
+
+---
+
+## Individual Subdirectory Reports
+
+${allReportsContent}
+
+---
+
+OUTPUT THE MASTER REPORT NOW (starting with the # heading):`
+  };
+
+  const agentMetadata = await run(config);
+
+  // Extract assistant messages from events
+  const assistantMessages: string[] = [];
+  for (const event of agentMetadata.events) {
+    if (event.type === "assistant.message" && event.data.content) {
+      assistantMessages.push(event.data.content as string);
+    }
+  }
+
+  // Save the master report at the root of the test run
+  const outputPath = path.join(runPath, `${runName}${MASTER_REPORT_SUFFIX}`);
+  const reportContent = assistantMessages.join("\n\n");
+  fs.writeFileSync(outputPath, reportContent, "utf-8");
+  
+  console.log(`\n  ✅ Generated master report: ${runName}${MASTER_REPORT_SUFFIX}`);
 }
 
 /**
@@ -128,6 +204,12 @@ async function processTestRun(runPath: string): Promise<void> {
   const runName = path.basename(runPath);
   console.log(`\nProcessing test run: ${runName}\n`);
 
+  // Validate template exists
+  if (!fs.existsSync(TEMPLATE_PATH)) {
+    console.error(`Error: Template not found at ${TEMPLATE_PATH}`);
+    process.exit(1);
+  }
+
   // Load the report template once
   const reportTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
 
@@ -144,14 +226,25 @@ async function processTestRun(runPath: string): Promise<void> {
 
   console.log(`Found ${subdirectories.length} subdirectorie(s)\n`);
 
-  // Process each subdirectory
-  let reportCount = 0;
+  // Process each subdirectory and collect report paths
+  const generatedReports: string[] = [];
   for (const subdir of subdirectories) {
-    await processSubdirectory(subdir, reportTemplate);
-    reportCount++;
+    const reportPath = await processSubdirectory(subdir, reportTemplate);
+    if (reportPath) {
+      generatedReports.push(reportPath);
+    }
   }
 
-  console.log(`\n✅ Processed ${reportCount} subdirectorie(s)`);
+  console.log(`\n✅ Processed ${generatedReports.length} subdirectorie(s)`);
+
+  // Generate master report if there are multiple reports
+  if (generatedReports.length > 1) {
+    await generateMasterReport(generatedReports, runPath, runName);
+    console.log("\n✅ Master report generated!");
+  } else if (generatedReports.length === 1) {
+    console.log("\n(Only one report generated, skipping master report)");
+  }
+
   console.log("\nReport generation complete.");
 }
 
