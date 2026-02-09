@@ -935,11 +935,26 @@ if ($deploymentDetails.rateLimits) {
 
 Write-Output "Endpoint: $endpoint"
 Write-Output ""
+
+# Generate direct link to deployment in Azure AI Foundry portal
+$scriptPath = Join-Path (Split-Path $PSCommandPath) "scripts\generate_deployment_url.ps1"
+$deploymentUrl = & $scriptPath `
+  -SubscriptionId $SUBSCRIPTION_ID `
+  -ResourceGroup $RESOURCE_GROUP `
+  -FoundryResource $ACCOUNT_NAME `
+  -ProjectName $PROJECT_NAME `
+  -DeploymentName $DEPLOYMENT_NAME
+
+Write-Output ""
+Write-Output "🔗 View in Azure AI Foundry Portal:"
+Write-Output ""
+Write-Output $deploymentUrl
+Write-Output ""
 Write-Output "═══════════════════════════════════════════"
 Write-Output ""
 
 Write-Output "Next steps:"
-Write-Output "• Test in Azure AI Foundry playground"
+Write-Output "• Click the link above to test in Azure AI Foundry playground"
 Write-Output "• Integrate into your application"
 Write-Output "• Monitor usage and performance"
 ```
