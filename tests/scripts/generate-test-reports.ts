@@ -15,7 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { run } from "../utils/agent-runner";
+import { run, TestConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,11 +49,11 @@ function getMostRecentTestRun(): string | undefined {
  */
 async function processSubdirectory(subdirPath: string, reportTemplate: string): Promise<string | null> {
   const subdirName = path.basename(subdirPath);
-  
+
   // Find all markdown files in this subdirectory (non-recursive)
   const markdownFiles: string[] = [];
   const entries = fs.readdirSync(subdirPath, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.endsWith(REPORT_SUFFIX)) {
       markdownFiles.push(path.join(subdirPath, entry.name));
@@ -72,16 +72,16 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string): 
   for (const mdFile of markdownFiles) {
     const fileName = path.basename(mdFile, ".md");
     const content = fs.readFileSync(mdFile, "utf-8");
-    
+
     console.log(`    Reading: ${fileName}...`);
-    
+
     consolidatedContent += `\n## ${fileName}\n\n${content}\n`;
   }
 
-  console.log("    Generating report..."); 
+  console.log("    Generating report...");
 
   // Use agent runner to generate consolidated report for this subdirectory
-  const config = {
+  const config: TestConfig = {
     prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
@@ -115,9 +115,9 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   const outputPath = path.join(subdirPath, `${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
-  
+
   console.log(`    ✅ Generated: ${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
-  
+
   return outputPath;
 }
 
@@ -132,9 +132,9 @@ async function generateMasterReport(reportPaths: string[], runPath: string, runN
   for (const reportPath of reportPaths) {
     const subdirName = path.basename(path.dirname(reportPath));
     const content = fs.readFileSync(reportPath, "utf-8");
-    
+
     console.log(`  Reading: ${subdirName} report...`);
-    
+
     allReportsContent += `\n# ${subdirName}\n\n${content}\n\n---\n\n`;
   }
 
@@ -183,7 +183,7 @@ OUTPUT THE MASTER REPORT NOW (starting with the # heading):`
   const outputPath = path.join(runPath, `${runName}${MASTER_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
-  
+
   console.log(`\n  ✅ Generated master report: ${runName}${MASTER_REPORT_SUFFIX}`);
 }
 
