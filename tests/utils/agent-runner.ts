@@ -335,7 +335,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       isComplete = false;
       await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
     }
-
+    
     // Generate markdown report
     writeMarkdownReport(config, agentMetadata);
 
