@@ -206,3 +206,73 @@ module.exports = df.orchestrator(function* (context) {
     return result2;
 });
 ```
+
+## AZD Deployment Requirements
+
+When creating Azure Functions with azd deployment, ensure the following:
+
+### 1. Consistent Service Naming
+
+**CRITICAL**: Service names must be consistent across all deployment files.
+
+- The service name in `azure.yaml` must match the `serviceName` parameter in Bicep
+- The Bicep module must tag the Function App with `azd-service-name: serviceName`
+- Common pattern: use `api` as the service name for Function apps
+
+**Example:**
+
+`azure.yaml`:
+```yaml
+services:
+  api:                    # Service name
+    host: function
+    project: ./src/api
+```
+
+`infra/main.bicep`:
+```bicep
+module functionApp './modules/function-app.bicep' = {
+  params: {
+    serviceName: 'api'    // Must match azure.yaml service name
+    // ...
+  }
+}
+```
+
+`infra/modules/function-app.bicep`:
+```bicep
+param serviceName string
+
+resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
+  name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
+  tags: union(tags, { 'azd-service-name': serviceName })  # Required tag
+  // ...
+}
+```
+
+### 2. Always Create main.parameters.json
+
+**CRITICAL**: Generate `main.parameters.json` to map Bicep parameters to azd environment variables.
+
+Minimum required mappings:
+```json
+{
+  "$schema": "https://json.schemastore.org/bicep-parameters.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    }
+  }
+}
+```
+
+### 3. Pre-Deployment Verification
+
+Before running `azd up`, verify:
+- [ ] `azure.yaml` service names align with Bicep `azd-service-name` tags
+- [ ] `infra/main.parameters.json` exists with required parameter mappings
+- [ ] All required Bicep parameters have corresponding mappings

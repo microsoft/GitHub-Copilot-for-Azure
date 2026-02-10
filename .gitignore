@@ -401,7 +401,6 @@ FodyWeavers.xsd
 scripts/node_modules/
 scripts/dist/
 scripts/coverage/
-scripts/package-lock.json
 token-metadata.json
 __test_fixtures__/
 __test_fixtures_*__/
@@ -413,3 +412,6 @@ skill-invocation-test-summary.md
 
 # Installed plugin copies (created by /plugin install)
 plugin/azure/
+
+# Test reports
+tests/reports/

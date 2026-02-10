@@ -1,0 +1,7 @@
+{
+  "name": "swa-test-static-root",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/copy-to-public.js"
+  }
+}

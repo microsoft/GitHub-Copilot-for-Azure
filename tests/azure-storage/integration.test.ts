@@ -46,8 +46,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-        } catch (e: any) {
-          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
           }
@@ -73,8 +73,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             successCount++;
           }
-        } catch (e: any) {
-          if (e.message?.includes("Failed to load @github/copilot-sdk")) {
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
           }
@@ -85,6 +85,33 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for storage tiers prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for storage tiers prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+
+    test("invokes azure-storage skill for blob SDK usage prompt", async () => {
+      let successCount = 0;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await run({
+            prompt: "How do I upload and download blobs from Azure Blob Storage in my application?"
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for blob SDK usage prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for blob SDK usage prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });

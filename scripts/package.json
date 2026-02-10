@@ -7,6 +7,7 @@
     "build": "tsc",
     "tokens": "node --import tsx src/tokens/cli.ts",
     "local": "node --import tsx src/local/cli.ts",
+    "references": "node --import tsx src/references/cli.ts",
     "verify-local": "node --import tsx src/verify-local.ts",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -20,6 +21,6 @@
     "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.19.0 || >=22.12.0"
   }
 }

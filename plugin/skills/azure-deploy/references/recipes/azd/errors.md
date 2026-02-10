@@ -1,16 +1,22 @@
 # AZD Errors
 
-| Error | Resolution |
-|-------|------------|
-| Not authenticated | `azd auth login` |
-| No environment | `azd env select <name>` |
-| Provision failed | Check Bicep errors in output |
-| Deploy failed | Check build/Docker errors |
-| Package failed | Verify Dockerfile and dependencies |
-| Quota exceeded | Request increase or change region |
+## Deployment Runtime Errors
+
+These errors occur **during** `azd up` execution:
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| `unknown flag: --location` | `azd up` doesn't accept `--location` | Use `azd env set AZURE_LOCATION <region>` before `azd up` |
+| Provision failed | Bicep template errors | Check detailed error in output |
+| Deploy failed | Build or Docker errors | Check build logs |
+| Package failed | Missing Dockerfile or deps | Verify Dockerfile exists and dependencies |
+| Quota exceeded | Subscription limits | Request increase or change region |
+
+> ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [pre-deploy-checklist.md](../../pre-deploy-checklist.md) and [azure-validate errors](../../../../azure-validate/references/recipes/azd/errors.md).
 
 ## Retry
 
+After fixing the issue:
 ```bash
 azd up --no-prompt
 ```

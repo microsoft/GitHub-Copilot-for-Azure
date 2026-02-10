@@ -4,9 +4,9 @@
  * Test isolated skill logic and validation rules.
  */
 
-import { loadSkill, LoadedSkill } from '../utils/skill-loader';
+import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = 'azure-role-selector';
+const SKILL_NAME = "azure-role-selector";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -15,109 +15,109 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     skill = await loadSkill(SKILL_NAME);
   });
 
-  describe('Skill Metadata', () => {
-    test('has valid SKILL.md with required fields', () => {
+  describe("Skill Metadata", () => {
+    test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
       expect(skill.metadata.name).toBe(SKILL_NAME);
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
 
-    test('description is concise and actionable', () => {
+    test("description is concise and actionable", () => {
       expect(skill.metadata.description.length).toBeGreaterThan(50);
       expect(skill.metadata.description.length).toBeLessThan(1024);
     });
 
-    test('description contains trigger phrases', () => {
+    test("description contains trigger phrases", () => {
       const description = skill.metadata.description.toLowerCase();
       const hasTriggerPhrases = 
-        description.includes('use for') ||
-        description.includes('use when') ||
-        description.includes('helps') ||
-        description.includes('activate') ||
-        description.includes('trigger');
+        description.includes("use for") ||
+        description.includes("use when") ||
+        description.includes("helps") ||
+        description.includes("activate") ||
+        description.includes("trigger");
       expect(hasTriggerPhrases).toBe(true);
     });
 
-    test('description contains anti-triggers', () => {
+    test("description contains anti-triggers", () => {
       const description = skill.metadata.description.toLowerCase();
       const hasAntiTriggers = 
-        description.includes('do not use for') ||
-        description.includes('not for') ||
-        description.includes('instead use');
+        description.includes("do not use for") ||
+        description.includes("not for") ||
+        description.includes("instead use");
       expect(hasAntiTriggers).toBe(true);
     });
   });
 
-  describe('Skill Content', () => {
-    test('has substantive content', () => {
+  describe("Skill Content", () => {
+    test("has substantive content", () => {
       expect(skill.content).toBeDefined();
       expect(skill.content.length).toBeGreaterThan(100);
     });
 
-    test('mentions azure documentation tool', () => {
-      expect(skill.content.toLowerCase()).toContain('azure__documentation');
+    test("mentions azure documentation tool", () => {
+      expect(skill.content.toLowerCase()).toContain("azure__documentation");
     });
 
-    test('mentions CLI generation', () => {
-      expect(skill.content.toLowerCase()).toContain('cli');
+    test("mentions CLI generation", () => {
+      expect(skill.content.toLowerCase()).toContain("cli");
     });
 
-    test('mentions Bicep', () => {
-      expect(skill.content.toLowerCase()).toContain('bicep');
+    test("mentions Bicep", () => {
+      expect(skill.content.toLowerCase()).toContain("bicep");
     });
 
-    test('mentions finding minimal role definition', () => {
+    test("mentions finding minimal role definition", () => {
       expect(skill.content.toLowerCase()).toMatch(/minimal role|least privilege|role definition/);
     });
 
-    test('mentions custom role creation', () => {
-      expect(skill.content.toLowerCase()).toContain('custom role');
+    test("mentions custom role creation", () => {
+      expect(skill.content.toLowerCase()).toContain("custom role");
     });
 
-    test('includes azure__extension_cli_generate tool', () => {
-      expect(skill.content.toLowerCase()).toContain('azure__extension_cli_generate');
+    test("includes azure__extension_cli_generate tool", () => {
+      expect(skill.content.toLowerCase()).toContain("azure__extension_cli_generate");
     });
 
-    test('mentions azure__bicepschema tool', () => {
-      expect(skill.content.toLowerCase()).toContain('azure__bicepschema');
+    test("mentions azure__bicepschema tool", () => {
+      expect(skill.content.toLowerCase()).toContain("azure__bicepschema");
     });
 
-    test('includes azure__get_azure_bestpractices tool', () => {
-      expect(skill.content.toLowerCase()).toContain('azure__get_azure_bestpractices');
+    test("includes azure__get_azure_bestpractices tool", () => {
+      expect(skill.content.toLowerCase()).toContain("azure__get_azure_bestpractices");
     });
   });
 
-  describe('RBAC Role Assignment Workflow', () => {
-    test('describes workflow for finding roles', () => {
+  describe("RBAC Role Assignment Workflow", () => {
+    test("describes workflow for finding roles", () => {
       const content = skill.content.toLowerCase();
-      const hasWorkflow = content.includes('find') || content.includes('search') || content.includes('documentation');
+      const hasWorkflow = content.includes("find") || content.includes("search") || content.includes("documentation");
       expect(hasWorkflow).toBe(true);
     });
 
-    test('mentions role assignment process', () => {
+    test("mentions role assignment process", () => {
       expect(skill.content.toLowerCase()).toMatch(/assign.*role|role.*assign/);
     });
 
-    test('includes guidance for no built-in role scenario', () => {
+    test("includes guidance for no built-in role scenario", () => {
       const content = skill.content.toLowerCase();
-      const hasCustomRoleGuidance = content.includes('no built-in role') || content.includes('custom role');
+      const hasCustomRoleGuidance = content.includes("no built-in role") || content.includes("custom role");
       expect(hasCustomRoleGuidance).toBe(true);
     });
   });
 
-  describe('Output Expectations', () => {
-    test('mentions generating CLI commands', () => {
+  describe("Output Expectations", () => {
+    test("mentions generating CLI commands", () => {
       expect(skill.content.toLowerCase()).toMatch(/cli command|generate.*command/);
     });
 
-    test('mentions providing Bicep code snippet', () => {
+    test("mentions providing Bicep code snippet", () => {
       expect(skill.content.toLowerCase()).toMatch(/bicep.*code|bicep.*snippet/);
     });
 
-    test('references role assignment in Bicep', () => {
+    test("references role assignment in Bicep", () => {
       const content = skill.content.toLowerCase();
-      const hasBicepAssignment = content.includes('role assignment') && content.includes('bicep');
+      const hasBicepAssignment = content.includes("role assignment") && content.includes("bicep");
       expect(hasBicepAssignment).toBe(true);
     });
   });
