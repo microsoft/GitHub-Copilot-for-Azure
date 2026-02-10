@@ -305,90 +305,97 @@ export function useAgentRunner() {
   
 
   async function run(config: TestConfig): Promise<AgentMetadata> {
-    const cleanup: RunnerCleanup = { config };
-    currentCleanups.push(cleanup);
+    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
 
     let isComplete = false;
 
-    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    const cleanup: RunnerCleanup = { config };
+    currentCleanups.push(cleanup);
     cleanup.workspace = testWorkspace;
     cleanup.preserveWorkspace = config.preserveWorkspace;
 
-    // Run optional setup
-    if (config.setup) {
-      await config.setup(testWorkspace);
-    }
+    try {
+      // Run optional setup
+      if (config.setup) {
+        await config.setup(testWorkspace);
+      }
 
-    // Copilot client with yolo mode
-    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
-    if (process.env.DEBUG && isTest()) {
-      cliArgs.push("--log-dir");
-      cliArgs.push(buildLogFilePath());
-    }
+      // Copilot client with yolo mode
+      const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
+      if (process.env.DEBUG && isTest()) {
+        cliArgs.push("--log-dir");
+        cliArgs.push(buildLogFilePath());
+      }
 
-    const client = new CopilotClient({
-      logLevel: process.env.DEBUG ? "all" : "error",
-      cwd: testWorkspace,
-      cliArgs: cliArgs,
-    }) as CopilotClient;
-    cleanup.client = client;
+      const client = new CopilotClient({
+        logLevel: process.env.DEBUG ? "all" : "error",
+        cwd: testWorkspace,
+        cliArgs: cliArgs,
+      }) as CopilotClient;
+      cleanup.client = client;
 
-    const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
-    const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
+      const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
-    const session = await client.createSession({
-      model: "claude-sonnet-4.5",
-      skillDirectories: [skillDirectory],
-      mcpServers: {
-        azure: {
-          type: "stdio",
-          command: "npx",
-          args: ["-y", "@azure/mcp", "server", "start"],
-          tools: ["*"]
-        }
-      },
-      systemMessage: config.systemPrompt
-    });
-    cleanup.session = session;
-
-    const agentMetadata: AgentMetadata = { events: [] };
-    cleanup.agentMetadata = agentMetadata;
-
-    const done = new Promise<void>((resolve) => {
-      session.on(async (event: SessionEvent) => {
-        if (isComplete) return;
-
-        if (process.env.DEBUG) {
-          console.log(`=== session event ${event.type}`);
-        }
-
-        if (event.type === "session.idle") {
-          isComplete = true;
-          resolve();
-          return;
-        }
-
-        agentMetadata.events.push(event);
-
-        if (config.shouldEarlyTerminate?.(agentMetadata)) {
-          isComplete = true;
-          resolve();
-          void session.abort();
-          return;
-        }
+      const session = await client.createSession({
+        model: "claude-sonnet-4.5",
+        skillDirectories: [skillDirectory],
+        mcpServers: {
+          azure: {
+            type: "stdio",
+            command: "npx",
+            args: ["-y", "@azure/mcp", "server", "start"],
+            tools: ["*"]
+          }
+        },
+        systemMessage: config.systemPrompt
       });
-    });
+      cleanup.session = session;
 
-    await session.send({ prompt: config.prompt });
-    await done;
+      const agentMetadata: AgentMetadata = { events: [] };
+      cleanup.agentMetadata = agentMetadata;
 
-    // Send follow-up prompts
-    for (const followUpPrompt of config.followUp ?? []) {
-      isComplete = false;
-      await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+      const done = new Promise<void>((resolve) => {
+        session.on(async (event: SessionEvent) => {
+          if (isComplete) return;
+
+          if (process.env.DEBUG) {
+            console.log(`=== session event ${event.type}`);
+          }
+
+          if (event.type === "session.idle") {
+            isComplete = true;
+            resolve();
+            return;
+          }
+
+          agentMetadata.events.push(event);
+
+          if (config.shouldEarlyTerminate?.(agentMetadata)) {
+            isComplete = true;
+            resolve();
+            void session.abort();
+            return;
+          }
+        });
+      });
+
+      await session.send({ prompt: config.prompt });
+      await done;
+
+      // Send follow-up prompts
+      for (const followUpPrompt of config.followUp ?? []) {
+        isComplete = false;
+        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+      }
+
+      return agentMetadata;
+    } catch (error) {
+      // Mark as complete to stop event processing
+      isComplete = true;
+      console.error("Agent runner error:", error);
+      throw error;
     }
-
-    return agentMetadata;
   }
 
   return { run };
