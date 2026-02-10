@@ -1,12 +1,12 @@
 /**
- * Unit Tests for github-copilot-integration
+ * Unit Tests for github-copilot
  * 
  * Test isolated skill logic and validation rules.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "github-copilot-integration";
+const SKILL_NAME = "github-copilot";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
