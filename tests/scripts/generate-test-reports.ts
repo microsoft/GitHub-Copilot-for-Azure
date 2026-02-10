@@ -28,6 +28,7 @@ const TEST_RUN_PREFIX = "test-run-";
 const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
 const MASTER_REPORT_SUFFIX = "-MASTER-REPORT.md";
+const agent = useAgentRunner();
 
 /**
  * Get the most recent test run directory
@@ -101,7 +102,7 @@ ${consolidatedContent}
 OUTPUT THE REPORT NOW (starting with the # heading):`
   };
 
-  const agentMetadata = await useAgentRunner().run(config);
+  const agentMetadata = await agent.run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];
@@ -169,7 +170,7 @@ ${allReportsContent}
 OUTPUT THE MASTER REPORT NOW (starting with the # heading):`
   };
 
-  const agentMetadata = await run(config);
+  const agentMetadata = await agent.run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];
