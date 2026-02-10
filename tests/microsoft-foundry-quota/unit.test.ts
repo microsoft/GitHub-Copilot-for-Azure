@@ -62,13 +62,13 @@ describe('microsoft-foundry-quota - Unit Tests', () => {
 
     test('follows orchestration pattern (how not what)', () => {
       expect(quotaContent).toContain('orchestrates quota');
-      expect(quotaContent).toContain('MCP Tools Used');
+      expect(quotaContent).toContain('MCP Tools');
     });
 
     test('contains Quick Reference table', () => {
       expect(quotaContent).toContain('## Quick Reference');
-      expect(quotaContent).toContain('MCP Tools');
-      expect(quotaContent).toContain('CLI Commands');
+      expect(quotaContent).toContain('Operation Type');
+      expect(quotaContent).toContain('Primary Method');
       expect(quotaContent).toContain('Microsoft.CognitiveServices/accounts');
     });
 
@@ -87,8 +87,8 @@ describe('microsoft-foundry-quota - Unit Tests', () => {
       expect(quotaContent).toContain('Deployment Slots');
     });
 
-    test('includes MCP Tools Used table', () => {
-      expect(quotaContent).toContain('## MCP Tools Used');
+    test('includes MCP Tools table', () => {
+      expect(quotaContent).toContain('## MCP Tools');
       expect(quotaContent).toContain('foundry_models_deployments_list');
       expect(quotaContent).toContain('foundry_resource_get');
     });
@@ -114,14 +114,14 @@ describe('microsoft-foundry-quota - Unit Tests', () => {
       expect(quotaContent).toContain('Fix QuotaExceeded error');
     });
 
-    test('workflows reference MCP tools first', () => {
-      expect(quotaContent).toContain('Using MCP Tools');
-      expect(quotaContent).toContain('foundry_models_deployments_list');
+    test('workflows use Azure CLI as primary method', () => {
+      expect(quotaContent).toContain('az rest');
+      expect(quotaContent).toContain('az cognitiveservices');
     });
 
-    test('workflows provide CLI fallback', () => {
-      expect(quotaContent).toContain('Using Azure CLI');
-      expect(quotaContent).toContain('az cognitiveservices');
+    test('workflows provide MCP tool alternatives', () => {
+      expect(quotaContent).toContain('Alternative');
+      expect(quotaContent).toContain('foundry_models_deployments_list');
     });
 
     test('workflows have concise steps and examples', () => {
@@ -158,11 +158,11 @@ describe('microsoft-foundry-quota - Unit Tests', () => {
 
   describe('PTU Capacity Planning', () => {
     test('provides official capacity calculator methods only', () => {
-      // Removed unofficial formulas, only official methods
+      // Removed unofficial formulas and non-existent CLI command, only official methods remain
       expect(quotaContent).toContain('PTU Capacity Planning');
       expect(quotaContent).toContain('Method 1: Microsoft Foundry Portal');
       expect(quotaContent).toContain('Method 2: Using Azure REST API');
-      expect(quotaContent).toContain('Method 3: Using Azure CLI');
+      // Method 3 removed because az cognitiveservices account calculate-model-capacity doesn't exist
     });
 
     test('includes agent instruction to not use unofficial formulas', () => {
@@ -187,8 +187,9 @@ describe('microsoft-foundry-quota - Unit Tests', () => {
       expect(quotaContent).toMatch(/--name\s+<[^>]+>/);
     });
 
-    test('includes jq examples for JSON parsing', () => {
-      expect(quotaContent).toContain('| jq');
+    test('uses Azure CLI native query and output formatting', () => {
+      expect(quotaContent).toContain('--query');
+      expect(quotaContent).toContain('--output table');
     });
   });
 
@@ -240,17 +241,16 @@ describe('microsoft-foundry-quota - Unit Tests', () => {
   });
 
   describe('Best Practices Compliance', () => {
-    test('prioritizes MCP tools over CLI commands', () => {
-      // MCP tools should appear before CLI in workflows
-      const mcpIndex = quotaContent.indexOf('Using MCP Tools');
-      const cliIndex = quotaContent.indexOf('Using Azure CLI');
-      expect(mcpIndex).toBeGreaterThan(-1);
-      expect(cliIndex).toBeGreaterThan(mcpIndex);
+    test('prioritizes Azure CLI for control plane operations', () => {
+      // For control plane operations, Azure CLI should be primary method
+      expect(quotaContent).toContain('Primary Method');
+      expect(quotaContent).toContain('Azure CLI');
+      expect(quotaContent).toContain('Optional MCP Tools');
     });
 
     test('follows skill = how, tools = what pattern', () => {
       expect(quotaContent).toContain('orchestrates');
-      expect(quotaContent).toContain('MCP Tools Used');
+      expect(quotaContent).toContain('MCP Tools');
     });
 
     test('provides routing clarity', () => {

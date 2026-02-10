@@ -103,10 +103,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test('contains quota management workflows', () => {
       expect(quotaContent).toContain('### 1. View Current Quota Usage');
-      expect(quotaContent).toContain('### 2. Check Quota Before Deployment');
-      expect(quotaContent).toContain('### 3. Request Quota Increase');
-      expect(quotaContent).toContain('### 4. Monitor Quota Across Multiple Deployments');
-      expect(quotaContent).toContain('### 5. Troubleshoot Quota-Related Deployment Failures');
+      expect(quotaContent).toContain('### 2. Find Best Region for Model Deployment');
+      expect(quotaContent).toContain('### 3. Check Quota Before Deployment');
+      expect(quotaContent).toContain('### 4. Request Quota Increase');
+      expect(quotaContent).toContain('### 5. Monitor Quota Across Deployments');
+      expect(quotaContent).toContain('### 6. Deploy with Provisioned Throughput Units (PTU)');
+      expect(quotaContent).toContain('### 7. Troubleshoot Quota Errors');
     });
 
     test('explains quota types', () => {
@@ -116,14 +118,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test('contains command patterns for each workflow', () => {
-      expect(quotaContent).toContain('Show me my current quota usage');
+      expect(quotaContent).toContain('Show my Microsoft Foundry quota usage');
       expect(quotaContent).toContain('Do I have enough quota');
       expect(quotaContent).toContain('Request quota increase');
-      expect(quotaContent).toContain('Show all my deployments');
+      expect(quotaContent).toContain('Show all my Foundry deployments');
     });
 
     test('contains az cognitiveservices commands', () => {
-      expect(quotaContent).toContain('az cognitiveservices usage list');
+      expect(quotaContent).toContain('az rest');
       expect(quotaContent).toContain('az cognitiveservices account deployment');
     });
 
@@ -138,15 +140,15 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(quotaContent).toContain('DeploymentLimitReached');
     });
 
-    test('includes best practices', () => {
-      expect(quotaContent).toContain('## Best Practices');
-      expect(quotaContent).toContain('Capacity Planning');
-      expect(quotaContent).toContain('Quota Optimization');
+    test('includes quota management guidance', () => {
+      expect(quotaContent).toContain('## Core Workflows');
+      expect(quotaContent).toContain('PTU Capacity Planning');
+      expect(quotaContent).toContain('Understanding Quotas');
     });
 
-    test('contains both Bash and PowerShell examples', () => {
-      expect(quotaContent).toContain('##### Bash');
-      expect(quotaContent).toContain('##### PowerShell');
+    test('contains bash command examples', () => {
+      expect(quotaContent).toContain('```bash');
+      expect(quotaContent).toContain('az rest');
     });
 
     test('uses correct Foundry resource type', () => {
