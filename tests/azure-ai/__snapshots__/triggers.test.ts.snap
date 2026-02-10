@@ -2,9 +2,8 @@
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Use for Azure AI: Search, Speech, Foundry, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, AI agents, prompt flows, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, AI agent, prompt flow, Foundry, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources.",
+  "description": "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources, AI agents/prompt flows (use microsoft-foundry).",
   "extractedKeywords": [
-    "agent",
     "agents",
     "apps",
     "azure",
@@ -14,17 +13,15 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
     "cli",
     "convert",
     "databases",
-    "deploy",
     "document",
-    "flow",
     "flows",
-    "foundry",
     "function",
     "functions",
     "helps",
     "hybrid",
     "intelligence",
     "mcp",
+    "microsoft-foundry",
     "openai",
     "prompt",
     "query",
@@ -46,7 +43,6 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
-  "agent",
   "agents",
   "apps",
   "azure",
@@ -56,17 +52,15 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match
   "cli",
   "convert",
   "databases",
-  "deploy",
   "document",
-  "flow",
   "flows",
-  "foundry",
   "function",
   "functions",
   "helps",
   "hybrid",
   "intelligence",
   "mcp",
+  "microsoft-foundry",
   "openai",
   "prompt",
   "query",
