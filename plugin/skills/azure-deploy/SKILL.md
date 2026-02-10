@@ -51,6 +51,8 @@ Activate this skill when user wants to:
 
 ## Steps
 
+> ⚠️ Deployment commands (especially `azd up`) can take 5-15 min. **Stream output visibly to the user** — do NOT run silently.
+
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Check Plan** — Read `.azure/plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/plan.md` |

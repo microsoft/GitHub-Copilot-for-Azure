@@ -1,12 +1,12 @@
-# Extensions SDK Reference
+# Copilot Extensions Reference
 
 Code patterns for `@copilot-extensions/preview-sdk` — webhook agents for GitHub Copilot Chat.
 
 ## Dependencies
 
 ```bash
-npm install @copilot-extensions/preview-sdk express
-npm install -D @types/express typescript ts-node @types/node
+pnpm install @copilot-extensions/preview-sdk express
+pnpm install -D @types/express typescript ts-node @types/node
 ```
 
 ## Minimal Extension (TypeScript)
@@ -32,7 +32,6 @@ app.post("/agent", async (req, res) => {
   );
   if (!isValidRequest) { res.status(401).send("Unauthorized"); return; }
 
-  // All four SSE headers required
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -61,3 +60,22 @@ app.listen(process.env.PORT || 3000);
 ## Request Verification
 
 Always verify via `verifyAndParseRequest(body, signature, keyId, { token })`. Required headers: `github-public-key-signature`, `github-public-key-identifier`.
+
+## Testing
+
+Create `public/test.html` and serve with `express.static()`. POST to the agent endpoint to test SSE streaming.
+
+## Hosting
+
+Extensions apps need **azure-prepare** to scaffold infra. Key requirements:
+- Public HTTPS endpoint
+- SSE-compatible hosting (Container Apps or App Service with `webSocketsEnabled`)
+- GITHUB_TOKEN via Key Vault
+
+## Errors
+
+| Error | Fix |
+|-------|-----|
+| SSE responses truncated | Set `X-Accel-Buffering: no` header |
+| 401 on agent endpoint | Check GITHUB_TOKEN and Key-Id header |
+| `verifyAndParseRequest` invalid | Use `github-public-key-signature` header |
