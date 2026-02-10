@@ -12,53 +12,46 @@ Build Copilot-powered apps and deploy to Azure.
 | Property | Value |
 |----------|-------|
 | Paths | SDK (`@github/copilot-sdk`) · Extensions (`@copilot-extensions/preview-sdk`) |
-| Hosting | Container Apps via AZD |
 
-## When to Use This Skill
+## When to Use
 
 - Build an app with the Copilot SDK or create a Copilot Extension
 - Deploy a Copilot-powered app to Azure
 
 ## Path Detection
 
-"Copilot SDK" / "@github/copilot-sdk" → **SDK path**. "Copilot Extension" / "webhook" → **Extensions path**. Ambiguous → ask.
+"Copilot SDK" / "@github/copilot-sdk" → **SDK path**. "Copilot Extension" / "webhook" → **Extensions path**.
 
 ## Prerequisites
 
-Run `docker info`. If it fails, **stop** — install Docker Desktop first.
+Docker required — run `docker info` to verify.
 
 ## Workflow
 
 ### Step 1: Scaffold + Customize
 
-- **SDK path** → Run `azd init --template jongio/copilot-sdk-agent`. Then read `src/index.ts` and modify `systemMessage`, `defineTool()` calls, and model to match user's use case. Install any new deps. See [Copilot SDK reference](references/copilot-sdk.md).
-- **Extensions path** → [Extensions reference](references/sdk-scaffold.md)
+- **SDK path** → Run `azd init --template jongio/copilot-sdk-agent` to scaffold the project. The template's chat app is just an example — adapt the code to the user's scenario. Build a custom UI that fits the use case (it's most likely not a chat experience). See [Copilot SDK reference](references/copilot-sdk.md).
+- **Extensions path** → [Extensions reference](references/copilot-extensions.md)
 
-> ⚠️ SDK template includes infra, test UI, Dockerfile — do NOT invoke **azure-prepare** or recreate these.
+> ⚠️ SDK template has infra, test UI, Dockerfile — do NOT recreate.
 
 ### Step 2: Test
 
-SDK template includes test UI at `/test.html`. Extensions path: see [test harness](references/test-harness.md).
+SDK: template includes React web UI — run `azd app run`. Extensions: see [Extensions reference](references/copilot-extensions.md).
 
 ### Step 3: Deploy
 
-- **SDK path:** `azd up` directly. See [Azure hosting](references/azure-hosting.md).
-- **Extensions path:** **azure-prepare** → **azure-validate** → **azure-deploy**
+> ⛔ **MANDATORY**: You MUST invoke these three skills IN ORDER. Do NOT run `azd up` or any deployment commands directly.
+
+1. Invoke the **azure-prepare** skill — it creates the deployment manifest. The SDK template already has `azure.yaml`, `infra/`, and Dockerfile, so tell it not to regenerate those.
+2. Invoke the **azure-validate** skill — it prompts the user for subscription/region and validates the deployment.
+3. Invoke the **azure-deploy** skill — it executes the deployment.
 
 ### Step 4: Foundry Bridge (Optional)
 
 See [Foundry bridge](references/foundry-bridge.md).
 
-## Critical Rules
+## Rules
 
-> ⛔ **Secrets:** GITHUB_TOKEN → **Key Vault** only. Use [preprovision hook](references/azure-hosting.md) to inject from `gh auth token`.
-
-> ⛔ **ACR:** Use **managed identity** for ACR pull. Never `adminUserEnabled: true`.
-
-> ⚠️ **SSE:** Set all four headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `X-Accel-Buffering: no`.
-
-> ⚠️ **Ports:** PORT, EXPOSE, targetPort, `app.listen` → all **3000**. **No inline HTML** in TypeScript — use `public/` + `express.static()`.
-
-## Errors
-
-See [error reference](references/errors.md).
+- Read the template's `AGENTS.md` before making changes — it has coding conventions and commands
+- Render markdown in agent responses properly in the UI
