@@ -2,9 +2,8 @@
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources, AI agents/prompt flows (use microsoft-foundry).",
+  "description": "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), general Azure resources.",
   "extractedKeywords": [
-    "agents",
     "apps",
     "azure",
     "azure-functions",
@@ -14,16 +13,14 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
     "convert",
     "databases",
     "document",
-    "flows",
     "function",
     "functions",
+    "general",
     "helps",
     "hybrid",
     "intelligence",
     "mcp",
-    "microsoft-foundry",
     "openai",
-    "prompt",
     "query",
     "resources",
     "search",
@@ -43,7 +40,6 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
-  "agents",
   "apps",
   "azure",
   "azure-functions",
@@ -53,16 +49,14 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match
   "convert",
   "databases",
   "document",
-  "flows",
   "function",
   "functions",
+  "general",
   "helps",
   "hybrid",
   "intelligence",
   "mcp",
-  "microsoft-foundry",
   "openai",
-  "prompt",
   "query",
   "resources",
   "search",
