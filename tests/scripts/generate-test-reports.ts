@@ -121,6 +121,10 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   return outputPath;
 }
 
+function getMasterReportFileName(runName: string) {
+  return `${runName}${MASTER_REPORT_SUFFIX}`;
+}
+
 /**
  * Generate a master consolidated report from all subdirectory reports
  */
@@ -180,7 +184,7 @@ OUTPUT THE MASTER REPORT NOW (starting with the # heading):`
   }
 
   // Save the master report at the root of the test run
-  const outputPath = path.join(runPath, `${runName}${MASTER_REPORT_SUFFIX}`);
+  const outputPath = path.join(runPath, getMasterReportFileName(runName));
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
@@ -237,12 +241,16 @@ async function processTestRun(runPath: string): Promise<void> {
 
   console.log(`\n✅ Processed ${generatedReports.length} subdirectories`);
 
-  // Generate master report if there are multiple reports
   if (generatedReports.length > 1) {
+    // Generate master report if there are multiple reports
     await generateMasterReport(generatedReports, runPath, runName);
     console.log("\n✅ Master report generated!");
   } else if (generatedReports.length === 1) {
-    console.log("\n(Only one report generated, skipping master report)");
+    // Copy the consolidated report as the master report since there is no need to summarize again
+    const reportPath = generatedReports[0];
+    const masterReportPath = path.join(runPath, getMasterReportFileName(runName));
+    fs.copyFileSync(reportPath, masterReportPath);
+    console.log(`\n(Only one report generated, copied to master report`);
   }
 
   console.log("\nReport generation complete.");
