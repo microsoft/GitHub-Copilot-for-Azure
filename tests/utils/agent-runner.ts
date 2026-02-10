@@ -694,7 +694,6 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
     throw new Error("runConversation requires at least one prompt");
   }
 
-  const CopilotClient = await getCopilotClient();
   const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
 
   let client: CopilotClient | undefined;
@@ -708,13 +707,13 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
       await config.setup(testWorkspace);
     }
 
-    const cliArgs: string[] = config.nonInteractive ? ["-p", "--yolo"] : [];
+    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
     if (process.env.DEBUG) {
       cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
 
-    client = new CopilotClient!({
+    client = new CopilotClient({
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,

@@ -33,10 +33,47 @@ import {
   countFoundryConfusion,
   countAgentApiFormatMismatch,
   countAiSearchConnectionFailures,
+  countAcrAdminCredentialUsage,
+  countMissingKeyVaultForToken,
+  countWrongSessionOnPattern,
+  countInlineHtmlInCode,
 } from "../utils/regression-detectors";
-import { setupCopilotSdkApp } from "../utils/ghcp-sdk-workspace";
 
 const SKILL_NAME = "ghcp-sdk-foundry-agent";
+
+// ─── File helpers ────────────────────────────────────────────────────────────
+
+/** Recursively find files matching a name pattern in a directory */
+function findFiles(dir: string, name: string): string[] {
+  const results: string[] = [];
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== ".azure") {
+        results.push(...findFiles(fullPath, name));
+      } else if (entry.name === name) {
+        results.push(fullPath);
+      }
+    }
+  } catch { /* ignore permission errors */ }
+  return results;
+}
+
+/** Find .js/.ts/.mjs source files in the workspace */
+function findSourceFiles(dir: string): string[] {
+  const results: string[] = [];
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== ".azure") {
+        results.push(...findSourceFiles(fullPath));
+      } else if (/\.(js|ts|mjs)$/.test(entry.name)) {
+        results.push(fullPath);
+      }
+    }
+  } catch { /* ignore permission errors */ }
+  return results;
+}
 
 // Scoring limits
 const MAX_DURATION_MS = 40 * 60 * 1000;
@@ -59,7 +96,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("end-to-end Foundry deployment", () => {
     beforeAll(async () => {
       result = await runConversation({
-        setup: setupCopilotSdkApp,
         nonInteractive: true,
         preserveWorkspace: true,
         maxTurns: MAX_TURNS,
@@ -68,22 +104,22 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           {
             label: "Deploy as Foundry hosted agent",
             prompt:
-              "Deploy this Copilot SDK agent as a hosted agent in Azure AI Foundry. Set up the Foundry project and agent configuration with managed runtime. Use my current subscription in eastus region.",
+              "Create a Copilot Extension using the Copilot SDK and deploy it as a hosted agent in Azure AI Foundry. Use my current subscription in eastus region.",
           },
           {
             label: "Add model + search",
             prompt:
-              "Add a GPT-4o model deployment and an AI Search index as connected resources. Use managed identity for authentication to both services.",
+              "Add a GPT-4o model and an AI Search index as connected resources with managed identity.",
           },
           {
             label: "Add tools + system prompt",
             prompt:
-              "Add code interpreter and file search tools to the agent. Configure a system prompt that describes the agent as a helpful coding assistant.",
+              "Add code interpreter and file search tools. Set the system prompt to describe a helpful coding assistant.",
           },
           {
             label: "Bridge to GitHub Extension",
             prompt:
-              "Create a bridge service that translates between the GitHub Copilot Extension webhook format (SSE streaming) and the Foundry agent API. Deploy it alongside the agent so it can receive requests from GitHub.",
+              "Bridge this Foundry agent back to GitHub as a Copilot Extension with a webhook service.",
           },
         ],
       });
@@ -113,6 +149,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isSkillInvoked(result.aggregate, "azure-prepare")).toBe(true);
     });
 
+    test("invokes azure-validate skill", () => {
+      expect(isSkillInvoked(result.aggregate, "azure-validate")).toBe(true);
+    });
+
     test("invokes avm-bicep-rules skill", () => {
       expect(isSkillInvoked(result.aggregate, "avm-bicep-rules")).toBe(true);
     });
@@ -120,6 +160,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     test("workspace contains required files", () => {
       expect(fs.existsSync(path.join(result.workspace, "azure.yaml"))).toBe(true);
       expect(fs.existsSync(path.join(result.workspace, "infra", "main.bicep"))).toBe(true);
+    });
+
+    test("workspace contains health endpoint", () => {
+      const srcFiles = findSourceFiles(result.workspace);
+      const hasHealthEndpoint = srcFiles.some((file) => {
+        const content = fs.readFileSync(file, "utf-8");
+        return /['"]\/health['"]/.test(content) || /\.get\s*\(\s*['"]\/health/.test(content);
+      });
+      expect(hasHealthEndpoint).toBe(true);
     });
 
     test("response contains deployment links", () => {
@@ -130,6 +179,18 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   describe("regression detectors", () => {
     test("no secrets in generated code", () => {
       expect(countSecretsInCode(result.aggregate)).toBe(0);
+    });
+
+    test("no ACR admin credentials", () => {
+      expect(countAcrAdminCredentialUsage(result.aggregate)).toBe(0);
+    });
+
+    test("GITHUB_TOKEN uses Key Vault", () => {
+      expect(countMissingKeyVaultForToken(result.aggregate)).toBe(0);
+    });
+
+    test("correct session.on() pattern", () => {
+      expect(countWrongSessionOnPattern(result.aggregate)).toBe(0);
     });
 
     test("Foundry vs OpenAI confusion within limits", () => {
@@ -152,9 +213,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(countAgentApiFormatMismatch(result.aggregate)).toBeLessThanOrEqual(2);
     });
 
-    // Foundry SDK version confusion detector — checks for wrong SDK imports
-    test("Foundry SDK version confusion within limits", () => {
-      expect(countFoundryConfusion(result.aggregate)).toBeLessThanOrEqual(2);
+    test("no inline HTML in TypeScript", () => {
+      expect(countInlineHtmlInCode(result.aggregate)).toBe(0);
     });
   });
 });
