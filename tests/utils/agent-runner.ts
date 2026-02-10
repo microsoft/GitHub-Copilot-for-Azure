@@ -42,6 +42,16 @@ export interface KeywordOptions {
   caseSensitive?: boolean;
 }
 
+/** Tracks resources that need cleanup after each test */
+interface RunnerCleanup {
+  session?: CopilotSession;
+  client?: CopilotClient;
+  workspace?: string;
+  preserveWorkspace?: boolean;
+  config?: TestConfig;
+  agentMetadata?: AgentMetadata;
+}
+
 /**
  * Generate a markdown report from agent metadata
  */
@@ -250,19 +260,60 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
 }
 
 /**
- * Run an agent session with the given configuration
+ * Sets up the agent runner with proper per-test cleanup via afterEach.
+ * Call once inside each describe() block. Each describe() gets its own
+ * isolated cleanup scope via closure, so parallel file execution is safe.
+ *
+ * Usage:
+ *   describe("my suite", () => {
+ *     const agent = useAgentRunner();
+ *     it("test", async () => {
+ *       const metadata = await agent.run({ prompt: "..." });
+ *     });
+ *   });
  */
-export async function run(config: TestConfig): Promise<AgentMetadata> {
-  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
-  const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
+export function useAgentRunner() {
+  let currentCleanups: RunnerCleanup[] = [];
 
-  // Declare client and session outside try block to ensure cleanup in finally
-  let client: CopilotClient | undefined;
-  let session: CopilotSession | undefined;
-  // Flag to prevent processing events after completion
-  let isComplete = false;
+  if(isTest()) {
+    afterEach(async () => {
+      for (const cleanup of currentCleanups) {
+        try {
+          if (cleanup.config && cleanup.agentMetadata) {
+            writeMarkdownReport(cleanup.config, cleanup.agentMetadata);
+          }
+        } catch { /* ignore */ }
+        try {
+          if (cleanup.session) {
+            await cleanup.session.destroy();
+          }
+        } catch { /* ignore */ }
+        try {
+          if (cleanup.client) {
+            await cleanup.client.stop();
+          }
+        } catch { /* ignore */ }
+        try {
+          if (cleanup.workspace && !cleanup.preserveWorkspace) {
+            fs.rmSync(cleanup.workspace, { recursive: true, force: true });
+          }
+        } catch { /* ignore */ }
+      }
+      currentCleanups = [];
+    });
+  }
+  
 
-  try {
+  async function run(config: TestConfig): Promise<AgentMetadata> {
+    const cleanup: RunnerCleanup = { config };
+    currentCleanups.push(cleanup);
+
+    let isComplete = false;
+
+    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    cleanup.workspace = testWorkspace;
+    cleanup.preserveWorkspace = config.preserveWorkspace;
+
     // Run optional setup
     if (config.setup) {
       await config.setup(testWorkspace);
@@ -275,15 +326,17 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       cliArgs.push(buildLogFilePath());
     }
 
-    client = new CopilotClient({
+    const client = new CopilotClient({
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
     }) as CopilotClient;
+    cleanup.client = client;
 
     const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
+    const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
 
-    session = await client.createSession({
+    const session = await client.createSession({
       model: "claude-sonnet-4.5",
       skillDirectories: [skillDirectory],
       mcpServers: {
@@ -296,15 +349,14 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       },
       systemMessage: config.systemPrompt
     });
+    cleanup.session = session;
 
     const agentMetadata: AgentMetadata = { events: [] };
+    cleanup.agentMetadata = agentMetadata;
 
     const done = new Promise<void>((resolve) => {
-      session!.on(async (event: SessionEvent) => {
-        // Stop processing events if already complete
-        if (isComplete) {
-          return;
-        }
+      session.on(async (event: SessionEvent) => {
+        if (isComplete) return;
 
         if (process.env.DEBUG) {
           console.log(`=== session event ${event.type}`);
@@ -316,17 +368,13 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
           return;
         }
 
-        // Capture all events
         agentMetadata.events.push(event);
 
-        // Check for early termination
-        if (config.shouldEarlyTerminate) {
-          if (config.shouldEarlyTerminate(agentMetadata)) {
-            isComplete = true;
-            resolve();
-            void session!.abort();
-            return;
-          }
+        if (config.shouldEarlyTerminate?.(agentMetadata)) {
+          isComplete = true;
+          resolve();
+          void session.abort();
+          return;
         }
       });
     });
@@ -339,43 +387,11 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
       isComplete = false;
       await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
     }
-    
-    // Generate markdown report
-    writeMarkdownReport(config, agentMetadata);
 
     return agentMetadata;
-  } catch (error) {
-    // Mark as complete to stop event processing
-    isComplete = true;
-    console.error("Agent runner error:", error);
-    throw error;
-  } finally {
-    // Mark as complete before starting cleanup to prevent post-completion event processing
-    isComplete = true;
-    // Cleanup session and client (guarded if undefined)
-    try {
-      if (session) {
-        await session.destroy();
-      }
-    } catch {
-      // Ignore session cleanup errors
-    }
-    try {
-      if (client) {
-        await client.stop();
-      }
-    } catch {
-      // Ignore client cleanup errors
-    }
-    // Cleanup workspace
-    try {
-      if (!config.preserveWorkspace) {
-        fs.rmSync(testWorkspace, { recursive: true, force: true });
-      }
-    } catch {
-      // Ignore cleanup errors
-    }
   }
+
+  return { run };
 }
 
 /**
