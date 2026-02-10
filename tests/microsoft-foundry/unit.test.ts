@@ -241,9 +241,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(rbacContent).toContain('Authorization failed');
     });
 
-    test('contains both Bash and PowerShell examples', () => {
-      expect(rbacContent).toContain('#### Bash');
-      expect(rbacContent).toContain('#### PowerShell');
+    test('contains bash command examples', () => {
+      expect(rbacContent).toContain('```bash');
     });
   });
 });

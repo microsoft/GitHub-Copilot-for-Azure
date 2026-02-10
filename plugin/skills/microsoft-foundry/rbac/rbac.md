@@ -43,7 +43,6 @@ Grant a user access to your Foundry project with the Azure AI User role.
 
 **Command Pattern:** "Grant Alice access to my Foundry project"
 
-#### Bash
 ```bash
 # Assign Azure AI User role to a user
 az role assignment create \
@@ -64,22 +63,12 @@ az role assignment list \
   --output table
 ```
 
-#### PowerShell
-```powershell
-# Assign Azure AI User role to a user
-az role assignment create `
-  --role "Azure AI User" `
-  --assignee "<user-email-or-object-id>" `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<foundry-resource-name>"
-```
-
 ### 2. Setup Developer Permissions
 
 Make a user a project manager with the ability to create projects and assign Azure AI User roles.
 
 **Command Pattern:** "Make Bob a project manager"
 
-#### Bash
 ```bash
 # Assign Azure AI Project Manager role
 az role assignment create \
@@ -101,22 +90,12 @@ az role assignment list \
   --output table
 ```
 
-#### PowerShell
-```powershell
-# Assign Azure AI Project Manager role
-az role assignment create `
-  --role "Azure AI Project Manager" `
-  --assignee "<user-email-or-object-id>" `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<foundry-resource-name>"
-```
-
 ### 3. Audit Role Assignments
 
 List all role assignments on your Foundry resource to understand who has access.
 
 **Command Pattern:** "Who has access to my Foundry?"
 
-#### Bash
 ```bash
 # List all role assignments on the Foundry resource
 az role assignment list \
@@ -142,21 +121,12 @@ az role assignment list \
   --output table
 ```
 
-#### PowerShell
-```powershell
-# List all role assignments on the Foundry resource
-az role assignment list `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<foundry-resource-name>" `
-  --output table
-```
-
 ### 4. Validate Permissions
 
 Check if a user (or yourself) has the required permissions to perform specific actions.
 
 **Command Pattern:** "Can I deploy models?"
 
-#### Bash
 ```bash
 # Check current user's effective permissions on the resource
 az role assignment list \
@@ -186,17 +156,6 @@ az role assignment list \
   --output table
 ```
 
-#### PowerShell
-```powershell
-# Check current user's effective permissions
-$userId = az ad signed-in-user show --query id -o tsv
-az role assignment list `
-  --assignee $userId `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<foundry-resource-name>" `
-  --query "[].roleDefinitionName" `
-  --output tsv
-```
-
 **Permission Requirements by Action:**
 
 | Action | Required Role(s) |
@@ -212,7 +171,6 @@ Set up roles for the project's managed identity to access connected resources li
 
 **Command Pattern:** "Set up identity for my project"
 
-#### Bash
 ```bash
 # Get the managed identity principal ID of the Foundry resource
 PRINCIPAL_ID=$(az cognitiveservices account show \
@@ -258,34 +216,6 @@ az role assignment list \
   --output table
 ```
 
-#### PowerShell
-```powershell
-# Get the managed identity principal ID of the Foundry resource
-$principalId = az cognitiveservices account show `
-  --name <foundry-resource-name> `
-  --resource-group <resource-group> `
-  --query identity.principalId `
-  --output tsv
-
-# Assign Storage Blob Data Contributor
-az role assignment create `
-  --role "Storage Blob Data Contributor" `
-  --assignee $principalId `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
-
-# Assign Key Vault Secrets User
-az role assignment create `
-  --role "Key Vault Secrets User" `
-  --assignee $principalId `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.KeyVault/vaults/<key-vault-name>"
-
-# Assign Search Index Data Contributor
-az role assignment create `
-  --role "Search Index Data Contributor" `
-  --assignee $principalId `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Search/searchServices/<search-service-name>"
-```
-
 **Common Managed Identity Role Assignments:**
 
 | Connected Resource | Role | Purpose |
@@ -303,7 +233,6 @@ Create a service principal with minimal required roles for CI/CD pipeline automa
 
 **Command Pattern:** "Create SP for CI/CD pipeline"
 
-#### Bash
 ```bash
 # Create a service principal for CI/CD
 az ad sp create-for-rbac \
@@ -341,25 +270,6 @@ az role assignment list \
 az ad sp credential reset \
   --id "$SP_APP_ID" \
   --output json
-```
-
-#### PowerShell
-```powershell
-# Create a service principal for CI/CD
-az ad sp create-for-rbac `
-  --name "foundry-cicd-sp" `
-  --role "Azure AI User" `
-  --scopes "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<foundry-resource-name>" `
-  --output json
-
-# Get the service principal App ID
-$spAppId = az ad sp list --display-name "foundry-cicd-sp" --query "[0].appId" -o tsv
-
-# Add Contributor role if needed
-az role assignment create `
-  --role "Contributor" `
-  --assignee $spAppId `
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>"
 ```
 
 **CI/CD Service Principal Best Practices:**
