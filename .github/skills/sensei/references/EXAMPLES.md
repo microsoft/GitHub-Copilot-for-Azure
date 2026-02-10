@@ -44,13 +44,7 @@ const shouldNotTriggerPrompts = [
 ```yaml
 ---
 name: appinsights-instrumentation
-description: |
-  Instrument web applications to send telemetry data to Azure Application Insights
-  for monitoring and diagnostics. USE FOR: "add App Insights", "instrument my app",
-  "set up application monitoring", "add telemetry", "track requests and dependencies",
-  "ASP.NET Core telemetry", "Node.js Application Insights". DO NOT USE FOR: querying
-  existing logs (use azure-observability), creating alerts or dashboards, analyzing
-  costs, or Azure Monitor metrics queries.
+description: "Instrument web applications to send telemetry data to Azure Application Insights for monitoring and diagnostics. USE FOR: add App Insights, instrument my app, set up application monitoring, add telemetry, track requests and dependencies, ASP.NET Core telemetry, Node.js Application Insights. DO NOT USE FOR: querying existing logs (use azure-observability), creating alerts or dashboards, analyzing costs, or Azure Monitor metrics queries."
 ---
 ```
 
@@ -114,13 +108,7 @@ description: 'Azure Security Services including Key Vault, Managed Identity, RBA
 ```yaml
 ---
 name: azure-security
-description: |
-  Overview of Azure security services and concepts including Key Vault, Managed Identity,
-  RBAC, Entra ID, and Defender for Cloud. USE FOR: "Azure security overview", "what
-  security services are available", "explain managed identity", "RBAC basics", "Key Vault
-  concepts", "Entra ID overview", "Defender for Cloud features". DO NOT USE FOR: hardening
-  existing resources (use azure-security-hardening), Entra app registration setup (use
-  entra-app-registration), or role assignment guidance (use azure-rbac).
+description: "Overview of Azure security services and concepts including Key Vault, Managed Identity, RBAC, Entra ID, and Defender for Cloud. USE FOR: Azure security overview, what security services are available, explain managed identity, RBAC basics, Key Vault concepts, Entra ID overview, Defender for Cloud features. DO NOT USE FOR: hardening existing resources (use azure-security-hardening), Entra app registration setup (use entra-app-registration), or role assignment guidance (use azure-rbac)."
 ---
 ```
 
@@ -139,11 +127,7 @@ description: |
 ```yaml
 ---
 name: azure-deploy
-description: |
-  Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
-  USE THIS SKILL when users want to deploy, publish, host, or run their application
-  on Azure. This skill detects application type and recommends optimal Azure service.
-  Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure".
+description: "Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. USE THIS SKILL when users want to deploy, publish, host, or run their application on Azure. This skill detects application type and recommends optimal Azure service. Trigger phrases include deploy to Azure, host on Azure, publish to Azure."
 ---
 ```
 
@@ -157,13 +141,7 @@ description: |
 ```yaml
 ---
 name: azure-deploy
-description: |
-  Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
-  USE FOR: "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure",
-  "azd up", "deploy my app", "push to Azure", "get this running in the cloud".
-  DO NOT USE FOR: initial project setup (use azure-create-app), validating Bicep
-  before deployment (use azure-deployment-preflight), or troubleshooting failed
-  deployments (use azure-diagnostics).
+description: "Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. USE FOR: deploy to Azure, host on Azure, publish to Azure, run on Azure, azd up, deploy my app, push to Azure, get this running in the cloud. DO NOT USE FOR: initial project setup (use azure-create-app), validating Bicep before deployment (use azure-deployment-preflight), or troubleshooting failed deployments (use azure-diagnostics)."
 ---
 ```
 
@@ -237,20 +215,20 @@ sensei: improve appinsights-instrumentation frontmatter
 
 ## Anti-Pattern Examples
 
-### ❌ Don't Do This: Single-Line Long Description
-
-```yaml
-description: Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
-```
-
-**Problem:** Single-line descriptions over 200 characters are hard to read, review, and maintain. Use multi-line YAML format (`|`) instead:
+### ❌ Don't Do This: Pipe Block Scalar with USE FOR/DO NOT USE FOR
 
 ```yaml
 description: |
   Identify and quantify cost savings across Azure subscriptions by analyzing actual costs,
-  utilization metrics, and generating actionable optimization recommendations. USE FOR:
-  optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings.
+  utilization metrics, and generating actionable optimization recommendations.
+  USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings.
   DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
+```
+
+**Problem:** The pipe `|` block scalar causes `USE FOR:` and `DO NOT USE FOR:` to be misinterpreted as top-level YAML keys by the Copilot CLI parser. Use quoted string format instead:
+
+```yaml
+description: "Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation)."
 ```
 
 ### ❌ Don't Do This: Overly Long Description
@@ -275,9 +253,7 @@ description: |
 ### ❌ Don't Do This: Vague Anti-Triggers
 
 ```yaml
-description: |
-  Deploy apps to Azure. USE FOR: deployment.
-  DO NOT USE FOR: other stuff.
+description: "Deploy apps to Azure. USE FOR: deployment. DO NOT USE FOR: other stuff."
 ```
 
 **Problem:** Too vague - agent can't determine what "other stuff" means.

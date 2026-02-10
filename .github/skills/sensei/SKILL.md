@@ -89,10 +89,10 @@ Run sensei on all skills
 For each skill, execute this loop until score >= Medium-High AND tests pass:
 
 1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md`, tests, and token count
-2. **SCORE** - Run rule-based compliance check (see [SCORING.md](references/SCORING.md))
-3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
+2. **SCORE** - Run rule-based compliance check (see [SCORING.md](references/SCORING.md)). **Also detect unsafe `|` block scalars:** if `description: |` is used AND any indented line starts with `USE FOR:` or `DO NOT USE FOR:`, flag as `pipe-colon-conflict` warning
+3. **CHECK** - If score >= Medium-High AND tests pass AND no formatting warnings → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
-5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
+5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars). **If `pipe-colon-conflict` detected:** convert `description: |` to `description: "..."` by joining all block lines into a single quoted string. Never use pipe `|` when description contains `USE FOR:` or `DO NOT USE FOR:`
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
 8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
@@ -112,19 +112,18 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 
 **Target: Medium-High** (triggers + anti-triggers present)
 
+> ⚠️ **Formatting:** Sensei checks for unsafe `|` block scalars with colon-prefixed lines (USE FOR:, DO NOT USE FOR:), unsupported frontmatter keys, mixed indentation, and tabs. See [SCORING.md](references/SCORING.md) §6.
+
 ## Frontmatter Template
 
 ```yaml
 ---
 name: skill-name
-description: |
-  [1-2 sentence description of what the skill does]
-  USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]
-  DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)
+description: "[1-2 sentence description of what the skill does] USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]. DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)."
 ---
 ```
 
-> **IMPORTANT:** Always use multi-line YAML format (`|`) for descriptions over 200 characters. Single-line descriptions become difficult to read, review, and maintain. See [azure-ai](../../plugin/skills/azure-ai/SKILL.md), [azure-functions](../../plugin/skills/azure-functions/SKILL.md) for examples.
+> **IMPORTANT:** Always use quoted string format (`"..."`) for descriptions containing `USE FOR:` or `DO NOT USE FOR:`. The pipe block scalar (`|`) causes these to be misinterpreted as YAML keys by the Copilot CLI parser. See [azure-deploy](../../plugin/skills/azure-deploy/SKILL.md) for an example.
 
 > Keep total description under 1024 characters.
 
