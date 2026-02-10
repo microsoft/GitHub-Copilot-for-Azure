@@ -404,7 +404,7 @@ export function useAgentRunner() {
       console.error("Agent runner error:", error);
       throw error;
     } finally {
-      if(!isTest()) {
+      if (!isTest()) {
         await cleanup();
       }
     }
