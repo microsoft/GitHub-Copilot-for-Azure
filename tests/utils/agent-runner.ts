@@ -295,7 +295,7 @@ export function useAgentRunner() {
   async function createMarkdownReport(): Promise<void> {
     for (const entry of currentCleanups) {
       try {
-        if (isTest() &&entry.config && entry.agentMetadata) {
+        if (isTest() && entry.config && entry.agentMetadata) {
           writeMarkdownReport(entry.config, entry.agentMetadata);
         }
       } catch { /* ignore */ }
