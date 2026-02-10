@@ -78,8 +78,8 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string): 
     consolidatedContent += `\n## ${fileName}\n\n${content}\n`;
   }
 
-  console.log(`    Generating report...`);
-
+  console.log("    Generating report..."); 
+  
   // Use agent runner to generate consolidated report for this subdirectory
   const config = {
     prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
@@ -138,7 +138,7 @@ async function generateMasterReport(reportPaths: string[], runPath: string, runN
     allReportsContent += `\n# ${subdirName}\n\n${content}\n\n---\n\n`;
   }
 
-  console.log(`\n  Generating master report...`);
+  console.log("\n  Generating master report...");
 
   // Use agent runner to generate master consolidated report
   const config = {
