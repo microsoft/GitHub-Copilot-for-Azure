@@ -84,7 +84,7 @@ docker build -t <image>:test ./src/<service>
 
 ### 7. Azure Policy Validation
 
-See [Policy Validation Guide](../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
 
 ## References
 
