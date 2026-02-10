@@ -79,7 +79,7 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string): 
   }
 
   console.log("    Generating report..."); 
-  
+
   // Use agent runner to generate consolidated report for this subdirectory
   const config = {
     prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
@@ -224,7 +224,7 @@ async function processTestRun(runPath: string): Promise<void> {
     process.exit(1);
   }
 
-  console.log(`Found ${subdirectories.length} subdirectorie(s)\n`);
+  console.log(`Found ${subdirectories.length} subdirectories\n`);
 
   // Process each subdirectory and collect report paths
   const generatedReports: string[] = [];
@@ -235,7 +235,7 @@ async function processTestRun(runPath: string): Promise<void> {
     }
   }
 
-  console.log(`\n✅ Processed ${generatedReports.length} subdirectorie(s)`);
+  console.log(`\n✅ Processed ${generatedReports.length} subdirectories`);
 
   // Generate master report if there are multiple reports
   if (generatedReports.length > 1) {
