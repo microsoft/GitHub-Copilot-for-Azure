@@ -5,10 +5,10 @@
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from '../../../utils/trigger-matcher';
-import { loadSkill, LoadedSkill } from '../../../utils/skill-loader';
+import { TriggerMatcher } from '../../../../utils/trigger-matcher';
+import { loadSkill, LoadedSkill } from '../../../../utils/skill-loader';
 
-const SKILL_NAME = 'microsoft-foundry/models/deploy/customize-deployment';
+const SKILL_NAME = 'microsoft-foundry/models/deploy-model/customize';
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
