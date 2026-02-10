@@ -1,5 +1,5 @@
 ---
-name: github-copilot-integration
+name: github-copilot
 description: "Build apps with the GitHub Copilot SDK or Copilot Extensions and deploy to Azure. Copilot SDK embeds agentic workflows in your app via @github/copilot-sdk. Copilot Extensions build webhook agents for GitHub Copilot Chat via @copilot-extensions/preview-sdk. USE FOR: copilot SDK, copilot extension, @github/copilot-sdk, embed copilot, copilot-powered app, copilot agent, build copilot extension, copilot-extensions, preview-sdk, copilot webhook, SSE streaming agent. DO NOT USE FOR: using Copilot (not building with it), Azure Functions without Copilot (use azure-functions), general web apps (use azure-prepare), AI model deployment alone (use microsoft-foundry)."
 ---
 

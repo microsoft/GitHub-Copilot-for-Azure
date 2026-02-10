@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for github-copilot-integration
+ * Trigger Tests for github-copilot
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "github-copilot-integration";
+const SKILL_NAME = "github-copilot";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;

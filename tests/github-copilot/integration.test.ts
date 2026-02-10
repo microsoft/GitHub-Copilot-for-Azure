@@ -1,5 +1,5 @@
 /**
- * Integration Tests for github-copilot-integration
+ * Integration Tests for github-copilot
  *
  * Tests skill behavior with a real Copilot agent session.
  * Verifies the skill triggers on the canonical demo prompt.
@@ -17,7 +17,7 @@ import {
   getIntegrationSkipReason,
 } from "../utils/agent-runner";
 
-const SKILL_NAME = "github-copilot-integration";
+const SKILL_NAME = "github-copilot";
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
