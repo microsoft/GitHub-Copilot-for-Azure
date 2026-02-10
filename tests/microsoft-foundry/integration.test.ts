@@ -11,7 +11,7 @@
 
 import { randomUUID } from "crypto";
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -38,13 +38,15 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes microsoft-foundry skill for AI model deployment prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?"
           });
 
@@ -71,7 +73,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes"
           });
 
@@ -104,7 +106,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     // Foundry assigns a unique identifier to each model, which must be used when calling Foundry APIs.
     // However, users may refer to a model in various ways (e.g. GPT 5, gpt-5, GPT-5, GPT5, etc.)
     // The agent can list the models to help the user find the unique identifier for a model.
-    const agentMetadata = await run({
+    const agentMetadata = await agent.run({
       systemPrompt: {
         mode: "append",
         content: `Use ${projectEndpoint} as the project endpoint when calling Foundry tools.`
@@ -131,7 +133,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     const agentName = `onboarding-buddy-${agentNameSuffix}`;
     const projectClient = new AIProjectClient(projectEndpoint, new DefaultAzureCredential());
 
-    const _agentMetadata = await run({
+    const _agentMetadata = await agent.run({
       prompt: `Create a Foundry agent called "${agentName}" in my foundry project ${projectEndpoint}, use gpt-4o as the model, and give it a generic system instruction suitable for onboarding a new team member in a professional environment for now.`,
       nonInteractive: true
     });

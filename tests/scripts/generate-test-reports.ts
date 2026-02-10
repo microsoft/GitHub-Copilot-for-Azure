@@ -15,7 +15,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { run, type TestConfig } from "../utils/agent-runner";
+import { useAgentRunner, type TestConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -101,7 +101,7 @@ ${consolidatedContent}
 OUTPUT THE REPORT NOW (starting with the # heading):`
   };
 
-  const agentMetadata = await run(config);
+  const agentMetadata = await useAgentRunner().run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];

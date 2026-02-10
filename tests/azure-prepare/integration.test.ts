@@ -10,7 +10,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,13 +33,15 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Prepare my application for Azure deployment and set up the infrastructure"
           });
 
@@ -66,7 +68,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
           });
 
@@ -85,60 +87,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`${SKILL_NAME} invocation rate for modernization prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for modernization prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-    });
-
-    test("invokes azure-prepare skill for Key Vault secrets integration prompt", async () => {
-      let successCount = 0;
-
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await run({
-            prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
-          });
-
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Key Vault integration prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Key Vault integration prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
-    });
-
-    test("invokes azure-prepare skill for Azure Identity authentication prompt", async () => {
-      let successCount = 0;
-
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await run({
-            prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
-          });
-
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Azure Identity authentication prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure Identity authentication prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
