@@ -232,10 +232,6 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
  * Write markdown report to file
  */
 function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): void {
-  if (!isTest()) {
-    return;
-  }
-
   try {
     const filePath = buildShareFilePath();
     const dir = path.dirname(filePath);
@@ -275,32 +271,35 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
 export function useAgentRunner() {
   let currentCleanups: RunnerCleanup[] = [];
 
-  if(isTest()) {
-    afterEach(async () => {
-      for (const cleanup of currentCleanups) {
-        try {
-          if (cleanup.config && cleanup.agentMetadata) {
-            writeMarkdownReport(cleanup.config, cleanup.agentMetadata);
-          }
-        } catch { /* ignore */ }
-        try {
-          if (cleanup.session) {
-            await cleanup.session.destroy();
-          }
-        } catch { /* ignore */ }
-        try {
-          if (cleanup.client) {
-            await cleanup.client.stop();
-          }
-        } catch { /* ignore */ }
-        try {
-          if (cleanup.workspace && !cleanup.preserveWorkspace) {
-            fs.rmSync(cleanup.workspace, { recursive: true, force: true });
-          }
-        } catch { /* ignore */ }
-      }
-      currentCleanups = [];
-    });
+  async function cleanup(): Promise<void> {
+    for (const entry of currentCleanups) {
+      try {
+        if (entry.config && entry.agentMetadata) {
+          writeMarkdownReport(entry.config, entry.agentMetadata);
+        }
+      } catch { /* ignore */ }
+      try {
+        if (entry.session) {
+          await entry.session.destroy();
+        }
+      } catch { /* ignore */ }
+      try {
+        if (entry.client) {
+          await entry.client.stop();
+        }
+      } catch { /* ignore */ }
+      try {
+        if (entry.workspace && !entry.preserveWorkspace) {
+          fs.rmSync(entry.workspace, { recursive: true, force: true });
+        }
+      } catch { /* ignore */ }
+    }
+    currentCleanups = [];
+  }
+
+  if (isTest()) {
+    // Guarantees cleanup even if it times out in a test.
+    afterEach(cleanup);
   }
   
 
@@ -310,10 +309,10 @@ export function useAgentRunner() {
 
     let isComplete = false;
 
-    const cleanup: RunnerCleanup = { config };
-    currentCleanups.push(cleanup);
-    cleanup.workspace = testWorkspace;
-    cleanup.preserveWorkspace = config.preserveWorkspace;
+    const entry: RunnerCleanup = { config };
+    currentCleanups.push(entry);
+    entry.workspace = testWorkspace;
+    entry.preserveWorkspace = config.preserveWorkspace;
 
     try {
       // Run optional setup
@@ -333,7 +332,7 @@ export function useAgentRunner() {
         cwd: testWorkspace,
         cliArgs: cliArgs,
       }) as CopilotClient;
-      cleanup.client = client;
+      entry.client = client;
 
       const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
@@ -350,10 +349,10 @@ export function useAgentRunner() {
         },
         systemMessage: config.systemPrompt
       });
-      cleanup.session = session;
+      entry.session = session;
 
       const agentMetadata: AgentMetadata = { events: [] };
-      cleanup.agentMetadata = agentMetadata;
+      entry.agentMetadata = agentMetadata;
 
       const done = new Promise<void>((resolve) => {
         session.on(async (event: SessionEvent) => {
@@ -395,6 +394,8 @@ export function useAgentRunner() {
       isComplete = true;
       console.error("Agent runner error:", error);
       throw error;
+    } finally {
+      cleanup();
     }
   }
 
