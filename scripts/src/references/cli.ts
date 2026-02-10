@@ -12,7 +12,7 @@
  *   npm run references <skill>      # Validate a single skill
  */
 
-import { dirname, resolve, relative, normalize, posix } from 'node:path';
+import { dirname, resolve, relative, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
