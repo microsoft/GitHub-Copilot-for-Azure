@@ -5,7 +5,7 @@
  * Checks every skill's markdown files to ensure:
  *   1. Every local markdown link points to an actual file or directory.
  *   2. Every local markdown link resolves to a path inside the skill's
- *      own directory (or the shared `_shared` directory).
+ *      own directory.
  *
  * Usage:
  *   npm run references              # Validate all skills
@@ -184,7 +184,6 @@ function validateSkill(skillName: string): ValidationResult {
 function listSkills(): string[] {
   return readdirSync(SKILLS_DIR)
     .filter((name) => {
-      if (name.startsWith('_')) return false; // skip _shared etc.
       const full = resolve(SKILLS_DIR, name);
       return statSync(full).isDirectory();
     })
