@@ -517,13 +517,15 @@ Check evaluation run status to identify issues. For SDK implementation, see [lan
 
 ##### Bash
 ```bash
-# Check current quota usage
-az cognitiveservices usage list \
-  --name <resource-name> \
-  --resource-group <resource-group>
+# Check current quota usage for region
+subId=$(az account show --query id -o tsv)
+region="eastus"  # Change to your region
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/locations/$region/usages?api-version=2023-05-01" \
+  --query "value[?contains(name.value,'OpenAI.Standard')].{Model:name.value, Used:currentValue, Limit:limit, Available:(limit-currentValue)}" \
+  --output table
 
-# Request quota increase (manual process in portal)
-echo "Request quota increase in Azure Portal under Quotas section"
+# For detailed quota guidance, use the quota sub-skill: microsoft-foundry:quota
 ```
 
 # Request quota increase (manual process in portal)
