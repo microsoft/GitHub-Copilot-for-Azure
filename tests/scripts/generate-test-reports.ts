@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
 
 const REPORTS_PATH = path.resolve(__dirname, "../reports");
 const TEMPLATE_PATH = path.resolve(__dirname, "report-template.md");
+const AGGREGATED_TEMPLATE_PATH = path.resolve(__dirname, "aggregated-template.md");
 
 // Constants
 const TEST_RUN_PREFIX = "test-run-";
@@ -144,23 +145,22 @@ async function generateMasterReport(reportPaths: string[], runPath: string, runN
 
   console.log("\n  Generating master report...");
 
+  // Load the aggregated report template
+  const aggregatedTemplate = fs.readFileSync(AGGREGATED_TEMPLATE_PATH, "utf-8");
+
   // Use agent runner to generate master consolidated report
-  const config = {
+  const config: TestConfig = {
     prompt: `You are a master test report aggregator. You will receive multiple test reports and combine them into one comprehensive summary.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
 
 ## Your Task
 
-Create a master consolidated report that combines all the individual subdirectory reports below. The report should:
+Create a master consolidated report that combines all the individual subdirectory reports below. The report MUST follow the exact structure and formatting of the template below.
 
-1. **Overall Summary Section**: Aggregate total results across all reports (total tests, pass/fail counts, success rate)
-2. **Structure**: Follow a similar markdown structure to the individual reports
-3. **High-Level Findings**: Include any warnings, errors, or important findings across all reports (no need for specific test details)
-4. **Token Usage**: Aggregate and report total token usage across all reports
-5. **Subdirectory Breakdown**: Brief summary of results per subdirectory/skill area
+## Report Template
 
-Be concise but comprehensive. Focus on the big picture and actionable insights.
+${aggregatedTemplate}
 
 ---
 
@@ -170,7 +170,11 @@ ${allReportsContent}
 
 ---
 
-OUTPUT THE MASTER REPORT NOW (starting with the # heading):`
+OUTPUT THE MASTER REPORT NOW (starting with the # heading):`,
+    systemPrompt: {
+      mode: "append",
+      content: "**Important**: Skills and MCP tools are different. When summarize statistics related to skills, don't count MCP tool invocations. Skills are explicitly called out as skills in the context. MCP servers appear to be regular tool calls except that they are from an MCP server."
+    }
   };
 
   const agentMetadata = await run(config);
