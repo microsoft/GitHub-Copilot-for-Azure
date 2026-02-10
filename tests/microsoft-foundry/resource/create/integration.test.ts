@@ -31,78 +31,63 @@ describe('microsoft-foundry:resource/create - Integration Tests', () => {
     });
   });
 
-  describe('Workflow Documentation Accessibility', () => {
-    test('references workflows file for detailed steps', async () => {
+  describe('Workflow Documentation', () => {
+    test('main file contains all 3 workflows inline', async () => {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const workflowsPath = path.join(
+      const mainFilePath = path.join(
         __dirname,
-        '../../../../plugin/skills/microsoft-foundry/resource/create/references/workflows.md'
+        '../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md'
       );
 
-      const workflowsExists = await fs.access(workflowsPath).then(() => true).catch(() => false);
-      expect(workflowsExists).toBe(true);
-    });
+      const mainContent = await fs.readFile(mainFilePath, 'utf-8');
 
-    test('workflows file contains all 4 workflows', async () => {
-      const fs = await import('fs/promises');
-      const path = await import('path');
-
-      const workflowsPath = path.join(
-        __dirname,
-        '../../../../plugin/skills/microsoft-foundry/resource/create/references/workflows.md'
-      );
-
-      const workflowsContent = await fs.readFile(workflowsPath, 'utf-8');
-
-      expect(workflowsContent).toContain('## 1. Create Resource Group');
-      expect(workflowsContent).toContain('## 2. Create Foundry Resource');
-      expect(workflowsContent).toContain('## 3. Monitor Resource Usage');
-      expect(workflowsContent).toContain('## 4. Register Resource Provider');
+      expect(mainContent).toContain('### 1. Create Resource Group');
+      expect(mainContent).toContain('### 2. Create Foundry Resource');
+      expect(mainContent).toContain('### 3. Register Resource Provider');
     });
   });
 
   describe('Command Validation', () => {
-    test('workflows contain valid Azure CLI commands', async () => {
+    test('skill contains valid Azure CLI commands', async () => {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const workflowsPath = path.join(
+      const mainFilePath = path.join(
         __dirname,
-        '../../../../plugin/skills/microsoft-foundry/resource/create/references/workflows.md'
+        '../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md'
       );
 
-      const workflowsContent = await fs.readFile(workflowsPath, 'utf-8');
+      const mainContent = await fs.readFile(mainFilePath, 'utf-8');
 
       // Check for key Azure CLI commands
-      expect(workflowsContent).toContain('az group create');
-      expect(workflowsContent).toContain('az cognitiveservices account create');
-      expect(workflowsContent).toContain('az cognitiveservices account list-usage');
-      expect(workflowsContent).toContain('az provider register');
-      expect(workflowsContent).toContain('--kind AIServices');
+      expect(mainContent).toContain('az group create');
+      expect(mainContent).toContain('az cognitiveservices account create');
+      expect(mainContent).toContain('az provider register');
+      expect(mainContent).toContain('--kind AIServices');
     });
 
     test('commands include required parameters', async () => {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const workflowsPath = path.join(
+      const mainFilePath = path.join(
         __dirname,
-        '../../../../plugin/skills/microsoft-foundry/resource/create/references/workflows.md'
+        '../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md'
       );
 
-      const workflowsContent = await fs.readFile(workflowsPath, 'utf-8');
+      const mainContent = await fs.readFile(mainFilePath, 'utf-8');
 
-      expect(workflowsContent).toContain('--resource-group');
-      expect(workflowsContent).toContain('--name');
-      expect(workflowsContent).toContain('--location');
-      expect(workflowsContent).toContain('--sku');
+      expect(mainContent).toContain('--resource-group');
+      expect(mainContent).toContain('--name');
+      expect(mainContent).toContain('--location');
+      expect(mainContent).toContain('--sku');
     });
   });
 
-  describe('Progressive Disclosure Pattern', () => {
-    test('main skill file is lean', async () => {
+  describe('Inline Pattern', () => {
+    test('follows quota skill pattern with all content inline', async () => {
       const fs = await import('fs/promises');
       const path = await import('path');
 
@@ -114,24 +99,21 @@ describe('microsoft-foundry:resource/create - Integration Tests', () => {
       const mainContent = await fs.readFile(mainFilePath, 'utf-8');
       const lineCount = mainContent.split('\n').length;
 
-      // Main file should be relatively lean (under 200 lines)
-      expect(lineCount).toBeLessThan(200);
+      // Main file should have all content (500+ lines like quota.md)
+      expect(lineCount).toBeGreaterThan(400);
     });
 
-    test('detailed content in references', async () => {
+    test('no references directory exists', async () => {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const workflowsPath = path.join(
+      const referencesPath = path.join(
         __dirname,
-        '../../../../plugin/skills/microsoft-foundry/resource/create/references/workflows.md'
+        '../../../../plugin/skills/microsoft-foundry/resource/create/references'
       );
 
-      const workflowsContent = await fs.readFile(workflowsPath, 'utf-8');
-      const lineCount = workflowsContent.split('\n').length;
-
-      // Workflows file should have detailed content
-      expect(lineCount).toBeGreaterThan(100);
+      const referencesExists = await fs.access(referencesPath).then(() => true).catch(() => false);
+      expect(referencesExists).toBe(false);
     });
   });
 });

@@ -2,13 +2,14 @@
 
 exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents, manage RBAC permissions and role assignments, manage quotas and capacity.
-USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, deployment failure, QuotaExceeded.
+  "description": "Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents, manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
+USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, deployment failure, QuotaExceeded.
 DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
 ",
   "extractedKeywords": [
     "agent",
     "agents",
+    "aiservices",
     "applications",
     "assignment",
     "assignments",
@@ -36,6 +37,7 @@ DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-cr
     "index",
     "indexes",
     "infrastructure",
+    "kind",
     "knowledge",
     "manage",
     "managed",
@@ -45,6 +47,7 @@ DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-cr
     "models",
     "monitor",
     "monitoring",
+    "multi-service",
     "onboard",
     "permissions",
     "principal",
@@ -55,8 +58,10 @@ DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-cr
     "quotas",
     "rbac",
     "resource",
+    "resources",
     "role",
     "service",
+    "services",
     "skill",
     "this",
     "with",
@@ -70,6 +75,7 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
 [
   "agent",
   "agents",
+  "aiservices",
   "applications",
   "assignment",
   "assignments",
@@ -97,6 +103,7 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
   "index",
   "indexes",
   "infrastructure",
+  "kind",
   "knowledge",
   "manage",
   "managed",
@@ -106,6 +113,7 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
   "models",
   "monitor",
   "monitoring",
+  "multi-service",
   "onboard",
   "permissions",
   "principal",
@@ -116,8 +124,10 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
   "quotas",
   "rbac",
   "resource",
+  "resources",
   "role",
   "service",
+  "services",
   "skill",
   "this",
   "with",

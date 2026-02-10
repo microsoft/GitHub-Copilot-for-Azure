@@ -60,12 +60,12 @@ describe('microsoft-foundry:resource/create - Unit Tests', () => {
     });
   });
 
-  describe('Skill Content - Progressive Disclosure', () => {
-    test('has lean main file with references', () => {
+  describe('Skill Content - Inline Pattern', () => {
+    test('has all content inline like quota.md', () => {
       expect(resourceCreateContent).toBeDefined();
-      expect(resourceCreateContent.length).toBeGreaterThan(500);
-      // Main file should reference workflows
-      expect(resourceCreateContent).toContain('references/workflows.md');
+      const lineCount = resourceCreateContent.split('\n').length;
+      // Main file should have all content inline (500+ lines like quota.md)
+      expect(lineCount).toBeGreaterThan(400);
     });
 
     test('contains Quick Reference table', () => {
@@ -98,18 +98,16 @@ describe('microsoft-foundry:resource/create - Unit Tests', () => {
   });
 
   describe('Core Workflows', () => {
-    test('contains all 4 required workflows', () => {
+    test('contains all 3 required workflows', () => {
       expect(resourceCreateContent).toContain('## Core Workflows');
       expect(resourceCreateContent).toContain('### 1. Create Resource Group');
       expect(resourceCreateContent).toContain('### 2. Create Foundry Resource');
-      expect(resourceCreateContent).toContain('### 3. Monitor Resource Usage');
-      expect(resourceCreateContent).toContain('### 4. Register Resource Provider');
+      expect(resourceCreateContent).toContain('### 3. Register Resource Provider');
     });
 
     test('each workflow has command patterns', () => {
       expect(resourceCreateContent).toContain('Create a resource group');
       expect(resourceCreateContent).toContain('Create a new Azure AI Services resource');
-      expect(resourceCreateContent).toContain('Check usage');
       expect(resourceCreateContent).toContain('Register Cognitive Services provider');
     });
 
@@ -119,9 +117,12 @@ describe('microsoft-foundry:resource/create - Unit Tests', () => {
       expect(resourceCreateContent).toContain('az provider register');
     });
 
-    test('workflows reference detailed documentation', () => {
-      expect(resourceCreateContent).toContain('references/workflows.md#1-create-resource-group');
-      expect(resourceCreateContent).toContain('references/workflows.md#2-create-foundry-resource');
+    test('workflows include detailed steps inline', () => {
+      // All steps should be inline, not in separate references
+      expect(resourceCreateContent).toContain('#### Steps');
+      expect(resourceCreateContent).toContain('#### Example');
+      expect(resourceCreateContent).toContain('**Step 1:');
+      expect(resourceCreateContent).toContain('**Step 2:');
     });
   });
 
@@ -161,11 +162,12 @@ describe('microsoft-foundry:resource/create - Unit Tests', () => {
   });
 
   describe('Troubleshooting Section', () => {
-    test('lists common errors in table format', () => {
-      expect(resourceCreateContent).toContain('Common Errors');
+    test('lists common errors with solutions', () => {
+      expect(resourceCreateContent).toContain('## Troubleshooting');
       expect(resourceCreateContent).toContain('InsufficientPermissions');
       expect(resourceCreateContent).toContain('ResourceProviderNotRegistered');
       expect(resourceCreateContent).toContain('LocationNotAvailableForResourceType');
+      expect(resourceCreateContent).toContain('ResourceNameNotAvailable');
     });
 
     test('provides solutions for errors', () => {
@@ -201,9 +203,13 @@ describe('microsoft-foundry:resource/create - Unit Tests', () => {
       expect(resourceCreateContent).toContain('Do NOT use for');
     });
 
-    test('uses progressive disclosure with references', () => {
-      const referenceCount = (resourceCreateContent.match(/references\/workflows\.md/g) || []).length;
-      expect(referenceCount).toBeGreaterThan(0);
+    test('follows inline pattern like quota.md', () => {
+      // Should have all content inline, no references directory
+      expect(resourceCreateContent).not.toContain('references/workflows.md');
+      expect(resourceCreateContent).not.toContain('references/');
+      // Should have comprehensive inline content
+      const lineCount = resourceCreateContent.split('\n').length;
+      expect(lineCount).toBeGreaterThan(400);
     });
   });
 });
