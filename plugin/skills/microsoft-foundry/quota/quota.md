@@ -2,12 +2,17 @@
 
 This sub-skill orchestrates quota and capacity management workflows for Microsoft Foundry resources.
 
+> **Important:** All quota operations are **control plane (management)** operations. Use **Azure CLI commands** as the primary method. MCP tools are optional convenience wrappers around the same control plane APIs.
+
+> **Quota Scope:** Quotas are managed at the **subscription + region** level. When showing quota usage, display **regional quota summary** rather than listing all individual resources.
+
 ## Quick Reference
 
 | Property | Value |
 |----------|-------|
-| **MCP Tools** | `foundry_models_deployments_list`, `model_quota_list`, `model_catalog_list` |
-| **CLI Commands** | `az rest` (Management API), `az cognitiveservices account deployment` |
+| **Operation Type** | Control Plane (Management) |
+| **Primary Method** | Azure CLI: `az rest`, `az cognitiveservices account deployment` |
+| **Optional MCP Tools** | `foundry_models_deployments_list`, `model_quota_list` (wrappers) |
 | **Resource Type** | `Microsoft.CognitiveServices/accounts` |
 
 ## When to Use
@@ -59,14 +64,18 @@ Microsoft Foundry uses four quota types:
 | **Flexibility** | Scale up/down instantly | Requires planning and commitment |
 | **Use Case** | Prototyping, bursty traffic | Production apps, high-volume APIs |
 
-## MCP Tools Used
+## MCP Tools (Optional Wrappers)
 
-| Tool | Purpose | When to Use |
-|------|---------|-------------|
-| `foundry_models_deployments_list` | List all deployments with capacity | Check current quota allocation for a resource |
-| `model_quota_list` | List quota and usage across regions | Find regions with available capacity |
-| `model_catalog_list` | List available models from catalog | Check model availability by region |
-| `foundry_resource_get` | Get resource details and endpoint | Verify resource configuration |
+**Note:** All quota operations are control plane (management) operations. MCP tools are optional convenience wrappers around Azure CLI commands.
+
+| Tool | Purpose | Equivalent Azure CLI |
+|------|---------|---------------------|
+| `foundry_models_deployments_list` | List all deployments with capacity | `az cognitiveservices account deployment list` |
+| `model_quota_list` | List quota and usage across regions | `az rest` (Management API) |
+| `model_catalog_list` | List available models from catalog | `az rest` (Management API) |
+| `foundry_resource_get` | Get resource details and endpoint | `az cognitiveservices account show` |
+
+**Recommended:** Use Azure CLI commands directly for control plane operations.
 
 ## Core Workflows
 
@@ -74,31 +83,50 @@ Microsoft Foundry uses four quota types:
 
 **Command Pattern:** "Show my Microsoft Foundry quota usage"
 
-**Recommended Approach - Use MCP Tools:**
+> **CRITICAL AGENT INSTRUCTION:**
+> - When showing quota: Query REGIONAL quota summary, NOT individual resources
+> - DO NOT run `az cognitiveservices account list` for quota queries
+> - DO NOT filter resources by username or name patterns
+> - ONLY check specific resource deployments if user provides resource name
+> - Quotas are managed at SUBSCRIPTION + REGION level, NOT per-resource
+
+**Show Regional Quota Summary (REQUIRED APPROACH):**
+
+```bash
+# Get subscription ID
+subId=$(az account show --query id -o tsv)
+
+# Check quota for key regions
+regions=("eastus" "eastus2" "westus" "westus2")
+for region in "${regions[@]}"; do
+  echo "=== Region: $region ==="
+  az rest --method get \
+    --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/locations/$region/usages?api-version=2023-05-01" \
+    --query "value[?contains(name.value,'OpenAI.Standard')].{Model:name.value, Used:currentValue, Limit:limit, Available:(limit-currentValue)}" \
+    --output table
+  echo ""
+done
+```
+
+**If User Asks for Specific Resource (ONLY IF EXPLICITLY REQUESTED):**
+
+```bash
+# User must provide resource name
+az cognitiveservices account deployment list \
+  --name <user-provided-resource-name> \
+  --resource-group <user-provided-rg> \
+  --query '[].{Name:name, Model:properties.model.name, Capacity:sku.capacity, SKU:sku.name}' \
+  --output table
+```
+
+**Alternative - Use MCP Tools (Optional Wrappers):**
 ```
 foundry_models_deployments_list(
   resource-group="<rg>",
   azure-ai-services="<resource-name>"
 )
 ```
-Returns: Deployment names, models, SKU capacity (TPM), provisioning state
-
-**Alternative - Use Azure CLI:**
-```bash
-# List all deployments with capacity
-az cognitiveservices account deployment list \
-  --name <resource-name> \
-  --resource-group <rg> \
-  --query '[].{Name:name, Model:properties.model.name, Capacity:sku.capacity, SKU:sku.name}' \
-  --output table
-
-# Get regional quota via REST API (more reliable)
-subId=$(az account show --query id -o tsv)
-az rest --method get \
-  --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/locations/eastus/usages?api-version=2023-05-01" \
-  --query "value[?contains(name.value,'OpenAI')].{Name:name.value, Used:currentValue, Limit:limit, Available:(limit-currentValue)}" \
-  --output table
-```
+*Note: MCP tools are convenience wrappers around the same control plane APIs shown above.*
 
 **Interpreting Results:**
 - `Used` (currentValue): Currently allocated quota
@@ -181,22 +209,38 @@ Repeat for each target region.
 
 **Command Pattern:** "Show all my Foundry deployments and quota allocation"
 
-**For Single Resource:**
-Use workflow #1 above
+**Recommended Approach - Regional Quota Overview:**
 
-**For Multiple Resources:**
+Show quota by region (better than listing all resources):
+
 ```bash
-# List all Foundry resources
-az cognitiveservices account list \
-  --query '[?kind==`AIServices`]' \
-  --output table
+subId=$(az account show --query id -o tsv)
+regions=("eastus" "eastus2" "westus" "westus2" "swedencentral")
 
-# For each resource, check deployments
-for resource in $(az cognitiveservices account list --query '[?kind==`AIServices`].name' -o tsv); do
-    echo "=== $resource ==="
-    az cognitiveservices account deployment list --name "$resource" --output table
+for region in "${regions[@]}"; do
+  echo "=== Region: $region ==="
+  az rest --method get \
+    --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/locations/$region/usages?api-version=2023-05-01" \
+    --query "value[?contains(name.value,'OpenAI')].{Model:name.value, Used:currentValue, Limit:limit, Available:(limit-currentValue)}" \
+    --output table
+  echo ""
 done
 ```
+
+**Alternative - Check Specific Resource:**
+
+If user wants to monitor a specific resource, ask for resource name first:
+
+```bash
+# List deployments for specific resource
+az cognitiveservices account deployment list \
+  --name <resource-name> \
+  --resource-group <rg> \
+  --query '[].{Name:name, Model:properties.model.name, Capacity:sku.capacity}' \
+  --output table
+```
+
+> **Note:** Don't automatically iterate through all resources in the subscription. Show regional quota summary or ask for specific resource name.
 
 ### 6. Deploy with Provisioned Throughput Units (PTU)
 
