@@ -274,11 +274,6 @@ export function useAgentRunner() {
   async function cleanup(): Promise<void> {
     for (const entry of currentCleanups) {
       try {
-        if (entry.config && entry.agentMetadata) {
-          writeMarkdownReport(entry.config, entry.agentMetadata);
-        }
-      } catch { /* ignore */ }
-      try {
         if (entry.session) {
           await entry.session.destroy();
         }
@@ -297,9 +292,23 @@ export function useAgentRunner() {
     currentCleanups = [];
   }
 
+  async function createMarkdownReport(): Promise<void> {
+    for (const entry of currentCleanups) {
+      try {
+        if (isTest() &&entry.config && entry.agentMetadata) {
+          writeMarkdownReport(entry.config, entry.agentMetadata);
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
   if (isTest()) {
     // Guarantees cleanup even if it times out in a test.
-    afterEach(cleanup);
+    // No harm in running twice if the test also calls cleanup.
+    afterEach(async () => {
+      await createMarkdownReport();
+      await cleanup();
+    });
   }
   
 
@@ -395,7 +404,9 @@ export function useAgentRunner() {
       console.error("Agent runner error:", error);
       throw error;
     } finally {
-      cleanup();
+      if(!isTest()) {
+        await cleanup();
+      }
     }
   }
 
