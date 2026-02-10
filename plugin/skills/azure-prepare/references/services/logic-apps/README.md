@@ -39,7 +39,5 @@ Logic Apps are typically deployed as infrastructure, not application services:
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Triggers | [triggers.md](triggers.md) |
+- [Bicep Patterns](bicep.md)
+- [Triggers](triggers.md)

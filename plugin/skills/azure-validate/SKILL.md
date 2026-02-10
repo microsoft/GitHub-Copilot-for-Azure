@@ -39,12 +39,12 @@ description: |
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | — |
-| 2 | **Run Validation** — Execute recipe-specific validation commands | [recipes/](references/recipes/) |
-| 3 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | — |
+| 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/plan.md` |
+| 2 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
+| 3 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
 | 4 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 5 | **Update Status** — Only after ALL checks pass, set status to `Validated` | — |
-| 6 | **Deploy** — Invoke **azure-deploy** skill | — |
+| 5 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
+| 6 | **Deploy** — Invoke **azure-deploy** skill | [azure-deploy](../azure-deploy/SKILL.md) |
 
 > **⛔ VALIDATION AUTHORITY**
 >
@@ -56,16 +56,6 @@ description: |
 > Do NOT set status to `Validated` without running checks and recording proof.
 
 ---
-
-## Recipes
-
-| Recipe | Reference |
-|--------|-----------|
-| AZD | [recipes/azd/](references/recipes/azd/) |
-| AZCLI | [recipes/azcli/](references/recipes/azcli/) |
-| Bicep | [recipes/bicep/](references/recipes/bicep/) |
-| Terraform | [recipes/terraform/](references/recipes/terraform/) |
-
 
 > **⚠️ MANDATORY NEXT STEP — DO NOT SKIP**
 >

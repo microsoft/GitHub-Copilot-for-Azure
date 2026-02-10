@@ -6,7 +6,7 @@ Run these validations when reviewing or authoring skills.
 
 | # | Check | Description |
 |---|-------|-------------|
-| 1 | [Broken Links](broken-links.md) | Verify all markdown links point to existing files |
+| 1 | [Broken Links](broken-links.md) | Verify all markdown links point to existing files (not folders) |
 | 2 | [Orphaned References](orphaned-refs.md) | Find unreferenced files in `references/` |
 | 3 | [Token Splitting](token-splitting.md) | Split references exceeding 1000 tokens |
 | 4 | [Duplicate Content](duplicates.md) | Consolidate repeated content |
@@ -16,7 +16,8 @@ Run these validations when reviewing or authoring skills.
 
 | Check | Action if Failed |
 |-------|------------------|
-| Broken links | Fix, delete, or user decision |
+| Broken links | Fix path, add `/README.md` for folder links, or delete |
+| Folder links | Change to file links (e.g., `recipes/` → `recipes/README.md`) |
 | Orphaned references | Delete, add link, or user decision |
 | References >1000 tokens | Split into folder with README.md |
 | Duplicate content | Consolidate into shared reference |

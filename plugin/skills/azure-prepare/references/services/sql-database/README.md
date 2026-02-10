@@ -37,8 +37,6 @@ Managed relational database with ACID compliance and full SQL Server compatibili
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Entra ID auth | [auth.md](auth.md) |
-| SDK patterns | [sdk.md](sdk.md) |
+- [Bicep Patterns](bicep.md)
+- [Entra ID Auth](auth.md)
+- [SDK Patterns](sdk.md)

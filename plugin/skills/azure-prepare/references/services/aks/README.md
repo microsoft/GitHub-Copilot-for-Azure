@@ -42,8 +42,6 @@ services:
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| K8s manifests | [manifests.md](manifests.md) |
-| Add-ons | [addons.md](addons.md) |
+- [Bicep Patterns](bicep.md)
+- [K8s Manifests](manifests.md)
+- [Add-ons](addons.md)

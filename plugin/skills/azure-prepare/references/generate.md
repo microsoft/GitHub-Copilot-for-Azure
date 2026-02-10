@@ -29,12 +29,12 @@ The research step loads service-specific references and invokes related skills t
 
 Load the appropriate recipe for detailed generation steps:
 
-| Recipe | Reference |
-|--------|-----------|
-| AZD | [recipes/azd/](recipes/azd/) |
-| AZCLI | [recipes/azcli/](recipes/azcli/) |
-| Bicep | [recipes/bicep/](recipes/bicep/) |
-| Terraform | [recipes/terraform/](recipes/terraform/) |
+| Recipe | Guide |
+|--------|-------|
+| AZD | [AZD Recipe](recipes/azd/README.md) |
+| AZCLI | [AZCLI Recipe](recipes/azcli/README.md) |
+| Bicep | [Bicep Recipe](recipes/bicep/README.md) |
+| Terraform | [Terraform Recipe](recipes/terraform/README.md) |
 
 ## Common Standards
 

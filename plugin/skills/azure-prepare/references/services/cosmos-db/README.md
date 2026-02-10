@@ -47,8 +47,6 @@ Recommendation: Use **Session** for most applications.
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Partition key selection | [partitioning.md](partitioning.md) |
-| SDK connection patterns | [sdk.md](sdk.md) |
+- [Bicep Patterns](bicep.md)
+- [Partition Key Selection](partitioning.md)
+- [SDK Connection Patterns](sdk.md)

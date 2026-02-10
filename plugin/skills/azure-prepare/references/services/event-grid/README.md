@@ -41,7 +41,5 @@ Serverless event routing for event-driven architectures.
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Subscriptions | [subscriptions.md](subscriptions.md) |
+- [Bicep Patterns](bicep.md)
+- [Subscriptions](subscriptions.md)

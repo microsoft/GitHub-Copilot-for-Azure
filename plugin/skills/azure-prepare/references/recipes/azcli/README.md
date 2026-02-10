@@ -70,8 +70,8 @@ Resources: `{prefix}{token}{instance}`
 
 ## References
 
-- [Deployment commands](mdc:commands.md)
-- [Deployment scripts](mdc:scripts.md)
+- [Deployment Commands](commands.md)
+- [Deployment Scripts](scripts.md)
 
 ## Next
 

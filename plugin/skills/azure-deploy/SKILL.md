@@ -53,9 +53,9 @@ Activate this skill when user wants to:
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Check Plan** — Read `.azure/plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | — |
-| 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [pre-deploy-checklist](references/pre-deploy-checklist.md) |
-| 3 | **Load Recipe** — Based on `recipe.type` in manifest | [recipes/](references/recipes/) |
+| 1 | **Check Plan** — Read `.azure/plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/plan.md` |
+| 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [pre-deploy-checklist.md](references/pre-deploy-checklist.md) |
+| 3 | **Load Recipe** — Based on `recipe.type` in manifest | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
 | 5 | **Handle Errors** — See recipe's `errors.md` | — |
 | 6 | **Verify Success** — Confirm deployment completed and endpoints are accessible | — |
@@ -63,17 +63,6 @@ Activate this skill when user wants to:
 > **⛔ VALIDATION PROOF CHECK**
 >
 > When checking the plan, verify the **Validation Proof** section (Section 7) contains actual validation results with commands run and timestamps. If this section is empty, validation was bypassed — invoke **azure-validate** skill first.
-
-## Recipes
-
-| Recipe | Reference |
-|--------|-----------|
-| AZD (Bicep or Terraform) | [recipes/azd/](references/recipes/azd/) |
-| AZCLI | [recipes/azcli/](references/recipes/azcli/) |
-| Bicep | [recipes/bicep/](references/recipes/bicep/) |
-| Terraform | [recipes/terraform/](references/recipes/terraform/) |
-
-> 💡 **Tip:** azd supports both Bicep and Terraform. Check `azure.yaml` for `infra.provider` setting.
 
 ## MCP Tools
 

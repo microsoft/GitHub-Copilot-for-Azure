@@ -37,6 +37,7 @@ Metadata (~100 tokens) loads at startup. SKILL.md (<5000 tokens) loads on activa
 
 References are JIT (just-in-time) loaded:
 - Only files explicitly linked via `[text](references/file.md)` load
+- **Link to files, not folders** - `[Recipes](references/recipes/README.md)` not `[Recipes](references/recipes/)`
 - Each file loads in full (not sections)
 - No caching between requests - write self-contained files
 - Use recipes/services patterns for multi-option skills

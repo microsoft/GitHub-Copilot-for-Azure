@@ -46,10 +46,6 @@ resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2022-09-01' = {
 
 ## Deployment Token
 
-For CI/CD pipelines:
+> ⚠️ **Security Warning:** Do NOT expose deployment tokens in Bicep outputs.
 
-```bicep
-output deploymentToken string = staticWebApp.listSecrets().properties.apiKey
-```
-
-Store this token as a secret in GitHub Actions or Azure DevOps.
+See [deployment.md](deployment.md) for secure token handling.

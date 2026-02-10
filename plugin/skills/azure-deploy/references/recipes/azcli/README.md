@@ -68,5 +68,5 @@ func azure functionapp publish <function-app-name>
 
 ## References
 
-- [Verification steps](mdc:verify.md)
-- [Error handling](mdc:errors.md)
+- [Verification steps](./verify.md)
+- [Error handling](./errors.md)

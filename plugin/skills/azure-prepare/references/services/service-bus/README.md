@@ -36,7 +36,5 @@ Enterprise messaging with queues and pub/sub topics.
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Messaging patterns | [patterns.md](patterns.md) |
+- [Bicep Patterns](bicep.md)
+- [Messaging Patterns](patterns.md)

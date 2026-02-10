@@ -60,8 +60,6 @@ Endpoint should return 200 OK when healthy.
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Deployment slots | [deployment-slots.md](deployment-slots.md) |
-| Auto-scaling | [scaling.md](scaling.md) |
+- [Bicep Patterns](bicep.md)
+- [Deployment Slots](deployment-slots.md)
+- [Auto-Scaling](scaling.md)

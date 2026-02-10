@@ -11,28 +11,30 @@ After architecture planning, research each selected component to gather best pra
 
 ## Service-to-Reference Mapping
 
-| Azure Service | Internal Reference | Related Skills |
-|---------------|-------------------|----------------|
+| Azure Service | Reference | Related Skills |
+|---------------|-----------|----------------|
 | **Hosting** | | |
-| Container Apps | [container-apps/README.md](services/container-apps/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
-| App Service | [app-service/README.md](services/app-service/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
-| Azure Functions | [functions/README.md](services/functions/README.md) | `azure-functions` (invoke for detailed guidance) |
-| Static Web Apps | [static-web-apps/README.md](services/static-web-apps/README.md) | — |
-| AKS | [aks/README.md](services/aks/README.md) | `azure-networking`, `azure-security-hardening` |
+| Container Apps | [Container Apps](services/container-apps/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
+| App Service | [App Service](services/app-service/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
+| Azure Functions | [Functions](services/functions/README.md) | `azure-functions` (invoke for detailed guidance) |
+| Static Web Apps | [Static Web Apps](services/static-web-apps/README.md) | — |
+| AKS | [AKS](services/aks/README.md) | `azure-networking`, `azure-security-hardening` |
 | **Data** | | |
-| Azure SQL | [sql-database/README.md](services/sql-database/README.md) | `azure-security` |
-| Cosmos DB | [cosmos-db/README.md](services/cosmos-db/README.md) | `azure-security` |
+| Azure SQL | [SQL Database](services/sql-database/README.md) | `azure-security` |
+| Cosmos DB | [Cosmos DB](services/cosmos-db/README.md) | `azure-security` |
 | PostgreSQL | — | `azure-postgres` (invoke for passwordless auth) |
-| Storage (Blob/Files) | [storage/README.md](services/storage/README.md) | `azure-storage`, `azure-security-hardening` |
+| Storage (Blob/Files) | [Storage](services/storage/README.md) | `azure-storage`, `azure-security-hardening` |
 | **Messaging** | | |
-| Service Bus | [service-bus/README.md](services/service-bus/README.md) | — |
-| Event Grid | [event-grid/README.md](services/event-grid/README.md) | — |
+| Service Bus | [Service Bus](services/service-bus/README.md) | — |
+| Event Grid | [Event Grid](services/event-grid/README.md) | — |
 | Event Hubs | — | — |
+| **Integration** | | |
+| Logic Apps | [Logic Apps](services/logic-apps/README.md) | — |
 | **Security & Identity** | | |
-| Key Vault | [key-vault/README.md](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
+| Key Vault | [Key Vault](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
 | Managed Identity | — | `azure-security`, `entra-app-registration` |
 | **Observability** | | |
-| Application Insights | [app-insights/README.md](services/app-insights/README.md) | `appinsights-instrumentation` (invoke for instrumentation) |
+| Application Insights | [App Insights](services/app-insights/README.md) | `appinsights-instrumentation` (invoke for instrumentation) |
 | Log Analytics | — | `azure-observability`, `azure-kusto` |
 | **AI Services** | | |
 | Azure OpenAI | — | `microsoft-foundry`, `azure-ai` |

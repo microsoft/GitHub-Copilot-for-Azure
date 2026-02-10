@@ -32,11 +32,7 @@ Activate this skill when user wants to:
 4. **Update plan progressively** — Mark steps complete as you go
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [azure-context.md](references/azure-context.md)
-7. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
-
-> **⛔ MANDATORY USER CONFIRMATION REQUIRED**
->
-> You **MUST** use `ask_user` to prompt the user to confirm **Azure subscription** and **Azure location/region** BEFORE generating ANY artifacts. Do NOT assume or auto-select these values.
+7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
 
 ---
 
@@ -54,33 +50,23 @@ Activate this skill when user wants to:
 ---
 
 ## Phase 1: Planning (BLOCKING — Complete Before Any Execution)
-- Prepare Azure Functions, serverless APIs, event-driven apps, and MCP servers or tools for AI agents
 
 Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts until the plan is approved.
 
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
-| 2 | **Gather Requirements** — Classification, scale, budget, **subscription, location** (MUST prompt user) | [requirements.md](references/requirements.md) |
+| 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
 | 4 | **Select Recipe** — Choose AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
 | 5 | **Plan Architecture** — Select stack + map components to Azure services | [architecture.md](references/architecture.md) |
 | 6 | **Write Plan** — Generate `.azure/plan.md` with all decisions | [plan-template.md](references/plan-template.md) |
-| 7 | **Present Plan** — Show plan to user and ask for approval before proceeding |
-| 8 | **Destructive actions require `ask_user`** — [global-rules](../_shared/global-rules.md)
+| 7 | **Present Plan** — Show plan to user and ask for approval | `.azure/plan.md` |
+| 8 | **Destructive actions require `ask_user`** | [global-rules](../_shared/global-rules.md) |
+
+---
 
 > **⛔ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
-
-> You **MUST** use `ask_user` to prompt the user to confirm:
-> - **Azure subscription** — Ask in Step 2 (Requirements) BEFORE architecture planning
-> - **Azure location/region** — Ask in Step 5 (Architecture) AFTER services are determined, filtered by service availability
->
-> Do NOT assume, guess, or auto-select these values. Do NOT proceed to artifact generation until the user has explicitly confirmed both. This is a blocking requirement.
->
-> **⚠️ CRITICAL: Before calling `ask_user` for subscription, you MUST:**
-> 1. Run `az account show --query "{name:name, id:id}" -o json` to get the current default
-> 2. Include the **actual subscription name and ID** in the choice text
-> 3. Example: `"Use current: jongdevdiv (25fd0362-...) (Recommended)"` — NOT generic `"Use default subscription"`
 
 ---
 
@@ -91,38 +77,11 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Research Components** — Load service references + invoke related skills | [research.md](references/research.md) |
-| 2 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
-| 3 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` |
-| 4 | **Validate** — Invoke **azure-validate** skill | — |
-
----
-
-
-## Action References
-
-| # | Action | Reference |
-|---|--------|-----------|
-| 1 | **Analyze Workspace** — Determine path: new, add components, or modernize. If `azure.yaml` + `infra/` exist → skip to azure-validate | [analyze.md](references/analyze.md) |
-| 2 | **Gather Requirements** — Classification, scale, budget, compliance, **subscription** (MUST prompt user) | [requirements.md](references/requirements.md) |
-| 3 | **Scan Codebase** — Components, technologies, dependencies, existing tooling | [scan.md](references/scan.md) |
-| 4 | **Select Recipe** — AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
-| 5 | **Plan Architecture** — Stack + service mapping, then **select location** (MUST prompt user with regions that support all selected services) | [architecture.md](references/architecture.md) |
-| 6 | **Generate Artifacts** — Research best practices first, then generate | [generate.md](references/generate.md) |
-| 7 | **Harden Security** — Apply best practices | [security.md](references/security.md) |
-| 8 | **Create Manifest** — Document decisions in `.azure/preparation-manifest.md` | [manifest.md](references/manifest.md) |
-| 9 | **Validate** — Invoke **azure-validate** skill before deployment | — |
-
-
----
-
-## Recipes
-
-| Recipe | When to Use | Reference |
-|--------|-------------|-----------|
-| AZD | Default. New projects, multi-service apps, want `azd up` | [recipes/azd/](references/recipes/azd/) |
-| AZCLI | Existing az scripts, imperative control, custom pipelines | [recipes/azcli/](references/recipes/azcli/) |
-| Bicep | IaC-first, no CLI wrapper, direct ARM deployment | [recipes/bicep/](references/recipes/bicep/) |
-| Terraform | Multi-cloud, existing TF expertise, state management | [recipes/terraform/](references/recipes/terraform/) |
+| 2 | **Confirm Azure Context** — Detect and confirm subscription + location | [azure-context.md](references/azure-context.md) |
+| 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
+| 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
+| 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
+| 6 | **Validate** — Invoke **azure-validate** skill | [azure-validate](../azure-validate/SKILL.md) |
 
 ---
 

@@ -40,9 +40,7 @@ services:
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Scaling patterns | [scaling.md](scaling.md) |
-| Health probes | [health-probes.md](health-probes.md) |
-| Environment variables | [environment.md](environment.md) |
+- [Bicep Patterns](bicep.md)
+- [Scaling Patterns](scaling.md)
+- [Health Probes](health-probes.md)
+- [Environment Variables](environment.md)

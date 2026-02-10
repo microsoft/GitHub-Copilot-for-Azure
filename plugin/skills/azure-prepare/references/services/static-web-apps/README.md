@@ -57,7 +57,7 @@ project/
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Routing & auth | [routing.md](routing.md) |
+- [Region Availability](region-availability.md)
+- [Bicep Patterns](bicep.md)
+- [Routing and Auth](routing.md)
+- [Deployment](deployment.md)

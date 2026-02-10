@@ -51,7 +51,5 @@ Centralized secrets, keys, and certificate management.
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| SDK access | [sdk.md](sdk.md) |
+- [Bicep Patterns](bicep.md)
+- [SDK Access](sdk.md)

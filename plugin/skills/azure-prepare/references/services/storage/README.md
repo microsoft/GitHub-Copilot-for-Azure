@@ -54,7 +54,5 @@ Scalable cloud storage for blobs, files, queues, and tables.
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Access patterns | [access.md](access.md) |
+- [Bicep Patterns](bicep.md)
+- [Access Patterns](access.md)

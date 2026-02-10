@@ -69,7 +69,7 @@ Or for pure Terraform:
 
 ## Recipe References
 
-- [AZD Recipe](recipes/azd/)
-- [AZCLI Recipe](recipes/azcli/)
-- [Bicep Recipe](recipes/bicep/)
-- [Terraform Recipe](recipes/terraform/)
+- [AZD Recipe](recipes/azd/README.md)
+- [AZCLI Recipe](recipes/azcli/README.md)
+- [Bicep Recipe](recipes/bicep/README.md)
+- [Terraform Recipe](recipes/terraform/README.md)

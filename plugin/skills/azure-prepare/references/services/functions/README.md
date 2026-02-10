@@ -9,6 +9,9 @@ Serverless compute for event-driven workloads, APIs, and scheduled tasks.
 - HTTP APIs with variable traffic
 - Message/queue processing
 - Real-time file processing
+- MCP servers for AI agents
+- Real-time streaming and event processing
+- Orchestrations and workflows (Durable Functions)
 
 ## Service Type in azure.yaml
 
@@ -29,11 +32,14 @@ services:
 
 ## Hosting Plans
 
-| Plan | Use Case | Scaling |
-|------|----------|---------|
-| Consumption (Y1) | Variable workloads, cost optimization | Auto, scale to zero |
-| Premium (EP1-EP3) | No cold starts, VNET, longer execution | Auto, min instances |
-| Dedicated | Predictable load, existing App Service | Manual or auto |
+**Use Flex Consumption for new deployments** (all AZD templates default to Flex).
+
+| Plan | Use Case | Scaling | VNET |
+|------|----------|---------|------|
+| **Flex Consumption** ⭐ | Default for new projects | Auto, pay-per-execution | ✅ |
+| Consumption (Y1) | Variable workloads, cost optimization | Auto, scale to zero | ❌ |
+| Premium (EP1-EP3) | No cold starts, longer execution | Auto, min instances | ✅ |
+| Dedicated | Predictable load, existing App Service | Manual or auto | ✅ |
 
 ## Runtime Stacks
 
@@ -46,8 +52,7 @@ services:
 
 ## References
 
-| Topic | Reference |
-|-------|-----------|
-| Bicep patterns | [bicep.md](bicep.md) |
-| Trigger types | [triggers.md](triggers.md) |
-| Durable Functions | [durable.md](durable.md) |
+- [AZD Templates](templates/README.md)
+- [Bicep Patterns](bicep.md)
+- [Trigger Types](triggers.md)
+- [Durable Functions](durable.md)
