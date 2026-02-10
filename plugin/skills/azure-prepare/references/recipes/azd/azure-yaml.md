@@ -4,6 +4,8 @@ Create `azure.yaml` in project root for AZD.
 
 ## Structure
 
+### Basic (Bicep - default)
+
 ```yaml
 name: <project-name>
 metadata:
@@ -15,6 +17,27 @@ services:
     language: <python|js|ts|java|dotnet|go>
     host: <containerapp|appservice|function|staticwebapp|aks>
 ```
+
+### With Terraform Provider
+
+```yaml
+name: <project-name>
+metadata:
+  template: azd-init
+
+# Specify Terraform as IaC provider
+infra:
+  provider: terraform
+  path: ./infra
+
+services:
+  <service-name>:
+    project: <path-to-source>
+    language: <python|js|ts|java|dotnet|go>
+    host: <containerapp|appservice|function|staticwebapp|aks>
+```
+
+> 💡 **Tip:** Omit `infra` section to use Bicep (default). Add `infra.provider: terraform` to use Terraform. See [terraform.md](terraform.md) for details.
 
 ## Host Types
 
@@ -28,9 +51,29 @@ services:
 
 ## Examples
 
-### Container App
+### Container App with Bicep (default)
 
 ```yaml
+name: myapp
+
+services:
+  api:
+    project: ./src/api
+    language: python
+    host: containerapp
+    docker:
+      path: ./src/api/Dockerfile
+```
+
+### Container App with Terraform
+
+```yaml
+name: myapp
+
+infra:
+  provider: terraform
+  path: ./infra
+
 services:
   api:
     project: ./src/api

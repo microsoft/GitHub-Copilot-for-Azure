@@ -2,12 +2,23 @@
 
 Terraform workflow for Azure deployments.
 
-## When to Use
+> 💡 **Consider azd+Terraform:** If you're primarily deploying to Azure and want a simpler workflow, consider using [azd with Terraform](../azd/terraform.md) instead. You get Terraform's IaC with azd's deployment convenience.
 
-- Multi-cloud requirements
-- Existing Terraform expertise
-- State management features needed
-- Organization mandate for Terraform
+## When to Use Pure Terraform
+
+- Multi-cloud deployments (non-Azure-first)
+- Complex Terraform modules/workspaces incompatible with azd
+- Existing Terraform CI/CD that's hard to migrate
+- Organization mandate for pure Terraform workflow
+
+## When to Use azd+Terraform Instead
+
+- Azure-first deployment (even if multi-cloud IaC)
+- Want `azd up` simplicity with Terraform IaC
+- Multi-service apps needing orchestration
+- Team new to Terraform but wants to learn it
+
+→ See [azd+Terraform documentation](../azd/terraform.md)
 
 ## Before Generation
 

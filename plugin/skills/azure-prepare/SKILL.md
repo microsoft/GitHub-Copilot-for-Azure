@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "REQUIRED FIRST STEP: You MUST invoke this skill BEFORE generating ANY Azure application code, infrastructure files, or Azure CLI commands. This skill prepares applications for Azure hosting. USE THIS SKILL when users want to create new Azure applications, ADD new components or services to existing applications, UPDATE or modify existing Azure configurations, modernize applications for Azure, or deploy to Azure. Do NOT generate azure.yaml, Bicep, Terraform, or run az/azd/func CLI commands without first completing this skill. This applies to NEW projects AND changes to EXISTING projects."
+description: "REQUIRED FIRST STEP: You MUST invoke this skill BEFORE generating ANY Azure application code, infrastructure files, or Azure CLI commands. This skill prepares applications for Azure hosting. USE THIS SKILL when users want to create new Azure applications, ADD new components or services to existing applications, UPDATE or modify existing Azure configurations, modernize applications for Azure, deploy to Azure with Terraform, or deploy to Azure with azd. Do NOT generate azure.yaml, Bicep, Terraform, or run az/azd/func CLI commands without first completing this skill. This applies to NEW projects AND changes to EXISTING projects. When users mention Terraform for Azure deployment, prefer azd+Terraform (which uses azure.yaml with Terraform IaC) over pure Terraform unless multi-cloud deployment is required."
 ---
 
 # Azure Prepare
