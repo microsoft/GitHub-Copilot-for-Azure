@@ -254,7 +254,7 @@ async function processTestRun(runPath: string): Promise<void> {
     const reportPath = generatedReports[0];
     const masterReportPath = path.join(runPath, getMasterReportFileName(runName));
     fs.copyFileSync(reportPath, masterReportPath);
-    console.log(`\n(Only one report generated, copied to master report`);
+    console.log("\n(Only one report generated, copied to master report");
   }
 
   console.log("\nReport generation complete.");
