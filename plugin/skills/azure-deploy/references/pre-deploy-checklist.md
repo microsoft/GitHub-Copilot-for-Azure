@@ -83,7 +83,7 @@ Check for each service in `azure.yaml`. If duplicates exist **in the target RG**
 
 **You MUST use `ask_user`** with regions that support ALL services in the architecture.
 
-See [region-availability.md](../../azure-prepare/references/region-availability.md) for service-specific limitations.
+See [region-availability.md](region-availability.md) for service-specific limitations.
 
 ## Step 7: Set Environment Variables
 
