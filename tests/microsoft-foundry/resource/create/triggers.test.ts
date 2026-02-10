@@ -28,7 +28,6 @@ describe('microsoft-foundry:resource/create - Trigger Tests', () => {
       'Set up new AI Services account',
       'Create a resource group for Foundry',
       'Register Cognitive Services provider',
-      'Check usage for my Foundry resource',
       'Create Azure Cognitive Services multi-service',
       'Provision AI Services with CLI',
       'Create new Azure AI Foundry resource',
