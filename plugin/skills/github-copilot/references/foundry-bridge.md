@@ -78,7 +78,7 @@ app.post("/agent", async (req, res) => {
 ## Dependencies
 
 ```bash
-npm install @copilot-extensions/preview-sdk @azure/ai-projects @azure/identity express
+pnpm install @copilot-extensions/preview-sdk @azure/ai-projects @azure/identity express
 ```
 
 ## Deployment

@@ -87,9 +87,13 @@ azd provision --preview --no-prompt
 
 > 💡 **Note:** This works for both Bicep and Terraform. azd will automatically detect the provider from `azure.yaml` and run the appropriate validation (`bicep build` or `terraform plan`).
 
-### 7. Package Validation
+### 8. Build Verification
 
-Confirm all services build/package successfully (must complete without error):
+Build the project and verify there are no errors. If the build fails, fix the issues and re-build until it succeeds. Do NOT proceed to packaging or deployment with build errors.
+
+### 9. Package Validation
+
+Confirm all services package successfully:
 
 ```bash
 azd package --no-prompt
