@@ -330,3 +330,136 @@ export function countAiSearchConnectionFailures(metadata: AgentMetadata): number
   }
   return count;
 }
+
+/**
+ * Detect ACR admin credential usage in generated Bicep/code.
+ * Skill requires managed identity; adminUserEnabled: true is banned.
+ */
+export function countAcrAdminCredentialUsage(metadata: AgentMetadata): number {
+  const allText = getAllToolText(metadata);
+  const antiPatterns = [
+    /adminUserEnabled\s*:\s*true/gi,
+    /listCredentials\(\)/gi,
+    /\.listCredentials\(\)\.passwords/gi,
+    /\.listCredentials\(\)\.username/gi,
+  ];
+
+  let count = 0;
+  for (const pattern of antiPatterns) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count += matches.length;
+  }
+  return count;
+}
+
+/**
+ * Detect GITHUB_TOKEN passed as plain Bicep @secure parameter instead of Key Vault.
+ * Counts instances where the token is wired as a direct secret value rather than
+ * via Key Vault secretUri reference.
+ */
+export function countMissingKeyVaultForToken(metadata: AgentMetadata): number {
+  const allText = getAllToolText(metadata);
+
+  // Positive: Key Vault is used (these reduce the count)
+  const kvPatterns = [
+    /keyVaultUrl/i,
+    /Microsoft\.KeyVault\/vaults\/secrets/i,
+    /secretUri/i,
+    /@Microsoft\.KeyVault\(/i,
+  ];
+  const hasKeyVault = kvPatterns.some(p => p.test(allText));
+
+  // Negative: token passed as direct secret value
+  const directSecretPatterns = [
+    /name:\s*'github-token'\s*\n\s*value:\s*githubToken/gi,
+    /@secure\(\)\s*\n.*param\s+githubToken/gi,
+    /secret.*value.*githubToken(?!.*keyVault)/gi,
+  ];
+
+  let count = 0;
+  for (const pattern of directSecretPatterns) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count += matches.length;
+  }
+
+  // If Key Vault is present alongside direct refs, reduce severity
+  return hasKeyVault ? Math.max(0, count - 1) : count;
+}
+
+/**
+ * Detect wrong session.on() usage pattern in generated Copilot SDK code.
+ * The correct API is session.on((event) => { switch(event.type) ... })
+ * NOT session.on("event_name", handler).
+ */
+export function countWrongSessionOnPattern(metadata: AgentMetadata): number {
+  const allText = getAllToolText(metadata);
+  const wrongPatterns = [
+    /session\.on\s*\(\s*["']/g,           // session.on("... or session.on('...
+    /\.on\s*\(\s*["']assistant\./g,       // .on("assistant.message_delta"...
+    /\.on\s*\(\s*["']tool\./g,            // .on("tool.execution_start"...
+    /\.on\s*\(\s*["']session\./g,         // .on("session.idle"...
+  ];
+
+  // Exclude common non-SDK patterns (Express app.on, process.on)
+  const excludePatterns = [
+    /app\.on\s*\(/g,
+    /process\.on\s*\(/g,
+    /server\.on\s*\(/g,
+    /emitter\.on\s*\(/g,
+  ];
+
+  let count = 0;
+  for (const pattern of wrongPatterns) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count += matches.length;
+  }
+
+  // Subtract false positives from non-SDK .on() calls
+  for (const pattern of excludePatterns) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count = Math.max(0, count - matches.length);
+  }
+
+  // Also check for wrong event name
+  const wrongEventNames = [
+    /tool\.execution_end/g,
+    /assistant\.message_end/g,
+    /session\.done/g,
+  ];
+  for (const pattern of wrongEventNames) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count += matches.length;
+  }
+
+  return count;
+}
+
+/**
+ * Detect inline HTML embedded as string literals in TypeScript/JavaScript.
+ * The correct pattern is to create a separate public/test.html file
+ * and serve via express.static().
+ */
+export function countInlineHtmlInCode(metadata: AgentMetadata): number {
+  const allText = getAllToolText(metadata) + "\n" + getAssistantText(metadata);
+
+  const inlinePatterns = [
+    /const\s+\w*HTML\w*\s*=\s*`<!DOCTYPE/gi,        // const TEST_PAGE_HTML = `<!DOCTYPE
+    /const\s+\w*html\w*\s*=\s*`<!DOCTYPE/gi,        // const htmlContent = `<!DOCTYPE
+    /res\.send\s*\(\s*`<!DOCTYPE/g,                  // res.send(`<!DOCTYPE
+    /res\.send\s*\(\s*\w*HTML/g,                     // res.send(TEST_PAGE_HTML)
+  ];
+
+  let count = 0;
+  for (const pattern of inlinePatterns) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count += matches.length;
+  }
+
+  return count;
+}

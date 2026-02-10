@@ -70,6 +70,11 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+// Health check endpoint
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // Copilot Extension agent endpoint (SSE streaming)
 app.post("/agent", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
