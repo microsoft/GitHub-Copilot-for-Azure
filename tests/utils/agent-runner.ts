@@ -222,6 +222,10 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
  * Write markdown report to file
  */
 function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): void {
+  if (!isTest()) {
+    return;
+  }
+
   try {
     const filePath = buildShareFilePath();
     const dir = path.dirname(filePath);
@@ -266,7 +270,7 @@ export async function run(config: TestConfig): Promise<AgentMetadata> {
 
     // Copilot client with yolo mode
     const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
-    if (process.env.DEBUG) {
+    if (process.env.DEBUG && isTest()) {
       cliArgs.push("--log-dir");
       cliArgs.push(buildLogFilePath());
     }
@@ -547,6 +551,16 @@ export function buildShareFilePath(): string {
 
 export function buildLogFilePath(): string {
   return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName());
+}
+
+function isTest(): boolean {
+  try {
+    // Jest provides expect.getState() with current test info
+    const _state = expect.getState();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function getTestName(): string {
