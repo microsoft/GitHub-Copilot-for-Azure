@@ -1,6 +1,6 @@
 ---
 name: azure-deploy
-description: "Execute Azure deployments after preparation and validation are complete. USE FOR: azd up, azd deploy, push to Azure, publish to Azure, ship to production, launch on Azure, go live, release to Azure, deploy web app, deploy container app, deploy static site, deploy Azure Functions, azd provision, infrastructure deployment, bicep deploy, terraform apply. DO NOT USE FOR: preparing new apps (use azure-prepare), validating before deploy (use azure-validate)."
+description: "Execute Azure deployments after preparation and validation are complete. USE FOR: azd up, azd deploy, push to Azure, publish to Azure, ship to production, launch on Azure, go live, release to Azure, deploy web app, deploy container app, deploy static site, deploy Azure Functions, azd provision, infrastructure deployment, bicep deploy, terraform apply, deploy with terraform. Supports azd with Bicep, azd with Terraform, pure Bicep, pure Terraform, and Azure CLI deployments. DO NOT USE FOR: preparing new apps (use azure-prepare), validating before deploy (use azure-validate)."
 ---
 
 # Azure Deploy
@@ -43,10 +43,12 @@ Activate this skill when user wants to:
 
 | Recipe | Reference |
 |--------|-----------|
-| AZD | [recipes/azd/](references/recipes/azd/) |
+| AZD (Bicep or Terraform) | [recipes/azd/](references/recipes/azd/) |
 | AZCLI | [recipes/azcli/](references/recipes/azcli/) |
 | Bicep | [recipes/bicep/](references/recipes/bicep/) |
 | Terraform | [recipes/terraform/](references/recipes/terraform/) |
+
+> 💡 **Tip:** azd supports both Bicep and Terraform. Check `azure.yaml` for `infra.provider` setting.
 
 ## MCP Tools
 
