@@ -144,8 +144,8 @@ scale: {
 
 ## Environment Variables and Secrets
 
-> ⛔ **NEVER** use `value` for passwords, connection strings, API keys, or other sensitive data.
-> Secrets in `value` are visible in logs, Azure Portal, and ARM exports.
+> ⛔ **NEVER** use `env[].value` for passwords, connection strings, API keys, or other sensitive data.
+> Secrets in `env[].value` are stored as plain text in the Container App configuration and are visible in Azure Portal and ARM/CLI exports.
 
 ### Pattern 1: secretRef (Required for Sensitive Data)
 
