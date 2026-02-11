@@ -271,7 +271,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         mode: "append",
         content: `Use ${projectEndpoint} as the project endpoint when calling Foundry tools.`
       },
-      prompt: "What's the official name of GPT 5 in Foundry?",
+      prompt: "What"s the official name of GPT 5 in Foundry?",
       nonInteractive: true
     });
 

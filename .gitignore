@@ -413,3 +413,5 @@ skill-invocation-test-summary.md
 
 # Installed plugin copies (created by /plugin install)
 plugin/azure/
+
+.github/

@@ -5,12 +5,12 @@
  * since resource/create is a sub-skill of microsoft-foundry.
  */
 
-import { TriggerMatcher } from '../../../utils/trigger-matcher';
-import { loadSkill, LoadedSkill } from '../../../utils/skill-loader';
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = 'microsoft-foundry';
 
-describe('microsoft-foundry:resource/create - Trigger Tests', () => {
+describe("microsoft-foundry:resource/create - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -19,7 +19,7 @@ describe('microsoft-foundry:resource/create - Trigger Tests', () => {
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe('Should Trigger - Resource Creation', () => {
+  describe("Should Trigger - Resource Creation", () => {
     const resourceCreatePrompts: string[] = [
       'Create a new Foundry resource',
       'Create Azure AI Services resource',
@@ -43,7 +43,7 @@ describe('microsoft-foundry:resource/create - Trigger Tests', () => {
     );
   });
 
-  describe('Should NOT Trigger', () => {
+  describe("Should NOT Trigger", () => {
     const nonTriggerPrompts: string[] = [
       'What is the weather today?',
       'Help me write Python code',
@@ -62,12 +62,12 @@ describe('microsoft-foundry:resource/create - Trigger Tests', () => {
     );
   });
 
-  describe('Trigger Keywords Snapshot', () => {
-    test('skill keywords match snapshot', () => {
+  describe("Trigger Keywords Snapshot", () => {
+    test("skill keywords match snapshot", () => {
       expect(triggerMatcher.getKeywords()).toMatchSnapshot();
     });
 
-    test('skill description triggers match snapshot', () => {
+    test("skill description triggers match snapshot", () => {
       expect({
         description: skill.metadata.description,
         extractedKeywords: triggerMatcher.getKeywords()
@@ -75,19 +75,19 @@ describe('microsoft-foundry:resource/create - Trigger Tests', () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    test('handles empty prompt', () => {
+  describe("Edge Cases", () => {
+    test("handles empty prompt", () => {
       const result = triggerMatcher.shouldTrigger('');
       expect(result.triggered).toBe(false);
     });
 
-    test('handles very long prompt with resource creation keywords', () => {
+    test("handles very long prompt with resource creation keywords", () => {
       const longPrompt = 'I want to create a new Azure AI Services Foundry resource '.repeat(50);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(result.triggered).toBe(true);
     });
 
-    test('is case insensitive', () => {
+    test("is case insensitive", () => {
       const upperResult = triggerMatcher.shouldTrigger('CREATE FOUNDRY RESOURCE');
       const lowerResult = triggerMatcher.shouldTrigger('create foundry resource');
       expect(upperResult.triggered).toBe(true);

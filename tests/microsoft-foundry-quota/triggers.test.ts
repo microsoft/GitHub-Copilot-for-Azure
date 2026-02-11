@@ -5,12 +5,12 @@
  * since quota is a sub-skill of microsoft-foundry.
  */
 
-import { TriggerMatcher } from '../utils/trigger-matcher';
-import { loadSkill, LoadedSkill } from '../utils/skill-loader';
+import { TriggerMatcher } from "../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = 'microsoft-foundry';
+const SKILL_NAME = "microsoft-foundry";
 
-describe('microsoft-foundry-quota - Trigger Tests', () => {
+describe("microsoft-foundry-quota - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -19,7 +19,7 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe('Should Trigger - Quota Management', () => {
+  describe("Should Trigger - Quota Management", () => {
     // Quota-specific prompts that SHOULD trigger the microsoft-foundry skill
     const quotaTriggerPrompts: string[] = [
       // View quota usage
@@ -74,7 +74,7 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     );
   });
 
-  describe('Should Trigger - Capacity and TPM Keywords', () => {
+  describe("Should Trigger - Capacity and TPM Keywords", () => {
     const capacityPrompts: string[] = [
       'How do I manage capacity in Microsoft Foundry?',
       'Increase TPM for my Azure AI Foundry deployment',
@@ -92,7 +92,7 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     );
   });
 
-  describe('Should Trigger - Deployment Failure Context', () => {
+  describe("Should Trigger - Deployment Failure Context", () => {
     const deploymentFailurePrompts: string[] = [
       'Microsoft Foundry deployment failed, check quota',
       'Insufficient quota to deploy model in Azure AI Foundry',
@@ -110,7 +110,7 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     );
   });
 
-  describe('Should NOT Trigger - Other Azure Services', () => {
+  describe("Should NOT Trigger - Other Azure Services", () => {
     const shouldNotTriggerPrompts: string[] = [
       'Check quota for Azure App Service',
       'Request quota increase for Azure VMs',
@@ -134,7 +134,7 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     );
   });
 
-  describe('Should NOT Trigger - Unrelated Topics', () => {
+  describe("Should NOT Trigger - Unrelated Topics", () => {
     const unrelatedPrompts: string[] = [
       'What is the weather today?',
       'Help me write a poem',
@@ -152,9 +152,8 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     );
   });
 
-  describe('Trigger Keywords - Quota Specific', () => {
-    test('skill description includes quota keywords', () => {
-      const keywords = triggerMatcher.getKeywords();
+  describe("Trigger Keywords - Quota Specific", () => {
+    test("skill description includes quota keywords", () => {
       const description = skill.metadata.description.toLowerCase();
 
       // Verify quota-related keywords are in description
@@ -165,7 +164,7 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
       expect(hasQuotaKeywords).toBe(true);
     });
 
-    test('skill keywords include foundry and quota terms', () => {
+    test("skill keywords include foundry and quota terms", () => {
       const keywords = triggerMatcher.getKeywords();
       const keywordString = keywords.join(' ').toLowerCase();
 
@@ -175,25 +174,25 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    test('handles empty prompt', () => {
+  describe("Edge Cases", () => {
+    test("handles empty prompt", () => {
       const result = triggerMatcher.shouldTrigger('');
       expect(result.triggered).toBe(false);
     });
 
-    test('handles very long quota-related prompt', () => {
+    test("handles very long quota-related prompt", () => {
       const longPrompt = 'Check my Microsoft Foundry quota usage '.repeat(50);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe('boolean');
     });
 
-    test('is case insensitive for quota keywords', () => {
+    test("is case insensitive for quota keywords", () => {
       const result1 = triggerMatcher.shouldTrigger('MICROSOFT FOUNDRY QUOTA CHECK');
       const result2 = triggerMatcher.shouldTrigger('microsoft foundry quota check');
       expect(result1.triggered).toBe(result2.triggered);
     });
 
-    test('handles misspellings gracefully', () => {
+    test("handles misspellings gracefully", () => {
       // Should still trigger on close matches
       const result = triggerMatcher.shouldTrigger('Check my Foundry qota usage');
       // May or may not trigger depending on other keywords
@@ -201,46 +200,46 @@ describe('microsoft-foundry-quota - Trigger Tests', () => {
     });
   });
 
-  describe('Multi-keyword Combinations', () => {
-    test('triggers with Foundry + quota combination', () => {
+  describe("Multi-keyword Combinations", () => {
+    test("triggers with Foundry + quota combination", () => {
       const result = triggerMatcher.shouldTrigger('Microsoft Foundry quota');
       expect(result.triggered).toBe(true);
     });
 
-    test('triggers with Foundry + capacity combination', () => {
+    test("triggers with Foundry + capacity combination", () => {
       const result = triggerMatcher.shouldTrigger('Azure AI Foundry capacity');
       expect(result.triggered).toBe(true);
     });
 
-    test('triggers with Foundry + TPM combination', () => {
+    test("triggers with Foundry + TPM combination", () => {
       const result = triggerMatcher.shouldTrigger('Microsoft Foundry TPM limits');
       expect(result.triggered).toBe(true);
     });
 
-    test('triggers with Foundry + deployment + failure', () => {
+    test("triggers with Foundry + deployment + failure", () => {
       const result = triggerMatcher.shouldTrigger('Foundry deployment failed insufficient quota');
       expect(result.triggered).toBe(true);
       expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
     });
   });
 
-  describe('Contextual Triggering', () => {
-    test('triggers when asking about limits', () => {
+  describe("Contextual Triggering", () => {
+    test("triggers when asking about limits", () => {
       const result = triggerMatcher.shouldTrigger('What are the quota limits for Microsoft Foundry?');
       expect(result.triggered).toBe(true);
     });
 
-    test('triggers when asking how to increase', () => {
+    test("triggers when asking how to increase", () => {
       const result = triggerMatcher.shouldTrigger('How do I increase my Azure AI Foundry quota?');
       expect(result.triggered).toBe(true);
     });
 
-    test('triggers when troubleshooting', () => {
+    test("triggers when troubleshooting", () => {
       const result = triggerMatcher.shouldTrigger('Troubleshoot Microsoft Foundry quota error');
       expect(result.triggered).toBe(true);
     });
 
-    test('triggers when monitoring', () => {
+    test("triggers when monitoring", () => {
       const result = triggerMatcher.shouldTrigger('Monitor quota usage in Azure AI Foundry');
       expect(result.triggered).toBe(true);
     });
