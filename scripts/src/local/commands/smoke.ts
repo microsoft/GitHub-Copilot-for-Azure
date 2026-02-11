@@ -4,10 +4,11 @@
  * Live verification that launches the Copilot CLI and confirms:
  * 1. The local plugin is loaded (via a temporary probe skill)
  * 2. All production skills are registered
- * 3. MCP servers are connected
+ * 3. MCP servers are connected (tool names visible)
+ * 4. Each MCP server responds to a real tool call
  * 
- * Creates a temporary _test-probe skill, launches `copilot -i` with a
- * verification prompt, parses output, and cleans up.
+ * Creates a temporary smoke-test-probe skill, launches `copilot -i` with
+ * verification prompts, parses output, and cleans up.
  */
 
 import { existsSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from 'node:fs';
@@ -95,6 +96,44 @@ interface SmokeResult {
   passed: boolean;
   detail: string;
 }
+
+interface McpToolProbe {
+  server: string;
+  prompt: string;
+  // Primary: model explicitly reports success
+  successPattern: RegExp;
+  // Secondary: tool was invoked (even if it errored, proves server connectivity)
+  invokedPattern: RegExp;
+}
+
+// Lightweight tool calls to verify each MCP server actually responds.
+// Prompts avoid double quotes to prevent shell escaping issues.
+const MCP_TOOL_PROBES: McpToolProbe[] = [
+  {
+    server: 'context7',
+    prompt: 'Call the context7-resolve-library-id tool with libraryName set to react and query set to react hooks. If it returns data, say CONTEXT7_OK. If it fails, say CONTEXT7_FAIL.',
+    successPattern: /CONTEXT7_OK/i,
+    invokedPattern: /context7-resolve-library-id/i,
+  },
+  {
+    server: 'playwright',
+    prompt: 'Call the playwright-browser_tabs tool with action set to list. If it returns data or an error response, say PLAYWRIGHT_OK. If the tool is not found, say PLAYWRIGHT_FAIL.',
+    successPattern: /PLAYWRIGHT_OK/i,
+    invokedPattern: /playwright-browser_tabs/i,
+  },
+  {
+    server: 'azure',
+    prompt: 'Call the azure-documentation tool with intent set to azure functions overview and learn set to true. If it returns data, say AZURE_OK. If it fails, say AZURE_FAIL.',
+    successPattern: /AZURE_OK/i,
+    invokedPattern: /azure-documentation/i,
+  },
+  {
+    server: 'microsoft-learn',
+    prompt: 'Call the microsoft-learn-microsoft_docs_search tool with query set to azure functions. If it returns data, say MSLEARN_OK. If it fails, say MSLEARN_FAIL.',
+    successPattern: /MSLEARN_OK/i,
+    invokedPattern: /microsoft-learn-microsoft_docs_search/i,
+  },
+];
 
 export function smoke(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
@@ -217,6 +256,50 @@ export function smoke(rootDir: string, args: string[]): void {
         console.log(`   ✅ Found ${foundServers.length}: ${foundServers.join(', ')}`);
       }
     }
+
+    // Test 4: Per-server tool invocation
+    console.log('\n🧪 Test 4: MCP Server Tool Invocation');
+    console.log('   ⏳ Testing each MCP server with a real tool call...');
+
+    const serverResults: { server: string; passed: boolean; detail: string }[] = [];
+
+    for (const probe of MCP_TOOL_PROBES) {
+      // Skip servers not in our expected list
+      if (!expectedMcpServers.includes(probe.server)) continue;
+
+      console.log(`\n   🔌 ${probe.server}:`);
+      console.log('      ⏳ Calling tool...');
+
+      const output = runCopilotPrompt(probe.prompt, options.verbose);
+
+      if (options.verbose) {
+        console.log(`      📄 Output (first 300 chars): ${output.slice(0, 300)}`);
+      }
+
+      const passed = probe.successPattern.test(output);
+      const invoked = probe.invokedPattern.test(output);
+      // Server is working if tool was called (even if it errored due to setup like missing Chrome)
+      const serverOk = passed || invoked;
+      let detail: string;
+      if (passed) {
+        detail = 'Tool call succeeded';
+      } else if (invoked) {
+        detail = 'Tool was invoked (server responded, but tool returned an error — may need setup)';
+      } else {
+        detail = 'Tool call failed — server may not be connected';
+      }
+      serverResults.push({ server: probe.server, passed: serverOk, detail });
+      console.log(`      ${serverOk ? '✅' : '❌'} ${detail}`);
+    }
+
+    const toolTestPassed = serverResults.every(r => r.passed);
+    results.push({
+      name: 'MCP tool invocation',
+      passed: toolTestPassed,
+      detail: toolTestPassed
+        ? `All ${serverResults.length} MCP servers responded to tool calls`
+        : `${serverResults.filter(r => !r.passed).map(r => r.server).join(', ')} failed`,
+    });
   } finally {
     // Always clean up probe skill
     console.log('\n   🧹 Cleaning up probe skill...');
