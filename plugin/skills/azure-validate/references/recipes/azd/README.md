@@ -5,7 +5,9 @@ Validation steps for Azure Developer CLI projects.
 ## Prerequisites
 
 - `azure.yaml` exists in project root
-- `./infra/` contains Bicep files
+- Infrastructure files exist:
+  - For Bicep: `./infra/` contains Bicep files
+  - For Terraform: `./infra/` contains `.tf` files and `azure.yaml` has `infra.provider: terraform`
 
 ## Validation Steps
 
@@ -82,7 +84,7 @@ mcp_azure_mcp_group_list
 Prompt user to confirm subscription and location before continuing.
 
 Refer to the region availability reference to select a region supported by all services in this template:
-- [Region availability](../../../../azure-prepare/references/region-availability.md)
+- [Region availability](../../region-availability.md)
 
 ```bash
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
@@ -100,6 +102,8 @@ Validate IaC is ready:
 ```bash
 azd provision --preview --no-prompt
 ```
+
+> 💡 **Note:** This works for both Bicep and Terraform. azd will automatically detect the provider from `azure.yaml` and run the appropriate validation (`bicep build` or `terraform plan`).
 
 ### 8. Package Validation
 

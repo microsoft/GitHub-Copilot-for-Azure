@@ -3,7 +3,7 @@
 # Runs the deployment test groups for azure-deploy skill.
 # Triggered manually.
 
-name: Test azure-deploy deployment tests
+name: Integration Tests - azure-deploy
 
 permissions:
   id-token: write
@@ -90,12 +90,27 @@ jobs:
             TEST_ARGS="--testNamePattern=${{ inputs.group-name }}"
           fi
           npm run test:integration -- --testPathPattern="azure-deploy" $TEST_ARGS
-      
-      # Todo: Generate a report to give test details
-      # - name: Upload integration test results
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: test-results-skill-invocation
-      #     path: tests/skill-invocation-test-summary.md
-      #     retention-days: 30
+        continue-on-error: true
+
+      - name: Generate report
+        id: generate-report
+        run: npm run report
+
+      - name: Show master report
+        id: show-master-report
+        run: |
+          MASTER_REPORT=$(find reports -name "*-MASTER-REPORT.md" -type f | head -n 1)
+          if [ -n "$MASTER_REPORT" ]; then
+            echo "Found master report: $MASTER_REPORT"
+            cat "$MASTER_REPORT" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No master report found"
+          fi
+
+      - name: Export report
+        uses: actions/upload-artifact@v4
+        with:
+          name: azure-deploy-test-reports
+          path: tests/reports/
+          retention-days: 30
 
