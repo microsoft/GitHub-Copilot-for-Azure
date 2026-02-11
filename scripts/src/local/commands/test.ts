@@ -1,13 +1,13 @@
 /**
- * Smoke Command
+ * Test Command
  * 
- * Live verification that launches the Copilot CLI and confirms:
+ * Live integration test that launches the Copilot CLI and confirms:
  * 1. The local plugin is loaded (via a temporary probe skill)
  * 2. All production skills are registered
  * 3. MCP servers are connected (tool names visible)
  * 4. Each MCP server responds to a real tool call
  * 
- * Creates a temporary smoke-test-probe skill, launches `copilot -i` with
+ * Creates a temporary probe skill, launches `copilot -i` with
  * verification prompts, parses output, and cleans up.
  */
 
@@ -135,11 +135,11 @@ const MCP_TOOL_PROBES: McpToolProbe[] = [
   },
 ];
 
-export function smoke(rootDir: string, args: string[]): void {
+export function test(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
   const localPluginPath = join(rootDir, 'plugin');
 
-  console.log('\n🔥 Smoke Test - Live Copilot CLI Verification\n');
+  console.log('\n🧪 Integration Test - Live Copilot CLI Verification\n');
   console.log('────────────────────────────────────────────────────────────');
 
   if (!existsSync(localPluginPath)) {
@@ -312,11 +312,11 @@ export function smoke(rootDir: string, args: string[]): void {
 
   const allPassed = results.every(r => r.passed);
   if (allPassed) {
-    console.log('\n✅ SMOKE TEST PASSED\n');
+    console.log('\n✅ TEST PASSED\n');
     console.log('   Copilot CLI is correctly loading local plugin,');
     console.log('   all production skills are registered, and MCP servers are connected.\n');
   } else {
-    console.log('\n❌ SMOKE TEST FAILED\n');
+    console.log('\n❌ TEST FAILED\n');
     for (const r of results) {
       console.log(`   ${r.passed ? '✅' : '❌'} ${r.name}: ${r.detail}`);
     }
