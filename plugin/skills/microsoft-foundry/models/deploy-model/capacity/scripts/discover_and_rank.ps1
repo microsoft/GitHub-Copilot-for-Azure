@@ -27,11 +27,11 @@ $capRaw = az rest --method GET `
     --url-parameters api-version=2024-10-01 modelFormat=OpenAI modelName=$ModelName modelVersion=$ModelVersion `
     2>$null | Out-String | ConvertFrom-Json
 
-# Query all AI Services projects
+# Query all AI Foundry projects (AIProject kind)
 $projRaw = az rest --method GET `
     --url "https://management.azure.com/subscriptions/$subId/providers/Microsoft.CognitiveServices/accounts" `
     --url-parameters api-version=2024-10-01 `
-    --query "value[?kind=='AIServices'].{Name:name, Location:location}" `
+    --query "value[?kind=='AIProject'].{Name:name, Location:location}" `
     2>$null | Out-String | ConvertFrom-Json
 
 # Build capacity map (GlobalStandard only, pick max per region)
