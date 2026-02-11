@@ -94,8 +94,7 @@ jobs:
 
       - name: Generate report
         id: generate-report
-        run:
-          npm run report
+        run: npm run report
 
       - name: Show master report
         id: show-master-report
