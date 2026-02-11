@@ -210,5 +210,3 @@ az functionapp function list \
 - Verify the path in `main` matches your actual file structure
 - Check deployment logs for any packaging errors: `azd deploy --debug`
 - For TypeScript, ensure build runs before deployment and outputs to the path specified in `main`
-
-**See also:** [Node.js v4 Programming Model Requirements](../../azure-prepare/references/services/functions.md#nodejs-v4-programming-model-requirements)
