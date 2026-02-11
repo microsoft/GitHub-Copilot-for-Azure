@@ -10,7 +10,7 @@ set -euo pipefail
 
 # Configuration
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-myapp}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-eastus2}"
 ENVIRONMENT="${ENVIRONMENT:-dev}"
 
 echo "Deploying to $ENVIRONMENT environment..."
@@ -49,7 +49,7 @@ $ErrorActionPreference = "Stop"
 
 # Configuration
 $ResourceGroup = $env:RESOURCE_GROUP ?? "rg-myapp"
-$Location = $env:LOCATION ?? "eastus"
+$Location = $env:LOCATION ?? "eastus2"
 $Environment = $env:ENVIRONMENT ?? "dev"
 
 Write-Host "Deploying to $Environment environment..."

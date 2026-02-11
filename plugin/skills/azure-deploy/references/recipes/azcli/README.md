@@ -24,7 +24,7 @@ Deploy to Azure using Azure CLI.
 
 ```bash
 az deployment sub create \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
   --parameters environmentName=dev
 ```
@@ -32,7 +32,7 @@ az deployment sub create \
 ### Resource Group Level
 
 ```bash
-az group create --name rg-myapp-dev --location eastus
+az group create --name rg-myapp-dev --location eastus2
 
 az deployment group create \
   --resource-group rg-myapp-dev \

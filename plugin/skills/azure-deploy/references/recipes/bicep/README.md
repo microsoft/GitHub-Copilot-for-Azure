@@ -24,7 +24,7 @@ Deploy to Azure using Bicep templates directly.
 
 ```bash
 az deployment sub create \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
   --parameters ./infra/main.parameters.json
 ```
@@ -42,16 +42,16 @@ az deployment group create \
 
 ```bash
 az deployment sub create \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
-  --parameters environmentName=dev location=eastus
+  --parameters environmentName=dev location=eastus2
 ```
 
 ### What-If (Preview Changes)
 
 ```bash
 az deployment sub what-if \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
   --parameters environmentName=dev
 ```
