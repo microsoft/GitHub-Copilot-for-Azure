@@ -148,7 +148,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
           });
 
