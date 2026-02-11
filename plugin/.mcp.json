@@ -5,7 +5,8 @@
       "args": ["-y", "@azure/mcp@latest", "server", "start"]
     },
     "foundry-agent": {
-      "url": "https://mcp.ai.azure.com"
+      "url": "https://mcp.ai.azure.com",
+      "type": "http"
     }
   }
 }
