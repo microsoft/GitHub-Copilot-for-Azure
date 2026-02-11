@@ -18,7 +18,7 @@ Webhook agents for GitHub Copilot Chat.
 
 Extensions are webhook endpoints that receive and respond with SSE — they can be built in any language. The JS SDK provides helpers but is not required.
 
-> 💡 **Tip:** Use `microsoft_docs_search` (microsoft-learn MCP) to search official Microsoft docs for additional Copilot Extensions guidance.
+> 💡 **Tip:** Use `azure-documentation` MCP tool to search official Microsoft docs for additional Copilot Extensions guidance.
 
 ## Getting Current Examples
 
@@ -44,7 +44,7 @@ Every request must be verified using the webhook signature. Required headers: `g
 
 ## Testing
 
-Use **playwright** MCP tools (`browser_navigate`, `browser_snapshot`, `browser_click`, etc.) to automate browser-based testing of the SSE endpoint. For manual verification, serve a static HTML test page and POST to the agent endpoint.
+Use **playwright** MCP tools (`playwright-browser_navigate`, `playwright-browser_snapshot`, `playwright-browser_click`, etc.) to automate browser-based testing of the SSE endpoint. For manual verification, serve a static HTML test page and POST to the agent endpoint.
 
 ## Hosting
 
