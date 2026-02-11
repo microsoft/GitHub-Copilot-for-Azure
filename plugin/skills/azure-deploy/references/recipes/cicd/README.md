@@ -77,7 +77,7 @@ jobs:
         with:
           scope: subscription
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          region: eastus
+          region: eastus2
           template: ./infra/main.bicep
           parameters: environmentName=${{ vars.ENVIRONMENT }}
 ```

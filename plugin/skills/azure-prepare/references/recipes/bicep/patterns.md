@@ -55,7 +55,7 @@ output resourceGroupName string = rg.name
   "contentVersion": "1.0.0.0",
   "parameters": {
     "environmentName": { "value": "dev" },
-    "location": { "value": "eastus" }
+    "location": { "value": "eastus2" }
   }
 }
 ```

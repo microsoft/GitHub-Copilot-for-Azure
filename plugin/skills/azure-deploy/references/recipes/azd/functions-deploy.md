@@ -46,7 +46,7 @@ azd provision --preview
 These are for azd provisioning, not application runtime:
 
 ```bash
-azd env set AZURE_LOCATION eastus
+azd env set AZURE_LOCATION eastus2
 azd env set VNET_ENABLED false
 ```
 
