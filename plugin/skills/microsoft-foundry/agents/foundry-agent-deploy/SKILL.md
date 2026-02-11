@@ -187,6 +187,6 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 
 ## Additional Resources
 
-- [Foundry Hosted Agents](https://learn.microsoft.com/en-gb/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
-- [Foundry Agent Runtime Components](https://learn.microsoft.com/en-gb/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
+- [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
+- [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
 - [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
