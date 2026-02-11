@@ -80,7 +80,7 @@ Deploy APIM with Basicv2 SKU for AI workloads.
 
 ```bash
 # Create resource group
-az group create --name rg-aigateway --location eastus
+az group create --name rg-aigateway --location eastus2
 
 # Deploy APIM with Bicep
 az deployment group create \

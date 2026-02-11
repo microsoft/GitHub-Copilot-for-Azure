@@ -58,7 +58,7 @@ variable "environment" {
 variable "location" {
   type        = string
   description = "Azure region"
-  default     = "eastus"
+  default     = "eastus2"
 }
 ```
 
@@ -112,7 +112,7 @@ resource "azurerm_storage_account" "main" {
 
 ```bash
 # Create state storage
-az group create --name rg-terraform-state --location eastus
+az group create --name rg-terraform-state --location eastus2
 
 az storage account create \
   --name tfstate<unique> \
