@@ -7,6 +7,8 @@
  * 2. Checking the marketplace entry exists with correct source
  * 3. Checking the installed_plugins entry has correct cache_path
  * 4. Verifying the plugin directory exists and has expected content
+ * 5. Checking MCP servers from plugin/.mcp.json are registered in mcp-config.json
+ * 6. Checking all production skills have valid SKILL.md with frontmatter
  */
 
 import { 
@@ -212,6 +214,118 @@ function checkPluginContent(pluginPath: string, verbose: boolean): { passed: boo
   return { passed: allExist, details };
 }
 
+interface McpCheckResult {
+  passed: boolean;
+  missing: string[];
+  present: string[];
+  expected: string[];
+}
+
+function checkMcpServers(pluginPath: string): McpCheckResult {
+  const mcpJsonPath = join(pluginPath, '.mcp.json');
+  if (!existsSync(mcpJsonPath)) {
+    return { passed: false, missing: [], present: [], expected: [] };
+  }
+
+  let pluginMcp: { mcpServers?: Record<string, unknown> };
+  try {
+    pluginMcp = JSON.parse(readFileSync(mcpJsonPath, 'utf-8'));
+  } catch {
+    return { passed: false, missing: [], present: [], expected: [] };
+  }
+
+  const expected = Object.keys(pluginMcp.mcpServers ?? {});
+  if (expected.length === 0) {
+    return { passed: true, missing: [], present: [], expected };
+  }
+
+  const mcpConfigPath = join(homedir(), '.copilot', 'mcp-config.json');
+  let userMcp: { mcpServers?: Record<string, unknown> } = {};
+  if (existsSync(mcpConfigPath)) {
+    try {
+      userMcp = JSON.parse(readFileSync(mcpConfigPath, 'utf-8'));
+    } catch { /* empty */ }
+  }
+
+  const registered = Object.keys(userMcp.mcpServers ?? {});
+  const missing = expected.filter(s => !registered.includes(s));
+  const present = expected.filter(s => registered.includes(s));
+
+  return { passed: missing.length === 0, missing, present, expected };
+}
+
+interface SkillCheckResult {
+  passed: boolean;
+  valid: string[];
+  invalid: { name: string; error: string }[];
+}
+
+function checkSkills(pluginPath: string): SkillCheckResult {
+  const skillsDir = join(pluginPath, 'skills');
+  if (!existsSync(skillsDir)) {
+    return { passed: false, valid: [], invalid: [{ name: 'skills/', error: 'directory not found' }] };
+  }
+
+  const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !d.name.startsWith('_'))
+    .map(d => d.name);
+
+  const valid: string[] = [];
+  const invalid: { name: string; error: string }[] = [];
+
+  for (const skill of skillDirs) {
+    const skillMdPath = join(skillsDir, skill, 'SKILL.md');
+    if (!existsSync(skillMdPath)) {
+      invalid.push({ name: skill, error: 'missing SKILL.md' });
+      continue;
+    }
+
+    let content: string;
+    try {
+      content = readFileSync(skillMdPath, 'utf-8');
+    } catch {
+      invalid.push({ name: skill, error: 'unreadable SKILL.md' });
+      continue;
+    }
+
+    // Check frontmatter
+    if (!content.startsWith('---')) {
+      invalid.push({ name: skill, error: 'missing YAML frontmatter' });
+      continue;
+    }
+
+    const fmEnd = content.indexOf('---', 3);
+    if (fmEnd === -1) {
+      invalid.push({ name: skill, error: 'unclosed YAML frontmatter' });
+      continue;
+    }
+
+    const frontmatter = content.slice(3, fmEnd);
+    const hasName = /^name:\s*.+/m.test(frontmatter);
+    const hasDesc = /^description:\s*.+/m.test(frontmatter) || /^description:\s*\|/m.test(frontmatter);
+
+    if (!hasName) {
+      invalid.push({ name: skill, error: 'frontmatter missing "name" field' });
+      continue;
+    }
+    if (!hasDesc) {
+      invalid.push({ name: skill, error: 'frontmatter missing "description" field' });
+      continue;
+    }
+
+    // Verify name matches directory
+    const nameMatch = frontmatter.match(/^name:\s*(.+)/m);
+    if (nameMatch && nameMatch[1].trim() !== skill) {
+      invalid.push({ name: skill, error: `frontmatter name "${nameMatch[1].trim()}" doesn't match directory` });
+      continue;
+    }
+
+    valid.push(skill);
+  }
+
+  return { passed: invalid.length === 0 && valid.length > 0, valid, invalid };
+}
+
 export function verify(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
   const localPluginPath = join(rootDir, 'plugin');
@@ -320,13 +434,53 @@ export function verify(rootDir: string, args: string[]): void {
     console.log(`      ${detail}`);
   }
 
+  // Test 5: Check MCP servers
+  console.log('\n🧪 Test 5: MCP Server Registration');
+  const mcpCheck = checkMcpServers(localPluginPath);
+
+  if (mcpCheck.expected.length === 0) {
+    console.log('   ⚠️  No .mcp.json found or no servers defined');
+  } else if (mcpCheck.passed) {
+    console.log(`   ✅ All ${mcpCheck.expected.length} MCP servers registered: ${mcpCheck.present.join(', ')}`);
+  } else {
+    console.log(`   ❌ Missing MCP servers: ${mcpCheck.missing.join(', ')}`);
+    if (mcpCheck.present.length > 0) {
+      console.log(`   ✅ Registered: ${mcpCheck.present.join(', ')}`);
+    }
+  }
+
+  // Test 6: Check production skills
+  console.log('\n🧪 Test 6: Production Skills Validation');
+  const skillsCheck = checkSkills(localPluginPath);
+
+  if (skillsCheck.passed) {
+    console.log(`   ✅ All ${skillsCheck.valid.length} skills have valid SKILL.md with frontmatter`);
+    if (options.verbose) {
+      for (const s of skillsCheck.valid) {
+        console.log(`      ✅ ${s}`);
+      }
+    }
+  } else {
+    if (skillsCheck.invalid.length > 0) {
+      console.log(`   ❌ ${skillsCheck.invalid.length} skill(s) with issues:`);
+      for (const s of skillsCheck.invalid) {
+        console.log(`      ❌ ${s.name}: ${s.error}`);
+      }
+    }
+    if (skillsCheck.valid.length > 0) {
+      console.log(`   ✅ ${skillsCheck.valid.length} valid skill(s)`);
+    }
+  }
+
   console.log('\n────────────────────────────────────────────────────────────');
 
   // Summary
   const allPassed = nestedCheck.passed &&
                     marketplaceCheck.passed &&
                     pluginCheck.passed &&
-                    contentCheck.passed;
+                    contentCheck.passed &&
+                    mcpCheck.passed &&
+                    skillsCheck.passed;
 
   if (allPassed) {
     console.log('\n✅ VERIFICATION PASSED\n');
@@ -350,7 +504,7 @@ export function verify(rootDir: string, args: string[]): void {
       }
     }
     
-    if (!marketplaceCheck.passed || !pluginCheck.passed) {
+    if (!marketplaceCheck.passed || !pluginCheck.passed || !mcpCheck.passed) {
       console.log('   ⚠️  Config needs to be updated.');
       if (options.fix) {
         console.log('\n   🔧 Running setup to fix config...\n');
@@ -365,6 +519,10 @@ export function verify(rootDir: string, args: string[]): void {
     
     if (!contentCheck.passed) {
       console.log('   ⚠️  Plugin directory is missing expected content.');
+    }
+
+    if (!skillsCheck.passed) {
+      console.log('   ⚠️  Some skills have invalid SKILL.md files.');
     }
     
     if (!options.fix) {
