@@ -23,7 +23,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description mentions Azure AI services", () => {
       const desc = skill.metadata.description.toLowerCase();
-      expect(desc).toMatch(/azure ai|ai search|speech|foundry|openai|document intelligence/);
+      expect(desc).toMatch(/azure ai|ai search|speech|openai|document intelligence/);
     });
 
     test("description includes USE FOR guidance", () => {
@@ -45,7 +45,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/## Services/i);
       expect(skill.content).toContain("AI Search");
       expect(skill.content).toContain("Speech");
-      expect(skill.content).toContain("Foundry");
       expect(skill.content).toContain("OpenAI");
       expect(skill.content).toContain("Document Intelligence");
     });
@@ -54,7 +53,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/## MCP Server/i);
       expect(skill.content).toContain("azure__search");
       expect(skill.content).toContain("azure__speech");
-      expect(skill.content).toContain("azure__foundry");
     });
   });
 
@@ -86,27 +84,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("Foundry Coverage", () => {
-    test("documents Foundry capabilities", () => {
-      expect(skill.content).toMatch(/## Foundry Capabilities/i);
-      expect(skill.content).toContain("Model catalog");
-      expect(skill.content).toContain("AI agents");
-      expect(skill.content).toContain("Prompt flow");
-    });
-
-    test("lists Foundry MCP commands", () => {
-      expect(skill.content).toContain("foundry_model_list");
-      expect(skill.content).toContain("foundry_deployment_list");
-      expect(skill.content).toContain("foundry_agent_list");
-    });
-  });
-
   describe("Documentation Links", () => {
     test("references Azure documentation", () => {
       expect(skill.content).toContain("learn.microsoft.com");
       expect(skill.content).toContain("azure/search");
       expect(skill.content).toContain("speech-service");
-      expect(skill.content).toContain("ai-studio");
     });
   });
 });
