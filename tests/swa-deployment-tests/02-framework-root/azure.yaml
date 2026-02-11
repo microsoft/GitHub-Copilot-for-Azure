@@ -1,0 +1,7 @@
+name: swa-test-framework-root
+services:
+  web:
+    project: .
+    language: js
+    host: staticwebapp
+    dist: dist

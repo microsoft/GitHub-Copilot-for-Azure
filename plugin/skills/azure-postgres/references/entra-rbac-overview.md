@@ -52,7 +52,7 @@ Once connected as admin, create roles for other identities using SQL functions.
 
 Grant appropriate permissions to the new roles using GRANT statements.
 
-**See:** [scripts/az-commands.sh](scripts/az-commands.sh) for Azure CLI commands, [references/sql-functions.md](sql-functions.md) for SQL functions, and [references/permission-templates.md](permission-templates.md) for permission grants.
+**See:** [scripts/az-commands.sh](../scripts/az-commands.sh) for Azure CLI commands, [references/sql-functions.md](sql-functions.md) for SQL functions, and [references/permission-templates.md](permission-templates.md) for permission grants.
 
 ## Setup Patterns
 
@@ -64,7 +64,7 @@ Set up a developer to access the database with their Azure identity.
 - Developer's UPN (e.g., `developer@company.com`)
 - Target database name
 - Permission level (read-only, read-write, admin)
-**Script:** See [scripts/setup-user.sh](scripts/setup-user.sh)
+**Script:** See [scripts/setup-user.sh](../scripts/setup-user.sh)
 
 ### Pattern 2: Managed Identity for Applications
 
@@ -82,7 +82,7 @@ Configure passwordless database access for Azure-hosted applications (Container 
 3. Grant permissions
 4. Configure application to use Azure Identity SDK
 
-**Script:** See [scripts/setup-managed-identity.sh](scripts/setup-managed-identity.sh)
+**Script:** See [scripts/setup-managed-identity.sh](../scripts/setup-managed-identity.sh)
 
 ### Pattern 3: Group-Based Access Control
 
@@ -99,7 +99,7 @@ Manage database permissions through Azure AD groups.
 |------|----------|----------|
 | **OFF** (default) | Members use group name as username | Simple setup, no individual tracking |
 | **ON** | Individual member roles auto-created | Audit trails, per-user permissions |
-**Script:** See [scripts/setup-group.sh](scripts/setup-group.sh)
+**Script:** See [scripts/setup-group.sh](../scripts/setup-group.sh)
 ---
 
 ### Pattern 4: Troubleshooting Connection Failures
@@ -127,7 +127,7 @@ Transition existing password-based roles to Entra ID authentication.
 4. Disable passwords: `ALTER ROLE "username" PASSWORD NULL`
 5. Switch to "Microsoft Entra authentication only" mode
 
-**Script:** See [scripts/migrate-to-entra.sh](scripts/migrate-to-entra.sh)
+**Script:** See [scripts/migrate-to-entra.sh](../scripts/migrate-to-entra.sh)
 
 ## MCP Tools Used
 
@@ -164,7 +164,7 @@ Transition existing password-based roles to Entra ID authentication.
 
 ## References
 
-- [Azure CLI Commands](./scripts/az-commands.sh) - Token acquisition, identity lookups, admin management
+- [Azure CLI Commands](../scripts/az-commands.sh) - Token acquisition, identity lookups, admin management
 - [SQL Functions](sql-functions.md) - Role creation, listing, security labels
 - [Permission Templates](permission-templates.md) - Copy-paste SQL for common scenarios
 - [Group Sync Guide](group-sync.md) - Group sync configuration details

@@ -67,17 +67,33 @@ azd env get-values
 ```
 
 **If AZURE_SUBSCRIPTION_ID or AZURE_LOCATION not set:**
-- Use `mcp_azure_mcp_subscription_list` to list subscriptions
-- Prompt user to confirm subscription and location before continuing
 
-**Popular locations:** `eastus`, `eastus2`, `westus2`, `westus3`, `centralus`, `westeurope`, `northeurope`, `uksouth`, `australiaeast`, `southeastasia`
+Use Azure MCP tools to list subscriptions:
+```
+mcp_azure_mcp_subscription_list
+```
+
+Use Azure MCP tools to list resource groups (check for conflicts):
+```
+mcp_azure_mcp_group_list
+  subscription: <subscription-id>
+```
+
+Prompt user to confirm subscription and location before continuing.
+
+Refer to the region availability reference to select a region supported by all services in this template:
+- [Region availability](../../region-availability.md)
 
 ```bash
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <location>
 ```
 
-### 6. Provision Preview
+### 6. Azure Policy Validation
+
+See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+
+### 7. Provision Preview
 
 Validate IaC is ready:
 
@@ -85,7 +101,7 @@ Validate IaC is ready:
 azd provision --preview --no-prompt
 ```
 
-### 7. Package Validation
+### 8. Package Validation
 
 Confirm all services build/package successfully:
 

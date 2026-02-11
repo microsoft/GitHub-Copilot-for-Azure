@@ -1,0 +1,7 @@
+name: swa-test-framework-subfolder
+services:
+  web:
+    project: ./src/web
+    language: js
+    host: staticwebapp
+    dist: dist

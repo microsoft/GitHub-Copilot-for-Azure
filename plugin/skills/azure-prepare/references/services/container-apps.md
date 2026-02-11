@@ -10,6 +10,9 @@ Hosting patterns and best practices for Azure Container Apps.
 - Web applications (server-rendered)
 - Any containerized workload that doesn't need full Kubernetes
 
+> ⚠️ **Security**: Always use `secretRef` for sensitive environment variables.
+> See [Environment Variables and Secrets](#environment-variables-and-secrets).
+
 ## Service Type in azure.yaml
 
 ```yaml
@@ -139,22 +142,90 @@ scale: {
 }
 ```
 
-## Environment Variables
+## Environment Variables and Secrets
 
-Use Key Vault references for secrets:
+> ⛔ **NEVER** use `env[].value` for passwords, connection strings, API keys, or other sensitive data.
+> Secrets in `env[].value` are stored as plain text in the Container App configuration and are visible in Azure Portal and ARM/CLI exports.
+
+### Pattern 1: secretRef (Required for Sensitive Data)
+
+Define secrets in the `configuration.secrets` array, then reference them:
 
 ```bicep
+configuration: {
+  secrets: [
+    {
+      name: 'database-url'
+      value: databaseConnectionString  // Stored securely by Container Apps
+    }
+  ]
+}
+// Then in container env:
+env: [
+  {
+    name: 'DATABASE_URL'
+    secretRef: 'database-url'  // ✅ Secure - references secret by name
+  }
+]
+```
+
+### Pattern 2: Key Vault Integration (Recommended)
+
+For production, pull secrets directly from Key Vault:
+
+```bicep
+identity: {
+  type: 'SystemAssigned'
+}
+// ...
+configuration: {
+  secrets: [
+    {
+      name: 'database-url'
+      keyVaultUrl: 'https://my-vault.vault.azure.net/secrets/database-url'
+      identity: 'system'
+    }
+  ]
+}
+// Then in container env:
 env: [
   {
     name: 'DATABASE_URL'
     secretRef: 'database-url'
   }
+]
+```
+
+> **Note**: The managed identity must have `Key Vault Secrets User` role on the Key Vault.
+
+### Pattern 3: Direct Value (Non-Sensitive Only)
+
+Use `value` only for non-sensitive configuration:
+
+```bicep
+env: [
   {
     name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-    value: applicationInsights.properties.ConnectionString
+    value: applicationInsights.properties.ConnectionString  // ✅ OK - not a secret
+  }
+  {
+    name: 'LOG_LEVEL'
+    value: 'info'  // ✅ OK - not sensitive
   }
 ]
 ```
+
+### What Requires secretRef?
+
+| Data Type | Use secretRef? |
+|-----------|---------------|
+| Database connection strings | ✅ Yes |
+| API keys | ✅ Yes |
+| Passwords | ✅ Yes |
+| Storage account keys | ✅ Yes |
+| App Insights connection string | ❌ No (not a secret) |
+| Feature flags | ❌ No |
+| Log levels | ❌ No |
 
 ## Health Probes
 
