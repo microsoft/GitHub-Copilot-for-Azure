@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: ''
+      debug:
+        description: 'Whether to set DEBUG=1 for jest tests'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -83,8 +88,8 @@ jobs:
       - name: Integration tests
         id: integration-tests
         env:
-          DEBUG: 1
           GH_HEAD_SHA: ${{ github.sha }}
+          DEBUG: ${{ inputs.debug && '1' || '' }}
         run: |
           if [ -n "${{ inputs.group-name }}" ]; then
             TEST_ARGS="--testNamePattern=${{ inputs.group-name }}"

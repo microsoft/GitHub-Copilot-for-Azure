@@ -25,6 +25,12 @@ on:
         description: 'Run integration tests'
         type: boolean
         default: true
+      debug:
+        description: 'Whether to set DEBUG=1 for jest tests'
+        required: false
+        type: boolean
+        default: false
+
   push:
     branches:
       - main
@@ -146,8 +152,8 @@ jobs:
         id: integration-tests
         if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
         env:
-          DEBUG: 1
           GH_HEAD_SHA: ${{ github.sha }}
+          DEBUG: ${{ inputs.debug && '1' || '' }}
         run: |
           if [ -n "${{ inputs.skill-name }}" ]; then
             TEST_ARGS="--testPathPattern=${{ inputs.skill-name }}"
