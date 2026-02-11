@@ -43,10 +43,10 @@ Use when the user wants to:
 |-------|------|-------------|
 | Server Pattern | [references/agent-as-server.md](references/agent-as-server.md) | HTTP server wrapping (production) |
 | Debug Setup | [references/debug-setup.md](references/debug-setup.md) | VS Code configs for Agent Inspector |
-| Agent Samples | [references/code-samples/python/agent.md](references/code-samples/python/agent.md) | Single agent, tools, MCP, threads |
-| Workflow Basics | [references/code-samples/python/workflow-basics.md](references/code-samples/python/workflow-basics.md) | Executor types, handler signatures, edges, WorkflowBuilder — start here for any workflow |
-| Workflow Agents | [references/code-samples/python/workflow-agents.md](references/code-samples/python/workflow-agents.md) | Agents as executor nodes, linear pipeline, run_stream event consumption |
-| Workflow Foundry | [references/code-samples/python/workflow-foundry.md](references/code-samples/python/workflow-foundry.md) | Foundry agents with bidirectional edges, loop control, register_executor factories |
+| Agent Samples | [references/agent-samples.md](references/agent-samples.md) | Single agent, tools, MCP, threads |
+| Workflow Basics | [references/workflow-basics.md](references/workflow-basics.md) | Executor types, handler signatures, edges, WorkflowBuilder — start here for any workflow |
+| Workflow Agents | [references/workflow-agents.md](references/workflow-agents.md) | Agents as executor nodes, linear pipeline, run_stream event consumption |
+| Workflow Foundry | [references/workflow-foundry.md](references/workflow-foundry.md) | Foundry agents with bidirectional edges, loop control, register_executor factories |
 
 > 💡 **Tip:** For advanced patterns (Reflection, Switch-Case, Fan-out/Fan-in, Loop, Human-in-Loop), search `microsoft/agent-framework` on GitHub.
 
@@ -62,26 +62,23 @@ This skill delegates to `microsoft-foundry` MCP tools for model and project oper
 
 ## Creation Workflow
 
-Track progress using this checklist:
-
-```markdown
-Creation Progress:
-- [ ] Gather context (Samples, Model, Server, Debug)
-- [ ] Select model & configure environment
-- [ ] Implement code (Agent-as-Server pattern)
-- [ ] Install dependencies
-- [ ] Verify startup (Run-Fix loop)
-- [ ] Documentation
-```
+1. Gather context (read agent-as-server.md + debug-setup.md + code samples)
+2. Select model & configure environment
+3. Implement agent/workflow code + HTTP server mode + `.vscode/` configs
+4. Install dependencies (venv + requirements.txt)
+5. Verify startup (Run-Fix loop)
+6. Documentation
 
 ### Step 1: Gather Context
 
 Read reference files based on user's request:
 
-**Required** (read relevant ones):
-- Code samples: agent.md, workflow-basics.md, workflow-agents.md, or workflow-foundry.md
-- Server pattern: agent-as-server.md
-- Debug setup: debug-setup.md
+**Always read these references:**
+- Server pattern: **agent-as-server.md** (required — HTTP server is the default)
+- Debug setup: **debug-setup.md** (required — always generate `.vscode/` configs)
+
+**Read the relevant code sample:**
+- Code samples: agent-samples.md, workflow-basics.md, workflow-agents.md, or workflow-foundry.md
 
 **Model Selection**: Use `microsoft-foundry` skill's model catalog to help user select and deploy a model.
 
@@ -104,14 +101,18 @@ FOUNDRY_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
 
 ### Step 3: Implement Code
 
-- **Server Mode**: Implement Agent-as-Server pattern (HTTP) unless "minimal" requested
-- **Debug**: Add `.vscode/launch.json` and `.vscode/tasks.json` from debug-setup.md
-- **Patterns**: Use gathered context to structure agent/workflow
+**All three are required by default:**
+
+1. **Agent/Workflow code**: Use gathered context to structure the agent or workflow
+2. **HTTP Server mode**: Wrap with Agent-as-Server pattern from `agent-as-server.md` — this is the default entry point
+3. **Debug configs**: Generate `.vscode/launch.json` and `.vscode/tasks.json` using templates from `debug-setup.md`
+
+> ⚠️ **Warning:** Only skip server mode or debug configs if the user explicitly requests a "minimal" or "no server" setup.
 
 ### Step 4: Install Dependencies
 
 1. Generate/update `requirements.txt`
-  ```
+  ```text
   # pin version to avoid breaking changes
 
   # agent framework

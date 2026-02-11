@@ -13,7 +13,7 @@ For agent as HTTP server, introduces `agentdev` tool, fully integrated with AI T
 ## Prerequisites
 
 - (REQUIRED) Agent or workflow created using agent-framework SDK
-- (REQUIRED) Running in HTTP server mode, i.e., using `azure.ai.agentserver.agentframework` SDK. If not, see [agent-as-server.md](agent-as-server.md) for HTTP server mode.
+- (REQUIRED) Running in HTTP server mode, i.e., using `azure.ai.agentserver.agentframework` SDK. If not, wrap the agent with `from_agent_framework(agent).run_async()` and install `azure-ai-agentserver-agentframework==1.0.0b10`.
 
 ## SDK Installations
 

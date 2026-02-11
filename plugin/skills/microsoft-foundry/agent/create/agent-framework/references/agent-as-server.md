@@ -23,7 +23,7 @@ agent = (
 
 Then, `azure.ai.agentserver.agentframework` package provides way to run above agent as an http server and receives user input direct from http request:
 
-```
+```text
 # requirements.txt
 # pin version to avoid breaking changes or compatibility issues
 azure-ai-agentserver-agentframework==1.0.0b10
