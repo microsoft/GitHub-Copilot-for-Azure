@@ -310,7 +310,6 @@ export function useAgentRunner() {
       await cleanup();
     });
   }
-  
 
   async function run(config: TestConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
@@ -534,22 +533,9 @@ export function getIntegrationSkipReason(): string | undefined {
 }
 
 /**
- * Common Azure deployment link patterns
- * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
- */
-const DEPLOY_LINK_PATTERNS = [
-  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
-  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
-  // Azure Static Web Apps URLs
-  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
-  // Azure Container Apps URLs
-  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
-];
-
-/**
  * Get all assistant messages from agent metadata
  */
-function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
+export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
@@ -568,14 +554,7 @@ function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   return Object.values(allMessages).join("\n");
 }
 
-/**
- * Check if the agent response contains any Azure deployment links
- */
-export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
-  const content = getAllAssistantMessages(agentMetadata);
 
-  return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
-}
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");

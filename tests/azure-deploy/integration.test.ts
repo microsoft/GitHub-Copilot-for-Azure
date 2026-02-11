@@ -13,10 +13,10 @@ import {
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  hasDeployLinks,
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
+import { hasDeployLinks } from "./utils";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
