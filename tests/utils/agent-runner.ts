@@ -310,7 +310,6 @@ export function useAgentRunner() {
       await cleanup();
     });
   }
-  
 
   async function run(config: TestConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
@@ -581,7 +580,7 @@ const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
 
 export function buildShareFilePath(): string {
-  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata.md`);
 }
 
 export function buildLogFilePath(): string {
