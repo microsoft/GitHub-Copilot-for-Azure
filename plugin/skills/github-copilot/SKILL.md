@@ -11,7 +11,7 @@ Build Copilot-powered apps and deploy to Azure.
 
 | Property | Value |
 |----------|-------|
-| Paths | SDK (`@github/copilot-sdk`) · Extensions (`@copilot-extensions/preview-sdk`) |
+| Paths | SDK (Copilot SDK) · Extensions (Copilot Extensions) |
 
 ## When to Use
 
@@ -30,14 +30,14 @@ Docker required — run `docker info` to verify.
 
 ### Step 1: Scaffold + Customize
 
-- **SDK path** → Run `azd init --template jongio/copilot-sdk-agent` to scaffold the project. The template's chat app is just an example — adapt the code to the user's scenario. Build a custom UI that fits the use case (it's most likely not a chat experience). See [Copilot SDK reference](references/copilot-sdk.md).
+- **SDK path** → Run `azd init --template jongio/copilot-sdk-agent` to scaffold the project. The template's chat app is just an example — adapt the code to the user's scenario. Build a custom UI that fits the use case (it's most likely not a chat experience). See [Copilot SDK Agent reference](references/copilot-sdk-agent.md).
 - **Extensions path** → [Extensions reference](references/copilot-extensions.md)
 
 > ⚠️ SDK template has infra, test UI, Dockerfile — do NOT recreate.
 
 ### Step 2: Test
 
-SDK: template includes React web UI — run `azd app run`. Extensions: see [Extensions reference](references/copilot-extensions.md).
+SDK: run `azd app run` to test locally. Extensions: see [Extensions reference](references/copilot-extensions.md).
 
 ### Step 3: Deploy
 
@@ -46,10 +46,6 @@ SDK: template includes React web UI — run `azd app run`. Extensions: see [Exte
 1. Invoke the **azure-prepare** skill — it creates the deployment manifest. The SDK template already has `azure.yaml`, `infra/`, and Dockerfile, so tell it not to regenerate those.
 2. Invoke the **azure-validate** skill — it prompts the user for subscription/region and validates the deployment.
 3. Invoke the **azure-deploy** skill — it executes the deployment.
-
-### Step 4: Foundry Bridge (Optional)
-
-See [Foundry bridge](references/foundry-bridge.md).
 
 ## Rules
 
