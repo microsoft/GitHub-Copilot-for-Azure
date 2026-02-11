@@ -3,6 +3,9 @@
     "azure": {
       "command": "npx",
       "args": ["-y", "@azure/mcp@latest", "server", "start"]
+    },
+    "foundry-agent": {
+      "url": "https://mcp.ai.azure.com"
     }
   }
 }
