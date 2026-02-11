@@ -77,7 +77,10 @@ az group show --name rg-<environment-name> --query "{location:location}" -o json
 az resource list --resource-group rg-<env-name> --tag azd-service-name=<service-name> --query "[].name" -o table
 ```
 
-Check for each service in `azure.yaml`. If duplicates exist **in the target RG**, delete or rename.
+Check for each service in `azure.yaml`. If duplicates exist **in the target RG**:
+
+1. **Preferred — Fresh environment**: Run `azd env new <new-name>` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
+2. **Alternative — Delete conflicts**: Use `ask_user` to confirm deletion of old resources (required by global rules).
 
 ## Step 6: Prompt User for Location
 
