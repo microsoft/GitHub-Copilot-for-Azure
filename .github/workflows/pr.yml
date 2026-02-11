@@ -28,6 +28,10 @@ jobs:
         working-directory: ./tests
         run: npm ci
 
+      - name: Typecheck
+        working-directory: ./tests
+        run: npm run typecheck
+
       - name: Lint test
         working-directory: ./tests
         run: npm run lint
