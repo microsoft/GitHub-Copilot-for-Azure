@@ -32,7 +32,7 @@ Use **context7** MCP tools as the PRIMARY way to get SDK documentation and code 
 
 ## Template Customization
 
-Read the scaffolded source (especially `AGENTS.md`) and adapt to the user's scenario:
+Read `AGENTS.md` FIRST — it lists every source file with its purpose. Use it as your navigation guide to read ONLY the files you need to change. Do NOT read every source file.
 
 1. **Build a custom UI** — the template UI is just an example; most scenarios are NOT chat
 2. **Adapt the API** — update routes, system message, and tool definitions for the user's domain
@@ -40,7 +40,12 @@ Read the scaffolded source (especially `AGENTS.md`) and adapt to the user's scen
 
 ## Testing
 
-Run `azd app run` to test locally. Adapt the template's UI rather than creating separate test pages. Use **playwright** MCP tools (`playwright-browser_navigate`, `playwright-browser_snapshot`, `playwright-browser_click`, etc.) for automated browser-based testing of the running app.
+Run `azd app run` to test locally. Adapt the template's UI rather than creating separate test pages. For browser testing, try Playwright MCP tools first. If Chrome is not installed, fall back to `curl` for API verification:
+
+```bash
+curl -s http://localhost:3000/health
+curl -s -X POST http://localhost:3000/api/chat -H "Content-Type: application/json" -d '{"message":"test"}'
+```
 
 ## BYOK (Bring Your Own Key)
 
