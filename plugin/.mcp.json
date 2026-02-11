@@ -17,7 +17,8 @@
       "args": ["-y", "@playwright/mcp@latest"]
     },
     "microsoft-learn": {
-      "url": "https://learn.microsoft.com/api/mcp"
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://learn.microsoft.com/api/mcp"]
     }
   }
 }
