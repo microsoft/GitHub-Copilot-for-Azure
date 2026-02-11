@@ -44,7 +44,7 @@ description: |
 | 3 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
 | 4 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
 | 5 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
-| 6 | **Deploy** — Invoke **azure-deploy** skill | [azure-deploy](../azure-deploy/SKILL.md) |
+| 6 | **Deploy** — Invoke **azure-deploy** skill | — |
 
 > **⛔ VALIDATION AUTHORITY**
 >

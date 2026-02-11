@@ -89,7 +89,7 @@ See [region-availability.md](region-availability.md) for service-specific limita
 
 > ⚠️ **Set ALL variables BEFORE running `azd up`** — not during error recovery.
 
-Environment should already be configured during validation. See [Environment Setup](../../../azure-validate/references/recipes/azd/environment.md) if needed.
+Environment should already be configured during **azure-validate**. Run `azd env get-values` to confirm.
 
 Verify settings:
 ```bash

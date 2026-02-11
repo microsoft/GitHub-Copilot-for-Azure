@@ -62,7 +62,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 | 5 | **Plan Architecture** — Select stack + map components to Azure services | [architecture.md](references/architecture.md) |
 | 6 | **Write Plan** — Generate `.azure/plan.md` with all decisions | [plan-template.md](references/plan-template.md) |
 | 7 | **Present Plan** — Show plan to user and ask for approval | `.azure/plan.md` |
-| 8 | **Destructive actions require `ask_user`** | [global-rules](../_shared/global-rules.md) |
+| 8 | **Destructive actions require `ask_user`** | [Global Rules](references/global-rules.md) |
 
 ---
 
@@ -81,7 +81,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 6 | **Validate** — Invoke **azure-validate** skill | [azure-validate](../azure-validate/SKILL.md) |
+| 6 | **Validate** — Invoke **azure-validate** skill | — |
 
 ---
 
