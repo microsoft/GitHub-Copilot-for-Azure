@@ -310,7 +310,6 @@ export function useAgentRunner() {
       await cleanup();
     });
   }
-  
 
   async function run(config: TestConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
