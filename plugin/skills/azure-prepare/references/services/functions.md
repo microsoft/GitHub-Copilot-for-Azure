@@ -31,68 +31,6 @@ services:
     project: ./src/my-function
 ```
 
-## Bicep Resource Pattern
-
-> **⚠️ IMPORTANT**: Always use Flex Consumption plan (FC1) for new Azure Functions deployments.
-
-```bicep
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: '${resourcePrefix}func${uniqueHash}'
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-}
-
-resource functionAppPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
-  name: '${resourcePrefix}-funcplan-${uniqueHash}'
-  location: location
-  sku: {
-    name: 'FC1'
-    tier: 'FlexConsumption'
-  }
-  kind: 'functionapp,linux'
-  properties: {
-    reserved: true
-  }
-}
-
-resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
-  name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
-  location: location
-  kind: 'functionapp,linux'
-  properties: {
-    serverFarmId: functionAppPlan.id
-    siteConfig: {
-      linuxFxVersion: 'Node|22'
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value}'
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'node'
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsights.properties.ConnectionString
-        }
-      ]
-    }
-    httpsOnly: true
-  }
-  identity: {
-    type: 'SystemAssigned'
-  }
-}
-```
-
 ## Required Supporting Resources
 
 | Resource | Purpose |
