@@ -128,3 +128,87 @@ azd env set STORAGE_SKU <user-provided-value>
 During `azd provision`, azd will substitute `${STORAGE_SKU}` with the value from the environment and will pass it to Bicep.
 
 **Reference:** [Use environment variables in infrastructure files](https://learn.microsoft.com/azure/developer/azure-developer-cli/manage-environment-variables?tabs=bash#use-environment-variables-in-infrastructure-files)
+
+## Node.js Functions Not Registered After Deployment
+
+**Symptom:** Infrastructure deploys successfully, Function App shows "Running" status, but `az functionapp function list` returns empty array and API endpoints return 404 Not Found.
+
+**Cause:** Node.js v4 programming model requires explicit entry point configuration in `package.json`. Without the `main` field, the Azure Functions runtime cannot locate function registrations, even though deployment succeeds.
+
+**Solution:**
+
+1. **Add entry point to package.json:**
+
+Edit your `package.json` to include a `main` field pointing to your function registration file:
+
+```json
+{
+  "name": "my-functions",
+  "main": "src/index.js",
+  "dependencies": {
+    "@azure/functions": "^4.0.0"
+  }
+}
+```
+
+For TypeScript projects, point to the compiled JavaScript output:
+
+```json
+{
+  "main": "dist/index.js"
+}
+```
+
+2. **Verify host.json exists:**
+
+Create `host.json` at the project root if missing:
+
+```json
+{
+  "version": "2.0",
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
+  }
+}
+```
+
+3. **Check function registration code:**
+
+Ensure your entry file uses the v4 registration pattern with the `app` object:
+
+```javascript
+const { app } = require('@azure/functions');
+
+app.http('myFunction', {
+    methods: ['GET', 'POST'],
+    authLevel: 'anonymous',
+    handler: async (request, context) => {
+        return { status: 200, body: 'Success' };
+    }
+});
+```
+
+4. **Redeploy:**
+
+```bash
+azd deploy
+```
+
+5. **Verify functions registered:**
+
+```bash
+az functionapp function list \
+  --name <function-app-name> \
+  --resource-group <resource-group-name> \
+  --query "[].name" -o table
+```
+
+**Additional checks:**
+
+- Ensure `@azure/functions` is in `dependencies`, not `devDependencies`
+- Verify the path in `main` matches your actual file structure
+- Check deployment logs for any packaging errors: `azd deploy --debug`
+- For TypeScript, ensure build runs before deployment and outputs to the path specified in `main`
+
+**See also:** [Node.js v4 Programming Model Requirements](../../azure-prepare/references/services/functions.md#nodejs-v4-programming-model-requirements)

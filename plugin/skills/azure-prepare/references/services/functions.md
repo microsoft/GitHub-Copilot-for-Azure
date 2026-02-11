@@ -174,6 +174,147 @@ module.exports = async function (context, req) {
 | .NET | `dotnet` | `DOTNET\|8.0` |
 | Java | `java` | `Java\|17` |
 
+## Node.js v4 Programming Model Requirements
+
+**CRITICAL**: Node.js Azure Functions using the v4 programming model have specific project structure requirements that differ from previous versions. Failure to meet these requirements results in successful infrastructure deployment but non-functional function code (empty function list, 404 responses).
+
+### Required Files
+
+Your Node.js Functions project MUST include these files at the project root:
+
+1. **package.json** - Must specify entry point via `main` field
+2. **host.json** - Runtime configuration file
+3. **Function code files** - Where you register your functions using `@azure/functions`
+
+### Package.json Configuration
+
+The `main` field tells the Azure Functions runtime where to find your function registrations. Without this, functions won't be discovered during deployment.
+
+**For JavaScript projects:**
+
+```json
+{
+  "name": "my-function-app",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "@azure/functions": "^4.0.0"
+  }
+}
+```
+
+**For TypeScript projects (after compilation):**
+
+```json
+{
+  "name": "my-function-app",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+### Host.json Configuration
+
+Create `host.json` at project root with runtime settings:
+
+```json
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "maxTelemetryItemsPerSecond": 20
+      }
+    }
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
+  }
+}
+```
+
+### Function Registration Pattern
+
+In your entry file (referenced by `main`), register functions using the `app` object:
+
+```javascript
+const { app } = require('@azure/functions');
+
+app.http('CreateShortUrl', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    handler: async (request, context) => {
+        const body = await request.json();
+        // Your logic here
+        return { 
+            status: 201,
+            jsonBody: { id: 'abc123', url: body.url }
+        };
+    }
+});
+
+app.http('GetUrl', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: 'urls/{id}',
+    handler: async (request, context) => {
+        const urlId = request.params.id;
+        // Your logic here
+        return { 
+            status: 200,
+            jsonBody: { id: urlId, originalUrl: 'https://example.com' }
+        };
+    }
+});
+```
+
+### Project Structure Example
+
+```
+my-function-app/
+├── package.json          # Must have "main" field
+├── host.json             # Runtime configuration
+├── .funcignore          # Files to exclude from deployment
+└── src/
+    └── index.js          # Entry point with function registrations
+```
+
+### Deployment Verification
+
+After deployment with `azd up`, verify functions are registered:
+
+```bash
+# List all functions in the deployed app
+az functionapp function list \
+  --name <function-app-name> \
+  --resource-group <resource-group-name>
+
+# Should return JSON array with your functions
+# If empty array returned, check package.json main field
+```
+
+### Common Issues and Solutions
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| Missing `main` field | Functions list empty, 404 on all endpoints | Add `"main": "src/index.js"` to package.json |
+| Wrong `main` path | Functions not discovered | Verify path matches your entry file location |
+| Missing `host.json` | Deployment fails or runtime errors | Create host.json at project root |
+| TypeScript build output | Functions not found after build | Set `main` to compiled output path (e.g., `"dist/index.js"`) |
+| Dependencies not installed | Functions fail at runtime | Ensure `@azure/functions` is in `dependencies`, not `devDependencies` |
+
 ## Cold Start Mitigation
 
 For Premium plan, configure minimum instances:
