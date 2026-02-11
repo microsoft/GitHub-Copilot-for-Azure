@@ -135,78 +135,48 @@ During `azd provision`, azd will substitute `${STORAGE_SKU}` with the value from
 
 **Cause:** Node.js v4 programming model requires explicit entry point configuration in `package.json`. Without the `main` field, the Azure Functions runtime cannot locate function registrations, even though deployment succeeds.
 
-**Solution:**
+**Solution Steps:**
 
-1. **Add entry point to package.json:**
+**Step 1: Configure Entry Point**
 
-Edit your `package.json` to include a `main` field pointing to your function registration file:
+Edit your `package.json` and add a `main` property that specifies where your function code lives. The path should be relative to the package.json location.
 
-```json
-{
-  "name": "my-functions",
-  "main": "src/index.js",
-  "dependencies": {
-    "@azure/functions": "^4.0.0"
-  }
-}
-```
+For JavaScript: `"main": "src/functions.js"` (or whatever your entry file is named)
+For TypeScript: `"main": "dist/functions.js"` (must point to compiled output, not .ts source)
 
-For TypeScript projects, point to the compiled JavaScript output:
+Ensure `@azure/functions` package version 4.x is listed under `dependencies` (not `devDependencies`).
 
-```json
-{
-  "main": "dist/index.js"
-}
-```
+**Step 2: Verify Runtime Configuration**
 
-2. **Verify host.json exists:**
+Confirm `host.json` exists at your project root (same directory as package.json). This file is mandatory for the Functions runtime to initialize.
 
-Create `host.json` at the project root if missing:
+Required contents: version property set to "2.0" and extensionBundle configuration with ID "Microsoft.Azure.Functions.ExtensionBundle" and a version range covering 4.x releases.
 
-```json
-{
-  "version": "2.0",
-  "extensionBundle": {
-    "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[4.*, 5.0.0)"
-  }
-}
-```
+**Step 3: Update Function Code Pattern**
 
-3. **Check function registration code:**
+Verify your entry file uses the v4 code-first registration approach. Import the `app` object from `@azure/functions` package and call methods like `app.http()` to register handlers.
 
-Ensure your entry file uses the v4 registration pattern with the `app` object:
+Each registration should specify:
+- Function name (first argument)
+- Configuration object with trigger type, methods, and handler function
 
-```javascript
-const { app } = require('@azure/functions');
+**Step 4: Redeploy and Verify**
 
-app.http('myFunction', {
-    methods: ['GET', 'POST'],
-    authLevel: 'anonymous',
-    handler: async (request, context) => {
-        return { status: 200, body: 'Success' };
-    }
-});
-```
+Run `azd deploy` to push updated code to Azure.
 
-4. **Redeploy:**
-
-```bash
-azd deploy
-```
-
-5. **Verify functions registered:**
-
+Then verify registration succeeded:
 ```bash
 az functionapp function list \
-  --name <function-app-name> \
-  --resource-group <resource-group-name> \
+  --name <your-app-name> \
+  --resource-group <your-rg-name> \
   --query "[].name" -o table
 ```
 
-**Additional checks:**
+If the table is empty, your `main` field path is still incorrect.
 
-- Ensure `@azure/functions` is in `dependencies`, not `devDependencies`
-- Verify the path in `main` matches your actual file structure
-- Check deployment logs for any packaging errors: `azd deploy --debug`
-- For TypeScript, ensure build runs before deployment and outputs to the path specified in `main`
+**Additional Troubleshooting:**
+
+- Confirm the file path in `main` actually exists in your project
+- For TypeScript: ensure your build process outputs to the directory specified in `main`
+- Check `azd deploy --debug` output for any packaging warnings
+- Verify node_modules includes `@azure/functions` in the deployed package
