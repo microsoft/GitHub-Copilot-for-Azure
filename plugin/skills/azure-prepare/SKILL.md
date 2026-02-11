@@ -14,7 +14,7 @@ description: |
 
 ---
 
-# Triggers
+## Triggers
 
 Activate this skill when user wants to:
 - Create a new application

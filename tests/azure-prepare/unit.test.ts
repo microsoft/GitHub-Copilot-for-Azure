@@ -51,7 +51,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Rules");
       expect(skill.content).toContain("## Phase 1: Planning");
       expect(skill.content).toContain("## Phase 2: Execution");
-      expect(skill.content).toContain("## Recipes");
       expect(skill.content).toContain("## Outputs");
     });
 

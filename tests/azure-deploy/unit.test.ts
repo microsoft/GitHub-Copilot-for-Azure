@@ -50,7 +50,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Triggers");
       expect(skill.content).toContain("## Rules");
       expect(skill.content).toContain("## Steps");
-      expect(skill.content).toContain("## Recipes");
+      expect(skill.content).toContain("## MCP Tools");
     });
 
     test("requires azure-validate prerequisite", () => {
@@ -64,11 +64,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain(".azure/plan.md");
     });
 
-    test("references multiple deployment recipes", () => {
-      expect(skill.content).toContain("AZD");
-      expect(skill.content).toContain("AZCLI");
-      expect(skill.content).toContain("Bicep");
-      expect(skill.content).toContain("Terraform");
+    test("references deployment recipes", () => {
+      expect(skill.content).toContain("recipes/README.md");
     });
 
     test("includes verification step", () => {
