@@ -114,11 +114,11 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   }
 
   // Save the consolidated report in the subdirectory
-  const outputPath = path.join(subdirPath, `${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
+  const outputPath = path.join(subdirPath, `test${CONSOLIDATED_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
-  console.log(`    ✅ Generated: ${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
+  console.log(`    ✅ Generated: test${CONSOLIDATED_REPORT_SUFFIX}`);
 
   return outputPath;
 }

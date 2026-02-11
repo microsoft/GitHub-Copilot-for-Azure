@@ -51,39 +51,7 @@ In `unit.test.ts`, add tests that verify the skill's content contains expected s
 ### Step 6: Configure integration tests (optional)
 In `integration.test.ts`, customize the prompts to test real agent behavior.
 
-```typescript
-import { 
-  run, 
-  isSkillInvoked, 
-  doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests,
-  getIntegrationSkipReason
-} from '../utils/agent-runner';
-
-const SKILL_NAME = '{skill-name}';
-
-// Integration tests auto-skip if SDK unavailable or in CI
-const skipTests = shouldSkipIntegrationTests();
-const skipReason = getIntegrationSkipReason();
-if (skipTests && skipReason) {
-  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
-}
-
-const describeIntegration = skipTests ? describe.skip : describe;
-
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  test('invokes skill for relevant prompt', async () => {
-    const agentMetadata = await run({
-      prompt: 'Your test prompt that should trigger this skill'
-    });
-    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-  });
-});
-```
-
-**Note:** Integration tests run automatically when SDK is available and authenticated. They skip gracefully in CI or when prerequisites are missing.
-
-**File Path Convention:** When writing results to files, use relative paths from the `tests/` directory (e.g., `./result-${SKILL_NAME}.txt`), NOT `./tests/result-*.txt`. Tests run from the `tests/` directory.
+Follow existing `integration.test.ts` files for how to implement such tests. 
 
 ### Step 7: Run and verify
 ```bash
