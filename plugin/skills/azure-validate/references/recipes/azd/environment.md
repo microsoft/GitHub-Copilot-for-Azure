@@ -8,9 +8,28 @@
 azd env list
 ```
 
-**If an environment is already selected** (marked with `*`):
-- Use the existing environment
-- Skip to Step 3
+**If an environment is already selected** (marked with `*`), check its current values:
+
+```bash
+azd env get-values
+```
+
+If `AZURE_ENV_NAME`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_LOCATION` are already set, confirm with user:
+
+```
+Question: "An AZD environment is already configured. Would you like to use it?"
+
+  Environment: {env-name}
+  Subscription: {subscription-id}
+  Location: {location}
+
+Choices: [
+  "Yes, use this environment (Recommended)",
+  "No, create a new environment"
+]
+```
+
+If user confirms → skip to **Verify Configuration**. Otherwise → continue to Step 2.
 
 **If NO environment exists or none is selected:**
 - Continue to Step 2
@@ -67,7 +86,7 @@ azd env set AZURE_LOCATION <location>
 
 ---
 
-## Step 4: Verify Configuration
+## Verify Configuration
 
 ```bash
 azd env get-values

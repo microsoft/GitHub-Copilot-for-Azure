@@ -8,7 +8,7 @@ Deploy to Azure using Terraform.
 - `.azure/plan.md` exists with status `Validated`
 - Terraform initialized (`terraform init`)
 - Plan validated (`terraform plan`)
-- **Subscription and location confirmed** → See [pre-deploy-checklist.md](../../pre-deploy-checklist.md)
+- **Subscription and location confirmed** → See [Pre-Deploy Checklist](../../pre-deploy-checklist.md)
 
 ## Workflow
 

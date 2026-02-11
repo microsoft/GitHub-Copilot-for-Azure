@@ -4,9 +4,42 @@ Detect and confirm Azure subscription and location before generating artifacts.
 
 ---
 
-## Step 1: Detect Defaults
+## Step 1: Check for Existing AZD Environment
 
-Check for user-configured defaults first:
+If the project already uses AZD, check for an existing environment with values already set:
+
+```bash
+azd env list
+```
+
+**If an environment is selected** (marked with `*`), check its values:
+
+```bash
+azd env get-values
+```
+
+If `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` are already set, use `ask_user` to confirm reuse:
+
+```
+Question: "I found an existing AZD environment with these settings. Would you like to continue with them?"
+
+  Environment: {env-name}
+  Subscription: {subscription-name} ({subscription-id})
+  Location: {location}
+
+Choices: [
+  "Yes, use these settings (Recommended)",
+  "No, let me choose different settings"
+]
+```
+
+If user confirms → skip to **Record in Plan**. Otherwise → continue to Step 2.
+
+---
+
+## Step 2: Detect Defaults
+
+Check for user-configured defaults:
 
 ```bash
 azd config get defaults
@@ -22,23 +55,8 @@ Returns JSON with any configured defaults:
 
 Use these as **recommended** values if present.
 
-## Step 2: Detect Current Subscription
-
-If no defaults, check environment and CLI:
-
-```powershell
-# Check for existing azd environment
-azd env get-values 2>$null | Select-String "AZURE_SUBSCRIPTION_ID"
-
-# Fall back to az CLI default
-az account show --query "{name:name, id:id}" -o json
-```
-
+If no defaults, fall back to az CLI:
 ```bash
-# Check for existing azd environment
-azd env get-values 2>/dev/null | grep AZURE_SUBSCRIPTION_ID
-
-# Fall back to az CLI default
 az account show --query "{name:name, id:id}" -o json
 ```
 
@@ -70,21 +88,9 @@ az account list --output table
 
 ---
 
-## Step 4: Detect Current Location
+## Step 4: Confirm Location with User
 
-If no defaults from Step 1, check environment:
-
-```powershell
-azd env get-values 2>$null | Select-String "AZURE_LOCATION"
-```
-
-```bash
-azd env get-values 2>/dev/null | grep AZURE_LOCATION
-```
-
-## Step 5: Confirm Location with User
-
-1. Consult [region-availability.md](region-availability.md) for services with limited availability
+1. Consult [Region Availability](region-availability.md) for services with limited availability
 2. Present only regions that support ALL selected services
 3. Use `ask_user`:
 

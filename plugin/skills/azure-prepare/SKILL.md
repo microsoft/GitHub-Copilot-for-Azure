@@ -31,7 +31,7 @@ Activate this skill when user wants to:
 3. **Research before generating** — Load references and invoke related skills
 4. **Update plan progressively** — Mark steps complete as you go
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
-6. **Confirm Azure context** — Use `ask_user` for subscription and location per [azure-context.md](references/azure-context.md)
+6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
 7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
 
 ---
@@ -77,7 +77,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Research Components** — Load service references + invoke related skills | [research.md](references/research.md) |
-| 2 | **Confirm Azure Context** — Detect and confirm subscription + location | [azure-context.md](references/azure-context.md) |
+| 2 | **Confirm Azure Context** — Detect and confirm subscription + location | [Azure Context](references/azure-context.md) |
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |

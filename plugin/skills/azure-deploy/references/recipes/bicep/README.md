@@ -7,7 +7,7 @@ Deploy to Azure using Bicep templates directly.
 - `az` CLI installed with Bicep extension
 - `.azure/plan.md` exists with status `Validated`
 - Bicep templates exist in `infra/`
-- **Subscription and location confirmed** → See [pre-deploy-checklist.md](../../pre-deploy-checklist.md)
+- **Subscription and location confirmed** → See [Pre-Deploy Checklist](../../pre-deploy-checklist.md)
 
 ## Workflow
 
