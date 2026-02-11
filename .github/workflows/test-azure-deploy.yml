@@ -3,7 +3,7 @@
 # Runs the deployment test groups for azure-deploy skill.
 # Triggered manually.
 
-name: Test azure-deploy deployment tests
+name: Integration Tests - azure-deploy
 
 permissions:
   id-token: write
