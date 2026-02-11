@@ -102,6 +102,15 @@ provider "azurerm" {
 }
 ```
 
+> **⚠️ IMPORTANT**: For **Azure Functions Flex Consumption**, use azurerm provider **v4.x or later**:
+> ```hcl
+> azurerm = {
+>   source  = "hashicorp/azurerm"
+>   version = "~> 4.0"
+> }
+> ```
+> See [functions.md](../../services/functions.md#terraform-configuration) for Flex Consumption Terraform patterns.
+
 ### 4. Variables and Outputs
 
 **variables.tf:**

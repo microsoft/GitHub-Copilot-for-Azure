@@ -110,6 +110,47 @@ module.exports = async function (context, req) {
 }
 ```
 
+## Terraform Configuration
+
+> **💡 ALWAYS USE FLEX CONSUMPTION** with Terraform for new Function App deployments.
+
+When using Terraform (especially with azd+Terraform), reference the **Azure Verified Modules (AVM)** for up-to-date Flex Consumption patterns:
+
+**Primary Reference:** [AVM Web Site Module - Flex Consumption Example](https://registry.terraform.io/modules/Azure/avm-res-web-site/azurerm/latest/examples/flex_consumption)
+
+Key points for Terraform:
+- Use **azurerm provider v4.x or later** for Flex Consumption support
+- Reference the AVM module for current best practices
+- Include `azd-service-name` tags for azd integration (see [azd+Terraform guide](../recipes/azd/terraform.md))
+
+**Example Terraform configuration:**
+```hcl
+# See the AVM module documentation for complete, up-to-date examples:
+# https://registry.terraform.io/modules/Azure/avm-res-web-site/azurerm/latest/examples/flex_consumption
+
+module "function_app" {
+  source  = "Azure/avm-res-web-site/azurerm"
+  version = "~> 0.0" # Check registry for latest version
+
+  # Flex Consumption configuration
+  kind                      = "functionapp,linux"
+  os_type                   = "Linux"
+  name                      = "func-${var.environment_name}-${var.service_name}"
+  location                  = var.location
+  resource_group_name       = azurerm_resource_group.main.name
+  
+  # Required for azd integration
+  tags = {
+    "azd-service-name" = var.service_name
+    "azd-env-name"     = var.environment_name
+  }
+
+  # See AVM module documentation for additional required parameters
+}
+```
+
+> **⚠️ NOTE**: The AVM module documentation is updated regularly. Always check the [Flex Consumption example](https://registry.terraform.io/modules/Azure/avm-res-web-site/azurerm/latest/examples/flex_consumption) for the latest configuration patterns.
+
 ## Runtime Stacks
 
 > **⚠️ ALWAYS QUERY OFFICIAL DOCUMENTATION**
