@@ -54,11 +54,23 @@ Use inline links:
 
 ### Validation Check
 
-When validating links, flag:
-1. Links pointing to directories instead of files
-2. Links to non-existent files
-3. Links with incorrect relative paths
-4. Links where text duplicates the URL/path
+Run the automated reference validator to catch broken and escaped links:
+
+```bash
+# From the scripts directory
+cd scripts
+npm run references              # Validate all skills
+npm run references <skill-name> # Validate a single skill
+```
+
+This checks:
+1. Every local markdown link resolves to an existing file
+2. No link escapes the skill's own directory (cross-skill links)
+3. Ignores external URLs, `mailto:`, and fragment-only links
+
+When validating manually, also check for:
+4. Links pointing to directories instead of files
+5. Links where text duplicates the URL/path
 
 ## When broken link found, ask user:
 

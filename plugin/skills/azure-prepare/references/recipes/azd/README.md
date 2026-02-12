@@ -84,4 +84,4 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 ## Next
 
-→ Update manifest → **azure-validate**
+→ Update `.azure/plan.md` → **azure-validate**

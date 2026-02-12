@@ -75,4 +75,4 @@ Resources: `{prefix}{token}{instance}`
 
 ## Next
 
-→ Update manifest → **azure-validate**
+→ Update `.azure/plan.md` → **azure-validate**

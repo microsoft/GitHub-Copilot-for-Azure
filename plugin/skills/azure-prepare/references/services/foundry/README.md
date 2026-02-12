@@ -2,6 +2,8 @@
 
 Azure AI Foundry (formerly Azure OpenAI) for building AI-powered applications with models like GPT-4o, GPT-4, and embeddings.
 
+> **💡 For detailed AI guidance**, invoke the **`microsoft-foundry`** skill. It provides model catalog access, RAG patterns, agent creation, and evaluation workflows.
+
 ## When to Use
 
 - Chat and conversational AI applications

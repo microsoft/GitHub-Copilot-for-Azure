@@ -2,6 +2,14 @@
 
 Run these validations when reviewing or authoring skills.
 
+## Automated Validation
+
+```bash
+cd scripts
+npm run references              # Check broken links and cross-skill escapes
+npm run tokens -- check         # Check token limits
+```
+
 ## Validations
 
 | # | Check | Description |

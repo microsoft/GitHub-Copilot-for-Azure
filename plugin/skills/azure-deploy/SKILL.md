@@ -43,7 +43,7 @@ Activate this skill when user wants to:
 ## Rules
 
 1. Run after azure-prepare and azure-validate
-2. Manifest must exist with status `Validated`
+2. `.azure/plan.md` must exist with status `Validated`
 3. **Pre-deploy checklist required** — [Pre-Deploy Checklist](references/pre-deploy-checklist.md)
 4. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
 
@@ -55,7 +55,7 @@ Activate this skill when user wants to:
 |---|--------|-----------|
 | 1 | **Check Plan** — Read `.azure/plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/plan.md` |
 | 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
-| 3 | **Load Recipe** — Based on `recipe.type` in manifest | [recipes/README.md](references/recipes/README.md) |
+| 3 | **Load Recipe** — Based on `recipe.type` in `.azure/plan.md` | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
 | 5 | **Handle Errors** — See recipe's `errors.md` | — |
 | 6 | **Verify Success** — Confirm deployment completed and endpoints are accessible | — |

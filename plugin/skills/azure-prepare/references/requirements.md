@@ -46,6 +46,6 @@ Use `ask_user` tool to confirm each of these with the user:
 4. Compliance requirements (including data residency preferences)
 5. Architecture preferences (if any)
 
-## Document in Manifest
+## Document in Plan
 
 Record all requirements in `.azure/plan.md` immediately after gathering.

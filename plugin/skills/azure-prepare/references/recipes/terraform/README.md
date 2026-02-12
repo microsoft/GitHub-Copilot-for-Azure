@@ -75,4 +75,4 @@ Manual Dockerfile creation required.
 
 ## Next
 
-→ Update manifest → **azure-validate**
+→ Update `.azure/plan.md` → **azure-validate**

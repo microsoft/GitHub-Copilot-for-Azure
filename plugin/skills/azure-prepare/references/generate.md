@@ -13,7 +13,7 @@ The research step loads service-specific references and invokes related skills t
 1. ✅ Completed [Research Components](research.md) step
 2. ✅ Loaded all relevant `services/*.md` references
 3. ✅ Invoked related skills for specialized guidance
-4. ✅ Documented findings in manifest
+4. ✅ Documented findings in `.azure/plan.md`
 
 ## Generation Order
 
@@ -70,6 +70,6 @@ Apply language-specific production settings for containerized apps:
 
 ## After Generation
 
-1. Update manifest with generated file list
+1. Update `.azure/plan.md` with generated file list
 2. Run validation checks
 3. Proceed to **azure-validate** skill

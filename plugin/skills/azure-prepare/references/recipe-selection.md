@@ -44,7 +44,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 
 ## Record Selection
 
-Document in manifest:
+Document in `.azure/plan.md`:
 
 ```markdown
 ## Recipe: AZD (Terraform)

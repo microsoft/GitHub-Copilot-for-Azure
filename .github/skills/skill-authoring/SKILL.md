@@ -49,7 +49,8 @@ See [REFERENCE-LOADING.md](references/REFERENCE-LOADING.md) for details.
 ```bash
 # Run from the scripts directory
 cd scripts
-npm run tokens -- check plugin/skills/my-skill/SKILL.md
+npm run references              # Validate all skill links
+npm run tokens -- check         # Check token limits
 ```
 
 ### Integrity Checks

@@ -65,12 +65,9 @@ See [Token Budgets](token-budgets.md) for detailed limits.
 ## Final Steps
 
 ```bash
-# Run token check
 cd scripts
-npm run check
-
-# Generate updated metadata (optional)
-npm run tokens
+npm run references        # Validate all skill links
+npm run tokens -- check   # Check token limits
 ```
 
 If any checks fail, see [Guidelines](guidelines/README.md) for guidance.

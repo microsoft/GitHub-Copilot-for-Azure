@@ -7,7 +7,7 @@ After architecture planning, research each selected component to gather best pra
 1. **Identify Components** — List all Azure services from architecture plan
 2. **Load Service References** — For each service, load the `services/<service>/README.md` first, then specific references as needed
 3. **Invoke Related Skills** — For deeper guidance, invoke mapped skills from the table below
-4. **Document Findings** — Record key insights in the manifest
+4. **Document Findings** — Record key insights in `.azure/plan.md`
 
 ## Service-to-Reference Mapping
 
@@ -37,8 +37,8 @@ After architecture planning, research each selected component to gather best pra
 | Application Insights | [App Insights](services/app-insights/README.md) | `appinsights-instrumentation` (invoke for instrumentation) |
 | Log Analytics | — | `azure-observability`, `azure-kusto` |
 | **AI Services** | | |
-| Azure OpenAI | — | `microsoft-foundry`, `azure-ai` |
-| AI Search | — | `azure-ai` |
+| Azure OpenAI | [Foundry](services/foundry/README.md) | `microsoft-foundry` (invoke for AI patterns and model guidance) |
+| AI Search | — | `azure-ai` (invoke for search configuration) |
 
 ## Research Instructions
 
@@ -83,7 +83,7 @@ For Component: Azure Functions
 → Apply: to artifact generation
 ```
 
-### Step 3: Document in Manifest
+### Step 3: Document in Plan
 
 Add research findings to `.azure/plan.md`:
 
