@@ -109,6 +109,24 @@ Projects in <region>:
 
 > ⚠️ **Never deploy without showing the user which project will be used.** This prevents accidental deployments to the wrong resource.
 
+## Pre-Deployment Validation (All Modes)
+
+Before presenting any deployment options (SKU, capacity), always validate both of these:
+
+1. **Model supports the SKU** — query the model catalog to confirm the selected model+version supports the target SKU:
+   ```bash
+   az cognitiveservices model list --location <region> --subscription <sub-id> -o json
+   ```
+   Filter for the model, extract `.model.skus[].name` to get supported SKUs.
+
+2. **Subscription has available quota** — check that the user's subscription has unallocated quota for the SKU+model combination:
+   ```bash
+   az cognitiveservices usage list --location <region> --subscription <sub-id> -o json
+   ```
+   Match by usage name pattern `OpenAI.<SKU>.<model-name>` (e.g., `OpenAI.GlobalStandard.gpt-4o`). Compute `available = limit - currentValue`.
+
+> ⚠️ **Warning:** Only present options that pass both checks. Do NOT show hardcoded SKU lists — always query dynamically. SKUs with 0 available quota should be shown as ❌ informational items, not selectable options.
+
 ## Prerequisites
 
 All deployment modes require:
