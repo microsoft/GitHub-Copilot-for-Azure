@@ -66,3 +66,6 @@ Converting an existing application to run on Azure.
 | `infra/*.tf` exists | Terraform IaC |
 | `Dockerfile` exists | Containerized app |
 | No Azure files | NEW or MODERNIZE mode |
+| `*.AppHost.csproj` exists | .NET Aspire project (likely using azd) |
+
+> 💡 **.NET Aspire Projects:** Aspire projects typically use azd in "limited mode" where infrastructure is generated in-memory. When working with Aspire, be aware that `azd provision` may not populate all environment variables needed by `azd deploy`, particularly for Container Apps deployments (e.g., `AZURE_CONTAINER_REGISTRY_ENDPOINT`, `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, `MANAGED_IDENTITY_CLIENT_ID`). These may need to be set manually using `azd env set` after provisioning.
