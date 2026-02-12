@@ -22,7 +22,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export interface AgentMetadata {
+  /**
+   * Events emitted by the Copilot SDK agent during the agent run.
+   */
   events: SessionEvent[];
+
+  /**
+   * Comments made by the test author.
+   * These comments will be added to the agentMetadata markdown for an LLM or human reviewer to read.
+   */
+  testComments: string[];
 }
 
 export interface TestConfig {
@@ -57,6 +66,15 @@ interface RunnerCleanup {
  */
 function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): string {
   const lines: string[] = [];
+
+  // Test author's comment
+  console.log("agentMetadata.testComments.length", agentMetadata.testComments.length);
+  if (agentMetadata.testComments.length > 0) {
+    lines.push("# Test comments");
+    lines.push("");
+    lines.push(agentMetadata.testComments.join("\n"));
+    lines.push("");
+  }
 
   // User Prompt section
   lines.push("# User Prompt");
@@ -310,7 +328,6 @@ export function useAgentRunner() {
       await cleanup();
     });
   }
-  
 
   async function run(config: TestConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
@@ -360,7 +377,7 @@ export function useAgentRunner() {
       });
       entry.session = session;
 
-      const agentMetadata: AgentMetadata = { events: [] };
+      const agentMetadata: AgentMetadata = { events: [], testComments: [] };
       entry.agentMetadata = agentMetadata;
 
       const done = new Promise<void>((resolve) => {
