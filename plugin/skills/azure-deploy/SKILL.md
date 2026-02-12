@@ -50,6 +50,11 @@ Activate this skill when user wants to:
 
 > 💡 **Tip:** azd supports both Bicep and Terraform. Check `azure.yaml` for `infra.provider` setting.
 
+## SDK Quick References
+
+- **Azure Developer CLI**: [azd](references/sdk/azd-deployment.md)
+- **Azure Identity**: [Python](references/sdk/azure-identity-py.md) | [.NET](references/sdk/azure-identity-dotnet.md) | [TypeScript](references/sdk/azure-identity-ts.md) | [Java](references/sdk/azure-identity-java.md)
+
 ## MCP Tools
 
 | Tool | Purpose |
