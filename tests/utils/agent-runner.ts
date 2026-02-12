@@ -67,8 +67,7 @@ interface RunnerCleanup {
 function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): string {
   const lines: string[] = [];
 
-  // Test author's comment
-  console.log("agentMetadata.testComments.length", agentMetadata.testComments.length);
+  // Comment by the test author in test code
   if (agentMetadata.testComments.length > 0) {
     lines.push("# Test comments");
     lines.push("");
