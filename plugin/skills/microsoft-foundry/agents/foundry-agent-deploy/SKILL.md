@@ -46,20 +46,25 @@ Create and manage agent deployments in Azure AI Foundry, including container lif
 
 > ⚠️ **Warning:** This step is MANDATORY before creating a hosted agent. Environment variables are included in the agent payload and are difficult to change after deployment.
 
-Present all environment variables (collected during packaging) to the user for confirmation. Display in a table with variable name and value. Mask sensitive values.
+If an `azure.yaml` exists in the project root, run `azd env get-values` and merge any matching values into the environment variable list (collected during packaging). Azd values take precedence over empty/placeholder values but do not override user-provided values.
 
-Loop until the user confirms or cancels:
+Present all environment variables to the user for confirmation using the `ask_user` or `askQuestions` tool. Display in a table with variable name, value, and source (`azd`, `project default`, or `user`). Mask sensitive values.
+
+Use the `ask_user` or `askQuestions` tool to loop until the user confirms or cancels:
 - `yes` → Proceed to Step 2
 - `VAR_NAME=new_value` → Update the value, show updated table, ask again
 - `cancel` → Abort deployment
 
 ### Step 2: Collect Agent Configuration
 
-Ask the user for:
+If an `azure.yaml` exists in the project root, run `azd env get-values` and look for:
+- `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` → pre-fill **Project endpoint**
+- `AZURE_CONTAINER_REGISTRY_NAME` → derive the image URL prefix (`<acr-name>.azurecr.io/`)
+
+Use the `ask_user` or `askQuestions` tool to collect only values not found in the azd environment:
 - **Project endpoint** — AI Foundry project endpoint URL
 - **Agent name** — Unique name for the agent
 - **Model deployment** — Model deployment name (e.g., `gpt-4o`)
-- **Instructions** — System prompt / agent instructions (optional)
 
 ### Step 3: Get Agent Definition Schema
 
@@ -88,7 +93,7 @@ Use `agent_container_control` with `action: start` to start the container.
 
 ### Step 6: Verify Agent Status
 
-Use `agent_container_status_get` to poll until status is `Running`.
+Delegate status polling to a `task` or `runSubagent` sub-agent (type: `task`). Provide the project endpoint, agent name, and instruct it to use `agent_container_status_get` repeatedly until the status is `Running` or `Failed`.
 
 **Container status values:**
 - `Starting` — Container is initializing
@@ -100,7 +105,10 @@ Use `agent_container_status_get` to poll until status is `Running`.
 
 ### Step 1: Collect Agent Configuration
 
-Ask the user for:
+If an `azure.yaml` exists in the project root, run `azd env get-values` and look for:
+- `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` → pre-fill **Project endpoint**
+
+Use the `ask_user` or `askQuestions` tool to collect only values not found in the azd environment:
 - **Project endpoint** — AI Foundry project endpoint URL
 - **Agent name** — Unique name for the agent
 - **Model deployment** — Model deployment name (e.g., `gpt-4o`)
