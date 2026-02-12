@@ -661,15 +661,6 @@ export interface ConversationResult {
 }
 
 /**
- * Count occurrences of a tool being called across events
- */
-function countToolCalls(events: SessionEvent[], toolName: string): number {
-  return events.filter(
-    e => e.type === "tool.execution_start" && e.data.toolName === toolName
-  ).length;
-}
-
-/**
  * Count LLM turns (assistant messages) across events
  */
 function countLlmTurns(events: SessionEvent[]): number {
@@ -736,65 +727,70 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
     });
 
     let aborted = false;
+    let currentTurnMetadata: AgentMetadata = { events: [] };
+    let currentLabel = "Turn 1";
+    let resolveIdle: (() => void) | undefined;
+
+    session.on(async (event: SessionEvent) => {
+      if (process.env.DEBUG) {
+        console.log(`=== [${currentLabel}] session event ${event.type}`);
+      }
+
+      if (event.type === "session.idle") {
+        resolveIdle?.();
+        return;
+      }
+
+      currentTurnMetadata.events.push(event);
+      aggregate.events.push(event);
+
+      // Check turn limits
+      if (config.maxTurns && countLlmTurns(aggregate.events) > config.maxTurns) {
+        console.warn(`⚠️  Max LLM turns (${config.maxTurns}) exceeded — aborting`);
+        aborted = true;
+        resolveIdle?.();
+        void session!.abort();
+        return;
+      }
+
+      // Check deploy attempt limits (azd up / azd deploy / azd provision)
+      if (config.maxDeployAttempts) {
+        const azdCalls = aggregate.events.filter(
+          e => e.type === "tool.execution_start" &&
+            JSON.stringify(e.data.arguments ?? {}).match(/azd\s+(up|deploy|provision)/i)
+        ).length;
+        if (azdCalls > config.maxDeployAttempts) {
+          console.warn(`⚠️  Max deploy attempts (${config.maxDeployAttempts}) exceeded — aborting`);
+          aborted = true;
+          resolveIdle?.();
+          void session!.abort();
+          return;
+        }
+      }
+    });
 
     for (let i = 0; i < config.prompts.length; i++) {
       if (aborted) break;
 
-      const turnMetadata: AgentMetadata = { events: [] };
       const promptEntry = config.prompts[i];
-      const label = promptEntry.label ?? `Turn ${i + 1}`;
+      currentLabel = promptEntry.label ?? `Turn ${i + 1}`;
+      currentTurnMetadata = { events: [] };
 
       if (process.env.DEBUG) {
-        console.log(`\n=== ${label}: "${promptEntry.prompt.substring(0, 80)}..."`);
+        console.log(`\n=== ${currentLabel}: "${promptEntry.prompt.substring(0, 80)}..."`);
       }
 
       const done = new Promise<void>((resolve) => {
-        session!.on(async (event: SessionEvent) => {
-          if (process.env.DEBUG) {
-            console.log(`=== [${label}] session event ${event.type}`);
-          }
-
-          if (event.type === "session.idle") {
-            resolve();
-            return;
-          }
-
-          turnMetadata.events.push(event);
-          aggregate.events.push(event);
-
-          // Check turn limits
-          if (config.maxTurns && countLlmTurns(aggregate.events) > config.maxTurns) {
-            console.warn(`⚠️  Max LLM turns (${config.maxTurns}) exceeded — aborting`);
-            aborted = true;
-            resolve();
-            void session!.abort();
-            return;
-          }
-
-          // Check deploy attempt limits (azd up / azd deploy / azd provision)
-          if (config.maxDeployAttempts) {
-            const azdCalls = aggregate.events.filter(
-              e => e.type === "tool.execution_start" &&
-                JSON.stringify(e.data.arguments ?? {}).match(/azd\s+(up|deploy|provision)/i)
-            ).length;
-            if (azdCalls > config.maxDeployAttempts) {
-              console.warn(`⚠️  Max deploy attempts (${config.maxDeployAttempts}) exceeded — aborting`);
-              aborted = true;
-              resolve();
-              void session!.abort();
-              return;
-            }
-          }
-        });
+        resolveIdle = resolve;
       });
 
       await session.send({ prompt: promptEntry.prompt });
       await done;
 
-      turns.push(turnMetadata);
+      turns.push(currentTurnMetadata);
 
       if (process.env.DEBUG) {
-        console.log(`=== [${label}] completed with ${turnMetadata.events.length} events`);
+        console.log(`=== [${currentLabel}] completed with ${currentTurnMetadata.events.length} events`);
       }
     }
 

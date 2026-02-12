@@ -5,6 +5,7 @@
  * Copy this file to /tests/{skill-name}/unit.test.ts
  */
 
+import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 // Replace with your skill name
@@ -53,13 +54,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Frontmatter Formatting", () => {
     test("frontmatter has no tabs", () => {
-      const raw = require("fs").readFileSync(skill.filePath, "utf-8");
+      const raw = readFileSync(skill.filePath, "utf-8");
       const frontmatter = raw.split("---")[1];
       expect(frontmatter).not.toMatch(/\t/);
     });
 
     test("frontmatter keys are only supported attributes", () => {
-      const raw = require("fs").readFileSync(skill.filePath, "utf-8");
+      const raw = readFileSync(skill.filePath, "utf-8");
       const frontmatter = raw.split("---")[1];
       const supported = ["name", "description", "compatibility", "license", "metadata",
         "argument-hint", "disable-model-invocation", "user-invokable"];
