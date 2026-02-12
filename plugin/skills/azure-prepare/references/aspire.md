@@ -1,0 +1,155 @@
+# .NET Aspire Projects
+
+Guidance for preparing .NET Aspire applications for Azure deployment.
+
+## What is .NET Aspire?
+
+.NET Aspire is an opinionated, cloud-ready stack for building observable, production-ready distributed applications. Aspire projects use an AppHost orchestrator to define and configure the application's components, services, and dependencies.
+
+## Detection
+
+A .NET Aspire project is identified by:
+
+| Indicator | Description |
+|-----------|-------------|
+| `*.AppHost.csproj` | AppHost orchestrator project file |
+| `Aspire.Hosting` package | Core Aspire hosting package reference |
+| `Aspire.Hosting.AppHost` | Alternative Aspire hosting package |
+
+**Example project structure:**
+```
+orleans-voting/
+├── OrleansVoting.sln
+├── OrleansVoting.AppHost/
+│   └── OrleansVoting.AppHost.csproj   ← AppHost indicator
+├── OrleansVoting.Web/
+├── OrleansVoting.Api/
+└── OrleansVoting.Grains/
+```
+
+## Azure Preparation Workflow
+
+### Step 1: Detection
+
+When scanning the codebase (per [scan.md](scan.md)), detect Aspire by:
+
+```bash
+# Check for AppHost project
+find . -name "*.AppHost.csproj"
+
+# Or check for Aspire.Hosting package reference
+grep -r "Aspire.Hosting" . --include="*.csproj"
+```
+
+### Step 2: Initialize with azd
+
+**CRITICAL: For Aspire projects, use `azd init --from-code` instead of creating azure.yaml manually.**
+
+The `--from-code` flag:
+- Auto-detects the AppHost orchestrator
+- Reads the Aspire service definitions
+- Generates appropriate `azure.yaml` and infrastructure
+- Works in non-interactive/CI environments (no TTY prompts)
+
+```bash
+# Non-interactive initialization for Aspire projects
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+azd init --from-code -e "$ENV_NAME"
+```
+
+**Why `--from-code` is required:**
+- Without it, `azd init` prompts: "How do you want to initialize your app?" (requires TTY)
+- With `--from-code`, azd automatically detects the AppHost and proceeds without prompts
+- This is essential for automation, agents, and CI/CD pipelines
+
+### Step 3: What azd Generates
+
+`azd init --from-code` creates:
+
+| Artifact | Location | Description |
+|----------|----------|-------------|
+| `azure.yaml` | Project root | Service definitions from AppHost |
+| `infra/` | Project root | Bicep templates for Azure resources |
+| `.azure/` | Project root | Environment configuration |
+
+**Example generated azure.yaml:**
+```yaml
+name: orleans-voting
+metadata:
+  template: orleans-voting
+
+services:
+  web:
+    project: ./OrleansVoting.Web
+    language: dotnet
+    host: containerapp
+
+  api:
+    project: ./OrleansVoting.Api
+    language: dotnet
+    host: containerapp
+```
+
+## Flags Reference
+
+### azd init for Aspire
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--from-code` | ✅ Yes | Auto-detect AppHost, no interactive prompts |
+| `-e <name>` | ✅ Yes | Environment name (required for non-interactive) |
+| `--no-prompt` | Optional | Skip additional confirmations |
+
+**Complete command:**
+```bash
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+azd init --from-code -e "$ENV_NAME"
+```
+
+## Common Aspire Samples
+
+| Sample | Repository | Notes |
+|--------|------------|-------|
+| orleans-voting | [dotnet/aspire-samples](https://github.com/dotnet/aspire-samples/tree/main/samples/orleans-voting) | Orleans cluster with voting app |
+| AspireYarp | [dotnet/aspire-samples](https://github.com/dotnet/aspire-samples/tree/main/samples/AspireYarp) | YARP reverse proxy |
+| AspireWithDapr | [dotnet/aspire-samples](https://github.com/dotnet/aspire-samples/tree/main/samples/AspireWithDapr) | Dapr integration |
+| eShop | [dotnet/eShop](https://github.com/dotnet/eShop) | Reference microservices app |
+
+## Troubleshooting
+
+### Error: "no default response for prompt 'How do you want to initialize your app?'"
+
+**Cause:** Missing `--from-code` flag  
+**Solution:** Add `--from-code` to the `azd init` command
+
+```bash
+# ❌ Wrong - requires interactive prompt
+azd init -e "my-env"
+
+# ✅ Correct - auto-detects AppHost
+azd init --from-code -e "my-env"
+```
+
+### No AppHost detected
+
+**Symptoms:** `azd init --from-code` doesn't find the AppHost
+
+**Solutions:**
+1. Verify AppHost project exists: `find . -name "*.AppHost.csproj"`
+2. Check project builds: `dotnet build`
+3. Ensure Aspire.Hosting package is referenced in AppHost project
+
+## References
+
+- [.NET Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)
+- [Azure Developer CLI (azd)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/)
+- [Aspire Samples Repository](https://github.com/dotnet/aspire-samples)
+- [azd + Aspire Integration](https://learn.microsoft.com/en-us/dotnet/aspire/deployment/azure/aca-deployment-azd-in-depth)
+
+## Next Steps
+
+After `azd init --from-code`:
+1. Review generated `azure.yaml` and `infra/` files
+2. Customize infrastructure as needed
+3. Proceed to **azure-validate** skill
+4. Deploy with **azure-deploy** skill (`azd up`)
