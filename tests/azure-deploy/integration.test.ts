@@ -159,6 +159,25 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates static portfolio website with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using my current subscription in eastus2 region with Terraform infrastructure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
+    }, deployTestTimeoutMs);
   });
 
   // App Service
@@ -237,6 +256,25 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates URL shortener service with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using my current subscription in eastus2 region using Terraform infrastructure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
+    }, deployTestTimeoutMs);
   });
 
   // Azure Container Apps (ACA)
@@ -276,109 +314,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
-  });
 
-  // Bicep Infrastructure Tests
-  describe("bicep-infrastructure-tests", () => {
-    // Static web apps test
-    test("creates static portfolio website with Bicep infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using my current subscription in eastus2 region with Bicep infrastructure.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
-    }, deployTestTimeoutMs);
-
-    // Azure Functions test
-    test("creates URL shortener service with Bicep infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using my current subscription in eastus2 region using Bicep infrastructure.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
-    }, deployTestTimeoutMs);
-
-    // ACA test
-    test("creates social media application with Bicep infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a simple social media application with likes and comments and deploy to Azure using my current subscription in eastus2 region using Bicep infrastructure code.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
-    }, deployTestTimeoutMs);
-  });
-
-  // Terraform Infrastructure Tests
-  describe("terraform-infrastructure-tests", () => {
-    // Static web apps test
-    test("creates static portfolio website with Terraform infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using my current subscription in eastus2 region with Terraform infrastructure.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
-    }, deployTestTimeoutMs);
-
-    // Azure Functions test
-    test("creates URL shortener service with Terraform infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using my current subscription in eastus2 region using Terraform infrastructure.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
-    }, deployTestTimeoutMs);
-
-    // ACA test
+    // Terraform test
     test("creates social media application with Terraform infrastructure", async () => {
       const agentMetadata = await agent.run({
         prompt: "Create a simple social media application with likes and comments and deploy to Azure using my current subscription in eastus2 region using Terraform infrastructure code.",
@@ -398,3 +335,4 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, deployTestTimeoutMs);
   });
 });
+
