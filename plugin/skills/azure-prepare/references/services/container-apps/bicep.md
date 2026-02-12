@@ -1,25 +1,6 @@
 # Container Apps Bicep Patterns
 
-## Container Registry (Required)
-
-Container Apps require an Azure Container Registry for image storage.
-
-```bicep
-var resourceSuffix = take(uniqueString(subscription().id, resourceGroup().id), 6)
-
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: replace('cr${take(environmentName, 35)}${take(resourceSuffix, 6)}', '-', '')
-  location: location
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    adminUserEnabled: true
-  }
-}
-```
-
-> **⚠️ Important:** Container Registry names must be alphanumeric only (5-50 characters). Use `replace()` to remove hyphens from environment names and `take()` to ensure length constraints.
+> **⚠️ Container Registry Naming:** If using Azure Container Registry, names must be alphanumeric only (5-50 characters). Use `replace()` to remove hyphens: `replace('cr${environmentName}${resourceSuffix}', '-', '')`
 
 ## Basic Resource
 
