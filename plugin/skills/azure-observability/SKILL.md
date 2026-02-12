@@ -87,6 +87,15 @@ AzureMetrics
 | Security | Log Analytics | Sign-ins, audit logs |
 | Costs | Cost Management | Budget alerts |
 
+## SDK Quick References
+
+For programmatic access to monitoring services, see the condensed SDK guides:
+
+- **OpenTelemetry**: [Python](references/sdk/azure-monitor-opentelemetry-py.md) | [TypeScript](references/sdk/azure-monitor-opentelemetry-ts.md) | [Python Exporter](references/sdk/azure-monitor-opentelemetry-exporter-py.md)
+- **Monitor Query**: [Python](references/sdk/azure-monitor-query-py.md) | [Java](references/sdk/azure-monitor-query-java.md)
+- **Log Ingestion**: [Python](references/sdk/azure-monitor-ingestion-py.md) | [Java](references/sdk/azure-monitor-ingestion-java.md)
+- **App Insights Mgmt**: [.NET](references/sdk/azure-mgmt-applicationinsights-dotnet.md)
+
 ## Service Details
 
 For deep documentation on specific services:

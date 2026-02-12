@@ -389,3 +389,7 @@ The skill generates:
 - Provide dry-run commands for validation
 - Include rollback procedures
 - Monitor impact after implementation
+
+## SDK Quick References
+
+- **Redis Management**: [.NET](references/sdk/azure-resource-manager-redis-dotnet.md)

@@ -167,6 +167,12 @@ MSAL is the recommended library for integrating Microsoft identity platform.
 | **Use HTTPS only** | All redirect URIs must use HTTPS (except localhost) |
 | **Monitor sign-ins** | Use Entra ID sign-in logs for anomaly detection |
 
+## SDK Quick References
+
+- **Azure Identity**: [Python](references/sdk/azure-identity-py.md) | [.NET](references/sdk/azure-identity-dotnet.md) | [TypeScript](references/sdk/azure-identity-ts.md) | [Java](references/sdk/azure-identity-java.md) | [Rust](references/sdk/azure-identity-rust.md)
+- **Key Vault (secrets)**: [Python](references/sdk/azure-keyvault-py.md) | [TypeScript](references/sdk/azure-keyvault-secrets-ts.md)
+- **Auth Events**: [.NET](references/sdk/microsoft-azure-webjobs-extensions-authentication-events-dotnet.md)
+
 ## References
 
 - [OAuth Flows](references/OAUTH-FLOWS.md) - Detailed OAuth 2.0 flow explanations

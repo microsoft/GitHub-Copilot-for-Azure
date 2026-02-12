@@ -12,7 +12,22 @@ description: |
 
 # Azure Compliance & Security Auditing
 
-## Triggers
+## Quick Reference
+
+| Property | Details |
+|---|---|
+| Best for | Compliance scans, security audits, Key Vault expiration checks |
+| Primary capabilities | Comprehensive Resources Assessment, Key Vault Expiration Monitoring |
+| MCP tools | azqr, subscription and resource group listing, Key Vault item inspection |
+
+## When to Use This Skill
+
+- Run azqr or Azure Quick Review for compliance assessment
+- Validate Azure resource configuration against best practices
+- Identify orphaned or misconfigured resources
+- Audit Key Vault keys, secrets, and certificates for expiration
+
+## Skill Activation Triggers
 
 Activate this skill when user wants to:
 - Check Azure compliance or best practices
@@ -26,7 +41,10 @@ Activate this skill when user wants to:
 - "Find secrets without expiration dates"
 - "Check certificate expiration dates"
 
----
+## Prerequisites
+
+- Authentication: user is logged in to Azure via `az login`
+- Permissions to read resource configuration and Key Vault metadata
 
 ## Assessments
 
@@ -48,4 +66,45 @@ Activate this skill when user wants to:
 | `keyvault_secret_get` | Get secret details including expiration |
 | `keyvault_certificate_list` | List all certificates in vault |
 | `keyvault_certificate_get` | Get certificate details including expiration |
+
+## Assessment Workflow
+
+1. Select scope (subscription or resource group) for Comprehensive Resources Assessment.
+2. Run azqr and capture output artifacts.
+3. Analyze Scan Results and summarize findings and recommendations.
+4. Review Key Vault Expiration Monitoring output for keys, secrets, and certificates.
+5. Classify issues and propose remediation or fix steps for each finding.
+
+### Priority Classification
+
+| Priority | Guidance |
+|---|---|
+| Critical | Immediate remediation required for high-impact exposure |
+| High | Resolve within days to reduce risk |
+| Medium | Plan a resolution in the next sprint |
+| Low | Track and fix during regular maintenance |
+
+## Error Handling
+
+| Error | Message | Remediation |
+|---|---|---|
+| Authentication required | "Please login" | Run `az login` and retry |
+| Access denied | "Forbidden" | Confirm permissions and fix role assignments |
+| Missing resource | "Not found" | Verify subscription and resource group selection |
+
+## Best Practices
+
+- Run compliance scans on a regular schedule (weekly or monthly)
+- Track findings over time and verify remediation effectiveness
+- Separate compliance reporting from remediation execution
+- Keep Key Vault expiration policies documented and enforced
+
+## SDK Quick References
+
+For programmatic Key Vault access, see the condensed SDK guides:
+
+- **Key Vault (Python)**: [Secrets/Keys/Certs](references/sdk/azure-keyvault-py.md)
+- **Secrets**: [TypeScript](references/sdk/azure-keyvault-secrets-ts.md) | [Rust](references/sdk/azure-keyvault-secrets-rust.md) | [Java](references/sdk/azure-security-keyvault-secrets-java.md)
+- **Keys**: [.NET](references/sdk/azure-security-keyvault-keys-dotnet.md) | [Java](references/sdk/azure-security-keyvault-keys-java.md) | [TypeScript](references/sdk/azure-keyvault-keys-ts.md) | [Rust](references/sdk/azure-keyvault-keys-rust.md)
+- **Certificates**: [Rust](references/sdk/azure-keyvault-certificates-rust.md)
 

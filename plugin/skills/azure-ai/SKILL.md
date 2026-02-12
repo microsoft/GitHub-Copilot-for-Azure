@@ -47,6 +47,18 @@ When Azure MCP is enabled:
 | Speaker diarization | Identify who spoke when |
 | Custom models | Domain-specific vocabulary |
 
+## SDK Quick References
+
+For programmatic access to these services, see the condensed SDK guides:
+
+- **AI Search**: [Python](references/sdk/azure-search-documents-py.md) | [TypeScript](references/sdk/azure-search-documents-ts.md) | [.NET](references/sdk/azure-search-documents-dotnet.md)
+- **OpenAI**: [.NET](references/sdk/azure-ai-openai-dotnet.md)
+- **Vision**: [Python](references/sdk/azure-ai-vision-imageanalysis-py.md) | [Java](references/sdk/azure-ai-vision-imageanalysis-java.md)
+- **Transcription**: [Python](references/sdk/azure-ai-transcription-py.md)
+- **Translation**: [Python](references/sdk/azure-ai-translation-text-py.md) | [TypeScript](references/sdk/azure-ai-translation-ts.md)
+- **Document Intelligence**: [.NET](references/sdk/azure-ai-document-intelligence-dotnet.md) | [TypeScript](references/sdk/azure-ai-document-intelligence-ts.md)
+- **Content Safety**: [Python](references/sdk/azure-ai-contentsafety-py.md) | [TypeScript](references/sdk/azure-ai-contentsafety-ts.md) | [Java](references/sdk/azure-ai-contentsafety-java.md)
+
 ## Service Details
 
 For deep documentation on specific services:
