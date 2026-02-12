@@ -18,6 +18,7 @@
     "results": "node scripts/show-test-results.js",
     "update:snapshots": "cross-env jest --updateSnapshot",
     "mergeSkillInvocationTestResult": "node scripts/generate-skill-invocation-test-summary.js",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "lint:fix": "eslint --fix"
   },
@@ -37,7 +38,8 @@
     "jest-junit": "^16.0.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "simple-git": "^3.30.0"
   },
   "jest-junit": {
     "outputDirectory": "./reports",
