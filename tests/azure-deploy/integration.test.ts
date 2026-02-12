@@ -313,7 +313,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
-    test("deploys MvcMovie90", async () => {
+    test("deploys MvcMovie 90", async  () => {
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
         const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
 
@@ -324,6 +324,40 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
               targetDir: workspace,
               depth: 1,
               sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+        });
+    
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+    
+        expect(isSkillUsed).toBe(true);
+        expect(isValidateInvoked).toBe(true);
+        expect(isPrepareInvoked).toBe(true);
+        expect(containsDeployLinks).toBe(true);
+      }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire azure functions", async () => {
+        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
+        const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
+
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
             });
           },
           prompt:
