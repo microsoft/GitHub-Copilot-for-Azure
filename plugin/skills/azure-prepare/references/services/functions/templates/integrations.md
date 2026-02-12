@@ -22,4 +22,5 @@ Templates for Azure Functions with specific service integrations.
 
 ## Flex Consumption Samples
 
-Service Bus and Event Hubs templates: [Azure Functions Flex Consumption Samples](https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/)
+Service Bus and Event Hubs templates: [Azure Functions Flex Consumption Samples](https://github.com/Azure-Samples/azure-functions-flex-consumption-samples)
+
