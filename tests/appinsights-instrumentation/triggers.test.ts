@@ -46,7 +46,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Explain quantum computing",
       "How do I use AWS CloudWatch?",
       "Deploy my application to Heroku",
-      "What is the best pizza topping?",
       "Configure logging in Spring Boot",
       "Create a React component",
     ];

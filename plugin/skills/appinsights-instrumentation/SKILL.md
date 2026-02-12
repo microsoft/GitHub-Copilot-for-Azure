@@ -1,15 +1,33 @@
 ---
 name: appinsights-instrumentation
-description: "Instrument web applications to send telemetry data to Azure Application Insights for observability and monitoring. USE FOR: instrument app with app insights, add appinsights instrumentation, configure application insights, set up telemetry monitoring, enable app insights auto-instrumentation, add observability to azure web app, instrument webapp to send data to app insights, configure telemetry for app service. DO NOT USE FOR: non-Azure monitoring (use CloudWatch for AWS, Datadog for third-party), log analysis (use azure-kusto), cost monitoring (use azure-cost-optimization), security monitoring (use azure-security)."
+description: |
+  Guidance for instrumenting webapps with Azure Application Insights. Provides telemetry patterns, SDK setup, and configuration references.
+  USE FOR: how to instrument app, App Insights SDK, telemetry patterns, what is App Insights, Application Insights guidance, instrumentation examples, APM best practices.
+  DO NOT USE FOR: adding App Insights to my app (use azure-prepare), add telemetry to my project (use azure-prepare), add monitoring (use azure-prepare). This skill provides guidance—azure-prepare orchestrates component changes.
 ---
 
-# AppInsights instrumentation
+# AppInsights Instrumentation Guide
 
-This skill enables sending telemetry data of a webapp to Azure App Insights for better observability of the app's health.
+This skill provides **guidance and reference material** for instrumenting webapps with Azure Application Insights.
 
-## When to use this skill
+> **⛔ ADDING COMPONENTS?**
+>
+> If the user wants to **add App Insights to their app**, invoke **azure-prepare** instead.
+> This skill provides reference material—azure-prepare orchestrates the actual changes.
 
-Use this skill when the user wants to enable telemetry for their webapp.
+## When to Use This Skill
+
+- User asks **how** to instrument (guidance, patterns, examples)
+- User needs SDK setup instructions
+- azure-prepare invokes this skill during research phase
+- User wants to understand App Insights concepts
+
+## When to Use azure-prepare Instead
+
+- User says "add telemetry to my app"
+- User says "add App Insights" 
+- User wants to modify their project
+- Any request to change/add components
 
 ## Prerequisites
 
