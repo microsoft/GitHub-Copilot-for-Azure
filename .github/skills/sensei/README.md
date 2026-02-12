@@ -36,10 +36,11 @@ Sensei implements the "Ralph Wiggum" technique:
 2. **Score** - Evaluate frontmatter compliance
 3. **Improve** - Add triggers, anti-triggers, compatibility
 4. **Verify** - Run tests to ensure changes work
-5. **Check Tokens** - Analyze token usage, gather suggestions
-6. **Summary** - Display before/after with suggestions
-7. **Prompt** - Ask user: Commit, Create Issue, or Skip?
-8. **Repeat** - Until target score reached
+5. **Validate References** - Check markdown links are valid
+6. **Check Tokens** - Analyze token usage, gather suggestions
+7. **Summary** - Display before/after with suggestions
+8. **Prompt** - Ask user: Commit, Create Issue, or Skip?
+9. **Repeat** - Until target score reached
 
 ---
 
@@ -169,20 +170,27 @@ npm test -- --testPathPattern=azure-validation
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│  7. CHECK TOKENS:                                       │
+│  7. VALIDATE REFERENCES:                                │
+│     npm run references {skill-name}                     │
+│     • Check markdown links are valid                    │
+│     • Ensure links stay within skill directory          │
+└─────────────────────┬───────────────────────────────────┘
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│  8. CHECK TOKENS:                                       │
 │     npm run tokens -- check plugin/skills/{skill-name}  │
 │     npm run tokens -- suggest (gather optimizations)    │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│  8. SUMMARY: Display before/after comparison            │
+│  9. SUMMARY: Display before/after comparison            │
 │     • Score change (Low → Medium-High)                  │
 │     • Token delta (+/- tokens)                          │
 │     • Unimplemented suggestions                         │
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│  9. PROMPT USER: Choose action                          │
+│  10. PROMPT USER: Choose action                         │
 │     [C] Commit changes                                  │
 │     [I] Create GitHub issue with suggestions            │
 │     [S] Skip (discard changes)                          │

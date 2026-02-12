@@ -32,15 +32,16 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║    Run sensei on all Low-adherence skills                        ║
 ║                                                                  ║
 ║  WHAT IT DOES:                                                   ║
-║    1. READ    - Load skill's SKILL.md, tests, and token count    ║
-║    2. SCORE   - Check compliance (Low/Medium/Medium-High/High)   ║
-║    3. SCAFFOLD- Create tests from template if missing            ║
-║    4. IMPROVE - Add USE FOR triggers + DO NOT USE FOR            ║
-║    5. TEST    - Run tests, fix if needed                         ║
-║    6. TOKENS  - Check token budget, gather suggestions           ║
-║    7. SUMMARY - Show before/after with suggestions               ║
-║    8. PROMPT  - Ask: Commit, Create Issue, or Skip?              ║
-║    9. REPEAT  - Until Medium-High score + tests pass             ║
+║    1. READ      - Load skill's SKILL.md, tests, and token count  ║
+║    2. SCORE     - Check compliance (Low/Medium/Medium-High/High) ║
+║    3. SCAFFOLD  - Create tests from template if missing          ║
+║    4. IMPROVE   - Add USE FOR triggers + DO NOT USE FOR          ║
+║    5. TEST      - Run tests, fix if needed                       ║
+║    6. REFERENCES- Validate markdown links                        ║
+║    7. TOKENS    - Check token budget, gather suggestions         ║
+║    8. SUMMARY   - Show before/after with suggestions             ║
+║    9. PROMPT    - Ask: Commit, Create Issue, or Skip?            ║
+║   10. REPEAT    - Until Medium-High score + tests pass           ║
 ║                                                                  ║
 ║  TARGET SCORE: Medium-High                                       ║
 ║    ✓ Description > 150 chars                                     ║
@@ -94,10 +95,11 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
-8. **TOKENS** - Check token budget, gather optimization suggestions
-9. **SUMMARY** - Display before/after comparison with unimplemented suggestions
-10. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
-11. **REPEAT** - Go to step 2 (max 5 iterations per skill)
+8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
+9. **TOKENS** - Check token budget, gather optimization suggestions
+10. **SUMMARY** - Display before/after comparison with unimplemented suggestions
+11. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
+12. **REPEAT** - Go to step 2 (max 5 iterations per skill)
 
 ## Scoring Criteria (Quick Reference)
 
