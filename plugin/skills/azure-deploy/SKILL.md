@@ -64,6 +64,11 @@ Activate this skill when user wants to:
 >
 > When checking the plan, verify the **Validation Proof** section (Section 7) contains actual validation results with commands run and timestamps. If this section is empty, validation was bypassed — invoke **azure-validate** skill first.
 
+## SDK Quick References
+
+- **Azure Developer CLI**: [azd](references/sdk/azd-deployment.md)
+- **Azure Identity**: [Python](references/sdk/azure-identity-py.md) | [.NET](references/sdk/azure-identity-dotnet.md) | [TypeScript](references/sdk/azure-identity-ts.md) | [Java](references/sdk/azure-identity-java.md)
+
 ## MCP Tools
 
 | Tool | Purpose |

@@ -110,6 +110,12 @@ Use these patterns based on your scenario:
 | Connection timeout | Firewall blocking access | Add firewall rule: `az postgres flexible-server firewall-rule create` |
 | Guest user login fails | Wrong UPN format | Use full UPN with `#EXT#` tag from Azure AD |
 
+## SDK Quick References
+
+- **PostgreSQL Client**: [TypeScript](references/sdk/azure-postgres-ts.md)
+- **Azure Identity**: [Python](references/sdk/azure-identity-py.md) | [TypeScript](references/sdk/azure-identity-ts.md)
+- **PostgreSQL Mgmt**: [.NET](references/sdk/azure-resource-manager-postgresql-dotnet.md)
+
 ## References
 
 - [Microsoft Entra ID Authentication Setup](./references/entra-rbac-overview.md) - Complete passwordless authentication guide
