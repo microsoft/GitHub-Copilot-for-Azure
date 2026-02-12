@@ -49,9 +49,9 @@ All modules must accept:
 
 | Resource Type | Constraint | Pattern |
 |---------------|------------|---------|
-| Container Registry | Alphanumeric only (5-50 chars) | `replace('cr${environmentName}${resourceSuffix}', '-', '')` |
-| Storage Account | Lowercase alphanumeric (3-24 chars) | `toLower(replace('st${environmentName}${resourceSuffix}', '-', ''))` |
-| Key Vault | Alphanumeric + hyphens (3-24 chars) | `'kv-${environmentName}-${resourceSuffix}'` |
+| Container Registry | Alphanumeric only (5-50 chars) | `replace('cr${take(environmentName, 35)}${resourceSuffix}', '-', '')` |
+| Storage Account | Lowercase alphanumeric (3-24 chars) | `toLower(take(replace('st${environmentName}${resourceSuffix}', '-', ''), 24))` |
+| Key Vault | Alphanumeric + hyphens (3-24 chars) | `'kv-${take(environmentName, 6)}-${take(resourceSuffix, 6)}'` |
 
 **Example: Container Registry**
 
@@ -59,8 +59,8 @@ All modules must accept:
 // ❌ WRONG - Fails with hyphenated environment names
 var acrName = 'cr${environmentName}${resourceSuffix}'
 
-// ✅ CORRECT - Strips invalid characters
-var acrName = replace('cr${environmentName}${resourceSuffix}', '-', '')
+// ✅ CORRECT - Strips invalid characters and ensures length constraints
+var acrName = replace('cr${take(environmentName, 35)}${resourceSuffix}', '-', '')
 ```
 
 ## Container Resources

@@ -8,7 +8,7 @@ Container Apps require an Azure Container Registry for image storage.
 var resourceSuffix = take(uniqueString(subscription().id, resourceGroup().id), 6)
 
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: replace('cr${environmentName}${resourceSuffix}', '-', '')
+  name: replace('cr${take(environmentName, 35)}${resourceSuffix}', '-', '')
   location: location
   sku: {
     name: 'Basic'
@@ -19,7 +19,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' =
 }
 ```
 
-> **⚠️ Important:** Container Registry names must be alphanumeric only (5-50 characters). Use `replace()` to remove hyphens from environment names.
+> **⚠️ Important:** Container Registry names must be alphanumeric only (5-50 characters). Use `replace()` to remove hyphens from environment names and `take()` to ensure length constraints.
 
 ## Basic Resource
 
