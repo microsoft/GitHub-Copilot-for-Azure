@@ -106,7 +106,7 @@ jobs:
         run: |
           SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
           if [ -n "$SKILL_REPORT" ]; then
-            echo "Found master report: $SKILL_REPORT"
+            echo "Found skill report: $SKILL_REPORT"
             cat "$SKILL_REPORT" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No skill report found"
