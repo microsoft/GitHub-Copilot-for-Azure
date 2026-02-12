@@ -36,19 +36,19 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
                   │ YES             │           │
                   ▼                 ▼           │
          ┌──────────────────┐       │           │
-         │  6. CHECK TOKENS │       │           │
+         │  7. CHECK TOKENS │       │           │
          │  Get suggestions │       │           │
          └────────┬─────────┘       │           │
                   │                 │           │
                   ▼                 │           │
          ┌──────────────────┐       │           │
-         │  7. SUMMARY      │       │           │
+         │  8. SUMMARY      │       │           │
          │  Before/After    │       │           │
          └────────┬─────────┘       │           │
                   │                 │           │
                   ▼                 │           │
          ┌──────────────────┐       │           │
-         │  8. PROMPT USER  │       │           │
+         │  9. PROMPT USER  │       │           │
          │  Commit/Issue?   │       │           │
          └────────┬─────────┘       │           │
                   │                 │           │
@@ -79,6 +79,12 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
                            ┌──────────────────┐ │
                            │   5b. VERIFY     │ │
                            │   Run tests      │ │
+                           └────────┬─────────┘ │
+                                    │           │
+                                    ▼           │
+                           ┌──────────────────┐ │
+                           │ 5c. VALIDATE     │ │
+                           │   REFERENCES     │ │
                            └────────┬─────────┘ │
                                     │           │
                                     ▼           │
@@ -219,6 +225,33 @@ This runs only unit and trigger tests, which are fast and don't require the Copi
 - Analyze failure
 - Adjust frontmatter or test prompts
 - Re-run (counts as sub-iteration)
+
+### Step 5c: VALIDATE REFERENCES
+
+**Action:** Check that all markdown links in skill files are valid and don't escape the skill directory
+
+**Command:**
+```bash
+cd scripts && npm run references {skill-name}
+```
+
+**What it checks:**
+1. Every local markdown link points to an actual file or directory
+2. Every local markdown link stays within the skill's own directory
+3. External links (http://, https://, mailto:) are ignored
+4. Fragment-only links (#anchor) are ignored
+
+**Expected outcome:**
+- ✅ All references are valid and contained within skill directory
+
+**If validation fails:**
+- Review broken or escaped references
+- Fix invalid links or move referenced files into skill directory
+- Re-run validation (counts as sub-iteration)
+
+**Example issues caught:**
+- Broken link: `[CLI Commands](references/CLI-COMMANDS.md)` when file doesn't exist
+- Escaped reference: `[Other skill](../../other-skill/SKILL.md)` crosses skill boundary
 
 ### Step 6: CHECK TOKENS
 
