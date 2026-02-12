@@ -13,7 +13,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
@@ -25,10 +25,11 @@ const SKILL_NAME = "microsoft-foundry";
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
+  const agent = useAgentRunner();
 
   describe("View Quota Usage", () => {
     test("invokes skill for quota usage check", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Show me my current quota usage for Microsoft Foundry resources"
       });
 
@@ -37,7 +38,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("response includes quota-related commands", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "How do I check my Azure AI Foundry quota limits?"
       });
 
@@ -49,7 +50,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("response mentions TPM (Tokens Per Minute)", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Explain quota in Microsoft Foundry"
       });
 
@@ -66,7 +67,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Quota Before Deployment", () => {
     test("provides guidance on checking quota before deployment", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Do I have enough quota to deploy GPT-4o to Microsoft Foundry?"
       });
 
@@ -84,7 +85,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("suggests capacity calculation", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "How much quota do I need for a production Foundry deployment?"
       });
 
@@ -101,7 +102,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Request Quota Increase", () => {
     test("explains quota increase process", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "How do I request a quota increase for Microsoft Foundry?"
       });
 
@@ -119,7 +120,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("mentions business justification", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Request more TPM quota for Azure AI Foundry"
       });
 
@@ -136,7 +137,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Monitor Quota Across Deployments", () => {
     test("provides monitoring commands", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Monitor quota usage across all my Microsoft Foundry deployments"
       });
 
@@ -154,7 +155,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("explains capacity by model tracking", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Show me quota allocation by model in Azure AI Foundry"
       });
 
@@ -171,7 +172,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Troubleshoot Quota Errors", () => {
     test("troubleshoots QuotaExceeded error", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "My Microsoft Foundry deployment failed with QuotaExceeded error. Help me fix it."
       });
 
@@ -189,7 +190,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("troubleshoots InsufficientQuota error", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Getting InsufficientQuota error when deploying to Azure AI Foundry"
       });
 
@@ -198,7 +199,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("troubleshoots DeploymentLimitReached error", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "DeploymentLimitReached error in Microsoft Foundry, what should I do?"
       });
 
@@ -213,7 +214,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("addresses 429 rate limit errors", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Getting 429 rate limit errors from my Foundry deployment"
       });
 
@@ -230,7 +231,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Capacity Planning", () => {
     test("helps with production capacity planning", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Help me plan capacity for production Microsoft Foundry deployment with 1M requests per day"
       });
 
@@ -248,7 +249,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("provides best practices", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "What are best practices for quota management in Azure AI Foundry?"
       });
 
@@ -265,7 +266,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("MCP Tool Integration", () => {
     test("suggests foundry MCP tools when available", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "List all my Microsoft Foundry model deployments and their capacity"
       });
 
@@ -286,7 +287,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Regional Capacity", () => {
     test("explains regional quota distribution", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "How does quota work across different Azure regions for Foundry?"
       });
 
@@ -301,7 +302,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("suggests deploying to different region when quota exhausted", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "I ran out of quota in East US for Microsoft Foundry. What are my options?"
       });
 
@@ -318,7 +319,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Quota Optimization", () => {
     test("provides optimization guidance", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "How can I optimize my Microsoft Foundry quota allocation?"
       });
 
@@ -336,7 +337,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("suggests deleting unused deployments", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "I need to free up quota in Azure AI Foundry"
       });
 
@@ -353,7 +354,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Command Output Explanation", () => {
     test("explains how to interpret quota usage output", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "What does the quota usage output mean in Microsoft Foundry?"
       });
 
@@ -368,7 +369,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("explains TPM concept", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "What is TPM in the context of Microsoft Foundry quotas?"
       });
 
@@ -385,7 +386,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
 
   describe("Error Resolution Steps", () => {
     test("provides step-by-step resolution for quota errors", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Walk me through fixing a quota error in Microsoft Foundry deployment"
       });
 
@@ -403,7 +404,7 @@ describeIntegration("microsoft-foundry-quota - Integration Tests", () => {
     });
 
     test("offers multiple resolution options", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "What are my options when I hit quota limits in Azure AI Foundry?"
       });
 
