@@ -66,9 +66,16 @@ output resourceGroupName string = rg.name
 var resourceToken = uniqueString(subscription().id, resourceGroup().id, location)
 
 // Pattern: {prefix}{name}{token}
-// Total ≤32 chars, alphanumeric only
-var kvName = 'kv${environmentName}${resourceToken}'
-var storName = 'stor${resourceToken}'
+// Azure resources have different naming rules
+
+// Key Vault: alphanumeric + hyphens (3-24 chars)
+var kvName = 'kv-${take(environmentName, 12)}-${resourceToken}'
+
+// Storage: lowercase alphanumeric only (3-24 chars)
+var storName = toLower(take(replace('st${environmentName}${resourceToken}', '-', ''), 24))
+
+// Container Registry: alphanumeric only (5-50 chars)
+var acrName = take(replace('cr${environmentName}${resourceToken}', '-', ''), 50)
 ```
 
 ## Security Requirements
@@ -123,3 +130,24 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 ```
+
+### Container Registry
+
+```bicep
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: replace('cr${environmentName}${resourceToken}', '-', '')
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: true
+  }
+}
+
+output acrName string = containerRegistry.name
+output acrLoginServer string = containerRegistry.properties.loginServer
+```
+
+> **⚠️ Important:** Container Registry names must be alphanumeric only. Use `replace()` to remove hyphens from environment names.
+

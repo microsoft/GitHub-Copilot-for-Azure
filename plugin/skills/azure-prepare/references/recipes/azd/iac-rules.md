@@ -45,6 +45,24 @@ All modules must accept:
 | Diagnostics | Enable logging |
 | API versions | Use latest |
 
+## Resource Naming Constraints
+
+| Resource Type | Constraint | Pattern |
+|---------------|------------|---------|
+| Container Registry | Alphanumeric only (5-50 chars) | `replace('cr${environmentName}${resourceSuffix}', '-', '')` |
+| Storage Account | Lowercase alphanumeric (3-24 chars) | `toLower(replace('st${environmentName}${resourceSuffix}', '-', ''))` |
+| Key Vault | Alphanumeric + hyphens (3-24 chars) | `'kv-${environmentName}-${resourceSuffix}'` |
+
+**Example: Container Registry**
+
+```bicep
+// ❌ WRONG - Fails with hyphenated environment names
+var acrName = 'cr${environmentName}${resourceSuffix}'
+
+// ✅ CORRECT - Strips invalid characters
+var acrName = replace('cr${environmentName}${resourceSuffix}', '-', '')
+```
+
 ## Container Resources
 
 ```bicep
