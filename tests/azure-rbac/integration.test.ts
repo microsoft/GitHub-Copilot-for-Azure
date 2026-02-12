@@ -1,5 +1,5 @@
 /**
- * Integration Tests for azure-role-selector
+ * Integration Tests for azure-rbac
  * 
  * Tests skill behavior with a real Copilot agent session.
  * Adapted from PR #617's azureRoleSelectorTests.ts
@@ -18,7 +18,7 @@ import {
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 
-const SKILL_NAME = "azure-role-selector";
+const SKILL_NAME = "azure-rbac";
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -34,7 +34,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
 
-  test("invokes azure-role-selector skill for AcrPull prompt", async () => {
+  test("invokes azure-rbac skill for AcrPull prompt", async () => {
     let agentMetadata;
     try {
       agentMetadata = await agent.run({
@@ -48,11 +48,11 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       throw e;
     }
 
-    const isAzureRoleSelectorSkillUsed = isSkillInvoked(agentMetadata, "azure-role-selector");
+    const isAzureRbacSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
     const isAcrPullRoleMentioned = doesAssistantMessageIncludeKeyword(agentMetadata, "AcrPull");
     const areDocumentationToolCallsSuccess = areToolCallsSuccess(agentMetadata, "azure-documentation");
 
-    expect(isAzureRoleSelectorSkillUsed).toBe(true);
+    expect(isAzureRbacSkillUsed).toBe(true);
     expect(isAcrPullRoleMentioned).toBe(true);
     expect(areDocumentationToolCallsSuccess).toBe(true);
   });
@@ -71,7 +71,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       throw e;
     }
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-role-selector");
+    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
     const mentionsStorageRole = doesAssistantMessageIncludeKeyword(agentMetadata, "Storage Blob Data Reader");
 
     expect(isSkillUsed).toBe(true);
@@ -92,7 +92,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       throw e;
     }
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-role-selector");
+    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
     const mentionsKeyVaultRole = doesAssistantMessageIncludeKeyword(agentMetadata, "Key Vault");
 
     expect(isSkillUsed).toBe(true);
@@ -113,7 +113,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       throw e;
     }
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-role-selector");
+    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
     const mentionsCLI = doesAssistantMessageIncludeKeyword(agentMetadata, "az role assignment");
     const areCliToolCallsSuccess = areToolCallsSuccess(agentMetadata, "azure__extension_cli_generate");
 
@@ -135,7 +135,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       throw e;
     }
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-role-selector");
+    const isSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
     const mentionsBicep = doesAssistantMessageIncludeKeyword(agentMetadata, "bicep") || 
                           doesAssistantMessageIncludeKeyword(agentMetadata, "roleAssignment");
 

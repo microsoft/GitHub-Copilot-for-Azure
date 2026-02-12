@@ -220,7 +220,7 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 8. `azure-validation`
 9. `azure-nodejs-production`
 10. `entra-app-registration`
-11. `azure-role-selector`
+11. `azure-rbac`
 
 ### Medium-Adherence Skills
 
