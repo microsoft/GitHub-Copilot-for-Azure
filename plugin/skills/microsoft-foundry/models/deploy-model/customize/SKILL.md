@@ -80,7 +80,7 @@ If user accepts all defaults (latest version, GlobalStandard SKU, recommended ca
 
 ## Phase Summaries
 
-> **Full implementation details:** See [references/customize-workflow.md](references/customize-workflow.md)
+> ⚠️ **MUST READ:** Before executing any phase, load [references/customize-workflow.md](references/customize-workflow.md) for the full scripts and implementation details. The summaries below describe *what* each phase does — the reference file contains the *how* (CLI commands, quota patterns, capacity formulas, cross-region fallback logic).
 
 | Phase | Action | Key Details |
 |-------|--------|-------------|
@@ -137,7 +137,7 @@ az cognitiveservices account deployment delete --name <account> --resource-group
 
 ## Selection Guides & Advanced Topics
 
-> **Full details:** See [references/customize-guides.md](references/customize-guides.md)
+> For SKU comparison tables, PTU sizing formulas, and advanced option details, load [references/customize-guides.md](references/customize-guides.md).
 
 **SKU selection:** GlobalStandard (production/HA) → Standard (dev/test) → ProvisionedManaged (high-volume/guaranteed throughput) → DataZoneStandard (data residency).
 
@@ -151,7 +151,7 @@ az cognitiveservices account deployment delete --name <account> --resource-group
 
 - **preset** - Quick deployment to best region with automatic configuration
 - **microsoft-foundry** - Parent skill for all Azure AI Foundry operations
-- **quota** - Manage quotas and capacity
+- **[quota](../../../quota/quota.md)** — For quota viewing, increase requests, and troubleshooting quota errors, defer to this skill instead of duplicating guidance
 - **rbac** - Manage permissions and access control
 
 ---

@@ -116,7 +116,7 @@ az cognitiveservices account deployment show \
 
 | Problem | Solution |
 |---------|----------|
-| `QuotaExceeded` | Check usage with `az cognitiveservices usage list`, reduce capacity, try different SKU, or check other regions |
+| `QuotaExceeded` | Check usage with `az cognitiveservices usage list`, reduce capacity, try different SKU, check other regions, or use the [quota skill](../../../quota/quota.md) to request an increase |
 | Version not available for SKU | Check `az cognitiveservices account list-models --query "[?name=='gpt-4o'].version"`, use latest |
 | Deployment name exists | Skill auto-generates unique name (e.g., `gpt-4o-2`), or specify custom name |
 

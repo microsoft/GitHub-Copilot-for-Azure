@@ -250,9 +250,7 @@ if ($deployableSkus.Count -eq 0) {
     Write-Output "  ❌ $($s.Name) — Quota: $($s.Used)/$($s.Limit) (0 available)"
   }
   Write-Output ""
-  Write-Output "Request quota increase: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
-  Write-Output ""
-  Write-Output "Or try cross-region fallback — the capacity check in Phase 7 will search other regions automatically."
+  Write-Output "Request quota increase — use the [quota skill](../../../../quota/quota.md) for guidance."
   exit 1
 }
 
@@ -380,10 +378,7 @@ if ($capacityResult.value) {
             Write-Output "   Available: $maxCapacity $unit (your current quota limit)"
             Write-Output ""
             Write-Output "You must enter a value between $minCapacity and $maxCapacity $unit"
-            Write-Output ""
-            Write-Output "To increase quota, visit:"
-            Write-Output "https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
-            Write-Output ""
+            Write-Output "To request a quota increase, use the [quota skill](../../../../quota/quota.md)."
             $attempts++
             continue
           }
@@ -524,7 +519,7 @@ if ($capacityResult.value) {
         Write-Output "❌ No regions have available capacity for $MODEL_NAME with $SELECTED_SKU SKU."
         Write-Output ""
         Write-Output "Next Steps:"
-        Write-Output "  1. Request quota increase: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
+        Write-Output "  1. Request quota increase — use the [quota skill](../../../../quota/quota.md)"
         Write-Output "  2. Check existing deployments that may be consuming quota"
         Write-Output "  3. Try a different model or SKU"
         exit 1
@@ -632,7 +627,7 @@ if ($capacityResult.value) {
       Write-Output "❌ No regions have available capacity for $MODEL_NAME with $SELECTED_SKU SKU."
       Write-Output ""
       Write-Output "Next Steps:"
-      Write-Output "  1. Request quota increase: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
+      Write-Output "  1. Request quota increase — use the [quota skill](../../../../quota/quota.md)"
       Write-Output "  2. Check existing deployments that may be consuming quota"
       Write-Output "  3. Try a different model or SKU"
       exit 1

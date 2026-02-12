@@ -71,7 +71,7 @@ az rest --method GET \
 **Key Flow:**
 - All region capacity checks return 0
 - Skill presents actionable next steps:
-  1. Request quota increase via Azure Portal
+  1. Request quota increase — defer to the [quota skill](../../../quota/quota.md)
   2. List existing deployments that may be consuming quota
   3. Suggest alternatives (gpt-4o, gpt-4o-mini)
 

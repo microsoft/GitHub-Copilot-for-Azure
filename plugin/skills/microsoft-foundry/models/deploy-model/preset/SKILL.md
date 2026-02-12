@@ -45,7 +45,7 @@ Automates intelligent Azure OpenAI model deployment by checking capacity across 
 
 ## Deployment Phases
 
-For full implementation scripts (bash/PowerShell), see [references/preset-workflow.md](references/preset-workflow.md).
+> ⚠️ **MUST READ:** Before executing any phase, load [references/preset-workflow.md](references/preset-workflow.md) for the full bash/PowerShell scripts. The summaries below describe *what* each phase does — the reference file contains the actual implementation.
 
 | Phase | Action | Key Commands |
 |-------|--------|-------------|
@@ -65,7 +65,7 @@ For full implementation scripts (bash/PowerShell), see [references/preset-workfl
 | Error | Symptom | Resolution |
 |-------|---------|------------|
 | Auth failure | `az account show` returns error | Run `az login` then `az account set --subscription <id>` |
-| No quota | All regions show 0 capacity | Request quota increase via [Azure Portal](https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade); check existing deployments; try alternative models |
+| No quota | All regions show 0 capacity | Defer to the [quota skill](../../../quota/quota.md) for increase requests and troubleshooting; check existing deployments; try alternative models |
 | Model not found | Empty capacity list | Verify model name with `az cognitiveservices account list-models`; check case sensitivity |
 | Name conflict | "deployment already exists" | Append suffix to deployment name (handled automatically by `generate_deployment_name` script) |
 | Region unavailable | Region doesn't support model | Select a different region from the available list |
@@ -92,6 +92,7 @@ For full implementation scripts (bash/PowerShell), see [references/preset-workfl
 ## Related Skills
 
 - **microsoft-foundry** - Parent skill for Azure AI Foundry operations
+- **[quota](../../../quota/quota.md)** — For quota viewing, increase requests, and troubleshooting quota errors, defer to this skill
 - **azure-quick-review** - Review Azure resources for compliance
 - **azure-cost-estimation** - Estimate costs for Azure deployments
 - **azure-validate** - Validate Azure infrastructure before deployment
