@@ -63,9 +63,9 @@ describeIntegration("brownfield-dotnet - Integration Tests", () => {
     const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
     const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
+    expect(isSkillUsed).toBe(true);
+    expect(isValidateInvoked).toBe(true);
+    expect(isPrepareInvoked).toBe(true);
+    expect(containsDeployLinks).toBe(true);
   }, deployTestTimeoutMs);
 });
