@@ -348,10 +348,9 @@ Next Steps:
      --name my-ai-project-prod \
      --resource-group rg-production
 
-3. Consider alternative models:
+3. Consider alternative models with lower capacity requirements:
    • gpt-4o (similar performance, better availability)
-   • gpt-4-turbo (more capacity available)
-   • gpt-35-turbo (lower capacity requirements)
+   • gpt-4o-mini (cost-effective, lower capacity)
 
 # User lists existing deployments
 $ az cognitiveservices account deployment list \
@@ -362,7 +361,7 @@ $ az cognitiveservices account deployment list \
 Name                        Model           Capacity  Status
 --------------------------  --------------  --------  ---------
 gpt-4-0613-20260101-120000  gpt-4          150000    Succeeded
-gpt-35-turbo-prod           gpt-35-turbo    50000    Succeeded
+gpt-4o-mini-prod            gpt-4o-mini     50000    Succeeded
 
 # User decides to use alternative model
 # Re-run skill with gpt-4o instead
@@ -473,7 +472,7 @@ Next steps:
 ## Example 6: Deployment Name Conflict
 
 **User Request:**
-> "Deploy gpt-35-turbo"
+> "Deploy gpt-4o-mini"
 
 **Context:**
 - User has many existing deployments
@@ -483,35 +482,35 @@ Next steps:
 
 ```bash
 # Phase 1-6: Standard flow
-$ MODEL_NAME="gpt-35-turbo"
-$ MODEL_VERSION="0125"
-$ DEPLOYMENT_NAME="gpt-35-turbo-20260205-153000"
+$ MODEL_NAME="gpt-4o-mini"
+$ MODEL_VERSION="2024-07-18"
+$ DEPLOYMENT_NAME="gpt-4o-mini-20260205-153000"
 
 # Phase 7: Deploy
 $ az cognitiveservices account deployment create \
   --name "my-ai-project-prod" \
   --resource-group "rg-production" \
   --deployment-name "$DEPLOYMENT_NAME" \
-  --model-name "gpt-35-turbo" \
-  --model-version "0125" \
+  --model-name "gpt-4o-mini" \
+  --model-version "2024-07-18" \
   --model-format "OpenAI" \
   --sku-name "GlobalStandard" \
   --sku-capacity 50000
 
-❌ Error: Deployment "gpt-35-turbo-20260205-153000" already exists
+❌ Error: Deployment "gpt-4o-mini-20260205-153000" already exists
 
 # Retry with random suffix
-$ DEPLOYMENT_NAME="gpt-35-turbo-20260205-153000-$(openssl rand -hex 2)"
+$ DEPLOYMENT_NAME="gpt-4o-mini-20260205-153000-$(openssl rand -hex 2)"
 $ echo "Retrying with name: $DEPLOYMENT_NAME"
-Retrying with name: gpt-35-turbo-20260205-153000-7b9e
+Retrying with name: gpt-4o-mini-20260205-153000-7b9e
 
 $ az cognitiveservices account deployment create ...
 
 ✓ Deployment successful!
 
-Deployment Name: gpt-35-turbo-20260205-153000-7b9e
-Model: gpt-35-turbo
-Version: 0125
+Deployment Name: gpt-4o-mini-20260205-153000-7b9e
+Model: gpt-4o-mini
+Version: 2024-07-18
 Region: eastus
 SKU: GlobalStandard
 Capacity: 50K TPM
