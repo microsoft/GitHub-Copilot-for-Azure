@@ -4,6 +4,7 @@
  * Test isolated skill logic and validation rules.
  */
 
+import { readFileSync } from "fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "github-copilot";
@@ -47,16 +48,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("documents SDK scaffold workflow", () => {
       expect(skill.content).toContain("@github/copilot-sdk");
-      expect(skill.content).toContain("Copilot SDK reference");
+      expect(skill.content).toContain("Copilot SDK Agent reference");
     });
 
     test("documents Extensions scaffold workflow", () => {
-      expect(skill.content).toContain("preview-sdk");
+      expect(skill.content).toContain("copilot-extensions");
       expect(skill.content).toContain("Extensions reference");
     });
 
     test("documents Azure hosting options", () => {
-      expect(skill.content).toContain("Container Apps");
+      expect(skill.content).toContain("Docker");
     });
 
     test("references azure-prepare and azure-deploy skills", () => {
@@ -67,13 +68,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Frontmatter Formatting", () => {
     test("frontmatter has no tabs", () => {
-      const raw = require("fs").readFileSync(skill.filePath, "utf-8");
+      const raw = readFileSync(skill.filePath, "utf-8");
       const frontmatter = raw.split("---")[1];
       expect(frontmatter).not.toMatch(/\t/);
     });
 
     test("frontmatter keys are only supported attributes", () => {
-      const raw = require("fs").readFileSync(skill.filePath, "utf-8");
+      const raw = readFileSync(skill.filePath, "utf-8");
       const frontmatter = raw.split("---")[1];
       const supported = ["name", "description", "compatibility", "license", "metadata",
         "argument-hint", "disable-model-invocation", "user-invokable"];

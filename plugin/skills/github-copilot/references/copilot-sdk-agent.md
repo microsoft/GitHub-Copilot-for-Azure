@@ -28,7 +28,7 @@ Use **context7** MCP tools as the PRIMARY way to get SDK documentation and code 
 ## Quick Start
 
 - **New project:** Run `azd init --template jongio/copilot-sdk-agent`, then follow the scaffolded README for setup.
-- **Existing project:** Use the template as a reference — browse its source with `github-mcp-server-get_file_contents` (`owner: "jongio"`, `repo: "copilot-sdk-agent"`) and adapt the patterns into your codebase.
+- **Existing project:** See the [Existing Project Integration guide](existing-project-integration.md) for a step-by-step workflow to add Copilot SDK to your current codebase. Use `github-mcp-server-get_file_contents` to study the template's patterns as reference.
 
 ## Template Customization
 
