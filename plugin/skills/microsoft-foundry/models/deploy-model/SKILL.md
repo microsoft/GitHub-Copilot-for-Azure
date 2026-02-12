@@ -127,6 +127,8 @@ Before presenting any deployment options (SKU, capacity), always validate both o
 
 > ⚠️ **Warning:** Only present options that pass both checks. Do NOT show hardcoded SKU lists — always query dynamically. SKUs with 0 available quota should be shown as ❌ informational items, not selectable options.
 
+> 💡 **Quota management:** For quota increase requests, usage monitoring, and troubleshooting quota errors, defer to the [quota skill](../../quota/quota.md) instead of duplicating that guidance inline.
+
 ## Prerequisites
 
 All deployment modes require:

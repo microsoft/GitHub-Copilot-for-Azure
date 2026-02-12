@@ -112,7 +112,7 @@ Add a "Quota Available" column to the ranked output from Phase 3:
 | westus3 | 90K TPM | ✅ | 1 | ❌ 0 (at limit) |
 | swedencentral | 100K TPM | ✅ | 0 | ✅ 100K |
 
-Regions/SKUs where `quotaAvailable = 0` should be marked with ❌ in the results. If no region has available quota, direct user to request a quota increase.
+Regions/SKUs where `quotaAvailable = 0` should be marked with ❌ in the results. If no region has available quota, hand off to the [quota skill](../../../quota/quota.md) for increase requests and troubleshooting.
 
 ### Phase 4: Present Results and Hand Off
 
@@ -133,7 +133,7 @@ If the discovery table shows a sample project for the chosen region, suggest it 
 
 | Error | Cause | Resolution |
 |-------|-------|------------|
-| "No capacity found" | Model not available or all at quota | Suggest quota increase via [Azure Portal](https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade) |
+| "No capacity found" | Model not available or all at quota | Hand off to [quota skill](../../../quota/quota.md) for increase requests and troubleshooting |
 | Script auth error | `az login` expired | Re-run `az login` |
 | Empty version list | Model not in region catalog | Try a different region: `./scripts/query_capacity.sh <model> "" eastus` |
 | "No projects found" | No AI Services resources | Guide to `project/create` skill or Azure Portal |
@@ -142,4 +142,4 @@ If the discovery table shows a sample project for the chosen region, suggest it 
 
 - **[preset](../preset/SKILL.md)** — Quick deployment after capacity discovery
 - **[customize](../customize/SKILL.md)** — Custom deployment after capacity discovery
-- **[quota](../../../quota/quota.md)** — Managing quota limits and requesting increases
+- **[quota](../../../quota/quota.md)** — For quota viewing, increase requests, and troubleshooting quota errors, defer to this skill instead of duplicating guidance
