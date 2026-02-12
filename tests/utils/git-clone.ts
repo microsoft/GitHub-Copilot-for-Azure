@@ -45,7 +45,7 @@ export async function cloneRepo(options: CloneOptions): Promise<void> {
 
   const cloneArgs: string[] = [];
   if (branch) {
-    cloneArgs.push("--branch", branch);
+    cloneArgs.push("--branch", branch, "--single-branch");
   }
   if (depth) {
     cloneArgs.push("--depth", String(depth));
