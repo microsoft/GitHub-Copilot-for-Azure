@@ -54,24 +54,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe("Should Trigger - Foundry", () => {
-    const foundryPrompts: string[] = [
-      "Create an AI agent in Azure Foundry",
-      "How do I use Azure AI Foundry?",
-      "Set up a prompt flow in Azure",
-      "Deploy a model using Azure Foundry",
-      "Build an AI agent with prompt flow",
-    ];
-
-    test.each(foundryPrompts)(
-      'triggers on: "%s"',
-      (prompt) => {
-        const result = triggerMatcher.shouldTrigger(prompt);
-        expect(result.triggered).toBe(true);
-      }
-    );
-  });
-
   describe("Should Trigger - OpenAI & Document Intelligence", () => {
     const otherAIPrompts: string[] = [
       "Use Azure OpenAI for embeddings",

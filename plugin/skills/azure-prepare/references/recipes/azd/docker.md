@@ -16,7 +16,7 @@ Create Dockerfiles for containerized services.
 ### Node.js
 
 ```dockerfile
-FROM node:20-slim
+FROM node:22-slim
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
@@ -28,7 +28,7 @@ CMD ["node", "index.js"]
 ### Python
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -40,11 +40,11 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ### .NET
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["*.csproj", "./"]
 RUN dotnet restore

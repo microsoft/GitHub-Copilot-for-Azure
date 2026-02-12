@@ -2,18 +2,31 @@
 
 Determine the preparation path based on workspace state.
 
+## Three Modes — Always Choose One
+
+> **⛔ IMPORTANT**: Always go through one of these three paths. Having `azure.yaml` does NOT mean you skip to validate — the user may want to modify or extend the app.
+
+| Mode | When to Use |
+|------|-------------|
+| **NEW** | Empty workspace, or user wants to create a new app |
+| **MODIFY** | Existing Azure app, user wants to add features/components |
+| **MODERNIZE** | Existing non-Azure app, user wants to migrate to Azure |
+
 ## Decision Tree
 
 ```
-Workspace has azure.yaml AND infra/?
-├── YES → Skip to azure-validate
-└── NO → Continue...
-    ├── Empty/new workspace → Path: NEW
-    ├── Existing code, no Azure config → Path: MODERNIZE
-    └── Existing Azure app, adding features → Path: ADD
+What does the user want to do?
+│
+├── Create new application → Mode: NEW
+│
+├── Add/change features to existing app
+│   ├── Has azure.yaml/infra? → Mode: MODIFY
+│   └── No Azure config? → Mode: MODERNIZE (add Azure support first)
+│
+└── Migrate/modernize for Azure → Mode: MODERNIZE
 ```
 
-## Path: NEW
+## Mode: NEW
 
 Creating a new Azure application from scratch.
 
@@ -21,9 +34,9 @@ Creating a new Azure application from scratch.
 1. Confirm project type with user
 2. Gather requirements → [requirements.md](requirements.md)
 3. Select technology stack
-4. Generate all artifacts
+4. Update plan
 
-## Path: ADD
+## Mode: MODIFY
 
 Adding components/services to an existing Azure application.
 
@@ -31,10 +44,9 @@ Adding components/services to an existing Azure application.
 1. Scan existing codebase → [scan.md](scan.md)
 2. Identify existing Azure configuration
 3. Gather requirements for new components
-4. Generate only new artifacts
-5. Update existing azure.yaml/infra as needed
+4. Update plan
 
-## Path: MODERNIZE
+## Mode: MODERNIZE
 
 Converting an existing application to run on Azure.
 
@@ -43,14 +55,14 @@ Converting an existing application to run on Azure.
 2. Analyze existing infrastructure (Docker, CI/CD, etc.)
 3. Gather requirements → [requirements.md](requirements.md)
 4. Map existing components to Azure services
-5. Generate Azure artifacts, preserving existing customizations
+5. Update plan
 
 ## Detection Signals
 
 | Signal | Indicates |
 |--------|-----------|
-| `azure.yaml` exists | AZD project |
+| `azure.yaml` exists | AZD project (MODIFY mode likely) |
 | `infra/*.bicep` exists | Bicep IaC |
 | `infra/*.tf` exists | Terraform IaC |
 | `Dockerfile` exists | Containerized app |
-| No Azure files | Needs preparation |
+| No Azure files | NEW or MODERNIZE mode |

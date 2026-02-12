@@ -58,7 +58,7 @@ az webapp create \
   --name <app-name> \
   --resource-group <rg-name> \
   --plan <plan-name> \
-  --runtime "NODE:20-lts"
+  --runtime "NODE:22-lts"
 ```
 
 ## Functions

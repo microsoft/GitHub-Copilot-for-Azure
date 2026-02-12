@@ -12,7 +12,7 @@ These errors occur **during** `azd up` execution:
 | Package failed | Missing Dockerfile or deps | Verify Dockerfile exists and dependencies |
 | Quota exceeded | Subscription limits | Request increase or change region |
 
-> ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [pre-deploy-checklist.md](../../pre-deploy-checklist.md) and [azure-validate errors](../../../../azure-validate/references/recipes/azd/errors.md).
+> ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [Pre-Deploy Checklist](../../pre-deploy-checklist.md).
 
 ## Retry
 
