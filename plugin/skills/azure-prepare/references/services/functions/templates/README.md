@@ -13,9 +13,9 @@ AZD template selection for Azure Functions deployments.
 | 3 | Azure SQL | `SqlTrigger`, `@app.sql` | [Awesome AZD](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
 | 4 | AI/OpenAI | `openai`, `langchain`, `semantic_kernel` | [Awesome AZD](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
 | 5 | SWA | `staticwebapp.config.json` | [integrations.md](integrations.md) |
-| 6 | Service Bus | `ServiceBusTrigger` | [Flex Samples](https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/) |
+| 6 | Service Bus | `ServiceBusTrigger` | [Flex Samples](https://github.com/Azure-Samples/azure-functions-flex-consumption-samples) |
 | 7 | Durable | `DurableOrchestrationTrigger` | [Awesome AZD](https://azure.github.io/awesome-azd/?tags=functions&name=durable) |
-| 8 | Event Hubs | `EventHubTrigger` | [Flex Samples](https://learn.microsoft.com/en-us/samples/azure-samples/azure-functions-flex-consumption-samples/) |
+| 8 | Event Hubs | `EventHubTrigger` | [Flex Samples](https://github.com/Azure-Samples/azure-functions-flex-consumption-samples) |
 | 9 | Blob | `BlobTrigger` | [Awesome AZD](https://azure.github.io/awesome-azd/?tags=functions&name=blob) |
 | 10 | Timer | `TimerTrigger`, `@app.schedule` | [Awesome AZD](https://azure.github.io/awesome-azd/?tags=functions&name=timer) |
 | 11 | **HTTP (default)** | No specific indicators | [http.md](http.md) |
@@ -52,3 +52,4 @@ azd init -t <TEMPLATE> -e "$ENV_NAME" --no-prompt
 - [Detailed Selection Tree](selection.md)
 
 **Browse all:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)
+
