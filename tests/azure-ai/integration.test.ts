@@ -10,7 +10,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,13 +33,15 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes azure-ai skill for AI Search query prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "How do I create a vector search index in Azure AI Search?"
           });
 
@@ -61,13 +63,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
-    test("invokes azure-ai skill for Azure OpenAI prompt", async () => {
+    test("invokes azure-ai skill for Azure AI Search prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
-            prompt: "How do I deploy a GPT-4 model in Azure AI Foundry?"
+          const agentMetadata = await agent.run({
+            prompt: "How do I use Azure Speech to convert text to speech?"
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -83,8 +85,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Azure OpenAI prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure OpenAI prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      console.log(`${SKILL_NAME} invocation rate for Azure Speech prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure Speech prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });

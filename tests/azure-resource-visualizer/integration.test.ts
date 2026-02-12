@@ -12,7 +12,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -36,6 +36,8 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const visualizerTestTimeoutMs = 1800000;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes azure-resource-visualizer skill for architecture diagram prompt", async () => {
       let successCount = 0;

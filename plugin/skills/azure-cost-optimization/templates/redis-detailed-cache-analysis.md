@@ -15,7 +15,7 @@ CRITICAL ISSUES (🔴 Immediate Action)
 [1] example-cache-001
     SKU: Premium P1 (6GB)
     State: Failed
-    Location: eastus
+    Location: eastus2
     Age: 12 days
     Cost: $300/month
     Tags: environment=dev, owner=user1@example.com
@@ -29,7 +29,7 @@ CRITICAL ISSUES (🔴 Immediate Action)
 [2] example-cache-002
     SKU: Premium P1 (6GB)
     State: Running
-    Location: eastus
+    Location: eastus2
     Age: 120 days
     Cost: $300/month
     Tags: environment=dev, owner=user2@example.com
