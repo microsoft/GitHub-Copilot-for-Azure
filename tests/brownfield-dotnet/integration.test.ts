@@ -52,7 +52,7 @@ describeIntegration("brownfield-dotnet - Integration Tests", () => {
         "Please deploy this application to Azure. " +
         "Use the eastus2 region. " +
         "Use my current subscription. " +
-        "This is for a small scale production environment." +
+        "This is for a small scale production environment. " +
         "Use standard SKUs",
       nonInteractive: true,
       followUp: FOLLOW_UP_PROMPT,
