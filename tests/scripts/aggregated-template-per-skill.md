@@ -31,6 +31,11 @@ List every test that was run against this skill, grouped by test type.
 
 ---
 
+## Confidence Level Reasoning
+
+Explain why the confidence level is what it is.
+
+
 ## 🔍 Per-Test Case Results
 
 For each test case, provide a narrative summary of what happened during execution, what went well, and what went wrong. One subsection per test case.
@@ -88,6 +93,15 @@ List notable CLI commands that were run during testing (e.g., `az` commands, `np
 |---------|---------|---------|
 | `{command}` | {brief description of why it was run} | Test {n} |
 | ... | ... | ... |
+
+### MCP Tools Used
+
+List MCP tools that have been used during the tests.
+
+| Tool Name | MCP Server | Invocations | Purpose | Test(s) |
+|-----------|------------|-------------|---------|---------|
+| `{tool-name}` | {mcp-server-name} | {count} | {brief description of why it was used} | Test {n} |
+| ... | ... | ... | ... | ... |
 
 ---
 

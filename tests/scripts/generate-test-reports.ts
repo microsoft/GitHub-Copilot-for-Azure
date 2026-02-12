@@ -4,8 +4,8 @@
  * Test Reports Generator
  * 
  * Reads all markdown files of test results for a skill and generates:
- * 1. ONE consolidated report per test run
- * 2. ONE per-skill report aggregating all test results for a given skill
+ * 1. ONE consolidated report per subdirectory
+ * 2. ONE per-skill report aggregating all test results for the specified skill
  * 
  * Usage:
  *   npm run report -- --skill <skill-name> # Process most recent test run for a skill
@@ -242,7 +242,7 @@ OUTPUT THE SKILL REPORT NOW (starting with the # heading):`,
 
 /**
  * Process a test run directory - generate ONE consolidated report per subdirectory,
- * then either a per-skill report (when --skill is provided) or a master report.
+ * then generate a per-skill report for the specified skill.
  */
 async function processTestRun(runPath: string, skill: string): Promise<void> {
   if (!fs.existsSync(runPath)) {
