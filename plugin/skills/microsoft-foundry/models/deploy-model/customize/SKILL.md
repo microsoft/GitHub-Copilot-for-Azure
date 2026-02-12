@@ -277,7 +277,9 @@ if ($versions) {
 
 ### Phase 6: List and Select SKU
 
-**Available SKU types:**
+> ⚠️ **Warning:** Do NOT present hardcoded SKU lists. Always query model catalog + subscription quota before showing options.
+
+**SKU Reference:**
 
 | SKU | Description | Use Case |
 |-----|-------------|----------|
@@ -286,31 +288,106 @@ if ($versions) {
 | **ProvisionedManaged** | Reserved PTU capacity, guaranteed throughput | High-volume, predictable workloads |
 | **DataZoneStandard** | Data zone isolation | Data residency requirements |
 
+**Step A: Query model-supported SKUs:**
+
 #### PowerShell
 ```powershell
-Write-Output "Available SKUs for $MODEL_NAME (version $MODEL_VERSION):"
-Write-Output ""
-Write-Output "  1. GlobalStandard (Recommended - Multi-region load balancing)"
-Write-Output "     • Automatic failover across regions"
-Write-Output "     • Best availability and reliability"
-Write-Output ""
-Write-Output "  2. Standard (Single region)"
-Write-Output "     • Predictable latency"
-Write-Output "     • Lower cost than GlobalStandard"
-Write-Output ""
-Write-Output "  3. ProvisionedManaged (Reserved PTU capacity)"
-Write-Output "     • Guaranteed throughput"
-Write-Output "     • Best for high-volume workloads"
-Write-Output ""
+Write-Output "Fetching supported SKUs for $MODEL_NAME (version $MODEL_VERSION)..."
 
-$skuChoice = Read-Host "Select SKU (1-3, default: 1)"
+# Get SKUs the model supports in this region
+$modelCatalog = az cognitiveservices model list --location $PROJECT_REGION --subscription $SUBSCRIPTION_ID -o json 2>$null | ConvertFrom-Json
+$modelEntry = $modelCatalog | Where-Object { $_.model.name -eq $MODEL_NAME -and $_.model.version -eq $MODEL_VERSION } | Select-Object -First 1
 
-switch ($skuChoice) {
-  "1" { $SELECTED_SKU = "GlobalStandard" }
-  "2" { $SELECTED_SKU = "Standard" }
-  "3" { $SELECTED_SKU = "ProvisionedManaged" }
-  "" { $SELECTED_SKU = "GlobalStandard" }
-  default { $SELECTED_SKU = "GlobalStandard" }
+if (-not $modelEntry) {
+  Write-Output "❌ Model $MODEL_NAME version $MODEL_VERSION not found in region $PROJECT_REGION"
+  exit 1
+}
+
+$supportedSkus = $modelEntry.model.skus | ForEach-Object { $_.name }
+Write-Output "Model-supported SKUs: $($supportedSkus -join ', ')"
+```
+
+**Step B: Check subscription quota per SKU:**
+
+```powershell
+# Get subscription quota usage for this region
+$usageData = az cognitiveservices usage list --location $PROJECT_REGION --subscription $SUBSCRIPTION_ID -o json 2>$null | ConvertFrom-Json
+
+# Build deployable SKU list with quota info
+$deployableSkus = @()
+$unavailableSkus = @()
+
+foreach ($sku in $supportedSkus) {
+  # Quota names follow pattern: OpenAI.<SKU>.<model-name>
+  $usageEntry = $usageData | Where-Object { $_.name.value -eq "OpenAI.$sku.$MODEL_NAME" }
+
+  if ($usageEntry) {
+    $limit = $usageEntry.limit
+    $current = $usageEntry.currentValue
+    $available = $limit - $current
+  } else {
+    # No usage entry means no quota allocated for this SKU
+    $available = 0
+    $limit = 0
+    $current = 0
+  }
+
+  if ($available -gt 0) {
+    $deployableSkus += [PSCustomObject]@{ Name = $sku; Available = $available; Limit = $limit; Used = $current }
+  } else {
+    $unavailableSkus += [PSCustomObject]@{ Name = $sku; Available = 0; Limit = $limit; Used = $current }
+  }
+}
+```
+
+**Step C: Present only deployable SKUs:**
+
+```powershell
+if ($deployableSkus.Count -eq 0) {
+  Write-Output ""
+  Write-Output "❌ No SKUs have available quota for $MODEL_NAME in $PROJECT_REGION"
+  Write-Output ""
+  Write-Output "All supported SKUs are at quota limit:"
+  foreach ($s in $unavailableSkus) {
+    Write-Output "  ❌ $($s.Name) — Quota: $($s.Used)/$($s.Limit) (0 available)"
+  }
+  Write-Output ""
+  Write-Output "Request quota increase: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
+  Write-Output ""
+  Write-Output "Or try cross-region fallback — the capacity check in Phase 7 will search other regions automatically."
+  exit 1
+}
+
+Write-Output ""
+Write-Output "Available SKUs for $MODEL_NAME (version $MODEL_VERSION) in $PROJECT_REGION:"
+Write-Output ""
+for ($i = 0; $i -lt $deployableSkus.Count; $i++) {
+  $s = $deployableSkus[$i]
+  if ($s.Available -ge 1000) {
+    $capDisplay = "$([Math]::Floor($s.Available / 1000))K"
+  } else {
+    $capDisplay = "$($s.Available)"
+  }
+  $marker = if ($i -eq 0) { " (Recommended)" } else { "" }
+  Write-Output "  $($i+1). $($s.Name)$marker — $capDisplay TPM available (quota: $($s.Used)/$($s.Limit))"
+}
+
+# Show unavailable SKUs as informational
+if ($unavailableSkus.Count -gt 0) {
+  Write-Output ""
+  Write-Output "Unavailable (no quota):"
+  foreach ($s in $unavailableSkus) {
+    Write-Output "  ❌ $($s.Name) — Quota: $($s.Used)/$($s.Limit)"
+  }
+}
+
+Write-Output ""
+$skuChoice = Read-Host "Select SKU (1-$($deployableSkus.Count), default: 1)"
+
+if ([string]::IsNullOrEmpty($skuChoice)) {
+  $SELECTED_SKU = $deployableSkus[0].Name
+} else {
+  $SELECTED_SKU = $deployableSkus[[int]$skuChoice - 1].Name
 }
 
 Write-Output "Selected SKU: $SELECTED_SKU"

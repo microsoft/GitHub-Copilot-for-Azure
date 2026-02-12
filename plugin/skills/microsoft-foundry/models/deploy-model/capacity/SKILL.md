@@ -75,9 +75,48 @@ Run the full discovery script with model name, version, and minimum capacity tar
 
 > 💡 The script automatically queries capacity across ALL regions, cross-references with the user's existing projects, and outputs a ranked table sorted by: meets target → project count → available capacity.
 
+### Phase 3.5: Validate Subscription Quota
+
+After discovery identifies candidate regions, validate that the user's subscription actually has available quota in each region. Model capacity (from Phase 3) shows what the platform can support, but subscription quota limits what this specific user can deploy.
+
+```powershell
+# For each candidate region from discovery results:
+$usageData = az cognitiveservices usage list --location <region> --subscription $SUBSCRIPTION_ID -o json 2>$null | ConvertFrom-Json
+
+# Check quota for each SKU the model supports
+# Quota names follow pattern: OpenAI.<SKU>.<model-name>
+$usageEntry = $usageData | Where-Object { $_.name.value -eq "OpenAI.<SKU>.<model-name>" }
+
+if ($usageEntry) {
+  $quotaAvailable = $usageEntry.limit - $usageEntry.currentValue
+} else {
+  $quotaAvailable = 0  # No quota allocated
+}
+```
+```bash
+# For each candidate region from discovery results:
+usage_json=$(az cognitiveservices usage list --location <region> --subscription "$SUBSCRIPTION_ID" -o json 2>/dev/null)
+
+# Extract quota for specific SKU+model
+quota_available=$(echo "$usage_json" | jq -r --arg name "OpenAI.<SKU>.<model-name>" \
+  '.[] | select(.name.value == $name) | .limit - .currentValue')
+```
+
+**Annotate discovery results:**
+
+Add a "Quota Available" column to the ranked output from Phase 3:
+
+| Region | Available Capacity | Meets Target | Projects | Quota Available |
+|--------|-------------------|--------------|----------|-----------------|
+| eastus2 | 120K TPM | ✅ | 3 | ✅ 80K |
+| westus3 | 90K TPM | ✅ | 1 | ❌ 0 (at limit) |
+| swedencentral | 100K TPM | ✅ | 0 | ✅ 100K |
+
+Regions/SKUs where `quotaAvailable = 0` should be marked with ❌ in the results. If no region has available quota, direct user to request a quota increase.
+
 ### Phase 4: Present Results and Hand Off
 
-After the script outputs the ranked table, present it to the user and ask:
+After the script outputs the ranked table (now annotated with quota info), present it to the user and ask:
 
 1. 🚀 **Quick deploy** to top recommendation with defaults → route to [preset](../preset/SKILL.md)
 2. ⚙️ **Custom deploy** with version/SKU/capacity/RAI selection → route to [customize](../customize/SKILL.md)

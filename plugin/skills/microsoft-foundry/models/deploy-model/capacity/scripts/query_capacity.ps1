@@ -57,9 +57,24 @@ if (-not $filtered) {
 Write-Host "Capacity: $ModelName v$ModelVersion ($SKU)"
 Write-Host ""
 $filtered | ForEach-Object {
+    # Check subscription quota for this region
+    $quotaDisplay = "?"
+    try {
+        $usageData = az cognitiveservices usage list --location $_.location --subscription $subId -o json 2>$null | Out-String | ConvertFrom-Json
+        $usageEntry = $usageData | Where-Object { $_.name.value -eq "OpenAI.$SKU.$ModelName" }
+        if ($usageEntry) {
+            $quotaAvail = [int]$usageEntry.limit - [int]$usageEntry.currentValue
+            $quotaDisplay = if ($quotaAvail -gt 0) { "${quotaAvail}K" } else { "0 (at limit)" }
+        } else {
+            $quotaDisplay = "0 (none)"
+        }
+    } catch {
+        $quotaDisplay = "?"
+    }
     [PSCustomObject]@{
         Region    = $_.location
         SKU       = $_.properties.skuName
         Available = "$($_.properties.availableCapacity)K TPM"
+        Quota     = $quotaDisplay
     }
 } | Sort-Object { [int]($_.Available -replace '[^\d]','') } -Descending | Format-Table -AutoSize
