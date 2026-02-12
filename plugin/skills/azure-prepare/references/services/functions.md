@@ -118,6 +118,92 @@ module.exports = async function (context, req) {
 >
 > **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
 
+## Node.js v4 Programming Model - Critical Deployment Requirements
+
+**CRITICAL FOR DEPLOYMENT SUCCESS**: The v4 programming model for Node.js Functions introduces a breaking change in how the runtime discovers your function code. Missing this configuration causes the exact issue reported: infrastructure deploys successfully, Function App shows healthy status, but zero functions register and all endpoints return 404.
+
+### Why Functions Aren't Discovered
+
+In v4, Azure Functions runtime changed from automatic file-system scanning to explicit entry point configuration. The runtime needs to know which JavaScript file contains your function registrations. Without this pointer, the runtime starts successfully but has no functions to load.
+
+### Three Essential Configuration Elements
+
+**Element 1: Entry Point Declaration**
+
+Your `package.json` must declare where function registrations live using the `main` property. This is non-optional in v4.
+
+Examples of valid entry point declarations:
+- Single file: `"main": "src/functions.js"`
+- Compiled output: `"main": "dist/app.js"`  
+- Alternative path: `"main": "handlers/index.js"`
+
+**Element 2: Runtime Configuration File**
+
+A `host.json` file must exist at your project root. Minimum viable configuration includes the version identifier and extension bundle specification. The runtime will not start without this file.
+
+Key configuration points:
+- Version must be set to "2.0" for v4 compatibility
+- Extension bundle ID: "Microsoft.Azure.Functions.ExtensionBundle"
+- Version range: Use interval notation like "[4.0.0, 5.0.0)" which means "include all 4.x releases but stop before 5.0.0"
+
+**Element 3: Code-First Function Registration**
+
+Your entry point file must use the `app` object from the `@azure/functions` package to register handlers. The v3 pattern of exporting handler functions with separate binding configuration files is obsolete.
+
+Registration pattern structure:
+- Import the `app` singleton from `@azure/functions`
+- Call registration methods like `app.http()` with function name and configuration object
+- Configuration object includes trigger details and handler function
+- Handler receives request and context, returns response object
+
+### Deployment Verification Strategy
+
+After running `azd deploy`, verify the Functions runtime discovered your code:
+
+```bash
+# Query the Function App to list registered functions
+az functionapp function list \
+  --resource-group <your-rg> \
+  --name <your-function-app> \
+  --output table
+```
+
+Expected: Table showing your function names
+Problem indicator: Empty table means entry point misconfiguration
+
+### Common Configuration Mistakes
+
+| Problem | Manifestation | Resolution Path |
+|---------|---------------|-----------------|
+| No `main` field in package.json | Empty function list post-deploy | Add `"main"` property pointing to entry file |
+| `main` points to non-existent path | Runtime startup error | Verify file path exists relative to package.json |
+| Missing host.json file | Deployment fails or runtime won't start | Create host.json at project root with v2 config |
+| TypeScript compiled to different directory | Functions not found after build | Update `main` to point to compiled JS location (e.g., dist/) |
+| `@azure/functions` in devDependencies | Runtime error on Azure | Move package to dependencies section |
+| Using v3 export pattern | Functions never register | Rewrite using `app.http()` registration pattern |
+
+### Project Organization Requirements
+
+Minimum viable structure for successful deployment:
+
+```
+project-root/
+├── package.json       ← Must contain "main" field
+├── host.json          ← Must exist with v2 configuration
+└── src/
+    └── handlers.js    ← Your entry point (path must match "main" value)
+```
+
+### TypeScript Specific Considerations
+
+For TypeScript projects, the `main` field must reference compiled JavaScript output, not TypeScript source. Common mistake is pointing to `.ts` files which the runtime cannot execute.
+
+Typical TypeScript setup:
+- Source files in `src/` directory
+- Compiled output in `dist/` directory  
+- `main` field: `"dist/handlers.js"` (not `"src/handlers.ts"`)
+- Build script must run before deployment
+
 ## Cold Start Mitigation
 
 ### Flex Consumption - Always Ready Instances

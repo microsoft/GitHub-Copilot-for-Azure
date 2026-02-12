@@ -128,3 +128,55 @@ azd env set STORAGE_SKU <user-provided-value>
 During `azd provision`, azd will substitute `${STORAGE_SKU}` with the value from the environment and will pass it to Bicep.
 
 **Reference:** [Use environment variables in infrastructure files](https://learn.microsoft.com/azure/developer/azure-developer-cli/manage-environment-variables?tabs=bash#use-environment-variables-in-infrastructure-files)
+
+## Node.js Functions Not Registered After Deployment
+
+**Symptom:** Infrastructure deploys successfully, Function App shows "Running" status, but `az functionapp function list` returns empty array and API endpoints return 404 Not Found.
+
+**Cause:** Node.js v4 programming model requires explicit entry point configuration in `package.json`. Without the `main` field, the Azure Functions runtime cannot locate function registrations, even though deployment succeeds.
+
+**Solution Steps:**
+
+**Step 1: Configure Entry Point**
+
+Edit your `package.json` and add a `main` property that specifies where your function code lives. The path should be relative to the package.json location.
+
+For JavaScript: `"main": "src/functions.js"` (or whatever your entry file is named)
+For TypeScript: `"main": "dist/functions.js"` (must point to compiled output, not .ts source)
+
+Ensure `@azure/functions` package version 4.x is listed under `dependencies` (not `devDependencies`).
+
+**Step 2: Verify Runtime Configuration**
+
+Confirm `host.json` exists at your project root (same directory as package.json). This file is mandatory for the Functions runtime to initialize.
+
+Required contents: version property set to "2.0" and extensionBundle configuration with ID "Microsoft.Azure.Functions.ExtensionBundle" and a version range covering 4.x releases.
+
+**Step 3: Update Function Code Pattern**
+
+Verify your entry file uses the v4 code-first registration approach. Import the `app` object from `@azure/functions` package and call methods like `app.http()` to register handlers.
+
+Each registration should specify:
+- Function name (first argument)
+- Configuration object with trigger type, methods, and handler function
+
+**Step 4: Redeploy and Verify**
+
+Run `azd deploy` to push updated code to Azure.
+
+Then verify registration succeeded:
+```bash
+az functionapp function list \
+  --name <your-app-name> \
+  --resource-group <your-rg-name> \
+  --query "[].name" -o table
+```
+
+If the table is empty, your `main` field path is still incorrect.
+
+**Additional Troubleshooting:**
+
+- Confirm the file path in `main` actually exists in your project
+- For TypeScript: ensure your build process outputs to the directory specified in `main`
+- Check `azd deploy --debug` output for any packaging warnings
+- Verify node_modules includes `@azure/functions` in the deployed package
