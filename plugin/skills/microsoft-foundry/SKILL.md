@@ -512,8 +512,6 @@ az cognitiveservices usage list \
 echo "Request quota increase in Azure Portal under Quotas section"
 ```
 
-##### PowerShell
-```powershell
 # Request quota increase (manual process in portal)
 Write-Output "Request quota increase in Azure Portal under Quotas section"
 ```
@@ -569,14 +567,6 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o
 
 For SDK-specific details, authentication, and code examples:
 - **Python**: See [language/python.md](language/python.md)
-
-### SDK Quick References
-
-- **AI Projects**: [Python](references/sdk/azure-ai-projects-py.md) | [.NET](references/sdk/azure-ai-projects-dotnet.md) | [TypeScript](references/sdk/azure-ai-projects-ts.md) | [Java](references/sdk/azure-ai-projects-java.md)
-- **Agent Framework**: [Python](references/sdk/agent-framework-azure-ai-py.md)
-- **Agents v2**: [Python](references/sdk/agents-v2-py.md)
-- **Evaluation**: [Python](references/sdk/azure-ai-evaluation-py.md)
-- **AI Search (RAG)**: [Python](references/sdk/azure-search-documents-py.md)
 
 ## Additional Resources
 
