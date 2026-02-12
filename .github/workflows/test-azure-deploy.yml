@@ -99,7 +99,7 @@ jobs:
 
       - name: Generate report
         id: generate-report
-        run: npm run report
+        run: npm run report -- --skill azure-deploy
 
       - name: Show skill report
         id: show-skill-report
