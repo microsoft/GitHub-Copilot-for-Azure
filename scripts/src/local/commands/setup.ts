@@ -176,7 +176,7 @@ export function setupMcpServers(pluginPath: string, options: { force: boolean })
     const merged: McpServerEntry = {
       ...entry,
       tools: entry.tools ?? ['*'],
-      type: entry.type ?? 'local',
+      type: entry.type ?? 'stdio',
     };
 
     if (existing) {

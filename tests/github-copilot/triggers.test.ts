@@ -57,7 +57,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Set up a MySQL database locally",
       "Help me optimize my SQL query performance",
       "Write a unit test for my React component",
-      "Set up a PostgreSQL database on Azure",
+      "Set up a PostgreSQL database locally",
       "Add a REST API to my existing project",
       "Help me refactor my existing codebase",
     ];
