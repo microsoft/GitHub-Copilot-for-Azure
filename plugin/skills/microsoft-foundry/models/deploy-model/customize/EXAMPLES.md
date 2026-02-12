@@ -391,7 +391,7 @@ User: "Y"
 
 Agent: "Available deployments:
   1. gpt-4o-backup
-  2. gpt-35-turbo-fallback
+  2. gpt-4o-mini-fallback
   3. o3-mini
   
   Select spillover target:"

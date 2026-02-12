@@ -149,12 +149,17 @@ echo "  Region: $PROJECT_REGION"
 
 **If model name provided as skill parameter, skip this phase.**
 
-Ask user which model to deploy. Common options:
-- `gpt-4o` (Recommended for most use cases)
-- `gpt-4o-mini` (Cost-effective, faster responses)
-- `gpt-4-turbo` (Advanced reasoning)
-- `gpt-35-turbo` (Lower cost, high performance)
-- Custom model name
+Ask user which model to deploy. **Fetch available models dynamically** from the account rather than using a hardcoded list:
+
+```bash
+# List available models in the account
+az cognitiveservices account list-models \
+  --name "$PROJECT_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "[].name" -o tsv | sort -u
+```
+
+Present the results to the user and let them choose, or enter a custom model name.
 
 **Store model:**
 ```bash
@@ -291,9 +296,9 @@ if [ -z "$AVAILABLE_REGIONS" ]; then
   echo "     --name $PROJECT_NAME \\"
   echo "     --resource-group $RESOURCE_GROUP"
   echo ""
-  echo "3. Consider alternative models:"
-  echo "   • gpt-4o-mini (lower capacity requirements)"
-  echo "   • gpt-35-turbo (smaller model)"
+  echo "3. Consider alternative models with lower capacity requirements:"
+  echo "   • gpt-4o-mini (cost-effective, lower capacity requirements)"
+  echo "   List available models: az cognitiveservices account list-models --name \$PROJECT_NAME --resource-group \$RESOURCE_GROUP --output table"
   exit 1
 fi
 ```
