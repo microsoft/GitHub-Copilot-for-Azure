@@ -12,6 +12,7 @@
  * Run with: npm run test:integration -- brownfield-dotnet
  */
 
+import { hasDeployLinks } from "../azure-deploy/utils";
 import {
   isSkillInvoked,
   shouldSkipIntegrationTests,
@@ -33,7 +34,7 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000; // 30 minutes
 
-describeIntegration("brownfield-dotnet (eShop) - Deploy to Azure", () => {
+describeIntegration("brownfield-dotnet - Integration Tests", () => {
   const agent = useAgentRunner();
 
   const FOLLOW_UP_PROMPT = ["Go with recommended options."];
@@ -57,12 +58,14 @@ describeIntegration("brownfield-dotnet (eShop) - Deploy to Azure", () => {
       followUp: FOLLOW_UP_PROMPT,
     });
 
-    const isDeployInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
     const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
     const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+    const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-    expect(isDeployInvoked).toBe(true);
-    expect(isValidateInvoked).toBe(true);
-    expect(isPrepareInvoked).toBe(true);
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
   }, deployTestTimeoutMs);
 });
