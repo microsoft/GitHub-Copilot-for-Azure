@@ -93,12 +93,11 @@ For each skill, execute this loop until score >= Medium-High AND tests pass AND 
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
-7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
-8. **REFERENCES** - Run `cd scripts && npm run references {skill-name}` to validate markdown links
-9. **TOKENS** - Check token budget, gather optimization suggestions
-10. **SUMMARY** - Display before/after comparison with unimplemented suggestions
-11. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
-12. **REPEAT** - Go to step 2 (max 5 iterations per skill)
+7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`, then validate markdown links with `cd scripts && npm run references {skill-name}`
+8. **TOKENS** - Check token budget, gather optimization suggestions
+9. **SUMMARY** - Display before/after comparison with unimplemented suggestions
+10. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
+11. **REPEAT** - Go to step 2 (max 5 iterations per skill)
 
 ## Scoring Criteria (Quick Reference)
 
