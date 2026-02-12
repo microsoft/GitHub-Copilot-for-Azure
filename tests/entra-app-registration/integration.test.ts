@@ -10,7 +10,7 @@
  */
 
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,15 +33,13 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  const agent = useAgentRunner();
-
   describe("skill-invocation", () => {
     test("invokes entra-app-registration skill for OAuth app registration prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "How do I create a Microsoft Entra app registration for OAuth authentication?"
           });
 
@@ -68,7 +66,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Configure API permissions for my Entra ID application to access Microsoft Graph"
           });
 

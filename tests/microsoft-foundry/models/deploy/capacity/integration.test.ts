@@ -11,7 +11,7 @@
 
 import * as fs from "fs";
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -31,15 +31,13 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration("capacity - Integration Tests", () => {
-  const agent = useAgentRunner();
-
   describe("skill-invocation", () => {
     test("invokes skill for capacity discovery prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Find available capacity for gpt-4o across all Azure regions"
           });
 
@@ -66,7 +64,7 @@ describeIntegration("capacity - Integration Tests", () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?"
           });
 

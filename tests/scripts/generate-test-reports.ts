@@ -15,21 +15,19 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, type TestConfig } from "../utils/agent-runner";
+import { run, type TestConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REPORTS_PATH = path.resolve(__dirname, "../reports");
 const TEMPLATE_PATH = path.resolve(__dirname, "report-template.md");
-const AGGREGATED_TEMPLATE_PATH = path.resolve(__dirname, "aggregated-template.md");
 
 // Constants
 const TEST_RUN_PREFIX = "test-run-";
 const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
 const MASTER_REPORT_SUFFIX = "-MASTER-REPORT.md";
-const agent = useAgentRunner();
 
 /**
  * Get the most recent test run directory
@@ -103,7 +101,7 @@ ${consolidatedContent}
 OUTPUT THE REPORT NOW (starting with the # heading):`
   };
 
-  const agentMetadata = await agent.run(config);
+  const agentMetadata = await run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];
@@ -114,17 +112,13 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   }
 
   // Save the consolidated report in the subdirectory
-  const outputPath = path.join(subdirPath, `test${CONSOLIDATED_REPORT_SUFFIX}`);
+  const outputPath = path.join(subdirPath, `${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
-  console.log(`    ✅ Generated: test${CONSOLIDATED_REPORT_SUFFIX}`);
+  console.log(`    ✅ Generated: ${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
 
   return outputPath;
-}
-
-function getMasterReportFileName(runName: string) {
-  return `${runName}${MASTER_REPORT_SUFFIX}`;
 }
 
 /**
@@ -146,22 +140,23 @@ async function generateMasterReport(reportPaths: string[], runPath: string, runN
 
   console.log("\n  Generating master report...");
 
-  // Load the aggregated report template
-  const aggregatedTemplate = fs.readFileSync(AGGREGATED_TEMPLATE_PATH, "utf-8");
-
   // Use agent runner to generate master consolidated report
-  const config: TestConfig = {
+  const config = {
     prompt: `You are a master test report aggregator. You will receive multiple test reports and combine them into one comprehensive summary.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
 
 ## Your Task
 
-Create a master consolidated report that combines all the individual subdirectory reports below. The report MUST follow the exact structure and formatting of the template below.
+Create a master consolidated report that combines all the individual subdirectory reports below. The report should:
 
-## Report Template
+1. **Overall Summary Section**: Aggregate total results across all reports (total tests, pass/fail counts, success rate)
+2. **Structure**: Follow a similar markdown structure to the individual reports
+3. **High-Level Findings**: Include any warnings, errors, or important findings across all reports (no need for specific test details)
+4. **Token Usage**: Aggregate and report total token usage across all reports
+5. **Subdirectory Breakdown**: Brief summary of results per subdirectory/skill area
 
-${aggregatedTemplate}
+Be concise but comprehensive. Focus on the big picture and actionable insights.
 
 ---
 
@@ -171,14 +166,10 @@ ${allReportsContent}
 
 ---
 
-OUTPUT THE MASTER REPORT NOW (starting with the # heading):`,
-    systemPrompt: {
-      mode: "append",
-      content: "**Important**: Skills and MCP tools are different. When summarize statistics related to skills, don't count MCP tool invocations. Skills are explicitly called out as skills in the context. MCP servers appear to be regular tool calls except that they are from an MCP server."
-    }
+OUTPUT THE MASTER REPORT NOW (starting with the # heading):`
   };
 
-  const agentMetadata = await agent.run(config);
+  const agentMetadata = await run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];
@@ -189,7 +180,7 @@ OUTPUT THE MASTER REPORT NOW (starting with the # heading):`,
   }
 
   // Save the master report at the root of the test run
-  const outputPath = path.join(runPath, getMasterReportFileName(runName));
+  const outputPath = path.join(runPath, `${runName}${MASTER_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
@@ -246,16 +237,12 @@ async function processTestRun(runPath: string): Promise<void> {
 
   console.log(`\n✅ Processed ${generatedReports.length} subdirectories`);
 
+  // Generate master report if there are multiple reports
   if (generatedReports.length > 1) {
-    // Generate master report if there are multiple reports
     await generateMasterReport(generatedReports, runPath, runName);
     console.log("\n✅ Master report generated!");
   } else if (generatedReports.length === 1) {
-    // Copy the consolidated report as the master report since there is no need to summarize again
-    const reportPath = generatedReports[0];
-    const masterReportPath = path.join(runPath, getMasterReportFileName(runName));
-    fs.copyFileSync(reportPath, masterReportPath);
-    console.log("\n(Only one report generated, copied to master report");
+    console.log("\n(Only one report generated, skipping master report)");
   }
 
   console.log("\nReport generation complete.");
