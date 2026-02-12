@@ -5,10 +5,10 @@
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from '../../../../utils/trigger-matcher';
-import { loadSkill, LoadedSkill } from '../../../../utils/skill-loader';
+import { TriggerMatcher } from "../../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
 
-const SKILL_NAME = 'microsoft-foundry/models/deploy-model';
+const SKILL_NAME = "microsoft-foundry/models/deploy-model";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -19,20 +19,20 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe('Should Trigger', () => {
+  describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      'Deploy a model to Azure OpenAI',
-      'Deploy gpt-4o model',
-      'Create a deployment for gpt-4o',
-      'Help me with model deployment',
-      'Deploy an OpenAI model to my project',
-      'Set up a model in my Foundry project',
-      'Provision gpt-4o model',
-      'Find capacity for model deployment',
-      'Check model availability across regions',
-      'Where can I deploy gpt-4o?',
-      'Best region for model deployment',
-      'Capacity analysis for my model',
+      "Deploy a model to Azure OpenAI",
+      "Deploy gpt-4o model",
+      "Create a deployment for gpt-4o",
+      "Help me with model deployment",
+      "Deploy an OpenAI model to my project",
+      "Set up a model in my Foundry project",
+      "Provision gpt-4o model",
+      "Find capacity for model deployment",
+      "Check model availability across regions",
+      "Where can I deploy gpt-4o?",
+      "Best region for model deployment",
+      "Capacity analysis for my model",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -45,17 +45,17 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe('Should NOT Trigger', () => {
+  describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
-      'What is the weather today?',
-      'Help me write a poem',
-      'Explain quantum computing',
-      'Help me with AWS SageMaker',
-      'Configure my PostgreSQL database',
-      'Help me with Kubernetes pods',
-      'Create a knowledge index',
-      'How do I write Python code?',
-      'Set up a virtual network in Azure',
+      "What is the weather today?",
+      "Help me write a poem",
+      "Explain quantum computing",
+      "Help me with AWS SageMaker",
+      "Configure my PostgreSQL database",
+      "Help me with Kubernetes pods",
+      "Create a knowledge index",
+      "How do I write Python code?",
+      "Set up a virtual network in Azure",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -67,12 +67,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe('Trigger Keywords Snapshot', () => {
-    test('skill keywords match snapshot', () => {
+  describe("Trigger Keywords Snapshot", () => {
+    test("skill keywords match snapshot", () => {
       expect(triggerMatcher.getKeywords()).toMatchSnapshot();
     });
 
-    test('skill description triggers match snapshot', () => {
+    test("skill description triggers match snapshot", () => {
       expect({
         name: skill.metadata.name,
         description: skill.metadata.description,
@@ -81,21 +81,21 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    test('handles empty prompt', () => {
-      const result = triggerMatcher.shouldTrigger('');
+  describe("Edge Cases", () => {
+    test("handles empty prompt", () => {
+      const result = triggerMatcher.shouldTrigger("");
       expect(result.triggered).toBe(false);
     });
 
-    test('handles very long prompt', () => {
-      const longPrompt = 'deploy model '.repeat(100);
+    test("handles very long prompt", () => {
+      const longPrompt = "deploy model ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
-      expect(typeof result.triggered).toBe('boolean');
+      expect(typeof result.triggered).toBe("boolean");
     });
 
-    test('is case insensitive', () => {
-      const result1 = triggerMatcher.shouldTrigger('DEPLOY MODEL TO AZURE');
-      const result2 = triggerMatcher.shouldTrigger('deploy model to azure');
+    test("is case insensitive", () => {
+      const result1 = triggerMatcher.shouldTrigger("DEPLOY MODEL TO AZURE");
+      const result2 = triggerMatcher.shouldTrigger("deploy model to azure");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });
