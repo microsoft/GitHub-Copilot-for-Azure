@@ -420,7 +420,6 @@ tests/
 | azure-functions | ✅ | - | - | ✅ | - |
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
-| azure-networking | ✅ | - | - | ✅ | - |
 | azure-nodejs-production | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
 | azure-postgres | ✅ | - | - | ✅ | - |

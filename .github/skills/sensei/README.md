@@ -58,7 +58,7 @@ Run sensei on appinsights-instrumentation --skip-integration
 
 ### Multiple Skills
 ```
-Run sensei on azure-security, azure-networking, azure-observability
+Run sensei on azure-security, azure-observability
 ```
 
 ### All Low-Adherence Skills

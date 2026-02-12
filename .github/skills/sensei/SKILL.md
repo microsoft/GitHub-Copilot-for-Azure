@@ -28,7 +28,7 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║  EXAMPLES:                                                       ║
 ║    Run sensei on appinsights-instrumentation                     ║
 ║    Run sensei on azure-security --skip-integration               ║
-║    Run sensei on azure-security, azure-networking                ║
+║    Run sensei on azure-security, azure-observability             ║
 ║    Run sensei on all Low-adherence skills                        ║
 ║                                                                  ║
 ║  WHAT IT DOES:                                                   ║
@@ -71,7 +71,7 @@ Run sensei on azure-deploy
 
 ### Multiple Skills
 ```
-Run sensei on azure-security, azure-networking, azure-observability
+Run sensei on azure-security, azure-observability
 ```
 
 ### By Adherence Level
