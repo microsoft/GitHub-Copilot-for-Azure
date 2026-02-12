@@ -17,6 +17,7 @@ import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+import { getAllAssistantMessages } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -560,25 +561,25 @@ export function getIntegrationSkipReason(): string | undefined {
 }
 
 /**
- * Get all assistant messages from agent metadata
+ * Common Azure deployment link patterns
+ * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
  */
-export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
-  const allMessages: Record<string, string> = {};
+const DEPLOY_LINK_PATTERNS = [
+  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
+  // Azure Static Web Apps URLs
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
+  // Azure Container Apps URLs
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
+];
 
-  agentMetadata.events.forEach(event => {
-    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
-      allMessages[event.data.messageId] = event.data.content;
-    }
-    if (event.type === "assistant.message_delta" && event.data.messageId) {
-      if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
-      } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
-      }
-    }
-  });
+/**
+ * Check if the agent response contains any Azure deployment links
+ */
+export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
+  const content = getAllAssistantMessages(agentMetadata);
 
-  return Object.values(allMessages).join("\n");
+  return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
 }
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
@@ -691,7 +692,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
   let session: CopilotSession | undefined;
 
   const turns: AgentMetadata[] = [];
-  const aggregate: AgentMetadata = { events: [] };
+  const aggregate: AgentMetadata = { events: [], testComments: [] };
 
   try {
     if (config.setup) {
@@ -727,7 +728,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
     });
 
     let aborted = false;
-    let currentTurnMetadata: AgentMetadata = { events: [] };
+    let currentTurnMetadata: AgentMetadata = { events: [], testComments: [] };
     let currentLabel = "Turn 1";
     let resolveIdle: (() => void) | undefined;
 
@@ -774,7 +775,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
 
       const promptEntry = config.prompts[i];
       currentLabel = promptEntry.label ?? `Turn ${i + 1}`;
-      currentTurnMetadata = { events: [] };
+      currentTurnMetadata = { events: [], testComments: [] };
 
       if (process.env.DEBUG) {
         console.log(`\n=== ${currentLabel}: "${promptEntry.prompt.substring(0, 80)}..."`);

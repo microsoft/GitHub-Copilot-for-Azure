@@ -7,66 +7,7 @@
  */
 
 import { type AgentMetadata } from "./agent-runner";
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Extract all assistant message text from metadata */
-function getAssistantText(metadata: AgentMetadata): string {
-  const messages: Record<string, string> = {};
-  for (const event of metadata.events) {
-    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
-      messages[event.data.messageId as string] = event.data.content as string;
-    }
-    if (event.type === "assistant.message_delta" && event.data.messageId) {
-      const id = event.data.messageId as string;
-      messages[id] = (messages[id] ?? "") + (event.data.deltaContent as string ?? "");
-    }
-  }
-  return Object.values(messages).join("\n");
-}
-
-/** Stringify tool call arguments safely */
-function argsString(event: { data: Record<string, unknown> }): string {
-  try {
-    return JSON.stringify(event.data.arguments ?? {});
-  } catch {
-    return String(event.data.arguments);
-  }
-}
-
-/** Get all tool execution results (complete events) */
-function getToolResults(metadata: AgentMetadata): Array<{
-  toolCallId: string;
-  success: boolean;
-  content: string;
-  error: string;
-}> {
-  return metadata.events
-    .filter(e => e.type === "tool.execution_complete")
-    .map(e => ({
-      toolCallId: e.data.toolCallId as string,
-      success: e.data.success as boolean,
-      content: (e.data.result as { content?: string })?.content ?? "",
-      error: (e.data.error as { message?: string })?.message ?? ""
-    }));
-}
-
-/** Get combined text of all tool args and results for scanning */
-function getAllToolText(metadata: AgentMetadata): string {
-  const parts: string[] = [];
-  for (const event of metadata.events) {
-    if (event.type === "tool.execution_start") {
-      parts.push(argsString(event));
-    }
-    if (event.type === "tool.execution_complete") {
-      const result = event.data.result as { content?: string } | undefined;
-      if (result?.content) parts.push(result.content);
-      const error = event.data.error as { message?: string } | undefined;
-      if (error?.message) parts.push(error.message);
-    }
-  }
-  return parts.join("\n");
-}
+import { getAllAssistantMessages, argsString, getToolResults, getAllToolText } from "./evaluate";
 
 // ─── Detectors ───────────────────────────────────────────────────────────────
 
@@ -134,7 +75,7 @@ export function countAcrAuthSpirals(metadata: AgentMetadata): number {
  * Count port binding confusion — conflicting PORT/WEBSITES_PORT/EXPOSE values.
  */
 export function countPortBindingConfusion(metadata: AgentMetadata): number {
-  const allText = getAssistantText(metadata) + "\n" + getAllToolText(metadata);
+  const allText = getAllAssistantMessages(metadata) + "\n" + getAllToolText(metadata);
 
   const portRefs: Record<string, Set<string>> = {};
   const portPatterns: Array<{ name: string; regex: RegExp }> = [
@@ -167,7 +108,7 @@ export function countPortBindingConfusion(metadata: AgentMetadata): number {
  * Count hosting choice thrashing — reversals between Web App and Container Apps.
  */
 export function countHostingThrashing(metadata: AgentMetadata): number {
-  const text = getAssistantText(metadata);
+  const text = getAllAssistantMessages(metadata);
   const lines = text.split("\n");
 
   type HostingChoice = "webapp" | "container-apps" | null;
@@ -445,7 +386,7 @@ export function countWrongSessionOnPattern(metadata: AgentMetadata): number {
  * and serve via express.static().
  */
 export function countInlineHtmlInCode(metadata: AgentMetadata): number {
-  const allText = getAllToolText(metadata) + "\n" + getAssistantText(metadata);
+  const allText = getAllToolText(metadata) + "\n" + getAllAssistantMessages(metadata);
 
   const inlinePatterns = [
     /const\s+\w*HTML\w*\s*=\s*`<!DOCTYPE/gi,        // const TEST_PAGE_HTML = `<!DOCTYPE
