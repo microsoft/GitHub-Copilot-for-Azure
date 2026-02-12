@@ -14,9 +14,11 @@
 import {
   useAgentRunner,
   isSkillInvoked,
+  getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
+import type { AgentMetadata } from "../utils/agent-runner";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-resource-visualizer";
@@ -34,6 +36,20 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 const visualizerTestTimeoutMs = 1800000;
+
+/**
+ * Check if a file-creation tool call produced an architecture markdown file
+ * containing a Mermaid diagram (graph TB or graph LR).
+ */
+function hasArchitectureDiagramFile(agentMetadata: AgentMetadata): boolean {
+  const fileToolCalls = getToolCalls(agentMetadata, "create");
+  return fileToolCalls.some(event => {
+    const args = JSON.stringify(event.data);
+    const hasArchitectureFile = /architecture.*\.md/i.test(args);
+    const hasMermaidDiagram = /graph\s+(TB|LR)/i.test(args);
+    return hasArchitectureFile && hasMermaidDiagram;
+  });
+}
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
@@ -109,8 +125,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const hasDiagramFile = hasArchitectureDiagramFile(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
+      expect(hasDiagramFile).toBe(true);
     }, visualizerTestTimeoutMs);
 
     test("visualizes resource connections and relationships", async () => {
@@ -121,8 +139,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const hasDiagramFile = hasArchitectureDiagramFile(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
+      expect(hasDiagramFile).toBe(true);
     }, visualizerTestTimeoutMs);
   });
 });
