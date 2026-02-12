@@ -22,7 +22,6 @@ import { cloneRepo } from "../utils/git-clone";
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
-const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -35,6 +34,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000;
+const brownfieldTestTimeoutMs = 2700000;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
@@ -281,7 +281,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   describe("brownfield-dotnet", () => {
-    test("deploys eShop to Azure for small scale production", async () => {
+    test("deploys eShop", async () => {
+        const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
+
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             await cloneRepo({
@@ -309,6 +311,40 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         expect(isValidateInvoked).toBe(true);
         expect(isPrepareInvoked).toBe(true);
         expect(containsDeployLinks).toBe(true);
-      }, deployTestTimeoutMs);
+      }, brownfieldTestTimeoutMs);
+
+    test("deploys MvcMovie90", async () => {
+        const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
+        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
+
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPNETCORE_DOCS_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+        });
+    
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+    
+        expect(isSkillUsed).toBe(true);
+        expect(isValidateInvoked).toBe(true);
+        expect(isPrepareInvoked).toBe(true);
+        expect(containsDeployLinks).toBe(true);
+      }, brownfieldTestTimeoutMs);
   })
 });
