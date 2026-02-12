@@ -7,11 +7,10 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 import matter from "gray-matter";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get the directory path from global jest setup or use current directory
+const skillsDir = (global as any).TESTS_PATH || path.resolve(".");
 
 export interface SkillMetadata {
   name: string;
@@ -31,7 +30,7 @@ export interface LoadedSkill {
  */
 export async function loadSkill(skillName: string): Promise<LoadedSkill> {
   const skillPath = path.join(
-    global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills"),
+    global.SKILLS_PATH || path.resolve(skillsDir, "../../plugin/skills"),
     skillName
   );
   const skillFile = path.join(skillPath, "SKILL.md");
@@ -59,7 +58,7 @@ export async function loadSkill(skillName: string): Promise<LoadedSkill> {
  * Load all skills from the skills directory
  */
 export async function loadAllSkills(): Promise<LoadedSkill[]> {
-  const skillsPath = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
+  const skillsPath = global.SKILLS_PATH || path.resolve(skillsDir, "../../plugin/skills");
   const skillDirs = fs.readdirSync(skillsPath, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
@@ -82,7 +81,7 @@ export async function loadAllSkills(): Promise<LoadedSkill[]> {
  * Get list of all skill names
  */
 export function getSkillNames(): string[] {
-  const skillsPath = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
+  const skillsPath = global.SKILLS_PATH || path.resolve(skillsDir, "../../plugin/skills");
   return fs.readdirSync(skillsPath, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
@@ -92,7 +91,7 @@ export function getSkillNames(): string[] {
  * Check if a skill has a SKILL.md file
  */
 export function hasSkillDefinition(skillName: string): boolean {
-  const skillsPath = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
+  const skillsPath = global.SKILLS_PATH || path.resolve(skillsDir, "../../plugin/skills");
   const skillFile = path.join(skillsPath, skillName, "SKILL.md");
   return fs.existsSync(skillFile);
 }
