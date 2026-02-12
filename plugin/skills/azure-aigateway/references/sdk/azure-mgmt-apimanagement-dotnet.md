@@ -5,7 +5,8 @@
 > in the **azure-mgmt-apimanagement-dotnet** plugin skill if installed.
 
 ## Install
-dotnet add package Azure.ResourceManager.ApiManagement Azure.Identity
+dotnet add package Azure.ResourceManager.ApiManagement
+dotnet add package Azure.Identity
 
 ## Quick Start
 ```csharp
