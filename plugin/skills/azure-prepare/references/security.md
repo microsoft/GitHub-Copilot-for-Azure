@@ -234,9 +234,9 @@ All Azure SDKs use their language's Identity library for credential-free authent
 | Go | `azidentity` | `go get github.com/Azure/azure-sdk-for-go/sdk/azidentity` |
 | Rust | `azure_identity` | `cargo add azure_identity` |
 
-For Key Vault SDK examples, see: [key-vault.md](services/key-vault.md)
+For Key Vault SDK examples, see: [Key Vault Reference](services/key-vault/README.md)
 
-For Storage SDK examples, see: [storage.md](services/storage.md)
+For Storage SDK examples, see: [Storage Reference](services/storage/README.md)
 
 ---
 

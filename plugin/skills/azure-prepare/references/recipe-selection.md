@@ -44,7 +44,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 
 ## Record Selection
 
-Document in manifest:
+Document in `.azure/plan.md`:
 
 ```markdown
 ## Recipe: AZD (Terraform)
@@ -69,7 +69,7 @@ Or for pure Terraform:
 
 ## Recipe References
 
-- [AZD Recipe](recipes/azd/)
-- [AZCLI Recipe](recipes/azcli/)
-- [Bicep Recipe](recipes/bicep/)
-- [Terraform Recipe](recipes/terraform/)
+- [AZD Recipe](recipes/azd/README.md)
+- [AZCLI Recipe](recipes/azcli/README.md)
+- [Bicep Recipe](recipes/bicep/README.md)
+- [Terraform Recipe](recipes/terraform/README.md)

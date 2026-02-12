@@ -25,15 +25,15 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 | Artifact | Reference |
 |----------|-----------|
-| azure.yaml | [azure-yaml.md](azure-yaml.md) |
-| Terraform with azd | [terraform.md](terraform.md) |
-| AZD IAC rules | [iac-rules.md](iac-rules.md) |
-| Azure Functions templates | [functions-templates.md](functions-templates.md) |
+| azure.yaml | [Schema Guide](azure-yaml.md) |
+| Terraform with azd | [Terraform Guide](terraform.md) |
+| AZD IAC rules | [IAC Rules](iac-rules.md) |
+| Azure Functions templates | [Templates](../../services/functions/templates/README.md) |
 | Bicep best practices | `mcp_bicep_get_bicep_best_practices` |
 | Bicep resource schema | `mcp_bicep_get_az_resource_type_schema` |
 | Azure Verified Modules | `mcp_bicep_list_avm_metadata` |
 | Terraform best practices | `mcp_azure_mcp_azureterraformbestpractices` |
-| Dockerfiles | [docker.md](docker.md) |
+| Dockerfiles | [Docker Guide](docker.md) |
 
 ## Generation Steps
 
@@ -41,19 +41,19 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 | # | Artifact | Reference |
 |---|----------|-----------|
-| 1 | azure.yaml | [azure-yaml.md](azure-yaml.md) |
+| 1 | azure.yaml | [Schema Guide](azure-yaml.md) |
 | 2 | Application code | Entry points, health endpoints, config |
-| 3 | Dockerfiles | [docker.md](docker.md) (if containerized) |
-| 4 | Infrastructure | `./infra/main.bicep` + modules per [iac-rules.md](iac-rules.md) |
+| 3 | Dockerfiles | [Docker Guide](docker.md) (if containerized) |
+| 4 | Infrastructure | `./infra/main.bicep` + modules per [IAC Rules](iac-rules.md) |
 
 ### For Terraform
 
 | # | Artifact | Reference |
 |---|----------|-----------|
-| 1 | azure.yaml with `infra.provider: terraform` | [terraform.md](terraform.md) |
+| 1 | azure.yaml with `infra.provider: terraform` | [Terraform Guide](terraform.md) |
 | 2 | Application code | Entry points, health endpoints, config |
-| 3 | Dockerfiles | [docker.md](docker.md) (if containerized) |
-| 4 | Terraform files | `./infra/*.tf` per [terraform.md](terraform.md) |
+| 3 | Dockerfiles | [Docker Guide](docker.md) (if containerized) |
+| 4 | Terraform files | `./infra/*.tf` per [Terraform Guide](terraform.md) |
 
 ## Outputs
 
@@ -77,11 +77,11 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 ## References
 
-- [azure.yaml schema](mdc:azure-yaml.md)
-- [Terraform with azd](mdc:terraform.md)
-- [Docker configuration](mdc:docker.md)
-- [IAC rules (Bicep)](mdc:iac-rules.md)
+- [azure.yaml Schema](azure-yaml.md)
+- [Terraform with AZD](terraform.md)
+- [Docker Configuration](docker.md)
+- [IAC Rules](iac-rules.md)
 
 ## Next
 
-→ Update manifest → **azure-validate**
+→ Update `.azure/plan.md` → **azure-validate**

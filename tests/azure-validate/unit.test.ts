@@ -51,8 +51,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/azure-deploy/i);
     });
 
-    test("mentions manifest file", () => {
-      expect(skill.content).toMatch(/manifest/i);
+    test("mentions plan file", () => {
+      expect(skill.content).toMatch(/plan\.md/i);
     });
   });
 

@@ -14,11 +14,12 @@ Use this checklist before submitting a new skill or updating an existing one.
 
 ## Token Budget
 
+See [Token Budgets](token-budgets.md) for detailed limits.
+
 - [ ] SKILL.md is under 500 tokens (soft limit)
 - [ ] SKILL.md is under 5000 tokens (hard limit per spec)
-- [ ] SKILL.md is under 500 lines
 - [ ] Reference files are each under 1000 tokens
-- [ ] Run `npm run check` from `scripts/` directory
+- [ ] Run `npm run tokens -- check` from `scripts/` directory
 
 ## Structure
 
@@ -28,6 +29,14 @@ Use this checklist before submitting a new skill or updating an existing one.
 - [ ] Optional `assets/` directory for templates/data
 - [ ] File references use relative paths from skill root
 - [ ] No deeply nested reference chains
+
+## Link and Reference Integrity
+
+- [ ] All markdown links point to existing files (no broken links)
+- [ ] All files in `references/` are linked from SKILL.md or other references (no orphans)
+- [ ] References >1000 tokens are split into folder with README.md
+- [ ] Duplicate content is consolidated into shared references
+- [ ] No out-of-place guidance (service-specific content in generic sections)
 
 ## Content Quality
 
@@ -56,12 +65,9 @@ Use this checklist before submitting a new skill or updating an existing one.
 ## Final Steps
 
 ```bash
-# Run token check
 cd scripts
-npm run check
-
-# Generate updated metadata (optional)
-npm run tokens
+npm run references        # Validate all skill links
+npm run tokens -- check   # Check token limits
 ```
 
-If any checks fail, see [GUIDELINES.md](GUIDELINES.md) for guidance.
+If any checks fail, see [Guidelines](guidelines/README.md) for guidance.

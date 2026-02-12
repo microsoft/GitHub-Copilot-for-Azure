@@ -32,23 +32,9 @@ Validate azure.yaml against official schema:
 mcp_azure_mcp_azd(command: "validate_azure_yaml", parameters: { path: "./azure.yaml" })
 ```
 
-### 3. Environment Check
+### 3. Environment Setup
 
-Check if environment exists:
-
-```bash
-azd env list
-```
-
-**If environment exists**, get current values:
-```bash
-azd env get-values
-```
-
-**If no environment**, create one:
-```bash
-azd env new <environment-name>
-```
+Verify AZD environment exists and is configured. See [Environment Setup](environment.md) for detailed steps.
 
 ### 4. Authentication Check
 
@@ -115,7 +101,8 @@ azd package --no-prompt
 
 ## References
 
-- [Error handling](mdc:errors.md)
+- [Environment Setup](environment.md)
+- [Error Handling](./errors.md)
 
 ## Next
 

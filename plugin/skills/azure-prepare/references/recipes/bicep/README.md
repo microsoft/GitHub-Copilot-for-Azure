@@ -54,8 +54,8 @@ Manual Dockerfile creation required.
 
 ## References
 
-- [Bicep patterns](mdc:patterns.md)
+- [Bicep Patterns](patterns.md)
 
 ## Next
 
-→ Update manifest → **azure-validate**
+→ Update `.azure/plan.md` → **azure-validate**
