@@ -41,7 +41,7 @@ Use this skill when you need **precise control** over deployment configuration:
 | **SKU Selection** | User chooses (GlobalStandard/Standard/PTU) | GlobalStandard only |
 | **Capacity** | User specifies exact value | Auto-calculated (50% of available) |
 | **RAI Policy** | User selects from options | Default policy only |
-| **Region** | Uses current project region | Checks capacity across all regions |
+| **Region** | Current region first, falls back to all regions if no capacity | Checks capacity across all regions upfront |
 | **Use Case** | Precise deployment requirements | Quick deployment to best region |
 
 ## Prerequisites
@@ -59,7 +59,7 @@ Use this skill when you need **precise control** over deployment configuration:
 
 ## Workflow Overview
 
-### Complete Flow (13 Phases)
+### Complete Flow (14 Phases)
 
 ```
 1. Verify Authentication
@@ -69,6 +69,7 @@ Use this skill when you need **precise control** over deployment configuration:
 5. List Model Versions → User Selects
 6. List SKUs for Version → User Selects
 7. Get Capacity Range → User Configures
+   7b. If no capacity: Cross-Region Fallback → Query all regions → User selects region/project
 8. List RAI Policies → User Selects
 9. Configure Advanced Options (if applicable)
 10. Configure Version Upgrade Policy
@@ -192,32 +193,35 @@ if ($PROJECT_REGION) {
 
 ### Phase 4: Get Model Name
 
-**If model name not provided as parameter:**
+**If model name not provided as parameter, fetch available models dynamically:**
 
 #### PowerShell
 ```powershell
-Write-Output "Select model to deploy:"
-Write-Output ""
-Write-Output "Common models:"
-Write-Output "  1. gpt-4o (Recommended - Latest GPT-4 model)"
-Write-Output "  2. gpt-4o-mini (Cost-effective, faster)"
-Write-Output "  3. gpt-4-turbo (Advanced reasoning)"
-Write-Output "  4. gpt-35-turbo (High performance, lower cost)"
-Write-Output "  5. o3-mini (Reasoning model)"
-Write-Output "  6. Custom model name"
+Write-Output "Fetching available models..."
+
+$models = az cognitiveservices account list-models `
+  --name $ACCOUNT_NAME `
+  --resource-group $RESOURCE_GROUP `
+  --query "[].name" -o json | ConvertFrom-Json | Sort-Object -Unique
+
+if (-not $models -or $models.Count -eq 0) {
+  Write-Output "❌ No models available in this account"
+  exit 1
+}
+
+Write-Output "Available models:"
+for ($i = 0; $i -lt $models.Count; $i++) {
+  Write-Output "  $($i+1). $($models[$i])"
+}
+Write-Output "  $($models.Count+1). Custom model name"
 Write-Output ""
 
-# Use AskUserQuestion or Read-Host
-$modelChoice = Read-Host "Enter choice (1-6)"
+$modelChoice = Read-Host "Enter choice (1-$($models.Count+1))"
 
-switch ($modelChoice) {
-  "1" { $MODEL_NAME = "gpt-4o" }
-  "2" { $MODEL_NAME = "gpt-4o-mini" }
-  "3" { $MODEL_NAME = "gpt-4-turbo" }
-  "4" { $MODEL_NAME = "gpt-35-turbo" }
-  "5" { $MODEL_NAME = "o3-mini" }
-  "6" { $MODEL_NAME = Read-Host "Enter custom model name" }
-  default { $MODEL_NAME = "gpt-4o" }
+if ([int]$modelChoice -le $models.Count) {
+  $MODEL_NAME = $models[[int]$modelChoice - 1]
+} else {
+  $MODEL_NAME = Read-Host "Enter custom model name"
 }
 
 Write-Output "Selected model: $MODEL_NAME"
@@ -443,30 +447,227 @@ if ($capacityResult.value) {
     
     Write-Output "✓ Deployment capacity validated: $DEPLOY_CAPACITY $unit"
   } else {
-    Write-Output "⚠ Unable to determine capacity for $SELECTED_SKU"
+    # No capacity for selected SKU in current region — try cross-region fallback
+    Write-Output "⚠ No capacity for $SELECTED_SKU in current region ($PROJECT_REGION)"
     Write-Output ""
-    Write-Output "Cannot proceed without capacity information."
-    Write-Output "Please check:"
-    Write-Output "  • Azure CLI authentication (az account show)"
-    Write-Output "  • Permissions to query model capacities"
-    Write-Output "  • Network connectivity"
+    Write-Output "Searching all regions for available capacity..."
     Write-Output ""
-    Write-Output "Alternatively, check quota in Azure Portal:"
-    Write-Output "  https://portal.azure.com → Quotas → Cognitive Services"
-    exit 1
+
+    # Query capacity across ALL regions (remove location filter)
+    $allRegionsUrl = "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/providers/Microsoft.CognitiveServices/modelCapacities?api-version=2024-10-01&modelFormat=OpenAI&modelName=$MODEL_NAME&modelVersion=$MODEL_VERSION"
+    $allRegionsResult = az rest --method GET --url "$allRegionsUrl" 2>$null | ConvertFrom-Json
+
+    if ($allRegionsResult.value) {
+      $availableRegions = $allRegionsResult.value | Where-Object {
+        $_.properties.skuName -eq $SELECTED_SKU -and $_.properties.availableCapacity -gt 0
+      } | Sort-Object { $_.properties.availableCapacity } -Descending
+
+      if ($availableRegions -and $availableRegions.Count -gt 0) {
+        Write-Output "Available regions with $SELECTED_SKU capacity for $MODEL_NAME:"
+        Write-Output ""
+        for ($i = 0; $i -lt $availableRegions.Count; $i++) {
+          $r = $availableRegions[$i]
+          $cap = $r.properties.availableCapacity
+          if ($cap -ge 1000000) {
+            $capDisplay = "$([Math]::Round($cap / 1000000, 1))M TPM"
+          } elseif ($cap -ge 1000) {
+            $capDisplay = "$([Math]::Floor($cap / 1000))K TPM"
+          } else {
+            $capDisplay = "$cap TPM"
+          }
+          Write-Output "  $($i+1). $($r.location) - $capDisplay"
+        }
+        Write-Output ""
+
+        $regionChoice = Read-Host "Select region (1-$($availableRegions.Count))"
+        $selectedRegion = $availableRegions[[int]$regionChoice - 1]
+        $PROJECT_REGION = $selectedRegion.location
+        $availableCapacity = $selectedRegion.properties.availableCapacity
+
+        Write-Output ""
+        Write-Output "Selected region: $PROJECT_REGION (Available: $availableCapacity TPM)"
+        Write-Output ""
+
+        # Find existing projects in selected region
+        $projectsInRegion = az cognitiveservices account list `
+          --query "[?kind=='AIProject' && location=='$PROJECT_REGION'].{Name:name, ResourceGroup:resourceGroup}" `
+          -o json 2>$null | ConvertFrom-Json
+
+        if ($projectsInRegion -and $projectsInRegion.Count -gt 0) {
+          Write-Output "Projects in $PROJECT_REGION`:"
+          for ($p = 0; $p -lt $projectsInRegion.Count; $p++) {
+            Write-Output "  $($p+1). $($projectsInRegion[$p].Name) ($($projectsInRegion[$p].ResourceGroup))"
+          }
+          Write-Output "  $($projectsInRegion.Count+1). Create new project"
+          Write-Output ""
+          $projChoice = Read-Host "Select project (1-$($projectsInRegion.Count+1))"
+          if ([int]$projChoice -le $projectsInRegion.Count) {
+            $ACCOUNT_NAME = $projectsInRegion[[int]$projChoice - 1].Name
+            $RESOURCE_GROUP = $projectsInRegion[[int]$projChoice - 1].ResourceGroup
+          } else {
+            Write-Output "Please create a project in $PROJECT_REGION using the project/create skill, then re-run this deployment."
+            exit 1
+          }
+        } else {
+          Write-Output "No existing projects found in $PROJECT_REGION."
+          Write-Output "Please create a project in $PROJECT_REGION using the project/create skill, then re-run this deployment."
+          exit 1
+        }
+
+        Write-Output "✓ Switched to project: $ACCOUNT_NAME in $PROJECT_REGION"
+        Write-Output ""
+
+        # Re-run capacity configuration with the new region
+        # Set capacity defaults based on SKU
+        if ($SELECTED_SKU -eq "ProvisionedManaged") {
+          $minCapacity = 50
+          $maxCapacity = 1000
+          $stepCapacity = 50
+          $defaultCapacity = 100
+          $unit = "PTU"
+        } else {
+          $minCapacity = 1000
+          $maxCapacity = [Math]::Min($availableCapacity, 300000)
+          $stepCapacity = 1000
+          $defaultCapacity = [Math]::Min(10000, [Math]::Floor($availableCapacity / 2))
+          $unit = "TPM"
+        }
+
+        Write-Output "Capacity Configuration:"
+        Write-Output "  Available: $availableCapacity $unit"
+        Write-Output "  Recommended: $defaultCapacity $unit"
+        Write-Output ""
+
+        $capacityChoice = Read-Host "Enter capacity (default: $defaultCapacity)"
+        if ([string]::IsNullOrEmpty($capacityChoice)) {
+          $DEPLOY_CAPACITY = $defaultCapacity
+        } else {
+          $DEPLOY_CAPACITY = [int]$capacityChoice
+        }
+
+        Write-Output "✓ Deployment capacity validated: $DEPLOY_CAPACITY $unit"
+      } else {
+        Write-Output "❌ No regions have available capacity for $MODEL_NAME with $SELECTED_SKU SKU."
+        Write-Output ""
+        Write-Output "Next Steps:"
+        Write-Output "  1. Request quota increase: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
+        Write-Output "  2. Check existing deployments that may be consuming quota"
+        Write-Output "  3. Try a different model or SKU"
+        exit 1
+      }
+    } else {
+      Write-Output "❌ Unable to query capacity across regions."
+      Write-Output "Please verify Azure CLI authentication and permissions."
+      exit 1
+    }
   }
 } else {
-  Write-Output "⚠ Unable to query capacity API"
+  # Capacity API returned no data — try cross-region fallback
+  Write-Output "⚠ No capacity data for current region ($PROJECT_REGION)"
   Write-Output ""
-  Write-Output "Cannot proceed without capacity information."
-  Write-Output "Please verify:"
-  Write-Output "  • Azure CLI is authenticated: az account show"
-  Write-Output "  • You have permissions to query capacities"
-  Write-Output "  • API endpoint is accessible"
+  Write-Output "Searching all regions for available capacity..."
   Write-Output ""
-  Write-Output "Alternatively, check quota in Azure Portal:"
-  Write-Output "  https://portal.azure.com → Quotas → Cognitive Services"
-  exit 1
+
+  $allRegionsUrl = "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/providers/Microsoft.CognitiveServices/modelCapacities?api-version=2024-10-01&modelFormat=OpenAI&modelName=$MODEL_NAME&modelVersion=$MODEL_VERSION"
+  $allRegionsResult = az rest --method GET --url "$allRegionsUrl" 2>$null | ConvertFrom-Json
+
+  if ($allRegionsResult.value) {
+    $availableRegions = $allRegionsResult.value | Where-Object {
+      $_.properties.skuName -eq $SELECTED_SKU -and $_.properties.availableCapacity -gt 0
+    } | Sort-Object { $_.properties.availableCapacity } -Descending
+
+    if ($availableRegions -and $availableRegions.Count -gt 0) {
+      Write-Output "Available regions with $SELECTED_SKU capacity for $MODEL_NAME:"
+      Write-Output ""
+      for ($i = 0; $i -lt $availableRegions.Count; $i++) {
+        $r = $availableRegions[$i]
+        $cap = $r.properties.availableCapacity
+        if ($cap -ge 1000000) {
+          $capDisplay = "$([Math]::Round($cap / 1000000, 1))M TPM"
+        } elseif ($cap -ge 1000) {
+          $capDisplay = "$([Math]::Floor($cap / 1000))K TPM"
+        } else {
+          $capDisplay = "$cap TPM"
+        }
+        Write-Output "  $($i+1). $($r.location) - $capDisplay"
+      }
+      Write-Output ""
+
+      $regionChoice = Read-Host "Select region (1-$($availableRegions.Count))"
+      $selectedRegion = $availableRegions[[int]$regionChoice - 1]
+      $PROJECT_REGION = $selectedRegion.location
+      $availableCapacity = $selectedRegion.properties.availableCapacity
+
+      Write-Output ""
+      Write-Output "Selected region: $PROJECT_REGION (Available: $availableCapacity TPM)"
+      Write-Output ""
+
+      # Find existing projects in selected region
+      $projectsInRegion = az cognitiveservices account list `
+        --query "[?kind=='AIProject' && location=='$PROJECT_REGION'].{Name:name, ResourceGroup:resourceGroup}" `
+        -o json 2>$null | ConvertFrom-Json
+
+      if ($projectsInRegion -and $projectsInRegion.Count -gt 0) {
+        Write-Output "Projects in $PROJECT_REGION`:"
+        for ($p = 0; $p -lt $projectsInRegion.Count; $p++) {
+          Write-Output "  $($p+1). $($projectsInRegion[$p].Name) ($($projectsInRegion[$p].ResourceGroup))"
+        }
+        Write-Output "  $($projectsInRegion.Count+1). Create new project"
+        Write-Output ""
+        $projChoice = Read-Host "Select project (1-$($projectsInRegion.Count+1))"
+        if ([int]$projChoice -le $projectsInRegion.Count) {
+          $ACCOUNT_NAME = $projectsInRegion[[int]$projChoice - 1].Name
+          $RESOURCE_GROUP = $projectsInRegion[[int]$projChoice - 1].ResourceGroup
+        } else {
+          Write-Output "Please create a project in $PROJECT_REGION using the project/create skill, then re-run this deployment."
+          exit 1
+        }
+      } else {
+        Write-Output "No existing projects found in $PROJECT_REGION."
+        Write-Output "Please create a project in $PROJECT_REGION using the project/create skill, then re-run this deployment."
+        exit 1
+      }
+
+      Write-Output "✓ Switched to project: $ACCOUNT_NAME in $PROJECT_REGION"
+      Write-Output ""
+
+      if ($SELECTED_SKU -eq "ProvisionedManaged") {
+        $minCapacity = 50; $maxCapacity = 1000; $stepCapacity = 50; $defaultCapacity = 100; $unit = "PTU"
+      } else {
+        $minCapacity = 1000
+        $maxCapacity = [Math]::Min($availableCapacity, 300000)
+        $stepCapacity = 1000
+        $defaultCapacity = [Math]::Min(10000, [Math]::Floor($availableCapacity / 2))
+        $unit = "TPM"
+      }
+
+      Write-Output "Capacity Configuration:"
+      Write-Output "  Available: $availableCapacity $unit"
+      Write-Output "  Recommended: $defaultCapacity $unit"
+      Write-Output ""
+
+      $capacityChoice = Read-Host "Enter capacity (default: $defaultCapacity)"
+      if ([string]::IsNullOrEmpty($capacityChoice)) {
+        $DEPLOY_CAPACITY = $defaultCapacity
+      } else {
+        $DEPLOY_CAPACITY = [int]$capacityChoice
+      }
+
+      Write-Output "✓ Deployment capacity validated: $DEPLOY_CAPACITY $unit"
+    } else {
+      Write-Output "❌ No regions have available capacity for $MODEL_NAME with $SELECTED_SKU SKU."
+      Write-Output ""
+      Write-Output "Next Steps:"
+      Write-Output "  1. Request quota increase: https://portal.azure.com/#view/Microsoft_Azure_Capacity/QuotaMenuBlade"
+      Write-Output "  2. Check existing deployments that may be consuming quota"
+      Write-Output "  3. Try a different model or SKU"
+      exit 1
+    }
+  } else {
+    Write-Output "❌ Unable to query capacity across regions."
+    Write-Output "Please verify Azure CLI authentication and permissions."
+    exit 1
+  }
 }
 ```
 
@@ -1025,8 +1226,8 @@ Use the PTU calculator based on:
 |-------|-------|------------|
 | **Model not found** | Invalid model name | List available models with `az cognitiveservices account list-models` |
 | **Version not available** | Version not supported for SKU | Select different version or SKU |
-| **Insufficient quota** | Requested capacity > available quota | **PREVENTED at input**: Skill validates capacity against quota before deployment. If you see this error, the quota query failed or quota changed between validation and deployment. |
-| **SKU not supported** | SKU not available in region | Select different SKU or region |
+| **Insufficient quota** | Requested capacity > available quota in current region | Skill automatically searches all regions for available capacity. User selects alternate region and project. Only fails if no region has quota. |
+| **SKU not supported** | SKU not available in region | Skill searches other regions where the SKU is available via cross-region fallback |
 | **Capacity out of range** | Invalid capacity value | **PREVENTED at input**: Skill validates min/max/step at capacity input phase (Phase 7) |
 | **Deployment name exists** | Name conflict | Use different name (auto-incremented) |
 | **Authentication failed** | Not logged in | Run `az login` |
