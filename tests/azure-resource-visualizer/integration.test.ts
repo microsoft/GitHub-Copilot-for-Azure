@@ -44,7 +44,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
             shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
           });
@@ -72,7 +72,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Visualize how my Azure resources are connected and show their relationships",
             shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
           });
@@ -102,7 +102,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   describe("resource-group-visualization", () => {
     test("generates architecture diagram for a resource group", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -114,7 +114,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, visualizerTestTimeoutMs);
 
     test("visualizes resource connections and relationships", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Visualize how my Azure resources are connected and show their relationships",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
