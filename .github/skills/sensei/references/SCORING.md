@@ -218,9 +218,9 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 6. `azure-storage`
 7. `azure-ai`
 8. `azure-validation`
-10. `azure-nodejs-production`
-11. `entra-app-registration`
-12. `azure-role-selector`
+9. `azure-nodejs-production`
+10. `entra-app-registration`
+11. `azure-role-selector`
 
 ### Medium-Adherence Skills
 
