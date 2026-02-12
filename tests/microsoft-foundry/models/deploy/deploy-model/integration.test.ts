@@ -11,7 +11,7 @@
 
 import * as fs from "fs";
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -31,15 +31,13 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration("deploy-model - Integration Tests", () => {
-  const agent = useAgentRunner();
-
   describe("skill-invocation", () => {
     test("invokes skill for simple model deployment prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Deploy gpt-4o model to my Azure project"
           });
 
@@ -66,7 +64,7 @@ describeIntegration("deploy-model - Integration Tests", () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Where can I deploy gpt-4o? Check capacity across regions"
           });
 
@@ -93,7 +91,7 @@ describeIntegration("deploy-model - Integration Tests", () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Deploy gpt-4o with custom SKU and capacity settings"
           });
 

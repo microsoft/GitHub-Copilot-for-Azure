@@ -14,7 +14,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { 
-  useAgentRunner, 
+  run, 
   isSkillInvoked, 
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
@@ -28,11 +28,10 @@ const SKILL_NAME = "your-skill-name";
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  const agent = useAgentRunner();
-
+  
   // Example test: Verify the skill is invoked for a relevant prompt
   test("invokes skill for relevant prompt", async () => {
-    const agentMetadata = await agent.run({
+    const agentMetadata = await run({
       prompt: "Your test prompt that should trigger this skill"
     });
 
@@ -42,7 +41,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Example test: Verify expected content in response
   test("response contains expected keywords", async () => {
-    const agentMetadata = await agent.run({
+    const agentMetadata = await run({
       prompt: "Your test prompt here"
     });
 
@@ -55,7 +54,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Example test: Verify MCP tool calls succeed
   test("MCP tool calls are successful", async () => {
-    const agentMetadata = await agent.run({
+    const agentMetadata = await run({
       prompt: "Your test prompt that uses Azure tools"
     });
 
@@ -66,7 +65,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   // Example test with workspace setup
   test("works with project files", async () => {
-    const agentMetadata = await agent.run({
+    const agentMetadata = await run({
       setup: async (workspace: string) => {
         // Create any files needed in the workspace
         fs.writeFileSync(

@@ -2,23 +2,19 @@
  * Integration Tests for azure-resource-visualizer
  * 
  * Tests skill behavior with a real Copilot agent session.
- * Runs prompts multiple times to measure skill invocation rate,
- * and end-to-end workflows with nonInteractive mode and follow-up prompts.
+ * Runs prompts multiple times to measure skill invocation rate.
  * 
  * Prerequisites:
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
- * 3. az login (for Azure resource access)
  */
 
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
-  getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import type { AgentMetadata } from "../utils/agent-runner";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-resource-visualizer";
@@ -35,34 +31,16 @@ if (skipTests && skipReason) {
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;
-const visualizerTestTimeoutMs = 1800000;
-
-/**
- * Check if a file-creation tool call produced an architecture markdown file
- * containing a Mermaid diagram (graph TB or graph LR).
- */
-function hasArchitectureDiagramFile(agentMetadata: AgentMetadata): boolean {
-  const fileToolCalls = getToolCalls(agentMetadata, "create");
-  return fileToolCalls.some(event => {
-    const args = JSON.stringify(event.data);
-    const hasArchitectureFile = /architecture.*\.md/i.test(args);
-    const hasMermaidDiagram = /graph\s+(TB|LR)/i.test(args);
-    return hasArchitectureFile && hasMermaidDiagram;
-  });
-}
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  const agent = useAgentRunner();
-
   describe("skill-invocation", () => {
     test("invokes azure-resource-visualizer skill for architecture diagram prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
-            prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+          const agentMetadata = await run({
+            prompt: "Generate a Mermaid diagram showing my Azure resource group architecture"
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -88,9 +66,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
-            prompt: "Visualize how my Azure resources are connected and show their relationships",
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+          const agentMetadata = await run({
+            prompt: "Visualize how my Azure resources are connected and show their relationships"
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -110,39 +87,5 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for resource relationships prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
-  });
-
-  // Need to be logged into az for these tests.
-  // az login
-  const FOLLOW_UP_PROMPT = ["Go with recommended options."];
-
-  describe("resource-group-visualization", () => {
-    test("generates architecture diagram for a resource group", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasDiagramFile = hasArchitectureDiagramFile(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(hasDiagramFile).toBe(true);
-    }, visualizerTestTimeoutMs);
-
-    test("visualizes resource connections and relationships", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Visualize how my Azure resources are connected and show their relationships",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasDiagramFile = hasArchitectureDiagramFile(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(hasDiagramFile).toBe(true);
-    }, visualizerTestTimeoutMs);
   });
 });

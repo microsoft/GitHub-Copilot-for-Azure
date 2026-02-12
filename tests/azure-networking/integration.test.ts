@@ -10,7 +10,7 @@
  */
 
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,14 +33,13 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes azure-networking skill for private endpoint prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "How do I set up a private endpoint for my Azure Storage account?"
           });
 
@@ -67,7 +66,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Design a hub-spoke network topology for my Azure Virtual Networks"
           });
 

@@ -42,16 +42,6 @@ export interface KeywordOptions {
   caseSensitive?: boolean;
 }
 
-/** Tracks resources that need cleanup after each test */
-interface RunnerCleanup {
-  session?: CopilotSession;
-  client?: CopilotClient;
-  workspace?: string;
-  preserveWorkspace?: boolean;
-  config?: TestConfig;
-  agentMetadata?: AgentMetadata;
-}
-
 /**
  * Generate a markdown report from agent metadata
  */
@@ -232,6 +222,10 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
  * Write markdown report to file
  */
 function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): void {
+  if (!isTest()) {
+    return;
+  }
+
   try {
     const filePath = buildShareFilePath();
     const dir = path.dirname(filePath);
@@ -256,160 +250,132 @@ function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): 
 }
 
 /**
- * Sets up the agent runner with proper per-test cleanup via afterEach.
- * Call once inside each describe() block. Each describe() gets its own
- * isolated cleanup scope via closure, so parallel file execution is safe.
- *
- * Usage:
- *   describe("my suite", () => {
- *     const agent = useAgentRunner();
- *     it("test", async () => {
- *       const metadata = await agent.run({ prompt: "..." });
- *     });
- *   });
+ * Run an agent session with the given configuration
  */
-export function useAgentRunner() {
-  let currentCleanups: RunnerCleanup[] = [];
+export async function run(config: TestConfig): Promise<AgentMetadata> {
+  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+  const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
 
-  async function cleanup(): Promise<void> {
-    for (const entry of currentCleanups) {
-      try {
-        if (entry.session) {
-          await entry.session.destroy();
-        }
-      } catch { /* ignore */ }
-      try {
-        if (entry.client) {
-          await entry.client.stop();
-        }
-      } catch { /* ignore */ }
-      try {
-        if (entry.workspace && !entry.preserveWorkspace) {
-          fs.rmSync(entry.workspace, { recursive: true, force: true });
-        }
-      } catch { /* ignore */ }
+  // Declare client and session outside try block to ensure cleanup in finally
+  let client: CopilotClient | undefined;
+  let session: CopilotSession | undefined;
+  // Flag to prevent processing events after completion
+  let isComplete = false;
+
+  try {
+    // Run optional setup
+    if (config.setup) {
+      await config.setup(testWorkspace);
     }
-    currentCleanups = [];
-  }
 
-  async function createMarkdownReport(): Promise<void> {
-    for (const entry of currentCleanups) {
-      try {
-        if (isTest() && entry.config && entry.agentMetadata) {
-          writeMarkdownReport(entry.config, entry.agentMetadata);
-        }
-      } catch { /* ignore */ }
+    // Copilot client with yolo mode
+    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
+    if (process.env.DEBUG && isTest()) {
+      cliArgs.push("--log-dir");
+      cliArgs.push(buildLogFilePath());
     }
-  }
 
-  if (isTest()) {
-    // Guarantees cleanup even if it times out in a test.
-    // No harm in running twice if the test also calls cleanup.
-    afterEach(async () => {
-      await createMarkdownReport();
-      await cleanup();
+    client = new CopilotClient({
+      logLevel: process.env.DEBUG ? "all" : "error",
+      cwd: testWorkspace,
+      cliArgs: cliArgs,
+    }) as CopilotClient;
+
+    const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
+
+    session = await client.createSession({
+      model: "claude-sonnet-4.5",
+      skillDirectories: [skillDirectory],
+      mcpServers: {
+        azure: {
+          type: "stdio",
+          command: "npx",
+          args: ["-y", "@azure/mcp", "server", "start"],
+          tools: ["*"]
+        }
+      },
+      systemMessage: config.systemPrompt
     });
-  }
 
-  async function run(config: TestConfig): Promise<AgentMetadata> {
-    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
-    const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
+    const agentMetadata: AgentMetadata = { events: [] };
 
-    let isComplete = false;
+    const done = new Promise<void>((resolve) => {
+      session!.on(async (event: SessionEvent) => {
+        // Stop processing events if already complete
+        if (isComplete) {
+          return;
+        }
 
-    const entry: RunnerCleanup = { config };
-    currentCleanups.push(entry);
-    entry.workspace = testWorkspace;
-    entry.preserveWorkspace = config.preserveWorkspace;
+        if (process.env.DEBUG) {
+          console.log(`=== session event ${event.type}`);
+        }
 
+        if (event.type === "session.idle") {
+          isComplete = true;
+          resolve();
+          return;
+        }
+
+        // Capture all events
+        agentMetadata.events.push(event);
+
+        // Check for early termination
+        if (config.shouldEarlyTerminate) {
+          if (config.shouldEarlyTerminate(agentMetadata)) {
+            isComplete = true;
+            resolve();
+            void session!.abort();
+            return;
+          }
+        }
+      });
+    });
+
+    await session.send({ prompt: config.prompt });
+    await done;
+
+    // Send follow-up prompts
+    for (const followUpPrompt of config.followUp ?? []) {
+      isComplete = false;
+      await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+    }
+    
+    // Generate markdown report
+    writeMarkdownReport(config, agentMetadata);
+
+    return agentMetadata;
+  } catch (error) {
+    // Mark as complete to stop event processing
+    isComplete = true;
+    console.error("Agent runner error:", error);
+    throw error;
+  } finally {
+    // Mark as complete before starting cleanup to prevent post-completion event processing
+    isComplete = true;
+    // Cleanup session and client (guarded if undefined)
     try {
-      // Run optional setup
-      if (config.setup) {
-        await config.setup(testWorkspace);
+      if (session) {
+        await session.destroy();
       }
-
-      // Copilot client with yolo mode
-      const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
-      if (process.env.DEBUG && isTest()) {
-        cliArgs.push("--log-dir");
-        cliArgs.push(buildLogFilePath());
+    } catch {
+      // Ignore session cleanup errors
+    }
+    try {
+      if (client) {
+        await client.stop();
       }
-
-      const client = new CopilotClient({
-        logLevel: process.env.DEBUG ? "all" : "error",
-        cwd: testWorkspace,
-        cliArgs: cliArgs,
-      }) as CopilotClient;
-      entry.client = client;
-
-      const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
-
-      const session = await client.createSession({
-        model: "claude-sonnet-4.5",
-        skillDirectories: [skillDirectory],
-        mcpServers: {
-          azure: {
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "@azure/mcp", "server", "start"],
-            tools: ["*"]
-          }
-        },
-        systemMessage: config.systemPrompt
-      });
-      entry.session = session;
-
-      const agentMetadata: AgentMetadata = { events: [] };
-      entry.agentMetadata = agentMetadata;
-
-      const done = new Promise<void>((resolve) => {
-        session.on(async (event: SessionEvent) => {
-          if (isComplete) return;
-
-          if (process.env.DEBUG) {
-            console.log(`=== session event ${event.type}`);
-          }
-
-          if (event.type === "session.idle") {
-            isComplete = true;
-            resolve();
-            return;
-          }
-
-          agentMetadata.events.push(event);
-
-          if (config.shouldEarlyTerminate?.(agentMetadata)) {
-            isComplete = true;
-            resolve();
-            void session.abort();
-            return;
-          }
-        });
-      });
-
-      await session.send({ prompt: config.prompt });
-      await done;
-
-      // Send follow-up prompts
-      for (const followUpPrompt of config.followUp ?? []) {
-        isComplete = false;
-        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+    } catch {
+      // Ignore client cleanup errors
+    }
+    // Cleanup workspace
+    try {
+      if (!config.preserveWorkspace) {
+        fs.rmSync(testWorkspace, { recursive: true, force: true });
       }
-
-      return agentMetadata;
-    } catch (error) {
-      // Mark as complete to stop event processing
-      isComplete = true;
-      console.error("Agent runner error:", error);
-      throw error;
-    } finally {
-      if (!isTest()) {
-        await cleanup();
-      }
+    } catch {
+      // Ignore cleanup errors
     }
   }
-
-  return { run };
 }
 
 /**
@@ -533,9 +499,22 @@ export function getIntegrationSkipReason(): string | undefined {
 }
 
 /**
+ * Common Azure deployment link patterns
+ * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
+ */
+const DEPLOY_LINK_PATTERNS = [
+  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
+  // Azure Static Web Apps URLs
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
+  // Azure Container Apps URLs
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
+];
+
+/**
  * Get all assistant messages from agent metadata
  */
-export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
+function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
@@ -554,7 +533,14 @@ export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   return Object.values(allMessages).join("\n");
 }
 
+/**
+ * Check if the agent response contains any Azure deployment links
+ */
+export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
+  const content = getAllAssistantMessages(agentMetadata);
 
+  return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
+}
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");

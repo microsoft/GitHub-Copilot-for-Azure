@@ -10,7 +10,7 @@
  */
 
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,15 +33,13 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  const agent = useAgentRunner();
-
   describe("skill-invocation", () => {
     test("invokes azure-validate skill for deployment readiness check", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Check if my app is ready to deploy to Azure"
           });
 
@@ -68,7 +66,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Validate my azure.yaml configuration before deploying"
           });
 
@@ -96,7 +94,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Validate my Bicep template before deploying to Azure"
           });
 
@@ -123,7 +121,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
           });
 

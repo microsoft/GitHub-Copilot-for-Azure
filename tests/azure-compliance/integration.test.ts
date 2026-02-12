@@ -10,7 +10,7 @@
  */
 
 import {
-  useAgentRunner,
+  run,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,15 +33,13 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
-  const agent = useAgentRunner();
-
   describe("skill-invocation", () => {
     test("invokes azure-compliance skill for comprehensive compliance assessment prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Run azqr to check my Azure subscription for compliance against best practices"
           });
 
@@ -68,7 +66,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Show me expired certificates and secrets in my Azure Key Vault"
           });
 
@@ -95,7 +93,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Run a full compliance audit on my Azure environment including resource best practices and Key Vault expiration checks"
           });
 
@@ -122,7 +120,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
+          const agentMetadata = await run({
             prompt: "Check my Azure subscription for orphaned resources and compliance issues"
           });
 
