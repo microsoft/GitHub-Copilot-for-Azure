@@ -11,7 +11,7 @@
 
 import * as fs from "fs";
 import {
-  run,
+  useAgentRunner,
   AgentMetadata,
   isSkillInvoked,
   getToolCalls,
@@ -38,13 +38,15 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration("agent-framework - Integration Tests", () => {
+  const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes skill for agent creation prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Create a foundry agent using Microsoft Agent Framework SDK in Python.",
             shouldEarlyTerminate: terminateOnCreate,
           });
@@ -72,7 +74,7 @@ describeIntegration("agent-framework - Integration Tests", () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Create multi-agent workflow as foundry agent in Python with orchestration using Agent Framework.",
             shouldEarlyTerminate: terminateOnCreate,
           });

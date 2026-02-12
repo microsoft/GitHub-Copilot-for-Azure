@@ -100,7 +100,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Grant a user the Azure AI User role on my Foundry project"
           });
 
@@ -127,7 +127,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Create a service principal for my Foundry CI/CD pipeline"
           });
 
@@ -154,7 +154,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Set up managed identity roles for my Foundry project to access Azure Storage"
           });
 
@@ -181,7 +181,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Who has access to my Foundry project? List all role assignments"
           });
 
@@ -208,7 +208,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Make Bob a project manager in my Azure AI Foundry"
           });
 
@@ -235,7 +235,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Can I deploy models to my Foundry project? Check my permissions"
           });
 
