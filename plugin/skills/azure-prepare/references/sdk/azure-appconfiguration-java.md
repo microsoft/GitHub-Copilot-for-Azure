@@ -11,6 +11,10 @@
     <artifactId>azure-data-appconfiguration</artifactId>
     <version>1.8.0</version>
 </dependency>
+<dependency>
+    <groupId>com.azure</groupId>
+    <artifactId>azure-identity</artifactId>
+</dependency>
 ```
 
 ## Quick Start

@@ -7,12 +7,14 @@
 ## Install
 ```xml
 <dependency><groupId>com.azure</groupId><artifactId>azure-monitor-ingestion</artifactId></dependency>
+<dependency><groupId>com.azure</groupId><artifactId>azure-identity</artifactId></dependency>
 ```
 
 ## Quick Start
 ```java
 import com.azure.monitor.ingestion.LogsIngestionClient;
 import com.azure.monitor.ingestion.LogsIngestionClientBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 LogsIngestionClient client = new LogsIngestionClientBuilder()
     .endpoint("<data-collection-endpoint>")
     .credential(new DefaultAzureCredentialBuilder().build()).buildClient();

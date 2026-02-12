@@ -26,6 +26,9 @@ service_client = DataLakeServiceClient("https://<account>.dfs.core.windows.net",
 ## Non-Obvious Patterns
 ```python
 # Large file upload requires append + flush
-file_client.append_data(data=chunk, offset=0, length=len(chunk))
-file_client.flush_data(total_length)
+offset = 0
+for chunk in chunks:
+	file_client.append_data(data=chunk, offset=offset, length=len(chunk))
+	offset += len(chunk)
+file_client.flush_data(offset)
 ```

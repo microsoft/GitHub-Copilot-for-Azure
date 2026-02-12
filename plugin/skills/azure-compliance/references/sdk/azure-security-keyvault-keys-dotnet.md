@@ -5,7 +5,8 @@
 > in the **azure-security-keyvault-keys-dotnet** plugin skill if installed.
 
 ## Install
-dotnet add package Azure.Security.KeyVault.Keys Azure.Identity
+dotnet add package Azure.Security.KeyVault.Keys
+dotnet add package Azure.Identity
 
 ## Quick Start
 ```csharp

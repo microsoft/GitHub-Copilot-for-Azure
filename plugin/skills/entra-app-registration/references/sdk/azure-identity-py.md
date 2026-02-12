@@ -5,11 +5,15 @@
 > in the **azure-identity-py** plugin skill if installed.
 
 ## Install
+```bash
 pip install azure-identity
+```
 
 ## Quick Start
+```python
 from azure.identity import DefaultAzureCredential
 credential = DefaultAzureCredential()
+```
 
 ## Best Practices
 - Use DefaultAzureCredential for code that runs locally and in Azure

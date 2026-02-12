@@ -10,6 +10,7 @@ pip install azure-ai-transcription
 
 ## Quick Start
 ```python
+import os
 from azure.ai.transcription import TranscriptionClient
 client = TranscriptionClient(endpoint=os.environ["TRANSCRIPTION_ENDPOINT"],
     credential=os.environ["TRANSCRIPTION_KEY"])

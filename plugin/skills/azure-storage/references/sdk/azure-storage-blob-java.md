@@ -11,6 +11,10 @@
     <artifactId>azure-storage-blob</artifactId>
     <version>12.33.0</version>
 </dependency>
+<dependency>
+    <groupId>com.azure</groupId>
+    <artifactId>azure-identity</artifactId>
+</dependency>
 ```
 
 ## Quick Start

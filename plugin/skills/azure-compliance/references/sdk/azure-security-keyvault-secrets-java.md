@@ -11,6 +11,10 @@
     <artifactId>azure-security-keyvault-secrets</artifactId>
     <version>4.9.0</version>
 </dependency>
+<dependency>
+    <groupId>com.azure</groupId>
+    <artifactId>azure-identity</artifactId>
+</dependency>
 ```
 
 ## Quick Start

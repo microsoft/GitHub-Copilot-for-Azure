@@ -7,12 +7,14 @@
 ## Install
 ```xml
 <dependency><groupId>com.azure</groupId><artifactId>azure-monitor-query</artifactId></dependency>
+<dependency><groupId>com.azure</groupId><artifactId>azure-identity</artifactId></dependency>
 ```
 
 ## Quick Start
 ```java
 import com.azure.monitor.query.LogsQueryClient;
 import com.azure.monitor.query.LogsQueryClientBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 LogsQueryClient client = new LogsQueryClientBuilder()
     .credential(new DefaultAzureCredentialBuilder().build()).buildClient();
 ```

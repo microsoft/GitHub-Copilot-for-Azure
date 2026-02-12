@@ -6,11 +6,13 @@
 
 ## Install
 dotnet add package Azure.ResourceManager.ApplicationInsights
+dotnet add package Azure.Identity
 
 ## Quick Start
 ```csharp
 using Azure.ResourceManager;
 using Azure.ResourceManager.ApplicationInsights;
+using Azure.Identity;
 ArmClient client = new ArmClient(new DefaultAzureCredential());
 var components = resourceGroup.GetApplicationInsightsComponents();
 ```

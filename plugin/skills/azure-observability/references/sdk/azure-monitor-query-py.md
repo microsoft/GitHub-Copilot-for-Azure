@@ -5,7 +5,7 @@
 > in the **azure-monitor-query-py** plugin skill if installed.
 
 ## Install
-pip install azure-monitor-query
+pip install azure-monitor-query azure-identity
 
 ## Quick Start
 ```python

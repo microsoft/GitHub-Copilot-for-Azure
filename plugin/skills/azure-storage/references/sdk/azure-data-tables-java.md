@@ -11,6 +11,10 @@
     <artifactId>azure-data-tables</artifactId>
     <version>12.6.0-beta.1</version>
 </dependency>
+<dependency>
+    <groupId>com.azure</groupId>
+    <artifactId>azure-identity</artifactId>
+</dependency>
 ```
 
 ## Quick Start
