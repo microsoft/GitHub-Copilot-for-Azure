@@ -15,10 +15,6 @@
     "playwright": {
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
-    },
-    "microsoft-learn": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://learn.microsoft.com/api/mcp"]
     }
   }
 }

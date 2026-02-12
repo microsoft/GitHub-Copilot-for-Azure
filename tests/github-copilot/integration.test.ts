@@ -10,7 +10,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
@@ -28,8 +28,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
+
   test("invokes skill for canonical demo prompt", async () => {
-    const agentMetadata = await run({
+    const agentMetadata = await agent.run({
       prompt: "Build a repo quality rater with the Copilot SDK — analyze code and give a 5-star rating.",
     });
 
@@ -37,7 +39,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   test("response mentions SDK or extension patterns", async () => {
-    const agentMetadata = await run({
+    const agentMetadata = await agent.run({
       prompt: "Create a Copilot Extension that summarizes issues",
     });
 

@@ -48,7 +48,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("documents SDK scaffold workflow", () => {
       expect(skill.content).toContain("@github/copilot-sdk");
-      expect(skill.content).toContain("Copilot SDK Agent reference");
+      expect(skill.content).toContain("SDK reference");
     });
 
     test("documents Extensions scaffold workflow", () => {
