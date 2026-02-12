@@ -85,19 +85,20 @@ Run sensei on all skills
 
 ## The Ralph Loop
 
-For each skill, execute this loop until score >= Medium-High AND tests pass:
+For each skill, execute this loop until score >= Medium-High AND tests pass AND references valid:
 
 1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md`, tests, and token count
 2. **SCORE** - Run rule-based compliance check (see [SCORING.md](references/SCORING.md))
-3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
+3. **CHECK** - If score >= Medium-High AND tests pass AND references valid → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
-8. **TOKENS** - Check token budget, gather optimization suggestions
-9. **SUMMARY** - Display before/after comparison with unimplemented suggestions
-10. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
-11. **REPEAT** - Go to step 2 (max 5 iterations per skill)
+8. **REFERENCES** - Run `cd scripts && npm run references {skill-name}` to validate markdown links
+9. **TOKENS** - Check token budget, gather optimization suggestions
+10. **SUMMARY** - Display before/after comparison with unimplemented suggestions
+11. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
+12. **REPEAT** - Go to step 2 (max 5 iterations per skill)
 
 ## Scoring Criteria (Quick Reference)
 

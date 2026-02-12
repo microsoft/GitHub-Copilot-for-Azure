@@ -32,6 +32,7 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
          ┌──────────────────┐                   │
          │  Score >= M-H?   │──NO───┐           │
          │  Tests pass?     │       │           │
+         │  Refs valid?     │       │           │
          └────────┬─────────┘       │           │
                   │ YES             │           │
                   ▼                 ▼           │
@@ -79,6 +80,12 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
                            ┌──────────────────┐ │
                            │   5b. VERIFY     │ │
                            │   Run tests      │ │
+                           └────────┬─────────┘ │
+                                    │           │
+                                    ▼           │
+                           ┌──────────────────┐ │
+                           │  5c. REFERENCES  │ │
+                           │  Validate links  │ │
                            └────────┬─────────┘ │
                                     │           │
                                     ▼           │
@@ -220,6 +227,38 @@ This runs only unit and trigger tests, which are fast and don't require the Copi
 - Adjust frontmatter or test prompts
 - Re-run (counts as sub-iteration)
 
+### Step 5c: REFERENCES
+
+**Action:** Validate markdown links in skill files
+
+**Command:**
+```bash
+cd scripts && npm run references {skill-name}
+```
+
+**What it checks:**
+1. Every local markdown link points to an actual file or directory
+2. All links resolve within the skill's own directory (prevents escaping to parent/sibling skills)
+
+**Expected outcome:**
+- All links are valid and properly contained
+- No broken references
+- No links escaping skill boundaries
+
+**If validation fails:**
+- Review the reported issues
+- Fix broken links or update paths
+- Ensure cross-skill references are intentional (usually an error)
+- Re-run validation
+
+**Common issues:**
+- Broken links to moved/deleted files
+- Incorrect relative paths
+- Links that escape to parent directories (`../`)
+- Links to sibling skills (should use skill boundaries)
+
+> 💡 **Tip:** This check is also enforced in the PR pipeline, so catching issues early in the sensei loop prevents PR failures.
+
 ### Step 6: CHECK TOKENS
 
 **Action:** Analyze token usage and gather optimization suggestions
@@ -258,6 +297,7 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 ║  Tokens: 623                     Tokens: 589                     ║
 ║  Triggers: 0                     Triggers: 5                     ║
 ║  Anti-triggers: 0                Anti-triggers: 3                ║
+║  References: ✅ Valid             References: ✅ Valid             ║
 ║                                                                  ║
 ║  SUGGESTIONS NOT IMPLEMENTED:                                    ║
 ║  • Remove emoji decorations (-12 tokens)                         ║
@@ -271,6 +311,7 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 - Token delta (+/- tokens)
 - Trigger count change
 - Anti-trigger count change
+- Reference validation status (Valid/Invalid)
 - Unimplemented token suggestions
 
 ### Step 8: PROMPT USER
