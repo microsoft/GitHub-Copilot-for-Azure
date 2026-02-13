@@ -355,7 +355,6 @@ tests/
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost-estimation | ❌ | - | - | - | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
