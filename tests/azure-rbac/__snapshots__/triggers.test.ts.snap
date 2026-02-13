@@ -1,23 +1,21 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`azure-role-selector - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`azure-rbac - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Helps users find the right Azure RBAC role for an identity with least privilege access, then generate CLI commands and Bicep code to assign it.
 USE FOR: "what role should I assign", "least privilege role", "RBAC role for", "role to read blobs", "role for managed identity", "custom role definition", "assign role to identity".
-DO NOT USE FOR: creating managed identities (use azure-security), general security hardening (use azure-security-hardening), networking permissions (use azure-networking).
+DO NOT USE FOR: creating or configuring managed identities, or general Azure security hardening; those are out of scope for this role-selection skill.
 ",
   "extractedKeywords": [
     "access",
     "assign",
     "azure",
-    "azure-networking",
-    "azure-security",
-    "azure-security-hardening",
     "bicep",
     "blobs",
     "cli",
     "code",
     "commands",
+    "configuring",
     "creating",
     "custom",
     "definition",
@@ -30,38 +28,38 @@ DO NOT USE FOR: creating managed identities (use azure-security), general securi
     "identity",
     "least",
     "managed",
-    "networking",
-    "permissions",
     "privilege",
     "rbac",
     "read",
     "right",
     "role",
+    "role-selection",
+    "scope",
     "security",
-    "selector",
     "should",
+    "skill",
     "then",
+    "this",
+    "those",
     "users",
     "what",
     "with",
   ],
-  "name": "azure-role-selector",
+  "name": "azure-rbac",
 }
 `;
 
-exports[`azure-role-selector - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`azure-rbac - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "access",
   "assign",
   "azure",
-  "azure-networking",
-  "azure-security",
-  "azure-security-hardening",
   "bicep",
   "blobs",
   "cli",
   "code",
   "commands",
+  "configuring",
   "creating",
   "custom",
   "definition",
@@ -74,17 +72,19 @@ exports[`azure-role-selector - Trigger Tests Trigger Keywords Snapshot skill key
   "identity",
   "least",
   "managed",
-  "networking",
-  "permissions",
   "privilege",
   "rbac",
   "read",
   "right",
   "role",
+  "role-selection",
+  "scope",
   "security",
-  "selector",
   "should",
+  "skill",
   "then",
+  "this",
+  "those",
   "users",
   "what",
   "with",

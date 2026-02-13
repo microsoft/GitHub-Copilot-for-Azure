@@ -120,7 +120,7 @@ description: |
   security services are available", "explain managed identity", "RBAC basics", "Key Vault
   concepts", "Entra ID overview", "Defender for Cloud features". DO NOT USE FOR: hardening
   existing resources (use azure-security-hardening), Entra app registration setup (use
-  entra-app-registration), or role assignment guidance (use azure-role-selector).
+  entra-app-registration), or role assignment guidance (use azure-rbac).
 ---
 ```
 

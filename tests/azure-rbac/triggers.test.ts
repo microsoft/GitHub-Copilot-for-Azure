@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for azure-role-selector
+ * Trigger Tests for azure-rbac
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-role-selector";
+const SKILL_NAME = "azure-rbac";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;

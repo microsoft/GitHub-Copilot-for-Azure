@@ -226,7 +226,7 @@ import {
   getIntegrationSkipReason
 } from '../utils/agent-runner';
 
-const SKILL_NAME = 'azure-role-selector';
+const SKILL_NAME = 'azure-rbac';
 
 // Integration tests auto-skip if SDK unavailable or in CI
 const skipTests = shouldSkipIntegrationTests();

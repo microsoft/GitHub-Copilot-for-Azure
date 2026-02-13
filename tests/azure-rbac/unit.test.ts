@@ -1,12 +1,12 @@
 /**
- * Unit Tests for azure-role-selector
+ * Unit Tests for azure-rbac
  * 
  * Test isolated skill logic and validation rules.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-role-selector";
+const SKILL_NAME = "azure-rbac";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;

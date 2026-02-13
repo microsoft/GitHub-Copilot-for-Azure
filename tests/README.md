@@ -149,13 +149,13 @@ import { run, isSkillInvoked, doesAssistantMessageIncludeKeyword, shouldSkipInte
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration('azure-role-selector - Integration Tests', () => {
+describeIntegration('azure-rbac - Integration Tests', () => {
   test('invokes skill for relevant prompt', async () => {
     const agentMetadata = await run({
       prompt: 'What role should I assign for Azure Container Registry access?'
     });
 
-    expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
+    expect(isSkillInvoked(agentMetadata, 'azure-rbac')).toBe(true);
     expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
   });
 });
@@ -426,7 +426,7 @@ tests/
 | azure-prepare | ✅ | - | - | ✅ | - |
 | azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
 | azure-resource-visualizer | ✅ | - | - | ✅ | - |
-| azure-role-selector | ✅ | ✅ | ✅ | ✅ | - |
+| azure-rbac | ✅ | ✅ | ✅ | ✅ | - |
 | azure-security | ✅ | - | - | ✅ | - |
 | azure-security-hardening | ✅ | - | - | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
