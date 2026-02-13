@@ -14,7 +14,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, type TestConfig } from "../utils/agent-runner";
+import { useAgentRunner, type AgentRunConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,7 +128,7 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string): 
   console.log("    Generating report...");
 
   // Use agent runner to generate consolidated report for this subdirectory
-  const config: TestConfig = {
+  const config: AgentRunConfig = {
     prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
@@ -194,7 +194,7 @@ async function generateSkillReport(reportPaths: string[], runPath: string, runNa
   // Load the per-skill aggregated report template
   const aggregatedTemplate = fs.readFileSync(AGGREGATED_TEMPLATE_PATH, "utf-8");
 
-  const config: TestConfig = {
+  const config: AgentRunConfig = {
     prompt: `You are a per-skill test report generator. You will receive multiple individual test reports that all belong to the skill "${skill}", and you must combine them into one comprehensive per-skill summary.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
