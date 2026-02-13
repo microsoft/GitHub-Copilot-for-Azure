@@ -57,7 +57,7 @@ Register the new route with the existing server/app instance. Do NOT create a se
 
 > ⚠️ **Warning:** Do not duplicate server startup logic. Add the Copilot route to the existing app instance.
 
-## BYOK Support
+## BYOM Support
 
 If the user has their own model provider, pass provider config when creating a session. For Azure endpoints, use `DefaultAzureCredential` from `@azure/identity` to get a `bearerToken` — never use API keys.
 
