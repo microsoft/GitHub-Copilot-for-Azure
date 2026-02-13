@@ -279,6 +279,7 @@ function validateSkill(skillName: string): ValidationResult {
   }
 
   // Track visited files for orphan detection
+  // Using case-insensitive comparison for cross-platform compatibility (Windows)
   const visited = new Set<string>();
   const queue: string[] = [];
 
