@@ -379,9 +379,9 @@ function main(): void {
       const issueCount = result.issues.length + result.orphanedFiles.length;
       totalIssues += result.issues.length;
       totalOrphanedFiles += result.orphanedFiles.length;
-      
+
       console.log(`  ❌ ${skill} — ${issueCount} issue(s)`);
-      
+
       // Report link issues
       for (const issue of result.issues) {
         const loc = `${formatPath(issue.file)}:${issue.line}`;
@@ -389,7 +389,7 @@ function main(): void {
         console.log(`       Link: ${issue.link}`);
         console.log(`       ${issue.reason}`);
       }
-      
+
       // Report orphaned files
       for (const orphan of result.orphanedFiles) {
         console.log(`     ${formatPath(orphan.file)}`);
