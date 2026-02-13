@@ -25,13 +25,13 @@ Templates include infra, Dockerfiles, token scripts — do NOT recreate. See [SD
 
 ## Step 2B: Deploy Existing SDK App
 
-User brings code that already uses the Copilot SDK. Adapt it using template patterns.
+> **MANDATORY**: Read the template repo first to learn the required patterns, then adapt them to the user's project structure. Do NOT generate infra, scripts, or azure.yaml from scratch — but do NOT blindly copy either, since the user's project layout will differ.
 
-1. Read template infra via `github-mcp-server-get_file_contents` — see [deploy ref](references/deploy-existing.md)
-2. Add `scripts/get-github-token.mjs` (token injection script)
-3. Add `azure.yaml` with `preprovision` + `prerun` hooks calling the token script
-4. Add `infra/` with Bicep: Key Vault → stores `GITHUB_TOKEN`, Managed Identity → `Key Vault Secrets User`, Container App → `secretRef` from Key Vault
-5. Add `Dockerfile` if missing
+1. **Read the template first** — use `github-mcp-server-get_file_contents` to read `azure.yaml`, `infra/main.bicep`, `infra/resources.bicep`, `scripts/get-github-token.mjs`, and `Dockerfile` from the matching template repo (`jongio/copilot-sdk-service` or `jongio/copilot-sdk-agent`). See [deploy ref](references/deploy-existing.md).
+2. **`scripts/get-github-token.mjs`** — use the template version as-is (this script is generic)
+3. **`azure.yaml`** — follow the template's hook structure but adapt `project`, `language`, `ports`, and service layout to the user's app
+4. **`infra/`** — follow the template's Bicep patterns (AVM modules, Key Vault + token flow) but adapt resource names, SKUs, and app config to match what the user's app actually needs
+5. **`Dockerfile`** — if the user has none, learn from the template's Dockerfile but write one that fits the user's actual entry point, dependencies, and build steps
 
 ## Step 2C: Azure Model (BYOM)
 
