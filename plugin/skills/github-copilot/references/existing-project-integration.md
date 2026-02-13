@@ -1,6 +1,11 @@
-# Existing Project Integration
+# Integrating Copilot SDK into Existing Projects
 
-Add Copilot SDK agent capabilities to an existing application.
+Add Copilot SDK AI features to an existing application. Two integration scenarios:
+
+| Scenario | Use case | Key pattern |
+|----------|----------|-------------|
+| **Agent** | Interactive chat with tools, multi-turn sessions | Streaming endpoint, tool definitions |
+| **Service** | AI processing (summarize, classify), background scripts | `sendAndWait`, one-shot completions, no chat UI |
 
 ## Project Analysis
 
@@ -17,17 +22,17 @@ Also check for existing web frameworks, API routes, and middleware patterns.
 
 ## Study Template Patterns
 
-Use MCP tools to read the template's implementation for the detected language:
+Use MCP tools to read template implementations for the detected language:
 
-1. Call `github-mcp-server-get_file_contents` with `owner: "jongio"`, `repo: "copilot-sdk-agent"` to browse the template
-2. Read `AGENTS.md` first — it maps every source file to its purpose
-3. Focus on: session creation, tool definitions, API route handlers, middleware
+- **Agent template:** Call `github-mcp-server-get_file_contents` with `owner: "jongio"`, `repo: "copilot-sdk-agent"`. Focus on session creation, tool definitions, streaming handlers.
+- **Service template:** Call `github-mcp-server-get_file_contents` with `owner: "jongio"`, `repo: "copilot-sdk-service"`. Focus on `sendAndWait` calls, one-shot completions.
+- Read `AGENTS.md` first in each repo — it maps every source file to its purpose.
 
-Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) to get current SDK API examples.
+Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) for current SDK API examples. See [copilot-sdk.md](copilot-sdk.md) for full SDK reference.
 
 ## Integration Steps
 
-1. **Add SDK dependency** — install the package for the project's language:
+### 1. Add SDK dependency
 
 | Language | Package |
 |----------|---------|
@@ -35,15 +40,22 @@ Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) to 
 | Python | `github-copilot-sdk` |
 | Go / .NET | See SDK repo for equivalent |
 
-2. **Create agent endpoint** — add a route (e.g., `/api/agent` or `/api/chat`) that creates a Copilot session and handles streaming responses. Adapt to the app's existing routing pattern (Express router, FastAPI route, etc.)
+### 2. Create Copilot endpoint
 
-3. **Define tools** — create tool definitions exposing the app's domain logic to the agent. Each tool needs a name, description, and handler function.
+- **Agent path:** Add a route (e.g., `/api/chat`) that creates a session with streaming responses. Define tools exposing domain logic — each tool needs a name, description, and handler. Support multi-turn sessions.
+- **Service path:** Add a route (e.g., `/api/summarize`) or background script that uses `sendAndWait` for one-shot completions. No chat UI or tool definitions needed.
 
-4. **Configure authentication** — use `gh auth token` for local dev; for production, use Key Vault.
+Adapt to the app's existing routing pattern (Express router, FastAPI route, etc.).
 
-5. **Wire into existing app** — register the new route with the existing server/app instance. Do NOT create a separate server.
+### 3. Configure authentication
 
-> ⚠️ **Warning:** Do not duplicate server startup logic. Add the agent route to the existing app instance.
+Use `gh auth token` for local dev; for production, use Key Vault.
+
+### 4. Wire into existing app
+
+Register the new route with the existing server/app instance. Do NOT create a separate server.
+
+> ⚠️ **Warning:** Do not duplicate server startup logic. Add the Copilot route to the existing app instance.
 
 ## BYOK Support
 
@@ -58,12 +70,18 @@ If the user has their own model provider, pass provider config when creating a s
 
 ## Testing
 
-Run the existing dev server and test the new agent endpoint:
+Run the existing dev server and test the new endpoint:
 
 ```bash
-curl -s -X POST http://localhost:<port>/api/agent \
+# Agent endpoint
+curl -s -X POST http://localhost:<port>/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"test"}'
+
+# Service endpoint
+curl -s -X POST http://localhost:<port>/api/summarize \
+  -H "Content-Type: application/json" \
+  -d '{"text":"content to summarize"}'
 ```
 
 ## Errors
@@ -72,6 +90,6 @@ curl -s -X POST http://localhost:<port>/api/agent \
 |-------|-----|
 | SDK not found | Verify dependency installed and import path correct |
 | Auth fails locally | Run `gh auth login` then `gh auth refresh --scopes copilot` |
-| Route conflicts | Ensure agent endpoint path doesn't collide with existing routes |
-| Missing tools | Verify tool definitions are registered with the session |
-| Session hangs | Set a max turns limit or add a hook to break |
+| Route conflicts | Ensure endpoint path doesn't collide with existing routes |
+| Missing tools | (Agent only) Verify tool definitions are registered with the session |
+| Session hangs | (Agent only) Set a max turns limit or add a hook to break |
