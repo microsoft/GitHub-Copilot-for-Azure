@@ -492,6 +492,93 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);  
+  });
+
+  describe("brownfield-javascript", () => {
+    test("deploys nodejs-demoapp", async () => {
+      const NODEJS_DEMOAPP_REPO = "https://github.com/benc-uk/nodejs-demoapp.git";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: NODEJS_DEMOAPP_REPO,
+            targetDir: workspace,
+            depth: 1,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
-  })
+
+    test("deploys aspire with javascript", async () => {
+      const ASPIRE_JAVASCRIPT_SPARSE_PATH = "samples/aspire-with-javascript";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ASPIRE_JAVASCRIPT_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire with node", async () => {
+      const ASPIRE_NODE_SPARSE_PATH = "samples/aspire-with-node";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ASPIRE_NODE_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+  });
+
+  
 });
