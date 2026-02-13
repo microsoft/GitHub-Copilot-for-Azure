@@ -3,7 +3,7 @@
 # Runs the complete test suite for all skills.
 # Triggered manually or on significant changes.
 
-name: Test All Skills
+name: Test All Skills - non-integration
 
 permissions:
   contents: read
