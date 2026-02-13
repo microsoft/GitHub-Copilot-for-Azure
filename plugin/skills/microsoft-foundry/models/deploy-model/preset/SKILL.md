@@ -45,18 +45,17 @@ Automates intelligent Azure OpenAI model deployment by checking capacity across 
 
 ## Deployment Phases
 
-> ⚠️ **MUST READ:** Before executing any phase, load [references/preset-workflow.md](references/preset-workflow.md) for the full bash/PowerShell scripts. The summaries below describe *what* each phase does — the reference file contains the actual implementation.
-
 | Phase | Action | Key Commands |
 |-------|--------|-------------|
 | 1. Verify Auth | Check Azure CLI login and subscription | `az account show`, `az login` |
-| 2. Get Project | Read `PROJECT_RESOURCE_ID`, parse ARM ID, extract subscription/RG/account/project, verify exists | `az cognitiveservices account show` |
+| 2. Get Project | Parse `PROJECT_RESOURCE_ID` ARM ID, verify exists | `az cognitiveservices account show` |
 | 3. Get Model | List available models, user selects model + version | `az cognitiveservices account list-models` |
-| 4. Check Current Region | Query capacity for project's region using GlobalStandard SKU | `az rest --method GET .../modelCapacities` |
-| 5. Multi-Region Query | If no local capacity, query all regions; categorize available vs unavailable | Same capacity API without location filter |
-| 6. Select Region + Project | User picks region; find or create project in that region | `az cognitiveservices account list`, `az cognitiveservices account create` |
-| 7. Deploy | Generate unique name via `scripts/generate_deployment_name.sh`, calculate capacity (50% available, min 50 TPM), create deployment, monitor until Succeeded/Failed | `az cognitiveservices account deployment create`, `az cognitiveservices account deployment show` |
-| 8. Show Results | Display deployment details, endpoint URL, Foundry portal link, test commands | `scripts/generate_deployment_url.sh` |
+| 4. Check Current Region | Query capacity using GlobalStandard SKU | `az rest --method GET .../modelCapacities` |
+| 5. Multi-Region Query | If no local capacity, query all regions | Same capacity API without location filter |
+| 6. Select Region + Project | User picks region; find or create project | `az cognitiveservices account list`, `az cognitiveservices account create` |
+| 7. Deploy | Generate unique name, calculate capacity (50% available, min 50 TPM), create deployment | `az cognitiveservices account deployment create` |
+
+For detailed step-by-step instructions, see [workflow reference](references/workflow.md).
 
 ---
 
@@ -75,17 +74,20 @@ Automates intelligent Azure OpenAI model deployment by checking capacity across 
 
 ## Advanced Usage
 
-- **Custom capacity:** Pass specific `--sku-capacity` value to `az cognitiveservices account deployment create`
-- **Override region:** Set `SELECTED_REGION` directly to skip capacity check
-- **Check status later:** `az cognitiveservices account deployment show --name <acct> --resource-group <rg> --deployment-name <name> --query "{Status:properties.provisioningState}"`
-- **Delete deployment:** `az cognitiveservices account deployment delete --name <acct> --resource-group <rg> --deployment-name <name>`
+```bash
+# Custom capacity
+az cognitiveservices account deployment create ... --sku-capacity <value>
+
+# Check deployment status
+az cognitiveservices account deployment show --name <acct> --resource-group <rg> --deployment-name <name> --query "{Status:properties.provisioningState}"
+
+# Delete deployment
+az cognitiveservices account deployment delete --name <acct> --resource-group <rg> --deployment-name <name>
+```
 
 ## Notes
 
-- **SKU:** Uses GlobalStandard only; future versions may support Standard/ProvisionedManaged
-- **API Version:** 2024-10-01 (GA stable)
-- **Capacity format:** Human-readable (K = thousands, M = millions)
-- **Timeout:** Deployment monitoring times out after 5 minutes; check manually if needed
+- **SKU:** GlobalStandard only — **API Version:** 2024-10-01 (GA stable)
 
 ---
 
