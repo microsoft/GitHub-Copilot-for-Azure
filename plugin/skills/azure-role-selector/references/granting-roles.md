@@ -121,6 +121,6 @@ In the Azure Portal, when assigning roles via **Access Control (IAM)** → **Add
 ## Further Reading
 
 - [Azure RBAC documentation](https://learn.microsoft.com/azure/role-based-access-control/overview)
-- [User Access Administrator role](https://learn.microsoft.com/azure/role-based-azure-control/built-in-roles#user-access-administrator)
+- [User Access Administrator role](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#user-access-administrator)
 - [Owner role](https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#owner)
 - [Assign Azure roles using Azure CLI](https://learn.microsoft.com/azure/role-based-access-control/role-assignments-cli)
