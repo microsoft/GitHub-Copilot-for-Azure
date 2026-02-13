@@ -295,7 +295,7 @@ test('documents cache tiers', () => {
 #### Step 5: Run and Verify
 
 ```bash
-npm test:skill -- {skill-name}
+npm run test:skill -- {skill-name}
 ```
 
 #### Step 6: Update Coverage Grid
