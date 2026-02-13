@@ -22,6 +22,7 @@ import { cloneRepo } from "../utils/git-clone";
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
+const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -408,7 +409,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("deploys aspire azure functions", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
 
         const agentMetadata = await agent.run({
@@ -448,7 +448,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("deploys aspire client apps integration", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
+        
         const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
 
         const agentMetadata = await agent.run({
@@ -488,7 +488,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("deploys aspire container build", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
 
         const agentMetadata = await agent.run({
@@ -528,7 +527,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("does not deploy aspire custom resources", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const CUSTOM_RESOURCES_SPARSE_PATH = "samples/custom-resources";
 
         const agentMetadata = await agent.run({
@@ -568,7 +566,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("deploys aspire database containers", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const DATABASE_CONTAINERS_SPARSE_PATH = "samples/database-containers";
 
         const agentMetadata = await agent.run({
@@ -608,7 +605,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("deploys aspire health-checks-ui", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
 
         const agentMetadata = await agent.run({
@@ -648,7 +644,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       }, brownfieldTestTimeoutMs);
 
     test("deploys aspire orleans-voting", async () => {
-        const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const ORLEANS_VOTING_SPARSE_PATH = "samples/orleans-voting";
 
         const agentMetadata = await agent.run({
