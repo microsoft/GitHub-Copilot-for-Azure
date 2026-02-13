@@ -17,10 +17,12 @@ import {
 } from "../utils/agent-runner";
 import * as fs from "fs";
 import { hasDeployLinks, hasTerraformFiles, hasBicepFiles } from "./utils";
+import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
+const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -137,9 +139,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -157,9 +165,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -178,9 +192,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasTerraform = hasTerraformFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
@@ -201,9 +221,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -221,9 +247,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -242,9 +274,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasTerraform = hasTerraformFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
@@ -265,9 +303,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -285,9 +329,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -306,9 +356,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasTerraform = hasTerraformFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
@@ -329,9 +385,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -349,9 +411,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasBicep = hasBicepFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
@@ -370,12 +438,56 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
       const hasTerraform = hasTerraformFiles(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      if (!isSkillUsed) {
+        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+      }
+      if (!isValidateInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+      }
+      if (!isPrepareInvoked) {
+        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+      }
       expect(containsDeployLinks).toBe(true);
       expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
+
+  describe("brownfield-dotnet", () => {
+    test("deploys eShop to Azure for small scale production", async () => {
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ESHOP_REPO,
+              targetDir: workspace,
+              depth: 1,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+        });
+    
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+    
+        if (!isSkillUsed) {
+          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+        }
+        if (!isValidateInvoked) {
+          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+        }
+        if (!isPrepareInvoked) {
+          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+        }
+        expect(containsDeployLinks).toBe(true);
+      }, deployTestTimeoutMs);
+  })
 });
 

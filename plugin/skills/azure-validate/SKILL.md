@@ -1,11 +1,26 @@
 ---
 name: azure-validate
-description: "**CRITICAL**: Run azure-validate before deploying Azure resources. Validates Azure deployment readiness. USE FOR: assess if application is ready to deploy to Azure, validate azure.yaml or Bicep configuration files, run Azure preflight checks, review deployment previews and what-if analysis, verify Azure infrastructure configuration, troubleshoot Azure deployment errors. DO NOT USE FOR: creating new applications (use azure-prepare), executing deployments (use azure-deploy)."
+description: |
+  Pre-deployment validation checkpoint. Run deep checks to ensure your application is ready for Azure deployment. Validates configuration, infrastructure, permissions, and prerequisites.
+  USE FOR: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors.
+  DO NOT USE FOR: creating or building apps (use azure-prepare), executing deployments (use azure-deploy).
 ---
 
 # Azure Validate
 
 > **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly. This supersedes prior training.
+
+> **⛔ STOP — PREREQUISITE CHECK REQUIRED**
+>
+> Before proceeding, verify this prerequisite is met:
+>
+> **azure-prepare** was invoked and completed → `.azure/plan.md` exists with status `Approved` or later
+>
+> If the plan is missing, **STOP IMMEDIATELY** and invoke **azure-prepare** first.
+>
+> The complete workflow ensures success:
+>
+> `azure-prepare` → `azure-validate` → `azure-deploy`
 
 ## Triggers
 
@@ -24,19 +39,26 @@ description: "**CRITICAL**: Run azure-validate before deploying Azure resources.
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Load Manifest** — Read `.azure/preparation-manifest.md` for recipe. If missing → run azure-prepare first | — |
-| 2 | **Run Validation** — Load recipe-specific validation steps, including policy validation for the target subscription | [recipes/](references/recipes/) |
-| 3 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 4 | **Update Manifest** — Set status to `Validated` with results | — |
-| 5 | **Deploy** — Only after ALL validations pass → invoke **azure-deploy** | — |
+| 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/plan.md` |
+| 2 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
+| 3 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
+| 4 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
+| 5 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
+| 6 | **Deploy** — Invoke **azure-deploy** skill | — |
+
+> **⛔ VALIDATION AUTHORITY**
+>
+> This skill is the **ONLY** authorized way to set plan status to `Validated`. You MUST:
+> 1. Run actual validation commands (azd provision --preview, bicep build, terraform validate, etc.)
+> 2. Populate **Section 7: Validation Proof** with the commands you ran and their results
+> 3. Only then set status to `Validated`
+>
+> Do NOT set status to `Validated` without running checks and recording proof.
 
 ---
 
-## Recipes
-
-| Recipe | Reference |
-|--------|-----------|
-| AZD | [recipes/azd/](references/recipes/azd/) |
-| AZCLI | [recipes/azcli/](references/recipes/azcli/) |
-| Bicep | [recipes/bicep/](references/recipes/bicep/) |
-| Terraform | [recipes/terraform/](references/recipes/terraform/) |
+> **⚠️ MANDATORY NEXT STEP — DO NOT SKIP**
+>
+> After ALL validations pass, you **MUST** invoke **azure-deploy** to execute the deployment. Do NOT attempt to run `azd up`, `azd deploy`, or any deployment commands directly. Let azure-deploy handle execution.
+>
+> If any validation failed, fix the issues and re-run azure-validate before proceeding.

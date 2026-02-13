@@ -1,0 +1,295 @@
+# Test all skills.
+#
+# Runs all integration tests.
+# Triggered manually.
+
+name: Integration Tests - all
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      skills:
+        description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-role-selector")'
+        required: true
+        type: string
+      debug:
+        description: 'Whether to set DEBUG=1 for jest tests'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run all integration tests
+    environment: cideploytest
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Log in with Azure (Federated Credentials)
+        run: |
+          azd auth login `
+            --client-id "$Env:AZURE_CLIENT_ID" `
+            --federated-credential-provider "github" `
+            --tenant-id "$Env:AZURE_TENANT_ID"
+        shell: pwsh
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+      
+      # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
+      # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
+      # As a known issue, when the permission of the token doesn't grant sufficient access,
+      # the agent will hang instead of giving an error.
+      # If you see the agent hang indefinitely, try refreshing the access token.
+      # See https://github.com/github/copilot-sdk/issues/343 for more details.
+      - name: Setup Copilot CLI
+        id: setup-copilot-cli
+        uses: mvkaran/setup-copilot-cli@v1
+        with:
+          token: ${{ secrets.COPILOT_CLI_TOKEN }}
+
+      # Manually break down the integration tests per skill
+
+      - name: Integration tests - appinsights-instrumentation
+        id: integration-tests-appinsights-instrumentation
+        if: contains(inputs.skills, 'appinsights-instrumentation')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration appinsights-instrumentation
+          npm run report -- --skill appinsights-instrumentation
+        continue-on-error: true
+
+      - name: Integration tests - azure-ai
+        id: integration-tests-azure-ai
+        if: contains(inputs.skills, 'azure-ai')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-ai
+          npm run report -- --skill azure-ai
+        continue-on-error: true
+
+      - name: Integration tests - azure-aigateway
+        id: integration-tests-azure-aigateway
+        if: contains(inputs.skills, 'azure-aigateway')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-aigateway
+          npm run report -- --skill azure-aigateway
+        continue-on-error: true
+
+      - name: Integration tests - azure-compliance
+        id: integration-tests-azure-compliance
+        if: contains(inputs.skills, 'azure-compliance')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-compliance
+          npm run report -- --skill azure-compliance
+        continue-on-error: true
+
+      - name: Integration tests - azure-cost-optimization
+        id: integration-tests-azure-cost-optimization
+        if: contains(inputs.skills, 'azure-cost-optimization')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-cost-optimization
+          npm run report -- --skill azure-cost-optimization
+        continue-on-error: true
+
+      - name: Integration tests - azure-deploy
+        id: integration-tests-azure-deploy
+        if: contains(inputs.skills, 'azure-deploy')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-deploy
+          npm run report -- --skill azure-deploy
+        continue-on-error: true
+
+      - name: Integration tests - azure-diagnostics
+        id: integration-tests-azure-diagnostics
+        if: contains(inputs.skills, 'azure-diagnostics')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-diagnostics
+          npm run report -- --skill azure-diagnostics
+        continue-on-error: true
+
+      - name: Integration tests - azure-kusto
+        id: integration-tests-azure-kusto
+        if: contains(inputs.skills, 'azure-kusto')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-kusto
+          npm run report -- --skill azure-kusto
+        continue-on-error: true
+
+      - name: Integration tests - azure-observability
+        id: integration-tests-azure-observability
+        if: contains(inputs.skills, 'azure-observability')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-observability
+          npm run report -- --skill azure-observability
+        continue-on-error: true
+
+      - name: Integration tests - azure-postgres
+        id: integration-tests-azure-postgres
+        if: contains(inputs.skills, 'azure-postgres')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-postgres
+          npm run report -- --skill azure-postgres
+        continue-on-error: true
+
+      - name: Integration tests - azure-prepare
+        id: integration-tests-azure-prepare
+        if: contains(inputs.skills, 'azure-prepare')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-prepare
+          npm run report -- --skill azure-prepare
+        continue-on-error: true
+
+      - name: Integration tests - azure-resource-visualizer
+        id: integration-tests-azure-resource-visualizer
+        if: contains(inputs.skills, 'azure-resource-visualizer')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-resource-visualizer
+          npm run report -- --skill azure-resource-visualizer
+        continue-on-error: true
+
+      - name: Integration tests - azure-role-selector
+        id: integration-tests-azure-role-selector
+        if: contains(inputs.skills, 'azure-role-selector')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-role-selector
+          npm run report -- --skill azure-role-selector
+        continue-on-error: true
+
+      - name: Integration tests - azure-storage
+        id: integration-tests-azure-storage
+        if: contains(inputs.skills, 'azure-storage')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-storage
+          npm run report -- --skill azure-storage
+        continue-on-error: true
+
+      - name: Integration tests - azure-validate
+        id: integration-tests-azure-validate
+        if: contains(inputs.skills, 'azure-validate')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration azure-validate
+          npm run report -- --skill azure-validate
+        continue-on-error: true
+
+      - name: Integration tests - entra-app-registration
+        id: integration-tests-entra-app-registration
+        if: contains(inputs.skills, 'entra-app-registration')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration entra-app-registration
+          npm run report -- --skill entra-app-registration
+        continue-on-error: true
+
+      - name: Integration tests - microsoft-foundry
+        id: integration-tests-microsoft-foundry
+        if: contains(inputs.skills, 'microsoft-foundry')
+        env:
+          DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_RUN_ID: all-integration
+        run: |
+          npm run test:integration microsoft-foundry
+          npm run report -- --skill microsoft-foundry
+        continue-on-error: true
+
+      - name: Show skill reports
+        id: show-skill-reports
+        run: |
+          SKILL_REPORTS=$(find reports -name "*-SKILL-REPORT.md" -type f | sort)
+          if [ -n "$SKILL_REPORTS" ]; then
+            echo "$SKILL_REPORTS" | while read -r REPORT; do
+              echo "Found skill report: $REPORT"
+              echo "\n" >> "$GITHUB_STEP_SUMMARY"
+              cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+            done
+          else
+            echo "No skill reports found"
+          fi
+
+      - name: Export report
+        uses: actions/upload-artifact@v4
+        with:
+          name: azure-all-integration-test-reports
+          path: tests/reports/
+          retention-days: 30
