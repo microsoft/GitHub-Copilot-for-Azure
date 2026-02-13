@@ -527,7 +527,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
-    test("deploys aspire custom resources", async () => {
+    test("does not deploy aspire custom resources", async () => {
         const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
         const CUSTOM_RESOURCES_SPARSE_PATH = "samples/custom-resources";
 
