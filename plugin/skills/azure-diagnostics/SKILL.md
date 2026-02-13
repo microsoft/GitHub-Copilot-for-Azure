@@ -46,7 +46,7 @@ Activate this skill when user wants to:
 
 | Service | Common Issues | Reference |
 |---------|---------------|-----------|
-| **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/) |
+| **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 
 ---
 
