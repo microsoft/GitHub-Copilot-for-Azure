@@ -8,9 +8,9 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agents/foundry-agent-package";
+const SKILL_NAME = "microsoft-foundry/agent/package";
 
-describe(`foundry-agent-package - Trigger Tests`, () => {
+describe(`package - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 

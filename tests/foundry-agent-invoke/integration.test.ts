@@ -1,5 +1,5 @@
 /**
- * Integration Tests for foundry-agent-run
+ * Integration Tests for foundry-agent-invoke
  *
  * Tests skill behavior with a real Copilot agent session.
  * Requires Copilot CLI to be installed and authenticated.
@@ -12,7 +12,7 @@ import {
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
 
-const SKILL_NAME = "foundry-agent-run";
+const SKILL_NAME = "invoke";
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 

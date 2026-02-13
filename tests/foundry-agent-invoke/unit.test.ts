@@ -1,14 +1,14 @@
 /**
- * Unit Tests for foundry-agent-run
+ * Unit Tests for foundry-agent-invoke
  *
  * Test isolated skill logic and validation rules.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agents/foundry-agent-run";
+const SKILL_NAME = "microsoft-foundry/agent/invoke";
 
-describe(`foundry-agent-run - Unit Tests`, () => {
+describe(`invoke - Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -18,7 +18,7 @@ describe(`foundry-agent-run - Unit Tests`, () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("foundry-agent-run");
+      expect(skill.metadata.name).toBe("invoke");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });

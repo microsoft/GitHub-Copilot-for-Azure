@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`foundry-agent-package - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`package - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Package and containerize agent projects for deployment as Hosted Agents in Azure AI Foundry. Generates Dockerfiles, docker-compose files, scans for environment variables, and publishes images to Azure Container Registry (ACR).
 USE FOR: containerize agent, Dockerfile, Docker image, ACR, package agent, dockerize, container registry, build image, push image, docker-compose, environment variable scan.
-DO NOT USE FOR: deploying agents to Foundry (use foundry-agent-deploy), invoking or testing agents (use foundry-agent-run), Azure Functions (use azure-functions).
+DO NOT USE FOR: deploying agents to Foundry (use deploy skill), invoking or testing agents (use invoke skill), Azure Functions (use azure-functions).
 ",
   "extractedKeywords": [
     "agent",
@@ -26,13 +26,12 @@ DO NOT USE FOR: deploying agents to Foundry (use foundry-agent-deploy), invoking
     "environment",
     "files",
     "foundry",
-    "foundry-agent-deploy",
-    "foundry-agent-run",
     "functions",
     "generates",
     "hosted",
     "image",
     "images",
+    "invoke",
     "invoking",
     "key vault",
     "package",
@@ -42,15 +41,16 @@ DO NOT USE FOR: deploying agents to Foundry (use foundry-agent-deploy), invoking
     "registry",
     "scan",
     "scans",
+    "skill",
     "testing",
     "variable",
     "variables",
   ],
-  "name": "foundry-agent-package",
+  "name": "package",
 }
 `;
 
-exports[`foundry-agent-package - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`package - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "agent",
   "agents",
@@ -71,13 +71,12 @@ exports[`foundry-agent-package - Trigger Tests Trigger Keywords Snapshot skill k
   "environment",
   "files",
   "foundry",
-  "foundry-agent-deploy",
-  "foundry-agent-run",
   "functions",
   "generates",
   "hosted",
   "image",
   "images",
+  "invoke",
   "invoking",
   "key vault",
   "package",
@@ -87,6 +86,7 @@ exports[`foundry-agent-package - Trigger Tests Trigger Keywords Snapshot skill k
   "registry",
   "scan",
   "scans",
+  "skill",
   "testing",
   "variable",
   "variables",

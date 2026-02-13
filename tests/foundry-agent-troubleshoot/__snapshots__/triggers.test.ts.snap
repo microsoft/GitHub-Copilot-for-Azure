@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`foundry-agent-troubleshoot - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`troubleshoot - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Troubleshoot and debug agents in Azure AI Foundry. Retrieves container logs for hosted agents, discovers Application Insights connections in the project, and queries telemetry using KQL to diagnose errors, failures, and performance issues.
 USE FOR: troubleshoot agent, debug agent, agent logs, agent errors, agent not responding, agent failing, container logs, diagnose agent, agent telemetry, agent traces, agent exceptions.
-DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), invoking or testing agents (use foundry-agent-run), containerizing projects (use foundry-agent-package), Azure Functions (use azure-functions).
+DO NOT USE FOR: deploying or creating agents (use deploy skill), invoking or testing agents (use invoke skill), containerizing projects (use package skill), Azure Functions (use azure-functions).
 ",
   "extractedKeywords": [
     "agent",
@@ -18,6 +18,7 @@ DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), invokin
     "containerizing",
     "creating",
     "debug",
+    "deploy",
     "deploying",
     "diagnose",
     "discovers",
@@ -26,35 +27,35 @@ DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), invokin
     "failing",
     "failures",
     "foundry",
-    "foundry-agent-deploy",
-    "foundry-agent-package",
-    "foundry-agent-run",
     "functions",
     "hosted",
     "insights",
+    "invoke",
     "invoking",
     "issues",
     "logs",
     "mcp",
     "monitor",
     "observability",
+    "package",
     "performance",
     "project",
     "projects",
     "queries",
     "responding",
     "retrieves",
+    "skill",
     "telemetry",
     "testing",
     "traces",
     "troubleshoot",
     "using",
   ],
-  "name": "foundry-agent-troubleshoot",
+  "name": "troubleshoot",
 }
 `;
 
-exports[`foundry-agent-troubleshoot - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`troubleshoot - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "agent",
   "agents",
@@ -67,6 +68,7 @@ exports[`foundry-agent-troubleshoot - Trigger Tests Trigger Keywords Snapshot sk
   "containerizing",
   "creating",
   "debug",
+  "deploy",
   "deploying",
   "diagnose",
   "discovers",
@@ -75,24 +77,24 @@ exports[`foundry-agent-troubleshoot - Trigger Tests Trigger Keywords Snapshot sk
   "failing",
   "failures",
   "foundry",
-  "foundry-agent-deploy",
-  "foundry-agent-package",
-  "foundry-agent-run",
   "functions",
   "hosted",
   "insights",
+  "invoke",
   "invoking",
   "issues",
   "logs",
   "mcp",
   "monitor",
   "observability",
+  "package",
   "performance",
   "project",
   "projects",
   "queries",
   "responding",
   "retrieves",
+  "skill",
   "telemetry",
   "testing",
   "traces",

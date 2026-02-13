@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`foundry-agent-run - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`invoke - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Invoke and test deployed agents in Azure AI Foundry. Send messages to prompt and hosted agents, support single-turn and multi-turn conversations, and verify agent readiness.
 USE FOR: invoke agent, test agent, send message, run agent, conversation with agent, chat with agent, agent response, try agent, talk to agent.
-DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), containerizing projects or building Docker images (use foundry-agent-package), Azure Functions (use azure-functions).
+DO NOT USE FOR: deploying or creating agents (use deploy skill), containerizing projects or building Docker images (use package skill), Azure Functions (use azure-functions).
 ",
   "extractedKeywords": [
     "agent",
@@ -23,8 +23,6 @@ DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), contain
     "deploying",
     "docker",
     "foundry",
-    "foundry-agent-deploy",
-    "foundry-agent-package",
     "functions",
     "hosted",
     "images",
@@ -33,24 +31,25 @@ DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), contain
     "message",
     "messages",
     "multi-turn",
+    "package",
     "projects",
     "prompt",
     "readiness",
     "response",
-    "run",
     "send",
     "single-turn",
+    "skill",
     "support",
     "talk",
     "test",
     "verify",
     "with",
   ],
-  "name": "foundry-agent-run",
+  "name": "invoke",
 }
 `;
 
-exports[`foundry-agent-run - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`invoke - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "agent",
   "agents",
@@ -68,8 +67,6 @@ exports[`foundry-agent-run - Trigger Tests Trigger Keywords Snapshot skill keywo
   "deploying",
   "docker",
   "foundry",
-  "foundry-agent-deploy",
-  "foundry-agent-package",
   "functions",
   "hosted",
   "images",
@@ -78,13 +75,14 @@ exports[`foundry-agent-run - Trigger Tests Trigger Keywords Snapshot skill keywo
   "message",
   "messages",
   "multi-turn",
+  "package",
   "projects",
   "prompt",
   "readiness",
   "response",
-  "run",
   "send",
   "single-turn",
+  "skill",
   "support",
   "talk",
   "test",

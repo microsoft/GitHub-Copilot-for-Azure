@@ -1,9 +1,9 @@
 ---
-name: foundry-agent-run
+name: invoke
 description: |
   Invoke and test deployed agents in Azure AI Foundry. Send messages to prompt and hosted agents, support single-turn and multi-turn conversations, and verify agent readiness.
   USE FOR: invoke agent, test agent, send message, run agent, conversation with agent, chat with agent, agent response, try agent, talk to agent.
-  DO NOT USE FOR: deploying or creating agents (use foundry-agent-deploy), containerizing projects or building Docker images (use foundry-agent-package), Azure Functions (use azure-functions).
+  DO NOT USE FOR: deploying or creating agents (use deploy skill), containerizing projects or building Docker images (use package skill), Azure Functions (use azure-functions).
 ---
 
 # Foundry Agent Run
@@ -46,7 +46,7 @@ Delegate the readiness check to a `task` or `runSubagent` sub-agent (type: `task
 **Hosted agents** → Use `agent_container_status_get` to check:
 - Status `Running` ✅ → Proceed to Step 2
 - Status `Starting` → Wait and re-check
-- Status `Stopped` or `Failed` ❌ → Warn the user and suggest using the foundry-agent-deploy skill to start the container
+- Status `Stopped` or `Failed` ❌ → Warn the user and suggest using the deploy skill to start the container
 
 ### Step 2: Invoke Agent
 
@@ -81,7 +81,7 @@ Each invocation with the same `conversationId` continues the existing conversati
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | Agent not found | Invalid agent name or project endpoint | Use `agent_get` to list available agents and verify name |
-| Container not running | Hosted agent container is stopped or failed | Use foundry-agent-deploy skill to start the container with `agent_container_control` |
+| Container not running | Hosted agent container is stopped or failed | Use deploy skill to start the container with `agent_container_control` |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment is active, retry with simpler input |
 | Conversation ID invalid | Stale or non-existent conversation | Start a new conversation without `conversationId` |
 | Rate limit exceeded | Too many requests | Implement backoff and retry, or wait before sending next message |

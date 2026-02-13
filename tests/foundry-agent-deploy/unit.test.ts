@@ -6,9 +6,9 @@
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agents/foundry-agent-deploy";
+const SKILL_NAME = "microsoft-foundry/agent/deploy";
 
-describe(`foundry-agent-deploy - Unit Tests`, () => {
+describe(`deploy - Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -18,7 +18,7 @@ describe(`foundry-agent-deploy - Unit Tests`, () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("foundry-agent-deploy");
+      expect(skill.metadata.name).toBe("deploy");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });

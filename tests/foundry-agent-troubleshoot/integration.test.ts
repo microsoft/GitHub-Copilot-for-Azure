@@ -12,7 +12,7 @@ import {
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
 
-const SKILL_NAME = "foundry-agent-troubleshoot";
+const SKILL_NAME = "troubleshoot";
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 

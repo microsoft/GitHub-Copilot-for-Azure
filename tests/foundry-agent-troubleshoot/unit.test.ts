@@ -6,9 +6,9 @@
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agents/foundry-agent-troubleshoot";
+const SKILL_NAME = "microsoft-foundry/agent/troubleshoot";
 
-describe(`foundry-agent-troubleshoot - Unit Tests`, () => {
+describe(`troubleshoot - Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -18,7 +18,7 @@ describe(`foundry-agent-troubleshoot - Unit Tests`, () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("foundry-agent-troubleshoot");
+      expect(skill.metadata.name).toBe("troubleshoot");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });

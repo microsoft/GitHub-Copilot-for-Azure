@@ -1,9 +1,9 @@
 ---
-name: foundry-agent-package
+name: package
 description: |
   Package and containerize agent projects for deployment as Hosted Agents in Azure AI Foundry. Generates Dockerfiles, docker-compose files, scans for environment variables, and publishes images to Azure Container Registry (ACR).
   USE FOR: containerize agent, Dockerfile, Docker image, ACR, package agent, dockerize, container registry, build image, push image, docker-compose, environment variable scan.
-  DO NOT USE FOR: deploying agents to Foundry (use foundry-agent-deploy), invoking or testing agents (use foundry-agent-run), Azure Functions (use azure-functions).
+  DO NOT USE FOR: deploying agents to Foundry (use deploy skill), invoking or testing agents (use invoke skill), Azure Functions (use azure-functions).
 ---
 
 # Foundry Agent Package

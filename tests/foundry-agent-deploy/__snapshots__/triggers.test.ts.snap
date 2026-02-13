@@ -1,10 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`foundry-agent-deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Create, update, and manage agent deployments in Azure AI Foundry. Supports both prompt agents (LLM-based) and hosted agents (container-based). Manages container lifecycle (start/stop) and monitors agent status.
 USE FOR: deploy agent, create agent, hosted agent, prompt agent, start container, stop container, agent status, clone agent, delete agent, agent container, Foundry agent deployment.
-DO NOT USE FOR: containerizing projects or building Docker images (use foundry-agent-package), invoking or testing agents (use foundry-agent-run), Azure Functions (use azure-functions).
+DO NOT USE FOR: containerizing projects or building Docker images (use package skill), invoking or testing agents (use invoke skill), Azure Functions (use azure-functions).
 ",
   "extractedKeywords": [
     "agent",
@@ -24,11 +24,10 @@ DO NOT USE FOR: containerizing projects or building Docker images (use foundry-a
     "deployments",
     "docker",
     "foundry",
-    "foundry-agent-package",
-    "foundry-agent-run",
     "functions",
     "hosted",
     "images",
+    "invoke",
     "invoking",
     "lifecycle",
     "llm-based",
@@ -36,8 +35,10 @@ DO NOT USE FOR: containerizing projects or building Docker images (use foundry-a
     "manages",
     "mcp",
     "monitors",
+    "package",
     "projects",
     "prompt",
+    "skill",
     "start",
     "status",
     "stop",
@@ -45,11 +46,11 @@ DO NOT USE FOR: containerizing projects or building Docker images (use foundry-a
     "testing",
     "update",
   ],
-  "name": "foundry-agent-deploy",
+  "name": "deploy",
 }
 `;
 
-exports[`foundry-agent-deploy - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`deploy - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "agent",
   "agents",
@@ -68,11 +69,10 @@ exports[`foundry-agent-deploy - Trigger Tests Trigger Keywords Snapshot skill ke
   "deployments",
   "docker",
   "foundry",
-  "foundry-agent-package",
-  "foundry-agent-run",
   "functions",
   "hosted",
   "images",
+  "invoke",
   "invoking",
   "lifecycle",
   "llm-based",
@@ -80,8 +80,10 @@ exports[`foundry-agent-deploy - Trigger Tests Trigger Keywords Snapshot skill ke
   "manages",
   "mcp",
   "monitors",
+  "package",
   "projects",
   "prompt",
+  "skill",
   "start",
   "status",
   "stop",

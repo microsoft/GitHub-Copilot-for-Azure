@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for foundry-agent-run
+ * Trigger Tests for foundry-agent-invoke
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,9 +8,9 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agents/foundry-agent-run";
+const SKILL_NAME = "microsoft-foundry/agent/invoke";
 
-describe(`foundry-agent-run - Trigger Tests`, () => {
+describe(`invoke - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 

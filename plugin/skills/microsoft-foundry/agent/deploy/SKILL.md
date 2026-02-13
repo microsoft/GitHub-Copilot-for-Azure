@@ -1,9 +1,9 @@
 ---
-name: foundry-agent-deploy
+name: deploy
 description: |
   Create, update, and manage agent deployments in Azure AI Foundry. Supports both prompt agents (LLM-based) and hosted agents (container-based). Manages container lifecycle (start/stop) and monitors agent status.
   USE FOR: deploy agent, create agent, hosted agent, prompt agent, start container, stop container, agent status, clone agent, delete agent, agent container, Foundry agent deployment.
-  DO NOT USE FOR: containerizing projects or building Docker images (use foundry-agent-package), invoking or testing agents (use foundry-agent-run), Azure Functions (use azure-functions).
+  DO NOT USE FOR: containerizing projects or building Docker images (use package skill), invoking or testing agents (use invoke skill), Azure Functions (use azure-functions).
 ---
 
 # Foundry Agent Deploy
