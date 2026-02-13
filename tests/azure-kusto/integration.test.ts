@@ -10,7 +10,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,13 +33,14 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes azure-kusto skill for KQL query prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Write a KQL query to analyze logs in my Azure Data Explorer database"
           });
 
@@ -66,7 +67,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Query my Kusto database to show events aggregated by hour for the last 24 hours"
           });
 

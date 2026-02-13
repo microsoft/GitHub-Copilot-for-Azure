@@ -10,7 +10,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -35,13 +35,14 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes azure-deploy skill for deployment prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Run azd up to deploy my already-prepared app to Azure"
           });
 
@@ -68,7 +69,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Publish my web app to Azure and configure the environment"
           });
 
@@ -95,7 +96,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Deploy my Azure Functions app to the cloud using azd"
           });
 
@@ -124,7 +125,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   // Static Web Apps (SWA)
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application and deploys to Azure", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -148,7 +149,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website and deploys to Azure", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -175,7 +176,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   // App Service
   describe("app-service-deploy", () => {
     test("creates discussion board and deploys to Azure", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -199,7 +200,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API and deploys to Azure", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -226,7 +227,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   // Azure Functions
   describe("azure-functions-deploy", () => {
     test("creates serverless HTTP API and deploys to Azure Functions", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -250,7 +251,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app and deploys to Azure Functions", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -277,7 +278,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   // Azure Container Apps (ACA)
   describe("azure-container-apps-deploy", () => {
     test("creates containerized web application and deploys to Azure Container Apps", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT
@@ -301,7 +302,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app and deploys to Azure Container Apps", async () => {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT

@@ -10,7 +10,7 @@
  */
 
 import { 
-  run, 
+  useAgentRunner,
   isSkillInvoked, 
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
@@ -32,11 +32,12 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
   
   test("invokes azure-role-selector skill for AcrPull prompt", async () => {
     let agentMetadata;
     try {
-      agentMetadata = await run({
+      agentMetadata = await agent.run({
         prompt: "What role should I assign to my managed identity to read images in an Azure Container Registry?"
       });
     } catch (e: unknown) {
@@ -59,7 +60,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test("recommends Storage Blob Data Reader for blob read access", async () => {
     let agentMetadata;
     try {
-      agentMetadata = await run({
+      agentMetadata = await agent.run({
         prompt: "What Azure role should I use to give my app read-only access to blob storage?"
       });
     } catch (e: unknown) {
@@ -80,7 +81,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test("recommends Key Vault Secrets User for secret access", async () => {
     let agentMetadata;
     try {
-      agentMetadata = await run({
+      agentMetadata = await agent.run({
         prompt: "What role do I need to read secrets from Azure Key Vault?"
       });
     } catch (e: unknown) {
@@ -101,7 +102,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test("generates CLI commands for role assignment", async () => {
     let agentMetadata;
     try {
-      agentMetadata = await run({
+      agentMetadata = await agent.run({
         prompt: "Generate Azure CLI command to assign Storage Blob Data Contributor role to my managed identity"
       });
     } catch (e: unknown) {
@@ -123,7 +124,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   test("provides Bicep code for role assignment", async () => {
     let agentMetadata;
     try {
-      agentMetadata = await run({
+      agentMetadata = await agent.run({
         prompt: "Show me Bicep code to assign Contributor role to a managed identity on a storage account"
       });
     } catch (e: unknown) {
