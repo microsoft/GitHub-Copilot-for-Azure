@@ -52,6 +52,7 @@ Activate this skill when user wants to:
 |------------|-----------|
 | Comprehensive Compliance (azqr) | [references/azure-quick-review.md](references/azure-quick-review.md) |
 | Key Vault Expiration | [references/azure-keyvault-expiration-audit.md](references/azure-keyvault-expiration-audit.md) |
+| Resource Graph Queries | [references/azure-resource-graph.md](references/azure-resource-graph.md) |
 
 ## MCP Tools
 

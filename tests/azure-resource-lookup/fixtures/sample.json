@@ -1,0 +1,21 @@
+{
+  "samplePrompts": {
+    "shouldTrigger": [
+      "Example prompt that should trigger this skill"
+    ],
+    "shouldNotTrigger": [
+      "Example prompt that should NOT trigger this skill"
+    ]
+  },
+  "sampleInput": {
+    "description": "Sample input data for integration tests"
+  },
+  "expectedOutput": {
+    "description": "Expected output for sample input"
+  },
+  "mcpResponses": {
+    "azure__bicepschema": {
+      "description": "Mock response for bicep schema tool"
+    }
+  }
+}
