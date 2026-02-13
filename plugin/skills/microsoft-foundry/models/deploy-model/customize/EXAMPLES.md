@@ -57,3 +57,27 @@
 
 - **High priority:** gpt-4o, ProvisionedManaged, 100 PTU, Priority Processing
 - **Low priority:** gpt-4o-mini, Standard, 5K TPM
+
+---
+
+## Tips and Best Practices
+
+**Capacity:** Start conservative → monitor with Azure Monitor → scale gradually → use spillover for peaks.
+
+**SKU Selection:** Standard for dev → GlobalStandard + dynamic quota for variable production → ProvisionedManaged (PTU) for predictable load.
+
+**Cost:** Right-size capacity; use gpt-4o-mini where possible (80-90% accuracy at lower cost); enable dynamic quota; consider PTU for consistent high-volume.
+
+**Versions:** Auto-upgrade recommended; test new versions in staging first; pin only if compatibility requires it.
+
+**Content Filtering:** Start with DefaultV2; use custom policies only for specific needs; monitor filtered requests.
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `QuotaExceeded` | Check usage with `az cognitiveservices usage list`, reduce capacity, try different SKU, check other regions, or use the [quota skill](../../../quota/quota.md) to request an increase |
+| Version not available for SKU | Check `az cognitiveservices account list-models --query "[?name=='gpt-4o'].version"`, use latest |
+| Deployment name exists | Skill auto-generates unique name (e.g., `gpt-4o-2`), or specify custom name |
