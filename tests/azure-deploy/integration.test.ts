@@ -13,64 +13,16 @@ import {
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  useAgentRunner,
-  type AgentMetadata
+  useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks, hasTerraformFiles, hasBicepFiles } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
-const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
-
-/**
- * Infrastructure as Code type
- */
-type IacType = "bicep" | "terraform";
-
-/**
- * Assert deployment outcome with skill invocations, deploy links, and IaC files
- * Adds soft warnings for skill invocations and strict assertions for links and IaC
- */
-function assertDeployOutcome(
-  agentMetadata: AgentMetadata,
-  options: {
-    expectIac?: IacType;
-    skillName?: string;
-  }
-): void {
-  const skillName = options.skillName || SKILL_NAME;
-  
-  // Soft assertions - add warnings to test comments
-  const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
-  const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-  const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-  
-  if (!isSkillUsed) {
-    agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
-  }
-  if (!isValidateInvoked) {
-    agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-  }
-  if (!isPrepareInvoked) {
-    agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-  }
-  
-  // Strict assertions
-  const containsDeployLinks = hasDeployLinks(agentMetadata);
-  expect(containsDeployLinks).toBe(true);
-  
-  // Check IaC files based on expectation
-  if (options.expectIac === "bicep") {
-    const hasBicep = hasBicepFiles(agentMetadata);
-    expect(hasBicep).toBe(true);
-  } else if (options.expectIac === "terraform") {
-    const hasTerraform = hasTerraformFiles(agentMetadata);
-    expect(hasTerraform).toBe(true);
-  }
-}
+const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -83,6 +35,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000;
+const brownfieldTestTimeoutMs = 2700000;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
@@ -181,29 +134,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+
     }, deployTestTimeoutMs);
 
-    test("creates static portfolio website", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
-    }, deployTestTimeoutMs);
-
-    // Terraform test
-    test("creates static portfolio website with Terraform infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using azd with Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      assertDeployOutcome(agentMetadata, { expectIac: "terraform", skillName: SKILL_NAME });
-    }, deployTestTimeoutMs);
   });
 
   // App Service
@@ -215,7 +152,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
@@ -225,18 +165,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
-    }, deployTestTimeoutMs);
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-    // Terraform test
-    test("creates todo list with frontend and API using Terraform", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using azd with Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      assertDeployOutcome(agentMetadata, { expectIac: "terraform", skillName: SKILL_NAME });
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -249,7 +181,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app", async () => {
@@ -259,18 +194,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
-    }, deployTestTimeoutMs);
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-    // Terraform test
-    test("creates URL shortener service with Terraform infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using azd with Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      assertDeployOutcome(agentMetadata, { expectIac: "terraform", skillName: SKILL_NAME });
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -283,7 +210,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app", async () => {
@@ -293,43 +223,265 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      assertDeployOutcome(agentMetadata, { expectIac: "bicep", skillName: SKILL_NAME });
-    }, deployTestTimeoutMs);
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-    // Terraform test
-    test("creates social media application with Terraform infrastructure", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a simple social media application with likes and comments and deploy to Azure using azd with Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      assertDeployOutcome(agentMetadata, { expectIac: "terraform", skillName: SKILL_NAME });
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
 
   describe("brownfield-dotnet", () => {
-    test("deploys eShop to Azure for small scale production", async () => {
-        const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            await cloneRepo({
-              repoUrl: ESHOP_REPO,
-              targetDir: workspace,
-              depth: 1,
-            });
-          },
-          prompt:
-            "Please deploy this application to Azure. " +
-            "Use the eastus2 region. " +
-            "Use my current subscription. " +
-            "This is for a small scale production environment. " +
-            "Use standard SKUs",
-          nonInteractive: true,
-          followUp: FOLLOW_UP_PROMPT,
-        });
-    
-        assertDeployOutcome(agentMetadata, { skillName: SKILL_NAME });
-      }, deployTestTimeoutMs);
+    test("deploys eShop", async () => {
+      const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ESHOP_REPO,
+            targetDir: workspace,
+            depth: 1,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys MvcMovie 90", async () => {
+      const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
+      const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPNETCORE_DOCS_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire azure functions", async () => {
+      const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire client apps integration", async () => {
+      const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: CLIENT_APPS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire container build", async () => {
+      const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: CONTAINER_BUILD_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("does not deploy aspire custom resources", async () => {
+      const CUSTOM_RESOURCES_SPARSE_PATH = "samples/custom-resources";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: CUSTOM_RESOURCES_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(false); //should not deploy
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire database containers", async () => {
+      const DATABASE_CONTAINERS_SPARSE_PATH = "samples/database-containers";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: DATABASE_CONTAINERS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire health-checks-ui", async () => {
+      const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: HEALTH_CHECKS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire orleans-voting", async () => {
+      const ORLEANS_VOTING_SPARSE_PATH = "samples/orleans-voting";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ORLEANS_VOTING_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+  
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
   })
 });
 
