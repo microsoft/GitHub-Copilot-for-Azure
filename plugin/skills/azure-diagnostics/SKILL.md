@@ -124,3 +124,4 @@ az monitor activity-log list -g RG --max-events 20
 ## References
 
 - [KQL Query Library](references/kql-queries.md)
+- [Azure Resource Graph Queries](references/azure-resource-graph.md)

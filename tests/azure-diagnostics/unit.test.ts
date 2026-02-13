@@ -81,6 +81,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("references KQL query documentation", () => {
       expect(skill.content).toContain("kql-queries.md");
     });
+
+    test("links to Azure Resource Graph reference", () => {
+      expect(skill.content).toContain("references/azure-resource-graph.md");
+    });
   });
 
   describe("Skill Structure", () => {

@@ -151,6 +151,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("Azure Resource Graph Integration", () => {
+    test("links to Azure Resource Graph reference", () => {
+      expect(skill.content).toContain("references/azure-resource-graph.md");
+    });
+
+    test("includes Resource Graph in assessments", () => {
+      expect(skill.content).toContain("Resource Graph");
+    });
+  });
+
   describe("Best Practices", () => {
     test("includes best practices section or guidance", () => {
       expect(skill.content).toContain("Best Practices");

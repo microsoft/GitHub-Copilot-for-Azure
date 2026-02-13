@@ -200,4 +200,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/Commands to execute/i);
     });
   });
+
+  describe("Azure Resource Graph Integration", () => {
+    test("links to Azure Resource Graph reference", () => {
+      expect(skill.content).toContain("references/azure-resource-graph.md");
+    });
+
+    test("mentions Resource Graph for resource discovery", () => {
+      expect(skill.content).toContain("Azure Resource Graph");
+    });
+  });
 });
