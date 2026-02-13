@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks, softCheckDeploySkills } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, hasTerraformFiles } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
@@ -141,6 +141,34 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     }, deployTestTimeoutMs);
 
+    test("creates static portfolio website", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates static portfolio website with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
+    }, deployTestTimeoutMs);
   });
 
   // App Service
@@ -169,6 +197,22 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates todo list with frontend and API using Terraform", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -199,6 +243,22 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates URL shortener service with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
+    }, deployTestTimeoutMs);
   });
 
   // Azure Container Apps (ACA)
@@ -227,6 +287,22 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates social media application with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a simple social media application with likes and comments and deploy to Azure using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
