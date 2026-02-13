@@ -16,8 +16,10 @@ description: "Build and deploy GitHub Copilot SDK apps to Azure. USE FOR: build 
 
 ## Step 2A: Scaffold New
 
-- **Agent** → `azd init --template jongio/copilot-sdk-agent`
-- **Service** → `azd init --template jongio/copilot-sdk-service`
+Default to the **service** template unless the user explicitly asks to build an **agent**:
+
+- **Service** (default) → `azd init --template jongio/copilot-sdk-service`
+- **Agent** (only if user says "agent") → `azd init --template jongio/copilot-sdk-agent`
 
 Templates include infra, Dockerfiles, token scripts — do NOT recreate. See [SDK ref](references/copilot-sdk.md).
 

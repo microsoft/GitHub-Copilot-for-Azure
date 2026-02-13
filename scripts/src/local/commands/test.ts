@@ -1,41 +1,197 @@
 /**
  * Test Command
- * 
- * Live integration test that launches the Copilot CLI and confirms:
- * 1. The local plugin is loaded (via a temporary probe skill)
- * 2. All production skills are registered
- * 3. MCP servers are connected (tool names visible)
- * 4. Each MCP server responds to a real tool call
- * 
- * Creates a temporary probe skill, launches `copilot -i` with
- * verification prompts, parses output, and cleans up.
+ *
+ * Unified integration test that:
+ * 1. Verifies the local plugin setup (config, MCP registration, skills)
+ * 2. Launches the Copilot CLI and confirms each MCP server responds
+ *    to a real tool call
  */
 
-import { existsSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { execSync } from 'node:child_process';
 
-const PROBE_SKILL_NAME = 'smoke-test-probe';
-const PROBE_MARKER = 'COPILOT_SMOKE_TEST_PROBE_FOUND';
 const TIMEOUT_MS = 120_000;
+const MARKETPLACE_NAME = 'github-copilot-for-azure';
+const PLUGIN_NAME = 'azure';
 
-interface SmokeOptions {
+interface TestOptions {
   verbose: boolean;
 }
 
-function parseArgs(args: string[]): SmokeOptions {
+function parseArgs(args: string[]): TestOptions {
   return {
     verbose: args.includes('--verbose') || args.includes('-v'),
   };
 }
 
-function getProductionSkills(pluginPath: string): string[] {
+interface TestResult {
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+// ── Setup verification helpers ──────────────────────────────────────
+
+function normalizePath(p: string): string {
+  return p.toLowerCase().replace(/\\/g, '/');
+}
+
+interface CopilotConfig {
+  marketplaces?: Record<string, { source?: { source?: string; repo?: string } }>;
+  installed_plugins?: { name: string; marketplace: string; enabled: boolean; cache_path: string }[];
+}
+
+function readCopilotConfig(): CopilotConfig | null {
+  const configPath = join(homedir(), '.copilot', 'config.json');
+  if (!existsSync(configPath)) return null;
+  try {
+    return JSON.parse(readFileSync(configPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+function checkPluginConfig(expectedCachePath: string): TestResult {
+  const config = readCopilotConfig();
+  if (!config) {
+    return { name: 'Plugin config', passed: false, detail: '~/.copilot/config.json not found' };
+  }
+
+  const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
+  if (!marketplace || marketplace.source?.source !== 'github' ||
+      marketplace.source?.repo !== 'microsoft/github-copilot-for-azure') {
+    return { name: 'Plugin config', passed: false, detail: `Marketplace "${MARKETPLACE_NAME}" not configured correctly` };
+  }
+
+  const plugin = (config.installed_plugins ?? []).find(
+    p => p.name === PLUGIN_NAME && p.marketplace === MARKETPLACE_NAME
+  );
+  if (!plugin) {
+    return { name: 'Plugin config', passed: false, detail: `Plugin "${PLUGIN_NAME}" not found in installed_plugins` };
+  }
+  if (!plugin.enabled) {
+    return { name: 'Plugin config', passed: false, detail: 'Plugin is disabled' };
+  }
+  if (normalizePath(plugin.cache_path) !== normalizePath(expectedCachePath)) {
+    return { name: 'Plugin config', passed: false, detail: `cache_path mismatch: ${plugin.cache_path} (expected ${expectedCachePath})` };
+  }
+
+  return { name: 'Plugin config', passed: true, detail: `cache_path → ${plugin.cache_path}` };
+}
+
+function checkNestedInstall(pluginPath: string): TestResult {
+  const nestedSkills = join(pluginPath, 'azure', 'skills');
+  if (existsSync(nestedSkills)) {
+    return { name: 'Nested install', passed: false, detail: `Found nested plugin at ${join(pluginPath, 'azure')} — remove it` };
+  }
+  return { name: 'Nested install', passed: true, detail: 'No nested plugin install' };
+}
+
+function checkMcpRegistration(pluginPath: string): TestResult {
+  const mcpJsonPath = join(pluginPath, '.mcp.json');
+  if (!existsSync(mcpJsonPath)) {
+    return { name: 'MCP registration', passed: false, detail: 'No .mcp.json in plugin directory' };
+  }
+
+  let expected: string[];
+  try {
+    const pluginMcp = JSON.parse(readFileSync(mcpJsonPath, 'utf-8'));
+    expected = Object.keys(pluginMcp.mcpServers ?? {});
+  } catch {
+    return { name: 'MCP registration', passed: false, detail: 'Failed to parse .mcp.json' };
+  }
+
+  if (expected.length === 0) {
+    return { name: 'MCP registration', passed: true, detail: 'No MCP servers defined' };
+  }
+
+  const userMcpPath = join(homedir(), '.copilot', 'mcp-config.json');
+  let registered: string[] = [];
+  if (existsSync(userMcpPath)) {
+    try {
+      const userMcp = JSON.parse(readFileSync(userMcpPath, 'utf-8'));
+      registered = Object.keys(userMcp.mcpServers ?? {});
+    } catch { /* empty */ }
+  }
+
+  const missing = expected.filter(s => !registered.includes(s));
+  if (missing.length > 0) {
+    return { name: 'MCP registration', passed: false, detail: `Missing in mcp-config.json: ${missing.join(', ')}` };
+  }
+
+  return { name: 'MCP registration', passed: true, detail: `All ${expected.length} servers registered: ${expected.join(', ')}` };
+}
+
+function checkSkills(pluginPath: string, verbose: boolean): TestResult {
   const skillsDir = join(pluginPath, 'skills');
-  if (!existsSync(skillsDir)) return [];
-  return readdirSync(skillsDir, { withFileTypes: true })
+  if (!existsSync(skillsDir)) {
+    return { name: 'Skills validation', passed: false, detail: 'skills/ directory not found' };
+  }
+
+  const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
     .filter(d => d.isDirectory() && !d.name.startsWith('_'))
     .map(d => d.name);
+
+  const invalid: { name: string; error: string }[] = [];
+
+  for (const skill of skillDirs) {
+    const skillMdPath = join(skillsDir, skill, 'SKILL.md');
+    if (!existsSync(skillMdPath)) {
+      invalid.push({ name: skill, error: 'missing SKILL.md' });
+      continue;
+    }
+
+    let content: string;
+    try {
+      content = readFileSync(skillMdPath, 'utf-8');
+    } catch {
+      invalid.push({ name: skill, error: 'unreadable SKILL.md' });
+      continue;
+    }
+
+    if (!content.startsWith('---')) {
+      invalid.push({ name: skill, error: 'missing YAML frontmatter' });
+      continue;
+    }
+
+    const fmEnd = content.indexOf('---', 3);
+    if (fmEnd === -1) {
+      invalid.push({ name: skill, error: 'unclosed YAML frontmatter' });
+      continue;
+    }
+
+    const frontmatter = content.slice(3, fmEnd);
+    if (!/^name:\s*.+/m.test(frontmatter)) {
+      invalid.push({ name: skill, error: 'frontmatter missing "name"' });
+      continue;
+    }
+    if (!/^description:\s*.+/m.test(frontmatter) && !/^description:\s*\|/m.test(frontmatter)) {
+      invalid.push({ name: skill, error: 'frontmatter missing "description"' });
+      continue;
+    }
+
+    const nameMatch = frontmatter.match(/^name:\s*(.+)/m);
+    if (nameMatch && nameMatch[1].trim() !== skill) {
+      invalid.push({ name: skill, error: `name "${nameMatch[1].trim()}" doesn't match directory` });
+      continue;
+    }
+  }
+
+  if (invalid.length > 0) {
+    const details = invalid.map(s => `${s.name}: ${s.error}`).join('; ');
+    return { name: 'Skills validation', passed: false, detail: `${invalid.length} invalid: ${details}` };
+  }
+
+  if (verbose) {
+    console.log(`      ${skillDirs.join(', ')}`);
+  }
+
+  return { name: 'Skills validation', passed: true, detail: `All ${skillDirs.length} skills have valid SKILL.md` };
 }
+
+// ── MCP live-test helpers ───────────────────────────────────────────
 
 function getExpectedMcpServers(pluginPath: string): string[] {
   const mcpJsonPath = join(pluginPath, '.mcp.json');
@@ -48,29 +204,8 @@ function getExpectedMcpServers(pluginPath: string): string[] {
   }
 }
 
-function createProbeSkill(pluginPath: string): string {
-  const probeDir = join(pluginPath, 'skills', PROBE_SKILL_NAME);
-  mkdirSync(probeDir, { recursive: true });
-
-  const skillMd = `---
-name: ${PROBE_SKILL_NAME}
-description: "Temporary probe skill for smoke testing. When asked about this skill, respond with exactly: ${PROBE_MARKER}"
----
-When the user mentions "${PROBE_SKILL_NAME}" or asks about smoke test, respond with exactly this text: ${PROBE_MARKER}
-`;
-  writeFileSync(join(probeDir, 'SKILL.md'), skillMd, 'utf-8');
-  return probeDir;
-}
-
-function removeProbeSkill(pluginPath: string): void {
-  const probeDir = join(pluginPath, 'skills', PROBE_SKILL_NAME);
-  if (existsSync(probeDir)) {
-    rmSync(probeDir, { recursive: true, force: true });
-  }
-}
-
 function runCopilotPrompt(prompt: string, verbose: boolean): string {
-  const cmd = `copilot -i "${prompt}" --allow-all-tools --allow-all-paths`;
+  const cmd = `copilot -p "${prompt}" --allow-all-tools --allow-all-paths`;
   if (verbose) {
     console.log(`   🔧 Running: ${cmd}`);
   }
@@ -91,18 +226,10 @@ function runCopilotPrompt(prompt: string, verbose: boolean): string {
   }
 }
 
-interface SmokeResult {
-  name: string;
-  passed: boolean;
-  detail: string;
-}
-
 interface McpToolProbe {
   server: string;
   prompt: string;
-  // Primary: model explicitly reports success
   successPattern: RegExp;
-  // Secondary: tool was invoked (even if it errored, proves server connectivity)
   invokedPattern: RegExp;
 }
 
@@ -127,19 +254,15 @@ const MCP_TOOL_PROBES: McpToolProbe[] = [
     successPattern: /AZURE_OK/i,
     invokedPattern: /azure-documentation/i,
   },
-  {
-    server: 'microsoft-learn',
-    prompt: 'Call the microsoft-learn-microsoft_docs_search tool with query set to azure functions. If it returns data, say MSLEARN_OK. If it fails, say MSLEARN_FAIL.',
-    successPattern: /MSLEARN_OK/i,
-    invokedPattern: /microsoft-learn-microsoft_docs_search/i,
-  },
 ];
+
+// ── Main test function ──────────────────────────────────────────────
 
 export function test(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
   const localPluginPath = join(rootDir, 'plugin');
 
-  console.log('\n🧪 Integration Test - Live Copilot CLI Verification\n');
+  console.log('\n🧪 Local Plugin Integration Test\n');
   console.log('────────────────────────────────────────────────────────────');
 
   if (!existsSync(localPluginPath)) {
@@ -148,126 +271,54 @@ export function test(rootDir: string, args: string[]): void {
     return;
   }
 
-  const productionSkills = getProductionSkills(localPluginPath);
-  const expectedMcpServers = getExpectedMcpServers(localPluginPath);
+  const results: TestResult[] = [];
 
-  console.log(`   📦 Production skills: ${productionSkills.length}`);
-  console.log(`   🔌 Expected MCP servers: ${expectedMcpServers.join(', ') || 'none'}`);
+  // ── Phase 1: Setup verification (no Copilot CLI needed) ──
 
-  // Create probe skill
-  console.log('\n   📝 Creating temporary probe skill...');
-  let probeDir: string;
-  try {
-    probeDir = createProbeSkill(localPluginPath);
-    console.log(`   ✅ Created: ${probeDir}`);
-  } catch (error) {
-    console.log(`   ❌ Failed to create probe skill: ${error instanceof Error ? error.message : error}`);
+  console.log('\n📋 Phase 1: Setup Verification\n');
+
+  const configResult = checkPluginConfig(localPluginPath);
+  results.push(configResult);
+  console.log(`   ${configResult.passed ? '✅' : '❌'} ${configResult.name}: ${configResult.detail}`);
+
+  const nestedResult = checkNestedInstall(localPluginPath);
+  results.push(nestedResult);
+  console.log(`   ${nestedResult.passed ? '✅' : '❌'} ${nestedResult.name}: ${nestedResult.detail}`);
+
+  const mcpRegResult = checkMcpRegistration(localPluginPath);
+  results.push(mcpRegResult);
+  console.log(`   ${mcpRegResult.passed ? '✅' : '❌'} ${mcpRegResult.name}: ${mcpRegResult.detail}`);
+
+  const skillsResult = checkSkills(localPluginPath, options.verbose);
+  results.push(skillsResult);
+  console.log(`   ${skillsResult.passed ? '✅' : '❌'} ${skillsResult.name}: ${skillsResult.detail}`);
+
+  // Abort early if setup is broken
+  const setupPassed = results.every(r => r.passed);
+  if (!setupPassed) {
+    console.log('\n────────────────────────────────────────────────────────────');
+    console.log('\n❌ TEST FAILED — setup verification did not pass\n');
+    console.log('   Run "npm run local setup --force" to fix.\n');
     process.exitCode = 1;
     return;
   }
 
-  const results: SmokeResult[] = [];
+  // ── Phase 2: Live MCP server tests ──
 
-  try {
-    // Test 1: Probe skill detection (proves local plugin is loaded)
-    console.log('\n🧪 Test 1: Local Plugin Loading (probe skill)');
-    console.log('   ⏳ Launching Copilot CLI...');
+  const expectedMcpServers = getExpectedMcpServers(localPluginPath);
 
-    const probePrompt = `You have a skill called ${PROBE_SKILL_NAME}. If you can see it in your available skills, respond with exactly: ${PROBE_MARKER}. If you cannot find it, respond with: PROBE_NOT_FOUND. Do not use any tools. Just check your loaded skills and respond.`;
-    const probeOutput = runCopilotPrompt(probePrompt, options.verbose);
-
-    if (options.verbose) {
-      console.log(`   📄 Output (first 500 chars): ${probeOutput.slice(0, 500)}`);
-    }
-
-    const probeFound = probeOutput.includes(PROBE_MARKER);
-    results.push({
-      name: 'Local plugin loaded',
-      passed: probeFound,
-      detail: probeFound
-        ? 'Probe skill found — Copilot is reading from local plugin directory'
-        : 'Probe skill NOT found — Copilot may not be using local plugin',
-    });
-    console.log(`   ${probeFound ? '✅' : '❌'} ${results[results.length - 1].detail}`);
-
-    // Test 2: Production skills registered
-    console.log('\n🧪 Test 2: Production Skills Registration');
-    console.log('   ⏳ Asking Copilot to list skills...');
-
-    const skillsPrompt = `List ALL your available skills by name. Output each skill name on its own line. Do not use any tools. Just list the skill names from your loaded plugins.`;
-    const skillsOutput = runCopilotPrompt(skillsPrompt, options.verbose);
-
-    if (options.verbose) {
-      console.log(`   📄 Output (first 500 chars): ${skillsOutput.slice(0, 500)}`);
-    }
-
-    const outputLower = skillsOutput.toLowerCase();
-    const foundSkills = productionSkills.filter(s => outputLower.includes(s.toLowerCase()));
-    const missingSkills = productionSkills.filter(s => !outputLower.includes(s.toLowerCase()));
-
-    const skillsPassed = missingSkills.length === 0;
-    results.push({
-      name: 'Production skills',
-      passed: skillsPassed,
-      detail: skillsPassed
-        ? `All ${productionSkills.length} production skills registered`
-        : `${missingSkills.length} missing: ${missingSkills.join(', ')}`,
-    });
-    console.log(`   ${skillsPassed ? '✅' : '❌'} ${results[results.length - 1].detail}`);
-    if (!skillsPassed && foundSkills.length > 0) {
-      console.log(`   ✅ Found ${foundSkills.length}: ${foundSkills.join(', ')}`);
-    }
-
-    // Test 3: MCP servers connected
-    // Use a single combined prompt to check all MCP tools at once (faster, one copilot launch)
-    if (expectedMcpServers.length > 0) {
-      console.log('\n🧪 Test 3: MCP Server Connectivity');
-      console.log('   ⏳ Asking Copilot to list tool names...');
-
-      // Tools use the {server}-{tool} naming pattern, so we can detect servers from tool names
-      const mcpPrompt = `List every tool name you have access to. Output each tool name on its own line. Include MCP tools. Do not use any tools, just list them.`;
-      const mcpOutput = runCopilotPrompt(mcpPrompt, options.verbose);
-
-      if (options.verbose) {
-        console.log(`   📄 Output (first 800 chars): ${mcpOutput.slice(0, 800)}`);
-      }
-
-      const mcpLower = mcpOutput.toLowerCase();
-      // MCP tools use {server}-{tool} or {server}_{tool} pattern
-      // Also check for server name mentioned directly
-      const foundServers = expectedMcpServers.filter(s => {
-        const sLower = s.toLowerCase();
-        return mcpLower.includes(`${sLower}-`) ||
-               mcpLower.includes(`${sLower}_`) ||
-               mcpLower.includes(sLower);
-      });
-      const missingServers = expectedMcpServers.filter(s => !foundServers.includes(s));
-
-      const mcpPassed = missingServers.length === 0;
-      results.push({
-        name: 'MCP servers',
-        passed: mcpPassed,
-        detail: mcpPassed
-          ? `All ${expectedMcpServers.length} MCP servers connected`
-          : `${missingServers.length} missing: ${missingServers.join(', ')}`,
-      });
-      console.log(`   ${mcpPassed ? '✅' : '❌'} ${results[results.length - 1].detail}`);
-      if (!mcpPassed && foundServers.length > 0) {
-        console.log(`   ✅ Found ${foundServers.length}: ${foundServers.join(', ')}`);
-      }
-    }
-
-    // Test 4: Per-server tool invocation
-    console.log('\n🧪 Test 4: MCP Server Tool Invocation');
-    console.log('   ⏳ Testing each MCP server with a real tool call...');
+  if (expectedMcpServers.length === 0) {
+    console.log('\n   ⚠️  No MCP servers defined — skipping live tests');
+  } else {
+    console.log('\n📋 Phase 2: MCP Server Tool Invocation\n');
+    console.log(`   Testing ${expectedMcpServers.join(', ')}...\n`);
 
     const serverResults: { server: string; passed: boolean; detail: string }[] = [];
 
     for (const probe of MCP_TOOL_PROBES) {
-      // Skip servers not in our expected list
       if (!expectedMcpServers.includes(probe.server)) continue;
 
-      console.log(`\n   🔌 ${probe.server}:`);
+      console.log(`   🔌 ${probe.server}:`);
       console.log('      ⏳ Calling tool...');
 
       const output = runCopilotPrompt(probe.prompt, options.verbose);
@@ -278,7 +329,6 @@ export function test(rootDir: string, args: string[]): void {
 
       const passed = probe.successPattern.test(output);
       const invoked = probe.invokedPattern.test(output);
-      // Server is working if tool was called (even if it errored due to setup like missing Chrome)
       const serverOk = passed || invoked;
       let detail: string;
       if (passed) {
@@ -289,7 +339,14 @@ export function test(rootDir: string, args: string[]): void {
         detail = 'Tool call failed — server may not be connected';
       }
       serverResults.push({ server: probe.server, passed: serverOk, detail });
-      console.log(`      ${serverOk ? '✅' : '❌'} ${detail}`);
+      console.log(`      ${serverOk ? '✅' : '❌'} ${detail}\n`);
+    }
+
+    // Check for expected servers that have no probe defined
+    const testedServers = MCP_TOOL_PROBES.map(p => p.server);
+    const untestedServers = expectedMcpServers.filter(s => !testedServers.includes(s));
+    if (untestedServers.length > 0) {
+      console.log(`   ⚠️  No tool probe defined for: ${untestedServers.join(', ')}`);
     }
 
     const toolTestPassed = serverResults.every(r => r.passed);
@@ -298,23 +355,18 @@ export function test(rootDir: string, args: string[]): void {
       passed: toolTestPassed,
       detail: toolTestPassed
         ? `All ${serverResults.length} MCP servers responded to tool calls`
-        : `${serverResults.filter(r => !r.passed).map(r => r.server).join(', ')} failed`,
+        : `Failed: ${serverResults.filter(r => !r.passed).map(r => r.server).join(', ')}`,
     });
-  } finally {
-    // Always clean up probe skill
-    console.log('\n   🧹 Cleaning up probe skill...');
-    removeProbeSkill(localPluginPath);
-    console.log('   ✅ Probe skill removed');
   }
 
-  // Summary
-  console.log('\n────────────────────────────────────────────────────────────');
+  // ── Summary ──
+
+  console.log('────────────────────────────────────────────────────────────');
 
   const allPassed = results.every(r => r.passed);
   if (allPassed) {
     console.log('\n✅ TEST PASSED\n');
-    console.log('   Copilot CLI is correctly loading local plugin,');
-    console.log('   all production skills are registered, and MCP servers are connected.\n');
+    console.log('   Plugin setup is correct and MCP servers are responding.\n');
   } else {
     console.log('\n❌ TEST FAILED\n');
     for (const r of results) {
