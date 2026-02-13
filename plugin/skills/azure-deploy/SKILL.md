@@ -76,3 +76,7 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
 | `mcp_azure_mcp_azd` | Execute AZD commands |
+
+## References
+
+- [Troubleshooting](references/troubleshooting.md) - Common issues and solutions

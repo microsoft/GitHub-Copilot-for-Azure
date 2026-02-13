@@ -265,13 +265,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Run reference check and capture output
-          if npm run references 2>&1 | tee reference-check.log; then
+          if OUTPUT=$(npm run references 2>&1); then
+            echo "$OUTPUT"
             echo "✅ All markdown references are valid" >> $GITHUB_STEP_SUMMARY
           else
+            echo "$OUTPUT"
             echo "❌ Found broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat reference-check.log >> $GITHUB_STEP_SUMMARY
+            echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
