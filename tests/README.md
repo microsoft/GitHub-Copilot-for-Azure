@@ -124,7 +124,7 @@ test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {
 npm run update:snapshots -- --testPathPattern={skill-name}
 ```
 
-### 3. Integration Tests (`integration.test.js`)
+### 3. Integration Tests (`integration.test.ts`)
 
 **Purpose:** Test skill behavior with a real Copilot agent session.
 
@@ -197,9 +197,9 @@ cd tests
 npm run test:integration -- azure-deploy static-web-apps-deploy
 ```
 
-Test cases are grouped under the `describe` groups. It's commonly useful to use the title of the `describe` group of the 2nd argument to run test cases of that group.
+Test cases are grouped under the `describe` groups. It's commonly useful to use the title of the `describe` group as the 2nd argument to run test cases of that group.
 
-To learn more about how the CLI options work, checkout `tests/scripts/run-tests.js`.
+To learn more about how the CLI options work, check out `tests/scripts/run-tests.js`.
 
 ### Reading Test Output
 
@@ -207,7 +207,7 @@ To learn more about how the CLI options work, checkout `tests/scripts/run-tests.
 
 **CI output:** JUnit XML at `tests/reports/junit.xml` - parsed by GitHub Actions for PR annotations.
 
-**Debug Mode:** When enviorment variable `DEBUG=1` is set logs will be recorded at `test/reports/test-run-{time}`
+**Debug Mode:** When environment variable `DEBUG=1` is set, logs will be recorded at `tests/reports/test-run-{time}`
 
 
 ### Generating Report
@@ -233,9 +233,9 @@ That's it. Copilot will read `tests/AGENTS.md` and create a complete test suite 
 
 > **Tip:** Replace `azure-redis` with any skill name from `/plugin/skills/`
 
-### Review and fix the AI generated test
+### Review and fix the AI-generated tests
 
-AI generated tests commonly miss required setup for the agent to make sense. For example, asking an agent to deploy an app without giving an app to the agent won't make much sense. They also often don't have the fine-level evaluation checks that would be useful. The test author needs to review the AI generated tests to make sure they are testing valid scenarios and the evaluation checks are sufficient.
+AI-generated tests commonly miss required setup for the agent to make sense. For example, asking an agent to deploy an app without giving an app to the agent won't make much sense. They also often don't have the fine-grained evaluation checks that would be useful. The test author needs to review the AI generated tests to make sure they are testing valid scenarios and the evaluation checks are sufficient.
 
 ---
 
