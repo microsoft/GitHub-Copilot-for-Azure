@@ -173,10 +173,11 @@ export function setupMcpServers(pluginPath: string, options: { force: boolean })
 
   for (const [name, entry] of Object.entries(pluginMcp.mcpServers)) {
     const existing = mcpConfig.mcpServers[name];
+    const isRemote = !!entry.url;
     const merged: McpServerEntry = {
       ...entry,
       tools: entry.tools ?? ['*'],
-      type: entry.type ?? 'stdio',
+      type: entry.type ?? (isRemote ? 'sse' : 'stdio'),
     };
 
     if (existing) {

@@ -34,7 +34,7 @@ Usage: npm run local <command> [options]
 Commands:
   setup     Configure ~/.copilot/config.json and mcp-config.json for local dev
   verify    Verify config, MCP servers, and skills are correctly set up
-  test      Live test: launch Copilot CLI and verify plugin + MCP servers load
+  test      Verify setup + live-test MCP servers via Copilot CLI
   help      Show this help message
 
 Options:
