@@ -74,7 +74,7 @@ For apps using the Copilot SDK for AI features without a full agent setup.
 | Service API | `curl -s http://localhost:3000/health` |
 | Service endpoint | `curl -s -X POST http://localhost:3000/api/<endpoint> -H "Content-Type: application/json" -d '{"input":"test"}'` |
 
-## BYOK (Bring Your Own Model)
+## BYOM (Bring Your Own Model)
 
 Pass provider config when creating a session. For Azure endpoints, use `DefaultAzureCredential` with `bearerToken` — no API keys.
 
@@ -87,5 +87,5 @@ Supported providers: `openai`, `azure`, `anthropic`, `ollama`.
 | `docker info` fails | Install Docker Desktop and start it |
 | `gh auth token` fails | Run `gh auth login` then `gh auth refresh --scopes copilot` |
 | `ECONNREFUSED` on JSON-RPC | Set autoStart or start CLI manually |
-| `Model not available` | Check model name; for BYOK verify provider config |
+| `Model not available` | Check model name; for BYOM verify provider config |
 | Session hangs | Set a max turns limit or add a hook to break |
