@@ -39,7 +39,7 @@ Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-t
 
 ### Step 1: Verify Agent Readiness
 
-Delegate the readiness check to a `task` or `runSubagent` sub-agent (type: `task`). Provide the project endpoint and agent name, and instruct it to:
+Delegate the readiness check to a sub-agent. Provide the project endpoint and agent name, and instruct it to:
 
 **Prompt agents** → Use `agent_get` to verify the agent exists.
 
@@ -50,7 +50,7 @@ Delegate the readiness check to a `task` or `runSubagent` sub-agent (type: `task
 
 ### Step 2: Invoke Agent
 
-If an `azure.yaml` exists in the project root, run `azd env get-values` and look for `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` to pre-fill the project endpoint. Use the `ask_user` or `askQuestions` tool for any values not resolved from azd (project endpoint, agent name).
+Use the project endpoint and agent name from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved.
 
 Use `agent_invoke` to send a message:
 - `projectEndpoint` — AI Foundry project endpoint

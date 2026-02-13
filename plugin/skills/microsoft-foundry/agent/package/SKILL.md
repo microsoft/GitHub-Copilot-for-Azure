@@ -41,7 +41,7 @@ Package agent projects into container images for deployment as Hosted Agents in 
 
 ### Step 1: Get Project Path
 
-Use the `ask_user` or `askQuestions` tool to ask the user for the absolute path to their agent project directory. If the workspace already has a single project root open, offer it as the default choice.
+Use the project path from the project context (see Common: Project Context Resolution). If not available, ask the user for the absolute path to their agent project directory. If the workspace already has a single project root open, offer it as the default choice.
 
 ### Step 2: Detect Project Type
 
@@ -49,7 +49,7 @@ Check for detection files listed in the Supported Project Types table above. Use
 
 ### Step 3: Scan for Environment Variables
 
-Delegate the environment variable scan to a `task` or `runSubagent` sub-agent (type: `explore`). Provide it the project path, detected project type, and the patterns table below. The sub-agent should search source files and return a structured list of variable names, classification (required/optional), and any default values found.
+Delegate the environment variable scan to a sub-agent. Provide it the project path, detected project type, and the patterns table below. The sub-agent should search source files and return a structured list of variable names, classification (required/optional), and any default values found.
 
 Search source files for environment variable access patterns based on the detected project type:
 
@@ -68,24 +68,20 @@ Search source files for environment variable access patterns based on the detect
 
 ### Step 4: Collect Environment Variable Values
 
-Check if the project is an `azd` project by looking for `azure.yaml` in the project root. If found:
+Use the azd environment values from the project context (see Common: Project Context Resolution) to pre-fill discovered variables (exact match or common aliases like `AZURE_OPENAI_ENDPOINT` for `OPENAI_ENDPOINT`).
 
-1. Run `azd env get-values` to load all azd environment variables
-2. Match discovered variable names against azd output (exact match or common aliases like `AZURE_OPENAI_ENDPOINT` for `OPENAI_ENDPOINT`)
-3. Pre-fill matched values as defaults
-
-Present discovered variables to the user using the `ask_user` or `askQuestions` tool, grouped by required (no default) and optional (with defaults). Show azd-resolved values as pre-filled defaults. Only prompt the user for variables not resolved from azd or project defaults.
+Present discovered variables to the user, grouped by required (no default) and optional (with defaults). Show azd-resolved values as pre-filled defaults. Only prompt the user for variables not resolved from azd or project defaults.
 
 > ⚠️ **Warning:** For sensitive variables (API keys, connection strings), remind users to add `.env` to `.gitignore` and consider Azure Key Vault for production secrets.
 
 ### Step 5: Generate Dockerfile
 
-Delegate Dockerfile creation to a `task` or `runSubagent` sub-agent (type: `general-purpose`). Provide the project type, runtime version, port, and any special requirements. The sub-agent should create the Dockerfile in the project directory following these guidelines:
+Delegate Dockerfile creation to a sub-agent. Provide the project type, runtime version, port, and any special requirements. The sub-agent should create the Dockerfile in the project directory following these guidelines:
 
 - Find the official base image for the language and runtime version
 - Use multi-stage builds (build stage + runtime stage) for compiled languages
 - Use Alpine or slim variants for smaller final images
-- Expose the correct port (use `ask_user` or `askQuestions` tool to ask the user if not detectable from project config)
+- Expose the correct port (ask the user if not detectable from project config)
 - Set the appropriate entrypoint for the project type
 - Always target `linux/amd64` platform
 
@@ -101,9 +97,9 @@ Create supporting files for local development:
 
 ### Step 7: Build and Push to ACR
 
-Collect ACR details. If an `azure.yaml` exists in the project root, run `azd env get-values` and look for `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` to pre-fill the registry name. Use the `ask_user` or `askQuestions` tool for any values not found in the azd environment: registry name, repository name, image tag (default: `latest`).
+Collect ACR details. Use the ACR name from the project context (see Common: Project Context Resolution) if available. Ask the user only for values not already resolved: registry name, repository name, image tag (default: `latest`).
 
-Use the `ask_user` or `askQuestions` tool to let the user choose the build method with choices: `["Cloud Build (ACR Tasks) (Recommended)", "Local Docker Build"]`.
+Let the user choose the build method: `Cloud Build (ACR Tasks) (Recommended)` or `Local Docker Build`.
 
 **Option A: Cloud Build (ACR Tasks)** — No local Docker required
 

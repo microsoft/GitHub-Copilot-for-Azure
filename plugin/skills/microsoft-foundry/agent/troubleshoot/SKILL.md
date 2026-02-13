@@ -40,10 +40,7 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 
 ### Step 1: Collect Agent Information
 
-If an `azure.yaml` exists in the project root, run `azd env get-values` and look for:
-- `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` → pre-fill **Project endpoint**
-
-Use the `ask_user` or `askQuestions` tool for any values not resolved from azd:
+Use the project endpoint and agent name from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved:
 - **Project endpoint** — AI Foundry project endpoint URL
 - **Agent name** — Name of the agent to troubleshoot
 
@@ -69,7 +66,7 @@ List the project connections to find Application Insights or Azure Monitor resou
 
 Refer to the documentation above for the exact command syntax and parameters. Look for connections of type `ApplicationInsights` or `AzureMonitor` in the output.
 
-If no observability connection is found, inform the user and suggest setting up Application Insights for the project. Use the `ask_user` or `askQuestions` tool to ask if they want to proceed without telemetry data.
+If no observability connection is found, inform the user and suggest setting up Application Insights for the project. Ask if they want to proceed without telemetry data.
 
 ### Step 5: Query Application Insights Telemetry
 
