@@ -1,4 +1,4 @@
-import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked } from "../utils/agent-runner";
 
 /**
  * Common Azure deployment link patterns
@@ -20,4 +20,20 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
   const content = getAllAssistantMessages(agentMetadata);
 
   return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
+}
+
+export function softCheckDeploySkills(agentMetadata: AgentMetadata): void {
+  const isDeploySkillUsed = isSkillInvoked(agentMetadata, "azure-deploy");
+  const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+  const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+
+  if (!isDeploySkillUsed) {
+    agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
+  }
+  if (!isValidateInvoked) {
+    agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
+  }
+  if (!isPrepareInvoked) {
+    agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
+  }
 }

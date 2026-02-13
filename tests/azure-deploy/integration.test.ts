@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills} from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
@@ -134,20 +134,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
@@ -158,20 +147,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
@@ -185,20 +163,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
+      
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
@@ -209,20 +176,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
@@ -236,20 +192,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
+      
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
@@ -260,20 +205,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
@@ -287,20 +221,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
 
@@ -311,20 +234,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         followUp: FOLLOW_UP_PROMPT
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      if (!isSkillUsed) {
-        agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-      }
-      if (!isValidateInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-      }
-      if (!isPrepareInvoked) {
-        agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-      }
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
@@ -351,20 +263,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -391,20 +292,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -430,20 +320,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -470,20 +349,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -509,20 +377,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -548,20 +405,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(false); //should not deploy
       }, brownfieldTestTimeoutMs);
 
@@ -587,20 +433,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+        
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -626,20 +461,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
@@ -665,20 +489,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
         });
     
-        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
-    
-        if (!isSkillUsed) {
-          agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-        }
-        if (!isValidateInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-        }
-        if (!isPrepareInvoked) {
-          agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-        }
+        
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
   })
