@@ -14,7 +14,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { 
-  useAgentRunner,
+  useAgentRunner, 
   isSkillInvoked, 
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
@@ -29,7 +29,7 @@ const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : descr
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
-  
+
   // Example test: Verify the skill is invoked for a relevant prompt
   test("invokes skill for relevant prompt", async () => {
     const agentMetadata = await agent.run({

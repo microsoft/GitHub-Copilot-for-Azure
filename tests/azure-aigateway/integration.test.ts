@@ -10,7 +10,7 @@
  */
 
 import { 
-  useAgentRunner,
+  useAgentRunner, 
   isSkillInvoked, 
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -34,6 +34,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
       test("invokes azure-aigateway skill for API Management gateway prompt", async () => {
       let successCount = 0;

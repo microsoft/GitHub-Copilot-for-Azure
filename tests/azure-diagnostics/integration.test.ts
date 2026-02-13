@@ -34,6 +34,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes azure-diagnostics skill for Container Apps troubleshooting prompt", async () => {
       let successCount = 0;

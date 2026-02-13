@@ -34,6 +34,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes azure-postgres skill for passwordless authentication prompt", async () => {
       let successCount = 0;

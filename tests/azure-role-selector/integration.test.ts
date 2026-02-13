@@ -10,7 +10,7 @@
  */
 
 import { 
-  useAgentRunner,
+  useAgentRunner, 
   isSkillInvoked, 
   areToolCallsSuccess, 
   doesAssistantMessageIncludeKeyword,
@@ -33,7 +33,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
-  
+
   test("invokes azure-role-selector skill for AcrPull prompt", async () => {
     let agentMetadata;
     try {

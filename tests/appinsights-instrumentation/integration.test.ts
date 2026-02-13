@@ -39,6 +39,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes skill for App Insights instrumentation request", async () => {
       let successCount = 0;
