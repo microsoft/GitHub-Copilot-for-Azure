@@ -279,7 +279,7 @@ jobs:
           if [ -n "$SKILL_REPORTS" ]; then
             echo "$SKILL_REPORTS" | while read -r REPORT; do
               echo "Found skill report: $REPORT"
-              echo "\n" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
               cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
             done
           else
