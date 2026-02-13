@@ -24,7 +24,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -84,7 +84,11 @@ jobs:
         with:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
-      # Manually break down the integration tests per skill
+      # Manually break down the integration tests per skill for easy tracking progress of a partially complete run.
+      # Todo: Make test failure abort the workflow when we have baseline tests that must pass.
+      # As of today, each step won't abort even if the integration test fails.
+      # This is because many integration tests aren't polished enough and consistently fails.
+      # Skill authors should use the reports to identify issues and polish their skills/tests.
 
       - name: Integration tests - appinsights-instrumentation
         id: integration-tests-appinsights-instrumentation
@@ -94,7 +98,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration appinsights-instrumentation
-          npm run report -- --skill appinsights-instrumentation
         continue-on-error: true
 
       - name: Integration tests - azure-ai
@@ -105,7 +108,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-ai
-          npm run report -- --skill azure-ai
         continue-on-error: true
 
       - name: Integration tests - azure-aigateway
@@ -116,7 +118,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-aigateway
-          npm run report -- --skill azure-aigateway
         continue-on-error: true
 
       - name: Integration tests - azure-compliance
@@ -127,7 +128,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-compliance
-          npm run report -- --skill azure-compliance
         continue-on-error: true
 
       - name: Integration tests - azure-cost-optimization
@@ -138,7 +138,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-cost-optimization
-          npm run report -- --skill azure-cost-optimization
         continue-on-error: true
 
       - name: Integration tests - azure-deploy
@@ -149,7 +148,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-deploy
-          npm run report -- --skill azure-deploy
         continue-on-error: true
 
       - name: Integration tests - azure-diagnostics
@@ -160,7 +158,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-diagnostics
-          npm run report -- --skill azure-diagnostics
         continue-on-error: true
 
       - name: Integration tests - azure-kusto
@@ -171,7 +168,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-kusto
-          npm run report -- --skill azure-kusto
         continue-on-error: true
 
       - name: Integration tests - azure-observability
@@ -182,7 +178,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-observability
-          npm run report -- --skill azure-observability
         continue-on-error: true
 
       - name: Integration tests - azure-postgres
@@ -193,7 +188,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-postgres
-          npm run report -- --skill azure-postgres
         continue-on-error: true
 
       - name: Integration tests - azure-prepare
@@ -204,7 +198,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-prepare
-          npm run report -- --skill azure-prepare
         continue-on-error: true
 
       - name: Integration tests - azure-resource-visualizer
@@ -215,7 +208,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-resource-visualizer
-          npm run report -- --skill azure-resource-visualizer
         continue-on-error: true
 
       - name: Integration tests - azure-role-selector
@@ -226,7 +218,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-role-selector
-          npm run report -- --skill azure-role-selector
         continue-on-error: true
 
       - name: Integration tests - azure-storage
@@ -237,7 +228,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-storage
-          npm run report -- --skill azure-storage
         continue-on-error: true
 
       - name: Integration tests - azure-validate
@@ -248,7 +238,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration azure-validate
-          npm run report -- --skill azure-validate
         continue-on-error: true
 
       - name: Integration tests - entra-app-registration
@@ -259,7 +248,6 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration entra-app-registration
-          npm run report -- --skill entra-app-registration
         continue-on-error: true
 
       - name: Integration tests - microsoft-foundry
@@ -270,10 +258,21 @@ jobs:
           TEST_RUN_ID: all-integration
         run: |
           npm run test:integration microsoft-foundry
-          npm run report -- --skill microsoft-foundry
         continue-on-error: true
+      
+      - name: Generate skill reports
+        if: always()
+        id: generate-skill-reports
+        run: |
+          IFS=',' read -ra SKILLS <<< "${{ inputs.skills }}"
+          for SKILL in "${SKILLS[@]}"; do
+            SKILL=$(echo "$SKILL" | xargs)
+            echo "Generating report for: $SKILL"
+            npm run report -- --skill "$SKILL" || true
+          done
 
       - name: Show skill reports
+        if: always()
         id: show-skill-reports
         run: |
           SKILL_REPORTS=$(find reports -name "*-SKILL-REPORT.md" -type f | sort)
@@ -288,6 +287,8 @@ jobs:
           fi
 
       - name: Export report
+        if: always()
+        id: export-report
         uses: actions/upload-artifact@v4
         with:
           name: azure-all-integration-test-reports

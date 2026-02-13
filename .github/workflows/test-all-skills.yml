@@ -21,15 +21,6 @@ on:
         required: false
         type: boolean
         default: true
-      run-integration-tests:
-        description: 'Run integration tests'
-        type: boolean
-        default: true
-      debug:
-        description: 'Whether to set DEBUG=1 for jest tests'
-        required: false
-        type: boolean
-        default: false
 
   push:
     branches:
@@ -134,54 +125,6 @@ jobs:
               console.log('| Lines | ' + c.lines.pct + '% |');
             " >> $GITHUB_STEP_SUMMARY
           fi
-      
-      # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
-      # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
-      # As a known issue, when the permission of the token doesn't grant sufficient access,
-      # the agent will hang instead of giving an error.
-      # If you see the agent hang indefinitely, try refreshing the access token.
-      # See https://github.com/github/copilot-sdk/issues/343 for more details.
-      - name: Setup Copilot CLI
-        id: setup-copilot-cli
-        if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
-        uses: mvkaran/setup-copilot-cli@v1
-        with:
-          token: ${{ secrets.COPILOT_CLI_TOKEN }}
-
-      - name: Integration tests
-        id: integration-tests
-        if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
-        env:
-          GH_HEAD_SHA: ${{ github.sha }}
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-        run: |
-          if [ -n "${{ inputs.skill-name }}" ]; then
-            TEST_ARGS="--testPathPattern=${{ inputs.skill-name }}"
-          fi
-          npm run test:integration -- --testNamePattern="skill-invocation" $TEST_ARGS
-          
-          # One or more result-{skill}.txt will be written to tests/
-          npm run mergeSkillInvocationTestResult
-          
-          # skill-invocation-test-summary.md will be written to tests/
-          cat skill-invocation-test-summary.md
-          
-          # Read the summary file and save to step output with commit hash
-          if [ -f skill-invocation-test-summary.md ]; then
-            echo "skill invocation test summary" >> $GITHUB_STEP_SUMMARY
-            echo "**Commit:** \`${GH_HEAD_SHA:0:7}\` ($GH_HEAD_SHA)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            cat skill-invocation-test-summary.md >> $GITHUB_STEP_SUMMARY
-          fi
-        continue-on-error: true
-      
-      - name: Upload integration test results
-        if: inputs.run-integration-tests && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-skill-invocation
-          path: tests/skill-invocation-test-summary.md
-          retention-days: 30
 
   update-readme:
     name: Update Coverage Grid
