@@ -26,7 +26,7 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
  * Check if file-creation tool calls produced Terraform (.tf) files
  */
 export function hasTerraformFiles(agentMetadata: AgentMetadata): boolean {
-  const fileToolCalls = getToolCalls(agentMetadata, "create_file");
+  const fileToolCalls = getToolCalls(agentMetadata, "create");
   return fileToolCalls.some(event => {
     const args = JSON.stringify(event.data);
     return /\.tf"/i.test(args);
@@ -37,7 +37,7 @@ export function hasTerraformFiles(agentMetadata: AgentMetadata): boolean {
  * Check if file-creation tool calls produced Bicep (.bicep) files
  */
 export function hasBicepFiles(agentMetadata: AgentMetadata): boolean {
-  const fileToolCalls = getToolCalls(agentMetadata, "create_file");
+  const fileToolCalls = getToolCalls(agentMetadata, "create");
   return fileToolCalls.some(event => {
     const args = JSON.stringify(event.data);
     return /\.bicep"/i.test(args);
