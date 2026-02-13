@@ -14,7 +14,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
@@ -38,13 +38,14 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for App Insights instrumentation request", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "How do I add Application Insights to my ASP.NET Core web app?"
           });
 
@@ -71,7 +72,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             setup: async (workspace: string) => {
               // Create a package.json to indicate Node.js project
               fs.writeFileSync(
@@ -102,7 +103,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   });
 
   test("response mentions auto-instrumentation for ASP.NET Core App Service app", async () => {
-    const agentMetadata = await run({
+    const agentMetadata = await agent.run({
       setup: async (workspace: string) => {
         fs.cpSync("./appinsights-instrumentation/resources/aspnetcore-app/", workspace, { recursive: true });
       },
@@ -119,7 +120,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   test("mentions App Insights in response", async () => {
     let workspacePath: string | undefined;
-    const agentMetadata = await run({
+    const agentMetadata = await agent.run({
       setup: async (workspace: string) => {
         workspacePath = workspace;
         fs.cpSync("./appinsights-instrumentation/resources/python-app/", workspace, { recursive: true });

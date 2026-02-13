@@ -14,7 +14,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { run, type TestConfig } from "../utils/agent-runner";
+import { useAgentRunner, type TestConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,7 +148,7 @@ ${consolidatedContent}
 OUTPUT THE REPORT NOW (starting with the # heading):`
   };
 
-  const agentMetadata = await run(config);
+  const agentMetadata = await agent.run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];
@@ -159,11 +159,11 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   }
 
   // Save the consolidated report in the subdirectory
-  const outputPath = path.join(subdirPath, `${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
+  const outputPath = path.join(subdirPath, `test${CONSOLIDATED_REPORT_SUFFIX}`);
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
-  console.log(`    ✅ Generated: ${subdirName}${CONSOLIDATED_REPORT_SUFFIX}`);
+  console.log(`    ✅ Generated: test${CONSOLIDATED_REPORT_SUFFIX}`);
 
   return outputPath;
 }
@@ -203,13 +203,9 @@ CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, e
 
 Create a per-skill report for the skill "${skill}" that aggregates all the individual test reports below. The report MUST follow the exact structure and formatting of the template below.
 
-1. **Overall Summary Section**: Aggregate total results across all reports (total tests, pass/fail counts, success rate)
-2. **Structure**: Follow a similar markdown structure to the individual reports
-3. **High-Level Findings**: Include any warnings, errors, or important findings across all reports (no need for specific test details)
-4. **Token Usage**: Aggregate and report total token usage across all reports
-5. **Subdirectory Breakdown**: Brief summary of results per subdirectory/skill area
+## Report Template
 
-Be concise but comprehensive. Focus on the big picture and actionable insights.
+${aggregatedTemplate}
 
 ---
 
@@ -226,7 +222,7 @@ OUTPUT THE SKILL REPORT NOW (starting with the # heading):`,
     }
   };
 
-  const agentMetadata = await run(config);
+  const agentMetadata = await agent.run(config);
 
   // Extract assistant messages from events
   const assistantMessages: string[] = [];

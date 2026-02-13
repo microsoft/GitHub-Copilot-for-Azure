@@ -10,7 +10,7 @@
  */
 
 import { 
-  run, 
+  useAgentRunner,
   isSkillInvoked, 
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -34,13 +34,14 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes azure-cost-optimization skill for cost savings prompt", async () => {
       let successCount = 0;
       
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "How can I reduce my Azure spending and find cost savings in my subscription?"
           });
           
@@ -67,7 +68,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Find orphaned and unused resources in my Azure subscription that I can delete"
           });
           
@@ -94,7 +95,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Rightsize my Azure VMs to reduce costs"
           });
           
@@ -121,7 +122,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "How can I optimize my Azure Redis costs?"
           });
           
@@ -148,7 +149,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Find unused storage accounts to reduce my Azure costs"
           });
           
@@ -173,7 +174,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   test("response mentions Cost Management for cost analysis", async () => {
     try {
-      const agentMetadata = await run({
+      const agentMetadata = await agent.run({
         prompt: "Analyze my Azure costs and show me where I can save money"
       });
 

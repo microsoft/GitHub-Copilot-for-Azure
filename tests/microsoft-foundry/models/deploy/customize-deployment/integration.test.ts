@@ -11,7 +11,7 @@
 
 import * as fs from "fs";
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -32,12 +32,13 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration("customize (customize-deployment) - Integration Tests", () => {
   describe("skill-invocation", () => {
+  const agent = useAgentRunner();
     test("invokes skill for custom deployment prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Deploy gpt-4o with custom SKU and capacity configuration"
           });
 
@@ -64,7 +65,7 @@ describeIntegration("customize (customize-deployment) - Integration Tests", () =
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Deploy gpt-4o with provisioned throughput PTU in my Foundry project"
           });
 
