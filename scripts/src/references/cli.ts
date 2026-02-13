@@ -7,6 +7,8 @@
  *   2. Every local markdown link resolves to a path inside the skill's
  *      own directory.
  *   3. No local markdown link points to a directory instead of a file.
+ *   4. All files in the skill's "references" directory are reachable
+ *      through a chain of markdown links starting from SKILL.md.
  *
  * Usage:
  *   npm run references              # Validate all skills
