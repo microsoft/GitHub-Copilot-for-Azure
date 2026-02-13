@@ -21,6 +21,12 @@ For users who only need to assign roles to identities (e.g., granting Storage Bl
 ### Example: Grant User Access Administrator at Storage Account Scope
 
 ```bash
+# Get your subscription ID
+# az account show --query id --output tsv
+
+# Get the user's principal ID (object ID)
+# az ad user show --id user@example.com --query id --output tsv
+
 # Grant User Access Administrator to a user for a specific storage account
 az role assignment create \
   --role "User Access Administrator" \
