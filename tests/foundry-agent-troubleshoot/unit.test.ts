@@ -61,8 +61,8 @@ describe(`foundry-agent-troubleshoot - Unit Tests`, () => {
       expect(skill.content).toContain("az cognitiveservices account connection");
     });
 
-    test("references kusto_query MCP tool", () => {
-      expect(skill.content).toContain("kusto_query");
+    test("references azure-kusto skill for telemetry", () => {
+      expect(skill.content).toContain("azure-kusto");
     });
 
     test("documents both agent types", () => {
@@ -70,9 +70,8 @@ describe(`foundry-agent-troubleshoot - Unit Tests`, () => {
       expect(skill.content).toContain("prompt");
     });
 
-    test("references Application Insights KQL tables", () => {
-      expect(skill.content).toContain("AppExceptions");
-      expect(skill.content).toContain("AppRequests");
+    test("references Application Insights", () => {
+      expect(skill.content).toContain("Application Insights");
     });
   });
 });

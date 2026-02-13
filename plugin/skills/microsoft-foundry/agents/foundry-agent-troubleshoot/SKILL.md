@@ -15,8 +15,9 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 | Property | Value |
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (container-based) |
-| MCP servers | `foundry-agent`, `azure__kusto` |
-| Key MCP tools | `agent_get`, `agent_container_status_get`, `kusto_query` |
+| MCP servers | `foundry-agent` |
+| Key MCP tools | `agent_get`, `agent_container_status_get` |
+| Related skills | `azure-kusto` (for KQL telemetry queries) |
 | CLI references | `az cognitiveservices agent logs`, `az cognitiveservices account connection` |
 
 ## When to Use This Skill
@@ -34,8 +35,6 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 |------|-------------|------------|
 | `agent_get` | Get agent details to determine type (prompt/hosted) | `projectEndpoint` (required), `agentName` (optional) |
 | `agent_container_status_get` | Check hosted agent container status | `projectEndpoint`, `agentName` (required); `agentVersion` |
-| `kusto_query` | Execute KQL queries against Application Insights | `subscription`, `cluster`, `database`, `query` (all required) |
-| `kusto_table_schema_get` | Get table schema for KQL query building | `subscription`, `cluster`, `database`, `table` (all required) |
 
 ## Workflow
 
@@ -43,7 +42,6 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 
 If an `azure.yaml` exists in the project root, run `azd env get-values` and look for:
 - `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` → pre-fill **Project endpoint**
-- `AZURE_SUBSCRIPTION_ID` → pre-fill subscription for Kusto queries
 
 Use the `ask_user` or `askQuestions` tool for any values not resolved from azd:
 - **Project endpoint** — AI Foundry project endpoint URL
@@ -75,40 +73,9 @@ If no observability connection is found, inform the user and suggest setting up 
 
 ### Step 5: Query Application Insights Telemetry
 
-Delegate the KQL query execution to a `task` or `runSubagent` sub-agent (type: `task`). Provide it the subscription, Application Insights cluster and database details, and the appropriate KQL query from the table below.
+Delegate telemetry querying to the `azure-kusto` skill. Provide it the Application Insights resource details discovered in Step 4 and the user's reported issue. The `azure-kusto` skill handles KQL query construction, execution via MCP tools, and result formatting.
 
-Use the `kusto_query` MCP tool to query Application Insights. Start with the diagnostic query most relevant to the user's reported issue:
-
-| Issue | KQL Query Target | Table |
-|-------|-----------------|-------|
-| Agent errors/exceptions | Recent exceptions with stack traces | `AppExceptions` |
-| Failed requests | Requests with non-success status codes | `AppRequests` |
-| Slow responses / latency | Request duration percentiles | `AppRequests` |
-| Agent traces / debug logs | Recent trace messages | `AppTraces` |
-| Dependency failures | Failed outbound calls (model, tools) | `AppDependencies` |
-
-**Suggested initial diagnostic query (AppExceptions):**
-
-```kql
-AppExceptions
-| where TimeGenerated > ago(1h)
-| where AppRoleName contains "<agent-name>"
-| project TimeGenerated, ProblemId, ExceptionType, OuterMessage, InnermostMessage
-| order by TimeGenerated desc
-| take 20
-```
-
-**Suggested latency query (AppRequests):**
-
-```kql
-AppRequests
-| where TimeGenerated > ago(1h)
-| where AppRoleName contains "<agent-name>"
-| summarize avg(DurationMs), percentile(DurationMs, 95), count() by bin(TimeGenerated, 5m)
-| order by TimeGenerated desc
-```
-
-Use `kusto_table_schema_get` to discover available columns if the initial queries need adjustment.
+Use `* contains "<response_id>"` or `* contains "<agent_name>"` filters to narrow down results to the specific agent instance.
 
 ### Step 6: Summarize Findings
 
