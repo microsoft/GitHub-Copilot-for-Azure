@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks, softCheckDeploySkills, hasTerraformFiles } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, hasTerraformFiles, hasBicepFiles } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
@@ -136,9 +136,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
-
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website", async () => {
@@ -150,8 +151,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -182,8 +185,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
       
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
@@ -195,8 +200,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -227,8 +234,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
       
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app", async () => {
@@ -240,8 +249,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -272,8 +283,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app", async () => {
@@ -285,8 +298,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -560,4 +575,3 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
   })
 });
-
