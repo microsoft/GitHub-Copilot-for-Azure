@@ -39,7 +39,7 @@ export interface AgentMetadata {
  * By default, reports for each test run will be written to a pseudo-unique directory under "reports/test-run-{timestamp}/".
  * If {@link testRunId} is non-empty, reports for this test run will be written to a directory under "reports/test-run-{testRunId}/".
  * This allows reports from multiple test runs to be written to the same directory.
- * 
+ *
  * Only applicable when the agent run is for a test.
  */
 const testRunId = process.env.TEST_RUN_ID;

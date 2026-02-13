@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       skills:
-        description: 'Comma separate list of skills to test (e.g. "appinsights-instrumentation,azure-role-selector")'
+        description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-role-selector")'
         required: true
         type: string
       debug:
@@ -174,17 +174,6 @@ jobs:
           npm run report -- --skill azure-kusto
         continue-on-error: true
 
-      - name: Integration tests - azure-networking
-        id: integration-tests-azure-networking
-        if: contains(inputs.skills, 'azure-networking')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-networking
-          npm run report -- --skill azure-networking
-        continue-on-error: true
-
       - name: Integration tests - azure-observability
         id: integration-tests-azure-observability
         if: contains(inputs.skills, 'azure-observability')
@@ -301,6 +290,6 @@ jobs:
       - name: Export report
         uses: actions/upload-artifact@v4
         with:
-          name: azure-deploy-test-reports
+          name: azure-all-integration-test-reports
           path: tests/reports/
           retention-days: 30
