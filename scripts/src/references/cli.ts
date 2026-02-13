@@ -3,9 +3,10 @@
  * Markdown Reference Validator
  *
  * Checks every skill's markdown files to ensure:
- *   1. Every local markdown link points to an actual file or directory.
+ *   1. Every local markdown link points to an actual file.
  *   2. Every local markdown link resolves to a path inside the skill's
  *      own directory.
+ *   3. No local markdown link points to a directory instead of a file.
  *
  * Usage:
  *   npm run references              # Validate all skills
@@ -144,7 +145,22 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
         continue; // no point checking containment if it doesn't exist
       }
 
-      // ── Check 2: Is the target inside the skill's directory? ────────────
+      // ── Check 2: Is the target a directory? ────────────────────────────
+      try {
+        if (statSync(resolved).isDirectory()) {
+          issues.push({
+            file: mdFile,
+            line: i + 1,
+            link: rawTarget,
+            reason: `Reference points to a directory, not a file: ${target}`,
+          });
+          continue;
+        }
+      } catch {
+        // skip if stat fails
+      }
+
+      // ── Check 3: Is the target inside the skill's directory? ────────────
       const normalizedResolved = normalize(resolved).toLowerCase();
       const normalizedSkillDir = normalize(skillDir).toLowerCase();
 
