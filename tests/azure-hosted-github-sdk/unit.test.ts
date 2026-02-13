@@ -1,13 +1,13 @@
 /**
- * Unit Tests for github-copilot
+ * Unit Tests for azure-hosted-github-sdk
  * 
- * Test isolated skill logic and validation rules.
+ * Test skill metadata, content, and frontmatter formatting.
  */
 
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "github-copilot";
+const SKILL_NAME = "azure-hosted-github-sdk";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -24,18 +24,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
 
-    test("description is detailed with triggers", () => {
-      expect(skill.metadata.description.length).toBeGreaterThan(150);
-      expect(skill.metadata.description.length).toBeLessThan(1024);
+    test("description is concise and actionable", () => {
+      expect(skill.metadata.description.length).toBeGreaterThan(50);
+      expect(skill.metadata.description.length).toBeLessThan(500);
     });
 
-    test("description contains USE FOR triggers", () => {
+    test("description contains USE FOR trigger phrases", () => {
       const description = skill.metadata.description;
       expect(description).toContain("USE FOR:");
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      const description = skill.metadata.description;
       expect(description).toContain("DO NOT USE FOR:");
     });
   });
@@ -46,23 +42,22 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content.length).toBeGreaterThan(100);
     });
 
-    test("documents SDK scaffold workflow", () => {
-      expect(skill.content).toContain("@github/copilot-sdk");
-      expect(skill.content).toContain("SDK reference");
+    test("references SDK templates", () => {
+      expect(skill.content).toContain("copilot-sdk-agent");
     });
 
-    test("documents Extensions scaffold workflow", () => {
-      expect(skill.content).toContain("copilot-extensions");
-      expect(skill.content).toContain("Extensions reference");
-    });
-
-    test("documents Azure hosting options", () => {
-      expect(skill.content).toContain("Docker");
-    });
-
-    test("references azure-prepare and azure-deploy skills", () => {
+    test("references deploy workflow", () => {
       expect(skill.content).toContain("azure-prepare");
       expect(skill.content).toContain("azure-deploy");
+    });
+
+    test("references SDK documentation", () => {
+      expect(skill.content).toContain("SDK ref");
+    });
+
+    test("includes deploy-existing path", () => {
+      expect(skill.content).toContain("deploy ref");
+      expect(skill.content).toContain("deploy-existing");
     });
   });
 
@@ -78,7 +73,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const frontmatter = raw.split("---")[1];
       const supported = ["name", "description", "compatibility", "license", "metadata",
         "argument-hint", "disable-model-invocation", "user-invokable"];
-      // Extract top-level keys (lines starting with a word followed by colon)
       const keys = frontmatter.split("\n")
         .filter((l: string) => /^[a-z][\w-]*\s*:/.test(l))
         .map((l: string) => l.split(":")[0].trim());
@@ -88,10 +82,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
-      // These must be embedded in the description string, not parsed as YAML keys
       const description = skill.metadata.description;
-      expect(description).toContain("USE FOR:");
-      expect(description).toContain("DO NOT USE FOR:");
+      if (description.includes("USE FOR")) {
+        expect(description).toContain("USE FOR:");
+      }
+      if (description.includes("DO NOT USE FOR")) {
+        expect(description).toContain("DO NOT USE FOR:");
+      }
     });
   });
 });

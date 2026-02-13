@@ -1,4 +1,9 @@
-const config = {
+import type { Config } from "jest";
+
+const config: Config = {
+  // Use ts-jest ESM preset for ESM-only packages like @github/copilot-sdk
+  preset: "ts-jest/presets/default-esm",
+
   // Use Node test environment
   testEnvironment: "node",
 
@@ -74,14 +79,6 @@ const config = {
       "ts-jest",
       {
         useESM: true,
-        tsconfig: {
-          module: "ES2022",
-          target: "ES2022",
-          esModuleInterop: true,
-          skipLibCheck: true,
-          moduleResolution: "bundler",
-          lib: ["ES2022"],
-        },
       },
     ],
   },
