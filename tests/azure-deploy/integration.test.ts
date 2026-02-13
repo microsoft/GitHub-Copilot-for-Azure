@@ -580,5 +580,60 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
   });
 
+  describe("brownfield-python", () => {
+    test("deploys flask calculator", async () => {
+      const FLASK_CALCULATOR_REPO = "https://github.com/UltiRequiem/flask-calculator.git";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: FLASK_CALCULATOR_REPO,
+            targetDir: workspace,
+            depth: 1,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+
+    test("deploys aspire with python", async () => {
+      const ASPIRE_PYTHON_SPARSE_PATH = "samples/aspire-with-python";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ASPIRE_PYTHON_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+      });
   
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+    }, brownfieldTestTimeoutMs);
+  });
 });
