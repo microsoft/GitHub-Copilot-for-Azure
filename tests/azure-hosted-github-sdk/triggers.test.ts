@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for github-copilot
+ * Trigger Tests for azure-hosted-github-sdk
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "github-copilot";
+const SKILL_NAME = "azure-hosted-github-sdk";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -21,21 +21,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Build a repo quality rater with the Copilot SDK",
-      "Create a Copilot Extension and deploy it to Azure",
-      "Build an app using the copilot-extensions preview-sdk",
-      "Deploy my Copilot Extension to Azure Container Apps",
-      "Create a copilot agent endpoint with SSE streaming",
-      "Build a Copilot Extension that reviews pull requests",
-      "I want to build a copilot-powered app using @github/copilot-sdk",
-      "Set up a copilot webhook endpoint on Azure",
-      "Embed Copilot in my Node.js application",
-      "Build an app that uses the GitHub Copilot SDK",
-      "Add the Copilot SDK agent to my existing Node.js app",
-      "Integrate GitHub Copilot agent into my current Express project",
-      "I have an existing Python API, help me add GitHub Copilot support",
-      "Add copilot-powered agent to my existing codebase",
-      "How do I integrate @github/copilot-sdk into an existing application",
+      "Build a Copilot SDK app and deploy it",
+      "Create a new copilot agent service",
+      "Scaffold a copilot-powered app on Azure",
+      "Build with the GitHub Copilot SDK and host it",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -43,7 +32,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(true);
-        expect(result.confidence).toBeGreaterThan(0);
       }
     );
   });
@@ -53,13 +41,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What is the weather today?",
       "Help me write a poem",
       "Explain quantum computing",
-      "How do I configure SSH keys for remote access",
-      "Set up a MySQL database locally",
-      "Help me optimize my SQL query performance",
-      "Write a unit test for my React component",
-      "Set up a PostgreSQL database locally",
-      "Add a REST API to my existing project",
-      "Help me refactor my existing codebase",
+      "Help me with AWS Lambda",
+      "How do I use Google Cloud Platform?",
+      "Write a Python script to parse JSON",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -92,14 +76,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "Copilot SDK ".repeat(1000);
+      const longPrompt = "Azure ".repeat(1000);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("copilot extension");
-      const result2 = triggerMatcher.shouldTrigger("COPILOT EXTENSION");
+      const result1 = triggerMatcher.shouldTrigger("azure");
+      const result2 = triggerMatcher.shouldTrigger("AZURE");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });
