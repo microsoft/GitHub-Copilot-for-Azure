@@ -59,14 +59,14 @@ Register the new route with the existing server/app instance. Do NOT create a se
 
 ## BYOK Support
 
-If the user has their own model provider, pass provider config when creating a session.
+If the user has their own model provider, pass provider config when creating a session. For Azure endpoints, use `DefaultAzureCredential` from `@azure/identity` to get a `bearerToken` — never use API keys.
 
-| Provider | Config key |
-|----------|-----------|
-| OpenAI | `openai` |
-| Azure OpenAI | `azure-openai` |
-| Anthropic | `anthropic` |
-| Ollama | `ollama` |
+| Provider | Config type | Auth |
+|----------|-----------|------|
+| Azure OpenAI / Foundry | `openai` or `azure` | `bearerToken` via `DefaultAzureCredential` |
+| OpenAI | `openai` | `apiKey` |
+| Anthropic | `anthropic` | `apiKey` |
+| Ollama | `ollama` | none |
 
 ## Testing
 
