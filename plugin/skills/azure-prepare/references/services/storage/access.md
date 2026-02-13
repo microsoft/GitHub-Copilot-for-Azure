@@ -1,5 +1,17 @@
 # Storage - Access Patterns
 
+## Prerequisites for Granting Storage Access
+
+> ⚠️ **Important**: To assign storage roles to managed identities, you need:
+> - **User Access Administrator** or **Owner** role on the Storage Account (or parent resource group/subscription)
+> - The role must include the `Microsoft.Authorization/roleAssignments/write` permission
+
+**Common scenarios**:
+- Granting Storage Blob Data Owner to a Web App or Function App's managed identity
+- Allowing applications to access storage using managed identity instead of connection strings
+
+If you encounter `AuthorizationFailed` errors when assigning roles, ensure you have User Access Administrator or Owner permissions at the target scope.
+
 ## Managed Identity Role Assignment
 
 ```bicep
