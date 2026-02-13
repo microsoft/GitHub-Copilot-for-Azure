@@ -367,7 +367,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         expect(containsDeployLinks).toBe(true);
       }, brownfieldTestTimeoutMs);
 
-    test("deploys MvcMovie 90", async  () => {
+    test("deploys MvcMovie 90", async () => {
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
         const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
 
