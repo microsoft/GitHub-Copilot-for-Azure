@@ -32,7 +32,7 @@ Guide for diagnosing and resolving HTTP 429 (Rate Limit Exceeded) errors in Micr
 - **Retry optimization** — Implementing or improving retry strategies
 - Questions like "Why am I getting rate limited?" or "How do I handle 429 errors?"
 
-**Workflow:** Diagnose → Present solution options via AskUserQuestion → Execute chosen solution
+**Workflow:** Gather context (subscription, RG, resource) → Diagnose → Present solution options via AskUserQuestion → Execute chosen solution
 
 ## Understanding Rate Limiting
 
@@ -59,20 +59,48 @@ For SKU type details (GlobalStandard, DataZoneStandard, etc.), see [references/s
 
 ## Diagnostic Workflow
 
+### Step 0: Gather Resource Context
+
+Before running any diagnostic commands, confirm you have the **subscription ID**, **resource group**, and **resource name** for the affected Azure OpenAI / Foundry resource. These are required by every diagnostic command below.
+
+**If the user already provided a resource endpoint** (e.g., `https://<resource>.openai.azure.com/...`), extract the resource name from the URL and ask for the remaining details.
+
+**If any values are unknown**, use `AskUserQuestion` to request them, and offer to look them up via CLI:
+
+```bash
+# List subscriptions the user has access to
+az account list --query "[].{Name:name, Id:id, IsDefault:isDefault}" --output table
+
+# Find Cognitive Services resources (search across resource groups)
+az cognitiveservices account list --query "[].{Name:name, ResourceGroup:resourceGroup, Location:location, Kind:kind}" --output table
+
+# Or narrow to a specific subscription
+az cognitiveservices account list --subscription <subscription-id> --query "[].{Name:name, ResourceGroup:resourceGroup, Location:location}" --output table
+```
+
+> ⚠️ **Warning:** Do NOT proceed to Steps 1–2 without `subscription`, `resource-group`, and `resource-name`. Both CLI commands and MCP tool calls will fail if these are omitted.
+
 ### Step 1: Check Deployment Rate Limits
 
 **Using MCP Tools (Preferred):**
 
-Use `azure__foundry` MCP tool with command `foundry_deployment_list`:
-- Parameters: `resource-group`, `azure-ai-services` (resource name)
-- Query fields: `name`, `model`, `sku.capacity`, `rateLimits`
-- Returns: Deployment configuration with TPM/RPM limits
+Use `azure__foundry` MCP tool with command `foundry_resource_get`:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `resource-group` | Yes | Resource group containing the Foundry resource |
+| `resource-name` | Yes | Name of the Azure OpenAI / Foundry resource |
+| `subscription` | Yes | Subscription ID or name (omit only if `AZURE_SUBSCRIPTION_ID` env var is set) |
+
+- Returns: Resource details including all deployed models with their configuration and rate limits
 
 **If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
 
 **CLI Fallback:**
+
 ```bash
 az cognitiveservices account deployment show \
+  --subscription <subscription-id> \
   --name <foundry-resource-name> \
   --resource-group <resource-group> \
   --deployment-name <deployment-name> \
@@ -87,16 +115,22 @@ az cognitiveservices account deployment show \
 **Using MCP Tools (Preferred):**
 
 Use `mcp__plugin_azure_azure__quota` MCP tool with command `quota_usage_check`:
-- Parameters:
-  - `region`: Region to check (e.g., "eastus2")
-  - `resource-types`: "Microsoft.CognitiveServices/accounts"
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `region` | Yes | Azure region (e.g., "eastus2") |
+| `resource-types` | Yes | `"Microsoft.CognitiveServices/accounts"` |
+| `subscription` | Yes | Subscription ID or name (omit only if `AZURE_SUBSCRIPTION_ID` env var is set) |
+
 - Returns: Quota usage showing current allocation vs. regional limit
 
 **If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
 
 **CLI Fallback:**
+
 ```bash
 az cognitiveservices usage list \
+  --subscription <subscription-id> \
   --location <region> \
   --query "[?contains(name.value, '<model-name>')].{Name:name.value, Current:currentValue, Limit:limit}" \
   --output table
@@ -118,8 +152,10 @@ Use `azure__monitor` MCP tool with command `monitor_logs_query`:
 **If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.
 
 **CLI Fallback:**
+
 ```bash
 az monitor log-analytics query \
+  --subscription <subscription-id> \
   --workspace <workspace-id> \
   --analytics-query "AzureDiagnostics | where ResultType == '429' | where TimeGenerated > ago(24h)" \
   --output table
@@ -164,6 +200,7 @@ Based on the user's selection, proceed with the appropriate strategy. See [refer
 
 ## Diagnostic Checklist
 
+- [ ] Confirm subscription ID, resource group, and resource name before running commands
 - [ ] Check `rateLimits` in deployment (not just `sku.capacity`)
 - [ ] Identify SKU type and check correct quota pool
 - [ ] Compare regional quota vs deployment allocation

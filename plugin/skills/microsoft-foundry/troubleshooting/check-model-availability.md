@@ -124,9 +124,13 @@ Even if model and SKU are available, capacity may be exhausted.
 **Using MCP Tools (Preferred):**
 
 Use `mcp__plugin_azure_azure__quota` MCP tool with command `quota_usage_check`:
-- Parameters:
-  - `region`: Region to check (e.g., "eastus2")
-  - `resource-types`: "Microsoft.CognitiveServices/accounts"
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `region` | Yes | Azure region (e.g., "eastus2") |
+| `resource-types` | Yes | `"Microsoft.CognitiveServices/accounts"` |
+| `subscription` | Yes | Subscription ID or name (omit only if `AZURE_SUBSCRIPTION_ID` env var is set) |
+
 - Returns: Current allocation vs. regional limit
 
 **CLI Fallback:**

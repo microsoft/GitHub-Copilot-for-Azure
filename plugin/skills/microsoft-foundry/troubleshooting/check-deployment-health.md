@@ -17,7 +17,7 @@ Guide for diagnosing deployment health issues, monitoring deployed models, and t
 | Property | Value |
 |----------|-------|
 | **Key CLI Commands** | `az cognitiveservices account deployment show`, `az monitor metrics list` |
-| **MCP Tools** | `foundry_deployment_list`, `monitor_metrics_query`, `monitor_logs_query` |
+| **MCP Tools** | `foundry_resource_get`, `monitor_metrics_query`, `monitor_logs_query` |
 | **Health Indicators** | Provisioning state, endpoint latency, error rate, availability |
 | **Common Issue** | Deployment stuck in "Creating" or "Failed" state |
 | **Best For** | Post-deployment health monitoring, troubleshooting inference failures |
@@ -64,9 +64,14 @@ For metric thresholds and monitoring setup, see [references/health-indicators.md
 
 **Using MCP Tools (Preferred):**
 
-Use `azure__foundry` MCP tool with command `foundry_deployment_list`:
-- Parameters: `resource-group`, `azure-ai-services` (resource name)
-- Query fields: `name`, `provisioningState`, `model`, `sku`
+Use `azure__foundry` MCP tool with command `foundry_resource_get`:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `resource-group` | Yes | Resource group containing the Foundry resource |
+| `resource-name` | Yes | Name of the Azure OpenAI / Foundry resource (acts as `azure-ai-services`) |
+| `subscription` | Yes | Subscription ID or name (omit only if `AZURE_SUBSCRIPTION_ID` env var is set) |
+
 - Returns: Deployment status with provisioning details
 
 **If Azure MCP is not enabled:** Run `/mcp add azure` or enable via `/mcp`.

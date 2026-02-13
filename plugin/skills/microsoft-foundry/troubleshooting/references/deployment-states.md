@@ -99,7 +99,7 @@ az cognitiveservices account deployment show \
 ```
 
 ### Via MCP
-Use `foundry_deployment_list` and filter by deployment name.
+Use `foundry_resource_get` with `resource-group` and `resource-name` and filter by deployment name.
 
 ## Stuck Deployments
 
