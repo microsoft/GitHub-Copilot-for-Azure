@@ -21,7 +21,9 @@ const sharedRules = {
     ],
 
     // Jest rules
-    "jest/expect-expect": "error",
+    "jest/expect-expect": ["error", {
+        "assertFunctionNames": ["expect", "assertDeployOutcome"]
+    }],
     "jest/no-disabled-tests": "warn",
     "jest/no-focused-tests": "error",
     "jest/valid-expect": "error",
