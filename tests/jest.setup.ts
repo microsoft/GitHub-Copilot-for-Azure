@@ -7,21 +7,43 @@
  * - Shared mock configurations
  */
 
-const path = require("path");
+import * as path from "path";
+import { fileURLToPath } from "url";
+import { TriggerMatcher, TriggerResult } from "./utils/trigger-matcher";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Make utils available globally for convenience
 global.SKILLS_PATH = path.resolve(__dirname, "../plugin/skills");
 global.TESTS_PATH = __dirname;
 
-// Helper to get skill path
-global.getSkillPath = (skillName) => {
-  return path.join(global.SKILLS_PATH, skillName);
-};
+// Custom matcher: check if a skill should trigger on a prompt
+expect.extend({
+  toTriggerSkill(prompt: string, skillName: string, triggerMatcher: TriggerMatcher) {
+    const result: TriggerResult = triggerMatcher.shouldTrigger(prompt);
+    return {
+      pass: result.triggered,
+      message: () =>
+        result.triggered
+          ? `Expected prompt "${prompt}" NOT to trigger skill "${skillName}"`
+          : `Expected prompt "${prompt}" to trigger skill "${skillName}". ` +
+          `Confidence: ${result.confidence}. Reason: ${result.reason}`
+    };
+  },
 
-// Helper to get test fixtures path
-global.getFixturesPath = (skillName) => {
-  return path.join(global.TESTS_PATH, skillName, "fixtures");
-};
+  toNotTriggerSkill(prompt: string, skillName: string, triggerMatcher: TriggerMatcher) {
+    const result: TriggerResult = triggerMatcher.shouldTrigger(prompt);
+    return {
+      pass: !result.triggered,
+      message: () =>
+        !result.triggered
+          ? `Expected prompt "${prompt}" to trigger skill "${skillName}"`
+          : `Expected prompt "${prompt}" NOT to trigger skill "${skillName}", ` +
+          `but it matched with confidence ${result.confidence}`
+    };
+  }
+});
 
 // Suppress console output during tests unless DEBUG is set
 if (!process.env.DEBUG) {
@@ -32,3 +54,13 @@ if (!process.env.DEBUG) {
     error: console.error
   };
 }
+
+// Helper to get skill path
+global.getSkillPath = (skillName: string): string => {
+  return path.join(global.SKILLS_PATH, skillName);
+};
+
+// Helper to get test fixtures path
+global.getFixturesPath = (skillName: string): string => {
+  return path.join(global.TESTS_PATH, skillName, "fixtures");
+};
