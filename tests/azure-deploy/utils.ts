@@ -1,4 +1,4 @@
-import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages, getToolCalls } from "../utils/agent-runner";
 
 /**
  * Common Azure deployment link patterns
@@ -20,4 +20,26 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
   const content = getAllAssistantMessages(agentMetadata);
 
   return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
+}
+
+/**
+ * Check if file-creation tool calls produced Terraform (.tf) files
+ */
+export function hasTerraformFiles(agentMetadata: AgentMetadata): boolean {
+  const fileToolCalls = getToolCalls(agentMetadata, "create_file");
+  return fileToolCalls.some(event => {
+    const args = JSON.stringify(event.data);
+    return /\.tf"/i.test(args);
+  });
+}
+
+/**
+ * Check if file-creation tool calls produced Bicep (.bicep) files
+ */
+export function hasBicepFiles(agentMetadata: AgentMetadata): boolean {
+  const fileToolCalls = getToolCalls(agentMetadata, "create_file");
+  return fileToolCalls.some(event => {
+    const args = JSON.stringify(event.data);
+    return /\.bicep"/i.test(args);
+  });
 }

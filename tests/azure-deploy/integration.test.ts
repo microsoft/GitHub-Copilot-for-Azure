@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks } from "./utils";
+import { hasDeployLinks, hasTerraformFiles, hasBicepFiles } from "./utils";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
@@ -135,11 +135,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website", async () => {
@@ -153,11 +155,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -172,11 +176,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -193,11 +199,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
@@ -211,11 +219,34 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates todo list with frontend and API using Terraform", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region using Terraform infrastructure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -232,11 +263,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app", async () => {
@@ -250,11 +283,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -269,11 +304,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -290,11 +327,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app", async () => {
@@ -308,11 +347,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     // Terraform test
@@ -327,11 +368,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
       const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
 
       expect(isSkillUsed).toBe(true);
       expect(isValidateInvoked).toBe(true);
       expect(isPrepareInvoked).toBe(true);
       expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 });
