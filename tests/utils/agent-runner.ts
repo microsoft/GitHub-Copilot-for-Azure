@@ -651,6 +651,8 @@ export interface ConversationConfig {
   maxTurns?: number;
   /** Maximum `azd up` invocations across all prompts. Session aborts if exceeded. */
   maxDeployAttempts?: number;
+  /** Per-turn timeout in ms. Defaults to 30 minutes. */
+  turnTimeout?: number;
 }
 
 export interface ConversationResult {
@@ -771,6 +773,8 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
       }
     });
 
+    const TURN_TIMEOUT = config.turnTimeout ?? 1800000; // 30 minutes default
+
     for (let i = 0; i < config.prompts.length; i++) {
       if (aborted) break;
 
@@ -786,8 +790,18 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
         resolveIdle = resolve;
       });
 
+      const timeout = new Promise<"timeout">((resolve) => {
+        setTimeout(() => resolve("timeout"), TURN_TIMEOUT);
+      });
+
       await session.send({ prompt: promptEntry.prompt });
-      await done;
+
+      const result = await Promise.race([done.then(() => "done" as const), timeout]);
+      if (result === "timeout") {
+        console.warn(`⚠️  ${currentLabel} timed out after ${TURN_TIMEOUT / 1000}s — aborting`);
+        aborted = true;
+        void session!.abort();
+      }
 
       turns.push(currentTurnMetadata);
 
@@ -801,6 +815,15 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
     console.error("Conversation runner error:", error);
     throw error;
   } finally {
+    // Write report even on timeout/failure so test results are captured
+    try {
+      if (aggregate.events.length > 0 && isTest()) {
+        const reportConfig: AgentRunConfig = {
+          prompt: config.prompts.map(p => p.prompt).join("\n---\n"),
+        };
+        writeMarkdownReport(reportConfig, aggregate);
+      }
+    } catch { /* ignore */ }
     try {
       if (session) await session.destroy();
     } catch { /* ignore */ }
