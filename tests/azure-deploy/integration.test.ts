@@ -17,9 +17,11 @@ import {
   hasDeployLinks
 } from "../utils/agent-runner";
 import * as fs from "fs";
+import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;
+const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
 // Check if integration tests should be skipped at module level
@@ -325,4 +327,36 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
+
+  describe("brownfield-dotnet", () => {
+    test("deploys eShop to Azure for small scale production", async () => {
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ESHOP_REPO,
+              targetDir: workspace,
+              depth: 1,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+        });
+    
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+        const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+    
+        expect(isSkillUsed).toBe(true);
+        expect(isValidateInvoked).toBe(true);
+        expect(isPrepareInvoked).toBe(true);
+        expect(containsDeployLinks).toBe(true);
+      }, deployTestTimeoutMs);
+  })
 });
