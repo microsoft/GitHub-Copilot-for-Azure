@@ -19,7 +19,25 @@ az account show --query "{name:name, id:id}" -o json
 
 ## Step 2: Prompt User for Subscription
 
-**You MUST use `ask_user`** to confirm the subscription. Include the actual subscription name and ID from Step 1 in the choices.
+**You MUST use `ask_user`** to confirm the subscription. Find the default subscription (marked `isDefault: true`) from Step 1 results and present it as the recommended choice.
+
+✅ **Correct — show actual name and ID as a choice:**
+```
+ask_user(
+  question: "Which Azure subscription would you like to deploy to?",
+  choices: [
+    "Use current: <subscription-name> (<subscription-id>) (Recommended)",
+    "Let me specify a different subscription"
+  ]
+)
+```
+
+❌ **Wrong — never use freeform input for subscription:**
+```
+ask_user(
+  question: "Which Azure subscription should I deploy to? I'll need the subscription name or ID."
+)
+```
 
 ## Step 3: Create AZD Environment FIRST
 
