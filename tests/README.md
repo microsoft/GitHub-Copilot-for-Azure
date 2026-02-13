@@ -207,7 +207,7 @@ To learn more about how the CLI options work, check out `tests/scripts/run-tests
 
 **CI output:** JUnit XML at `tests/reports/junit.xml` - parsed by GitHub Actions for PR annotations.
 
-**Debug Mode:** When environment variable `DEBUG=1` is set, logs will be recorded at `tests/reports/test-run-{time}`
+**Debug Mode:** When environment variable `DEBUG=1` is set, logs will be recorded under `tests/reports/test-run-{timestamp or TEST_RUN_ID}/...` (typically with per-test subdirectories).
 
 
 ### Generating Report
