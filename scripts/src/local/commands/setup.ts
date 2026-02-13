@@ -2,7 +2,8 @@
  * Setup Command
  * 
  * Configures ~/.copilot/config.json to point the azure plugin's cache_path
- * directly at the local plugin directory for development.
+ * directly at the local plugin directory for development, and merges
+ * plugin/.mcp.json into ~/.copilot/mcp-config.json so MCP servers are registered.
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -31,6 +32,19 @@ interface CopilotConfig {
   marketplaces?: Record<string, Marketplace>;
   installed_plugins?: InstalledPlugin[];
   [key: string]: unknown;
+}
+
+interface McpServerEntry {
+  command?: string;
+  args?: string[];
+  url?: string;
+  tools?: string[];
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface McpConfig {
+  mcpServers?: Record<string, McpServerEntry>;
 }
 
 interface SetupOptions {
@@ -83,6 +97,122 @@ function writeCopilotConfig(config: CopilotConfig): boolean {
   } catch {
     return false;
   }
+}
+
+function getMcpConfigPath(): string {
+  return join(getCopilotDir(), 'mcp-config.json');
+}
+
+function readMcpConfig(): McpConfig | null {
+  const configPath = getMcpConfigPath();
+  if (!existsSync(configPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(readFileSync(configPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeMcpConfig(config: McpConfig): boolean {
+  const configPath = getMcpConfigPath();
+  const copilotDir = getCopilotDir();
+
+  try {
+    if (!existsSync(copilotDir)) {
+      mkdirSync(copilotDir, { recursive: true });
+    }
+    const backupPath = configPath + '.bak';
+    if (existsSync(configPath)) {
+      writeFileSync(backupPath, readFileSync(configPath));
+    }
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readPluginMcpJson(pluginPath: string): McpConfig | null {
+  const mcpJsonPath = join(pluginPath, '.mcp.json');
+  if (!existsSync(mcpJsonPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(readFileSync(mcpJsonPath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+export function setupMcpServers(pluginPath: string, options: { force: boolean }): boolean {
+  console.log('\n🔌 MCP Server Registration\n');
+
+  const pluginMcp = readPluginMcpJson(pluginPath);
+  if (!pluginMcp?.mcpServers || Object.keys(pluginMcp.mcpServers).length === 0) {
+    console.log('   ⚠️  No .mcp.json found in plugin directory');
+    return false;
+  }
+
+  const pluginServers = Object.keys(pluginMcp.mcpServers);
+  console.log(`   📋 Plugin defines ${pluginServers.length} MCP servers: ${pluginServers.join(', ')}`);
+
+  let mcpConfig = readMcpConfig();
+  if (!mcpConfig) {
+    console.log('   📂 Creating new mcp-config.json...');
+    mcpConfig = {};
+  }
+
+  if (!mcpConfig.mcpServers) {
+    mcpConfig.mcpServers = {};
+  }
+
+  let updated = 0;
+  let skipped = 0;
+
+  for (const [name, entry] of Object.entries(pluginMcp.mcpServers)) {
+    const existing = mcpConfig.mcpServers[name];
+    const merged: McpServerEntry = {
+      ...entry,
+      tools: entry.tools ?? ['*'],
+      type: entry.type ?? 'stdio',
+    };
+
+    if (existing) {
+      // Check if config matches
+      const existingKey = JSON.stringify({ command: existing.command, args: existing.args, url: existing.url });
+      const newKey = JSON.stringify({ command: merged.command, args: merged.args, url: merged.url });
+
+      if (existingKey === newKey) {
+        skipped++;
+        continue;
+      }
+
+      if (!options.force) {
+        console.log(`   ⚠️  Server "${name}" exists with different config (use --force to overwrite)`);
+        skipped++;
+        continue;
+      }
+    }
+
+    mcpConfig.mcpServers[name] = merged;
+    updated++;
+    console.log(`   ${existing ? '🔄' : '➕'} ${name}`);
+  }
+
+  if (updated === 0) {
+    console.log('   ✅ All MCP servers already registered');
+    return true;
+  }
+
+  console.log(`\n   💾 Writing mcp-config.json (${updated} added/updated, ${skipped} unchanged)...`);
+  if (!writeMcpConfig(mcpConfig)) {
+    console.log('   ❌ Failed to write mcp-config.json');
+    return false;
+  }
+  console.log('   ✅ MCP servers registered');
+  return true;
 }
 
 function getExpectedMarketplace(): Marketplace {
@@ -164,9 +294,11 @@ export function setup(rootDir: string, args: string[]): void {
   const pluginOk = isPluginCorrect(config, localPluginPath);
 
   if (marketplaceOk && pluginOk) {
-    console.log('\n✅ Already configured correctly!');
+    console.log('\n✅ Plugin config already correct!');
+    // Still register MCP servers
+    setupMcpServers(localPluginPath, options);
     console.log('────────────────────────────────────────────────────────────');
-    console.log('\n✅ Setup complete! Config is already pointing to local repo.\n');
+    console.log('\n✅ Setup complete!\n');
     return;
   }
 
@@ -241,6 +373,9 @@ export function setup(rootDir: string, args: string[]): void {
     return;
   }
   console.log('   ✅ Config updated');
+
+  // Register MCP servers
+  setupMcpServers(localPluginPath, options);
 
   console.log('\n────────────────────────────────────────────────────────────');
   console.log('\n✅ Setup complete!\n');

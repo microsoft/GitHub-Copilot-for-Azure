@@ -1,15 +1,13 @@
 /**
- * Unit Tests for {SKILL_NAME}
+ * Unit Tests for azure-hosted-github-sdk
  * 
- * Test isolated skill logic and validation rules.
- * Copy this file to /tests/{skill-name}/unit.test.ts
+ * Test skill metadata, content, and frontmatter formatting.
  */
 
 import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-// Replace with your skill name
-const SKILL_NAME = "your-skill-name";
+const SKILL_NAME = "azure-hosted-github-sdk";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -27,21 +25,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("description is concise and actionable", () => {
-      // Descriptions should be 50-500 chars for readability
       expect(skill.metadata.description.length).toBeGreaterThan(50);
       expect(skill.metadata.description.length).toBeLessThan(500);
     });
 
-    test("description contains trigger phrases", () => {
-      // Descriptions should contain keywords that help with skill activation
-      const description = skill.metadata.description.toLowerCase();
-      const hasTriggerPhrases =
-        description.includes("use this") ||
-        description.includes("use when") ||
-        description.includes("helps") ||
-        description.includes("activate") ||
-        description.includes("trigger");
-      expect(hasTriggerPhrases).toBe(true);
+    test("description contains USE FOR trigger phrases", () => {
+      const description = skill.metadata.description;
+      expect(description).toContain("USE FOR:");
+      expect(description).toContain("DO NOT USE FOR:");
     });
   });
 
@@ -49,6 +40,24 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("has substantive content", () => {
       expect(skill.content).toBeDefined();
       expect(skill.content.length).toBeGreaterThan(100);
+    });
+
+    test("references SDK templates", () => {
+      expect(skill.content).toContain("copilot-sdk-agent");
+    });
+
+    test("references deploy workflow", () => {
+      expect(skill.content).toContain("azure-prepare");
+      expect(skill.content).toContain("azure-deploy");
+    });
+
+    test("references SDK documentation", () => {
+      expect(skill.content).toContain("SDK ref");
+    });
+
+    test("includes deploy-existing path", () => {
+      expect(skill.content).toContain("deploy ref");
+      expect(skill.content).toContain("deploy-existing");
     });
   });
 
@@ -64,7 +73,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const frontmatter = raw.split("---")[1];
       const supported = ["name", "description", "compatibility", "license", "metadata",
         "argument-hint", "disable-model-invocation", "user-invokable"];
-      // Extract top-level keys (lines starting with a word followed by colon)
       const keys = frontmatter.split("\n")
         .filter((l: string) => /^[a-z][\w-]*\s*:/.test(l))
         .map((l: string) => l.split(":")[0].trim());
@@ -74,7 +82,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
-      // These must be embedded in the description string, not parsed as YAML keys
       const description = skill.metadata.description;
       if (description.includes("USE FOR")) {
         expect(description).toContain("USE FOR:");

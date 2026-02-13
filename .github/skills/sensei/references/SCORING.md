@@ -75,10 +75,7 @@ A skill is **Medium-High** if:
 
 **Example of Medium-High adherence:**
 ```yaml
-description: |
-  Instrument web apps to send telemetry to Azure Application Insights.
-  USE FOR: "add App Insights", "instrument my app", "set up monitoring".
-  DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
+description: "Instrument web apps to send telemetry to Azure Application Insights. USE FOR: add App Insights, instrument my app, set up monitoring. DO NOT USE FOR: querying logs (use azure-observability), creating alerts."
 ```
 
 ### High Adherence
@@ -90,11 +87,8 @@ A skill is **High** if:
 
 **Example of High adherence:**
 ```yaml
-description: |
-  Instrument web apps to send telemetry to Azure Application Insights.
-  USE FOR: "add App Insights", "instrument my app", "set up monitoring".
-  DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
-compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
+description: "Instrument web apps to send telemetry to Azure Application Insights. USE FOR: add App Insights, instrument my app, set up monitoring. DO NOT USE FOR: querying logs (use azure-observability), creating alerts."
+compatibility: "Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource."
 ```
 
 ---
@@ -120,7 +114,7 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 | Ideal | 300-600 chars |
 | Max | 1024 chars |
 
-**Format Rule:** Descriptions over 200 characters MUST use multi-line YAML format (`|`) for maintainability.
+**Format Rule:** Descriptions containing `USE FOR:` or `DO NOT USE FOR:` MUST use quoted string format (`"..."`) to prevent YAML key misinterpretation. Pipe block scalars (`|`) may only be used for descriptions without colon-prefixed phrases.
 
 ### 3. Trigger Phrase Detection
 
@@ -165,6 +159,45 @@ compatibility: |
   Optional: Docker (for containerized apps)
 ```
 
+### 6. Frontmatter Formatting
+
+**Key constraint:** The Copilot CLI parser validates frontmatter keys against a supported list:
+`name`, `description`, `compatibility`, `license`, `metadata`, `argument-hint`, `disable-model-invocation`, `user-invokable`.
+
+Any text that looks like a YAML key (word followed by `:`) will cause an error if it's not in the supported list.
+
+| Check | Pass | Fail |
+|-------|------|------|
+| No unsupported keys | Only supported attributes at top level | `USE FOR:` parsed as key |
+| No tabs | Spaces only | Tabs mixed with spaces |
+| Quoted strings for descriptions with colons | `description: "...USE FOR:..."` | `description: \|` with `USE FOR:` on its own line |
+
+**The `|` block scalar trap:** When using `description: |`, lines like `  USE FOR: ...` and `  DO NOT USE FOR: ...` can be misinterpreted as top-level YAML keys by some parsers, producing errors like:
+
+```
+Attribute 'DO NOT USE FOR' is not supported in skill files.
+```
+
+**Safe formats:**
+
+```yaml
+# ✅ SAFE — quoted single-line string (preferred for descriptions with colons)
+description: "Build apps. USE FOR: thing1, thing2. DO NOT USE FOR: thing3 (use other-skill)."
+
+# ✅ SAFE — pipe block scalar WITHOUT colon-prefixed lines
+description: |
+  Build apps for Azure deployment.
+compatibility: "Requires Node.js 18+"
+
+# ❌ UNSAFE — pipe block scalar with USE FOR: on its own line
+description: |
+  Build apps.
+  USE FOR: thing1, thing2.
+  DO NOT USE FOR: thing3.
+```
+
+> **Rule:** If the description contains `USE FOR:` or `DO NOT USE FOR:`, use a quoted string format (`"..."`) instead of a block scalar (`|`).
+
 ---
 
 ## Scoring Algorithm
@@ -192,8 +225,17 @@ function scoreSkill(skill):
     if hasTriggers AND hasAntiTriggers AND hasCompatibility:
         score = "High"
     
+    # Formatting deductions (applied after scoring)
+    hasUnsafeBlockScalar = usesPipeWithColonPrefixedLines(skill.frontmatter)
+    hasMixedIndent = detectMixedIndentation(skill.frontmatter)
+    hasUnsupportedKeys = detectUnsupportedKeys(skill.frontmatter)
+    if hasUnsafeBlockScalar OR hasMixedIndent OR hasUnsupportedKeys:
+        warnings.add("frontmatter-formatting")
+    
     return score
 ```
+
+> **Note:** Formatting issues are reported as warnings, not score deductions. A skill can still reach High with formatting warnings, but sensei will flag them for cleanup during the IMPROVE step.
 
 ---
 

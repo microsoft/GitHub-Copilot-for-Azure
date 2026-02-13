@@ -127,6 +127,10 @@ tests/{skill-name}/integration.test.ts # If exists
 2. Contains trigger phrases ("USE FOR:" etc.)
 3. Contains anti-triggers ("DO NOT USE FOR:" etc.)
 4. Has compatibility field (optional for Medium-High)
+5. No frontmatter formatting issues:
+   - **Pipe-colon conflict:** `description: |` with `USE FOR:` or `DO NOT USE FOR:` on indented lines → these get misinterpreted as YAML keys by the Copilot CLI parser. Auto-fix: convert to quoted string `description: "..."`
+   - **Tabs:** any tab characters in frontmatter
+   - **Unsupported keys:** any top-level key not in the supported list
 
 **Output:** Low | Medium | Medium-High | High
 
@@ -155,6 +159,11 @@ const SKILL_NAME = '{skill-name}';  // Replace placeholder
 2. Add "DO NOT USE FOR:" section with anti-triggers
 3. Keep description under 1024 characters
 4. Maintain clarity and usefulness
+5. **Fix pipe-colon conflicts:** If `description: |` is used with `USE FOR:` or `DO NOT USE FOR:` on indented lines, convert to quoted string format:
+   - Read all indented continuation lines under `description: |`
+   - Join them into a single string (trim trailing newlines, collapse `\n` to spaces)
+   - Wrap in double quotes: `description: "joined text here"`
+   - Escape any internal double quotes with `\"`
 
 **Strategy:**
 - Read skill content to understand purpose
@@ -166,10 +175,7 @@ const SKILL_NAME = '{skill-name}';  // Replace placeholder
 ```yaml
 ---
 name: {skill-name}
-description: |
-  [What the skill does - 1-2 sentences]
-  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5]
-  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2] (use another-skill)
+description: "[What the skill does - 1-2 sentences] USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5]. DO NOT USE FOR: [scenario1] (use other-skill), [scenario2] (use another-skill)."
 ---
 ```
 
