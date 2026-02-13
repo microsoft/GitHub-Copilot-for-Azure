@@ -6,7 +6,7 @@ Azure Resource Graph (ARG) enables fast, cross-subscription resource querying us
 
 Use the `extension_cli_generate` MCP tool to generate `az graph query` commands:
 
-```
+```yaml
 mcp_azure_mcp_extension_cli_generate
   intent: "query Azure Resource Graph to <describe what you want to diagnose>"
   cli-type: "az"

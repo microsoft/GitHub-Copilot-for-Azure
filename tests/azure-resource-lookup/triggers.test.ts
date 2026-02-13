@@ -70,7 +70,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     ];
 
     test.each(shouldTriggerPrompts)(
-      'triggers on: "%s"',
+      "triggers on: \"%s\"",
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(true);
@@ -110,7 +110,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     ];
 
     test.each(shouldNotTriggerPrompts)(
-      'does not trigger on: "%s"',
+      "does not trigger on: \"%s\"",
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(false);

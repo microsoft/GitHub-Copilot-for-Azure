@@ -14,7 +14,6 @@
 import {
   useAgentRunner,
   isSkillInvoked,
-  areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
@@ -89,5 +88,15 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       doesAssistantMessageIncludeKeyword(agentMetadata, "available") ||
       doesAssistantMessageIncludeKeyword(agentMetadata, "resource");
     expect(hasHealthInfo).toBe(true);
+  });
+
+  // Skill invocation test
+  test("skill should be invoked for resource listing prompts", async () => {
+    const agentMetadata = await agent.run({
+      prompt: "List the websites in my subscription"
+    });
+
+    const skillInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+    expect(skillInvoked).toBe(true);
   });
 });

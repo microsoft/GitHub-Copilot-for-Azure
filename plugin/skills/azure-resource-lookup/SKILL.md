@@ -46,8 +46,8 @@ Use this skill when the user wants to:
 | Tool | Purpose | When to Use |
 |------|---------|-------------|
 | `extension_cli_generate` | Generate `az graph query` commands | Primary tool — generate ARG queries from user intent |
-| `subscription_list` | List available subscriptions | Discover subscription scope before querying |
-| `group_list` | List resource groups | Narrow query scope |
+| `mcp_azure_mcp_subscription_list` | List available subscriptions | Discover subscription scope before querying |
+| `mcp_azure_mcp_group_list` | List resource groups | Narrow query scope |
 
 ## Workflow
 
@@ -75,7 +75,7 @@ If a dedicated tool is available with full coverage, use it. Otherwise proceed t
 
 Use `extension_cli_generate` to build the `az graph query` command:
 
-```
+```yaml
 mcp_azure_mcp_extension_cli_generate
   intent: "query Azure Resource Graph to <user's request>"
   cli-type: "az"
