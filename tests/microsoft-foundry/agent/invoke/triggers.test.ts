@@ -47,6 +47,10 @@ describe(`invoke - Trigger Tests`, () => {
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
       "Set up monitoring for my web application",
+      "Generate a Dockerfile for my Python web service",
+      "Push my image to a registry",
+      "Create a serverless function in Azure",
+      "Package my Node.js app into a tarball",
     ];
 
     test.each(shouldNotTriggerPrompts)(

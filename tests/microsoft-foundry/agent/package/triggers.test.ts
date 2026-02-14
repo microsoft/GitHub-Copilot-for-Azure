@@ -47,6 +47,9 @@ describe(`package - Trigger Tests`, () => {
       "Explain how Kubernetes pods work",
       "Help me write a poem about clouds",
       "Set up monitoring for my web application",
+      "Create a serverless function endpoint",
+      "Send a request to my REST API",
+      "Run my unit tests locally",
     ];
 
     test.each(shouldNotTriggerPrompts)(
