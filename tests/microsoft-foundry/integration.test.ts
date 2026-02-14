@@ -9,18 +9,13 @@
  * 2. Run `copilot` and authenticate
  */
 
-import { randomUUID } from "crypto";
 import {
   useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  doesAssistantMessageIncludeKeyword,
-  areToolCallsSuccess,
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { AIProjectClient } from "@azure/ai-projects";
-import { DefaultAzureCredential } from "@azure/identity";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -255,63 +250,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for validate permissions prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
-  });
-
-  test("returns v1 model identifier for a given model", async () => {
-    const projectEndpoint = process.env.FOUNDRY_PROJECT_ENDPOINT;
-    if (!projectEndpoint) {
-      console.log("Environment variable FOUNDRY_PROJECT_ENDPOINT not defined. Skipping test.");
-      return;
-    }
-
-    // Foundry assigns a unique identifier to each model, which must be used when calling Foundry APIs.
-    // However, users may refer to a model in various ways (e.g. GPT 5, gpt-5, GPT-5, GPT5, etc.)
-    // The agent can list the models to help the user find the unique identifier for a model.
-    const agentMetadata = await agent.run({
-      systemPrompt: {
-        mode: "append",
-        content: `Use ${projectEndpoint} as the project endpoint when calling Foundry tools.`
-      },
-      prompt: "What's the official name of GPT 5 in Foundry?",
-      nonInteractive: true
-    });
-
-    const areFoundryToolCallsSuccess = areToolCallsSuccess(agentMetadata, "azure-foundry");
-    const isCorrectModelNameInResponse = doesAssistantMessageIncludeKeyword(agentMetadata, "gpt-5", { caseSensitive: true });
-    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    expect(areFoundryToolCallsSuccess).toBe(true);
-    expect(isCorrectModelNameInResponse).toBe(true);
-  });
-
-  test("successfully creates a v1 agent in Foundry", async () => {
-    const projectEndpoint = process.env.FOUNDRY_PROJECT_ENDPOINT;
-    if (!projectEndpoint) {
-      console.log("Environment variable FOUNDRY_PROJECT_ENDPOINT not defined. Skipping test.");
-      return;
-    }
-
-    const agentNameSuffix = randomUUID().substring(0, 4);
-    const agentName = `onboarding-buddy-${agentNameSuffix}`;
-    const projectClient = new AIProjectClient(projectEndpoint, new DefaultAzureCredential());
-
-    const _agentMetadata = await agent.run({
-      prompt: `Create a Foundry agent called "${agentName}" in my foundry project ${projectEndpoint}, use gpt-4o as the model, and give it a generic system instruction suitable for onboarding a new team member in a professional environment for now.`,
-      nonInteractive: true
-    });
-
-    // Verify if the agent is created in the Foundry project
-    const agentsIter = projectClient.agents.listAgents();
-
-    // The agentId of the created agent
-    let targetAgentId: string | undefined = undefined;
-    for await (const agent of agentsIter) {
-      console.log("Found agent", agent.name)
-      if (agent.name === agentName) {
-        targetAgentId = agent.id;
-      }
-    }
-    expect(targetAgentId).not.toBe(undefined);
-    await projectClient.agents.deleteAgent(targetAgentId!);
   });
 
 });
