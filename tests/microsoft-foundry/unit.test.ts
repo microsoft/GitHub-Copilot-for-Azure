@@ -90,8 +90,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const fs = await import("fs/promises");
       const path = await import("path");
       const quotaPath = path.join(
-        __dirname,
-        "../../plugin/skills/microsoft-foundry/quota/quota.md"
+        SKILLS_PATH,
+        "microsoft-foundry/quota/quota.md"
       );
       quotaContent = await fs.readFile(quotaPath, "utf-8");
     });
@@ -163,8 +163,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const fs = await import("fs/promises");
       const path = await import("path");
       const rbacPath = path.join(
-        __dirname,
-        "../../plugin/skills/microsoft-foundry/rbac/rbac.md"
+        SKILLS_PATH,
+        "microsoft-foundry/rbac/rbac.md"
       );
       rbacContent = await fs.readFile(rbacPath, "utf-8");
     });

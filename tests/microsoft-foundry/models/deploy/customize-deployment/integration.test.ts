@@ -30,9 +30,9 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration("customize (customize-deployment) - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}-customize-deployment - Integration Tests`, () => {
   describe("skill-invocation", () => {
-  const agent = useAgentRunner();
+    const agent = useAgentRunner();
     test("invokes skill for custom deployment prompt", async () => {
       let successCount = 0;
 

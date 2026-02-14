@@ -30,9 +30,9 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration("preset (deploy-model-optimal-region) - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}-preset - Integration Tests`, () => {
   describe("skill-invocation", () => {
-  const agent = useAgentRunner();
+    const agent = useAgentRunner();
     test("invokes skill for quick deployment prompt", async () => {
       let successCount = 0;
 
