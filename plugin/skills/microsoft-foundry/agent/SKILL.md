@@ -27,6 +27,7 @@ User Request
 | Create, update, start/stop, or delete an agent deployment | [deploy](deploy/SKILL.md) |
 | Send messages to an agent, single or multi-turn conversations | [invoke](invoke/SKILL.md) |
 | View container logs, query telemetry, diagnose failures | [troubleshoot](troubleshoot/SKILL.md) |
+| Creating AI agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [create/agent-framework/SKILL.md](create/agent-framework/SKILL.md) |
 
 ## Common: Project Context Resolution
 
