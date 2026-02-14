@@ -210,6 +210,24 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
+
+    test("creates Python function app with Service Bus trigger", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(isSkillUsed).toBe(true);
+      expect(isValidateInvoked).toBe(true);
+      expect(isPrepareInvoked).toBe(true);
+      expect(containsDeployLinks).toBe(true);
+    }, deployTestTimeoutMs);
   });
 
   // Azure Container Apps (ACA)
