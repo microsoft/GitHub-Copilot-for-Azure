@@ -4,7 +4,7 @@
  * Test the router skill metadata and common content.
  */
 
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry/agent";
 

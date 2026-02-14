@@ -1,16 +1,16 @@
 /**
- * Trigger Tests for foundry-agent-troubleshoot
+ * Trigger Tests for foundry-agent-invoke
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agent/troubleshoot";
+const SKILL_NAME = "microsoft-foundry/agent/invoke";
 
-describe(`troubleshoot - Trigger Tests`, () => {
+describe(`invoke - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,12 +21,12 @@ describe(`troubleshoot - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Troubleshoot my Foundry agent that is not responding",
-      "Debug my hosted agent errors in Azure AI Foundry",
-      "Show me the container logs for my Foundry agent",
-      "My agent is failing, help me diagnose the issue",
-      "Check agent telemetry and traces for exceptions",
-      "Why is my Foundry agent returning errors?",
+      "Invoke my Foundry agent with a test message",
+      "Send a message to my deployed agent",
+      "Test my deployed agent in Foundry",
+      "Run my agent with a test prompt",
+      "Have a conversation with my Foundry agent",
+      "Chat with my agent in Azure AI Foundry",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -43,10 +43,10 @@ describe(`troubleshoot - Trigger Tests`, () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem about clouds",
-      "Help me with AWS CloudWatch metrics",
+      "Help me with AWS Lambda",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
-      "Set up a new React web application",
+      "Set up monitoring for my web application",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -79,14 +79,14 @@ describe(`troubleshoot - Trigger Tests`, () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "troubleshoot agent ".repeat(100);
+      const longPrompt = "invoke agent ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("TROUBLESHOOT MY AGENT");
-      const result2 = triggerMatcher.shouldTrigger("troubleshoot my agent");
+      const result1 = triggerMatcher.shouldTrigger("INVOKE MY AGENT");
+      const result2 = triggerMatcher.shouldTrigger("invoke my agent");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

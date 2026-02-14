@@ -4,7 +4,7 @@
  * Test isolated skill logic and validation rules.
  */
 
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry/agent/deploy";
 

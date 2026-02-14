@@ -1,14 +1,14 @@
 /**
- * Unit Tests for foundry-agent-package
+ * Unit Tests for foundry-agent-invoke
  *
  * Test isolated skill logic and validation rules.
  */
 
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agent/package";
+const SKILL_NAME = "microsoft-foundry/agent/invoke";
 
-describe(`package - Unit Tests`, () => {
+describe(`invoke - Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -18,7 +18,7 @@ describe(`package - Unit Tests`, () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("package");
+      expect(skill.metadata.name).toBe("invoke");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
@@ -48,19 +48,19 @@ describe(`package - Unit Tests`, () => {
     test("contains expected sections", () => {
       expect(skill.content).toContain("## Quick Reference");
       expect(skill.content).toContain("## When to Use This Skill");
+      expect(skill.content).toContain("## MCP Tools");
       expect(skill.content).toContain("## Workflow");
-      expect(skill.content).toContain("## Supported Project Types");
       expect(skill.content).toContain("## Error Handling");
     });
 
-    test("references containerization concepts", () => {
-      expect(skill.content).toContain("Dockerfile");
-      expect(skill.content).toContain("ACR");
-      expect(skill.content).toContain("docker");
+    test("references agent_invoke MCP tool", () => {
+      expect(skill.content).toContain("agent_invoke");
     });
 
-    test("references Foundry Samples for examples", () => {
-      expect(skill.content).toContain("azure-ai-foundry/foundry-samples");
+    test("documents agent type differences", () => {
+      expect(skill.content).toContain("## Agent Type Differences");
+      expect(skill.content).toContain("Prompt Agent");
+      expect(skill.content).toContain("Hosted Agent");
     });
   });
 });

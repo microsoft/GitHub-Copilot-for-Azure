@@ -1,16 +1,16 @@
 /**
- * Trigger Tests for foundry-agent-deploy
+ * Trigger Tests for foundry-agent-troubleshoot
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agent/deploy";
+const SKILL_NAME = "microsoft-foundry/agent/troubleshoot";
 
-describe(`deploy - Trigger Tests`, () => {
+describe(`troubleshoot - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,12 +21,12 @@ describe(`deploy - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Deploy my agent to Azure AI Foundry",
-      "Create a hosted agent in Foundry",
-      "Start my agent container in Foundry",
-      "Stop my hosted agent container",
-      "Check agent container status in Foundry",
-      "Create a prompt agent with gpt-4o model",
+      "Troubleshoot my Foundry agent that is not responding",
+      "Debug my hosted agent errors in Azure AI Foundry",
+      "Show me the container logs for my Foundry agent",
+      "My agent is failing, help me diagnose the issue",
+      "Check agent telemetry and traces for exceptions",
+      "Why is my Foundry agent returning errors?",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -43,10 +43,10 @@ describe(`deploy - Trigger Tests`, () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem about clouds",
-      "Help me with AWS SageMaker",
+      "Help me with AWS CloudWatch metrics",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
-      "Set up monitoring for my web application",
+      "Set up a new React web application",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -79,14 +79,14 @@ describe(`deploy - Trigger Tests`, () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "deploy agent Foundry ".repeat(100);
+      const longPrompt = "troubleshoot agent ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("DEPLOY AGENT FOUNDRY");
-      const result2 = triggerMatcher.shouldTrigger("deploy agent foundry");
+      const result1 = triggerMatcher.shouldTrigger("TROUBLESHOOT MY AGENT");
+      const result2 = triggerMatcher.shouldTrigger("troubleshoot my agent");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

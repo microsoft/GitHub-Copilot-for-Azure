@@ -5,8 +5,8 @@
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry/agent/package";
 

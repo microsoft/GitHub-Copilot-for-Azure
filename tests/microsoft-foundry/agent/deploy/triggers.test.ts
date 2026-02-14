@@ -1,16 +1,16 @@
 /**
- * Trigger Tests for foundry-agent-invoke
+ * Trigger Tests for foundry-agent-deploy
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agent/invoke";
+const SKILL_NAME = "microsoft-foundry/agent/deploy";
 
-describe(`invoke - Trigger Tests`, () => {
+describe(`deploy - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,12 +21,12 @@ describe(`invoke - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Invoke my Foundry agent with a test message",
-      "Send a message to my deployed agent",
-      "Test my deployed agent in Foundry",
-      "Run my agent with a test prompt",
-      "Have a conversation with my Foundry agent",
-      "Chat with my agent in Azure AI Foundry",
+      "Deploy my agent to Azure AI Foundry",
+      "Create a hosted agent in Foundry",
+      "Start my agent container in Foundry",
+      "Stop my hosted agent container",
+      "Check agent container status in Foundry",
+      "Create a prompt agent with gpt-4o model",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -43,7 +43,7 @@ describe(`invoke - Trigger Tests`, () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem about clouds",
-      "Help me with AWS Lambda",
+      "Help me with AWS SageMaker",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
       "Set up monitoring for my web application",
@@ -79,14 +79,14 @@ describe(`invoke - Trigger Tests`, () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "invoke agent ".repeat(100);
+      const longPrompt = "deploy agent Foundry ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("INVOKE MY AGENT");
-      const result2 = triggerMatcher.shouldTrigger("invoke my agent");
+      const result1 = triggerMatcher.shouldTrigger("DEPLOY AGENT FOUNDRY");
+      const result2 = triggerMatcher.shouldTrigger("deploy agent foundry");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

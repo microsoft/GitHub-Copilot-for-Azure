@@ -1,14 +1,14 @@
 /**
- * Unit Tests for foundry-agent-invoke
+ * Unit Tests for foundry-agent-troubleshoot
  *
  * Test isolated skill logic and validation rules.
  */
 
-import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agent/invoke";
+const SKILL_NAME = "microsoft-foundry/agent/troubleshoot";
 
-describe(`invoke - Unit Tests`, () => {
+describe(`troubleshoot - Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -18,7 +18,7 @@ describe(`invoke - Unit Tests`, () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("invoke");
+      expect(skill.metadata.name).toBe("troubleshoot");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
@@ -53,14 +53,25 @@ describe(`invoke - Unit Tests`, () => {
       expect(skill.content).toContain("## Error Handling");
     });
 
-    test("references agent_invoke MCP tool", () => {
-      expect(skill.content).toContain("agent_invoke");
+    test("references container logs documentation", () => {
+      expect(skill.content).toContain("az cognitiveservices agent logs");
     });
 
-    test("documents agent type differences", () => {
-      expect(skill.content).toContain("## Agent Type Differences");
-      expect(skill.content).toContain("Prompt Agent");
-      expect(skill.content).toContain("Hosted Agent");
+    test("references account connection documentation", () => {
+      expect(skill.content).toContain("az cognitiveservices account connection");
+    });
+
+    test("references azure-kusto skill for telemetry", () => {
+      expect(skill.content).toContain("azure-kusto");
+    });
+
+    test("documents both agent types", () => {
+      expect(skill.content).toContain("hosted");
+      expect(skill.content).toContain("prompt");
+    });
+
+    test("references Application Insights", () => {
+      expect(skill.content).toContain("Application Insights");
     });
   });
 });
