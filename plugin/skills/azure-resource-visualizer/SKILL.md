@@ -33,6 +33,8 @@ If a resource group is specified, validate it exists and proceed.
 
 ### Step 2: Resource Discovery & Analysis
 
+For bulk resource discovery across subscriptions, use Azure Resource Graph queries. See [Azure Resource Graph Queries](references/azure-resource-graph.md) for cross-subscription inventory and relationship discovery patterns.
+
 Once you have the resource group:
 
 1. **Query all resources** in the resource group using Azure MCP tools or `az`.

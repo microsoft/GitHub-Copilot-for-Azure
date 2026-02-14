@@ -5,9 +5,9 @@ Deploy to Azure using Azure CLI.
 ## Prerequisites
 
 - `az` CLI installed → Run `mcp_azure_mcp_extension_cli_install` with `cli-type: az` if needed
-- `.azure/preparation-manifest.md` exists with status `Validated`
+- `.azure/plan.md` exists with status `Validated`
 - Bicep/ARM templates exist in `infra/`
-- **Subscription and location confirmed** → See [pre-deploy-checklist.md](../../pre-deploy-checklist.md)
+- **Subscription and location confirmed** → See [Pre-Deploy Checklist](../../pre-deploy-checklist.md)
 
 ## Workflow
 
@@ -24,7 +24,7 @@ Deploy to Azure using Azure CLI.
 
 ```bash
 az deployment sub create \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
   --parameters environmentName=dev
 ```
@@ -32,7 +32,7 @@ az deployment sub create \
 ### Resource Group Level
 
 ```bash
-az group create --name rg-myapp-dev --location eastus
+az group create --name rg-myapp-dev --location eastus2
 
 az deployment group create \
   --resource-group rg-myapp-dev \
@@ -68,5 +68,5 @@ func azure functionapp publish <function-app-name>
 
 ## References
 
-- [Verification steps](mdc:verify.md)
-- [Error handling](mdc:errors.md)
+- [Verification steps](./verify.md)
+- [Error handling](./errors.md)

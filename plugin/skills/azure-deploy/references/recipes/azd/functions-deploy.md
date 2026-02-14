@@ -6,7 +6,7 @@ Deployment workflows for Azure Functions using AZD.
 
 - Azure Functions project prepared with azd template
 - `azure.yaml` exists and validated
-- `.azure/preparation-manifest.md` status = `Validated`
+- `.azure/plan.md` status = `Validated`
 - Azure Functions Core Tools (optional, for local debugging or when using `func` commands outside azd workflows)
 
 ## AZD Deployment
@@ -46,7 +46,7 @@ azd provision --preview
 These are for azd provisioning, not application runtime:
 
 ```bash
-azd env set AZURE_LOCATION eastus
+azd env set AZURE_LOCATION eastus2
 azd env set VNET_ENABLED false
 ```
 

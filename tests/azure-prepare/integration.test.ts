@@ -10,7 +10,7 @@
  */
 
 import {
-  run,
+  useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
@@ -33,13 +33,15 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Prepare my application for Azure deployment and set up the infrastructure"
           });
 
@@ -66,7 +68,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
           });
 
@@ -93,7 +95,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
           });
 
@@ -120,7 +122,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
           });
 
@@ -146,7 +148,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await run({
+          const agentMetadata = await agent.run({
             prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
           });
 
