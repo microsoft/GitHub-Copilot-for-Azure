@@ -164,7 +164,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const path = await import("path");
       const rbacPath = path.join(
         SKILLS_PATH,
-        "/microsoft-foundry/rbac/rbac.md"
+        "microsoft-foundry/rbac/rbac.md"
       );
       rbacContent = await fs.readFile(rbacPath, "utf-8");
     });
