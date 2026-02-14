@@ -15,7 +15,7 @@ Create and manage agent deployments in Azure AI Foundry, including container lif
 | Property | Value |
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (container-based) |
-| MCP server | `foundry-agent` |
+| MCP server | `foundry-mcp` |
 | Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | Container protocols | `a2a`, `responses`, `mcp` |
 

@@ -76,7 +76,7 @@ These conventions apply to **all** agent skills:
 
 ## Common: MCP Server
 
-All agent skills use tools from the `foundry-agent` MCP server at `https://mcp.ai.azure.com`:
+All agent skills use tools from the `foundry-mcp` MCP server at `https://mcp.ai.azure.com`:
 
 | Tool | Description |
 |------|-------------|
