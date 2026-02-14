@@ -18,8 +18,8 @@ describe("microsoft-foundry:resource/create - Unit Tests", () => {
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
     const resourceCreatePath = path.join(
-      __dirname,
-      "../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md"
+      SKILLS_PATH,
+      "microsoft-foundry/resource/create/create-foundry-resource.md"
     );
     resourceCreateContent = await fs.readFile(resourceCreatePath, "utf-8");
   });

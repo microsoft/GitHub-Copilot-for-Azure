@@ -27,7 +27,6 @@
     "eslint": "^9.0.0",
     "eslint-plugin-jest": "^28.0.0",
     "typescript-eslint": "^8.0.0",
-    "@azure/ai-projects": "^1.0.1",
     "@azure/identity": "^4.13.0",
     "@github/copilot-sdk": "^0.1.22",
     "@types/jest": "^29.5.12",
