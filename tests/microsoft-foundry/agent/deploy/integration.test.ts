@@ -27,17 +27,35 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("invokes skill for relevant prompt", async () => {
-    const agentMetadata = await agent.run({
-      prompt: "Deploy my agent to Azure AI Foundry"
-    });
+    let agentMetadata;
+    try {
+      agentMetadata = await agent.run({
+        prompt: "Deploy my agent to Azure AI Foundry"
+      });
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
+        console.log(`⏭️  Skipping integration test: ${e.message}`);
+        return;
+      }
+      throw e;
+    }
 
     expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
   });
 
   test("response mentions agent concepts", async () => {
-    const agentMetadata = await agent.run({
-      prompt: "Deploy my agent to Azure AI Foundry"
-    });
+    let agentMetadata;
+    try {
+      agentMetadata = await agent.run({
+        prompt: "Deploy my agent to Azure AI Foundry"
+      });
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
+        console.log(`⏭️  Skipping integration test: ${e.message}`);
+        return;
+      }
+      throw e;
+    }
 
     expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
   });
