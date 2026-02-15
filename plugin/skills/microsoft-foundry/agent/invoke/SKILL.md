@@ -6,7 +6,7 @@ description: |
   DO NOT USE FOR: deploying or creating agents (use deploy skill), containerizing projects or building Docker images (use package skill), Azure Functions (use azure-functions).
 ---
 
-# Foundry Agent Run
+# Invoke Foundry Agent
 
 Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-turn conversations.
 
