@@ -51,6 +51,11 @@ describe("invoke - Trigger Tests", () => {
       "Push my image to a registry",
       "Create a serverless function in Azure",
       "Package my Node.js app into a tarball",
+      "Create a hosted agent in Azure AI Foundry",
+      "Deploy a new agent in Foundry",
+      "Build a Docker image for my Foundry agent",
+      "Package and publish a Docker container for my Foundry project",
+      "Set up CI/CD to deploy Foundry agents",
     ];
 
     test.each(shouldNotTriggerPrompts)(
