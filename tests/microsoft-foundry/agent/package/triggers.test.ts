@@ -10,7 +10,7 @@ import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry/agent/package";
 
-describe(`package - Trigger Tests`, () => {
+describe("package - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 

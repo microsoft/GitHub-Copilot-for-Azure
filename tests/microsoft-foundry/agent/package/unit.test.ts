@@ -8,7 +8,7 @@ import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry/agent/package";
 
-describe(`package - Unit Tests`, () => {
+describe("package - Unit Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
