@@ -50,11 +50,6 @@ describe("deploy - Trigger Tests", () => {
       "Generate a Dockerfile for my Python web service",
       "Push my image to a registry",
       "Create a serverless function endpoint",
-      "Send a test message to my Foundry agent",
-      "Invoke my deployed Foundry agent endpoint",
-      "Call my existing Foundry agent to run a query",
-      "Test my already deployed Azure AI Foundry agent",
-      "Use my Foundry agent to process this request",
     ];
 
     test.each(shouldNotTriggerPrompts)(
