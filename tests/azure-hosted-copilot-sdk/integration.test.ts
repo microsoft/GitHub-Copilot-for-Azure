@@ -1,5 +1,5 @@
 /**
- * Integration Tests for azure-hosted-github-sdk
+ * Integration Tests for azure-hosted-copilot-sdk
  * 
  * Tests skill behavior with a real Copilot agent session.
  * 
@@ -25,7 +25,7 @@ import {
 } from "../utils/regression-detectors";
 import * as fs from "fs";
 
-const SKILL_NAME = "azure-hosted-github-sdk";
+const SKILL_NAME = "azure-hosted-copilot-sdk";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
@@ -153,7 +153,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   describe("content-quality", () => {
     // Content tests verify the agent produces useful output regardless
-    // of which skill is invoked (azure-hosted-github-sdk or azure-prepare)
+    // of which skill is invoked (azure-hosted-copilot-sdk or azure-prepare)
     test("scaffold prompt mentions copilot SDK templates", async () => {
       const agentMetadata = await agent.run({
         prompt: "Scaffold a copilot-powered app using the copilot SDK and the copilot-sdk-agent template",

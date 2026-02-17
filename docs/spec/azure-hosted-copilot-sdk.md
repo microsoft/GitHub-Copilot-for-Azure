@@ -1,8 +1,8 @@
-# azure-hosted-github-sdk — Feature Status
+# azure-hosted-copilot-sdk — Feature Status
 
 ## Overview
 
-The `azure-hosted-github-sdk` skill enables users to build, deploy, and configure GitHub Copilot SDK applications on Azure. It covers three core workflows: scaffolding new apps from templates, deploying existing SDK apps, and configuring Bring Your Own Model (BYOM) to use Azure AI Foundry or Azure OpenAI models instead of the default GitHub-hosted models.
+The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configure GitHub Copilot SDK applications on Azure. It covers three core workflows: scaffolding new apps from templates, deploying existing SDK apps, and configuring Bring Your Own Model (BYOM) to use Azure AI Foundry or Azure OpenAI models instead of the default GitHub-hosted models.
 
 ## Current Status
 
@@ -10,7 +10,7 @@ The `azure-hosted-github-sdk` skill enables users to build, deploy, and configur
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `plugin/skills/azure-hosted-github-sdk/SKILL.md` | Main routing logic (Steps 1→2A/2B/2C→3) | ✅ Done (~471/500 tokens) |
+| `plugin/skills/azure-hosted-copilot-sdk/SKILL.md` | Main routing logic (Steps 1→2A/2B/2C→3) | ✅ Done (~471/500 tokens) |
 | `references/copilot-sdk.md` | SDK architecture, session lifecycle, BYOM comparison | ✅ Done (~888/1000 tokens) |
 | `references/deploy-existing.md` | Deploy workflow, Bicep infra, BYOM infrastructure | ✅ Done (~640/1000 tokens) |
 | `references/existing-project-integration.md` | Add SDK to existing apps, BYOM integration guide | ✅ Done (~844/1000 tokens) |
@@ -27,14 +27,14 @@ The `azure-hosted-github-sdk` skill enables users to build, deploy, and configur
 
 | Test File | Tests | Status |
 |-----------|-------|--------|
-| `tests/azure-hosted-github-sdk/triggers.test.ts` | 24 tests (11 trigger, 8 negative, 5 edge) | ✅ All passing |
-| `tests/azure-hosted-github-sdk/unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ All passing |
-| `tests/azure-hosted-github-sdk/integration.test.ts` | 4 invocation rate + 2 content quality | ⚠️ See below |
+| `tests/azure-hosted-copilot-sdk/triggers.test.ts` | 24 tests (11 trigger, 8 negative, 5 edge) | ✅ All passing |
+| `tests/azure-hosted-copilot-sdk/unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ All passing |
+| `tests/azure-hosted-copilot-sdk/integration.test.ts` | 4 invocation rate + 2 content quality | ⚠️ See below |
 | `tests/utils/regression-detectors.ts` | `countApiKeyInByomConfig()` detector | ✅ Added |
 
 **Integration test detail:**
 - Content quality tests (2): ✅ **Passing** — agent produces correct Copilot SDK and BYOM output
-- Invocation rate tests (4): ❌ **0% rate** — agent routes to `azure-prepare` instead of `azure-hosted-github-sdk`
+- Invocation rate tests (4): ❌ **0% rate** — agent routes to `azure-prepare` instead of `azure-hosted-copilot-sdk`
 
 This is a skill routing/discovery issue, not a content issue. The `azure-prepare` skill's `REQUIRED FIRST STEP` instruction captures all "build + deploy" prompts before our skill is considered. See [Known Issues](#known-issues).
 
@@ -45,7 +45,7 @@ User prompt
   │
   ▼
 ┌──────────────────────────────┐
-│  azure-hosted-github-sdk     │
+│  azure-hosted-copilot-sdk     │
 │  Step 1: Route               │
 ├──────────────────────────────┤
 │  Build new?    → Step 2A     │──→ azd init --template jongio/copilot-sdk-agent
@@ -85,7 +85,7 @@ The skill is never invoked by the Copilot CLI agent. Prompts containing "build c
 
 **Options:**
 1. Improve skill description to outcompete `azure-prepare` for Copilot SDK-specific prompts
-2. Add cross-skill routing — have `azure-prepare` detect Copilot SDK projects and delegate to `azure-hosted-github-sdk`
+2. Add cross-skill routing — have `azure-prepare` detect Copilot SDK projects and delegate to `azure-hosted-copilot-sdk`
 3. Use `systemPrompt` in the skill to provide stronger routing hints
 
 ### P1 — Agent Template Hosting
@@ -148,7 +148,7 @@ PR #3 on `jongio/copilot-sdk-service` adds BYOM support to the service template.
 ## File Inventory
 
 ```
-plugin/skills/azure-hosted-github-sdk/
+plugin/skills/azure-hosted-copilot-sdk/
 ├── SKILL.md                                    # Main skill (routing + steps)
 └── references/
     ├── azure-model-config.md                   # BYOM provider config + auth
@@ -156,7 +156,7 @@ plugin/skills/azure-hosted-github-sdk/
     ├── deploy-existing.md                      # Deploy workflow + Bicep infra
     └── existing-project-integration.md         # Add SDK to existing apps
 
-tests/azure-hosted-github-sdk/
+tests/azure-hosted-copilot-sdk/
 ├── integration.test.ts                         # 6 integration tests (invocation rate + content)
 ├── triggers.test.ts                            # 24 trigger matching tests
 ├── unit.test.ts                                # 17 unit tests
