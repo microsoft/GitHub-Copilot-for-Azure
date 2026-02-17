@@ -5,9 +5,13 @@ After architecture planning, research each selected component to gather best pra
 ## Process
 
 1. **Identify Components** — List all Azure services from architecture plan
-2. **Load Service References** — For each service, load the `services/<service>/README.md` first, then specific references as needed
-3. **Invoke Related Skills** — For deeper guidance, invoke mapped skills from the table below
-4. **Document Findings** — Record key insights in `.azure/plan.md`
+2. **Load Service References** — For each service, load `services/<service>/README.md` first, then specific references as needed
+3. **Check Resource Naming Rules** — For each resource type, check [resource naming rules](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-name-rules) for valid characters, length limits, and uniqueness scopes
+4. **Load Recipe References** — Load the selected recipe's guide (e.g., [AZD](recipes/azd/README.md)) and its IAC rules, MCP best practices, and schema tools listed in its "Before Generation" table
+5. **Check Region Availability** — Verify all selected services are available in the target region per [region-availability.md](region-availability.md)
+6. **Load Runtime References** — For containerized apps, load language-specific production settings (e.g., [Node.js](runtimes/nodejs.md))
+7. **Invoke Related Skills** — For deeper guidance, invoke mapped skills from the table below
+8. **Document Findings** — Record key insights in `.azure/plan.md`
 
 ## Service-to-Reference Mapping
 
