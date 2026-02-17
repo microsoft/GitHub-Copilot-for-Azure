@@ -22,9 +22,7 @@ jobs:
         env:
           SKILLS_PAT: ${{ secrets.SKILLS_REPO_PAT }}
         run: |
-          git clone --branch main --single-branch \
-            "https://x-access-token:${SKILLS_PAT}@github.com/microsoft/skills.git" \
-            target-repo
+          gh repo clone microsoft/skills target-repo -- --branch main --single-branch
 
           cd target-repo
           BRANCH_NAME="sync/copilot-for-azure-${{ github.run_id }}"
