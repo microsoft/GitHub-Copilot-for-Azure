@@ -68,6 +68,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
         name: 'EnableServerless'
       }
     ]
+    disableLocalAuth: true
   }
 }
 
