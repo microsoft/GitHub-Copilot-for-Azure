@@ -26,7 +26,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description is concise and actionable", () => {
       expect(skill.metadata.description.length).toBeGreaterThan(50);
-      expect(skill.metadata.description.length).toBeLessThan(500);
+      expect(skill.metadata.description.length).toBeLessThan(1025);
     });
 
     test("description contains USE FOR trigger phrases", () => {
@@ -58,6 +58,41 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("includes deploy-existing path", () => {
       expect(skill.content).toContain("deploy ref");
       expect(skill.content).toContain("deploy-existing");
+    });
+  });
+
+  describe("BYOM Content", () => {
+    test("includes BYOM routing step", () => {
+      expect(skill.content).toContain("Step 2C");
+      expect(skill.content).toContain("BYOM");
+    });
+
+    test("links to azure-model-config reference", () => {
+      expect(skill.content).toContain("azure-model-config.md");
+    });
+
+    test("mentions DefaultAzureCredential for BYOM", () => {
+      expect(skill.content).toContain("DefaultAzureCredential");
+    });
+
+    test("description includes BYOM trigger phrases", () => {
+      const description = skill.metadata.description;
+      expect(description).toContain("BYOM");
+      expect(description).toContain("azure model");
+      expect(description).toContain("bring your own model");
+    });
+
+    test("azure-model-config.md reference file exists", () => {
+      const refPath = skill.filePath.replace("SKILL.md", "references/azure-model-config.md");
+      const content = readFileSync(refPath, "utf-8");
+      expect(content).toContain("DefaultAzureCredential");
+      expect(content).toContain("bearerToken");
+      expect(content).toContain("AZURE_AI_FOUNDRY_PROJECT_ENDPOINT");
+    });
+
+    test("BYOM routing row in step 1 table", () => {
+      expect(skill.content).toContain("Use Azure/own model");
+      expect(skill.content).toContain("Step 2C");
     });
   });
 

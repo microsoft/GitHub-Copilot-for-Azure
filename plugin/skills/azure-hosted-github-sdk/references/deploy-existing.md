@@ -74,7 +74,25 @@ Adapt `project`, `language`, `ports` to the user's app. Add a `web` service if t
 
 If the user has no Dockerfile, read the template's Dockerfile for the detected language via GitHub MCP and adapt it to the user's project structure (entry point, build steps, port).
 
-## 6. Errors
+## 6. BYOM Infrastructure (Azure Model)
+
+If the user wants to use their own Azure model, add AI Services resources to Bicep. Read the agent template's Bicep for the pattern:
+
+`github-mcp-server-get_file_contents` owner: `jongio`, repo: `copilot-sdk-agent`, path: `infra/resources.bicep`
+
+Additional resources needed:
+
+| Resource | Purpose |
+|----------|---------|
+| AI Services account | Hosts model deployments |
+| AI Project | Foundry project scoping |
+| Role assignment | `Cognitive Services OpenAI User` for Managed Identity |
+
+Add env var to Container App: `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT`.
+
+See [Azure Model Configuration](azure-model-config.md) for provider config and auth pattern.
+
+## 7. Errors
 
 | Error | Fix |
 |-------|-----|

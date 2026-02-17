@@ -404,3 +404,38 @@ export function countInlineHtmlInCode(metadata: AgentMetadata): number {
 
   return count;
 }
+
+/**
+ * Detect API key usage in BYOM provider config when Azure endpoints are the target.
+ * Azure BYOM should use `bearerToken` via `DefaultAzureCredential`, never `apiKey`.
+ */
+export function countApiKeyInByomConfig(metadata: AgentMetadata): number {
+  const allText = getAllToolText(metadata);
+
+  // Only flag if Azure BYOM context is present
+  const azureByomIndicators = [
+    /AZURE_AI_FOUNDRY_PROJECT_ENDPOINT/i,
+    /services\.ai\.azure\.com/i,
+    /openai\.azure\.com/i,
+    /DefaultAzureCredential/i,
+    /bearerToken/i,
+  ];
+
+  const hasAzureByom = azureByomIndicators.some(p => p.test(allText));
+  if (!hasAzureByom) return 0;
+
+  // Count apiKey usage in provider config context
+  const apiKeyPatterns = [
+    /apiKey\s*[:=]\s*(?:process\.env|["'])/gi,
+    /provider\s*:\s*\{[^}]*apiKey/gi,
+    /AZURE_OPENAI_(?:API_)?KEY/gi,
+  ];
+
+  let count = 0;
+  for (const pattern of apiKeyPatterns) {
+    pattern.lastIndex = 0;
+    const matches = allText.match(pattern);
+    if (matches) count += matches.length;
+  }
+  return count;
+}

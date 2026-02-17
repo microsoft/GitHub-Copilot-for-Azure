@@ -76,9 +76,19 @@ For apps using the Copilot SDK for AI features without a full agent setup.
 
 ## BYOM (Bring Your Own Model)
 
-Pass provider config when creating a session. For Azure endpoints, use `DefaultAzureCredential` with `bearerToken` — no API keys.
+Use your own Azure AI or Foundry model instead of Copilot-hosted models. Full config details: [Azure Model Configuration](azure-model-config.md).
 
-Supported providers: `openai`, `azure`, `anthropic`, `ollama`.
+| Aspect | Default | BYOM |
+|--------|---------|------|
+| Model source | GitHub Copilot API | Your Azure endpoint |
+| `model` param | Copilot model ID (e.g., `gpt-5`) | Azure deployment name |
+| Auth | `GITHUB_TOKEN` | `DefaultAzureCredential` → `bearerToken` |
+| Billing | Copilot premium quotas | Azure subscription |
+| Discovery | `client.listModels()` | `foundry_models_deployments_list` MCP |
+
+Provider types: `openai` (Foundry), `azure` (Azure OpenAI), `anthropic`, `ollama`.
+
+> ⚠️ **Warning:** `model` is **required** when using a provider — SDK throws if missing.
 
 ## Errors
 

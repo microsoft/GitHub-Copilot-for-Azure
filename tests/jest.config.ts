@@ -79,6 +79,9 @@ const config: Config = {
       "ts-jest",
       {
         useESM: true,
+        diagnostics: {
+          ignoreDiagnostics: [1343], // Allow import.meta in ESM preset
+        },
       },
     ],
   },
