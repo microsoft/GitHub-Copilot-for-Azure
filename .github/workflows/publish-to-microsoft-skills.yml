@@ -20,7 +20,7 @@ jobs:
       # 2. Clone the main branch of microsoft/skills and create a feature branch
       - name: Clone microsoft/skills and create feature branch
         env:
-          SKILLS_PAT: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
         run: |
           gh repo clone microsoft/skills target-repo -- --branch main --single-branch
 
