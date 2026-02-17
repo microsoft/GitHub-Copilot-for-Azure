@@ -97,7 +97,7 @@ Create supporting files for local development:
 
 ### Step 7: Build and Push to ACR
 
-Collect ACR details. Use the ACR name from the project context (see Common: Project Context Resolution) if available. Ask the user only for values not already resolved: registry name, repository name, image tag (default: current timestamp).
+Collect ACR details. Use the ACR name from the project context (see Common: Project Context Resolution) if available. Ask the user only for values not already resolved: registry name, repository name, image tag (default: current timestamp). Avoid using `latest` as tag.
 
 Let the user choose the build method: `Cloud Build (ACR Tasks) (Recommended)` or `Local Docker Build`.
 
