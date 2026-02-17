@@ -2,8 +2,8 @@
 name: microsoft-foundry
 description: |
   Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, build RAG applications with knowledge indexes, create and evaluate AI agents, manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, deployment failure, QuotaExceeded.
-  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
+  USE FOR: Microsoft Foundry, AI Foundry, deploy model, deploy GPT, deploy OpenAI model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, PTU, deployment failure, QuotaExceeded, InsufficientQuota, DeploymentLimitReached, check quota, view quota, monitor quota, quota increase, deploy model without project, first time model deployment, deploy model to new project, Foundry deployment, GPT deployment, model deployment.
+  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app), AI Search queries (use azure-ai), speech-to-text (use azure-ai), OCR (use azure-ai).
 ---
 
 # Microsoft Foundry Skill
@@ -37,6 +37,37 @@ Use this skill when the user wants to:
 - **Evaluate agent performance** using built-in evaluators
 - **Set up monitoring** and continuous evaluation for production agents
 - **Troubleshoot issues** with deployments, agents, or evaluations
+- **Manage quotas** — check usage, troubleshoot quota errors, request increases, plan capacity
+- **Deploy models without an existing project** — this skill handles project discovery and creation automatically
+
+> ⚠️ **Important:** This skill works **with or without** an existing Foundry project. If no project context is available, the skill will discover existing resources or guide the user through creating one before proceeding.
+
+## Context Resolution (Project Discovery)
+
+Before routing to any sub-skill, resolve the user's project context:
+
+```
+User Prompt
+    │
+    ▼
+[1] Check PROJECT_RESOURCE_ID env var
+    ├─ Set? → Use it, route to sub-skill
+    └─ Not set? → Continue to [2]
+    │
+    ▼
+[2] Discover existing resources
+    az cognitiveservices account list \
+      --query "[?kind=='AIServices']" --output table
+    ├─ Resources found? → List projects, let user select
+    └─ No resources? → Continue to [3]
+    │
+    ▼
+[3] Offer to create a Foundry project
+    ├─ User wants full setup → Use project/create sub-skill
+    └─ User wants quick deploy → Create minimal project inline
+```
+
+> 💡 **Tip:** Never fail silently when project context is missing. Always discover or create before proceeding with deployment, quota checks, or agent creation.
 
 ## Prerequisites
 

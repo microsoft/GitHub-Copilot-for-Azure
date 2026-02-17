@@ -22,23 +22,32 @@ Automates intelligent Azure OpenAI model deployment by checking capacity across 
 
 - Azure CLI installed and configured
 - Active Azure subscription with Cognitive Services read/create permissions
-- Azure AI Foundry project resource ID (`PROJECT_RESOURCE_ID` env var or provided interactively)
+- Azure AI Foundry project resource ID (optional — will be discovered or created if not provided)
+  - Set via `PROJECT_RESOURCE_ID` env var or provide interactively
   - Format: `/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/projects/{project}`
   - Found in: Azure AI Foundry portal → Project → Overview → Resource ID
+
+> 💡 **Tip:** No project? This skill will discover existing resources or create a new one. See the parent [deploy-model SKILL.md](../SKILL.md) for the full context resolution flow.
 
 ## Quick Workflow
 
 ### Fast Path (Current Region Has Capacity)
 ```
-1. Check authentication → 2. Get project → 3. Check current region capacity
+1. Check authentication → 2. Discover/select project → 3. Check current region capacity
 → 4. Deploy immediately
 ```
 
 ### Alternative Region Path (No Capacity)
 ```
-1. Check authentication → 2. Get project → 3. Check current region (no capacity)
+1. Check authentication → 2. Discover/select project → 3. Check current region (no capacity)
 → 4. Query all regions → 5. Show alternatives → 6. Select region + project
 → 7. Deploy
+```
+
+### No Project Path (First-Time User)
+```
+1. Check authentication → 2. No project found → 3. Create minimal project
+→ 4. Check capacity → 5. Deploy
 ```
 
 ---
@@ -50,7 +59,7 @@ Automates intelligent Azure OpenAI model deployment by checking capacity across 
 | Phase | Action | Key Commands |
 |-------|--------|-------------|
 | 1. Verify Auth | Check Azure CLI login and subscription | `az account show`, `az login` |
-| 2. Get Project | Read `PROJECT_RESOURCE_ID`, parse ARM ID, extract subscription/RG/account/project, verify exists | `az cognitiveservices account show` |
+| 2. Get Project | Read `PROJECT_RESOURCE_ID`, parse ARM ID, extract subscription/RG/account/project; if not set, discover existing AIServices resources or offer to create a new project | `az cognitiveservices account list`, `az cognitiveservices account show` |
 | 3. Get Model | List available models, user selects model + version | `az cognitiveservices account list-models` |
 | 4. Check Current Region | Query capacity for project's region using GlobalStandard SKU | `az rest --method GET .../modelCapacities` |
 | 5. Multi-Region Query | If no local capacity, query all regions; categorize available vs unavailable | Same capacity API without location filter |

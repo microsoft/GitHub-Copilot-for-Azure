@@ -1,6 +1,9 @@
 ---
 name: azure-ai
-description: "Use for Azure AI: Search, Speech, Foundry, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, AI agents, prompt flows, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, AI agent, prompt flow, Foundry, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources."
+description: |
+  Use for Azure AI: Search, Speech, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR.
+  USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech.
+  DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources, deploy model (use microsoft-foundry), model deployment (use microsoft-foundry), Foundry project (use microsoft-foundry), AI Foundry (use microsoft-foundry), quota management (use microsoft-foundry), create agent (use microsoft-foundry), RBAC for Foundry (use microsoft-foundry), GPT deployment (use microsoft-foundry).
 ---
 
 # Azure AI Services
@@ -11,9 +14,9 @@ description: "Use for Azure AI: Search, Speech, Foundry, OpenAI, Document Intell
 |---------|----------|-----------|-----|
 | AI Search | Full-text, vector, hybrid search | `azure__search` | `az search` |
 | Speech | Speech-to-text, text-to-speech | `azure__speech` | - |
-| Foundry | AI models, agents, prompt flows | `azure__foundry` | `az ml` |
-| OpenAI | GPT models, embeddings, DALL-E | - | `az cognitiveservices` |
 | Document Intelligence | Form extraction, OCR | - | - |
+
+> ⚠️ **Note:** For Foundry (AI models, agents, deployments, quota) and OpenAI (GPT models, embeddings), use the **microsoft-foundry** skill instead.
 
 ## MCP Server (Preferred)
 
@@ -27,11 +30,6 @@ When Azure MCP is enabled:
 ### Speech
 - `azure__speech` with command `speech_transcribe` - Speech to text
 - `azure__speech` with command `speech_synthesize` - Text to speech
-
-### Foundry
-- `azure__foundry` with command `foundry_model_list` - List AI models
-- `azure__foundry` with command `foundry_deployment_list` - List deployments
-- `azure__foundry` with command `foundry_agent_list` - List AI agents
 
 **If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
 
@@ -53,19 +51,10 @@ When Azure MCP is enabled:
 | Speaker diarization | Identify who spoke when |
 | Custom models | Domain-specific vocabulary |
 
-## Foundry Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| Model catalog | GPT-4, Llama, Mistral, custom |
-| AI agents | Multi-turn, tool calling, RAG |
-| Prompt flow | Orchestration, evaluation |
-| Fine-tuning | Custom model training |
-
 ## Service Details
 
 For deep documentation on specific services:
 
 - AI Search indexing and queries -> [Azure AI Search documentation](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
 - Speech transcription patterns -> [Azure AI Speech documentation](https://learn.microsoft.com/azure/ai-services/speech-service/overview)
-- Foundry agents and flows -> [Azure AI Foundry documentation](https://learn.microsoft.com/azure/ai-studio/what-is-ai-studio)
+- Foundry agents, models, and deployments -> Use the **microsoft-foundry** skill
