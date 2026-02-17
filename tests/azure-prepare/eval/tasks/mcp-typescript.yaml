@@ -1,0 +1,43 @@
+# Task: MCP Server (source-only, no IaC delta)
+# Tests MCP trigger detection and source-only composition
+id: mcp-typescript-001
+name: MCP Server Functions - TypeScript
+description: |
+  Create an Azure Functions MCP server in TypeScript.
+  MCP is source-only — uses HTTP base with NO additional IaC.
+
+tags:
+  - mcp
+  - typescript
+  - source-only
+  - bicep
+
+inputs:
+  prompt: |
+    Create an Azure Functions MCP server in TypeScript that exposes tools
+    for querying a product catalog. Deploy to Azure.
+  context:
+    language: typescript
+    integration: mcp
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "mcp"
+    - "plan"
+
+graders:
+  - name: uses_http_base_for_mcp
+    type: regex
+    config:
+      must_match:
+        - "(?i)functions-quickstart-typescript-azd|http.?base"
+        - "(?i)mcp|MCPTrigger|mcp_tool"
+
+  - name: no_extra_iac
+    type: regex
+    config:
+      must_not_match:
+        - "(?i)cosmos\\.bicep|servicebus\\.bicep|eventhub\\.bicep"

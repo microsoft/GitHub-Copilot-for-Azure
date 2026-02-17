@@ -1,0 +1,51 @@
+# Task: Cosmos DB integration (TypeScript + Terraform)
+# Tests composable recipe with Terraform IaC
+id: cosmosdb-ts-terraform-001
+name: Cosmos DB Functions - TypeScript Terraform
+description: |
+  Create a TypeScript Azure Functions app with Cosmos DB using Terraform.
+  Must select the Terraform base template and apply cosmosdb recipe.
+
+tags:
+  - cosmosdb
+  - typescript
+  - recipe
+  - terraform
+
+inputs:
+  prompt: |
+    Build a TypeScript Azure Functions app that reads from Cosmos DB change feed.
+    I want to use Terraform for the infrastructure, not Bicep.
+  context:
+    language: typescript
+    integration: cosmosdb
+    iac: terraform
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "terraform"
+    - "cosmos"
+    - "plan"
+
+graders:
+  - name: selects_terraform_base
+    type: regex
+    config:
+      must_match:
+        - "(?i)terraform|functions-quickstart-typescript-azd-tf|\\.tf"
+
+  - name: uses_cosmos_recipe
+    type: regex
+    config:
+      must_match:
+        - "(?i)cosmos"
+
+  - name: managed_identity_auth
+    type: regex
+    config:
+      must_match:
+        - "(?i)managed.?identity|RBAC|identity"
+      must_not_match:
+        - "(?i)AccountKey=|SharedAccessKey"

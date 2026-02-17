@@ -1,0 +1,55 @@
+# Task: HTTP-only Azure Functions app (C#/.NET)
+# Tests the base case — no integration recipe needed
+id: http-dotnet-001
+name: HTTP Functions - C# .NET
+description: |
+  Create a simple HTTP-triggered Azure Functions app in C#/.NET.
+  Validates that the skill selects the HTTP base template without any recipe overlay.
+
+tags:
+  - http
+  - dotnet
+  - base-template
+  - bicep
+
+inputs:
+  prompt: |
+    Create a simple Azure Functions HTTP API in C# that returns hello world.
+    Deploy to Azure using Bicep infrastructure.
+  context:
+    language: dotnet
+    integration: http
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "functions-quickstart-dotnet-azd"
+    - "plan.md"
+  tool_calls:
+    required:
+      - pattern: "azd init|azd"
+    forbidden:
+      - pattern: "rm -rf"
+
+graders:
+  - name: selects_http_base
+    type: regex
+    config:
+      must_match:
+        - "(?i)functions-quickstart-dotnet-azd"
+      must_not_match:
+        - "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
+
+  - name: uses_managed_identity
+    type: regex
+    config:
+      must_match:
+        - "(?i)managed.?identity|RBAC|role.?assignment"
+
+  - name: plan_created
+    type: regex
+    config:
+      must_match:
+        - "(?i)\\.azure/plan\\.md|plan file"

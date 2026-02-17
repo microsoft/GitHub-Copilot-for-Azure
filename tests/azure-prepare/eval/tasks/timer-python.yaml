@@ -1,0 +1,46 @@
+# Task: Timer trigger (source-only, no IaC delta)
+# Tests source-only recipe — no additional infrastructure needed
+id: timer-python-001
+name: Timer Functions - Python
+description: |
+  Create a Python Azure Functions app with a scheduled timer trigger.
+  Timer is source-only — uses HTTP base template with NO IaC recipe delta.
+
+tags:
+  - timer
+  - python
+  - source-only
+  - bicep
+
+inputs:
+  prompt: |
+    Create a Python Azure Functions app that runs on a schedule every 5 minutes
+    to clean up old records. Deploy to Azure.
+  context:
+    language: python
+    integration: timer
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "timer"
+    - "schedule"
+    - "plan"
+
+graders:
+  - name: selects_http_base_no_iac_delta
+    type: regex
+    config:
+      must_match:
+        - "(?i)functions-quickstart-python|http.?base"
+        - "(?i)timer|schedule|cron"
+      must_not_match:
+        - "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
+
+  - name: no_extra_iac
+    type: regex
+    config:
+      must_not_match:
+        - "(?i)cosmos\\.bicep|servicebus\\.bicep|eventhub\\.bicep"

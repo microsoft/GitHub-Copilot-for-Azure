@@ -1,0 +1,45 @@
+# Task: Service Bus integration (C#/.NET + Bicep)
+# Tests full recipe scenario with queue trigger
+id: servicebus-dotnet-001
+name: Service Bus Functions - C# Bicep
+description: |
+  Create a C# Azure Functions app with Service Bus queue trigger.
+  Must select HTTP base + servicebus recipe.
+
+tags:
+  - servicebus
+  - dotnet
+  - recipe
+  - bicep
+
+inputs:
+  prompt: |
+    Create a C# Azure Functions app that processes messages from a Service Bus queue.
+    Use Bicep for infrastructure with managed identity authentication.
+  context:
+    language: dotnet
+    integration: servicebus
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "service bus"
+    - "plan"
+
+graders:
+  - name: selects_correct_template
+    type: regex
+    config:
+      must_match:
+        - "(?i)functions-quickstart-dotnet-azd|http.?base"
+        - "(?i)service.?bus"
+
+  - name: uses_managed_identity
+    type: regex
+    config:
+      must_match:
+        - "(?i)managed.?identity|RBAC|role.?assignment"
+      must_not_match:
+        - "(?i)SharedAccessKey|connection.?string.*key"
