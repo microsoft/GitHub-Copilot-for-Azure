@@ -1,6 +1,6 @@
 ---
 name: azure-hosted-github-sdk
-description: "Build and deploy GitHub Copilot SDK apps to Azure. USE FOR: build copilot app, create copilot app, build with copilot SDK, scaffold copilot project, new copilot app, copilot SDK, copilot agent, copilot service, copilot-powered app, foundry agent, deploy copilot app, deploy to azure, host on azure. DO NOT USE FOR: using Copilot (not building with it), Copilot Extensions, Azure Functions without Copilot, general web apps without copilot SDK, AI model deployment alone."
+description: "Build and deploy GitHub Copilot SDK apps to Azure. USE FOR: build copilot app, create copilot app, build with copilot SDK, scaffold copilot project, new copilot app, copilot SDK, copilot agent, copilot service, copilot-powered app, foundry agent, deploy copilot app, deploy to azure, host on azure, azure model, foundry model, BYOM, bring your own model, use my own model, azure openai model, DefaultAzureCredential, own endpoint, self-hosted model. DO NOT USE FOR: using Copilot (not building with it), Copilot Extensions, Azure Functions without Copilot, general web apps without copilot SDK, AI model deployment alone."
 ---
 
 # GitHub Copilot SDK on Azure
@@ -12,6 +12,7 @@ description: "Build and deploy GitHub Copilot SDK apps to Azure. USE FOR: build 
 | Build/create new | N/A | Step 2A (scaffold) |
 | Deploy existing | ✅ Yes | Step 2B (adapt + deploy) |
 | Add SDK to app | No | [Integrate SDK](references/existing-project-integration.md) |
+| Use Azure/own model | Any | Step 2C (BYOM config) |
 
 ## Step 2A: Scaffold New
 
@@ -29,6 +30,14 @@ User brings code that already uses the Copilot SDK. Adapt it using template patt
 3. Add `azure.yaml` with `preprovision` + `prerun` hooks calling the token script
 4. Add `infra/` with Bicep: Key Vault → stores `GITHUB_TOKEN`, Managed Identity → `Key Vault Secrets User`, Container App → `secretRef` from Key Vault
 5. Add `Dockerfile` if missing
+
+## Step 2C: Azure Model (BYOM)
+
+Layers on top of 2A/2B — scaffold or deploy first, then add BYOM. See [BYOM config ref](references/azure-model-config.md).
+
+1. Add `@azure/identity` dep, get token via `DefaultAzureCredential`
+2. Pass token as `bearerToken` in `provider` config, set model = Azure deployment name
+3. `listModels()` only returns Copilot models — use MCP tool `foundry_models_deployments_list` to discover Azure deployments
 
 ## Step 3: Deploy
 

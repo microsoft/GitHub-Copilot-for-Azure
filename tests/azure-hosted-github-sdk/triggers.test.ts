@@ -25,6 +25,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Create a new copilot agent service",
       "Scaffold a copilot-powered app on Azure",
       "Build with the GitHub Copilot SDK and host it",
+      "Build a Copilot SDK agent with my own Azure model",
+      "Create a copilot app using my Azure AI Foundry model",
+      "Set up a copilot service with BYOM and DefaultAzureCredential",
+      "Build a copilot agent that uses a self-hosted model on Azure",
+      "Deploy a copilot SDK app with my own endpoint",
+      "Create a copilot app and bring your own model from Azure OpenAI",
+      "Build a copilot service using a foundry model",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -44,6 +51,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me with AWS Lambda",
       "How do I use Google Cloud Platform?",
       "Write a Python script to parse JSON",
+      "Set up a PostgreSQL database with read replicas",
+      "Configure a VNet peering between two subscriptions",
     ];
 
     test.each(shouldNotTriggerPrompts)(

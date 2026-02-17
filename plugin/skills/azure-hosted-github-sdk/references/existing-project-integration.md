@@ -59,7 +59,7 @@ Register the new route with the existing server/app instance. Do NOT create a se
 
 ## BYOM Support
 
-If the user has their own model provider, pass provider config when creating a session. For Azure endpoints, use `DefaultAzureCredential` from `@azure/identity` to get a `bearerToken` — never use API keys.
+If the user wants their own Azure model, add BYOM config on top of the standard integration. Full config details: [Azure Model Configuration](azure-model-config.md).
 
 | Provider | Config type | Auth |
 |----------|-----------|------|
@@ -67,6 +67,17 @@ If the user has their own model provider, pass provider config when creating a s
 | OpenAI | `openai` | `apiKey` |
 | Anthropic | `anthropic` | `apiKey` |
 | Ollama | `ollama` | none |
+
+### BYOM Integration Steps
+
+1. Add `@azure/identity` dependency
+2. In the Copilot endpoint, get a fresh token per request:
+   - `const { token } = await credential.getToken("https://cognitiveservices.azure.com/.default")`
+3. Pass `provider` config with `bearerToken: token` to `createSession`
+4. Set `model` to the Azure deployment name (required for BYOM)
+5. Set env var `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` for the base URL
+
+> ⚠️ **Warning:** `bearerToken` is static — get a fresh token per request for production.
 
 ## Testing
 
