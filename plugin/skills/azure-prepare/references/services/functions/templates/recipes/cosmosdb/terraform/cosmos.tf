@@ -53,6 +53,9 @@ resource "azurerm_cosmosdb_account" "main" {
   capabilities {
     name = "EnableServerless"
   }
+
+  # Disable key-based auth — enforce managed identity / RBAC only
+  local_authentication_disabled = true
 }
 
 # ============================================================================

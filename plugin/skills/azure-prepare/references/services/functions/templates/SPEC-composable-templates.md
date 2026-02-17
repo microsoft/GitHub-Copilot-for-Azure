@@ -310,7 +310,7 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
     locations: [{ locationName: location, failoverPriority: 0 }]
     consistencyPolicy: { defaultConsistencyLevel: 'Session' }
     capabilities: [{ name: 'EnableServerless' }]
-    disableLocalAuth: false // Required for data plane operations via change feed
+    disableLocalAuth: true // Enforce RBAC-only auth — no keys
     publicNetworkAccess: vnetEnabled ? 'Disabled' : 'Enabled'
   }
 }

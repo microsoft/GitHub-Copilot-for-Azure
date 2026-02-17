@@ -16,6 +16,7 @@ that replaces the HTTP trigger in the base template.
 | **Auth** | Managed identity (`COSMOS_CONNECTION__accountEndpoint`) |
 | **Containers** | Application data container + leases container |
 | **Hosting** | Flex Consumption (from base template) |
+| **Local Auth** | Disabled (`disableLocalAuth: true`) — RBAC-only, no keys |
 
 ## Composition Steps
 
