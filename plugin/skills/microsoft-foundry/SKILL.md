@@ -42,32 +42,119 @@ Use this skill when the user wants to:
 
 > ⚠️ **Important:** This skill works **with or without** an existing Foundry project. If no project context is available, the skill will discover existing resources or guide the user through creating one before proceeding.
 
-## Context Resolution (Project Discovery)
+## Pre-Flight Checklist (Required for All Operations)
 
-Before routing to any sub-skill, resolve the user's project context:
+> ⚠️ **Warning:** Every Foundry operation **must** execute this checklist before proceeding to the sub-skill workflow. Do NOT skip phases.
 
 ```
-User Prompt
+User Request
     │
     ▼
-[1] Check PROJECT_RESOURCE_ID env var
-    ├─ Set? → Use it, route to sub-skill
-    └─ Not set? → Continue to [2]
+Phase 1: Verify Authentication
     │
     ▼
-[2] Discover existing resources
-    az cognitiveservices account list \
-      --query "[?kind=='AIServices']" --output table
-    ├─ Resources found? → List projects, let user select
-    └─ No resources? → Continue to [3]
+Phase 2: Verify Permissions
     │
     ▼
-[3] Offer to create a Foundry project
-    ├─ User wants full setup → Use project/create sub-skill
-    └─ User wants quick deploy → Create minimal project inline
+Phase 3: Discover Projects
+    │  ├─ Projects found → list and ask user to select
+    │  └─ No projects   → offer to create one
+    │
+    ▼
+Phase 4: Confirm Selected Project
+    │
+    ▼
+Route to Sub-Skill Workflow
 ```
 
-> 💡 **Tip:** Never fail silently when project context is missing. Always discover or create before proceeding with deployment, quota checks, or agent creation.
+### Phase 1: Verify Azure Authentication
+
+```bash
+az account show --query "{Subscription:name, SubscriptionId:id, User:user.name}" -o table
+```
+
+| Result | Action |
+|--------|--------|
+| ✅ Success | Continue to Phase 2 |
+| ❌ Not logged in | Run `az login` and retry |
+| ❌ Wrong subscription | `az account list -o table` → ask user to select → `az account set --subscription <id>` |
+
+### Phase 2: Verify RBAC Permissions
+
+```bash
+az role assignment list \
+  --assignee "$(az ad signed-in-user show --query id -o tsv)" \
+  --query "[?contains(roleDefinitionName, 'Owner') || contains(roleDefinitionName, 'Contributor') || contains(roleDefinitionName, 'Azure AI')].{Role:roleDefinitionName, Scope:scope}" \
+  -o table
+```
+
+| Result | Action |
+|--------|--------|
+| ✅ Has Owner, Contributor, or Azure AI role | Continue to Phase 3 |
+| ❌ No relevant roles | STOP — inform user they need elevated permissions. Refer to [RBAC skill](rbac/rbac.md) for role assignment guidance |
+
+> 💡 **Tip:** Minimum required roles by operation:
+
+| Operation | Minimum Role |
+|-----------|-------------|
+| Deploy models | Azure AI User |
+| Create projects | Azure AI Project Manager or Contributor |
+| Manage RBAC | Azure AI Owner or Owner |
+| View quota | Azure AI User or Reader |
+
+### Phase 3: Discover Foundry Resources
+
+**Step 1:** Check if `PROJECT_RESOURCE_ID` env var is set. If set, parse it and skip to Phase 4.
+
+**Step 2:** If not set, query all Foundry resources (`AIServices` kind) in the subscription:
+
+```bash
+az cognitiveservices account list \
+  --query "[?kind=='AIServices'].{Name:name, ResourceGroup:resourceGroup, Location:location}" \
+  -o table
+```
+
+> 💡 **Tip:** Foundry resources are `Microsoft.CognitiveServices/accounts` with `kind=='AIServices'`. These are the multi-service resources that support model deployments, agents, and other Foundry capabilities.
+
+| Result | Action |
+|--------|--------|
+| ✅ Resources found | List all resources and ask user to select one |
+| ❌ No resources | Ask user: "No Foundry resources found. Would you like to create one?" → Route to [resource/create](resource/create/create-foundry-resource.md) |
+
+**When listing resources, present them as a numbered selection:**
+
+```
+Found 3 Foundry resources:
+  1. my-ai-resource   (rg-ai-dev,     eastus)
+  2. prod-resource    (rg-prod,       westus2)
+  3. experiment-res   (rg-research,   northcentralus)
+
+Which resource would you like to use?
+```
+
+### Phase 4: Confirm Selected Project
+
+After selection, verify the project exists and display confirmation:
+
+```bash
+az cognitiveservices account show \
+  --name <project-name> \
+  --resource-group <resource-group> \
+  --query "{Name:name, Location:location, ResourceGroup:resourceGroup, State:properties.provisioningState}" \
+  -o table
+```
+
+```
+Using project:
+  Project:  <project-name>
+  Region:   <location>
+  Resource: <resource-group>
+  State:    Succeeded
+
+Proceeding with: <requested-operation>
+```
+
+> ⚠️ **Warning:** Never proceed with any operation without confirming the target project with the user. This prevents accidental operations on the wrong resource.
 
 ## Prerequisites
 
