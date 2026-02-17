@@ -1,9 +1,9 @@
 ---
 name: deploy-model
 description: |
-  Unified Azure OpenAI model deployment skill with intelligent intent-based routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI policy), and capacity discovery across regions and projects.
-  USE FOR: deploy model, deploy gpt, create deployment, model deployment, deploy openai model, set up model, provision model, find capacity, check model availability, where can I deploy, best region for model, capacity analysis.
-  DO NOT USE FOR: listing existing deployments (use foundry_models_deployments_list MCP tool), deleting deployments, agent creation (use agent/create), project creation (use project/create).
+  Unified Azure OpenAI model deployment skill with intelligent intent-based routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI policy), and capacity discovery across regions and projects. Works with or without an existing Foundry project — automatically discovers or creates one if needed.
+  USE FOR: deploy model, deploy gpt, create deployment, model deployment, deploy openai model, set up model, provision model, find capacity, check model availability, where can I deploy, best region for model, capacity analysis, deploy model without project, first time model deployment, deploy to new project, GPT deployment, Foundry deployment.
+  DO NOT USE FOR: listing existing deployments (use foundry_models_deployments_list MCP tool), deleting deployments, agent creation (use agent/create), project creation only (use project/create), quota management (use quota sub-skill), AI Search queries (use azure-ai), speech-to-text (use azure-ai).
 ---
 
 # Deploy Model
@@ -75,11 +75,28 @@ When a user specifies a capacity requirement AND wants deployment:
 
 Before any deployment, resolve which project to deploy to. This applies to **all** modes (preset, customize, and after capacity discovery).
 
+> ⚠️ **Important:** Project context is **not required** to start this skill. If no project exists, this skill will discover resources or create a new project before proceeding.
+
 ### Resolution Order
 
 1. **Check `PROJECT_RESOURCE_ID` env var** — if set, use it as the default
 2. **Check user prompt** — if user named a specific project or region, use that
-3. **If neither** — query the user's projects and suggest the current one
+3. **Discover existing resources** — query Azure for AIServices resources:
+   ```bash
+   az cognitiveservices account list \
+     --query "[?kind=='AIServices'].{Name:name, ResourceGroup:resourceGroup, Location:location}" \
+     --output table
+   ```
+   - If resources found → list projects, let user select
+   - If no resources found → continue to step 4
+4. **Offer to create a new project** — ask the user:
+   ```
+   No Foundry project found in your subscription. Would you like to:
+     1. Create a new Foundry project (recommended for first-time setup)
+     2. Specify a subscription or resource manually
+   ```
+   - Option 1 → Use [project/create](../../project/create/create-foundry-project.md) for comprehensive setup, or create minimal project inline for quick deployment
+   - Option 2 → Ask for subscription ID and resource details
 
 ### Confirmation Step (Required)
 
