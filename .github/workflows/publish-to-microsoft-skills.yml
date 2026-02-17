@@ -48,7 +48,10 @@ jobs:
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
+        env:
+          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
         run: |
+          gh auth setup-git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
