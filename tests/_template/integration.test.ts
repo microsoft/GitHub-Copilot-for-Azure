@@ -13,12 +13,12 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { 
-  useAgentRunner, 
-  isSkillInvoked, 
-  areToolCallsSuccess, 
+import {
+  useAgentRunner,
+  isSkillInvoked,
+  areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests 
+  shouldSkipIntegrationTests
 } from "../utils/agent-runner";
 
 // Replace with your skill name
@@ -47,7 +47,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     });
 
     const hasExpectedContent = doesAssistantMessageIncludeKeyword(
-      agentMetadata, 
+      agentMetadata,
       "expected keyword"
     );
     expect(hasExpectedContent).toBe(true);

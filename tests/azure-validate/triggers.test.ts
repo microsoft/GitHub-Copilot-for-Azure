@@ -25,18 +25,15 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Check if my app is ready to deploy to Azure",
       "Validate my azure.yaml configuration",
       "Run preflight checks before Azure deployment",
-      "Test my deployment preview",
       "Troubleshoot deployment errors",
       "Verify my infrastructure configuration before deploying",
       "Is my app ready for Azure deployment?",
       "Validate my Bicep configuration",
-      "Preview what changes will be made to Azure",
-      // Preflight validation (formerly azure-deployment-preflight)
+      // Preflight validation
       "Validate my Bicep template before deploying to Azure",
-      "Run a what-if analysis to preview changes before deploying my infrastructure",
       "Check my deployment permissions before running azd up",
-      "Preview Azure infrastructure changes with what-if deployment",
       "Verify my Bicep files are valid before provisioning",
+      "Run pre-deployment validation checks on my Azure infrastructure",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -54,7 +51,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me write a poem",
       "Explain quantum computing",
       "Help me with AWS S3 bucket naming",
-      "Deploy my application to Heroku",
       "What is the best pizza topping?",
       "How do I use Docker?",
     ];

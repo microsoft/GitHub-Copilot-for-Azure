@@ -32,23 +32,9 @@ Validate azure.yaml against official schema:
 mcp_azure_mcp_azd(command: "validate_azure_yaml", parameters: { path: "./azure.yaml" })
 ```
 
-### 3. Environment Check
+### 3. Environment Setup
 
-Check if environment exists:
-
-```bash
-azd env list
-```
-
-**If environment exists**, get current values:
-```bash
-azd env get-values
-```
-
-**If no environment**, create one:
-```bash
-azd env new <environment-name>
-```
+Verify AZD environment exists and is configured. See [Environment Setup](environment.md) for detailed steps.
 
 ### 4. Authentication Check
 
@@ -91,13 +77,9 @@ azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <location>
 ```
 
-### 6. Azure Policy Validation
+### 6. Provision Preview
 
-See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
-
-### 7. Provision Preview
-
-Validate IaC is ready:
+Validate IaC is ready (must complete without error):
 
 ```bash
 azd provision --preview --no-prompt
@@ -105,17 +87,22 @@ azd provision --preview --no-prompt
 
 > 💡 **Note:** This works for both Bicep and Terraform. azd will automatically detect the provider from `azure.yaml` and run the appropriate validation (`bicep build` or `terraform plan`).
 
-### 8. Package Validation
+### 7. Package Validation
 
-Confirm all services build/package successfully:
+Confirm all services build/package successfully (must complete without error):
 
 ```bash
 azd package --no-prompt
 ```
 
+### 8. Azure Policy Validation
+
+See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+
 ## References
 
-- [Error handling](mdc:errors.md)
+- [Environment Setup](environment.md)
+- [Error Handling](./errors.md)
 
 ## Next
 

@@ -22,10 +22,29 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export interface AgentMetadata {
+  /**
+   * Events emitted by the Copilot SDK agent during the agent run.
+   */
   events: SessionEvent[];
+
+  /**
+   * Comments made by the test author.
+   * These comments will be added to the agentMetadata markdown for an LLM or human reviewer to read.
+   */
+  testComments: string[];
 }
 
-export interface TestConfig {
+/**
+ * A unique identifier to use for the test run name.
+ * By default, reports for each test run will be written to a pseudo-unique directory under "reports/test-run-{timestamp}/".
+ * If {@link testRunId} is non-empty, reports for this test run will be written to a directory under "reports/test-run-{testRunId}/".
+ * This allows reports from multiple test runs to be written to the same directory.
+ *
+ * Only applicable when the agent run is for a test.
+ */
+const testRunId = process.env.TEST_RUN_ID;
+
+export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
@@ -48,15 +67,23 @@ interface RunnerCleanup {
   client?: CopilotClient;
   workspace?: string;
   preserveWorkspace?: boolean;
-  config?: TestConfig;
+  config?: AgentRunConfig;
   agentMetadata?: AgentMetadata;
 }
 
 /**
  * Generate a markdown report from agent metadata
  */
-function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): string {
+function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadata): string {
   const lines: string[] = [];
+
+  // Comment by the test author in test code
+  if (agentMetadata.testComments.length > 0) {
+    lines.push("# Test comments");
+    lines.push("");
+    lines.push(agentMetadata.testComments.join("\n"));
+    lines.push("");
+  }
 
   // User Prompt section
   lines.push("# User Prompt");
@@ -231,7 +258,7 @@ function generateMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata
 /**
  * Write markdown report to file
  */
-function writeMarkdownReport(config: TestConfig, agentMetadata: AgentMetadata): void {
+function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadata): void {
   try {
     const filePath = buildShareFilePath();
     const dir = path.dirname(filePath);
@@ -310,9 +337,8 @@ export function useAgentRunner() {
       await cleanup();
     });
   }
-  
 
-  async function run(config: TestConfig): Promise<AgentMetadata> {
+  async function run(config: AgentRunConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
     const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
 
@@ -360,7 +386,7 @@ export function useAgentRunner() {
       });
       entry.session = session;
 
-      const agentMetadata: AgentMetadata = { events: [] };
+      const agentMetadata: AgentMetadata = { events: [], testComments: [] };
       entry.agentMetadata = agentMetadata;
 
       const done = new Promise<void>((resolve) => {
@@ -534,22 +560,9 @@ export function getIntegrationSkipReason(): string | undefined {
 }
 
 /**
- * Common Azure deployment link patterns
- * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
- */
-const DEPLOY_LINK_PATTERNS = [
-  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
-  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
-  // Azure Static Web Apps URLs
-  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
-  // Azure Container Apps URLs
-  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
-];
-
-/**
  * Get all assistant messages from agent metadata
  */
-function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
+export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
@@ -568,24 +581,17 @@ function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
   return Object.values(allMessages).join("\n");
 }
 
-/**
- * Check if the agent response contains any Azure deployment links
- */
-export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
-  const content = getAllAssistantMessages(agentMetadata);
-
-  return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
-}
-
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
 
-export function buildShareFilePath(): string {
-  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+function buildShareFilePath(): string {
+  const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
 }
 
-export function buildLogFilePath(): string {
-  return path.join(DEFAULT_REPORT_DIR, `test-run-${TIME_STAMP}`, getTestName());
+function buildLogFilePath(): string {
+  const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName());
 }
 
 function isTest(): boolean {

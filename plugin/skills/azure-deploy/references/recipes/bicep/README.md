@@ -5,9 +5,9 @@ Deploy to Azure using Bicep templates directly.
 ## Prerequisites
 
 - `az` CLI installed with Bicep extension
-- `.azure/preparation-manifest.md` exists with status `Validated`
+- `.azure/plan.md` exists with status `Validated`
 - Bicep templates exist in `infra/`
-- **Subscription and location confirmed** → See [pre-deploy-checklist.md](../../pre-deploy-checklist.md)
+- **Subscription and location confirmed** → See [Pre-Deploy Checklist](../../pre-deploy-checklist.md)
 
 ## Workflow
 
@@ -24,7 +24,7 @@ Deploy to Azure using Bicep templates directly.
 
 ```bash
 az deployment sub create \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
   --parameters ./infra/main.parameters.json
 ```
@@ -42,16 +42,16 @@ az deployment group create \
 
 ```bash
 az deployment sub create \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
-  --parameters environmentName=dev location=eastus
+  --parameters environmentName=dev location=eastus2
 ```
 
 ### What-If (Preview Changes)
 
 ```bash
 az deployment sub what-if \
-  --location eastus \
+  --location eastus2 \
   --template-file ./infra/main.bicep \
   --parameters environmentName=dev
 ```
@@ -66,8 +66,8 @@ az deployment sub show \
 
 ## References
 
-- [Verification steps](mdc:verify.md)
-- [Error handling](mdc:errors.md)
+- [Verification steps](./verify.md)
+- [Error handling](./errors.md)
 
 ## MCP Tools
 

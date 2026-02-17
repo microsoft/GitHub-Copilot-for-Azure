@@ -85,8 +85,8 @@ Manual Dockerfile creation required.
 
 ## References
 
-- [Terraform patterns](mdc:patterns.md)
+- [Terraform Patterns](patterns.md)
 
 ## Next
 
-→ Update manifest → **azure-validate**
+→ Update `.azure/plan.md` → **azure-validate**

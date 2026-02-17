@@ -39,4 +39,4 @@ ask_user(
 - Azure subscription (show actual name and ID)
 - Azure region/location
 
-See [pre-deploy-checklist](pre-deploy-checklist.md).
+See [Pre-Deploy Checklist](pre-deploy-checklist.md).
