@@ -1,17 +1,29 @@
 # Integration Templates
 
-Templates for Azure Functions with specific service integrations.
+> **Migration Notice**: Integration templates are being replaced by the [composable recipe system](recipes/README.md).
+> New integrations should use HTTP base + recipe composition. See [composition.md](recipes/composition.md).
 
-## Browse by Service
+## Composable Recipes (preferred)
+
+| Service | Recipe | Status |
+|---------|--------|--------|
+| Cosmos DB | [recipes/cosmosdb/](recipes/cosmosdb/README.md) | ✅ Available |
+| Azure SQL | recipes/sql/ | 🔲 Planned |
+| Service Bus | recipes/servicebus/ | 🔲 Planned |
+| Event Hubs | recipes/eventhubs/ | 🔲 Planned |
+| Blob/Event Grid | recipes/blob-eventgrid/ | 🔲 Planned |
+| Timer | recipes/timer/ | 🔲 Planned (source-only) |
+| Durable | recipes/durable/ | 🔲 Planned (source-only) |
+| MCP | [mcp.md](mcp.md) | ✅ Available (source-only) |
+
+## Legacy: Browse by Service
+
+For integrations not yet recipe-ized, use the Awesome AZD gallery:
 
 | Service | Find Templates |
 |---------|----------------|
-| Cosmos DB | [Awesome AZD Cosmos](https://azure.github.io/awesome-azd/?tags=functions&name=cosmos) |
-| Azure SQL | [Awesome AZD SQL](https://azure.github.io/awesome-azd/?tags=functions&name=sql) |
 | AI/OpenAI | [Awesome AZD AI](https://azure.github.io/awesome-azd/?tags=functions&name=ai) |
 | Durable Functions | [Awesome AZD Durable](https://azure.github.io/awesome-azd/?tags=functions&name=durable) |
-| Blob Storage | [Awesome AZD Blob](https://azure.github.io/awesome-azd/?tags=functions&name=blob) |
-| Timer | [Awesome AZD Timer](https://azure.github.io/awesome-azd/?tags=functions&name=timer) |
 
 ## SWA + Functions
 
