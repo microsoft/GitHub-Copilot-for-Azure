@@ -1,6 +1,9 @@
 ---
 name: azure-ai
-description: "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), general Azure resources."
+description: |
+  Use for Azure AI: Search, Speech, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR.
+  USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech.
+  DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), resources, deploy model (use microsoft-foundry), model deployment (use microsoft-foundry), Foundry project (use microsoft-foundry), AI Foundry (use microsoft-foundry), quota management (use microsoft-foundry), create agent (use microsoft-foundry), RBAC for Foundry (use microsoft-foundry), GPT deployment (use microsoft-foundry).
 ---
 
 # Azure AI Services
@@ -11,8 +14,9 @@ description: "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. H
 |---------|----------|-----------|-----|
 | AI Search | Full-text, vector, hybrid search | `azure__search` | `az search` |
 | Speech | Speech-to-text, text-to-speech | `azure__speech` | - |
-| OpenAI | GPT models, embeddings, DALL-E | - | `az cognitiveservices` |
 | Document Intelligence | Form extraction, OCR | - | - |
+
+> ⚠️ **Note:** For Foundry (AI models, agents, deployments, quota) and OpenAI (GPT models, embeddings), use the **microsoft-foundry** skill instead.
 
 ## MCP Server (Preferred)
 
@@ -47,21 +51,10 @@ When Azure MCP is enabled:
 | Speaker diarization | Identify who spoke when |
 | Custom models | Domain-specific vocabulary |
 
-## SDK Quick References
-
-For programmatic access to these services, see the condensed SDK guides:
-
-- **AI Search**: [Python](references/sdk/azure-search-documents-py.md) | [TypeScript](references/sdk/azure-search-documents-ts.md) | [.NET](references/sdk/azure-search-documents-dotnet.md)
-- **OpenAI**: [.NET](references/sdk/azure-ai-openai-dotnet.md)
-- **Vision**: [Python](references/sdk/azure-ai-vision-imageanalysis-py.md) | [Java](references/sdk/azure-ai-vision-imageanalysis-java.md)
-- **Transcription**: [Python](references/sdk/azure-ai-transcription-py.md)
-- **Translation**: [Python](references/sdk/azure-ai-translation-text-py.md) | [TypeScript](references/sdk/azure-ai-translation-ts.md)
-- **Document Intelligence**: [.NET](references/sdk/azure-ai-document-intelligence-dotnet.md) | [TypeScript](references/sdk/azure-ai-document-intelligence-ts.md)
-- **Content Safety**: [Python](references/sdk/azure-ai-contentsafety-py.md) | [TypeScript](references/sdk/azure-ai-contentsafety-ts.md) | [Java](references/sdk/azure-ai-contentsafety-java.md)
-
 ## Service Details
 
 For deep documentation on specific services:
 
 - AI Search indexing and queries -> [Azure AI Search documentation](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
 - Speech transcription patterns -> [Azure AI Speech documentation](https://learn.microsoft.com/azure/ai-services/speech-service/overview)
+- Foundry agents, models, and deployments -> Use the **microsoft-foundry** skill
