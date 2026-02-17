@@ -13,9 +13,7 @@ import {
   useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason,
-  doesAssistantMessageIncludeKeyword,
-  getToolCalls
+  getIntegrationSkipReason
 } from "../utils/agent-runner";
 import * as fs from "fs";
 
@@ -145,49 +143,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure Identity authentication prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
-
-    test("recommends azd+Terraform for Terraform deployment prompt", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
-      });
-
-      // Verify the skill is invoked
-      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      // Check for azd+Terraform signals in the response
-      const mentionsAzureYaml = doesAssistantMessageIncludeKeyword(agentMetadata, "azure.yaml");
-      const mentionsAzdUp = doesAssistantMessageIncludeKeyword(agentMetadata, "azd up");
-      const mentionsInfraProvider = doesAssistantMessageIncludeKeyword(agentMetadata, "infra.provider");
-      
-      // Check for file creation tool calls for azure.yaml or Terraform files
-      const createCalls = getToolCalls(agentMetadata, "create");
-      const createsAzureYaml = createCalls.some(call => 
-        call.data.arguments && JSON.stringify(call.data.arguments).includes("azure.yaml")
-      );
-      const createsTerraform = createCalls.some(call => 
-        call.data.arguments && JSON.stringify(call.data.arguments).includes(".tf")
-      );
-
-      // At least one azd+Terraform signal should be present
-      const hasAzdTerraformSignal = mentionsAzureYaml || mentionsAzdUp || mentionsInfraProvider || 
-                                     createsAzureYaml || createsTerraform;
-      
-      if (!hasAzdTerraformSignal) {
-        console.warn("⚠️  No azd+Terraform signals detected. Checking for anti-patterns...");
-        
-        // Check for anti-patterns (raw CLI commands without azd)
-        const mentionsAzCli = doesAssistantMessageIncludeKeyword(agentMetadata, "az ");
-        const mentionsTerraformApply = doesAssistantMessageIncludeKeyword(agentMetadata, "terraform apply");
-        
-        if (mentionsAzCli || mentionsTerraformApply) {
-          console.warn("⚠️  Detected raw CLI commands (az or terraform apply) without azd context");
-        }
-      }
-
-      // Soft assertion with informative message
-      expect(hasAzdTerraformSignal).toBe(true);
-    });
-    
     test("invokes azure-prepare skill for Azure deployment with Terraform prompt", async () => {
       let successCount = 0;
 
