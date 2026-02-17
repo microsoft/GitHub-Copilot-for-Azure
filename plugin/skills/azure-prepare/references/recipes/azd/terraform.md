@@ -80,7 +80,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.2"
     }
     azurecaf = {
       source  = "aztfmod/azurecaf"
@@ -102,12 +102,14 @@ provider "azurerm" {
 }
 ```
 
-> **⚠️ IMPORTANT**: For **Azure Functions Flex Consumption**, use azurerm provider **v4.x or later**:
+> **⚠️ IMPORTANT**: For **Azure Functions Flex Consumption**, use azurerm provider **v4.2 or later**:
 > ```hcl
-> required_providers {
->   azurerm = {
->     source  = "hashicorp/azurerm"
->     version = "~> 4.0"
+> terraform {
+>   required_providers {
+>     azurerm = {
+>       source  = "hashicorp/azurerm"
+>       version = "~> 4.2"
+>     }
 >   }
 > }
 > ```

@@ -130,7 +130,7 @@ Key points for Terraform:
 
 module "function_app" {
   source  = "Azure/avm-res-web-site/azurerm"
-  version = "~> 0.0" # Check registry for latest version
+  version = "~> 0.1" # Check registry for latest version
 
   # Flex Consumption configuration
   kind                      = "functionapp,linux"
@@ -142,7 +142,6 @@ module "function_app" {
   # Required for azd integration
   tags = {
     "azd-service-name" = var.service_name
-    "azd-env-name"     = var.environment_name
   }
 
   # See AVM module documentation for additional required parameters
