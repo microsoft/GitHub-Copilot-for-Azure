@@ -1,5 +1,5 @@
 /**
- * Unit Tests for azure-hosted-github-sdk
+ * Unit Tests for azure-hosted-copilot-sdk
  * 
  * Test skill metadata, content, and frontmatter formatting.
  */
@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-hosted-github-sdk";
+const SKILL_NAME = "azure-hosted-copilot-sdk";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;

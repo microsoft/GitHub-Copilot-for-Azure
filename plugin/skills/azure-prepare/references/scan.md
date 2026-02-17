@@ -20,7 +20,7 @@ Before classifying components, grep dependency files for SDKs that require a spe
 
 | Dependency in code | Invoke instead |
 |--------------------|----------------|
-| `@github/copilot-sdk` · `github-copilot-sdk` · `copilot-sdk-go` · `GitHub.CopilotSdk` | **azure-hosted-github-sdk** |
+| `@github/copilot-sdk` · `github-copilot-sdk` · `copilot-sdk-go` · `GitHub.CopilotSdk` | **azure-hosted-copilot-sdk** |
 
 > ⚠️ If ANY match is found, **STOP and invoke that skill**. Do NOT continue with azure-prepare — the skill has tested templates and patterns.
 

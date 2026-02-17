@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for azure-hosted-github-sdk
+ * Trigger Tests for azure-hosted-copilot-sdk
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-hosted-github-sdk";
+const SKILL_NAME = "azure-hosted-copilot-sdk";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;

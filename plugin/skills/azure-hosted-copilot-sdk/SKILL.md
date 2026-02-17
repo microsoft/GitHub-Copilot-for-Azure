@@ -1,5 +1,5 @@
 ---
-name: azure-hosted-github-sdk
+name: azure-hosted-copilot-sdk
 description: "Build and deploy GitHub Copilot SDK apps to Azure. USE FOR: build copilot app, create copilot app, build with copilot SDK, scaffold copilot project, new copilot app, copilot SDK, copilot agent, copilot service, copilot-powered app, foundry agent, deploy copilot app, deploy to azure, host on azure, azure model, foundry model, BYOM, bring your own model, use my own model, azure openai model, DefaultAzureCredential, own endpoint, self-hosted model. DO NOT USE FOR: using Copilot (not building with it), Copilot Extensions, Azure Functions without Copilot, general web apps without copilot SDK, AI model deployment alone."
 ---
 
