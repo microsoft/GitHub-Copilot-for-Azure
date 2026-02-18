@@ -97,6 +97,7 @@ az cognitiveservices account deployment delete --name <acct> --resource-group <r
 ## Notes
 
 - **SKU:** GlobalStandard only — **API Version:** 2024-10-01 (GA stable)
+- **Anthropic models** (e.g., `claude-sonnet-4-6`) require `modelProviderData` with user-selected industry, tenant country code, and organization name. These models must be deployed via `az rest` (ARM REST API) instead of `az cognitiveservices account deployment create` because the CLI lacks `--model-provider-data` support. See [parent SKILL.md](../SKILL.md#third-party-model-provider-data-anthropic-models) for the full industry list and tenant API details.
 
 ---
 
