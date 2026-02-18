@@ -52,8 +52,9 @@ Analyze workspace to identify components, technologies, and dependencies.
 - Multiple .NET projects in a solution, typically including an AppHost orchestrator
 
 **When Aspire is detected:**
-- Use `azd init --from-code` instead of manual azure.yaml creation
+- Use `azd init --from-code -e <environment-name>` instead of manual azure.yaml creation
 - The `--from-code` flag automatically detects the AppHost and generates appropriate configuration
+- The `-e` flag is **required** for non-interactive environments (agents, CI/CD)
 - See [aspire.md](aspire.md) for detailed Aspire-specific guidance
 
 ## Output

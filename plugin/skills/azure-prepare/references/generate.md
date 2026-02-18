@@ -4,14 +4,14 @@ Generate infrastructure and configuration files based on selected recipe.
 
 ## CRITICAL: Check for Special Patterns First
 
-**Before manual generation, check if the project uses patterns that require `azd init --from-code`:**
+**Before manual generation, check if the project uses patterns that require `azd init --from-code -e <environment-name>`:**
 
 | Pattern | Detection | Action |
 |---------|-----------|--------|
-| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code` → [aspire.md](aspire.md) |
-| **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code` |
+| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code -e <environment-name>` → [aspire.md](aspire.md) |
+| **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code -e <environment-name>` |
 
-> ⚠️ **For .NET Aspire projects:** Do NOT manually create azure.yaml. Use `azd init --from-code` instead to auto-detect the AppHost. See [aspire.md](aspire.md) for details.
+> ⚠️ **For .NET Aspire projects:** Do NOT manually create azure.yaml. Use `azd init --from-code -e <environment-name>` instead to auto-detect the AppHost. **The `-e` flag is required for non-interactive environments.** See [aspire.md](aspire.md) for details.
 
 ## CRITICAL: Research Must Be Complete
 
