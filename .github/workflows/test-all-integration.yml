@@ -110,12 +110,14 @@ jobs:
 
       - name: Integration tests - azure-ai
         id: integration-tests-azure-ai
-        if: contains(inputs.skills, 'azure-ai')
+        # works around the problem that azure-ai is a prefix of azure-aigateway
+        if: contains(format(',{0},', inputs.skills), ',azure-ai,')
         env:
           DEBUG: ${{ inputs.debug && '1' || '' }}
           TEST_RUN_ID: all-integration
         run: |
-          npm run test:integration azure-ai
+          # works around the problem that azure-ai is a prefix of azure-aigateway
+          npm run test:integration azure-ai/
         continue-on-error: true
 
       - name: Integration tests - azure-aigateway

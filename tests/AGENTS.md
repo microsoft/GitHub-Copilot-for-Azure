@@ -237,7 +237,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   test('invokes skill for relevant prompt', async () => {
     const agentMetadata = await run({
       prompt: 'What role should I assign for blob storage access?'

@@ -221,22 +221,6 @@ jobs:
           
           echo "All skill files have valid frontmatter"
 
-      - name: Check skill name prefix conflicts
-        if: steps.changed-skills.outputs.any_changed == 'true'
-        run: |
-          # Collect toplevel skill directory names under plugin/skills
-          NAMES=$(ls -d plugin/skills/*/ | xargs -n1 basename)
-          
-          # Check if any name is a prefix of another
-          while IFS= read -r a; do
-            while IFS= read -r b; do
-              if [ "$a" != "$b" ] && [[ "$b" == "$a"* ]]; then
-                echo "error: Skill name '$a' is a prefix of '$b'"
-                exit 1
-              fi
-            done <<< "$NAMES"
-          done <<< "$NAMES"
-
       - name: Skip message
         if: steps.changed-skills.outputs.any_changed != 'true'
         run: echo "No skill files changed - skipping validation"
