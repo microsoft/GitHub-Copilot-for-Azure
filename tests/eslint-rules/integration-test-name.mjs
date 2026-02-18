@@ -8,8 +8,10 @@
  */
 
 // Placeholder regex — update this to match your naming convention.
-// Current pattern: "<lowercase-kebab-case> - Integration Tests"
-const DESCRIBE_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)* - Integration Tests$/;
+// Current pattern: 
+// - without suffix after skill name "<lowercase-kebab-case-skill-name>_ - Integration Tests"
+// - with suffix after skill name "<lowercase-kebab-case-skill-name>_<test-name-suffix> - Integration Tests"
+const DESCRIBE_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)_([a-z0-9]+)* - Integration Tests$/;
 
 /** @type {import("eslint").Rule.RuleModule} */
 const rule = {

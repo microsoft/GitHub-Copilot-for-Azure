@@ -120,9 +120,8 @@ export default tseslint.config(
         },
         rules: {
             // Update the pattern option below to change the required format.
-            // Default (in rule file): /^[a-z0-9]+(-[a-z0-9]+)* - Integration Tests$/
             "custom/integration-test-name": ["error", {
-                pattern: "^[a-z0-9]+(-[a-z0-9]+)* - Integration Tests$"
+                pattern: "^[a-z0-9]+(-[a-z0-9]+)*_(-[a-z0-9]+)* - Integration Tests$"
             }],
         },
     }

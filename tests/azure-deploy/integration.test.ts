@@ -37,7 +37,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000;
 const brownfieldTestTimeoutMs = 2700000;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes azure-deploy skill for deployment prompt", async () => {
