@@ -80,19 +80,42 @@ IF integration IN [cosmosdb, sql, servicebus, eventhubs, blob]:
 
 Read the recipe's `README.md` for required app settings. Add them to the function app config.
 
-**Bicep:** Add to `appSettings` array in function app resource:
+> **CRITICAL: User Assigned Managed Identity (UAMI) Configuration**
+>
+> The base templates use UAMI, not System Assigned MI. For service bindings (Event Hubs, Service Bus, etc.),
+> you MUST include `credential` and `clientId` settings alongside the endpoint:
+>
+> ```bicep
+> appSettings: {
+>   // Endpoint
+>   EventHubConnection__fullyQualifiedNamespace: eventhubs.outputs.fullyQualifiedNamespace
+>   // UAMI credentials - REQUIRED
+>   EventHubConnection__credential: 'managedidentity'
+>   EventHubConnection__clientId: apiUserAssignedIdentity.outputs.clientId
+> }
+> ```
+>
+> Without these, the function will fail with 500/Unauthorized errors.
+
+**Bicep Example (Cosmos DB):**
 ```bicep
-{
-  name: 'COSMOS_CONNECTION__accountEndpoint'
-  value: cosmos.outputs.cosmosAccountEndpoint
+appSettings: {
+  COSMOS_CONNECTION__accountEndpoint: cosmos.outputs.cosmosAccountEndpoint
+  COSMOS_CONNECTION__credential: 'managedidentity'
+  COSMOS_CONNECTION__clientId: apiUserAssignedIdentity.outputs.clientId
+  COSMOS_DATABASE_NAME: cosmos.outputs.cosmosDatabaseName
+  COSMOS_CONTAINER_NAME: cosmos.outputs.cosmosContainerName
 }
-{
-  name: 'COSMOS_DATABASE_NAME'
-  value: cosmos.outputs.cosmosDatabaseName
-}
-{
-  name: 'COSMOS_CONTAINER_NAME'
-  value: cosmos.outputs.cosmosContainerName
+```
+
+**Bicep Example (Event Hubs):**
+```bicep
+appSettings: {
+  EventHubConnection__fullyQualifiedNamespace: eventhubs.outputs.fullyQualifiedNamespace
+  EventHubConnection__credential: 'managedidentity'
+  EventHubConnection__clientId: apiUserAssignedIdentity.outputs.clientId
+  EVENTHUB_NAME: eventhubs.outputs.eventHubName
+  EVENTHUB_CONSUMER_GROUP: eventhubs.outputs.consumerGroupName
 }
 ```
 
@@ -185,5 +208,6 @@ Some integrations require additional storage endpoints. Toggle these in `main.bi
 4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
 5. **ALWAYS verify the base template initialized successfully** before applying recipe
 6. **ALWAYS keep `allowSharedKeyAccess: false`** — never enable local auth on storage
-7. **ALWAYS keep `disableLocalAuth: true`** — never enable local auth on Cosmos DB
+7. **ALWAYS keep `disableLocalAuth: true`** — never enable local auth on Cosmos DB/Event Hubs
 8. **ALWAYS wait for RBAC propagation** — use two-phase deploy if 403 errors occur
+9. **ALWAYS include UAMI credential settings** — when using User Assigned MI, bindings require `credential` + `clientId` app settings alongside the endpoint

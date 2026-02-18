@@ -25,10 +25,10 @@ HTTP Base Template (per language, from AZD gallery)
 
 | Recipe | IaC Delta? | Source Delta? | Status |
 |--------|-----------|--------------|--------|
-| [cosmosdb](cosmosdb/README.md) | ✅ Cosmos account + DB + containers + RBAC + PE | ✅ CosmosDBTrigger | ✅ POC |
+| [cosmosdb](cosmosdb/README.md) | ✅ Cosmos account + DB + containers + RBAC + PE | ✅ CosmosDBTrigger | ✅ Available |
+| [eventhubs](eventhubs/README.md) | ✅ EH namespace + hub + consumer group + RBAC + PE | ✅ EventHubTrigger | ✅ Available |
 | servicebus | ✅ SB namespace + queue + RBAC + PE | ✅ ServiceBusTrigger | 🔲 Planned |
 | sql | ✅ SQL server + DB + firewall + identity | ✅ SqlTrigger | 🔲 Planned |
-| eventhubs | ✅ EH namespace + hub + consumer group + RBAC + PE | ✅ EventHubTrigger | 🔲 Planned |
 | blob-eventgrid | ✅ EventGrid subscription + system topic | ✅ BlobTrigger (EG) | 🔲 Planned |
 | timer | ❌ None | ✅ TimerTrigger + cron | 🔲 Planned |
 | durable | ⚙️ Toggle `enableQueue`+`enableTable` in base | ✅ Orchestrator + Activity + Client | 🔲 Planned |
