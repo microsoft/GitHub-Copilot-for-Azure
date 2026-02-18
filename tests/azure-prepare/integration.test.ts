@@ -16,7 +16,7 @@ import {
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, expectFiles, getDockerContext } from "./utils";
+import { hasPlanReadyForValidation, expectFiles, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
 
@@ -269,6 +269,50 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("aspire-brownfield", () => {
     const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
+
+    test("generates azure.yaml with services section for Aspire projects", async () => {
+      const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      
+      // Verify azure.yaml exists
+      expectFiles(workspacePath!, [/azure\.yaml$/], []);
+
+      // CRITICAL: Verify azure.yaml has services section (not just name + metadata)
+      // This is the main issue - manual creation omits services section
+      expect(hasServicesSection(workspacePath!)).toBe(true);
+
+      // Verify the service references the AppHost project
+      // The AppHost project is ImageGallery.AppHost/ImageGallery.AppHost.csproj
+      const serviceProject = getServiceProject(workspacePath!, "app");
+      expect(serviceProject).toBeDefined();
+      expect(serviceProject).toMatch(/AppHost\.csproj/);
+    });
 
     test("sets correct docker context for Aspire container-build sample", async () => {
       const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
