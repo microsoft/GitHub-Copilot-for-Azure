@@ -15,6 +15,8 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
+import { hasValidationCommand } from "../azure-validate/utils";
+import { hasPlanReadyForValidation, cleanupWorkspace, expectFiles } from "./utils";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-prepare";
@@ -168,6 +170,177 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       console.log(`${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+  });
+
+  describe("prepare-deployment", () => {
+    const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+
+    test("creates project files for static whiteboard web app before validation", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a static whiteboard web app and deploy to Azure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      try {
+        // plan.md should have been set to Ready for Validation
+        const planReady = hasPlanReadyForValidation(agentMetadata);
+        expect(planReady).toBe(true);
+      } finally {
+        cleanupWorkspace(workspacePath);
+      }
+    });
+
+    test("creates correct files for AZD with Bicep recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using Azure Developer CLI with Bicep infrastructure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      try {
+        expectFiles(workspacePath!,
+          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+          [/\.tf$/],
+        );
+      } finally {
+        cleanupWorkspace(workspacePath);
+      }
+    });
+
+    test("creates correct files for AZD with Terraform recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using Azure Developer CLI with Terraform as the infrastructure provider.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      try {
+        expectFiles(workspacePath!,
+          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.tf$/],
+          [/\.bicep$/],
+        );
+      } finally {
+        cleanupWorkspace(workspacePath);
+      }
+    });
+
+    test("creates correct files for AZCLI recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using Azure CLI scripts with Bicep templates for imperative deployment control.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      try {
+        expectFiles(workspacePath!,
+          [/plan\.md$/, /infra\/.*\.bicep$/, /scripts\/deploy\.(sh|ps1)$/],
+          [/azure\.yaml$/, /\.tf$/],
+        );
+      } finally {
+        cleanupWorkspace(workspacePath);
+      }
+    });
+
+    test("creates correct files for standalone Bicep recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates without Azure Developer CLI.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      try {
+        expectFiles(workspacePath!,
+          [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.parameters\.json$/],
+          [/azure\.yaml$/, /\.tf$/],
+        );
+      } finally {
+        cleanupWorkspace(workspacePath);
+      }
+    });
+
+    test("creates correct files for Terraform recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using Terraform infrastructure as code.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      try {
+        expectFiles(workspacePath!,
+          [/plan\.md$/, /infra\/.*\.tf$/, /infra\/variables\.tf$/],
+          [/\.bicep$/, /azure\.yaml$/],
+        );
+      } finally {
+        cleanupWorkspace(workspacePath);
+      }
     });
   });
 });
