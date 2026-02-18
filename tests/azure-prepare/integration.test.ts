@@ -18,13 +18,10 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, expectFiles } from "./utils";
 import * as fs from "fs";
-import { hasBicepFiles, hasTerraformFiles } from "../azure-deploy/utils";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
-const FOLLOW_UP_PROMPT = ["Go with recommended options."];
-const prepareTestTimeoutMs = 1800000;
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
