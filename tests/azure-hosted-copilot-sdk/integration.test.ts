@@ -75,7 +75,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Build a copilot SDK agent that uses my own Azure AI Foundry model with bring your own model",
+            prompt: "Build a copilot SDK app that uses my own Azure model with bring your own model",
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -102,7 +102,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a new copilot agent service using the copilot SDK",
+            prompt: "Create a new copilot SDK app and deploy it to Azure",
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -156,11 +156,11 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     // of which skill is invoked (azure-hosted-copilot-sdk or azure-prepare)
     test("scaffold prompt mentions copilot SDK templates", async () => {
       const agentMetadata = await agent.run({
-        prompt: "Scaffold a copilot-powered app using the copilot SDK and the copilot-sdk-agent template",
+        prompt: "Scaffold a copilot-powered app using the copilot SDK and deploy it to Azure",
         nonInteractive: true,
       });
 
-      const mentionsTemplate = doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk-agent") ||
+      const mentionsTemplate = doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk-service") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "Copilot SDK");
       expect(mentionsTemplate).toBe(true);
@@ -169,7 +169,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
     test("BYOM prompt mentions DefaultAzureCredential", async () => {
       const agentMetadata = await agent.run({
-        prompt: "Build a copilot SDK agent with BYOM using my Azure AI Foundry model and DefaultAzureCredential for auth",
+        prompt: "Build a copilot SDK app with BYOM using my Azure model and DefaultAzureCredential for auth",
         nonInteractive: true,
       });
 

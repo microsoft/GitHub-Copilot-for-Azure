@@ -1,11 +1,6 @@
 # Integrating Copilot SDK into Existing Projects
 
-Add Copilot SDK AI features to an existing application. Two integration scenarios:
-
-| Scenario | Use case | Key pattern |
-|----------|----------|-------------|
-| **Agent** | Interactive chat with tools, multi-turn sessions | Streaming endpoint, tool definitions |
-| **Service** | AI processing (summarize, classify), background scripts | `sendAndWait`, one-shot completions, no chat UI |
+Add Copilot SDK AI features to an existing application.
 
 ## Project Analysis
 
@@ -18,17 +13,13 @@ Detect the project type by scanning for indicator files:
 | `go.mod` | Go | Gin, Echo, net/http |
 | `*.csproj` / `*.sln` | .NET | ASP.NET, Minimal API |
 
-Also check for existing web frameworks, API routes, and middleware patterns.
-
 ## Study Template Patterns
 
-Use MCP tools to read template implementations for the detected language:
+Read the template via MCP for reference implementation:
 
-- **Agent template:** Call `github-mcp-server-get_file_contents` with `owner: "jongio"`, `repo: "copilot-sdk-agent"`. Focus on session creation, tool definitions, streaming handlers.
-- **Service template:** Call `github-mcp-server-get_file_contents` with `owner: "jongio"`, `repo: "copilot-sdk-service"`. Focus on `sendAndWait` calls, one-shot completions.
-- Read `AGENTS.md` first in each repo — it maps every source file to its purpose.
+`github-mcp-server-get_file_contents` with `owner: "azure-samples"`, `repo: "copilot-sdk-service"`. Read `AGENTS.md` first.
 
-Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) for current SDK API examples. See [copilot-sdk.md](copilot-sdk.md) for full SDK reference.
+Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) for current SDK API examples.
 
 ## Integration Steps
 
@@ -38,12 +29,11 @@ Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) for
 |----------|---------|
 | Node.js | `@github/copilot-sdk` |
 | Python | `github-copilot-sdk` |
-| Go / .NET | See SDK repo for equivalent |
+| Go / .NET | See SDK repo |
 
 ### 2. Create Copilot endpoint
 
-- **Agent path:** Add a route (e.g., `/api/chat`) that creates a session with streaming responses. Define tools exposing domain logic — each tool needs a name, description, and handler. Support multi-turn sessions.
-- **Service path:** Add a route (e.g., `/api/summarize`) or background script that uses `sendAndWait` for one-shot completions. No chat UI or tool definitions needed.
+Add a route (e.g., `/api/chat`) that creates a `CopilotClient`, starts a session, and returns the response. Use `sendAndWait` for one-shot or SSE streaming for chat.
 
 Adapt to the app's existing routing pattern (Express router, FastAPI route, etc.).
 
@@ -55,52 +45,32 @@ Use `gh auth token` for local dev; for production, use Key Vault.
 
 Register the new route with the existing server/app instance. Do NOT create a separate server.
 
-> ⚠️ **Warning:** Do not duplicate server startup logic. Add the Copilot route to the existing app instance.
+> ⚠️ **Warning:** Do not duplicate server startup logic.
 
 ## BYOM Support
 
-If the user wants their own Azure model, add BYOM config on top of the standard integration. Full config details: [Azure Model Configuration](azure-model-config.md).
-
-| Provider | Config type | Auth |
-|----------|-----------|------|
-| Azure OpenAI / Foundry | `openai` or `azure` | `bearerToken` via `DefaultAzureCredential` |
-| OpenAI | `openai` | `apiKey` |
-| Anthropic | `anthropic` | `apiKey` |
-| Ollama | `ollama` | none |
-
-### BYOM Integration Steps
+If the user wants Azure BYOM, add on top of standard integration:
 
 1. Add `@azure/identity` dependency
-2. In the Copilot endpoint, get a fresh token per request:
-   - `const { token } = await credential.getToken("https://cognitiveservices.azure.com/.default")`
-3. Pass `provider` config with `bearerToken: token` to `createSession`
-4. Set `model` to the Azure deployment name (required for BYOM)
-5. Set env var `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` for the base URL
+2. Get fresh token per request: `credential.getToken("https://cognitiveservices.azure.com/.default")`
+3. Pass `provider` config with `bearerToken` to `createSession`
+4. Set `model` to Azure deployment name (required)
+5. Set env vars: `AZURE_OPENAI_ENDPOINT`, `MODEL_NAME`
 
-> ⚠️ **Warning:** `bearerToken` is static — get a fresh token per request for production.
+See [Azure Model Configuration](azure-model-config.md).
 
 ## Testing
 
-Run the existing dev server and test the new endpoint:
-
 ```bash
-# Agent endpoint
 curl -s -X POST http://localhost:<port>/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"test"}'
-
-# Service endpoint
-curl -s -X POST http://localhost:<port>/api/summarize \
-  -H "Content-Type: application/json" \
-  -d '{"text":"content to summarize"}'
 ```
 
 ## Errors
 
 | Error | Fix |
 |-------|-----|
-| SDK not found | Verify dependency installed and import path correct |
+| SDK not found | Verify dependency installed and import path |
 | Auth fails locally | Run `gh auth login` then `gh auth refresh --scopes copilot` |
-| Route conflicts | Ensure endpoint path doesn't collide with existing routes |
-| Missing tools | (Agent only) Verify tool definitions are registered with the session |
-| Session hangs | (Agent only) Set a max turns limit or add a hook to break |
+| Route conflicts | Ensure endpoint path doesn't collide |

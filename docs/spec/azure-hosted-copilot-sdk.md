@@ -2,41 +2,77 @@
 
 ## Overview
 
-The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configure GitHub Copilot SDK applications on Azure. It covers three core workflows: scaffolding new apps from templates, deploying existing SDK apps, and configuring Bring Your Own Model (BYOM) to use Azure AI Foundry or Azure OpenAI models instead of the default GitHub-hosted models.
+The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configure GitHub Copilot SDK applications on Azure. It uses a single template (`azure-samples/copilot-sdk-service`) with API + Web UI deployed to Azure Container Apps. Three model paths are supported: GitHub default (no config), GitHub specific (user picks model), and Azure BYOM (DefaultAzureCredential + Azure deployment).
 
-## Current Status
+**Scope:** Copilot SDK app development + Azure hosting only. Foundry agent lifecycle (package/deploy/invoke) is handled by the `microsoft-foundry` skill (#865). Agent Framework integration is handled by the `agent-framework` skill.
+
+## Current Status — PR #880
 
 ### Skill Files — ✅ Complete
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `plugin/skills/azure-hosted-copilot-sdk/SKILL.md` | Main routing logic (Steps 1→2A/2B/2C→3) | ✅ Done (~471/500 tokens) |
-| `references/copilot-sdk.md` | SDK architecture, session lifecycle, BYOM comparison | ✅ Done (~888/1000 tokens) |
-| `references/deploy-existing.md` | Deploy workflow, Bicep infra, BYOM infrastructure | ✅ Done (~640/1000 tokens) |
-| `references/existing-project-integration.md` | Add SDK to existing apps, BYOM integration guide | ✅ Done (~844/1000 tokens) |
-| `references/azure-model-config.md` | BYOM provider config, DefaultAzureCredential, errors | ✅ New (~445/1000 tokens) |
+| `SKILL.md` | Routing: scaffold → deploy → model config → deploy chain | ✅ Rewritten — single template, three model paths, no Foundry agent refs |
+| `references/copilot-sdk.md` | SDK reference, template info, model paths, testing | ✅ Rewritten — removed agent/service split, Foundry integration |
+| `references/azure-model-config.md` | Three model paths: GitHub default, specific, Azure BYOM | ✅ Rewritten — covers all three paths, not just BYOM |
+| `references/deploy-existing.md` | Deploy workflow, Bicep, token flow, Dockerfile patterns | ✅ Rewritten — single template, removed `copilot-sdk-agent` refs |
+| `references/existing-project-integration.md` | Add SDK to existing apps, BYOM integration | ✅ Rewritten — unified pattern, no agent/service split |
 
-### Template Repos — ✅ Agent done, ⚠️ Service PR pending
+### Template Repo (`azure-samples/copilot-sdk-service`) — ✅ Complete
 
-| Repo | BYOM Support | Status |
-|------|-------------|--------|
-| `jongio/copilot-sdk-agent` | DefaultAzureCredential in `chat.ts`, AI Services Bicep | ✅ Already has BYOM |
-| `jongio/copilot-sdk-service` | Added `@azure/identity`, provider config, AI Services Bicep | ⚠️ PR #3 open — pending review |
+| Component | Change | Status |
+|-----------|--------|--------|
+| `src/api/model-config.ts` | **NEW** — shared three-path model config (GitHub default/specific, Azure BYOM) | ✅ Created |
+| `src/api/routes/chat.ts` | **NEW** — POST `/chat` with SSE streaming for multi-turn conversations | ✅ Created |
+| `src/api/routes/summarize.ts` | Uses `getSessionOptions()` instead of hardcoded `model: "gpt-4o"` | ✅ Updated |
+| `src/api/index.ts` | Registered `/chat` route | ✅ Updated |
+| `src/api/package.json` | Added `@azure/identity` dependency | ✅ Updated |
+| `src/web/hooks/useService.ts` | SSE streaming client calling `/chat` instead of `/summarize` | ✅ Updated |
+| `src/web/App.tsx` | Updated title/subtitle for chat UI | ✅ Updated |
+| `infra/resources.bicep` | Conditional Azure OpenAI + role assignment (`useAzureModel` param) | ✅ Updated |
+| `infra/main.bicep` | Added `useAzureModel` and `azureModelName` params | ✅ Updated |
+| `infra/main.parameters.json` | Added BYOM parameter defaults | ✅ Updated |
+| `azure.yaml` | Template metadata updated to `azure-samples/copilot-sdk-service` | ✅ Updated |
+| `AGENTS.md` | Added Key Files table + Model Configuration section | ✅ Updated |
+| `README.md` | Three model paths, chat endpoint, updated architecture diagrams | ✅ Updated |
 
-### Test Automation — ✅ Tests written, ⚠️ Skill routing issue
+### Test Automation — ✅ Tests updated, ⚠️ Skill routing issue persists
 
 | Test File | Tests | Status |
 |-----------|-------|--------|
-| `tests/azure-hosted-copilot-sdk/triggers.test.ts` | 24 tests (11 trigger, 8 negative, 5 edge) | ✅ All passing |
-| `tests/azure-hosted-copilot-sdk/unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ All passing |
-| `tests/azure-hosted-copilot-sdk/integration.test.ts` | 4 invocation rate + 2 content quality | ⚠️ See below |
-| `tests/utils/regression-detectors.ts` | `countApiKeyInByomConfig()` detector | ✅ Added |
+| `triggers.test.ts` | 23 tests (10 trigger, 8 negative, 5 edge) | ✅ Updated — removed Foundry triggers |
+| `unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ Updated — checks `copilot-sdk-service` and `AZURE_OPENAI_ENDPOINT` |
+| `integration.test.ts` | 4 invocation rate + 2 content quality | ✅ Updated — removed Foundry/agent from prompts |
+| `__snapshots__/triggers.test.ts.snap` | Keyword snapshots | ✅ Regenerated |
+| `regression-detectors.ts` | `countApiKeyInByomConfig()` detector | ✅ Unchanged |
 
 **Integration test detail:**
 - Content quality tests (2): ✅ **Passing** — agent produces correct Copilot SDK and BYOM output
-- Invocation rate tests (4): ❌ **0% rate** — agent routes to `azure-prepare` instead of `azure-hosted-copilot-sdk`
+- Invocation rate tests (4): ❌ **0% rate** — `azure-prepare` skill captures prompts first
 
-This is a skill routing/discovery issue, not a content issue. The `azure-prepare` skill's `REQUIRED FIRST STEP` instruction captures all "build + deploy" prompts before our skill is considered. See [Known Issues](#known-issues).
+### PR Conflict Check — ✅ No conflicts
+
+| PR | Owner | Scope | Conflicts? |
+|----|-------|-------|------------|
+| #865 | ankitbko | `plugin/skills/microsoft-foundry/agent/` | ❌ None |
+| #914 | kuojianlu | `plugin/skills/agent-framework/` (draft) | ❌ None |
+| #915 | anchenyi | `plugin/skills/agent-framework/` (draft) | ❌ None |
+| #938 | JasonYeMSFT | `.github/workflows/` | ❌ None |
+
+### What Changed in This PR (Summary)
+
+**Removed:**
+- Agent/service template split (was: `copilot-sdk-agent` + `copilot-sdk-service` → now: single `copilot-sdk-service`)
+- All Foundry agent references (AIProjectClient, threads, function tools, evaluation, `host: azure.ai.agent`)
+- `foundry agent`, `copilot agent` trigger phrases
+- P1 (Agent Template Hosting) and P2 (Foundry Hosting) roadmap items
+
+**Added:**
+- Three model paths: GitHub default → GitHub specific → Azure BYOM
+- `DO NOT USE FOR: Foundry agent hosting (use microsoft-foundry skill)`
+- Chat endpoint with SSE streaming in template
+- `model-config.ts` shared module for env-var-based model selection
+- Conditional Azure OpenAI Bicep resources for BYOM
 
 ## Architecture
 
@@ -48,93 +84,73 @@ User prompt
 │  azure-hosted-copilot-sdk     │
 │  Step 1: Route               │
 ├──────────────────────────────┤
-│  Build new?    → Step 2A     │──→ azd init --template jongio/copilot-sdk-agent
-│                              │──→ azd init --template jongio/copilot-sdk-service
+│  Build new?    → Step 2A     │──→ azd init --template azure-samples/copilot-sdk-service
 │  Deploy existing? → Step 2B  │──→ Adapt using template infra patterns
 │  Add SDK?      → Integrate   │──→ references/existing-project-integration.md
-│  Use own model? → Step 2C    │──→ references/azure-model-config.md (BYOM)
+│  Use own model? → Step 2C    │──→ references/azure-model-config.md
 ├──────────────────────────────┤
 │  Step 3: Deploy              │──→ azure-prepare → azure-validate → azure-deploy
 └──────────────────────────────┘
 ```
 
-### BYOM Model Path
+### Three Model Paths
 
 ```
 Copilot SDK Session
   │
-  ├─ Default (no provider)
-  │    Routes through GitHub Copilot API
-  │    Models: gpt-4o, claude-sonnet-4.5, etc. (via listModels())
-  │    Billing: Copilot premium quotas
+  ├─ GitHub Default (no config)
+  │    SDK picks default model
+  │    Auth: GITHUB_TOKEN
+  │    Env: (none)
   │
-  └─ BYOM (with provider config)
-       Routes to user's Azure endpoint
-       Auth: DefaultAzureCredential → bearerToken (static, per-request refresh)
-       Model: Azure deployment name (no SDK validation)
-       Endpoint types:
-         ├─ Azure AI Foundry: type="openai", wireApi="responses"
-         └─ Azure OpenAI:     type="azure"
+  ├─ GitHub Specific (model only)
+  │    User picks model via listModels()
+  │    Auth: GITHUB_TOKEN
+  │    Env: MODEL_NAME=gpt-4o
+  │
+  └─ Azure BYOM (model + provider)
+       User's Azure deployment
+       Auth: DefaultAzureCredential → bearerToken
+       Env: MODEL_PROVIDER=azure, MODEL_NAME=<deployment>, AZURE_OPENAI_ENDPOINT=<url>
 ```
 
-## Plans
+### Template Architecture
+
+```
+azure-samples/copilot-sdk-service/
+├── src/api/                     # Express API (Node 24, TypeScript)
+│   ├── model-config.ts          # Three-path model selection
+│   ├── routes/chat.ts           # POST /chat — SSE streaming
+│   ├── routes/summarize.ts      # POST /summarize — one-shot
+│   └── routes/health.ts         # GET /health
+├── src/web/                     # React + Vite chat UI
+│   ├── hooks/useService.ts      # SSE streaming client
+│   └── components/              # ChatWindow, MessageInput, ThemeToggle
+├── infra/
+│   ├── main.bicep               # Subscription-scoped (useAzureModel param)
+│   └── resources.bicep          # Container Apps + conditional Azure OpenAI
+├── scripts/get-github-token.mjs # azd hook for GITHUB_TOKEN
+└── azure.yaml                   # API + Web services, preprovision/prerun hooks
+```
+
+## Future Work
 
 ### P0 — Skill Routing Fix
 
-The skill is never invoked by the Copilot CLI agent. Prompts containing "build copilot SDK app" or "BYOM" route to `azure-prepare` instead. Root cause: `azure-prepare` has a very aggressive `REQUIRED FIRST STEP` instruction that captures all deployment-related prompts.
+The skill is never invoked by the Copilot CLI agent. Prompts like "build copilot SDK app" route to `azure-prepare` instead. Root cause: `azure-prepare` has an aggressive `REQUIRED FIRST STEP` instruction that captures all deployment-related prompts.
 
 **Options:**
 1. Improve skill description to outcompete `azure-prepare` for Copilot SDK-specific prompts
-2. Add cross-skill routing — have `azure-prepare` detect Copilot SDK projects and delegate to `azure-hosted-copilot-sdk`
-3. Use `systemPrompt` in the skill to provide stronger routing hints
+2. Add cross-skill routing — `azure-prepare` detects Copilot SDK projects and delegates
+3. Use `systemPrompt` in the skill for stronger routing hints
 
-### P1 — Agent Template Hosting
+### P1 — Copilot SDK Streaming
 
-The `copilot-sdk-agent` template (`jongio/copilot-sdk-agent`) is the primary path for building Copilot SDK agents on Azure. Current status:
+The chat endpoint currently uses `sendAndWait` (full response in one SSE event). When the SDK supports true token-level streaming, update to stream incremental chunks.
 
-| Component | Status |
-|-----------|--------|
-| Agent app code (TypeScript, `defineTool`, `mcpServers`) | ✅ In template |
-| Azure Container Apps hosting | ✅ In template |
-| Key Vault for `GITHUB_TOKEN` | ✅ In template |
-| Managed Identity + RBAC | ✅ In template |
-| BYOM with DefaultAzureCredential | ✅ In template (`chat.ts`) |
-| AI Services Bicep (for BYOM) | ✅ In template (`resources.bicep`) |
-| Multi-model switching | ❌ Not yet — hardcoded to single deployment |
-| Production token refresh | ⚠️ Per-request pattern documented, not enforced |
+### P2 — Additional Language Templates
 
-**Planned work:**
-- Add environment-based model switching (allow users to configure multiple Azure deployments)
-- Add health check endpoint for Container Apps probes
-- Document scaling configuration for high-throughput agent scenarios
-
-### P2 — Foundry Hosting
-
-Azure AI Foundry provides a managed platform for hosting AI models. Integrating Foundry hosting means users can deploy models to Foundry and connect their Copilot SDK apps without managing compute infrastructure.
-
-| Component | Status |
-|-----------|--------|
-| Foundry model deployment discovery | ✅ Via `foundry_models_deployments_list` MCP tool |
-| Foundry endpoint configuration | ✅ Documented in `azure-model-config.md` |
-| Foundry project Bicep module | ✅ In agent template |
-| Foundry-native agent hosting | ❌ Not yet — SDK runs on Container Apps, calls Foundry API |
-| Foundry agent framework integration | ❌ Future — evaluate Foundry's native agent runtime vs Copilot SDK |
-
-**Planned work:**
-- Evaluate Foundry's agent hosting capabilities as an alternative to Container Apps for the compute layer
-- Add a Foundry-first template variant that provisions AI Project + model deployment + Copilot SDK app in one `azd up`
-- Document cost comparison: Container Apps + Foundry API calls vs Foundry-managed agent hosting
-
-### P3 — Service Template BYOM
-
-PR #3 on `jongio/copilot-sdk-service` adds BYOM support to the service template. Pending merge.
-
-| File | Change |
-|------|--------|
-| `package.json` | Added `@azure/identity` dependency |
-| `src/summarize.ts` | Added `DefaultAzureCredential` token acquisition, provider config |
-| `infra/resources.bicep` | Added AI Services account + AI Project + role assignment |
-| `infra/main.bicep` | Added `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` env var to Container App |
+Current template is TypeScript/Express only. Future templates for Python (FastAPI), Go, and .NET.
 
 ## Known Issues
 
@@ -142,8 +158,8 @@ PR #3 on `jongio/copilot-sdk-service` adds BYOM support to the service template.
 |-------|--------|----------|
 | Skill never invoked by agent (0% invocation rate) | Users don't get skill-specific guidance | **High** |
 | `bearerToken` is static — no auto-refresh callback in SDK | Long-running sessions fail after ~1 hour | Medium |
-| `listModels()` doesn't return Azure deployments | Users must use MCP tool or CLI to discover deployment names | Low |
-| Service template PR #3 not merged | `copilot-sdk-service` lacks BYOM out of the box | Medium |
+| `listModels()` doesn't return Azure deployments | Users must use CLI to discover deployment names | Low |
+| Chat endpoint uses `sendAndWait` not true streaming | Response arrives as single chunk, not token-by-token | Low |
 
 ## File Inventory
 
@@ -151,17 +167,20 @@ PR #3 on `jongio/copilot-sdk-service` adds BYOM support to the service template.
 plugin/skills/azure-hosted-copilot-sdk/
 ├── SKILL.md                                    # Main skill (routing + steps)
 └── references/
-    ├── azure-model-config.md                   # BYOM provider config + auth
-    ├── copilot-sdk.md                          # SDK architecture + session lifecycle
+    ├── azure-model-config.md                   # Three model paths + BYOM config
+    ├── copilot-sdk.md                          # SDK reference + template info
     ├── deploy-existing.md                      # Deploy workflow + Bicep infra
     └── existing-project-integration.md         # Add SDK to existing apps
 
+docs/spec/
+└── azure-hosted-copilot-sdk.md                 # This file — feature status
+
 tests/azure-hosted-copilot-sdk/
 ├── integration.test.ts                         # 6 integration tests (invocation rate + content)
-├── triggers.test.ts                            # 24 trigger matching tests
+├── triggers.test.ts                            # 23 trigger matching tests
 ├── unit.test.ts                                # 17 unit tests
 └── __snapshots__/triggers.test.ts.snap         # Trigger keyword snapshots
 
 tests/utils/
-└── regression-detectors.ts                     # countApiKeyInByomConfig() added
+└── regression-detectors.ts                     # countApiKeyInByomConfig() detector
 ```
