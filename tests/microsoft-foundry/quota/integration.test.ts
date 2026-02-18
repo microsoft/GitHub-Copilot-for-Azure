@@ -24,7 +24,7 @@ const SKILL_NAME = "microsoft-foundry";
 // Use centralized skip logic from agent-runner
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_-quota - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("View Quota Usage", () => {
