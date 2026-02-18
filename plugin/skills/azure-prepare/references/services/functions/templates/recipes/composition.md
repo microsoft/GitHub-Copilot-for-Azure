@@ -124,10 +124,28 @@ hooks:
 
 ### Step 7: Validate and Deploy
 
+**Required Environment Setup:**
 ```bash
-# Single command — provision + deploy
+azd env set AZURE_LOCATION eastus2      # Required: deployment region
+azd env set VNET_ENABLED false          # Required: VNet isolation (true/false)
+```
+
+**Deployment Strategy — Two Options:**
+
+**Option A: Single command** (fast, may fail on first deploy due to RBAC propagation)
+```bash
 azd up --no-prompt
 ```
+
+**Option B: Two-phase** (recommended for reliability)
+```bash
+azd provision --no-prompt     # Create resources + RBAC assignments
+sleep 60                       # Wait for RBAC propagation (Azure AD needs 30-60s)
+azd deploy --no-prompt        # Deploy code (RBAC now active)
+```
+
+> **CRITICAL: Never enable `allowSharedKeyAccess: true`** as a workaround for 403 errors.
+> The correct solution is waiting for RBAC propagation, not disabling security.
 
 ## Base Template Lookup
 
@@ -139,6 +157,18 @@ azd up --no-prompt
 | python | `functions-quickstart-python-http-azd` | `functions-quickstart-python-http-azd-tf` |
 | java | `azure-functions-java-flex-consumption-azd` | `azure-functions-java-flex-consumption-azd-tf` |
 | powershell | `functions-quickstart-powershell-azd` | `functions-quickstart-powershell-azd-tf` |
+
+## Storage Endpoint Requirements
+
+Some integrations require additional storage endpoints. Toggle these in `main.bicep` BEFORE provisioning:
+
+| Integration | enableBlob | enableQueue | enableTable | Notes |
+|-------------|:----------:|:-----------:|:-----------:|-------|
+| HTTP        | ✓          | -           | -           | Default |
+| Timer       | ✓          | -           | -           | Checkpointing uses blob |
+| Cosmos DB   | ✓          | -           | -           | Standard |
+| **Durable** | ✓          | **✓**       | **✓**       | Task hub + history |
+| **MCP**     | ✓          | **✓**       | -           | Message coordination |
 
 ## Recipe Classification
 
@@ -154,3 +184,6 @@ azd up --no-prompt
 3. **ALWAYS use recipe RBAC role GUIDs** — never let the LLM guess role IDs
 4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
 5. **ALWAYS verify the base template initialized successfully** before applying recipe
+6. **ALWAYS keep `allowSharedKeyAccess: false`** — never enable local auth on storage
+7. **ALWAYS keep `disableLocalAuth: true`** — never enable local auth on Cosmos DB
+8. **ALWAYS wait for RBAC propagation** — use two-phase deploy if 403 errors occur

@@ -26,3 +26,31 @@ Templates for hosting MCP (Model Context Protocol) servers on Azure Functions.
 | Python | `azd init -t remote-mcp-sdk-functions-hosting-python` |
 | TypeScript | `azd init -t remote-mcp-sdk-functions-hosting-node` |
 | C# | `azd init -t remote-mcp-sdk-functions-hosting-dotnet` |
+
+## Local Development
+
+MCP templates require local storage emulation (Azurite) for local testing:
+
+```bash
+# Start Azurite (in separate terminal or background)
+npx azurite --silent --location /tmp/azurite &
+
+# Build and run
+npm install
+npm run build
+func start
+```
+
+> The template's `local.settings.json` uses `UseDevelopmentStorage=true` which requires Azurite.
+
+## Storage Requirements
+
+MCP needs Queue storage for message coordination. Ensure `enableQueue: true` in `main.bicep`:
+
+```bicep
+var storageEndpointConfig = {
+  enableBlob: true   // Required for deployment
+  enableQueue: true  // Required for MCP
+  enableTable: false // Not required for MCP
+}
+```

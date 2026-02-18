@@ -62,9 +62,21 @@ The skill reads the recipe's README.md for:
 
 ### Step 4: Deploy
 
+**Set required environment variables:**
 ```bash
-azd up --no-prompt
+azd env set AZURE_LOCATION eastus2
+azd env set VNET_ENABLED false
 ```
+
+**Deploy (two-phase recommended for reliability):**
+```bash
+azd provision --no-prompt     # Create resources + RBAC
+sleep 60                       # Wait for RBAC propagation
+azd deploy --no-prompt        # Deploy code
+```
+
+> **Note:** If `azd up` fails with 403 storage errors, RBAC hasn't propagated yet.
+> Never enable `allowSharedKeyAccess` — just wait and retry.
 
 ## Design Principles
 
