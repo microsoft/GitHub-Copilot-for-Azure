@@ -1,14 +1,25 @@
 # SQL Database - Bicep Patterns
 
-## Basic Setup
+## Basic Setup (Entra-Only Authentication)
+
+**Recommended approach** — Uses Microsoft Entra ID authentication only. Required for subscriptions with policies enforcing Entra-only authentication.
 
 ```bicep
+param principalId string
+param principalName string
+
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: '${resourcePrefix}-sql-${uniqueHash}'
   location: location
   properties: {
-    administratorLogin: 'sqladmin'
-    administratorLoginPassword: sqlAdminPassword
+    administrators: {
+      administratorType: 'ActiveDirectory'
+      principalType: 'User'
+      login: principalName
+      sid: principalId
+      tenantId: subscription().tenantId
+      azureADOnlyAuthentication: true
+    }
     minimalTlsVersion: '1.2'
   }
 }
@@ -35,6 +46,11 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2022-05-01-previe
     endIpAddress: '0.0.0.0'
   }
 }
+```
+
+**Get current user's principal ID:**
+```bash
+az ad signed-in-user show --query "{id:id, name:displayName}" -o json
 ```
 
 ## Serverless Configuration
@@ -76,6 +92,24 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
         }
       }
     ]
+  }
+}
+```
+
+## Legacy SQL Authentication (Not Recommended)
+
+> ⚠️ **Warning**: This pattern will fail in subscriptions with policies requiring Entra-only authentication. Use Entra-only authentication (above) instead.
+
+```bicep
+param sqlAdminPassword string
+
+resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
+  name: '${resourcePrefix}-sql-${uniqueHash}'
+  location: location
+  properties: {
+    administratorLogin: 'sqladmin'
+    administratorLoginPassword: sqlAdminPassword
+    minimalTlsVersion: '1.2'
   }
 }
 ```

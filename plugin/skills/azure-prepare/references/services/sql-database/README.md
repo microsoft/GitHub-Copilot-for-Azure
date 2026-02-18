@@ -10,6 +10,13 @@ Managed relational database with ACID compliance and full SQL Server compatibili
 - Reporting and analytics
 - Strong schema enforcement
 
+## Authentication
+
+**Default:** Entra-only authentication (recommended)
+- Required for subscriptions with Entra-only policies
+- More secure than SQL authentication
+- Eliminates password management
+
 ## Required Supporting Resources
 
 | Resource | Purpose |
