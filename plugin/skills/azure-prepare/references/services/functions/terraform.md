@@ -1,10 +1,10 @@
 # Functions Terraform Patterns
 
-**Use Flex Consumption (FC1) for new deployments with managed identity.**
+## Flex Consumption (Recommended)
+
+**Use Flex Consumption for new deployments with managed identity (no connection strings).**
 
 > **⚠️ IMPORTANT**: Flex Consumption requires **azurerm provider v4.2 or later**.
-
-## Provider Configuration
 
 ```hcl
 terraform {
@@ -15,52 +15,272 @@ terraform {
     }
   }
 }
+
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_storage_account" "function_storage" {
+  name                     = "${var.resource_prefix}func${var.unique_hash}"
+  location                 = var.location
+  resource_group_name      = azurerm_resource_group.main.name
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  
+  min_tls_version              = "TLS1_2"
+  allow_nested_items_to_be_public = false
+  shared_access_key_enabled    = false  # Enforce managed identity
+}
+
+resource "azurerm_storage_container" "deployment_package" {
+  name                  = "deploymentpackage"
+  storage_account_id    = azurerm_storage_account.function_storage.id
+  container_access_type = "private"
+}
+
+resource "azurerm_application_insights" "function_insights" {
+  name                = "appi-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  application_type    = "web"
+}
+
+resource "azurerm_service_plan" "function_plan" {
+  name                = "plan-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  os_type             = "Linux"
+  sku_name            = "FC1"
+}
+
+resource "azurerm_linux_function_app" "function_app" {
+  name                       = "${var.resource_prefix}-${var.service_name}-${var.unique_hash}"
+  location                   = var.location
+  resource_group_name        = azurerm_resource_group.main.name
+  service_plan_id            = azurerm_service_plan.function_plan.id
+  storage_account_name       = azurerm_storage_account.function_storage.name
+  storage_uses_managed_identity = true
+  https_only                 = true
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  function_app_config {
+    deployment {
+      storage {
+        type  = "blob_container"
+        value = "${azurerm_storage_account.function_storage.primary_blob_endpoint}${azurerm_storage_container.deployment_package.name}"
+        authentication {
+          type = "SystemAssignedIdentity"
+        }
+      }
+    }
+
+    scale_and_concurrency {
+      maximum_instance_count = 100
+      instance_memory_mb     = 2048
+    }
+
+    runtime {
+      name    = "python"  # or "node", "dotnet-isolated"
+      version = "3.11"
+    }
+  }
+
+  site_config {
+    application_insights_connection_string = azurerm_application_insights.function_insights.connection_string
+    
+    application_stack {
+      python_version = "3.11"  # Adjust based on runtime
+    }
+  }
+
+  app_settings = {
+    "AzureWebJobsStorage__accountName"  = azurerm_storage_account.function_storage.name
+    "FUNCTIONS_EXTENSION_VERSION"       = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"          = "python"
+  }
+}
+
+# Grant Function App access to Storage for runtime
+resource "azurerm_role_assignment" "function_storage_access" {
+  scope                = azurerm_storage_account.function_storage.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+}
 ```
 
-## Hosting Plans
+> 💡 **Key Points:**
+> - Use `AzureWebJobsStorage__accountName` instead of connection string
+> - Set `shared_access_key_enabled = false` for enhanced security
+> - Use `storage_uses_managed_identity = true` for deployment authentication
+> - Grant `Storage Blob Data Owner` role for full access to blobs, queues, and tables
+> - Requires azurerm provider **v4.2 or later**
 
-| Plan | Use Case | Terraform SKU |
-|------|----------|---------------|
-| **Flex Consumption** ⭐ | Recommended for new projects | `FC1` |
-| Consumption (Y1) | Legacy, not recommended | `Y1` |
-| Premium | No cold starts, VNET support | `EP1`, `EP2`, `EP3` |
+### Using Azure Verified Module
 
-## Runtime Stacks
+For production deployments, use the official Azure Verified Module:
 
-Configure in `site_config.application_stack`:
+```hcl
+module "function_app" {
+  source  = "Azure/avm-res-web-site/azurerm"
+  version = "~> 0.0"
 
-| Runtime | Configuration |
-|---------|---------------|
-| Node.js | `node_version = "18"` |
-| Python | `python_version = "3.11"` |
-| .NET | `dotnet_version = "8.0"` |
-| Java | `java_version = "17"` |
+  name                = "${var.resource_prefix}-${var.service_name}-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  
+  kind    = "functionapp"
+  os_type = "Linux"
 
-## Patterns
+  sku_name = "FC1"
 
-### [Flex Consumption (Recommended)](terraform/flex-consumption.md)
+  function_app_storage_account_name       = azurerm_storage_account.function_storage.name
+  function_app_storage_uses_managed_identity = true
 
-Complete pattern with managed identity, security best practices, and Azure Verified Module.
+  site_config = {
+    application_insights_connection_string = azurerm_application_insights.function_insights.connection_string
+    
+    application_stack = {
+      python_version = "3.11"
+    }
+  }
 
-**Key Features:**
-- Uses `storage_uses_managed_identity = true`
-- No connection strings (`shared_access_key_enabled = false`)
-- Automatic scaling with `maximum_instance_count`
-- References [HashiCorp Flex Consumption Example](https://registry.terraform.io/modules/Azure/avm-res-web-site/azurerm/latest/examples/flex_consumption)
+  app_settings = {
+    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_storage.name
+    "FUNCTIONS_EXTENSION_VERSION"      = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"         = "python"
+  }
 
-### [Service Bus Integration](terraform/servicebus.md)
+  identity = {
+    type = "SystemAssigned"
+  }
+}
+```
 
-Managed identity configuration for Service Bus triggers and bindings.
+> 💡 **Example Reference:** [HashiCorp Flex Consumption Example](https://registry.terraform.io/modules/Azure/avm-res-web-site/azurerm/latest/examples/flex_consumption)
 
-**Key Features:**
-- Uses `SERVICEBUS__fullyQualifiedNamespace` (double underscore)
-- Automatic role assignments for receiver/sender
-- No connection strings required
+## Consumption Plan (Legacy)
 
-### [Alternative Hosting Plans](terraform/hosting-plans.md)
+**⚠️ Not recommended for new deployments. Use Flex Consumption instead.**
 
-Premium and legacy Consumption plan configurations.
+```hcl
+resource "azurerm_storage_account" "function_storage" {
+  name                     = "${var.resource_prefix}func${var.unique_hash}"
+  location                 = var.location
+  resource_group_name      = azurerm_resource_group.main.name
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
 
-**Includes:**
-- Premium (EP1-EP3) with `always_on` and `pre_warmed_instance_count`
-- Legacy Y1 Consumption (not recommended for new deployments)
+resource "azurerm_service_plan" "function_plan" {
+  name                = "${var.resource_prefix}-funcplan-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  os_type             = "Linux"
+  sku_name            = "Y1"
+}
+
+resource "azurerm_linux_function_app" "function_app" {
+  name                = "${var.resource_prefix}-${var.service_name}-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  service_plan_id     = azurerm_service_plan.function_plan.id
+  https_only          = true
+  
+  storage_account_name       = azurerm_storage_account.function_storage.name
+  storage_account_access_key = azurerm_storage_account.function_storage.primary_access_key
+  
+  site_config {
+    application_insights_connection_string = azurerm_application_insights.function_insights.connection_string
+    
+    application_stack {
+      python_version = "3.11"
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_EXTENSION_VERSION" = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"    = "python"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+```
+
+## Service Bus Integration (Managed Identity)
+
+```hcl
+data "azurerm_servicebus_namespace" "example" {
+  name                = var.servicebus_namespace_name
+  resource_group_name = var.servicebus_resource_group
+}
+
+resource "azurerm_linux_function_app" "function_app" {
+  # ... (Function App definition from above)
+  
+  app_settings = {
+    # Storage with managed identity
+    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_storage.name
+    
+    # Service Bus with managed identity
+    "SERVICEBUS__fullyQualifiedNamespace" = "${data.azurerm_servicebus_namespace.example.name}.servicebus.windows.net"
+    "SERVICEBUS_QUEUE_NAME"               = var.servicebus_queue_name
+    
+    # Other settings...
+    "FUNCTIONS_EXTENSION_VERSION"  = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"     = "python"
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.function_insights.connection_string
+  }
+}
+
+# Grant Service Bus Data Receiver role for triggers
+resource "azurerm_role_assignment" "servicebus_receiver" {
+  scope                = data.azurerm_servicebus_namespace.example.id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+}
+
+# Grant Service Bus Data Sender role (if function sends messages)
+resource "azurerm_role_assignment" "servicebus_sender" {
+  scope                = data.azurerm_servicebus_namespace.example.id
+  role_definition_name = "Azure Service Bus Data Sender"
+  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+}
+```
+
+> 💡 **Key Points:**
+> - Use `SERVICEBUS__fullyQualifiedNamespace` (double underscore) for managed identity
+> - Grant `Service Bus Data Receiver` role for reading messages
+> - Grant `Service Bus Data Sender` role for sending messages (if needed)
+> - Role assignments automatically enable connection via managed identity
+
+## Premium Plan (No Cold Starts)
+
+```hcl
+resource "azurerm_service_plan" "function_plan" {
+  name                = "${var.resource_prefix}-funcplan-${var.unique_hash}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  os_type             = "Linux"
+  sku_name            = "EP1"  # EP1, EP2, or EP3
+}
+
+resource "azurerm_linux_function_app" "function_app" {
+  # ... (rest of configuration similar to Flex Consumption)
+  
+  site_config {
+    # Premium-specific settings
+    always_on                      = true
+    pre_warmed_instance_count      = 1
+    elastic_instance_minimum       = 1
+    
+    application_stack {
+      python_version = "3.11"
+    }
+  }
+}
+```
