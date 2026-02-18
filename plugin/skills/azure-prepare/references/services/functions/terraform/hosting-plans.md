@@ -53,6 +53,7 @@ resource "azurerm_linux_function_app" "function_app" {
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
   service_plan_id     = azurerm_service_plan.function_plan.id
+  https_only          = true
   
   storage_account_name       = azurerm_storage_account.function_storage.name
   storage_account_access_key = azurerm_storage_account.function_storage.primary_access_key
