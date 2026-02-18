@@ -99,11 +99,12 @@ jobs:
         env:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}
+          TEST_NAME_PATTERN: ${{ inputs.test-pattern }}
         run: |
-          if [ -n "${{ inputs.test-pattern }}" ]; then
-            npm run test:integration -- --testPathPattern="azure-deploy" --testNamePattern="${{ inputs.test-pattern }}"
+          if [ -n "$TEST_NAME_PATTERN" ]; then
+            npm run test:integration -- azure-deploy "$TEST_NAME_PATTERN"
           else
-            npm run test:integration -- --testPathPattern="azure-deploy"
+            npm run test:integration -- azure-deploy
           fi
         continue-on-error: true
 
