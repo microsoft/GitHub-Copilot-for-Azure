@@ -2,23 +2,29 @@
  * Tests for suggest command - optimization suggestions
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 
-const TEST_DIR = join(tmpdir(), '__test_fixtures_suggest__');
+const TEST_DIR_PREFIX = join(tmpdir(), '__test_fixtures_suggest__');
 
 describe('suggest command', () => {
+  let testDir: string;
+  let testRootDir: string;
+  beforeAll(() => {
+    testDir = mkdtempSync(TEST_DIR_PREFIX);
+    testRootDir = join(testDir, 'root');
+  });
   beforeEach(() => {
-    mkdirSync(TEST_DIR, { recursive: true });
+    mkdirSync(testRootDir, { recursive: true });
   });
 
   afterEach(async () => {
     // Small delay to allow file handles to close on Windows
     await new Promise(resolve => setTimeout(resolve, 10));
     try {
-      rmSync(TEST_DIR, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+      rmSync(testRootDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     } catch (err) {
       // Ignore cleanup errors in tests
     }
@@ -27,10 +33,10 @@ describe('suggest command', () => {
   describe('emoji detection', () => {
     it('detects decorative emojis', () => {
       const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
-      
+
       const textWithEmojis = '🚀 Welcome to our project! 🎉🎊🎈';
       const emojis = textWithEmojis.match(EMOJI_REGEX);
-      
+
       expect(emojis).not.toBeNull();
       expect(emojis!.length).toBe(4);
     });
@@ -47,7 +53,7 @@ describe('suggest command', () => {
       const line = '🎉🎊🎈 Celebration!';
       const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
       const emojis = line.match(EMOJI_REGEX);
-      
+
       expect(emojis!.length).toBeGreaterThan(2);
     });
   });
@@ -64,11 +70,11 @@ describe('suggest command', () => {
     it('detects common verbose phrases', () => {
       const content = 'In order to complete this task, you need to...';
       const lowerContent = content.toLowerCase();
-      
-      const found = Object.keys(VERBOSE_PHRASES).filter(phrase => 
+
+      const found = Object.keys(VERBOSE_PHRASES).filter(phrase =>
         lowerContent.includes(phrase)
       );
-      
+
       expect(found).toContain('in order to');
     });
 
@@ -82,7 +88,7 @@ describe('suggest command', () => {
       const verbose = 'in order to';
       const concise = 'to';
       const savings = Math.ceil((verbose.length - concise.length) / 4);
-      
+
       expect(savings).toBe(3);  // (11 - 2) / 4 = 2.25, rounded up to 3
     });
   });
@@ -104,10 +110,10 @@ describe('suggest command', () => {
         'const k = 11;',
         '```'
       ];
-      
+
       let inBlock = false;
       let blockLines = 0;
-      
+
       for (const line of lines) {
         if (line.startsWith('```')) {
           if (!inBlock) {
@@ -120,7 +126,7 @@ describe('suggest command', () => {
           blockLines++;
         }
       }
-      
+
       expect(blockLines).toBe(11);
       expect(blockLines > 10).toBe(true);
     });
@@ -132,10 +138,10 @@ describe('suggest command', () => {
         'npm run build',
         '```'
       ];
-      
+
       let blockLines = 0;
       let inBlock = false;
-      
+
       for (const line of lines) {
         if (line.startsWith('```')) {
           inBlock = !inBlock;
@@ -143,7 +149,7 @@ describe('suggest command', () => {
           blockLines++;
         }
       }
-      
+
       expect(blockLines).toBe(2);
       expect(blockLines > 10).toBe(false);
     });
@@ -166,18 +172,18 @@ describe('suggest command', () => {
         '| Row 10 | Data |',
         '| Row 11 | Data |',
       ];
-      
+
       let tableRows = 0;
-      
+
       for (const line of lines) {
         const isTableRow = line.trim().startsWith('|') && line.trim().endsWith('|');
         const isSeparator = /^\|[\s\-:|]+\|$/.test(line.trim());
-        
+
         if (isTableRow && !isSeparator) {
           tableRows++;
         }
       }
-      
+
       // Subtract 1 for header row
       expect(tableRows - 1).toBe(11);
       expect(tableRows - 1 > 10).toBe(true);
@@ -191,7 +197,7 @@ describe('suggest command', () => {
         { estimatedSavings: 20 },
         { estimatedSavings: 5 }
       ];
-      
+
       const totalSavings = suggestions.reduce((sum, s) => sum + s.estimatedSavings, 0);
       expect(totalSavings).toBe(35);
     });
@@ -202,9 +208,9 @@ describe('suggest command', () => {
         { line: 10, issue: 'A' },
         { line: 30, issue: 'B' }
       ];
-      
+
       suggestions.sort((a, b) => a.line - b.line);
-      
+
       expect(suggestions[0].issue).toBe('A');
       expect(suggestions[1].issue).toBe('B');
       expect(suggestions[2].issue).toBe('C');
@@ -213,20 +219,14 @@ describe('suggest command', () => {
 
   describe('markdown file scanning', () => {
     it('finds markdown files recursively', () => {
-      // Clean and recreate test directory
-      try {
-        rmSync(TEST_DIR, { recursive: true, force: true });
-      } catch {}
-      mkdirSync(TEST_DIR, { recursive: true });
-      
       // Create test structure
-      writeFileSync(join(TEST_DIR, 'readme.md'), '# Readme');
-      mkdirSync(join(TEST_DIR, 'docs'), { recursive: true });
-      writeFileSync(join(TEST_DIR, 'docs', 'guide.md'), '# Guide');
-      
+      writeFileSync(join(testRootDir, 'readme.md'), '# Readme');
+      mkdirSync(join(testRootDir, 'docs'), { recursive: true });
+      writeFileSync(join(testRootDir, 'docs', 'guide.md'), '# Guide');
+
       const files: string[] = [];
       const { readdirSync } = require('node:fs');
-      
+
       function scan(dir: string) {
         const entries = readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
@@ -238,15 +238,15 @@ describe('suggest command', () => {
           }
         }
       }
-      
-      scan(TEST_DIR);
-      
+
+      scan(testRootDir);
+
       expect(files.length).toBe(2);
     });
 
     it('excludes node_modules and .git', () => {
       const EXCLUDED_DIRS = ['node_modules', '.git', 'dist', 'coverage'];
-      
+
       expect(EXCLUDED_DIRS.includes('node_modules')).toBe(true);
       expect(EXCLUDED_DIRS.includes('.git')).toBe(true);
       expect(EXCLUDED_DIRS.includes('src')).toBe(false);
