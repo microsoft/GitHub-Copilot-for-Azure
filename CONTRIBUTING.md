@@ -46,11 +46,9 @@ Install the Azure plugin:
 
 ## Local Development Setup
 
-To develop and test skills locally, you'll configure Copilot to load the plugin directly from your cloned repository. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
+To develop and test skills locally, you'll need to link your cloned repository to the installed plugins folder. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
 
-> **Note:** You do not need to run `/plugin install azure@github-copilot-for-azure` when developing locally, but it is OK if you do. The setup below configures Copilot to use your local folder whether or not the plugin is already installed.
-
-> **⚠️ Warning:** Do NOT run `/plugin uninstall azure` or `/plugin update azure` while using the local setup. These commands may delete or overwrite files in your local repository since `cache_path` points directly to your cloned repo's `plugin/` folder. To stop using the local plugin, follow the [Reset Configuration](#6-reset-configuration-if-needed) instructions instead.
+> **Important:** Do NOT run `/plugin install azure@github-copilot-for-azure` when developing locally. The symlink setup below IS the installation. Running the install command would create a nested copy that shadows your local changes.
 
 ### 1. Fork and Clone the Repository
 
@@ -76,52 +74,47 @@ The easiest way to set up local development is using the provided scripts:
 # From the repository root
 cd scripts
 
-# Configure Copilot to use local plugin
+# Create the symlink
 npm run local setup
 
 # Verify the setup is correct
 npm run local verify
 ```
 
-The setup script will update `~/.copilot/config.json` to:
-- Add the `github-copilot-for-azure` marketplace entry
-- "Install" the `azure` plugin.
-- Set the plugin's `cache_path` to point directly to your local `plugin/` folder
+The setup script will:
+- Create a symlink from `~/.copilot/installed-plugins/github-copilot-for-azure` to your local `plugin/` folder
+- Handle Windows junction fallback if admin privileges aren't available
 
 The verify script will:
 - Check for nested plugin installs (which shadow your local changes)
-- Verify the marketplace and plugin configuration is correct
-- Confirm the plugin directory has the expected structure
+- Test that file changes propagate correctly via the symlink
+- Compare file contents between local and installed locations
 
 Use `npm run local verify --fix` to automatically fix common issues.
 
-### 3b. Manual Configuration (Alternative)
+### 3b. Manual Symlink Setup (Alternative)
 
-If you prefer to configure manually, edit `~/.copilot/config.json`:
+If you prefer to create the symlink manually:
 
-```json
-{
-  "marketplaces": {
-    "github-copilot-for-azure": {
-      "source": {
-        "source": "github",
-        "repo": "microsoft/github-copilot-for-azure"
-      }
-    }
-  },
-  "installed_plugins": [
-    {
-      "name": "azure",
-      "marketplace": "github-copilot-for-azure",
-      "installed_at": "2026-02-02T18:23:33.259Z",
-      "enabled": true,
-      "cache_path": "C:\\path\\to\\GitHub-Copilot-for-Azure\\plugin"
-    }
-  ]
-}
+#### Windows (Command Prompt - Run as Administrator)
+
+```cmd
+mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure\azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
-> **Note:** Replace `cache_path` with the actual path to your cloned repository's `plugin` folder. Use double backslashes on Windows or forward slashes on macOS/Linux.
+#### Windows (PowerShell - Run as Administrator)
+
+```powershell
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure\azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
+```
+
+#### macOS / Linux
+
+```bash
+ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure/azure
+```
+
+> **Note:** Replace the paths above with your actual cloned repository location.
 
 ### 4. Reloading Skills After Changes
 
@@ -137,33 +130,43 @@ After making changes to skills:
 
 > **Tip:** Use `/skills reload` for faster iteration during development.
 
-### 5. Verify the Configuration
+### 5. Verify the Symlink
 
-Verify that the configuration is correct:
+Verify that the symlink was created correctly:
 
 ```bash
 # Using the verify script (recommended)
 cd scripts
 npm run local verify
 
-# Or manually check config.json:
+# Or manually:
 # Windows (PowerShell)
-Get-Content "$env:USERPROFILE\.copilot\config.json" | ConvertFrom-Json | ConvertTo-Json -Depth 10
+Get-ChildItem "$env:USERPROFILE\.copilot\installed-plugins" | Format-List
 
 # macOS / Linux
-cat ~/.copilot/config.json | jq .
+ls -la ~/.copilot/installed-plugins/
 ```
 
-You should see the `azure` plugin with `cache_path` pointing to your cloned repository's `plugin` folder.
+You should see `github-copilot-for-azure` pointing to your cloned repository's `plugin` folder.
 
-### 6. Reset Configuration (If Needed)
+### 6. Remove an Existing Symlink (If Needed)
 
-If you need to reset the configuration or switch back to using the marketplace version:
+If you need to remove or recreate a symlink:
 
-1. Edit `~/.copilot/config.json`
-2. Remove the `azure` entry from `installed_plugins`
-3. Optionally remove the `github-copilot-for-azure` entry from `marketplaces`
-4. Run `/plugin install azure@github-copilot-for-azure` to install from the marketplace
+#### Windows (Command Prompt - Run as Administrator)
+```cmd
+rmdir "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure"
+```
+
+#### Windows (PowerShell - Run as Administrator)
+```powershell
+Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Force
+```
+
+#### macOS / Linux
+```bash
+rm ~/.copilot/installed-plugins/github-copilot-for-azure
+```
 
 ### 7. Testing Pull Requests Locally
 
@@ -206,51 +209,20 @@ git checkout main
 
 Skills are the core building blocks of GitHub Copilot for Azure. Each skill provides domain-specific knowledge and capabilities.
 
-> Please see [SKILL_BACKGROUND.md](SKILL_BACKGROUND.md) for background information on skills and general approaches to developing them, then return to this document for information specific to this repo.
-
-When implementing Azure skills it is useful to keep in mind the lifecycle of an Azure-based application and the different operations involved in each:
-
-- Development (creating applications that use Azure services)
-  - choosing services
-  - implementing best practices
-  - accessing services from code
-  - standing up one-off service instances
-- Deployment (getting those applications running in Azure)
-  - preparation
-  - validation
-  - deployment
-- Maintenance (keeping them running in a secure and optimal fashion)
-  - service review
-  - cost optimization
-  - compliance/security checks
-  - validating best practices
-  - production diagnostics
-
-When creating a skill try to identify the high-level operations that it should be involved in, and then include guidance and explicit steps to help that operation succeed. This approach may mean that the "same" information appears in multiple skills; for example, we may need a skill to provide best practices around RBAC during development, and a separate skill to validate that RBAC is being used properly as part of maintenance. The two skills will contain similar information but be designed around different operations.
-
 ### Skill Structure
 
 Skills are located under `plugin/skills/`. Each skill folder should contain:
 
 ```
 plugin/skills/your-skill-name/
-├── SKILL.md              ◄── Primary skill definition (frontmatter + workflow)
-│   ├── ---
-│   │   name: your-skill-name
-│   │   description: |
-│   │     **WORKFLOW SKILL** - [description]
-│   │     USE FOR: [triggers]
-│   │     DO NOT USE FOR: [anti-triggers]
-│   │     INVOKES: [mcp tools]
-│   │   ---
-│   └── [Workflow body with steps]
-│
-├── references/           ◄── Supplemental materials (deep-dive docs)
-│   ├── services/             • Service-specific guidance
-│   ├── recipes/              • Step-by-step procedures
-│   └── patterns/             • Reusable patterns
-│
-└── scripts/              ◄── Automation scripts
+├── SKILL.md              # Main skill definition (required)
+├── LICENSE.txt           # License file (if applicable)
+├── references/           # Additional reference documentation
+│   └── *.md
+├── examples/             # Example code and templates
+│   └── *
+└── scripts/              # Helper scripts
+    └── *
 ```
 
 ### Creating a New Skill
@@ -282,132 +254,6 @@ _NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstorm
 - Test your skill thoroughly before submitting
 - **Follow the [Agent Skills Specification](https://agentskills.io/specification)**
 - See [.github/skills/skill-authoring/SKILL.md](.github/skills/skill-authoring/SKILL.md) for detailed guidelines
-
-### Running Sensei for Compliance
-
-**Sensei** is an automated tool that improves skill frontmatter compliance using the Ralph loop pattern. It iteratively refines skills until they reach **Medium-High** compliance with passing tests.
-
-#### When to Run Sensei
-
-| Use Case | Command |
-|----------|---------|
-| Before committing a new skill | `Run sensei on <skill-name>` |
-| After updating skill description/triggers | `Run sensei on <skill-name>` |
-| Fast iteration (skip integration tests) | `Run sensei on <skill-name> --skip-integration` |
-| Audit multiple skills | `Run sensei on <skill1>, <skill2>` |
-| Audit all Low-adherence skills | `Run sensei on all Low-adherence skills` |
-
-#### Usage
-
-In your Copilot CLI session, invoke the sensei skill:
-
-```
-Run sensei on azure-deploy
-```
-
-Sensei will analyze the skill and produce an assessment:
-
-```
-## 📊 SENSEI ASSESSMENT: azure-deploy
-
-### Current State
-
-**Frontmatter:**
-name: azure-deploy
-description: "Execute Azure deployments after preparation and validation are complete.
-  USE FOR: azd up, azd deploy, push to Azure, publish to Azure, ship to production...
-  DO NOT USE FOR: preparing new apps (use azure-prepare), validating before deploy..."
-
-### Scoring
-
-| Criteria | Status | Notes |
-|----------|--------|-------|
-| Description > 150 chars | ✅ | ~540 chars |
-| Has "USE FOR:" triggers | ✅ | 14 trigger phrases |
-| Has "DO NOT USE FOR:" | ✅ | 3 anti-triggers with redirects |
-| Description < 1024 chars | ✅ | ~540 chars |
-| SKILL.md < 500 tokens | ✅ | ~450 tokens estimate |
-| Tests exist | ✅ | Unit, trigger, and integration tests |
-
-### **Score: Medium-High** ✅
-```
-
-After improvements, sensei displays a before/after summary:
-
-```
-## 📊 SENSEI SUMMARY: azure-deploy
-
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Score** | Medium-High | Medium-High ✅ |
-| **Test Files** | 1 (integration only) | 3 (unit + triggers + integration) |
-| **Tests Passing** | N/A | 43/43 ✅ |
-```
-
-Sensei then prompts you to **Commit**, **Create Issue**, or **Skip**.
-
-#### Test Scaffolding
-
-If tests don't exist for your skill, sensei automatically scaffolds them from the `tests/_template/` directory:
-
-- `triggers.test.ts` - Tests that verify skill triggers on appropriate prompts
-- `unit.test.ts` - Tests for skill metadata and content validation
-
-The scaffolded tests include parameterized test cases for:
-- **Should Trigger** prompts - phrases that should activate the skill
-- **Should NOT Trigger** prompts - phrases that should not activate (anti-triggers)
-
-> **Note:** Tests must pass before sensei prompts for action. Review and adjust the generated test prompts to match your skill's actual triggers.
-
-#### Running Integration Tests
-
-After sensei completes, run integration tests to verify skill invocation:
-
-```bash
-cd tests
-npm run test:integration -- --testPathPattern=<skillname>
-```
-
-**Example output:**
-
-```
-PASS azure-deploy/integration.test.ts
-  azure-deploy - Integration Tests
-    ✓ invokes azure-deploy skill for deployment prompt
-    ✓ invokes azure-deploy skill for publish to Azure prompt
-    ✓ creates whiteboard application and deploys to Azure
-    ✓ creates discussion board and deploys to Azure
-    ✓ creates todo list with frontend and API and deploys to Azure
-
-Test Suites: 1 passed, 1 total
-Tests:       5 passed, 5 total
-```
-
-> **Prerequisites:** Integration tests require `@github/copilot-cli` installed and authenticated. Some tests may require `azd auth login`.
-
-#### Scoring Metrics
-
-Sensei evaluates skills against these compliance levels:
-
-| Score | Requirements |
-|-------|--------------|
-| **Low** | Description < 150 chars (always Low), OR missing explicit triggers/anti-triggers |
-| **Medium** | Description ≥ 150 chars, has trigger keywords/phrases, may lack full `USE FOR:`/`DO NOT USE FOR:` structure |
-| **Medium-High** ⭐ | Has `USE FOR:` triggers AND `DO NOT USE FOR:` anti-triggers |
-| **High** | Medium-High + `compatibility` field documenting requirements |
-
-**Target: Medium-High** - All skills should have explicit triggers and anti-triggers.
-
-**Token Budgets:**
-
-| File | Soft Limit | Hard Limit |
-|------|------------|------------|
-| SKILL.md | 500 tokens | 5000 tokens |
-| Description | — | 1024 chars |
-
----
-
-> **📚 Reference:** See [sensei skill](.github/skills/sensei/SKILL.md) for full documentation, including the complete Ralph loop workflow and detailed scoring criteria. Related: [skill-authoring](.github/skills/skill-authoring/SKILL.md), [markdown-token-optimizer](.github/skills/markdown-token-optimizer/SKILL.md).
 
 ### Token Management
 

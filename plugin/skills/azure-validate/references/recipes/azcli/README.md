@@ -88,7 +88,7 @@ See [Policy Validation Guide](../../policy-validation.md) for instructions on re
 
 ## References
 
-- [Error handling](mdc:errors.md)
+- [Error handling](./errors.md)
 
 ## Next
 

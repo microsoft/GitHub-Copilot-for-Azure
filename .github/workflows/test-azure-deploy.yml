@@ -12,8 +12,8 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      group-name:
-        description: 'Deploy test group name to run (e.g. static-web-apps-deploy). If empty, all groups will be run.'
+      test-pattern:
+        description: 'Optional: Filter tests by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
         required: false
         type: string
         default: ''
@@ -22,10 +22,6 @@ on:
         required: false
         type: boolean
         default: false
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
@@ -66,9 +62,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: tests/package-lock.json
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       - name: Install dependencies
         run: npm ci
@@ -91,25 +97,26 @@ jobs:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}
         run: |
-          if [ -n "${{ inputs.group-name }}" ]; then
-            TEST_ARGS="--testNamePattern=${{ inputs.group-name }}"
+          if [ -n "${{ inputs.test-pattern }}" ]; then
+            npm run test:integration -- --testPathPattern="azure-deploy" --testNamePattern="${{ inputs.test-pattern }}"
+          else
+            npm run test:integration -- --testPathPattern="azure-deploy"
           fi
-          npm run test:integration -- --testPathPattern="azure-deploy" $TEST_ARGS
         continue-on-error: true
 
       - name: Generate report
         id: generate-report
-        run: npm run report
+        run: npm run report -- --skill azure-deploy
 
-      - name: Show master report
-        id: show-master-report
+      - name: Show skill report
+        id: show-skill-report
         run: |
-          MASTER_REPORT=$(find reports -name "*-MASTER-REPORT.md" -type f | head -n 1)
-          if [ -n "$MASTER_REPORT" ]; then
-            echo "Found master report: $MASTER_REPORT"
-            cat "$MASTER_REPORT" >> "$GITHUB_STEP_SUMMARY"
+          SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
+          if [ -n "$SKILL_REPORT" ]; then
+            echo "Found skill report: $SKILL_REPORT"
+            cat "$SKILL_REPORT" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "No master report found"
+            echo "No skill report found"
           fi
 
       - name: Export report

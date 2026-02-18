@@ -127,7 +127,7 @@ variable "environment_name" {
 variable "location" {
   type        = string
   description = "Azure region"
-  default     = "eastus"
+  default     = "eastus2"
 }
 
 variable "principal_id" {
@@ -212,7 +212,7 @@ resource "azurerm_resource_group" "main" {
 azd env new dev
 
 # 2. Set required variables
-azd env set AZURE_LOCATION eastus
+azd env set AZURE_LOCATION eastus2
 
 # 3. Provision infrastructure (runs terraform init, plan, apply)
 azd provision
@@ -243,7 +243,7 @@ variable "database_name" {
 
 ```bash
 # Create state storage (one-time setup)
-az group create --name rg-terraform-state --location eastus
+az group create --name rg-terraform-state --location eastus2
 
 az storage account create \
   --name tfstate<unique> \

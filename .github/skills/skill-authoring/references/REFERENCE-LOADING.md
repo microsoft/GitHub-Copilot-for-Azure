@@ -14,7 +14,22 @@ See [the guide](references/guide.md) for details.
 
 <!-- This does NOT trigger a load -->
 Documentation is available in the references folder.
+
+<!-- This does NOT work - folder links don't load content -->
+See [recipes](references/recipes/) for options.
 ```
+
+### Link to Files, Not Folders
+
+**Critical:** Always link to actual files, never directories. Folder references don't trigger content loading.
+
+| ❌ Won't Load | ✅ Will Load |
+|---------------|--------------|
+| `[Recipes](references/recipes/)` | `[Recipes](references/recipes/README.md)` |
+| `[AZD](references/recipes/azd)` | `[AZD](references/recipes/azd/README.md)` |
+| `[Services](references/services)` | `[Services](references/services/README.md)` |
+
+Use `README.md` as the entry point for folder-organized content.
 
 ### No Caching Between Requests
 
@@ -57,20 +72,6 @@ Choose your approach:
 <!-- Result: Only chosen recipe loads (~300 tokens) -->
 <!-- Not all recipes (~900 tokens) -->
 ```
-
-### Avoid Reference Chains
-
-```
-❌ Bad: Multiple hops
-SKILL.md → guide.md → details.md → advanced.md
-
-✅ Good: Flat structure
-SKILL.md → guide.md
-SKILL.md → details.md
-SKILL.md → advanced.md
-```
-
-Spec recommends: **One level deep from SKILL.md**
 
 ## Self-Contained Reference Example
 

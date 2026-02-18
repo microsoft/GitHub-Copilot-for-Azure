@@ -214,14 +214,13 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 2. `azure-diagnostics`
 3. `azure-security`
 4. `azure-security-hardening`
-5. `azure-networking`
-6. `azure-observability`
-7. `azure-storage`
-8. `azure-ai`
-9. `azure-validation`
-10. `azure-nodejs-production`
-11. `entra-app-registration`
-12. `azure-role-selector`
+5. `azure-observability`
+6. `azure-storage`
+7. `azure-ai`
+8. `azure-validation`
+9. `azure-nodejs-production`
+10. `entra-app-registration`
+11. `azure-rbac`
 
 ### Medium-Adherence Skills
 

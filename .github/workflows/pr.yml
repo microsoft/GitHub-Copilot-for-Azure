@@ -28,6 +28,10 @@ jobs:
         working-directory: ./tests
         run: npm ci
 
+      - name: Typecheck
+        working-directory: ./tests
+        run: npm run typecheck
+
       - name: Lint test
         working-directory: ./tests
         run: npm run lint
@@ -217,6 +221,79 @@ jobs:
           
           echo "All skill files have valid frontmatter"
 
+      - name: Check skill name prefix conflicts
+        if: steps.changed-skills.outputs.any_changed == 'true'
+        run: |
+          # Collect toplevel skill directory names under plugin/skills
+          NAMES=$(ls -d plugin/skills/*/ | xargs -n1 basename)
+          
+          # Check if any name is a prefix of another
+          while IFS= read -r a; do
+            while IFS= read -r b; do
+              if [ "$a" != "$b" ] && [[ "$b" == "$a"* ]]; then
+                echo "error: Skill name '$a' is a prefix of '$b'"
+                exit 1
+              fi
+            done <<< "$NAMES"
+          done <<< "$NAMES"
+
       - name: Skip message
         if: steps.changed-skills.outputs.any_changed != 'true'
         run: echo "No skill files changed - skipping validation"
+
+  # Validate markdown references
+  reference-check:
+    name: Markdown References
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check changed skill markdown files
+        id: changed-markdown
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            plugin/skills/**/*.md
+            .github/skills/**/*.md
+
+      - name: Setup Node.js
+        if: steps.changed-markdown.outputs.any_changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package.json
+
+      - name: Install scripts dependencies
+        if: steps.changed-markdown.outputs.any_changed == 'true'
+        working-directory: ./scripts
+        run: npm ci
+
+      - name: Validate markdown references
+        if: steps.changed-markdown.outputs.any_changed == 'true'
+        working-directory: ./scripts
+        run: |
+          echo "## Markdown Reference Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Run reference check and capture output
+          if OUTPUT=$(npm run references 2>&1); then
+            echo "$OUTPUT"
+            echo "✅ All markdown references are valid" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "$OUTPUT"
+            echo "❌ Found broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Skip message
+        if: steps.changed-markdown.outputs.any_changed != 'true'
+        run: echo "No skill markdown files changed - skipping reference check"

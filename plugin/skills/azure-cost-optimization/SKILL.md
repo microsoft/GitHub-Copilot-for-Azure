@@ -122,6 +122,8 @@ extension_azqr({
 
 ### Step 3: Discover Resources
 
+For efficient cross-subscription resource discovery, use Azure Resource Graph. See [Azure Resource Graph Queries](references/azure-resource-graph.md) for orphaned resource detection and cost optimization patterns.
+
 List all resources in the subscription using Azure MCP tools or CLI:
 
 ```powershell
@@ -389,3 +391,7 @@ The skill generates:
 - Provide dry-run commands for validation
 - Include rollback procedures
 - Monitor impact after implementation
+
+## SDK Quick References
+
+- **Redis Management**: [.NET](references/sdk/azure-resource-manager-redis-dotnet.md)
