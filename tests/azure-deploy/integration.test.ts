@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks, softCheckDeploySkills} from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, hasTerraformFiles, hasBicepFiles } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
@@ -37,7 +37,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000;
 const brownfieldTestTimeoutMs = 2700000;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes azure-deploy skill for deployment prompt", async () => {
@@ -136,8 +136,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website", async () => {
@@ -149,8 +151,26 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates static portfolio website with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -165,8 +185,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
       
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
@@ -178,8 +200,26 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates todo list with frontend and API using Terraform", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
@@ -194,8 +234,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
       
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app", async () => {
@@ -207,8 +249,26 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates URL shortener service with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates Python function app with Service Bus trigger", async () => {
@@ -241,8 +301,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app", async () => {
@@ -254,8 +316,26 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasBicep = hasBicepFiles(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
+      expect(hasBicep).toBe(true);
+    }, deployTestTimeoutMs);
+
+    // Terraform test
+    test("creates social media application with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a simple social media application with likes and comments and deploy to Azure using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(containsDeployLinks).toBe(true);
+      expect(hasTerraform).toBe(true);
     }, deployTestTimeoutMs);
   });
 
