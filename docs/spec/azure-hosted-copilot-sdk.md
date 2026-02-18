@@ -6,7 +6,9 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 
 **Scope:** Copilot SDK app development + Azure hosting only. Foundry agent lifecycle (package/deploy/invoke) is handled by the `microsoft-foundry` skill (#865). Agent Framework integration is handled by the `agent-framework` skill.
 
-## Current Status — PR #880
+## Current Status — PR [#880](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/880)
+
+**Branch:** `github-copilot-integration` | **State:** Open, mergeable, blocked (`pending-owner-action`) | **29 commits, 38 files changed**
 
 ### Skill Files — ✅ Complete
 
@@ -36,13 +38,13 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | `AGENTS.md` | Added Key Files table + Model Configuration section | ✅ Updated |
 | `README.md` | Three model paths, chat endpoint, updated architecture diagrams | ✅ Updated |
 
-### Test Automation — ✅ Tests updated, ⚠️ Skill routing issue persists
+### Test Automation — ✅ Tests complete, ⚠️ Skill routing issue persists
 
 | Test File | Tests | Status |
 |-----------|-------|--------|
-| `triggers.test.ts` | 23 tests (10 trigger, 8 negative, 5 edge) | ✅ Updated — removed Foundry triggers |
-| `unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ Updated — checks `copilot-sdk-service` and `AZURE_OPENAI_ENDPOINT` |
-| `integration.test.ts` | 4 invocation rate + 2 content quality | ✅ Updated — removed Foundry/agent from prompts |
+| `triggers.test.ts` | 23 tests (10 trigger, 8 negative, 5 edge) | ✅ Complete — removed Foundry triggers |
+| `unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ Complete — checks `copilot-sdk-service` and `AZURE_OPENAI_ENDPOINT` |
+| `integration.test.ts` | 4 invocation rate + 2 content quality | ✅ Complete — removed Foundry/agent from prompts |
 | `__snapshots__/triggers.test.ts.snap` | Keyword snapshots | ✅ Regenerated |
 | `regression-detectors.ts` | `countApiKeyInByomConfig()` detector | ✅ Unchanged |
 
@@ -50,14 +52,32 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 - Content quality tests (2): ✅ **Passing** — agent produces correct Copilot SDK and BYOM output
 - Invocation rate tests (4): ❌ **0% rate** — `azure-prepare` skill captures prompts first
 
+### Local Template Support (`azd init` from local path) — ✅ Complete (separate repo)
+
+Support for `azd init --template <local-dir>` has been implemented in the `azure-dev` CLI repo (`C:\code\azure-dev`, branch `feature/local-template-support`). This enables template development workflows where uncommitted changes need to be tested without pushing to GitHub first.
+
+| Component | Change | Status |
+|-----------|--------|--------|
+| `pkg/templates/path.go` | `Absolute()` detects local dirs via `os.Stat()`, `IsLocalPath()` helper | ✅ Implemented |
+| `internal/repository/initializer.go` | `copyLocalTemplate()` with `.gitignore` support, local/remote branching | ✅ Implemented |
+| `cmd/init.go` | `--template` flag help text updated to mention local paths | ✅ Updated |
+| `pkg/templates/path_test.go` | 13 test cases (local dirs, URLs, git URIs, edge cases) | ✅ Passing |
+| `internal/repository/initializer_test.go` | 3 new tests (local copy, `.git` exclusion, `.gitignore` respect) | ✅ Passing |
+
+**Key design decisions:**
+- Uses `copy.Copy()` (not `git clone`) to preserve uncommitted/unstaged changes
+- Excludes `.git/` directory from copy (destination gets fresh `git init`)
+- Respects `.gitignore` rules via `go-gitignore` so `node_modules/`, `build/`, `.env` etc. are excluded
+- File handle properly closed after reading `.gitignore` (fixed `gitignore.NewFromFile()` → `gitignore.New()` + `f.Close()`)
+
 ### PR Conflict Check — ✅ No conflicts
 
-| PR | Owner | Scope | Conflicts? |
-|----|-------|-------|------------|
-| #865 | ankitbko | `plugin/skills/microsoft-foundry/agent/` | ❌ None |
-| #914 | kuojianlu | `plugin/skills/agent-framework/` (draft) | ❌ None |
-| #915 | anchenyi | `plugin/skills/agent-framework/` (draft) | ❌ None |
-| #938 | JasonYeMSFT | `.github/workflows/` | ❌ None |
+| PR | Owner | Scope | Status | Conflicts? |
+|----|-------|-------|--------|------------|
+| #865 | ankitbko | `plugin/skills/microsoft-foundry/agent/` | Open | ❌ None |
+| #914 | kuojianlu | `plugin/skills/agent-framework/` (draft) | Open | ❌ None |
+| #915 | anchenyi | `plugin/skills/agent-framework/` (draft) | Open | ❌ None |
+| #938 | JasonYeMSFT | `.github/workflows/` | ✅ Merged | N/A |
 
 ### What Changed in This PR (Summary)
 
@@ -74,6 +94,7 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 - `model-config.ts` shared module with per-request token refresh for Azure BYOM
 - Conditional Azure OpenAI Bicep resources for BYOM
 - Additional SDK-specific trigger phrases (`@github/copilot-sdk`, `CopilotClient`, `createSession`, etc.)
+- Local template support in `azd init` for template development workflows (separate `azure-dev` repo)
 
 ## Architecture
 
@@ -140,12 +161,18 @@ azure-samples/copilot-sdk-service/
 
 Current template is TypeScript/Express only. Future templates for Python (FastAPI), Go, and .NET.
 
+### P2 — Plugin-Side Template Source Configuration
+
+Add ability for the `azure-hosted-copilot-sdk` skill to reference local template directories (using the `azd init --template <local-dir>` support added in the `azure-dev` CLI). This would enable the skill to point at a local template checkout during development instead of always pulling from `azure-samples/copilot-sdk-service`.
+
 ## Known Issues
 
 | Issue | Impact | Severity |
 |-------|--------|----------|
-| Skill rarely invoked by agent (low invocation rate) | Users don't get skill-specific guidance; `azure-prepare` captures prompts first | **High** |
+| Skill rarely invoked by agent (0% invocation rate) | Users don't get skill-specific guidance; `azure-prepare` captures prompts first | **High** |
+| PR #880 title is stale ("Add Copilot SDK azure agent Skill") | Doesn't reflect rename to `azure-hosted-copilot-sdk` or scope changes | Low |
 | `listModels()` doesn't return Azure deployments | Users must use CLI to discover deployment names | Low |
+| PR #938 already merged | Conflict check table entry is now historical | Info |
 
 ## File Inventory
 
@@ -162,11 +189,19 @@ docs/spec/
 └── azure-hosted-copilot-sdk.md                 # This file — feature status
 
 tests/azure-hosted-copilot-sdk/
-├── integration.test.ts                         # 6 integration tests (invocation rate + content)
+├── integration.test.ts                         # 6 integration tests (4 invocation rate + 2 content)
 ├── triggers.test.ts                            # 23 trigger matching tests
 ├── unit.test.ts                                # 17 unit tests
 └── __snapshots__/triggers.test.ts.snap         # Trigger keyword snapshots
 
 tests/utils/
 └── regression-detectors.ts                     # countApiKeyInByomConfig() detector
+
+# Related: azure-dev CLI local template support
+# Branch: feature/local-template-support in C:\code\azure-dev
+cli/azd/pkg/templates/path.go                   # Absolute() + IsLocalPath()
+cli/azd/pkg/templates/path_test.go              # 13 test cases
+cli/azd/internal/repository/initializer.go      # copyLocalTemplate() with .gitignore
+cli/azd/internal/repository/initializer_test.go # 3 local template tests
+cli/azd/cmd/init.go                             # Updated --template help text
 ```
