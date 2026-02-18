@@ -54,3 +54,28 @@ export function expectFiles(
     expect(hasFile(files, pattern)).toBe(false);
   }
 }
+
+/**
+ * Read azure.yaml and return the docker context for a given service.
+ * Uses a simple regex approach to avoid a YAML parsing dependency.
+ * Returns undefined if the file doesn't exist, the service isn't found,
+ * or the service has no docker.context.
+ */
+export function getDockerContext(
+  workspacePath: string,
+  serviceName: string,
+): string | undefined {
+  const azureYamlPath = path.join(workspacePath, "azure.yaml");
+  if (!fs.existsSync(azureYamlPath)) return undefined;
+
+  const content = fs.readFileSync(azureYamlPath, "utf-8");
+
+  // Match the service block and find context: value within its docker: section
+  // Looks for: <serviceName>:\n  ...\n    docker:\n      ...\n      context: <value>
+  const servicePattern = new RegExp(
+    `^[ \\t]*${serviceName}:\\s*$[\\s\\S]*?^[ \\t]+docker:\\s*$[\\s\\S]*?^[ \\t]+context:\\s*(.+)$`,
+    "m"
+  );
+  const match = content.match(servicePattern);
+  return match?.[1]?.trim();
+}
