@@ -1,0 +1,79 @@
+name: Publish to microsoft/skills
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-and-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the current repo
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          path: source-repo
+
+      # 2. Clone the main branch of microsoft/skills and create a feature branch
+      - name: Clone microsoft/skills and create feature branch
+        env:
+          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+        run: |
+          gh repo clone microsoft/skills target-repo -- --branch main --single-branch
+
+          cd target-repo
+          BRANCH_NAME="sync/copilot-for-azure-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+
+      # 3. Sync files from source to target (mirror: add new, update existing, remove stale)
+      - name: Sync files
+        run: |
+          SOURCE_DIR="source-repo/plugin/"
+          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+
+          # Ensure target directory exists
+          mkdir -p "$TARGET_DIR"
+
+          # Use rsync to mirror source into target:
+          #   --archive   preserve permissions, timestamps, etc.
+          #   --delete    remove files in target that are no longer in source
+          #   --verbose   list changes
+          rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
+
+      # 4. Commit changes and create a PR
+      - name: Commit and push changes
+        id: commit
+        working-directory: target-repo
+        env:
+          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Sync plugin files from GitHub-Copilot-for-Azure"
+            git push origin "$BRANCH_NAME"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+        run: |
+          cd target-repo
+          gh pr create \
+            --repo "microsoft/skills" \
+            --base "main" \
+            --head "$BRANCH_NAME" \
+            --title "Sync plugin files from GitHub-Copilot-for-Azure (run ${{ github.run_id }})" \
+            --body "Automated sync of \`plugin/\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
