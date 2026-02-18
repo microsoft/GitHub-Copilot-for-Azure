@@ -62,7 +62,31 @@ azd init --from-code -e "$ENV_NAME"
 - With `--from-code`, azd automatically detects the AppHost and proceeds without prompts
 - This is essential for automation, agents, and CI/CD pipelines
 
-### Step 3: What azd Generates
+### Step 3: Configure Subscription and Location
+
+> **⛔ CRITICAL**: After `azd init --from-code` completes, you **MUST** immediately set the user-confirmed subscription and location.
+>
+> **DO NOT** skip this step or delay it until validation. The `azd init` command creates an environment but does NOT inherit the Azure CLI's subscription. If you skip this step, azd will use its own default subscription, which may differ from the user's confirmed choice.
+
+**Set the subscription and location immediately after initialization:**
+
+```bash
+# Set the user-confirmed subscription ID
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+
+# Set the location
+azd env set AZURE_LOCATION <location>
+```
+
+**Verify the configuration:**
+
+```bash
+azd env get-values
+```
+
+Confirm that `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` match the user's confirmed choices from [Azure Context](azure-context.md).
+
+### Step 4: What azd Generates
 
 `azd init --from-code` creates:
 
@@ -99,10 +123,20 @@ services:
 | `-e <name>` | ✅ Yes | Environment name (required for non-interactive) |
 | `--no-prompt` | Optional | Skip additional confirmations |
 
-**Complete command:**
+**Complete initialization sequence:**
 ```bash
+# 1. Initialize the environment
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init --from-code -e "$ENV_NAME"
+
+# 2. IMMEDIATELY set the user-confirmed subscription
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+
+# 3. Set the location
+azd env set AZURE_LOCATION <location>
+
+# 4. Verify configuration
+azd env get-values
 ```
 
 ## Common Aspire Samples
@@ -137,6 +171,25 @@ azd init --from-code -e "my-env"
 1. Verify AppHost project exists: `find . -name "*.AppHost.csproj"`
 2. Check project builds: `dotnet build`
 3. Ensure Aspire.Hosting package is referenced in AppHost project
+
+### Error: azd uses wrong subscription despite user confirmation
+
+**Symptoms:** `azd provision --preview` shows a different subscription than the one the user confirmed
+
+**Cause:** The `AZURE_SUBSCRIPTION_ID` was not set immediately after `azd init --from-code`. The Azure CLI and azd can have different default subscriptions.
+
+**Solution:** Always set the subscription immediately after initialization:
+
+```bash
+# After azd init --from-code completes:
+azd env set AZURE_SUBSCRIPTION_ID <user-confirmed-subscription-id>
+azd env set AZURE_LOCATION <location>
+
+# Verify before proceeding:
+azd env get-values
+```
+
+**Prevention:** Follow the complete initialization sequence in the [Flags Reference](#azd-init-for-aspire) section above.
 
 ## References
 

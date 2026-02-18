@@ -12,6 +12,8 @@ Generate infrastructure and configuration files based on selected recipe.
 | **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code` |
 
 > ⚠️ **For .NET Aspire projects:** Do NOT manually create azure.yaml. Use `azd init --from-code` instead to auto-detect the AppHost. See [aspire.md](aspire.md) for details.
+>
+> **CRITICAL:** After running `azd init --from-code`, you **MUST** immediately set the user-confirmed subscription with `azd env set AZURE_SUBSCRIPTION_ID <id>`. Do NOT skip this step. See [aspire.md](aspire.md) Step 3 for the complete sequence.
 
 ## CRITICAL: Research Must Be Complete
 
