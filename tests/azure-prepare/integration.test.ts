@@ -220,7 +220,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       );
     });
 
-    test("creates correct files for AZD with Terraform recipe", async () => {
+    test("creates correct files for Terraform recipe", async () => {
       let workspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
@@ -238,8 +238,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
       expectFiles(workspacePath!,
-        [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.tf$/],
-        [/\.bicep$/],
+        [/plan\.md$/, /infra\/.*\.tf$/],
+        [/\.bicep$/, /azure\.yaml$/],
       );
     });
 
