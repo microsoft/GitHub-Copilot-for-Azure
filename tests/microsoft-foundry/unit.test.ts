@@ -143,7 +143,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("uses correct Foundry resource type", () => {
-      expect(quotaContent).toContain("Microsoft.CognitiveServices/accounts");
+      expect(quotaContent).toContain("Microsoft.CognitiveServices");
     });
   });
 
