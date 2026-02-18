@@ -44,6 +44,27 @@ Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
 
 ### Bicep App Settings Block
 
+**RECOMMENDED: Use the module's `appSettings` output** (prevents missing settings):
+
+```bicep
+// In main.bicep - pass UAMI clientId to the module
+module eventhubs './app/eventhubs.bicep' = {
+  name: 'eventhubs'
+  params: {
+    name: abbrs.eventHubNamespaces
+    location: location
+    tags: tags
+    functionAppPrincipalId: apiUserAssignedIdentity.outputs.principalId
+    uamiClientId: apiUserAssignedIdentity.outputs.clientId  // REQUIRED for UAMI
+  }
+}
+
+// Merge app settings (ensures all UAMI settings are included)
+var appSettings = union(baseAppSettings, eventhubs.outputs.appSettings)
+```
+
+**ALTERNATIVE: Manual settings** (only if customization needed):
+
 ```bicep
 appSettings: {
   // Event Hubs recipe: UAMI connection settings

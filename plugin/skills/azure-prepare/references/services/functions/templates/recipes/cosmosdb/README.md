@@ -33,11 +33,50 @@ Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
 
 ## App Settings to Add
 
+> **CRITICAL: UAMI requires explicit credential configuration.**
+> Unlike System Assigned MI, User Assigned MI needs `credential` and `clientId` settings.
+
 | Setting | Value | Purpose |
 |---------|-------|---------|
-| `COSMOS_CONNECTION__accountEndpoint` | `https://{account}.documents.azure.com:443/` | Managed identity connection (double underscore = MI) |
+| `COSMOS_CONNECTION__accountEndpoint` | `https://{account}.documents.azure.com:443/` | Cosmos account endpoint |
+| `COSMOS_CONNECTION__credential` | `managedidentity` | Use managed identity auth |
+| `COSMOS_CONNECTION__clientId` | `{uami-client-id}` | UAMI client ID (from base template) |
 | `COSMOS_DATABASE_NAME` | `documents-db` | Database to monitor |
 | `COSMOS_CONTAINER_NAME` | `documents` | Container to monitor |
+
+### Bicep App Settings Block
+
+**RECOMMENDED: Use the module's `appSettings` output** (prevents missing settings):
+
+```bicep
+// In main.bicep - pass UAMI clientId to the module
+module cosmos './app/cosmos.bicep' = {
+  name: 'cosmos'
+  scope: rg
+  params: {
+    name: name
+    location: location
+    tags: tags
+    functionAppPrincipalId: apiUserAssignedIdentity.outputs.principalId
+    uamiClientId: apiUserAssignedIdentity.outputs.clientId  // REQUIRED for UAMI
+  }
+}
+
+// Merge app settings (ensures all UAMI settings are included)
+var appSettings = union(baseAppSettings, cosmos.outputs.appSettings)
+```
+
+**ALTERNATIVE: Manual settings** (only if customization needed):
+
+```bicep
+appSettings: {
+  COSMOS_CONNECTION__accountEndpoint: cosmos.outputs.cosmosAccountEndpoint
+  COSMOS_CONNECTION__credential: 'managedidentity'
+  COSMOS_CONNECTION__clientId: apiUserAssignedIdentity.outputs.clientId
+  COSMOS_DATABASE_NAME: cosmos.outputs.cosmosDatabaseName
+  COSMOS_CONTAINER_NAME: cosmos.outputs.cosmosContainerName
+}
+```
 
 > **Note:** The `__accountEndpoint` suffix signals the Functions runtime to use managed identity
 > instead of a connection string. No keys or connection strings are stored.

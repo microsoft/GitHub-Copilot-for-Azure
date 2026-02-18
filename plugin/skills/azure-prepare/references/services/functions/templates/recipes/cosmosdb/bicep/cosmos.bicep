@@ -159,3 +159,25 @@ output cosmosAccountEndpoint string = cosmosAccount.properties.documentEndpoint
 output cosmosAccountName string = cosmosAccount.name
 output cosmosDatabaseName string = databaseName
 output cosmosContainerName string = containerName
+
+// ============================================================================
+// APP SETTINGS OUTPUT - Use this to ensure correct UAMI configuration
+// ============================================================================
+// IMPORTANT: Always use this output instead of manually constructing app settings.
+// Pass the UAMI clientId from the base template's identity module.
+//
+// Usage in main.bicep:
+//   var cosmosAppSettings = cosmos.outputs.appSettings
+//   // Then merge: union(baseAppSettings, cosmosAppSettings)
+// ============================================================================
+
+@description('UAMI client ID from base template identity module - REQUIRED for UAMI auth')
+param uamiClientId string = ''
+
+output appSettings object = {
+  COSMOS_CONNECTION__accountEndpoint: cosmosAccount.properties.documentEndpoint
+  COSMOS_CONNECTION__credential: 'managedidentity'
+  COSMOS_CONNECTION__clientId: uamiClientId
+  COSMOS_DATABASE_NAME: databaseName
+  COSMOS_CONTAINER_NAME: containerName
+}

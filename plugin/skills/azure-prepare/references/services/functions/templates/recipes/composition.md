@@ -4,6 +4,11 @@ Step-by-step algorithm for composing a base HTTP template with an integration re
 
 > **This is the authoritative process. Follow it exactly.**
 
+> ⛔ **CRITICAL: Read [common/uami-bindings.md](common/uami-bindings.md) before any deployment.**
+> Base templates use User Assigned Managed Identity (UAMI). ALL service bindings require
+> explicit `credential` and `clientId` app settings. Failure to include these causes
+> 500/401/403 errors at runtime.
+
 ## Algorithm
 
 ```
@@ -124,6 +129,24 @@ appSettings: {
 app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
 ```
 
+### Step 4.5: VALIDATE App Settings (MANDATORY)
+
+**Before proceeding, verify these UAMI settings exist for EVERY service binding:**
+
+| Setting Pattern | Required? | Example |
+|-----------------|-----------|---------|
+| `{Connection}__fullyQualifiedNamespace` or `{Connection}__accountEndpoint` | ✅ Yes | `EventHubConnection__fullyQualifiedNamespace` |
+| `{Connection}__credential` | ✅ Yes | `EventHubConnection__credential: 'managedidentity'` |
+| `{Connection}__clientId` | ✅ Yes | `EventHubConnection__clientId: uamiClientId` |
+
+**Validation Checklist:**
+- [ ] Each service binding has all THREE settings (namespace/endpoint + credential + clientId)
+- [ ] `credential` value is exactly `'managedidentity'` (not `'ManagedIdentity'` or other)
+- [ ] `clientId` references the UAMI from base template (e.g., `apiUserAssignedIdentity.outputs.clientId`)
+- [ ] No connection strings or SAS keys are used
+
+> ⛔ **STOP if any check fails.** The function WILL fail at runtime with 500/Unauthorized errors.
+
 ### Step 5: Replace Source Code
 
 1. Read `recipes/{integration}/source/{language}.md`
@@ -208,6 +231,10 @@ Some integrations require additional storage endpoints. Toggle these in `main.bi
 4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
 5. **ALWAYS verify the base template initialized successfully** before applying recipe
 6. **ALWAYS keep `allowSharedKeyAccess: false`** — never enable local auth on storage
-7. **ALWAYS keep `disableLocalAuth: true`** — never enable local auth on Cosmos DB/Event Hubs
+7. **ALWAYS keep `disableLocalAuth: true`** — never enable local auth on Cosmos DB/Event Hubs/Service Bus
 8. **ALWAYS wait for RBAC propagation** — use two-phase deploy if 403 errors occur
-9. **ALWAYS include UAMI credential settings** — when using User Assigned MI, bindings require `credential` + `clientId` app settings alongside the endpoint
+9. **ALWAYS include ALL THREE UAMI settings for every binding** — see [common/uami-bindings.md](common/uami-bindings.md):
+   - `{Connection}__fullyQualifiedNamespace` or `{Connection}__accountEndpoint`
+   - `{Connection}__credential: 'managedidentity'`
+   - `{Connection}__clientId: apiUserAssignedIdentity.outputs.clientId`
+10. **ALWAYS use recipe module's `appSettings` output** — do not manually construct app settings; use `union(baseSettings, recipe.outputs.appSettings)` to prevent missing UAMI settings

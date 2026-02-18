@@ -79,3 +79,25 @@ output eventHubNamespaceId string = eventHubNamespace.id
 output eventHubName string = eventHub.name
 output consumerGroupName string = consumerGroup.name
 output fullyQualifiedNamespace string = '${eventHubNamespace.name}.servicebus.windows.net'
+
+// ============================================================================
+// APP SETTINGS OUTPUT - Use this to ensure correct UAMI configuration
+// ============================================================================
+// IMPORTANT: Always use this output instead of manually constructing app settings.
+// Pass the UAMI clientId from the base template's identity module.
+// 
+// Usage in main.bicep:
+//   var eventHubsAppSettings = eventhubs.outputs.appSettings
+//   // Then merge: union(baseAppSettings, eventHubsAppSettings)
+// ============================================================================
+
+@description('UAMI client ID from base template identity module - REQUIRED for UAMI auth')
+param uamiClientId string = ''
+
+output appSettings object = {
+  EventHubConnection__fullyQualifiedNamespace: '${eventHubNamespace.name}.servicebus.windows.net'
+  EventHubConnection__credential: 'managedidentity'
+  EventHubConnection__clientId: uamiClientId
+  EVENTHUB_NAME: eventHub.name
+  EVENTHUB_CONSUMER_GROUP: consumerGroup.name
+}
