@@ -2,6 +2,18 @@
 
 AZD template selection for Azure Functions deployments.
 
+## When to Use Templates
+
+**Templates are for creating NEW Azure Functions projects from scratch.**
+
+| Scenario | Action |
+|----------|--------|
+| **New Functions project** | Use `azd init -t <TEMPLATE>` (guidance below) |
+| **Existing Functions code** | Use `azd init --from-code` instead |
+| **.NET Aspire project** | Use `azd init --from-code` → [aspire.md](../../../aspire.md) |
+
+> 💡 **Tip:** If code already exists, use `azd init --from-code` to auto-detect the project structure instead of using templates.
+
 ## Template Selection
 
 **Check integration indicators IN ORDER before defaulting to HTTP.**
@@ -24,6 +36,8 @@ See [selection.md](selection.md) for detailed indicator patterns.
 
 ## Template Usage
 
+**For NEW projects using templates:**
+
 ```bash
 # Non-interactive initialization (REQUIRED for agents)
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
@@ -35,6 +49,19 @@ azd init -t <TEMPLATE> -e "$ENV_NAME" --no-prompt
 | `-e <name>` | Set environment name |
 | `-t <template>` | Specify template |
 | `--no-prompt` | Skip confirmations (required) |
+
+**For EXISTING projects:**
+
+```bash
+# Auto-detect existing code structure
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+azd init --from-code -e "$ENV_NAME"
+```
+
+| Flag | Purpose |
+|------|---------|
+| `--from-code` | Auto-detect project structure (no interactive prompts) |
+| `-e <name>` | Set environment name |
 
 ## What azd Creates
 
