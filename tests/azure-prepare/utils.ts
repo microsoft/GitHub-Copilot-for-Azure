@@ -65,8 +65,9 @@ export function getDockerContext(
   workspacePath: string,
   serviceName: string,
 ): string | undefined {
-  const azureYamlPath = path.join(workspacePath, "azure.yaml");
-  if (!fs.existsSync(azureYamlPath)) return undefined;
+  const files = listFilesRecursive(workspacePath);
+  const azureYamlPath = files.find(f => f.endsWith("/azure.yaml"));
+  if (!azureYamlPath) return undefined;
 
   const content = fs.readFileSync(azureYamlPath, "utf-8");
 
