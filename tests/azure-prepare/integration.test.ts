@@ -16,7 +16,7 @@ import {
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, cleanupWorkspace, expectFiles } from "./utils";
+import { hasPlanReadyForValidation, expectFiles } from "./utils";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-prepare";
