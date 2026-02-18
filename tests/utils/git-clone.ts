@@ -5,6 +5,7 @@
  * Useful for integration tests that need a real repository as a workspace.
  */
 
+import { mkdirSync } from "node:fs";
 import { simpleGit, type SimpleGitOptions } from "simple-git";
 
 export interface CloneOptions {
