@@ -74,4 +74,41 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("BLOCKING");
     });
   });
+
+  describe("Aspire Support", () => {
+    test("aspire.md reference file exists", () => {
+      const fs = require("fs");
+      const path = require("path");
+      const aspirePath = path.join(
+        __dirname,
+        "../../plugin/skills/azure-prepare/references/recipes/azd/aspire.md"
+      );
+      expect(fs.existsSync(aspirePath)).toBe(true);
+    });
+
+    test("aspire.md contains Docker context guidance", () => {
+      const fs = require("fs");
+      const path = require("path");
+      const aspirePath = path.join(
+        __dirname,
+        "../../plugin/skills/azure-prepare/references/recipes/azd/aspire.md"
+      );
+      const aspireContent = fs.readFileSync(aspirePath, "utf-8");
+      expect(aspireContent).toContain("AddDockerfile");
+      expect(aspireContent).toContain("docker.context");
+      expect(aspireContent).toContain("build context");
+    });
+
+    test("azure-yaml.md references aspire.md", () => {
+      const fs = require("fs");
+      const path = require("path");
+      const azureYamlPath = path.join(
+        __dirname,
+        "../../plugin/skills/azure-prepare/references/recipes/azd/azure-yaml.md"
+      );
+      const azureYamlContent = fs.readFileSync(azureYamlPath, "utf-8");
+      expect(azureYamlContent).toContain("aspire.md");
+      expect(azureYamlContent).toContain("docker.context");
+    });
+  });
 });
