@@ -1,16 +1,12 @@
 # Copilot SDK Reference
 
-Build apps powered by the Copilot SDK. Choose the scenario that fits your use case.
+## Template
 
-## Scenario Selection
+```bash
+azd init --template azure-samples/copilot-sdk-service
+```
 
-| | Agent | Service |
-|---|---|---|
-| **Template** | `azd init --template jongio/copilot-sdk-agent` | `azd init --template jongio/copilot-sdk-service` |
-| **Best for** | Multi-turn chat, Foundry agents, interactive UIs | API endpoints, scripts, one-shot processing, task automation |
-| **Architecture** | API (Express/TS) + Web UI (React/Vite), 2 Container Apps | Varies — API server, CLI script, or standalone process |
-| **Foundry** | ✅ AIProjectClient, threads, function tools, evaluation | ❌ Not needed |
-| **Chat UI** | ✅ Included (React/Vite) | ❌ Optional or none |
+**Architecture:** API (Express/TS) + Web UI (React/Vite), deployed as 2 Container Apps. Provides a chat endpoint with SSE streaming and a summarize endpoint.
 
 ## Documentation
 
@@ -35,60 +31,39 @@ Use **context7** MCP tools as the PRIMARY way to get SDK documentation and code 
 
 > 💡 **Tip:** Fall back to `github-mcp-server-get_file_contents` with `owner: "github"`, `repo: "copilot-sdk"` to read files directly from the repo.
 
-## Agent Scenario
+## Three Model Paths
 
-For interactive, multi-turn agents with optional Azure AI Foundry integration.
+| Path | Config | Auth |
+|------|--------|------|
+| GitHub default | No `model` param | `GITHUB_TOKEN` |
+| GitHub specific | `model: "<name>"` | `GITHUB_TOKEN` |
+| Azure BYOM | `model` + `provider` with `bearerToken` | `DefaultAzureCredential` |
 
-**Quick start:** `azd init --template jongio/copilot-sdk-agent`, then follow the scaffolded README.
+**Model discovery:**
+- GitHub models: call `listModels()` on the SDK client
+- Azure deployments: `az cognitiveservices account deployment list`
 
-**Foundry integration:** Uses Azure AI Projects SDK — `AIProjectClient` for thread-based conversations, function tools, streaming with annotations/citations. Evaluate agents via `azure-ai-evaluation`.
+Full BYOM config details: [Azure Model Configuration](azure-model-config.md).
 
-**Auth:** `DefaultAzureCredential` for Foundry resources; `gh auth token` for Copilot SDK locally.
+> ⚠️ **Warning:** `model` is **required** when using a provider — SDK throws if missing.
 
-**Template customization:** Read `AGENTS.md` FIRST — it lists every source file with its purpose. Then:
-1. Adapt the API — update routes, system message, and tool definitions
-2. Build a custom UI — the template UI is just an example
+## Template Customization
+
+Read `AGENTS.md` FIRST — it lists every source file with its purpose. Then:
+
+1. Adapt routes — update endpoints, system message, and tool definitions
+2. Customize the UI — the template UI is just an example
 3. Keep template infra — do NOT regenerate Dockerfile, Bicep, or `azure.yaml`
 
 **Existing project:** See [Existing Project Integration](existing-project-integration.md) for adding Copilot SDK to your codebase.
 
-## Service Scenario
-
-For apps using the Copilot SDK for AI features without a full agent setup.
-
-**Quick start:** `azd init --template jongio/copilot-sdk-service`, then follow the scaffolded README.
-
-**Key patterns:**
-- Use `sendAndWait` for one-shot requests (summarize, classify, extract)
-- No chat UI needed — expose AI as API endpoints or run as scripts
-- Optional streaming for longer responses
-- Task automation via the ralph loop pattern (see [cookbook at github/awesome-copilot](https://github.com/github/awesome-copilot))
-
-**Examples:** REST API with `/summarize` and `/classify` endpoints, CLI data processing scripts, automated content pipelines.
-
 ## Testing
 
-| Scenario | Command |
-|----------|---------|
-| Agent | `azd app run` — opens API + UI locally |
-| Service API | `curl -s http://localhost:3000/health` |
-| Service endpoint | `curl -s -X POST http://localhost:3000/api/<endpoint> -H "Content-Type: application/json" -d '{"input":"test"}'` |
-
-## BYOM (Bring Your Own Model)
-
-Use your own Azure AI or Foundry model instead of Copilot-hosted models. Full config details: [Azure Model Configuration](azure-model-config.md).
-
-| Aspect | Default | BYOM |
-|--------|---------|------|
-| Model source | GitHub Copilot API | Your Azure endpoint |
-| `model` param | Copilot model ID (e.g., `gpt-5`) | Azure deployment name |
-| Auth | `GITHUB_TOKEN` | `DefaultAzureCredential` → `bearerToken` |
-| Billing | Copilot premium quotas | Azure subscription |
-| Discovery | `client.listModels()` | `foundry_models_deployments_list` MCP |
-
-Provider types: `openai` (Foundry), `azure` (Azure OpenAI), `anthropic`, `ollama`.
-
-> ⚠️ **Warning:** `model` is **required** when using a provider — SDK throws if missing.
+| Check | Command |
+|-------|---------|
+| Run locally | `azd app run` — starts API + UI |
+| Health check | `curl -s http://localhost:3000/health` |
+| Test endpoint | `curl -s -X POST http://localhost:3000/api/<endpoint> -H "Content-Type: application/json" -d '{"input":"test"}'` |
 
 ## Errors
 

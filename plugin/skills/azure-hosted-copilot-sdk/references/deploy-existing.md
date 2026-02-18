@@ -4,14 +4,11 @@ Adapt a user's existing Copilot SDK app for Azure using patterns from the refere
 
 ## 1. Study Template Infra
 
-Read the matching template via GitHub MCP before generating any files:
+Read the template via GitHub MCP before generating any files:
 
-| Template | MCP call |
-|----------|----------|
-| Agent | `github-mcp-server-get_file_contents` owner: `jongio`, repo: `copilot-sdk-agent` |
-| Service | `github-mcp-server-get_file_contents` owner: `jongio`, repo: `copilot-sdk-service` |
+`github-mcp-server-get_file_contents` owner: `azure-samples`, repo: `copilot-sdk-service`
 
-Key files to read: `azure.yaml`, `infra/main.bicep`, `infra/resources.bicep`, `scripts/get-github-token.mjs`
+Key files to read: `azure.yaml`, `infra/main.bicep`, `infra/resources.bicep`, `scripts/get-github-token.mjs`, `AGENTS.md`
 
 ## 2. GitHub Token Flow
 
@@ -76,19 +73,14 @@ If the user has no Dockerfile, read the template's Dockerfile for the detected l
 
 ## 6. BYOM Infrastructure (Azure Model)
 
-If the user wants to use their own Azure model, add AI Services resources to Bicep. Read the agent template's Bicep for the pattern:
-
-`github-mcp-server-get_file_contents` owner: `jongio`, repo: `copilot-sdk-agent`, path: `infra/resources.bicep`
-
-Additional resources needed:
+If the user wants Azure BYOM, add these to Bicep:
 
 | Resource | Purpose |
 |----------|---------|
-| AI Services account | Hosts model deployments |
-| AI Project | Foundry project scoping |
+| Azure OpenAI / AI Services account | Hosts model deployments |
 | Role assignment | `Cognitive Services OpenAI User` for Managed Identity |
 
-Add env var to Container App: `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT`.
+Add env vars to Container App: `AZURE_OPENAI_ENDPOINT`, `MODEL_PROVIDER=azure`, `MODEL_NAME=<deployment>`.
 
 See [Azure Model Configuration](azure-model-config.md) for provider config and auth pattern.
 

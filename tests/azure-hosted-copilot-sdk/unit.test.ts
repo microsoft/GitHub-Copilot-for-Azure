@@ -42,8 +42,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content.length).toBeGreaterThan(100);
     });
 
-    test("references SDK templates", () => {
-      expect(skill.content).toContain("copilot-sdk-agent");
+    test("references SDK template", () => {
+      expect(skill.content).toContain("copilot-sdk-service");
     });
 
     test("references deploy workflow", () => {
@@ -87,7 +87,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const content = readFileSync(refPath, "utf-8");
       expect(content).toContain("DefaultAzureCredential");
       expect(content).toContain("bearerToken");
-      expect(content).toContain("AZURE_AI_FOUNDRY_PROJECT_ENDPOINT");
+      expect(content).toContain("AZURE_OPENAI_ENDPOINT");
     });
 
     test("BYOM routing row in step 1 table", () => {

@@ -22,16 +22,15 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
       "Build a Copilot SDK app and deploy it",
-      "Create a new copilot agent service",
+      "Create a new copilot SDK service",
       "Scaffold a copilot-powered app on Azure",
       "Build with the GitHub Copilot SDK and host it",
-      "Build a Copilot SDK agent with my own Azure model",
-      "Create a copilot app using my Azure AI Foundry model",
+      "Build a Copilot SDK app with my own Azure model",
+      "Create a copilot app using my Azure OpenAI model",
       "Set up a copilot service with BYOM and DefaultAzureCredential",
-      "Build a copilot agent that uses a self-hosted model on Azure",
+      "Build a copilot app that uses a self-hosted model on Azure",
       "Deploy a copilot SDK app with my own endpoint",
       "Create a copilot app and bring your own model from Azure OpenAI",
-      "Build a copilot service using a foundry model",
     ];
 
     test.each(shouldTriggerPrompts)(

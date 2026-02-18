@@ -1,19 +1,42 @@
-# Azure Model Configuration (BYOM)
+# Model Configuration
 
-Configure Azure AI Foundry or Azure OpenAI models as Bring Your Own Model (BYOM) providers with the GitHub Copilot SDK.
+Three model paths for the Copilot SDK. Each session needs different configuration.
 
-## Provider Config
+## Path 1: GitHub Default
+
+No configuration needed. SDK uses the default model.
+
+```typescript
+const session = await client.createSession({});
+// or simply: client.createSession()
+```
+
+Best for: quick prototyping, no model preference.
+
+## Path 2: GitHub Specific Model
+
+Specify a model name. Discover available models with `listModels()`.
+
+```typescript
+const models = await client.listModels();
+// Pick from available models
+const session = await client.createSession({
+  model: "gpt-4o",
+});
+```
+
+## Path 3: Azure BYOM (Bring Your Own Model)
+
+Use your own Azure AI deployment with `DefaultAzureCredential`.
+
+### Provider Config
 
 | Endpoint type | `type` | `baseUrl` pattern |
 |---|---|---|
-| Azure AI Foundry | `openai` | `https://<resource>.services.ai.azure.com/api/projects/<project>/openai/v1/` |
 | Azure OpenAI | `azure` | `https://<resource>.openai.azure.com` |
+| Azure AI Foundry | `openai` | `https://<resource>.services.ai.azure.com/api/projects/<project>/openai/v1/` |
 
-- **Foundry**: use `type: "openai"`, `wireApi: "responses"`, include `/openai/v1/` in URL
-- **Azure OpenAI**: use `type: "azure"`, do NOT include `/openai/v1/` — SDK handles path
-- `model` = Azure deployment name (required)
-
-## DefaultAzureCredential Pattern
+### Code Pattern
 
 ```typescript
 import { DefaultAzureCredential } from "@azure/identity";
@@ -24,49 +47,50 @@ const { token } = await credential.getToken("https://cognitiveservices.azure.com
 const session = await client.createSession({
     model: process.env.AZURE_DEPLOYMENT_NAME || "gpt-4o",
     provider: {
-        type: "openai",
-        baseUrl: process.env.AZURE_AI_FOUNDRY_PROJECT_ENDPOINT + "/openai/v1/",
+        type: "azure",
+        baseUrl: process.env.AZURE_OPENAI_ENDPOINT,
         bearerToken: token,
-        wireApi: "responses",
     },
 });
 ```
 
-## Environment Variables
+### Environment Variables
 
 | Variable | Value | Required |
 |----------|-------|----------|
-| `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` | `https://<resource>.services.ai.azure.com/api/projects/<project>` | Yes (Foundry) |
-| `AZURE_DEPLOYMENT_NAME` | Model deployment name (e.g., `gpt-4o`) | Yes |
+| `AZURE_OPENAI_ENDPOINT` | `https://<resource>.openai.azure.com` | Yes |
+| `AZURE_DEPLOYMENT_NAME` | Model deployment name | Yes |
 
-## Token Refresh
+### Token Refresh
 
-> ⚠️ **Warning:** `bearerToken` is static — there is no auto-refresh mechanism.
+> ⚠️ **Warning:** `bearerToken` is static — no auto-refresh.
 
-- Tokens are valid for ~1 hour
-- **Production**: get a fresh token per request (session-per-request pattern)
-- Long-running sessions will fail after token expiry
+- Tokens valid ~1 hour
+- **Production**: get fresh token per request
+- Long-running sessions fail after expiry
 
-## Discovering Deployments
+### Discovering Azure Deployments
 
-`listModels()` returns Copilot-hosted models only, NOT Azure deployments. To discover Azure deployments:
-
-- **MCP**: use `azure-foundry` tool with `foundry_models_deployments_list` command
-- **CLI**:
+`listModels()` returns GitHub models only. For Azure deployments:
 
 ```bash
 az cognitiveservices account deployment list --name <resource> --resource-group <rg>
 ```
 
+## Template Environment Variables
+
+The template uses env vars for model path selection:
+
+| Variable | Values | Effect |
+|----------|--------|--------|
+| `MODEL_PROVIDER` | unset or `azure` | Selects GitHub or Azure BYOM |
+| `MODEL_NAME` | model/deployment name | Selects specific model |
+| `AZURE_OPENAI_ENDPOINT` | Azure endpoint URL | Required for BYOM |
+
 ## Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `model is required` | Missing `model` in BYOM config | Set `model` to Azure deployment name |
-| `401 Unauthorized` | Token expired or wrong scope | Refresh via `DefaultAzureCredential.getToken()` |
-| `404 Not Found` | Wrong `baseUrl` or deployment name | Verify endpoint URL pattern and deployment exists |
-| `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT not set` | Missing env var | Set via `azd env set` or app settings |
-
-## Infrastructure
-
-For BYOM deployments, add Azure AI Services to your Bicep. See the agent template: `github-mcp-server-get_file_contents` owner: `jongio`, repo: `copilot-sdk-agent`, path: `infra/resources.bicep`.
+| `model is required` | Missing `model` in BYOM config | Set `MODEL_NAME` env var |
+| `401 Unauthorized` | Token expired or wrong scope | Refresh via `DefaultAzureCredential` |
+| `404 Not Found` | Wrong endpoint or deployment name | Verify URL and deployment exists |
