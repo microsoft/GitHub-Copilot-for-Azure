@@ -14,8 +14,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@types/micromatch": "^4.0.10",
     "@types/node": "^25.1.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "micromatch": "^4.0.8",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
