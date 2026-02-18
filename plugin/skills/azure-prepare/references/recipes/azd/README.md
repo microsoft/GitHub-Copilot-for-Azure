@@ -26,6 +26,7 @@ Azure Developer CLI workflow for preparing Azure deployments.
 | Artifact | Reference |
 |----------|-----------|
 | azure.yaml | [Schema Guide](azure-yaml.md) |
+| .NET Aspire apps | [Aspire Guide](aspire.md) |
 | Terraform with azd | [Terraform Guide](terraform.md) |
 | AZD IAC rules | [IAC Rules](iac-rules.md) |
 | Azure Functions templates | [Templates](../../services/functions/templates/README.md) |
@@ -78,6 +79,7 @@ Azure Developer CLI workflow for preparing Azure deployments.
 ## References
 
 - [azure.yaml Schema](azure-yaml.md)
+- [.NET Aspire Apps](aspire.md)
 - [Terraform with AZD](terraform.md)
 - [Docker Configuration](docker.md)
 - [IAC Rules](iac-rules.md)
