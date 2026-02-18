@@ -50,8 +50,9 @@ describe("preset (deploy-model-optimal-region) - Unit Tests", () => {
     });
 
     test("contains deployment phases", () => {
-      expect(skill.content).toContain("### Phase 1");
-      expect(skill.content).toContain("### Phase 2");
+      expect(skill.content).toContain("## Deployment Phases");
+      expect(skill.content).toContain("Verify Auth");
+      expect(skill.content).toContain("Get Project");
     });
 
     test("contains Azure CLI commands", () => {
