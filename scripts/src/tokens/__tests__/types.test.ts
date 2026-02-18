@@ -3,16 +3,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { 
-  estimateTokens, 
-  isMarkdownFile, 
+import {
+  estimateTokens,
+  isMarkdownFile,
   normalizePath,
   getErrorMessage,
-  globToRegex,
   matchesPattern,
   EXCLUDED_DIRS,
-  MARKDOWN_EXTENSIONS,
-  MAX_PATTERN_LENGTH
+  MARKDOWN_EXTENSIONS
 } from '../commands/types.js';
 
 describe('estimateTokens', () => {
@@ -171,57 +169,6 @@ describe('getErrorMessage', () => {
   });
 });
 
-describe('globToRegex', () => {
-  it('converts simple filename patterns', () => {
-    const regex = globToRegex('SKILL.md');
-    expect(regex.test('SKILL.md')).toBe(true);
-    expect(regex.test('path/to/SKILL.md')).toBe(true);
-    expect(regex.test('README.md')).toBe(false);
-  });
-
-  it('converts wildcard patterns', () => {
-    const regex = globToRegex('*.md');
-    expect(regex.test('README.md')).toBe(true);
-    expect(regex.test('SKILL.md')).toBe(true);
-    expect(regex.test('path/to/file.md')).toBe(true);
-    expect(regex.test('file.txt')).toBe(false);
-  });
-
-  it('converts globstar patterns', () => {
-    const regex = globToRegex('references/**/*.md');
-    // Note: references/**/*.md requires at least one directory between references and file
-    expect(regex.test('references/sub/file.md')).toBe(true);
-    expect(regex.test('references/a/b/c/file.md')).toBe(true);
-    expect(regex.test('other/file.md')).toBe(false);
-  });
-
-  it('escapes regex special characters', () => {
-    const regex = globToRegex('file.name.md');
-    expect(regex.test('file.name.md')).toBe(true);
-    expect(regex.test('fileXnameXmd')).toBe(false);
-  });
-
-  it('rejects patterns exceeding max length', () => {
-    const longPattern = 'a'.repeat(MAX_PATTERN_LENGTH + 1);
-    expect(() => globToRegex(longPattern)).toThrow('Pattern too long');
-  });
-
-  it('accepts patterns at max length', () => {
-    const maxPattern = 'a'.repeat(MAX_PATTERN_LENGTH);
-    expect(() => globToRegex(maxPattern)).not.toThrow();
-  });
-
-  it('uses non-greedy matching to prevent catastrophic backtracking', () => {
-    // This pattern could cause ReDoS with greedy matching
-    const regex = globToRegex('**/*.md');
-    const startTime = Date.now();
-    regex.test('a/b/c/d/e/f/g/h/i/j/k/l/m/file.md');
-    const elapsed = Date.now() - startTime;
-    // Should complete quickly (< 100ms), not hang
-    expect(elapsed).toBeLessThan(100);
-  });
-});
-
 describe('matchesPattern', () => {
   it('matches simple filename patterns', () => {
     expect(matchesPattern('SKILL.md', 'SKILL.md')).toBe(true);
@@ -231,7 +178,7 @@ describe('matchesPattern', () => {
 
   it('matches wildcard patterns', () => {
     expect(matchesPattern('README.md', '*.md')).toBe(true);
-    expect(matchesPattern('path/README.md', '*.md')).toBe(true);
+    expect(matchesPattern('path/README.md', '**/*.md')).toBe(true);
     expect(matchesPattern('file.txt', '*.md')).toBe(false);
   });
 
