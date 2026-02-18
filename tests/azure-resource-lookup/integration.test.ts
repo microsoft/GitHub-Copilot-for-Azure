@@ -22,7 +22,7 @@ const SKILL_NAME = "azure-resource-lookup";
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   // Cross-subscription resource queries (ARG sweet spot)

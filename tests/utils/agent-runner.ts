@@ -626,6 +626,5 @@ function sanitizeFileName(name: string): string {
     .replace(/\s+/g, "_")           // Replace spaces with underscores
     .replace(/-+/g, "-")            // Collapse multiple dashes
     .replace(/_+/g, "_")            // Collapse multiple underscores
-    .replace(/_-_/g, "-")
     .substring(0, 200);             // Limit length
 }

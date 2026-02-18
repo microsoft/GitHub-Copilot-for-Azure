@@ -60,9 +60,12 @@ function filterSubdirectoriesBySkill(subdirectories: string[], skill: string): s
   return subdirectories.filter(subdir => {
     const subdirName = path.basename(subdir);
 
-    // Directory names for test reports are guaranteed to start with the skill name for the tests.
+    // Skill name in the subdirectory name ends at the first underscore character.
     // See tests/eslint-rules/integration-test-name.mjs for details.
-    return subdirName.startsWith(skill);
+    const terminatorIndex = subdirName.indexOf("_");
+    const skillName = subdirName.substring(0, terminatorIndex);
+    
+    return skillName === skill;
   });
 }
 

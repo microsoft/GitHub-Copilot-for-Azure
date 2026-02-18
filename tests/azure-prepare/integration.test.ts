@@ -15,6 +15,8 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
+import { hasValidationCommand } from "../azure-validate/utils";
+import { hasPlanReadyForValidation, expectFiles } from "./utils";
 import * as fs from "fs";
 import { hasBicepFiles, hasTerraformFiles } from "../azure-deploy/utils";
 
@@ -35,7 +37,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
@@ -174,35 +176,97 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     });
   });
 
-  // Static Web Apps (SWA) preparation tests
-  describe("static-web-apps-prepare", () => {
-    test("prepares static portfolio website", async () => {
+  describe("prepare-deployment", () => {
+    const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+
+    test("creates project files for static whiteboard web app before validation", async () => {
+      let workspacePath: string | undefined;
+
       const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a static whiteboard web app and deploy to Azure.",
         nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
       });
 
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasBicep = hasBicepFiles(agentMetadata);
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      const planReady = hasPlanReadyForValidation(agentMetadata);
+      expect(planReady).toBe(true);
+    });
 
-      expect(isPrepareInvoked).toBe(true);
-      expect(hasBicep).toBe(true);
-    }, prepareTestTimeoutMs);
+    test("creates correct files for AZD with Bicep recipe", async () => {
+      let workspacePath: string | undefined;
 
-    // Terraform test
-    test("prepares static portfolio website with Terraform infrastructure", async () => {
       const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure.",
         nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
       });
 
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasTerraform = hasTerraformFiles(agentMetadata);
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+        [/\.tf$/],
+      );
+    });
 
-      expect(isPrepareInvoked).toBe(true);
-      expect(hasTerraform).toBe(true);
-    }, prepareTestTimeoutMs);
+    test("creates correct files for Terraform recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure with Terraform as the infrastructure provider.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.tf$/],
+        [/\.bicep$/, /azure\.yaml$/],
+      );
+    });
+
+    test("creates correct files for standalone Bicep recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.parameters\.json$/],
+        [/azure\.yaml$/, /\.tf$/],
+      );
+    });
   });
 });
