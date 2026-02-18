@@ -1,11 +1,3 @@
----
-name: foundry-agent-troubleshoot
-description: |
-  Troubleshoot and debug agents in Azure AI Foundry. Retrieves container logs for hosted agents, discovers Application Insights connections in the project, and queries telemetry using KQL to diagnose errors, failures, and performance issues.
-  USE FOR: troubleshoot agent, debug agent, agent logs, agent errors, agent not responding, agent failing, container logs, diagnose agent, agent telemetry, agent traces, agent exceptions.
-  DO NOT USE FOR: deploying or creating agents (use deploy skill), invoking or testing agents (use invoke skill), containerizing projects (use package skill), Azure Functions (use azure-functions).
----
-
 # Foundry Agent Troubleshoot
 
 Troubleshoot and debug Foundry agents by collecting container logs, discovering observability connections, and querying Application Insights telemetry.

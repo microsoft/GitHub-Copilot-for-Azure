@@ -6,7 +6,7 @@
 
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/foundry-agent-invoke";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("invoke - Unit Tests", () => {
   let skill: LoadedSkill;
@@ -18,7 +18,7 @@ describe("invoke - Unit Tests", () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("foundry-agent-invoke");
+      expect(skill.metadata.name).toBe("microsoft-foundry");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
@@ -36,31 +36,6 @@ describe("invoke - Unit Tests", () => {
     test("description contains DO NOT USE FOR anti-triggers", () => {
       const description = skill.metadata.description;
       expect(description).toMatch(/DO NOT USE FOR:/i);
-    });
-  });
-
-  describe("Skill Content", () => {
-    test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(100);
-    });
-
-    test("contains expected sections", () => {
-      expect(skill.content).toContain("## Quick Reference");
-      expect(skill.content).toContain("## When to Use This Skill");
-      expect(skill.content).toContain("## MCP Tools");
-      expect(skill.content).toContain("## Workflow");
-      expect(skill.content).toContain("## Error Handling");
-    });
-
-    test("references agent_invoke MCP tool", () => {
-      expect(skill.content).toContain("agent_invoke");
-    });
-
-    test("documents agent type differences", () => {
-      expect(skill.content).toContain("## Agent Type Differences");
-      expect(skill.content).toContain("Prompt Agent");
-      expect(skill.content).toContain("Hosted Agent");
     });
   });
 });

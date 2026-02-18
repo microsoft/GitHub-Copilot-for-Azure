@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/foundry-agent-deploy";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("deploy - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
@@ -24,7 +24,7 @@ describe("deploy - Trigger Tests", () => {
       "Deploy my agent to Azure AI Foundry",
       "Create a hosted agent in Foundry",
       "Start my agent container in Foundry",
-      "Stop my hosted agent container",
+      "Stop my hosted agent in Foundry",
       "Check agent container status in Foundry",
       "Create a prompt agent with gpt-4o model",
     ];

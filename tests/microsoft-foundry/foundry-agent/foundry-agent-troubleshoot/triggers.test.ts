@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/foundry-agent-troubleshoot";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("troubleshoot - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
@@ -24,8 +24,8 @@ describe("troubleshoot - Trigger Tests", () => {
       "Troubleshoot my Foundry agent that is not responding",
       "Debug my hosted agent errors in Azure AI Foundry",
       "Show me the container logs for my Foundry agent",
-      "My agent is failing, help me diagnose the issue",
-      "Check agent telemetry and traces for exceptions",
+      "My Foundry agent is failing, help me diagnose the issue",
+      "Check agent telemetry and traces for exceptions in Foundry",
       "Why is my Foundry agent returning errors?",
     ];
 

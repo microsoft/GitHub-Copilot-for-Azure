@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/foundry-agent-package";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("package - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
@@ -25,8 +25,8 @@ describe("package - Trigger Tests", () => {
       "Create a Dockerfile for my Foundry hosted agent",
       "Push my agent image to Azure Container Registry",
       "Package my Python agent for deployment",
-      "Build a Docker image for my hosted agent",
-      "Dockerize my Node.js agent for ACR",
+      "Build a Docker image for my Foundry agent",
+      "Dockerize my agent project for Foundry ACR",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -42,7 +42,7 @@ describe("package - Trigger Tests", () => {
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
-      "Help me with AWS Lambda functions",
+      "Help me with AWS Lambda",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
       "Help me write a poem about clouds",

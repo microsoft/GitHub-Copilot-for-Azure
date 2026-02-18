@@ -1,8 +1,8 @@
 ---
 name: foundry-agent
 description: |
-  Router skill for Azure AI Foundry agent lifecycle. Routes to specialized skills for packaging, deploying, invoking, and troubleshooting agents. Provides common project context resolution used by all agent skills.
-  USE FOR: Foundry agent, build agent, ship agent, agent lifecycle, agent workflow, create Foundry agent, manage Foundry agent, debug agent.
+  Router skill for Azure AI Foundry agent lifecycle. Routes to specialized references for packaging, deploying, invoking, and troubleshooting agents. Provides common project context resolution used by all agent workflows.
+  USE FOR: Foundry agent, build agent, ship agent, agent lifecycle, agent workflow, create Foundry agent, manage Foundry agent, debug agent, deploy agent, create agent, hosted agent, prompt agent, start container, stop container, agent status, clone agent, delete agent, invoke agent, test agent, send message, run agent, agent conversation, agent chat, containerize agent, Dockerfile, Docker image, ACR, package agent, dockerize, build image, push image, troubleshoot agent, agent logs, agent errors, agent not responding, container logs, diagnose agent, agent telemetry.
   DO NOT USE FOR: Azure Functions (use azure-functions), non-agent Foundry features like model catalog or evaluations (use microsoft-foundry).
 ---
 
@@ -21,12 +21,12 @@ User Request
     └── Troubleshoot / debug / logs / errors       → foundry-agent-troubleshoot
 ```
 
-| Scenario | Skill |
-|----------|-------|
-| Containerize agent, generate Dockerfile, build/push image to ACR | [foundry-agent-package](foundry-agent-package/SKILL.md) |
-| Create, update, start/stop, or delete an agent deployment | [foundry-agent-deploy](foundry-agent-deploy/SKILL.md) |
-| Send messages to an agent, single or multi-turn conversations | [foundry-agent-invoke](foundry-agent-invoke/SKILL.md) |
-| View container logs, query telemetry, diagnose failures | [foundry-agent-troubleshoot](foundry-agent-troubleshoot/SKILL.md) |
+| Scenario | Reference |
+|----------|-----------|
+| Containerize agent, generate Dockerfile, build/push image to ACR | [foundry-agent-package](foundry-agent-package/package.md) |
+| Create, update, start/stop, or delete an agent deployment | [foundry-agent-deploy](foundry-agent-deploy/deploy.md) |
+| Send messages to an agent, single or multi-turn conversations | [foundry-agent-invoke](foundry-agent-invoke/invoke.md) |
+| View container logs, query telemetry, diagnose failures | [foundry-agent-troubleshoot](foundry-agent-troubleshoot/troubleshoot.md) |
 | Creating AI agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [create/agent-framework/SKILL.md](create/agent-framework/SKILL.md) |
 
 ## Common: Project Context Resolution

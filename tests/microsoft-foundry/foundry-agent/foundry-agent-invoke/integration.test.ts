@@ -13,7 +13,7 @@ import {
   getIntegrationSkipReason,
 } from "../../../utils/agent-runner";
 
-const SKILL_NAME = "foundry-agent-invoke";
+const SKILL_NAME = "microsoft-foundry";
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();

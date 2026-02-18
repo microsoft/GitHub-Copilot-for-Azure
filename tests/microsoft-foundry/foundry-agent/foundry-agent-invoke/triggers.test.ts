@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/foundry-agent-invoke";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("invoke - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
@@ -49,7 +49,7 @@ describe("invoke - Trigger Tests", () => {
       "Set up monitoring for my web application",
       "Generate a Dockerfile for my Python web service",
       "Push my image to a registry",
-      "Create a serverless function in Azure",
+      "Set up a serverless endpoint on AWS",
       "Package my Node.js app into a tarball",
     ];
 

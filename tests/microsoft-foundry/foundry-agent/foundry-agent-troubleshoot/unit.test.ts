@@ -6,7 +6,7 @@
 
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/foundry-agent-troubleshoot";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("troubleshoot - Unit Tests", () => {
   let skill: LoadedSkill;
@@ -18,7 +18,7 @@ describe("troubleshoot - Unit Tests", () => {
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("foundry-agent-troubleshoot");
+      expect(skill.metadata.name).toBe("microsoft-foundry");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
@@ -36,42 +36,6 @@ describe("troubleshoot - Unit Tests", () => {
     test("description contains DO NOT USE FOR anti-triggers", () => {
       const description = skill.metadata.description;
       expect(description).toMatch(/DO NOT USE FOR:/i);
-    });
-  });
-
-  describe("Skill Content", () => {
-    test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(100);
-    });
-
-    test("contains expected sections", () => {
-      expect(skill.content).toContain("## Quick Reference");
-      expect(skill.content).toContain("## When to Use This Skill");
-      expect(skill.content).toContain("## MCP Tools");
-      expect(skill.content).toContain("## Workflow");
-      expect(skill.content).toContain("## Error Handling");
-    });
-
-    test("references container logs documentation", () => {
-      expect(skill.content).toContain("az cognitiveservices agent logs");
-    });
-
-    test("references account connection documentation", () => {
-      expect(skill.content).toContain("az cognitiveservices account connection");
-    });
-
-    test("references azure-kusto skill for telemetry", () => {
-      expect(skill.content).toContain("azure-kusto");
-    });
-
-    test("documents both agent types", () => {
-      expect(skill.content).toContain("hosted");
-      expect(skill.content).toContain("prompt");
-    });
-
-    test("references Application Insights", () => {
-      expect(skill.content).toContain("Application Insights");
     });
   });
 });

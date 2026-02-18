@@ -1,11 +1,3 @@
----
-name: foundry-agent-invoke
-description: |
-  Invoke and test deployed agents in Azure AI Foundry. Send messages to prompt and hosted agents, support single-turn and multi-turn conversations, and verify agent readiness.
-  USE FOR: invoke agent, test agent, send message, run agent, agent conversation, agent chat, agent response, try agent, talk to agent.
-  DO NOT USE FOR: deploying or creating agents (use deploy skill), containerizing projects or building Docker images (use package skill), Azure Functions (use azure-functions).
----
-
 # Invoke Foundry Agent
 
 Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-turn conversations.
