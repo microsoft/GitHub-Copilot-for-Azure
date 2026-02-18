@@ -37,15 +37,6 @@ export function hasFile(files: string[], pattern: RegExp): boolean {
 }
 
 /**
- * Remove a preserved workspace directory if it exists.
- */
-export function cleanupWorkspace(workspacePath: string | undefined): void {
-  if (workspacePath && fs.existsSync(workspacePath)) {
-    fs.rmSync(workspacePath, { recursive: true, force: true });
-  }
-}
-
-/**
  * List files in a workspace, log them, and assert expected/unexpected file patterns.
  */
 export function expectFiles(

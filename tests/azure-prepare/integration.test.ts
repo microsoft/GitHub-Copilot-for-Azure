@@ -193,14 +193,8 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      try {
-        // plan.md should have been set to Ready for Validation
-        const planReady = hasPlanReadyForValidation(agentMetadata);
-        expect(planReady).toBe(true);
-      } finally {
-        cleanupWorkspace(workspacePath);
-      }
+      const planReady = hasPlanReadyForValidation(agentMetadata);
+      expect(planReady).toBe(true);
     });
 
     test("creates correct files for AZD with Bicep recipe", async () => {
@@ -220,15 +214,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      try {
-        expectFiles(workspacePath!,
-          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
-          [/\.tf$/],
-        );
-      } finally {
-        cleanupWorkspace(workspacePath);
-      }
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+        [/\.tf$/],
+      );
     });
 
     test("creates correct files for AZD with Terraform recipe", async () => {
@@ -248,15 +237,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      try {
-        expectFiles(workspacePath!,
-          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.tf$/],
-          [/\.bicep$/],
-        );
-      } finally {
-        cleanupWorkspace(workspacePath);
-      }
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.tf$/],
+        [/\.bicep$/],
+      );
     });
 
     test("creates correct files for AZCLI recipe", async () => {
@@ -276,15 +260,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      try {
-        expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.bicep$/, /scripts\/deploy\.(sh|ps1)$/],
-          [/azure\.yaml$/, /\.tf$/],
-        );
-      } finally {
-        cleanupWorkspace(workspacePath);
-      }
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.bicep$/, /scripts\/deploy\.(sh|ps1)$/],
+        [/azure\.yaml$/, /\.tf$/],
+      );
     });
 
     test("creates correct files for standalone Bicep recipe", async () => {
@@ -304,15 +283,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      try {
-        expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.parameters\.json$/],
-          [/azure\.yaml$/, /\.tf$/],
-        );
-      } finally {
-        cleanupWorkspace(workspacePath);
-      }
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.parameters\.json$/],
+        [/azure\.yaml$/, /\.tf$/],
+      );
     });
 
     test("creates correct files for Terraform recipe", async () => {
@@ -332,15 +306,10 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-      try {
-        expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.tf$/, /infra\/variables\.tf$/],
-          [/\.bicep$/, /azure\.yaml$/],
-        );
-      } finally {
-        cleanupWorkspace(workspacePath);
-      }
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.tf$/, /infra\/variables\.tf$/],
+        [/\.bicep$/, /azure\.yaml$/],
+      );
     });
   });
 });
