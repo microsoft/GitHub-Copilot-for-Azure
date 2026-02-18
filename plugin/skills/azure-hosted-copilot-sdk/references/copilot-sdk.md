@@ -6,7 +6,7 @@
 azd init --template azure-samples/copilot-sdk-service
 ```
 
-**Architecture:** API (Express/TS) + Web UI (React/Vite), deployed as 2 Container Apps. Provides a chat endpoint with SSE streaming and a summarize endpoint.
+**Architecture:** API (Express/TS) + Web UI (React/Vite), deployed as 2 Container Apps. Chat endpoint streams token-level deltas via `assistant.message_delta` SSE events. Azure BYOM gets a fresh bearer token per-request (no expiry issues).
 
 ## Documentation
 

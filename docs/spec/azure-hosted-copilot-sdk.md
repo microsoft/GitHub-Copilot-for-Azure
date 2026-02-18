@@ -22,8 +22,8 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 
 | Component | Change | Status |
 |-----------|--------|--------|
-| `src/api/model-config.ts` | **NEW** — shared three-path model config (GitHub default/specific, Azure BYOM) | ✅ Created |
-| `src/api/routes/chat.ts` | **NEW** — POST `/chat` with SSE streaming for multi-turn conversations | ✅ Created |
+| `src/api/model-config.ts` | **NEW** — shared three-path model config with per-request token refresh for Azure BYOM | ✅ Created |
+| `src/api/routes/chat.ts` | **NEW** — POST `/chat` with true SSE streaming via `assistant.message_delta` events | ✅ Created |
 | `src/api/routes/summarize.ts` | Uses `getSessionOptions()` instead of hardcoded `model: "gpt-4o"` | ✅ Updated |
 | `src/api/index.ts` | Registered `/chat` route | ✅ Updated |
 | `src/api/package.json` | Added `@azure/identity` dependency | ✅ Updated |
@@ -70,9 +70,10 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 **Added:**
 - Three model paths: GitHub default → GitHub specific → Azure BYOM
 - `DO NOT USE FOR: Foundry agent hosting (use microsoft-foundry skill)`
-- Chat endpoint with SSE streaming in template
-- `model-config.ts` shared module for env-var-based model selection
+- Chat endpoint with true token-level SSE streaming via `assistant.message_delta` events
+- `model-config.ts` shared module with per-request token refresh for Azure BYOM
 - Conditional Azure OpenAI Bicep resources for BYOM
+- Additional SDK-specific trigger phrases (`@github/copilot-sdk`, `CopilotClient`, `createSession`, etc.)
 
 ## Architecture
 
@@ -135,20 +136,7 @@ azure-samples/copilot-sdk-service/
 
 ## Future Work
 
-### P0 — Skill Routing Fix
-
-The skill is never invoked by the Copilot CLI agent. Prompts like "build copilot SDK app" route to `azure-prepare` instead. Root cause: `azure-prepare` has an aggressive `REQUIRED FIRST STEP` instruction that captures all deployment-related prompts.
-
-**Options:**
-1. Improve skill description to outcompete `azure-prepare` for Copilot SDK-specific prompts
-2. Add cross-skill routing — `azure-prepare` detects Copilot SDK projects and delegates
-3. Use `systemPrompt` in the skill for stronger routing hints
-
-### P1 — Copilot SDK Streaming
-
-The chat endpoint currently uses `sendAndWait` (full response in one SSE event). When the SDK supports true token-level streaming, update to stream incremental chunks.
-
-### P2 — Additional Language Templates
+### P1 — Additional Language Templates
 
 Current template is TypeScript/Express only. Future templates for Python (FastAPI), Go, and .NET.
 
@@ -156,10 +144,8 @@ Current template is TypeScript/Express only. Future templates for Python (FastAP
 
 | Issue | Impact | Severity |
 |-------|--------|----------|
-| Skill never invoked by agent (0% invocation rate) | Users don't get skill-specific guidance | **High** |
-| `bearerToken` is static — no auto-refresh callback in SDK | Long-running sessions fail after ~1 hour | Medium |
+| Skill rarely invoked by agent (low invocation rate) | Users don't get skill-specific guidance; `azure-prepare` captures prompts first | **High** |
 | `listModels()` doesn't return Azure deployments | Users must use CLI to discover deployment names | Low |
-| Chat endpoint uses `sendAndWait` not true streaming | Response arrives as single chunk, not token-by-token | Low |
 
 ## File Inventory
 
