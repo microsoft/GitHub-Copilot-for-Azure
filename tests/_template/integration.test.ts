@@ -27,7 +27,7 @@ const SKILL_NAME = "your-skill-name";
 // Use centralized skip logic from agent-runner
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   // Example test: Verify the skill is invoked for a relevant prompt

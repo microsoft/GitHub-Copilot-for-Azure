@@ -8,8 +8,11 @@
  */
 
 // Placeholder regex — update this to match your naming convention.
-// Current pattern: "<lowercase-kebab-case> - Integration Tests"
-const DESCRIBE_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)* - Integration Tests$/;
+// The test name must begin with the exact skill name terminated by an underscore, followed by an optional suffix and then the fixed " - Integration Tests" label.
+// Current pattern:
+// - without the optional suffix after skill name "<lowercase-kebab-case-skill-name>_ - Integration Tests"
+// - with the optional suffix after skill name "<lowercase-kebab-case-skill-name>_<test-name-suffix> - Integration Tests"
+const DEFAULT_NAME_PATTERN = /^[a-z0-9-]+_[a-z0-9-]* - Integration Tests$/;
 
 /** @type {import("eslint").Rule.RuleModule} */
 const rule = {
@@ -42,7 +45,7 @@ const rule = {
     create(context) {
         // Allow overriding the pattern via rule options
         const patternStr = context.options?.[0]?.pattern;
-        const pattern = patternStr ? new RegExp(patternStr) : DESCRIBE_NAME_PATTERN;
+        const pattern = patternStr ? new RegExp(patternStr) : DEFAULT_NAME_PATTERN;
 
         return {
             CallExpression(node) {
