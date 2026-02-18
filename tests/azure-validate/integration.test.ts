@@ -15,6 +15,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
+import { hasValidationCommand } from "./utils";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-validate";
@@ -143,6 +144,61 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       console.log(`${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+  });
+
+  describe("deployment-validation", () => {
+    const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+
+    test("terminates at validation for static whiteboard web app", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static whiteboard web app and deploy to Azure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+      });
+
+      const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
+      expect(deployInvoked).toBe(false);
+
+      const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const validationCommandRan = hasValidationCommand(agentMetadata);
+      expect(validateInvoked || validationCommandRan).toBe(true);
+    });
+
+    test("terminates at validation for static portfolio website", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+      });
+
+      const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
+      expect(deployInvoked).toBe(false);
+
+      const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const validationCommandRan = hasValidationCommand(agentMetadata);
+      expect(validateInvoked || validationCommandRan).toBe(true);
+    });
+
+    test("terminates at validation for containerized web app on Container Apps", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a containerized web application and deploy to Azure Container Apps.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+      });
+
+      const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
+      expect(deployInvoked).toBe(false);
+
+      const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const validationCommandRan = hasValidationCommand(agentMetadata);
+      expect(validateInvoked || validationCommandRan).toBe(true);
     });
   });
 });
