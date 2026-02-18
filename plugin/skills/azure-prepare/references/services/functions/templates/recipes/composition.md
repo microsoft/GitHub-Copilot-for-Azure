@@ -36,8 +36,14 @@ azd init -t $TEMPLATE -e "$ENV_NAME" --no-prompt
 IF integration IN [http]:
   → DONE. Base template is complete.
 
-IF integration IN [timer, durable, mcp]:
+IF integration IN [timer]:
   → Source-only recipe. Skip to Step 5.
+
+IF integration IN [durable, mcp]:
+  → Source-only recipe, BUT toggle storage endpoints in main.bicep first:
+    - Set `enableQueue: true`  (required for Durable task hub and MCP)
+    - Set `enableTable: true`  (required for Durable history and OpenAI bindings)
+  → Then skip to Step 5.
 
 IF integration IN [cosmosdb, sql, servicebus, eventhubs, blob]:
   → Full recipe. Continue to Step 3.

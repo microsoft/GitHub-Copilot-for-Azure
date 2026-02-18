@@ -31,8 +31,8 @@ HTTP Base Template (per language, from AZD gallery)
 | eventhubs | ✅ EH namespace + hub + consumer group + RBAC + PE | ✅ EventHubTrigger | 🔲 Planned |
 | blob-eventgrid | ✅ EventGrid subscription + system topic | ✅ BlobTrigger (EG) | 🔲 Planned |
 | timer | ❌ None | ✅ TimerTrigger + cron | 🔲 Planned |
-| durable | ❌ None | ✅ Orchestrator + Activity + Client | 🔲 Planned |
-| mcp | ❌ None | ✅ MCPTrigger / `@app.mcp_tool` | 🔲 Planned |
+| durable | ⚙️ Toggle `enableQueue`+`enableTable` in base | ✅ Orchestrator + Activity + Client | 🔲 Planned |
+| mcp | ⚙️ Toggle `enableQueue`+`enableTable` in base | ✅ MCPTrigger / `@app.mcp_tool` | 🔲 Planned |
 
 ## How It Works
 
