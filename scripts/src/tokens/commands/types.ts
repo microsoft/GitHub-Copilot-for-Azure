@@ -133,7 +133,8 @@ export const DEFAULT_LIMITS: TokenLimitsConfig = {
     'SKILL.md': 500,
     'references/**/*.md': 1000,
     'docs/**/*.md': 1500,
-    '**/*.md': 2000
+    '**/*.md': 2000,
+    '*.md': 2000
   },
   overrides: {
     'README.md': 3000,

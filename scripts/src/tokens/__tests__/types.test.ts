@@ -179,6 +179,7 @@ describe('matchesPattern', () => {
   it('matches wildcard patterns', () => {
     expect(matchesPattern('README.md', '*.md')).toBe(true);
     expect(matchesPattern('path/README.md', '**/*.md')).toBe(true);
+    expect(matchesPattern('random.md', '*.md')).toBe(true);
     expect(matchesPattern('file.txt', '*.md')).toBe(false);
   });
 
