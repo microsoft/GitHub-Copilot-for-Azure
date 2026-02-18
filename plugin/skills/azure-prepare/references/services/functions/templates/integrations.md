@@ -9,8 +9,8 @@
 |---------|--------|--------|
 | Cosmos DB | [recipes/cosmosdb/](recipes/cosmosdb/README.md) | ✅ Available |
 | Event Hubs | [recipes/eventhubs/](recipes/eventhubs/README.md) | ✅ Available |
+| Service Bus | [recipes/servicebus/](recipes/servicebus/README.md) | ✅ Available |
 | Azure SQL | recipes/sql/ | 🔲 Planned |
-| Service Bus | recipes/servicebus/ | 🔲 Planned |
 | Blob/Event Grid | recipes/blob-eventgrid/ | 🔲 Planned |
 | Timer | recipes/timer/ | 🔲 Planned (source-only) |
 | Durable | recipes/durable/ | 🔲 Planned (source-only) |

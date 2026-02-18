@@ -27,7 +27,7 @@ HTTP Base Template (per language, from AZD gallery)
 |--------|-----------|--------------|--------|
 | [cosmosdb](cosmosdb/README.md) | ✅ Cosmos account + DB + containers + RBAC + PE | ✅ CosmosDBTrigger | ✅ Available |
 | [eventhubs](eventhubs/README.md) | ✅ EH namespace + hub + consumer group + RBAC + PE | ✅ EventHubTrigger | ✅ Available |
-| servicebus | ✅ SB namespace + queue + RBAC + PE | ✅ ServiceBusTrigger | 🔲 Planned |
+| [servicebus](servicebus/README.md) | ✅ SB namespace + queue + RBAC + PE | ✅ ServiceBusTrigger | ✅ Available |
 | sql | ✅ SQL server + DB + firewall + identity | ✅ SqlTrigger | 🔲 Planned |
 | blob-eventgrid | ✅ EventGrid subscription + system topic | ✅ BlobTrigger (EG) | 🔲 Planned |
 | timer | ❌ None | ✅ TimerTrigger + cron | 🔲 Planned |
