@@ -45,7 +45,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe("Should NOT Trigger", () => {
-    // Prompts that should NOT trigger - no Azure intent
+    // Prompts that should NOT trigger - no Azure intent or other skills
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem",
@@ -53,6 +53,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What is the capital of France?",
       "Calculate the fibonacci sequence",
       "Parse this JSON file",
+      "Run azd up to deploy my app",
+      "Run azd deploy now",
+      "Execute azd up command",
+      "Begin the ship",
+      "Validate the configuration files",
     ];
 
     test.each(shouldNotTriggerPrompts)(

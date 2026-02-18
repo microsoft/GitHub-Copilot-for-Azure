@@ -49,9 +49,9 @@ export function hasTerraformFiles(agentMetadata: AgentMetadata): boolean {
     const args = JSON.stringify(event.data);
     return /\.tf"/i.test(args);
   });
-  
+
   if (foundInToolCalls) return true;
-  
+
   // Also check all assistant messages for references to .tf files
   // This catches cases where files were created via PowerShell or other methods
   const allContent = getAllAssistantMessages(agentMetadata);
@@ -69,9 +69,9 @@ export function hasBicepFiles(agentMetadata: AgentMetadata): boolean {
     const args = JSON.stringify(event.data);
     return /\.bicep"/i.test(args);
   });
-  
+
   if (foundInToolCalls) return true;
-  
+
   // Also check all assistant messages for references to .bicep files
   // This catches cases where files were created via PowerShell or other methods
   const allContent = getAllAssistantMessages(agentMetadata);

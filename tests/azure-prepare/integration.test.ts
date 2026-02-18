@@ -15,11 +15,15 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
+import { hasValidationCommand } from "../azure-validate/utils";
+import { hasPlanReadyForValidation, expectFiles, getDockerContext } from "./utils";
+import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
+const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -168,6 +172,140 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       console.log(`${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
+  });
+
+  describe("prepare-deployment", () => {
+    test("creates project files for static whiteboard web app before validation", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a static whiteboard web app and deploy to Azure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      const planReady = hasPlanReadyForValidation(agentMetadata);
+      expect(planReady).toBe(true);
+    });
+
+    test("creates correct files for AZD with Bicep recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+        [/\.tf$/],
+      );
+    });
+
+    test("creates correct files for Terraform recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure with Terraform as the infrastructure provider.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.tf$/],
+        [/\.bicep$/, /azure\.yaml$/],
+      );
+    });
+
+    test("creates correct files for standalone Bicep recipe", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.parameters\.json$/],
+        [/azure\.yaml$/, /\.tf$/],
+      );
+    });
+  });
+
+  describe("aspire-brownfield", () => {
+    const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
+
+    test("sets correct docker context for Aspire container-build sample", async () => {
+      const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: CONTAINER_BUILD_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expectFiles(workspacePath!, [/azure\.yaml$/], []);
+
+      // The AppHost defines: builder.AddDockerfile("ginapp", "./ginapp")
+      // So azure.yaml should have docker.context: ginapp (not "." or the project root)
+      const dockerContext = getDockerContext(workspacePath!, "ginapp");
+      expect(dockerContext).toBeDefined();
+      expect(dockerContext).toMatch(/ginapp/);
     });
   });
 });
