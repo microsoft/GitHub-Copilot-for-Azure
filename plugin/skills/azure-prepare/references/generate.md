@@ -2,6 +2,17 @@
 
 Generate infrastructure and configuration files based on selected recipe.
 
+## CRITICAL: Check for Special Patterns First
+
+**Before manual generation, check if the project uses patterns that require `azd init --from-code`:**
+
+| Pattern | Detection | Action |
+|---------|-----------|--------|
+| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code` → [aspire.md](aspire.md) |
+| **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code` |
+
+> ⚠️ **For .NET Aspire projects:** Do NOT manually create azure.yaml. Use `azd init --from-code` instead to auto-detect the AppHost. See [aspire.md](aspire.md) for details.
+
 ## CRITICAL: Research Must Be Complete
 
 **DO NOT generate any files without first completing the [Research Components](research.md) step.**

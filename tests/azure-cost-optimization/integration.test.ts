@@ -33,7 +33,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
