@@ -22,11 +22,12 @@ export function hasPlanReadyForValidation(metadata: AgentMetadata): boolean {
 
 /**
  * Recursively list all files under a directory, returning paths relative to the root.
+ * Paths are normalized to use forward slashes for cross-platform regex matching.
  */
 export function listFilesRecursive(dir: string): string[] {
   return fs
     .readdirSync(dir, { recursive: true })
-    .map(p => path.join(dir, String(p)));
+    .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
 }
 
 /**
