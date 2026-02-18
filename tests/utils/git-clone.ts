@@ -5,6 +5,8 @@
  * Useful for integration tests that need a real repository as a workspace.
  */
 
+import { execSync } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import { simpleGit, type SimpleGitOptions } from "simple-git";
 
 export interface CloneOptions {
@@ -35,8 +37,10 @@ export interface CloneOptions {
 export async function cloneRepo(options: CloneOptions): Promise<void> {
   const { repoUrl, targetDir, branch, depth, sparseCheckoutPath } = options;
 
+  mkdirSync(targetDir, { recursive: true });
+
   const gitOptions: Partial<SimpleGitOptions> = {
-    baseDir: process.cwd(),
+    baseDir: targetDir,
     binary: "git",
     maxConcurrentProcesses: 1,
   };
@@ -53,12 +57,10 @@ export async function cloneRepo(options: CloneOptions): Promise<void> {
 
   if (sparseCheckoutPath) {
     // Clone without checking out files, then sparse-checkout the target path
-    cloneArgs.push("--no-checkout");
+    cloneArgs.push("--filter=tree:0", "--no-checkout");
     await git.clone(repoUrl, targetDir, cloneArgs);
-
-    const repoGit = simpleGit({ ...gitOptions, baseDir: targetDir });
-    await repoGit.raw(["sparse-checkout", "set", sparseCheckoutPath]);
-    await repoGit.checkout(branch ?? "HEAD");
+    await git.raw(["sparse-checkout", "set", sparseCheckoutPath]);
+    await git.checkout();
   } else {
     await git.clone(repoUrl, targetDir, cloneArgs);
   }
