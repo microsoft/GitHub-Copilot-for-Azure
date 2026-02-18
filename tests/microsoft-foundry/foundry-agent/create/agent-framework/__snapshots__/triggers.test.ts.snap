@@ -1,0 +1,76 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`agent-framework - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Create AI agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns.
+USE FOR: create agent, build agent, scaffold agent, new agent, agent framework, workflow pattern, multi-agent, MCP tools, create workflow.
+DO NOT USE FOR: deploying agents (use foundry-agent-deploy), evaluating agents (use agent/evaluate), Azure AI Foundry agents without Agent Framework SDK.
+",
+  "extractedKeywords": [
+    "agent",
+    "agents",
+    "azure",
+    "build",
+    "cli",
+    "create",
+    "deploy",
+    "deploying",
+    "evaluate",
+    "evaluating",
+    "foundry",
+    "foundry-agent-deploy",
+    "framework",
+    "function",
+    "identity",
+    "mcp",
+    "microsoft",
+    "multi-agent",
+    "pattern",
+    "patterns",
+    "scaffold",
+    "single-agent",
+    "supports",
+    "tools",
+    "using",
+    "validation",
+    "without",
+    "workflow",
+    "workflows",
+  ],
+  "name": "agent-framework",
+}
+`;
+
+exports[`agent-framework - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "agent",
+  "agents",
+  "azure",
+  "build",
+  "cli",
+  "create",
+  "deploy",
+  "deploying",
+  "evaluate",
+  "evaluating",
+  "foundry",
+  "foundry-agent-deploy",
+  "framework",
+  "function",
+  "identity",
+  "mcp",
+  "microsoft",
+  "multi-agent",
+  "pattern",
+  "patterns",
+  "scaffold",
+  "single-agent",
+  "supports",
+  "tools",
+  "using",
+  "validation",
+  "without",
+  "workflow",
+  "workflows",
+]
+`;

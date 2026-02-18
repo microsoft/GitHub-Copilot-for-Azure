@@ -67,8 +67,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("create-ghcp-agent.md");
     });
 
-    test("references agent/deploy sub-skill", () => {
-      expect(skill.content).toContain("agent/deploy");
+    test("references foundry-agent sub-skill", () => {
+      expect(skill.content).toContain("foundry-agent");
       expect(skill.content).toContain("deploy-agent.md");
     });
 

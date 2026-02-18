@@ -3,7 +3,7 @@ name: foundry-create-project
 description: |
   Create a new Azure AI Foundry project using Azure Developer CLI (azd) to provision infrastructure for hosting AI agents and models.
   USE FOR: create Foundry project, new AI Foundry project, set up Foundry, azd init Foundry, provision Foundry infrastructure, onboard to Foundry, create Azure AI project, set up AI project.
-  DO NOT USE FOR: deploying agents to existing projects (use agent/deploy), creating agent code (use agent/create), deploying AI models from catalog (use microsoft-foundry main skill), Azure Functions (use azure-functions).
+  DO NOT USE FOR: deploying agents to existing projects (use foundry-agent-deploy), creating agent code (use agent/create), deploying AI models from catalog (use microsoft-foundry main skill), Azure Functions (use azure-functions).
 allowed-tools: Read, Write, Bash, AskUserQuestion
 ---
 
@@ -90,7 +90,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ### Step 6: Next Steps
 
-- Deploy an agent → `agent/deploy` skill
+- Deploy an agent → `foundry-agent-deploy` skill
 - Browse models → `foundry_models_list` MCP tool
 - Manage project → https://ai.azure.com
 
@@ -115,7 +115,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ## Related Skills
 
-- **agent/deploy** — Deploy agents to the created project
+- **foundry-agent-deploy** — Deploy agents to the created project
 - **agent/create** — Create a new agent for deployment
 
 ## Resources

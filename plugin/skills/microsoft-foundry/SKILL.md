@@ -16,14 +16,14 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **agent** | Create, package, deploy, invoke, debug, logs Foundry AI Agents | [agent](agent/SKILL.md) |
+| **foundry-agent** | Create, package, deploy, invoke, debug, logs Foundry AI Agents | [foundry-agent](foundry-agent/SKILL.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
-> 💡 **Tip:** For a complete onboarding flow: `project/create` -> `agent`. If the user only wants to *create and deploy* or work with agent then route directly to `agent/SKILL.md` and use the relevant sub-skills (`package`, `deploy`, `invoke`) as needed.
+> 💡 **Tip:** For a complete onboarding flow: `project/create` -> `foundry-agent`. If the user only wants to *create and deploy* or work with agent then route directly to `foundry-agent/SKILL.md` and use the relevant sub-skills (`foundry-agent-package`, `foundry-agent-deploy`, `foundry-agent-invoke`) as needed.
 
 > 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
