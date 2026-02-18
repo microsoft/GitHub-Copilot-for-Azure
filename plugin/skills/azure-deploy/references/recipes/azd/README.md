@@ -19,7 +19,8 @@ Deploy to Azure using Azure Developer CLI (azd).
 |------|------|---------|
 | 1 | **Verify environment** | `azd env get-values` — Confirm AZURE_SUBSCRIPTION_ID and AZURE_LOCATION set |
 | 2 | **Deploy** | `azd up --no-prompt` |
-| 3 | **Verify** | See [Verification](verify.md) |
+| 3 | **Post-Deploy** | [Post-Deployment Steps](post-deployment.md) — If using SQL + managed identity |
+| 4 | **Verify** | See [Verification](verify.md) |
 
 ## Common Mistakes
 
@@ -65,6 +66,7 @@ azd deploy api --no-prompt
 ## References
 
 - [Pre-deploy Checklist](../../pre-deploy-checklist.md) — **REQUIRED**
+- [Post-Deployment Steps](post-deployment.md) — SQL + managed identity setup
 - [Azure Functions Deployment](functions-deploy.md)
 - [Verification](verify.md)
 - [Error Handling](errors.md)
