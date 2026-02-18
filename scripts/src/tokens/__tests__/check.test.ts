@@ -2,7 +2,7 @@
  * Tests for check command - token limit validation
  */
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdirSync, writeFileSync, rmSync, mkdtempSync, readFileSync, existsSync } from 'node:fs';
@@ -40,6 +40,13 @@ describe('check command', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
     try {
       rmSync(testRootDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
+  });
+  afterAll(() => {
+    try {
+      rmSync(testDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     } catch (err) {
       // Ignore cleanup errors in tests
     }

@@ -2,7 +2,7 @@
  * Tests for suggest command - optimization suggestions
  */
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
@@ -19,12 +19,18 @@ describe('suggest command', () => {
   beforeEach(() => {
     mkdirSync(testRootDir, { recursive: true });
   });
-
   afterEach(async () => {
     // Small delay to allow file handles to close on Windows
     await new Promise(resolve => setTimeout(resolve, 10));
     try {
       rmSync(testRootDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (err) {
+      // Ignore cleanup errors in tests
+    }
+  });
+  afterAll(() => {
+    try {
+      rmSync(testDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
     } catch (err) {
       // Ignore cleanup errors in tests
     }
