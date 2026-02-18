@@ -4,6 +4,8 @@
  * Test isolated skill logic and validation rules.
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-prepare";
@@ -77,21 +79,17 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Aspire Support", () => {
     test("aspire.md reference file exists", () => {
-      const fs = require("fs");
-      const path = require("path");
       const aspirePath = path.join(
-        __dirname,
-        "../../plugin/skills/azure-prepare/references/recipes/azd/aspire.md"
+        SKILLS_PATH,
+        "azure-prepare/references/recipes/azd/aspire.md"
       );
       expect(fs.existsSync(aspirePath)).toBe(true);
     });
 
     test("aspire.md contains Docker context guidance", () => {
-      const fs = require("fs");
-      const path = require("path");
       const aspirePath = path.join(
-        __dirname,
-        "../../plugin/skills/azure-prepare/references/recipes/azd/aspire.md"
+        SKILLS_PATH,
+        "azure-prepare/references/recipes/azd/aspire.md"
       );
       const aspireContent = fs.readFileSync(aspirePath, "utf-8");
       expect(aspireContent).toContain("AddDockerfile");
@@ -100,11 +98,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("azure-yaml.md references aspire.md", () => {
-      const fs = require("fs");
-      const path = require("path");
       const azureYamlPath = path.join(
-        __dirname,
-        "../../plugin/skills/azure-prepare/references/recipes/azd/azure-yaml.md"
+        SKILLS_PATH,
+        "azure-prepare/references/recipes/azd/azure-yaml.md"
       );
       const azureYamlContent = fs.readFileSync(azureYamlPath, "utf-8");
       expect(azureYamlContent).toContain("aspire.md");
