@@ -16,10 +16,13 @@ import {
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 import * as fs from "fs";
+import { hasBicepFiles, hasTerraformFiles } from "../azure-deploy/utils";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
+const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+const prepareTestTimeoutMs = 1800000;
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -169,5 +172,37 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
+  });
+
+  // Static Web Apps (SWA) preparation tests
+  describe("static-web-apps-prepare", () => {
+    test("prepares static portfolio website", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const hasBicep = hasBicepFiles(agentMetadata);
+
+      expect(isPrepareInvoked).toBe(true);
+      expect(hasBicep).toBe(true);
+    }, prepareTestTimeoutMs);
+
+    // Terraform test
+    test("prepares static portfolio website with Terraform infrastructure", async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using azd with Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT
+      });
+
+      const isPrepareInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
+      const hasTerraform = hasTerraformFiles(agentMetadata);
+
+      expect(isPrepareInvoked).toBe(true);
+      expect(hasTerraform).toBe(true);
+    }, prepareTestTimeoutMs);
   });
 });
