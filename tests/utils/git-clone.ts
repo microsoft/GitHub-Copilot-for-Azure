@@ -5,7 +5,6 @@
  * Useful for integration tests that need a real repository as a workspace.
  */
 
-import { execSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { simpleGit, type SimpleGitOptions } from "simple-git";
 
