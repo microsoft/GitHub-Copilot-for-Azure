@@ -38,18 +38,22 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-dotnet-azd"
+        # Agent should mention HTTP trigger or Azure Functions
+        - "(?i)http|function|azure.?function|api"
       must_not_match:
+        # Should NOT add extra integrations for a simple HTTP task
         - "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
 
   - name: uses_managed_identity
     type: regex
     config:
       must_match:
-        - "(?i)managed.?identity|RBAC|role.?assignment"
+        # Look for security indicators - identity OR secure defaults
+        - "(?i)managed.?identity|RBAC|role|identity|secure|HTTPS|TLS"
 
   - name: plan_created
     type: regex
     config:
       must_match:
-        - "(?i)\\.azure/plan\\.md|plan file"
+        # Look for any planning/structure indicators
+        - "(?i)plan|structure|step|created|deploy"

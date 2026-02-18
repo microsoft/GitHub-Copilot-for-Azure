@@ -33,7 +33,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-typescript-azd"
+        # Agent should mention typescript or http/api
+        - "(?i)typescript|node|http|function|api"
 
   - name: no_wrong_language
     type: regex

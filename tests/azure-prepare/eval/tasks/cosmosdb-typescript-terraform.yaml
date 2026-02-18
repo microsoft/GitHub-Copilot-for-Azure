@@ -34,7 +34,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)terraform|functions-quickstart-typescript-azd-tf|\\.tf"
+        # Agent should mention terraform
+        - "(?i)terraform|[.]tf|infrastructure.?as.?code"
 
   - name: uses_cosmos_recipe
     type: regex

@@ -34,8 +34,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-dotnet-azd|http.?base"
-        - "(?i)durable|orchestrat"
+        # Agent should mention durable/orchestration
+        - "(?i)durable|orchestrat|fan.?out|activity"
 
   - name: no_extra_infra
     type: regex

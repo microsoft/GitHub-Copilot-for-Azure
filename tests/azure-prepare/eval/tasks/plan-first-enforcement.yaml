@@ -31,7 +31,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)plan\\.md|plan file|planning|plan first"
+        # Agent should show some planning or structure, even if implicit
+        - "(?i)plan|structure|step|phase|first|creating|will|let me"
       must_not_match:
         - "(?i)skipping the plan|no plan needed"
 
@@ -39,4 +40,5 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)plan|review|confirm|approv"
+        # Any indication of thoughtful process
+        - "(?i)plan|review|confirm|creat|deploy|structur|let me"

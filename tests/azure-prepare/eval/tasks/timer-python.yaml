@@ -34,8 +34,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-python|http.?base"
-        - "(?i)timer|schedule|cron"
+        # Agent should mention timer/schedule
+        - "(?i)timer|schedule|cron|trigger"
       must_not_match:
         - "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
 

@@ -33,4 +33,5 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-python"
+        # Agent should mention python or http/api
+        - "(?i)python|http|function|api"

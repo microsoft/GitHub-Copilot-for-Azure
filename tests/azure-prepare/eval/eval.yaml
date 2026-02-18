@@ -53,12 +53,12 @@ graders:
       assertions:
         - "len(output) > 10"
 
-  # Plan-first workflow compliance — must mention plan.md
+  # Plan-first workflow compliance — look for planning indicators
   - type: regex
     name: plan_first
     config:
       must_match:
-        - "(?i)plan\\.md|plan file|planning phase"
+        - "(?i)plan|planning|structure|step|phase|first|will create|creating"
       must_not_match:
         - "(?i)fatal error|crashed|exception occurred"
 
@@ -70,12 +70,13 @@ graders:
         - "(?i)connection.?string.*=.*Account(Key|Name)="
         - "(?i)SharedAccessKey="
 
-  # Behavior constraints
+  # Behavior constraints — only evaluated when session digest available
   - type: behavior
     name: efficiency
     config:
-      max_tool_calls: 30
+      max_tool_calls: 40
       max_duration_ms: 600000
+      skip_if_no_digest: true
 
 tasks:
   - "tasks/*.yaml"

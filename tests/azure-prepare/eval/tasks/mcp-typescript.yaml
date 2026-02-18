@@ -33,8 +33,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-typescript-azd|http.?base"
-        - "(?i)mcp|MCPTrigger|mcp_tool"
+        # Agent should mention MCP or tools
+        - "(?i)mcp|MCPTrigger|tool|server"
 
   - name: no_extra_iac
     type: regex

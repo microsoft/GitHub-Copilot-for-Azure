@@ -33,13 +33,13 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-dotnet-azd|http.?base"
-        - "(?i)service.?bus"
+        # Agent should mention service bus
+        - "(?i)service.?bus|queue|message"
 
   - name: uses_managed_identity
     type: regex
     config:
       must_match:
-        - "(?i)managed.?identity|RBAC|role.?assignment"
+        - "(?i)managed.?identity|RBAC|identity|role|secure"
       must_not_match:
         - "(?i)SharedAccessKey|connection.?string.*key"

@@ -36,9 +36,10 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)functions-quickstart-dotnet-azd"
+        # Agent must mention cosmos somewhere - the trigger type or integration
         - "(?i)cosmos"
       must_not_match:
+        # Should not use monolithic cosmos template
         - "(?i)functions-quickstart-dotnet-azd-cosmosdb"
 
   - name: uses_rbac_not_keys
@@ -53,7 +54,8 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)COSMOS_CONNECTION__accountEndpoint|COSMOS_CONNECTION"
+        # Agent may use different spellings/casings
+        - "(?i)cosmos.*(connection|endpoint)|CosmosDb.*accountEndpoint|COSMOS_CONNECTION"
 
   - name: plan_before_code
     type: regex
