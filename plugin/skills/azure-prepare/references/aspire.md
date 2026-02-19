@@ -182,34 +182,9 @@ For Container Apps deployments with Azure Container Registry and Managed Identit
 
 ### Proactive Setup (Recommended)
 
-**Do this BEFORE running `azd up` to avoid deployment failures:**
+**Do this AFTER `azd provision` but BEFORE `azd deploy` to avoid deployment failures:**
 
-#### Option 1: Use `azd infra synth` (azd 1.5.0+)
-
-Generate explicit infrastructure with proper outputs:
-
-```bash
-# 1. After azd init, generate infrastructure to disk
-azd infra synth
-
-# 2. Add outputs to infra/main.bicep (or the main module file)
-cat >> infra/main.bicep << 'EOF'
-
-// Environment variables for Container Apps deployment
-output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
-output AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID string = managedIdentity.id
-output MANAGED_IDENTITY_CLIENT_ID string = managedIdentity.properties.clientId
-EOF
-
-# 3. Now azd up will automatically populate these variables
-azd up --no-prompt
-```
-
-> 💡 **Note:** Replace `containerRegistry` and `managedIdentity` with the actual Bicep resource names in your generated `infra/` files. Check `infra/main.bicep` or `infra/resources.bicep` for the exact resource declaration names.
-
-#### Option 2: Set Variables After Provisioning
-
-If you can't use `azd infra synth`, set variables manually after `azd provision`:
+Set variables manually after `azd provision`:
 
 ```bash
 # 1. Provision infrastructure first
@@ -243,13 +218,6 @@ azd env set MANAGED_IDENTITY_CLIENT_ID (az identity list --resource-group $rgNam
 # 4. Deploy application
 azd deploy --no-prompt
 ```
-
-### Why This is Needed
-
-Aspire's "limited mode" generates infrastructure in-memory during `azd provision`. While it creates all necessary Azure resources (Container Registry, Managed Identity, Container Apps Environment), it doesn't populate the environment variables that reference those resources. The `azd deploy` phase needs these variables to:
-- Log in to the Container Registry
-- Configure Managed Identity authentication
-- Set up Container App identity bindings
 
 ## Next Steps
 

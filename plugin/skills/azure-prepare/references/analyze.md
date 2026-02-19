@@ -66,6 +66,3 @@ Converting an existing application to run on Azure.
 | `infra/*.tf` exists | Terraform IaC |
 | `Dockerfile` exists | Containerized app |
 | No Azure files | NEW or MODERNIZE mode |
-| `*.AppHost.csproj` exists | .NET Aspire project (likely using azd) |
-
-> 💡 **.NET Aspire Projects:** Aspire projects typically use azd in "limited mode" where infrastructure is generated in-memory. When working with Aspire Container Apps deployments, proactive environment variable setup is **required** to prevent deployment failures. See [aspire.md](aspire.md#environment-variables-for-container-apps) for critical setup steps.

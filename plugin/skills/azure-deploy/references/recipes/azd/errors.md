@@ -76,7 +76,7 @@ After setting these variables, retry the deployment:
 azd deploy --no-prompt
 ```
 
-> 💡 **Tip:** This issue is specific to Aspire limited mode. If you have an explicit `infra/` folder with Bicep or Terraform files, you can add outputs that automatically populate these environment variables. See [Troubleshooting](../../troubleshooting.md) for more details.
+> 💡 **Tip:** This issue is specific to Aspire limited mode. Manually setting these environment variables after `azd provision` is the recommended workaround.
 
 ## Retry
 
