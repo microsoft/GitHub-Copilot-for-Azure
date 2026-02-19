@@ -76,7 +76,7 @@ describe('compare command', () => {
     it('rejects refs exceeding max length', () => {
       const longRef = 'a'.repeat(256);
       expect(isValidGitRef(longRef)).toBe(false);
-      
+
       const validLongRef = 'a'.repeat(255);
       expect(isValidGitRef(validLongRef)).toBe(true);
     });
@@ -152,72 +152,6 @@ describe('compare command', () => {
     it('returns increase emoji for small increase', () => {
       expect(getChangeEmoji(100, 10)).toBe('📈');
       expect(getChangeEmoji(100, 20)).toBe('📈');
-    });
-  });
-
-  describe('comparison report structure', () => {
-    it('creates valid comparison report', () => {
-      const report = {
-        baseRef: 'main',
-        headRef: 'HEAD',
-        timestamp: new Date().toISOString(),
-        summary: {
-          totalBefore: 1000,
-          totalAfter: 1100,
-          totalDiff: 100,
-          percentChange: 10,
-          filesAdded: 1,
-          filesRemoved: 0,
-          filesModified: 2,
-          filesIncreased: 2,
-          filesDecreased: 1
-        },
-        files: [
-          {
-            file: 'new.md',
-            before: null,
-            after: { tokens: 100, characters: 400, lines: 20 },
-            diff: 100,
-            percentChange: 100,
-            status: 'added' as const
-          },
-          {
-            file: 'modified.md',
-            before: { tokens: 500, characters: 2000, lines: 100 },
-            after: { tokens: 550, characters: 2200, lines: 110 },
-            diff: 50,
-            percentChange: 10,
-            status: 'modified' as const
-          }
-        ]
-      };
-
-      expect(report.baseRef).toBe('main');
-      expect(report.headRef).toBe('HEAD');
-      expect(report.summary.totalDiff).toBe(100);
-      expect(report.files.length).toBe(2);
-      expect(report.files[0].status).toBe('added');
-      expect(report.files[1].status).toBe('modified');
-    });
-
-    it('calculates correct percent change', () => {
-      const before = 1000;
-      const after = 1100;
-      const diff = after - before;
-      const percentChange = Math.round((diff / before) * 100);
-      
-      expect(percentChange).toBe(10);
-    });
-
-    it('handles zero before case for percent change', () => {
-      const before = 0;
-      const after = 100;
-      // When before is 0, percent calculation uses special logic for new files
-      const percentChange = before === 0
-        ? (after > 0 ? 100 : 0)
-        : Math.round(((after - before) / before) * 100);
-      
-      expect(percentChange).toBe(100);
     });
   });
 });
