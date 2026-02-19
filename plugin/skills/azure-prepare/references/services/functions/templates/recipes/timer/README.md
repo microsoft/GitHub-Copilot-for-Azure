@@ -47,12 +47,14 @@ Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
 
 | Path | Description |
 |------|-------------|
-| `source/python.md` | Python TimerTrigger source code |
-| `source/typescript.md` | TypeScript TimerTrigger source code |
-| `source/javascript.md` | JavaScript TimerTrigger source code |
-| `source/dotnet.md` | C# (.NET) TimerTrigger source code |
-| `source/java.md` | Java TimerTrigger source code |
-| `source/powershell.md` | PowerShell TimerTrigger source code |
+| [source/python.md](source/python.md) | Python TimerTrigger source code |
+| [source/typescript.md](source/typescript.md) | TypeScript TimerTrigger source code |
+| [source/javascript.md](source/javascript.md) | JavaScript TimerTrigger source code |
+| [source/dotnet.md](source/dotnet.md) | C# (.NET) TimerTrigger source code |
+| [source/java.md](source/java.md) | Java TimerTrigger source code |
+| [source/powershell.md](source/powershell.md) | PowerShell TimerTrigger source code |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## Common Issues
 

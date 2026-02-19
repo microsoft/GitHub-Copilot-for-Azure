@@ -77,10 +77,14 @@ Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
 
 | Path | Description |
 |------|-------------|
-| `source/python.md` | Python Durable Functions source code |
-| `source/typescript.md` | TypeScript Durable Functions source code |
-| `source/javascript.md` | JavaScript Durable Functions source code |
-| `source/dotnet.md` | C# (.NET) Durable Functions source code |
+| [source/python.md](source/python.md) | Python Durable Functions source code |
+| [source/typescript.md](source/typescript.md) | TypeScript Durable Functions source code |
+| [source/javascript.md](source/javascript.md) | JavaScript Durable Functions source code |
+| [source/dotnet.md](source/dotnet.md) | C# (.NET) Durable Functions source code |
+| [source/java.md](source/java.md) | Java Durable Functions source code |
+| [source/powershell.md](source/powershell.md) | PowerShell Durable Functions source code |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## Patterns Included
 

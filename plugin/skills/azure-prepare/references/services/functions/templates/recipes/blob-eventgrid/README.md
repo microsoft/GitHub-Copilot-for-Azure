@@ -68,8 +68,14 @@ PDFProcessorSTORAGE__clientId: uamiClientId
 
 | Path | Description |
 |------|-------------|
-| `source/python.md` | Python blob trigger with Event Grid |
-| `source/typescript.md` | TypeScript blob trigger with Event Grid |
+| [source/python.md](source/python.md) | Python blob trigger with Event Grid |
+| [source/typescript.md](source/typescript.md) | TypeScript blob trigger with Event Grid |
+| [source/javascript.md](source/javascript.md) | JavaScript blob trigger with Event Grid |
+| [source/dotnet.md](source/dotnet.md) | C# (.NET) blob trigger with Event Grid |
+| [source/java.md](source/java.md) | Java blob trigger with Event Grid |
+| [source/powershell.md](source/powershell.md) | PowerShell blob trigger with Event Grid |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## Common Issues
 

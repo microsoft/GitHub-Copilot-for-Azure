@@ -105,14 +105,17 @@ appSettings: {
 
 | Path | Description |
 |------|-------------|
-| `bicep/eventhubs.bicep` | Bicep module — namespace + hub + consumer group + RBAC |
-| `bicep/eventhubs-network.bicep` | Bicep module — private endpoint + DNS (conditional) |
-| `terraform/eventhubs.tf` | Terraform — all Event Hubs resources + RBAC + networking |
-| `source/python.md` | Python EventHubTrigger source code |
-| `source/typescript.md` | TypeScript EventHubTrigger source code |
-| `source/dotnet.md` | C# EventHubTrigger source code |
-| `source/java.md` | Java EventHubTrigger source code |
-| `source/powershell.md` | PowerShell EventHubTrigger source code |
+| [bicep/eventhubs.bicep](bicep/eventhubs.bicep) | Bicep module — namespace + hub + consumer group + RBAC |
+| [bicep/eventhubs-network.bicep](bicep/eventhubs-network.bicep) | Bicep module — private endpoint + DNS (conditional) |
+| [terraform/eventhubs.tf](terraform/eventhubs.tf) | Terraform — all Event Hubs resources + RBAC + networking |
+| [source/python.md](source/python.md) | Python EventHubTrigger source code |
+| [source/typescript.md](source/typescript.md) | TypeScript EventHubTrigger source code |
+| [source/javascript.md](source/javascript.md) | JavaScript EventHubTrigger source code |
+| [source/dotnet.md](source/dotnet.md) | C# EventHubTrigger source code |
+| [source/java.md](source/java.md) | Java EventHubTrigger source code |
+| [source/powershell.md](source/powershell.md) | PowerShell EventHubTrigger source code |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## Common Issues
 

@@ -115,11 +115,14 @@ appSettings: {
 
 | Path | Description |
 |------|-------------|
-| `bicep/cosmos.bicep` | Bicep module — all Cosmos resources + RBAC |
-| `bicep/cosmos-network.bicep` | Bicep module — private endpoint + DNS (conditional) |
-| `terraform/cosmos.tf` | Terraform — all Cosmos resources + RBAC + networking |
-| `source/dotnet.md` | C# CosmosDBTrigger source code |
-| `source/typescript.md` | TypeScript CosmosDBTrigger source code |
-| `source/python.md` | Python CosmosDBTrigger source code |
-| `source/java.md` | Java CosmosDBTrigger source code |
-| `source/powershell.md` | PowerShell CosmosDBTrigger source code |
+| [bicep/cosmos.bicep](bicep/cosmos.bicep) | Bicep module — all Cosmos resources + RBAC |
+| [bicep/cosmos-network.bicep](bicep/cosmos-network.bicep) | Bicep module — private endpoint + DNS (conditional) |
+| [terraform/cosmos.tf](terraform/cosmos.tf) | Terraform — all Cosmos resources + RBAC + networking |
+| [source/dotnet.md](source/dotnet.md) | C# CosmosDBTrigger source code |
+| [source/typescript.md](source/typescript.md) | TypeScript CosmosDBTrigger source code |
+| [source/javascript.md](source/javascript.md) | JavaScript CosmosDBTrigger source code |
+| [source/python.md](source/python.md) | Python CosmosDBTrigger source code |
+| [source/java.md](source/java.md) | Java CosmosDBTrigger source code |
+| [source/powershell.md](source/powershell.md) | PowerShell CosmosDBTrigger source code |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |

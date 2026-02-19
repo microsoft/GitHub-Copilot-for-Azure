@@ -83,14 +83,16 @@ var appSettings = union(baseAppSettings, servicebus.outputs.appSettings)
 
 | Path | Description |
 |------|-------------|
-| `bicep/servicebus.bicep` | Bicep module — namespace + queue + RBAC |
-| `terraform/servicebus.tf` | Terraform module — namespace + queue + RBAC |
-| `source/python.md` | Python ServiceBusTrigger source code |
-| `source/typescript.md` | TypeScript ServiceBusTrigger source code |
-| `source/javascript.md` | JavaScript ServiceBusTrigger source code |
-| `source/dotnet.md` | C# (.NET) ServiceBusTrigger source code (isolated worker) |
-| `source/java.md` | Java ServiceBusTrigger source code |
-| `source/powershell.md` | PowerShell ServiceBusTrigger source code |
+| [bicep/servicebus.bicep](bicep/servicebus.bicep) | Bicep module — namespace + queue + RBAC |
+| [terraform/servicebus.tf](terraform/servicebus.tf) | Terraform module — namespace + queue + RBAC |
+| [source/python.md](source/python.md) | Python ServiceBusTrigger source code |
+| [source/typescript.md](source/typescript.md) | TypeScript ServiceBusTrigger source code |
+| [source/javascript.md](source/javascript.md) | JavaScript ServiceBusTrigger source code |
+| [source/dotnet.md](source/dotnet.md) | C# (.NET) ServiceBusTrigger source code (isolated worker) |
+| [source/java.md](source/java.md) | Java ServiceBusTrigger source code |
+| [source/powershell.md](source/powershell.md) | PowerShell ServiceBusTrigger source code |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## Common Issues
 

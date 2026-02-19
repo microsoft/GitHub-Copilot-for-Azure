@@ -57,9 +57,14 @@ AZURE_SQL_CONNECTION_STRING_KEY: 'Server=${sqlServer.properties.fullyQualifiedDo
 
 | Path | Description |
 |------|-------------|
-| `source/python.md` | Python SQL trigger + output |
-| `source/typescript.md` | TypeScript SQL trigger + output |
-| `source/dotnet.md` | C# (.NET) SQL trigger + output |
+| [source/python.md](source/python.md) | Python SQL trigger + output |
+| [source/typescript.md](source/typescript.md) | TypeScript SQL trigger + output |
+| [source/javascript.md](source/javascript.md) | JavaScript SQL trigger + output |
+| [source/dotnet.md](source/dotnet.md) | C# (.NET) SQL trigger + output |
+| [source/java.md](source/java.md) | Java SQL trigger + output |
+| [source/powershell.md](source/powershell.md) | PowerShell SQL trigger + output |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## SQL Change Tracking
 

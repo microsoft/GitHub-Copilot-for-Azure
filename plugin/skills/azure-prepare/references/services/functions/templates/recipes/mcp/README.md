@@ -49,8 +49,14 @@ Each MCP tool is a function that:
 
 | Path | Description |
 |------|-------------|
-| `source/python.md` | Python MCP tools using `@app.mcp_tool` decorator |
-| `source/typescript.md` | TypeScript MCP tools |
+| [source/python.md](source/python.md) | Python MCP tools using `@app.mcp_tool` decorator |
+| [source/typescript.md](source/typescript.md) | TypeScript MCP tools |
+| [source/javascript.md](source/javascript.md) | JavaScript MCP tools |
+| [source/dotnet.md](source/dotnet.md) | C# (.NET) MCP tools |
+| [source/java.md](source/java.md) | Java MCP tools |
+| [source/powershell.md](source/powershell.md) | PowerShell MCP tools |
+| [eval/summary.md](eval/summary.md) | Evaluation summary |
+| [eval/python.md](eval/python.md) | Python evaluation results |
 
 ## Example Tools Included
 
