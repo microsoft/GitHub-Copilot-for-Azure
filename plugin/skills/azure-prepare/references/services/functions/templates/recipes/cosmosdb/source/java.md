@@ -66,3 +66,9 @@ Add to `pom.xml` (extensions bundle handles this, but for explicit control):
 ## Files to Remove from HTTP Base
 
 - Remove or replace the HTTP trigger Java class(es)
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

@@ -116,3 +116,9 @@ public class SqlFunctions {
 ```
 AZURE_SQL_CONNECTION_STRING_KEY=Server=<server>.database.windows.net;Database=<db>;Authentication=Active Directory Managed Identity;User Id=<uami-client-id>
 ```
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

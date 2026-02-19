@@ -98,3 +98,9 @@ Add to `.csproj`:
 - `%EVENTHUB_CONSUMER_GROUP%` - Reads from app setting at runtime
 - `Connection = "EventHubConnection"` - Uses settings prefixed with `EventHubConnection__`
 - Uses isolated worker model (recommended for .NET 8+)
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

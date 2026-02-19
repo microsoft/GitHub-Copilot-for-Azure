@@ -21,6 +21,16 @@ HTTP Base Template (per language, from AZD gallery)
        = Complete deployable project → `azd up`
 ```
 
+## Common Patterns
+
+All recipes should use these shared patterns:
+
+| Pattern | File | Description |
+|---------|------|-------------|
+| [UAMI Bindings](common/uami-bindings.md) | `common/uami-bindings.md` | **MANDATORY** — App settings for managed identity connections |
+| [Error Handling](common/error-handling.md) | `common/error-handling.md` | Try/catch + logging patterns per language |
+| [Health Check](common/health-check.md) | `common/health-check.md` | Health endpoint for monitoring/load balancers |
+
 ## Available Recipes
 
 | Recipe | IaC Delta? | Source Delta? | Status |

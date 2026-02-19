@@ -104,3 +104,9 @@ Add to `pom.xml`:
 - `%EVENTHUB_CONSUMER_GROUP%` - Reads from app setting at runtime
 - `connection = "EventHubConnection"` - Uses settings prefixed with `EventHubConnection__`
 - `cardinality = Cardinality.MANY` - Batch processing for better throughput
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

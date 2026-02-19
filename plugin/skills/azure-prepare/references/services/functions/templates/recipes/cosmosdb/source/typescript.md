@@ -67,3 +67,9 @@ Add to `package.json`:
 
 - `src/functions/httpGetFunction.ts`
 - `src/functions/httpPostBodyFunction.ts`
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

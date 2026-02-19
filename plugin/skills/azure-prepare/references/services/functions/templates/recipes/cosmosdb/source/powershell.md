@@ -56,3 +56,9 @@ if ($documents.Count -gt 0) {
 ## Files to Remove from HTTP Base
 
 - Remove the HTTP trigger function folder(s) (e.g., `httpget/`, `httppost/`)
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

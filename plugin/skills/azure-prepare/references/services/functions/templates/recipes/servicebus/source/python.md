@@ -98,3 +98,9 @@ Set these in `local.settings.json`:
 
 > **Note:** For local development with UAMI, use Azure Identity `DefaultAzureCredential`
 > which will use your `az login` credentials.
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

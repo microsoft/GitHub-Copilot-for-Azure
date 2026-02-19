@@ -74,3 +74,9 @@ Add to `.csproj`:
 
 - `httpGetFunction.cs`
 - `httpPostBodyFunction.cs`
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

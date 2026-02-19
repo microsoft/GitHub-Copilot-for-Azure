@@ -103,3 +103,9 @@ curl -X POST "https://<func>.azurewebsites.net/api/httpTriggerSqlOutput?code=<ke
   -H "Content-Type: application/json" \
   -d '{"id": "1", "title": "Test", "url": "https://example.com", "completed": false}'
 ```
+
+## Common Patterns
+
+- [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
+- [Health Check](../../common/health-check.md) — Health endpoint for monitoring
+- [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings
