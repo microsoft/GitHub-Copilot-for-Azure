@@ -68,6 +68,8 @@ PDFProcessorSTORAGE__clientId: uamiClientId
 
 | Path | Description |
 |------|-------------|
+| [bicep/blob.bicep](bicep/blob.bicep) | Bicep module for Storage + Event Grid |
+| [terraform/blob.tf](terraform/blob.tf) | Terraform module for Storage + Event Grid |
 | [source/python.md](source/python.md) | Python blob trigger with Event Grid |
 | [source/typescript.md](source/typescript.md) | TypeScript blob trigger with Event Grid |
 | [source/javascript.md](source/javascript.md) | JavaScript blob trigger with Event Grid |

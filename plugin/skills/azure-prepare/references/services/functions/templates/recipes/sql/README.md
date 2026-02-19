@@ -57,6 +57,8 @@ AZURE_SQL_CONNECTION_STRING_KEY: 'Server=${sqlServer.properties.fullyQualifiedDo
 
 | Path | Description |
 |------|-------------|
+| [bicep/sql.bicep](bicep/sql.bicep) | Bicep module for SQL Server + Database |
+| [terraform/sql.tf](terraform/sql.tf) | Terraform module for SQL Server + Database |
 | [source/python.md](source/python.md) | Python SQL trigger + output |
 | [source/typescript.md](source/typescript.md) | TypeScript SQL trigger + output |
 | [source/javascript.md](source/javascript.md) | JavaScript SQL trigger + output |
