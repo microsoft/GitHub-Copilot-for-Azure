@@ -25,13 +25,15 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 ### Check for Existing Codebase Patterns
 
-**⚠️ CRITICAL: For existing codebases with special patterns, use `azd init --from-code` instead of manual generation.**
+**⚠️ CRITICAL: For existing codebases with special patterns, use `azd init --from-code -e <environment-name>` instead of manual generation.**
 
 | Pattern | Detection | Action |
 |---------|-----------|--------|
-| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code` → [aspire.md](../../aspire.md) |
+| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code -e <environment-name>` → [aspire.md](../../aspire.md) |
 | **Existing azure.yaml** | `azure.yaml` present | MODIFY mode - update existing config |
 | **New project** | No azure.yaml, no special patterns | Manual generation (steps below) |
+
+> 💡 **Note:** The `-e <environment-name>` flag is **required** when running `azd init --from-code` in non-interactive environments (agents, CI/CD pipelines). Without it, the command will fail with a prompt error.
 
 ### References for Manual Generation
 

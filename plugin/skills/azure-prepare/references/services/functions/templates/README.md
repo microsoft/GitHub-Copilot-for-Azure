@@ -8,11 +8,11 @@ AZD template selection for Azure Functions deployments.
 
 | Scenario | Action |
 |----------|--------|
-| **New Functions project** | Use `azd init -t <TEMPLATE>` (guidance below) |
-| **Existing Functions code** | Use `azd init --from-code` instead |
-| **.NET Aspire project** | Use `azd init --from-code` → [aspire.md](../../../aspire.md) |
+| **New Functions project** | Use `azd init -t <TEMPLATE> -e <environment-name>` (guidance below) |
+| **Existing Functions code** | Use `azd init --from-code -e <environment-name>` instead |
+| **.NET Aspire project** | Use `azd init --from-code -e <environment-name>` → [aspire.md](../../../aspire.md) |
 
-> 💡 **Tip:** If code already exists, use `azd init --from-code` to auto-detect the project structure instead of using templates.
+> 💡 **Tip:** If code already exists, use `azd init --from-code -e <environment-name>` to auto-detect the project structure instead of using templates. **The `-e` flag is required for non-interactive environments.**
 
 ## Template Selection
 
