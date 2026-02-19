@@ -18,6 +18,17 @@
 | Bicep | blob.bicep | ✅ | ✅ | PASS |
 | Terraform | blob.tf | ✅ | ✅ | PASS |
 
+## Deployment Validation
+
+| Test | Status | Details |
+|------|--------|---------|
+| AZD Template Init | ✅ PASS | `functions-quickstart-python-azd-eventgrid-blob` |
+| AZD Provision | ✅ PASS | Resources created in `rg-blob-eval` |
+| AZD Deploy | ✅ PASS | Function deployed to `func-mtgqcoepn4p3w` |
+| HTTP Response | ✅ PASS | HTTP 200 from function endpoint |
+| Event Grid Topic | ✅ PASS | `eventgridpdftopic` created |
+| Storage Account | ✅ PASS | RBAC-only storage provisioned |
+
 ## Results
 
 | Test | Python | TypeScript | JavaScript | .NET | Java | PowerShell |
@@ -42,3 +53,7 @@ Dedicated AZD templates available for all 6 languages:
 | RBAC Assignment | ✅ | ✅ |
 | Private Endpoint (VNet) | ✅ | ✅ |
 | Azure Policy Compliance | ✅ | ✅ |
+
+## Test Date
+
+2025-02-19
