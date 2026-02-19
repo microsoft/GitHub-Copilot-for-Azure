@@ -29,10 +29,10 @@ HTTP Base Template (per language, from AZD gallery)
 | [eventhubs](eventhubs/README.md) | ✅ EH namespace + hub + consumer group + RBAC + PE | ✅ EventHubTrigger | ✅ Available |
 | [servicebus](servicebus/README.md) | ✅ SB namespace + queue + RBAC + PE | ✅ ServiceBusTrigger | ✅ Available |
 | [timer](timer/README.md) | ❌ None | ✅ TimerTrigger + cron | ✅ Available |
-| [durable](durable/README.md) | ❌ None (uses base Storage) | ✅ Orchestrator + Activity + Client | ⚠️ Testing |
-| [mcp](mcp/README.md) | ❌ None | ✅ MCP JSON-RPC tools | ✅ Available |
-| sql | ✅ SQL server + DB + firewall + identity | ✅ SqlTrigger | 🔲 Planned |
-| blob-eventgrid | ✅ EventGrid subscription + system topic | ✅ BlobTrigger (EG) | 🔲 Planned |
+| [durable](durable/README.md) | ⚠️ Storage flags (enableQueue/Table) | ✅ Orchestrator + Activity + Client | ✅ Available |
+| [mcp](mcp/README.md) | ⚠️ Storage flag (enableQueue) | ✅ MCP JSON-RPC tools | ✅ Available |
+| [sql](sql/README.md) | ✅ SQL server + DB + firewall + identity | ✅ SqlTrigger | ✅ Available |
+| [blob-eventgrid](blob-eventgrid/README.md) | ✅ EventGrid subscription + system topic | ✅ BlobTrigger (EG) | ✅ Available |
 
 ## How It Works
 

@@ -11,10 +11,10 @@
 | Event Hubs | [recipes/eventhubs/](recipes/eventhubs/README.md) | ✅ Available |
 | Service Bus | [recipes/servicebus/](recipes/servicebus/README.md) | ✅ Available |
 | Timer | [recipes/timer/](recipes/timer/README.md) | ✅ Available (source-only) |
-| Durable | [recipes/durable/](recipes/durable/README.md) | ✅ Available (source-only, requires IaC) |
-| MCP | [recipes/mcp/](recipes/mcp/README.md) | ✅ Available (source-only) |
-| Azure SQL | recipes/sql/ | 🔲 Planned |
-| Blob/Event Grid | recipes/blob-eventgrid/ | 🔲 Planned |
+| Durable | [recipes/durable/](recipes/durable/README.md) | ✅ Available (requires storage flags) |
+| MCP | [recipes/mcp/](recipes/mcp/README.md) | ✅ Available (requires storage flags) |
+| Azure SQL | [recipes/sql/](recipes/sql/README.md) | ✅ Available |
+| Blob/Event Grid | [recipes/blob-eventgrid/](recipes/blob-eventgrid/README.md) | ✅ Available |
 
 ## Legacy: Browse by Service
 
