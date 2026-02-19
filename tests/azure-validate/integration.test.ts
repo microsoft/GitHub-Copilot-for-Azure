@@ -243,6 +243,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
       const setAll = CONTAINER_DEPLOY_ENV_PATTERNS.every(p => matchesCommand(agentMetadata, p));
       expect(setAll).toBe(true);
+
+      agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
     }, aspireEnvVarTestTimeoutMs);
 
     test("passes --environment on azd init and sets subscription before provision", async () => {
@@ -280,6 +282,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         /azd\s+env\s+set\s+AZURE_SUBSCRIPTION_ID\s+\S+/i,
       );
       expect(setsSubscription).toBe(true);
+
+      agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
     }, aspireEnvVarTestTimeoutMs);
 
     test("sets AzureWebJobsSecretStorageType for aspire-with-azure-functions", async () => {
@@ -312,6 +316,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         /AzureWebJobsSecretStorageType/i,
       );
       expect(setsSecretStorageType).toBe(true);
+
+      agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
     }, aspireEnvVarTestTimeoutMs);
   });
 });
