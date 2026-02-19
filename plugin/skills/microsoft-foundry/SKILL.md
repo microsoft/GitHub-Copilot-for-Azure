@@ -39,14 +39,14 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create a new agent from scratch | [create/agent-framework](foundry-agent/create/agent-framework/SKILL.md) → [package](foundry-agent/package/package.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Deploy an agent (code already exists) | [package](foundry-agent/package/package.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Update/redeploy an agent after code changes | [package](foundry-agent/package/package.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Invoke/test/chat with an agent | [invoke](foundry-agent/invoke/invoke.md) |
-| Troubleshoot an agent issue | [invoke](foundry-agent/invoke/invoke.md) → [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| Fix a broken agent (troubleshoot + redeploy) | [invoke](foundry-agent/invoke/invoke.md) → [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) → apply fixes → [package](foundry-agent/package/package.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Containerize/package an agent only | [package](foundry-agent/package/package.md) |
-| Start/stop agent container | [deploy](foundry-agent/deploy/deploy.md) |
+| Create a new agent from scratch | create/agent-framework → package → deploy → invoke |
+| Deploy an agent (code already exists) | package → deploy → invoke |
+| Update/redeploy an agent after code changes | package → deploy → invoke |
+| Invoke/test/chat with an agent | invoke |
+| Troubleshoot an agent issue | invoke → troubleshoot |
+| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → package → deploy → invoke |
+| Containerize/package an agent only | package |
+| Start/stop agent container | deploy |
 
 ## Agent: Project Context Resolution
 
