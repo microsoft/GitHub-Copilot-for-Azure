@@ -62,3 +62,29 @@ export function matchesToolCallArgs(
     return pattern.test(argsStr);
   });
 }
+
+/**
+ * Check whether any file-mutating tool call (create or edit) targets a file
+ * whose path matches {@link pathPattern} AND whose serialized arguments
+ * match {@link contentPattern}.
+ *
+ * This is stricter than {@link matchesToolCallArgs} because it ensures the
+ * content appeared in a write to a specific file, not just in any tool call
+ * (e.g. a plan document).
+ */
+export function matchesFileEdit(
+  metadata: AgentMetadata,
+  pathPattern: RegExp,
+  contentPattern: RegExp,
+): boolean {
+  const FILE_MUTATING_TOOLS = ["create", "edit", "replace_string_in_file", "multi_replace_string_in_file"];
+  const calls = getToolCalls(metadata).filter(event => {
+    const toolName = (event.data as Record<string, unknown>).toolName as string | undefined;
+    return toolName && FILE_MUTATING_TOOLS.includes(toolName);
+  });
+
+  return calls.some(event => {
+    const argsStr = JSON.stringify(event.data);
+    return pathPattern.test(argsStr) && contentPattern.test(argsStr);
+  });
+}

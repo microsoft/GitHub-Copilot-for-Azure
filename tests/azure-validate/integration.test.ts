@@ -19,6 +19,7 @@ import {
   hasValidationCommand,
   matchesCommand,
   matchesToolCallArgs,
+  matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
@@ -307,12 +308,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          matchesCommand(metadata, /azd\s+(deploy|up)/) ||
-          matchesToolCallArgs(metadata, /AzureWebJobsSecretStorageType/i),
+          matchesCommand(metadata, /azd\s+(provision|deploy|up)/),
       });
 
-      const setsSecretStorageType = matchesToolCallArgs(
+      const setsSecretStorageType = matchesFileEdit(
         agentMetadata,
+        /AppHost\.cs/i,
         /AzureWebJobsSecretStorageType/i,
       );
       expect(setsSecretStorageType).toBe(true);
