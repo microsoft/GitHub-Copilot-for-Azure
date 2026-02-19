@@ -8,7 +8,7 @@ import { loadSkill, type LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
 
-describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
+describe("microsoft-foundry:resource/create - Integration Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -37,8 +37,8 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/resource/create/create-foundry-resource.md"
+        __dirname,
+        "../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
       const mainContent = await fs.readFile(mainFilePath, "utf-8");
@@ -55,8 +55,8 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/resource/create/create-foundry-resource.md"
+        __dirname,
+        "../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
       const mainContent = await fs.readFile(mainFilePath, "utf-8");
@@ -73,8 +73,8 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/resource/create/create-foundry-resource.md"
+        __dirname,
+        "../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
       const mainContent = await fs.readFile(mainFilePath, "utf-8");
@@ -92,8 +92,8 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/resource/create/create-foundry-resource.md"
+        __dirname,
+        "../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
       const mainContent = await fs.readFile(mainFilePath, "utf-8");
@@ -108,8 +108,8 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const referencesPath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/resource/create/references"
+        __dirname,
+        "../../../../plugin/skills/microsoft-foundry/resource/create/references"
       );
 
       const referencesExists = await fs.access(referencesPath).then(() => true).catch(() => false);
@@ -130,8 +130,8 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/resource/create/create-foundry-resource.md"
+        __dirname,
+        "../../../../plugin/skills/microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
       const mainContent = await fs.readFile(mainFilePath, "utf-8");

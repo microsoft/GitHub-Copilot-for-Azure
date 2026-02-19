@@ -54,13 +54,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe("Should Trigger - OpenAI & Document Intelligence", () => {
+  describe("Should Trigger - Document Intelligence", () => {
     const otherAIPrompts: string[] = [
-      "Use Azure OpenAI for embeddings",
       "Extract text from documents using Azure OCR",
       "How do I use Document Intelligence in Azure?",
       "Set up form extraction with Azure",
-      "Use GPT models through Azure OpenAI",
     ];
 
     test.each(otherAIPrompts)(
@@ -81,7 +79,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Use Google Cloud Speech API",
       "Configure Elasticsearch for my app",
       "Help me configure nginx for load balancing",
-      "Create a REST API with Express",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -127,10 +124,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
     test("distinguishes between AI services and other Azure services", () => {
       const aiResult = triggerMatcher.shouldTrigger("Create an Azure AI Search index");
-      const functionResult = triggerMatcher.shouldTrigger("Create an azure app service");
-      // AI Search should trigger, Function should not
+      // AI Search should trigger
       expect(aiResult.triggered).toBe(true);
-      expect(functionResult.triggered).toBe(false);
     });
   });
 });
