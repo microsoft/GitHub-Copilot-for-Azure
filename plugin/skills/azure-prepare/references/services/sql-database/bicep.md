@@ -96,9 +96,13 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 }
 ```
 
-## Legacy SQL Authentication (Not Recommended)
+## Legacy SQL Authentication (⛔ DO NOT USE)
 
-> ⚠️ **Warning**: This pattern will fail in subscriptions with policies requiring Entra-only authentication. Use Entra-only authentication (above) instead.
+> ❌ **DEPRECATED - DO NOT USE FOR NEW DEPLOYMENTS**
+> 
+> This authentication method is included for reference only. **DO NOT use SQL authentication for new Azure SQL deployments.** It will fail in any subscription with Entra-only authentication policies and violates Azure security best practices.
+>
+> **Always use Entra-only authentication (documented above) for all new deployments.**
 
 ```bicep
 param sqlAdminPassword string
