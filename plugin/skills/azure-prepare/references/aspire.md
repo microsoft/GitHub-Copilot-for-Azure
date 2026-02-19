@@ -193,6 +193,64 @@ azd init --from-code -e "my-env"
 2. Check project builds: `dotnet build`
 3. Ensure Aspire.Hosting package is referenced in AppHost project
 
+### Azure Functions: Secret initialization from Blob storage failed
+
+**Symptoms:** Azure Functions app fails at startup with error:
+```
+System.InvalidOperationException: Secret initialization from Blob storage failed due to missing both
+an Azure Storage connection string and a SAS connection uri.
+```
+
+**Cause:** When using `AddAzureFunctionsProject` with `WithHostStorage(storage)`, Aspire configures identity-based storage access (managed identity). However, Azure Functions' internal secret management does not support identity-based URIs and requires file-based secret storage for Container Apps deployments.
+
+**Solution:** Add `AzureWebJobsSecretStorageType=Files` environment variable to the Functions resource in the AppHost **before running `azd up`**:
+
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.ImageGallery_Functions>("functions")
+                       .WithReference(queues)
+                       .WithReference(blobs)
+                       .WaitFor(storage)
+                       .WithRoleAssignments(storage, ...)
+                       .WithHostStorage(storage)
+                       .WithEnvironment("AzureWebJobsSecretStorageType", "Files")  // Required for Container Apps
+                       .WithUrlForEndpoint("http", u => u.DisplayText = "Functions App");
+```
+
+> 💡 **Why this is required:**
+> - `WithHostStorage(storage)` sets identity-based URIs like `AzureWebJobsStorage__blobServiceUri`
+> - This is correct and secure for runtime storage operations
+> - However, Functions' secret/key management doesn't support these URIs
+> - File-based secrets are mandatory for Container Apps deployments
+
+> ⚠️ **Important:** This is required when:
+> - Using `AddAzureFunctionsProject` in Aspire
+> - Using `WithHostStorage()` with identity-based storage
+> - Deploying to Azure Container Apps (the default for Aspire Functions)
+
+**Generated Infrastructure Note:**
+
+If you need to modify the generated Container Apps infrastructure directly, ensure the Functions container app has this environment variable:
+
+```bicep
+resource functionsContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  properties: {
+    template: {
+      containers: [
+        {
+          env: [
+            {
+              name: 'AzureWebJobsSecretStorageType'
+              value: 'Files'
+            }
+            // ... other environment variables
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
 ### Error: azd uses wrong subscription despite user confirmation
 
 **Symptoms:** `azd provision --preview` shows a different subscription than the one the user confirmed
