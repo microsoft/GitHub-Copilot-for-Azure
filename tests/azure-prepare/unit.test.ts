@@ -4,6 +4,8 @@
  * Test isolated skill logic and validation rules.
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-prepare";
@@ -72,6 +74,37 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("has blocking plan requirement", () => {
       expect(skill.content).toContain("PLAN-FIRST");
       expect(skill.content).toContain("BLOCKING");
+    });
+  });
+
+  describe("Aspire Support", () => {
+    test("aspire.md reference file exists", () => {
+      const aspirePath = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/recipes/azd/aspire.md"
+      );
+      expect(fs.existsSync(aspirePath)).toBe(true);
+    });
+
+    test("aspire.md contains Docker context guidance", () => {
+      const aspirePath = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/recipes/azd/aspire.md"
+      );
+      const aspireContent = fs.readFileSync(aspirePath, "utf-8");
+      expect(aspireContent).toContain("AddDockerfile");
+      expect(aspireContent).toContain("docker.context");
+      expect(aspireContent).toContain("build context");
+    });
+
+    test("azure-yaml.md references aspire.md", () => {
+      const azureYamlPath = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/recipes/azd/azure-yaml.md"
+      );
+      const azureYamlContent = fs.readFileSync(azureYamlPath, "utf-8");
+      expect(azureYamlContent).toContain("aspire.md");
+      expect(azureYamlContent).toContain("docker.context");
     });
   });
 });
