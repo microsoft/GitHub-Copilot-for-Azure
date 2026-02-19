@@ -58,8 +58,21 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Verify Azure identity
-        run: az account show
+      # azure/login only fetches the OIDC access token once.
+      # If a test starts after the token expires, it will fail with authentication errors.
+      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
+      # Learn more at https://github.com/Azure/login/issues/372
+      - name: Fetch OIDC token every 300 seconds
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          while true; do
+            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
+            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
+            sleep 300
+          done &
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
