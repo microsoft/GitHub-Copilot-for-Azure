@@ -44,18 +44,18 @@ resource "azurecaf_name" "sql_server" {
 # SQL Server
 # ============================================================================
 resource "azurerm_mssql_server" "main" {
-  name                         = azurecaf_name.sql_server.result
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = azurerm_resource_group.main.location
-  version                      = "12.0"
-  minimum_tls_version          = "1.2"
+  name                          = azurecaf_name.sql_server.result
+  resource_group_name           = azurerm_resource_group.main.name
+  location                      = azurerm_resource_group.main.location
+  version                       = "12.0"
+  minimum_tls_version           = "1.2"
   public_network_access_enabled = true
 
   azuread_administrator {
     login_username              = var.sql_admin_login
     object_id                   = var.sql_admin_object_id
     tenant_id                   = data.azurerm_client_config.current.tenant_id
-    azuread_authentication_only = true  # Entra-only, no SQL auth
+    azuread_authentication_only = true # Entra-only, no SQL auth
   }
 
   tags = local.tags
