@@ -27,6 +27,10 @@ describe("deploy - Trigger Tests", () => {
       "Stop my hosted agent in Foundry",
       "Check agent container status in Foundry",
       "Create a prompt agent with gpt-4o model",
+      "Containerize my agent project for Foundry",
+      "Create a Dockerfile for my Foundry hosted agent",
+      "Push my agent image to Azure Container Registry",
+      "Package my Python agent for deployment",
     ];
 
     test.each(shouldTriggerPrompts)(

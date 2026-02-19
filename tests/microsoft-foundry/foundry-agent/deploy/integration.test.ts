@@ -64,4 +64,23 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
   });
+
+  test("invokes skill for containerize prompt", async () => {
+    let agentMetadata;
+    try {
+      agentMetadata = await agent.run({
+        prompt: "Containerize my agent project for Foundry",
+        shouldEarlyTerminate: (metadata) =>
+          isSkillInvoked(metadata, SKILL_NAME),
+      });
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
+        console.log(`⏭️  Skipping integration test: ${e.message}`);
+        return;
+      }
+      throw e;
+    }
+
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+  });
 });

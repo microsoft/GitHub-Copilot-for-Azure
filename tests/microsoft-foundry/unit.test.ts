@@ -83,7 +83,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("references agent sub-skills in table", () => {
-      expect(skill.content).toContain("foundry-agent/package/package.md");
       expect(skill.content).toContain("foundry-agent/deploy/deploy.md");
       expect(skill.content).toContain("foundry-agent/invoke/invoke.md");
       expect(skill.content).toContain("foundry-agent/troubleshoot/troubleshoot.md");
