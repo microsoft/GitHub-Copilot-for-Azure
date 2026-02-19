@@ -1,6 +1,6 @@
 # Foundry Agent Deploy
 
-Create and manage agent deployments in Azure AI Foundry, including container lifecycle for hosted agents.
+Create and manage agent deployments in Azure AI Foundry. For hosted agents, this includes the full workflow from containerizing the project to starting the agent container.
 
 ## Quick Reference
 
@@ -9,17 +9,19 @@ Create and manage agent deployments in Azure AI Foundry, including container lif
 | Agent types | Prompt (LLM-based), Hosted (container-based) |
 | MCP server | `foundry-mcp` |
 | Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
+| CLI tools | `docker`, `az acr` (hosted agents only) |
 | Container protocols | `a2a`, `responses`, `mcp` |
+| Supported languages | .NET, Node.js, Python, Go, Java |
 
 ## When to Use This Skill
 
+- Containerize an existing agent project and deploy it as a hosted agent
 - Create a new prompt agent with a model deployment
 - Create a new hosted agent from a container image
 - Start or stop hosted agent containers
 - Check agent container status
 - Update agent configuration or instructions
-- Clone an existing agent
-- Delete an agent (with automatic container cleanup)
+- Clone or delete an agent
 
 ## MCP Tools
 
@@ -34,30 +36,83 @@ Create and manage agent deployments in Azure AI Foundry, including container lif
 
 ## Workflow: Hosted Agent Deployment
 
-### Step 1: Confirm Environment Variables
+### Step 1: Detect and Scan Project
 
-> ⚠️ **Warning:** This step is MANDATORY before creating a hosted agent. Environment variables are included in the agent payload and are difficult to change after deployment.
+Get the project path from the project context (see Common: Project Context Resolution). Detect the project type by checking for these files:
 
-Merge environment variables from the project context (see Common: Project Context Resolution) into the list collected during packaging. Azd values take precedence over empty/placeholder values but do not override user-provided values.
+| Project Type | Detection Files |
+|--------------|-----------------|
+| .NET | `*.csproj`, `*.fsproj` |
+| Node.js | `package.json` |
+| Python | `requirements.txt`, `pyproject.toml`, `setup.py` |
+| Go | `go.mod` |
+| Java (Maven) | `pom.xml` |
+| Java (Gradle) | `build.gradle` |
 
-Present all environment variables to the user for confirmation. Display in a table with variable name, value, and source (`azd`, `project default`, or `user`). Mask sensitive values.
+Delegate an environment variable scan to a sub-agent. Provide the project path and project type. Search source files for these patterns:
+
+| Project Type | Patterns to Search |
+|--------------|--------------------|
+| .NET (`*.cs`) | `Environment.GetEnvironmentVariable("...")`, `configuration["..."]`, `configuration.GetValue<T>("...")` |
+| Node.js (`*.js`, `*.ts`, `*.mjs`) | `process.env.VAR_NAME`, `process.env["..."]` |
+| Python (`*.py`) | `os.environ["..."]`, `os.environ.get("...")`, `os.getenv("...")` |
+| Go (`*.go`) | `os.Getenv("...")`, `os.LookupEnv("...")` |
+| Java (`*.java`) | `System.getenv("...")`, `@Value("${...}")` |
+
+Classification: if followed by a throw/error → required; if followed by a fallback value → optional with default; otherwise → assume required, ask user.
+
+### Step 2: Collect and Confirm Environment Variables
+
+> ⚠️ **Warning:** Environment variables are included in the agent payload and are difficult to change after deployment.
+
+Use azd environment values from the project context to pre-fill discovered variables. Merge with any user-provided values. Present all variables to the user for confirmation with variable name, value, and source (`azd`, `project default`, or `user`). Mask sensitive values.
 
 Loop until the user confirms or cancels:
-- `yes` → Proceed to Step 2
+- `yes` → Proceed
 - `VAR_NAME=new_value` → Update the value, show updated table, ask again
 - `cancel` → Abort deployment
 
-### Step 2: Collect Agent Configuration
+### Step 3: Generate Dockerfile and Build Image
 
-Use the project endpoint and ACR name from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved:
+Delegate Dockerfile creation to a sub-agent. Guidelines:
+- Use official base image for the detected language and runtime version
+- Use multi-stage builds for compiled languages
+- Use Alpine or slim variants for smaller images
+- Always target `linux/amd64` platform
+- Expose the correct port (ask user if not detectable)
+
+> 💡 **Tip:** Reference [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples) for containerized agent examples.
+
+Also generate `docker-compose.yml` and `.env` files for local development.
+
+Collect ACR details from project context. Let the user choose the build method:
+
+**Cloud Build (ACR Tasks) (Recommended)** — no local Docker required:
+```bash
+az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --file Dockerfile .
+```
+
+**Local Docker Build:**
+```bash
+docker build --platform linux/amd64 -t <image>:<tag> -f Dockerfile .
+az acr login --name <acr-name>
+docker tag <image>:<tag> <acr-name>.azurecr.io/<repository>:<tag>
+docker push <acr-name>.azurecr.io/<repository>:<tag>
+```
+
+> 💡 **Tip:** Prefer Cloud Build if Docker is not available locally. On Windows with WSL, prefix Docker commands with `wsl -e` if `docker info` fails but `wsl -e docker info` succeeds.
+
+### Step 4: Collect Agent Configuration
+
+Use the project endpoint and ACR name from the project context. Ask the user only for values not already resolved:
 - **Agent name** — Unique name for the agent
 - **Model deployment** — Model deployment name (e.g., `gpt-4o`)
 
-### Step 3: Get Agent Definition Schema
+### Step 5: Get Agent Definition Schema
 
 Use `agent_definition_schema_get` with `schemaType: hosted` to retrieve the current schema and validate required fields.
 
-### Step 4: Create the Agent
+### Step 6: Create the Agent
 
 Use `agent_update` with the agent definition:
 
@@ -74,11 +129,11 @@ Use `agent_update` with the agent definition:
 }
 ```
 
-### Step 5: Start Agent Container
+### Step 7: Start Agent Container
 
 Use `agent_container_control` with `action: start` to start the container.
 
-### Step 6: Verify Agent Status
+### Step 8: Verify Agent Status
 
 Delegate status polling to a sub-agent. Provide the project endpoint, agent name, and instruct it to use `agent_container_status_get` repeatedly until the status is `Running` or `Failed`.
 
@@ -170,6 +225,10 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 
 | Error | Cause | Resolution |
 |-------|-------|------------|
+| Project type not detected | No known project files found | Ask user to specify project type manually |
+| Docker not running | Docker Desktop not started or not installed | Start Docker Desktop, or use Cloud Build (ACR Tasks) instead |
+| ACR login failed | Not authenticated to Azure | Run `az login` first, then `az acr login --name <acr-name>` |
+| Build/push failed | Dockerfile errors or insufficient ACR permissions | Check Dockerfile syntax, verify Contributor or AcrPush role on registry |
 | Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
 | Container start failed | Image not accessible or invalid configuration | Verify ACR image path, check cpu/memory values, confirm ACR permissions |
 | Container status: Failed | Runtime error in container | Check container logs, verify environment variables, ensure image runs correctly |

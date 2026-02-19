@@ -1,8 +1,8 @@
 ---
 name: microsoft-foundry
 description: |
-  Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, complete AI agent dev lifecycle, manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, deploy agent, debug agent, invoke agent, agent chat, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, deployment failure, QuotaExceeded.
+  Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models, manage AI agents (create, deploy, invoke, troubleshoot Foundry Agents), manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
+  USE FOR: Microsoft Foundry, AI Foundry, create agent, deploy agent, debug agent, invoke agent, run agent, agent chat, evaluate agent, agent monitoring,  deploy model, model catalog, knowledge index, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, quota, capacity, TPM, deployment failure, QuotaExceeded.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
 ---
 
@@ -18,9 +18,8 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **invoke** | Send messages to an agent, single or multi-turn conversations. MANDATORY to read before invoking the agent. | [invoke](foundry-agent/invoke/invoke.md) |
-| **package** | Containerize agent, generate Dockerfile, build/push image to ACR | [package](foundry-agent/package/package.md) |
-| **deploy** | Create, update, start/stop, or delete an agent deployment | [deploy](foundry-agent/deploy/deploy.md) |
+| **deploy** | Containerize, build, push to ACR, create/update/start/stop agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
+| **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
 | **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
 | **create/agent-framework** | Create agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [create/agent-framework](foundry-agent/create/agent-framework/SKILL.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
@@ -29,7 +28,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
-> 💡 **Tip:** For a complete onboarding flow: `project/create` → agent workflows (`package` → `deploy` → `invoke`).
+> 💡 **Tip:** For a complete onboarding flow: `project/create` → agent workflows (`deploy` → `invoke`).
 
 > 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
@@ -39,13 +38,12 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create a new agent from scratch | create/agent-framework → package → deploy → invoke |
-| Deploy an agent (code already exists) | package → deploy → invoke |
-| Update/redeploy an agent after code changes | package → deploy → invoke |
+| Create a new agent from scratch | create/agent-framework → deploy → invoke |
+| Deploy an agent (code already exists) | deploy → invoke |
+| Update/redeploy an agent after code changes | deploy → invoke |
 | Invoke/test/chat with an agent | invoke |
 | Troubleshoot an agent issue | invoke → troubleshoot |
-| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → package → deploy → invoke |
-| Containerize/package an agent only | package |
+| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
 | Start/stop agent container | deploy |
 
 ## Agent: Project Context Resolution
@@ -63,7 +61,7 @@ Match missing values against the azd environment:
 | azd Variable | Resolves To | Used By |
 |-------------|-------------|---------|
 | `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | Project endpoint | deploy, invoke, troubleshoot |
-| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix | package, deploy |
+| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix | deploy |
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription | troubleshoot |
 
 ### Step 3: Collect Missing Values
