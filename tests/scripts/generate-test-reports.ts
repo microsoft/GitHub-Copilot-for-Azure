@@ -3,33 +3,71 @@
 /**
  * Test Reports Generator
  * 
- * Reads all markdown files in each subdirectory and generates:
+ * Reads all markdown files of test results for a skill and generates:
  * 1. ONE consolidated report per subdirectory
- * 2. ONE master report combining all subdirectory reports (if multiple reports exist)
+ * 2. ONE per-skill report aggregating all test results for the specified skill
  * 
  * Usage:
- *   npm run reports              # Process most recent test run
- *   npm run reports <path>       # Process specific test run
+ *   npm run report -- --skill <skill-name> # Process most recent test run for a skill
  */
 
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, type TestConfig } from "../utils/agent-runner";
+import { useAgentRunner, type AgentRunConfig } from "../utils/agent-runner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const REPORTS_PATH = path.resolve(__dirname, "../reports");
 const TEMPLATE_PATH = path.resolve(__dirname, "report-template.md");
-const AGGREGATED_TEMPLATE_PATH = path.resolve(__dirname, "aggregated-template.md");
+const AGGREGATED_TEMPLATE_PATH = path.resolve(__dirname, "aggregated-template-per-skill.md");
 
 // Constants
 const TEST_RUN_PREFIX = "test-run-";
 const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
-const MASTER_REPORT_SUFFIX = "-MASTER-REPORT.md";
+const SKILL_REPORT_SUFFIX = "-SKILL-REPORT.md";
 const agent = useAgentRunner();
+
+/**
+ * Parse command-line arguments.
+ * Supports: --skill <skill-name> (required)
+ */
+function parseArgs(argv: string[]): { skill: string } {
+  const args = argv.slice(2);
+  let skill: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--skill" && i + 1 < args.length) {
+      skill = args[++i];
+    }
+  }
+
+  if (!skill) {
+    console.error("Error: --skill <skill-name> is required");
+    console.error("Usage: npm run report -- --skill <skill-name>");
+    process.exit(1);
+  }
+
+  return { skill };
+}
+
+/**
+ * Filter subdirectories belonging to a specific skill.
+ */
+function filterSubdirectoriesBySkill(subdirectories: string[], skill: string): string[] {
+  return subdirectories.filter(subdir => {
+    const subdirName = path.basename(subdir);
+
+    // Skill name in the subdirectory name ends at the first underscore character.
+    // See tests/eslint-rules/integration-test-name.mjs for details.
+    const terminatorIndex = subdirName.indexOf("_");
+    const skillName = subdirName.substring(0, terminatorIndex);
+    
+    return skillName === skill;
+  });
+}
 
 /**
  * Get the most recent test run directory
@@ -83,7 +121,7 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string): 
   console.log("    Generating report...");
 
   // Use agent runner to generate consolidated report for this subdirectory
-  const config: TestConfig = {
+  const config: AgentRunConfig = {
     prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
@@ -123,17 +161,17 @@ OUTPUT THE REPORT NOW (starting with the # heading):`
   return outputPath;
 }
 
-function getMasterReportFileName(runName: string) {
-  return `${runName}${MASTER_REPORT_SUFFIX}`;
+function getSkillReportFileName(runName: string, skill: string) {
+  return `${runName}-${skill}${SKILL_REPORT_SUFFIX}`;
 }
 
 /**
- * Generate a master consolidated report from all subdirectory reports
+ * Generate a per-skill aggregated report from subdirectory reports belonging to that skill.
  */
-async function generateMasterReport(reportPaths: string[], runPath: string, runName: string): Promise<void> {
-  console.log(`\n\n📊 Generating master consolidated report from ${reportPaths.length} subdirectory reports...\n`);
+async function generateSkillReport(reportPaths: string[], runPath: string, runName: string, skill: string): Promise<void> {
+  console.log(`\n\n📊 Generating per-skill report for "${skill}" from ${reportPaths.length} test report(s)...\n`);
 
-  // Read all generated reports
+  // Read all generated reports for this skill
   let allReportsContent = "";
   for (const reportPath of reportPaths) {
     const subdirName = path.basename(path.dirname(reportPath));
@@ -144,20 +182,19 @@ async function generateMasterReport(reportPaths: string[], runPath: string, runN
     allReportsContent += `\n# ${subdirName}\n\n${content}\n\n---\n\n`;
   }
 
-  console.log("\n  Generating master report...");
+  console.log("\n  Generating skill report...");
 
-  // Load the aggregated report template
+  // Load the per-skill aggregated report template
   const aggregatedTemplate = fs.readFileSync(AGGREGATED_TEMPLATE_PATH, "utf-8");
 
-  // Use agent runner to generate master consolidated report
-  const config: TestConfig = {
-    prompt: `You are a master test report aggregator. You will receive multiple test reports and combine them into one comprehensive summary.
+  const config: AgentRunConfig = {
+    prompt: `You are a per-skill test report generator. You will receive multiple individual test reports that all belong to the skill "${skill}", and you must combine them into one comprehensive per-skill summary.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
 
 ## Your Task
 
-Create a master consolidated report that combines all the individual subdirectory reports below. The report MUST follow the exact structure and formatting of the template below.
+Create a per-skill report for the skill "${skill}" that aggregates all the individual test reports below. The report MUST follow the exact structure and formatting of the template below.
 
 ## Report Template
 
@@ -165,16 +202,16 @@ ${aggregatedTemplate}
 
 ---
 
-## Individual Subdirectory Reports
+## Individual Test Reports for Skill "${skill}"
 
 ${allReportsContent}
 
 ---
 
-OUTPUT THE MASTER REPORT NOW (starting with the # heading):`,
+OUTPUT THE SKILL REPORT NOW (starting with the # heading):`,
     systemPrompt: {
       mode: "append",
-      content: "**Important**: Skills and MCP tools are different. When summarize statistics related to skills, don't count MCP tool invocations. Skills are explicitly called out as skills in the context. MCP servers appear to be regular tool calls except that they are from an MCP server."
+      content: "**Important**: Skills and MCP tools are different. When summarizing statistics related to skills, don't count MCP tool invocations. Skills are explicitly called out as skills in the context. MCP servers appear to be regular tool calls except that they are from an MCP server."
     }
   };
 
@@ -188,18 +225,19 @@ OUTPUT THE MASTER REPORT NOW (starting with the # heading):`,
     }
   }
 
-  // Save the master report at the root of the test run
-  const outputPath = path.join(runPath, getMasterReportFileName(runName));
+  // Save the skill report at the root of the test run
+  const outputPath = path.join(runPath, getSkillReportFileName(runName, skill));
   const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
-  console.log(`\n  ✅ Generated master report: ${runName}${MASTER_REPORT_SUFFIX}`);
+  console.log(`\n  ✅ Generated skill report: ${getSkillReportFileName(runName, skill)}`);
 }
 
 /**
- * Process a test run directory - generate ONE consolidated report per subdirectory
+ * Process a test run directory - generate ONE consolidated report per subdirectory,
+ * then generate a per-skill report for the specified skill.
  */
-async function processTestRun(runPath: string): Promise<void> {
+async function processTestRun(runPath: string, skill: string): Promise<void> {
   if (!fs.existsSync(runPath)) {
     console.error(`Error: Path not found: ${runPath}`);
     process.exit(1);
@@ -224,16 +262,17 @@ async function processTestRun(runPath: string): Promise<void> {
 
   // Find all subdirectories in the test run
   const entries = fs.readdirSync(runPath, { withFileTypes: true });
-  const subdirectories = entries
+  let subdirectories = entries
     .filter(entry => entry.isDirectory())
     .map(entry => path.join(runPath, entry.name));
 
+  // Filter subdirectories by skill
+  subdirectories = filterSubdirectoriesBySkill(subdirectories, skill);
   if (subdirectories.length === 0) {
-    console.error(`Error: No subdirectories found in: ${runPath}`);
+    console.error(`Error: No test results found for skill "${skill}" in: ${runPath}`);
     process.exit(1);
   }
-
-  console.log(`Found ${subdirectories.length} subdirectories\n`);
+  console.log(`Found ${subdirectories.length} test(s) for skill "${skill}"\n`);
 
   // Process each subdirectory and collect report paths
   const generatedReports: string[] = [];
@@ -246,16 +285,10 @@ async function processTestRun(runPath: string): Promise<void> {
 
   console.log(`\n✅ Processed ${generatedReports.length} subdirectories`);
 
-  if (generatedReports.length > 1) {
-    // Generate master report if there are multiple reports
-    await generateMasterReport(generatedReports, runPath, runName);
-    console.log("\n✅ Master report generated!");
-  } else if (generatedReports.length === 1) {
-    // Copy the consolidated report as the master report since there is no need to summarize again
-    const reportPath = generatedReports[0];
-    const masterReportPath = path.join(runPath, getMasterReportFileName(runName));
-    fs.copyFileSync(reportPath, masterReportPath);
-    console.log("\n(Only one report generated, copied to master report");
+  // Generate a per-skill report
+  if (generatedReports.length > 0) {
+    await generateSkillReport(generatedReports, runPath, runName, skill);
+    console.log(`\n✅ Skill report for "${skill}" generated!`);
   }
 
   console.log("\nReport generation complete.");
@@ -263,25 +296,20 @@ async function processTestRun(runPath: string): Promise<void> {
 
 // Main execution
 async function main() {
-  const args = process.argv.slice(2);
+  const { skill } = parseArgs(process.argv);
 
-  let targetPath: string;
-
-  if (args.length === 0) {
-    // No args - use most recent run
-    const mostRecent = getMostRecentTestRun();
-    if (!mostRecent) {
-      console.error("Error: No test run directories found");
-      process.exit(1);
-    }
-    targetPath = path.join(REPORTS_PATH, mostRecent);
-    console.log(`Using most recent test run: ${mostRecent}`);
-  } else {
-    // Use provided argument
-    targetPath = path.isAbsolute(args[0]) ? args[0] : path.join(REPORTS_PATH, args[0]);
+  // Use the most recent test run
+  const mostRecent = getMostRecentTestRun();
+  if (!mostRecent) {
+    console.error("Error: No test run directories found");
+    process.exit(1);
   }
+  console.log(`Using most recent test run: ${mostRecent}`);
 
-  await processTestRun(targetPath);
+  const targetPath = path.join(REPORTS_PATH, mostRecent);
+  console.log(`Generating report for skill: ${skill}`);
+
+  await processTestRun(targetPath, skill);
 }
 
 main().catch(error => {

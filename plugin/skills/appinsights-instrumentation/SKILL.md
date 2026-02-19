@@ -64,3 +64,8 @@ No matter which option you choose, recommend the user to create the App Insights
 - If the app is an ASP.NET Core app, see [ASPNETCORE guide](references/aspnetcore.md) for how to modify the C# code.
 - If the app is a Node.js app, see [NODEJS guide](references/nodejs.md) for how to modify the JavaScript/TypeScript code.
 - If the app is a Python app, see [PYTHON guide](references/python.md) for how to modify the Python code.
+
+## SDK Quick References
+
+- **OpenTelemetry Distro**: [Python](references/sdk/azure-monitor-opentelemetry-py.md) | [TypeScript](references/sdk/azure-monitor-opentelemetry-ts.md)
+- **OpenTelemetry Exporter**: [Python](references/sdk/azure-monitor-opentelemetry-exporter-py.md) | [Java](references/sdk/azure-monitor-opentelemetry-exporter-java.md)

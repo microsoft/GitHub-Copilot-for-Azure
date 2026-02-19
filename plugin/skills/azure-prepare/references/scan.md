@@ -25,7 +25,7 @@ Analyze workspace to identify components, technologies, and dependencies.
 | Next.js/Nuxt | SSR Web App |
 | Celery/Bull/Agenda | Background Worker |
 | azure-functions SDK | Azure Function |
-| Aspire.Hosting.AppHost project | .NET Aspire orchestrator |
+| .AppHost.csproj or Aspire.Hosting package | .NET Aspire App |
 
 **Pure Static Site Detection:**
 - No package.json, requirements.txt, or build configuration
@@ -49,6 +49,19 @@ Analyze workspace to identify components, technologies, and dependencies.
 | `Dockerfile` | Containerized |
 | `.github/workflows/` | GitHub Actions CI/CD |
 | `azure-pipelines.yml` | Azure DevOps CI/CD |
+
+### .NET Aspire Detection
+
+**.NET Aspire projects** are identified by:
+- A project ending with `.AppHost.csproj` (e.g., `OrleansVoting.AppHost.csproj`)
+- Reference to `Aspire.Hosting` or `Aspire.Hosting.AppHost` package in .csproj files
+- Multiple .NET projects in a solution, typically including an AppHost orchestrator
+
+**When Aspire is detected:**
+- Use `azd init --from-code -e <environment-name>` instead of manual azure.yaml creation
+- The `--from-code` flag automatically detects the AppHost and generates appropriate configuration
+- The `-e` flag is **required** for non-interactive environments (agents, CI/CD)
+- See [aspire.md](aspire.md) for detailed Aspire-specific guidance
 
 ## Output
 

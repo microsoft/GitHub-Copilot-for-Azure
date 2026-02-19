@@ -1,9 +1,9 @@
 ---
 name: azure-prepare
 description: |
-  Default entry point for Azure application development. Invoke this skill for ANY application work related to Azure: creating apps, building features, adding components, updating code, migrating, or modernizing. Analyzes your project and prepares it for Azure deployment.
-  USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, make an application, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure.
-  DO NOT USE FOR: only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy).
+  Default entry point for Azure application development. Invoke this skill for ANY application work related to Azure: creating apps, building features, adding components, updating code, migrating, or modernizing. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml configuration, and Dockerfiles.
+  USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, make an application, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with Terraform (defaults to azd+Terraform), Azure with azd, generate azure.yaml, generate Bicep or Terraform, prepare Azure Functions.
+  DO NOT USE FOR: only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy), pure Terraform without azd (prefer azd+Terraform).
 ---
 
 # Azure Prepare
@@ -93,6 +93,14 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | Infrastructure | `./infra/` |
 | AZD Config | `azure.yaml` (AZD only) |
 | Dockerfiles | `src/<component>/Dockerfile` |
+
+---
+
+## SDK Quick References
+
+- **Azure Developer CLI**: [azd](references/sdk/azd-deployment.md)
+- **Azure Identity**: [Python](references/sdk/azure-identity-py.md) | [.NET](references/sdk/azure-identity-dotnet.md) | [TypeScript](references/sdk/azure-identity-ts.md) | [Java](references/sdk/azure-identity-java.md)
+- **App Configuration**: [Python](references/sdk/azure-appconfiguration-py.md) | [TypeScript](references/sdk/azure-appconfiguration-ts.md) | [Java](references/sdk/azure-appconfiguration-java.md)
 
 ---
 

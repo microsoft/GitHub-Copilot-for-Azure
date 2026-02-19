@@ -58,17 +58,11 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 
 | Trigger | What Runs | Workflow File |
 |---------|-----------|---------------|
-| **Push to `main`** affecting `tests/**` or `plugin/skills/**` | Full test suite | `test-all-skills.yml` |
-| **Pull Request** affecting `tests/**` or `plugin/skills/**` | Full test suite | `test-all-skills.yml` |
-| **Manual dispatch** | Full suite or single skill | `test-all-skills.yml` |
-
-### Running a Single Skill in CI
-
-Use the **workflow_dispatch** trigger with the `skill-name` input:
-
-1. Go to **Actions** → **Test All Skills**
-2. Click **Run workflow**
-3. Enter a skill name (e.g., `azure-validation`) or leave empty for all skills
+| **Push to `main`** affecting `tests/**` or `plugin/skills/**` | non-integration test suite | `test-all-skills.yml` |
+| **Pull Request** affecting `tests/**` or `plugin/skills/**` | non-integration test suite | `test-all-skills.yml` |
+| **Manual dispatch** | non-integration test suite for all skills or single skill | `test-all-skills.yml` |
+| **Manual dispatch** | integration test suite for azure-deploy tests | `test-azure-deploy.yml` |
+| **Manual dispatch** | integration test for selected skills | `test-all-integration.yml` |
 
 ### Local Development
 
@@ -130,38 +124,19 @@ test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {
 npm run update:snapshots -- --testPathPattern={skill-name}
 ```
 
-### 3. Integration Tests (`integration.test.js`)
+### 3. Integration Tests (`integration.test.ts`)
 
 **Purpose:** Test skill behavior with a real Copilot agent session.
 
 **What it checks:**
-- ✅ Skill is invoked by the agent for relevant prompts
-- ✅ Agent response contains expected content
-- ✅ Azure MCP tool calls succeed
+- Skill is invoked by the agent for relevant prompts
+- Agent response contains expected content
+- Azure MCP tool calls succeed
+- Any change to the environment that you expect the agent to make, such as edits to files in the workspace, CLI commands executed in the terminal, etc.
 
 **Prerequisites:**
 1. Install Copilot CLI: `npm install -g @github/copilot-cli`
 2. Authenticate: Run `copilot` and follow prompts
-
-**Example:**
-```typescript
-import { run, isSkillInvoked, doesAssistantMessageIncludeKeyword, shouldSkipIntegrationTests } from '../utils/agent-runner';
-
-const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
-
-describeIntegration('azure-role-selector - Integration Tests', () => {
-  test('invokes skill for relevant prompt', async () => {
-    const agentMetadata = await run({
-      prompt: 'What role should I assign for Azure Container Registry access?'
-    });
-
-    expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
-    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
-  });
-});
-```
-
-**Note:** Integration tests are skipped in CI (no auth) and when `SKIP_INTEGRATION_TESTS=true`.
 
 ---
 
@@ -193,33 +168,18 @@ npm install
 
 ### Integration Tests
 
-Integration tests run **automatically when possible** but skip gracefully when:
-- Running in CI (`CI=true`)
-- `@github/copilot-sdk` is not installed
-- Copilot CLI is not authenticated
-
-When skipped, a message explains why:
-```
-⏭️  Skipping integration tests: Running in CI environment
-```
-
 To run integration tests locally:
 
 ```bash
-# 1. Ensure you're authenticated
-copilot --help  # Should show help, not login prompt
+# 1. (Optional) Authenticate with tools if the test depends on them
 az login
 az account list --output table
 az account set --subscription "x"   # Select a default subscription from the table. 
 azd auth login
 
 # 2. Run tests (integration will run automatically if SDK is available)
-npm test
+npm run test:integration skill-name [group-name]
 ```
-
-Environment variables:
-- `SKIP_INTEGRATION_TESTS=true` - Force skip integration tests
-- `CI=true` - Automatically set in CI; always skips integration tests
 
 ### Example: Test a Specific Skill
 
@@ -227,11 +187,6 @@ Environment variables:
 cd tests
 env:DEBUG="1"
 npm run test:skill -- azure-validation
-
-# Output:
-# PASS azure-validation/unit.test.ts
-# PASS azure-validation/triggers.test.ts
-# Test Suites: 2 passed, 2 total
 ```
 
 ### Example: Test a Specific Subset of a Test
@@ -240,26 +195,19 @@ To run only the SWA tests from the deploy integration test suite:
 ```bash
 cd tests
 npm run test:integration -- azure-deploy static-web-apps-deploy
-
-# Output:
-# PASS azure-deploy/integration.test.ts
-# Test Suites: 1 passed, 1 total
 ```
+
+Test cases are grouped under the `describe` groups. It's commonly useful to use the title of the `describe` group as the 2nd argument to run test cases of that group.
+
+To learn more about how the CLI options work, check out `tests/scripts/run-tests.js`.
 
 ### Reading Test Output
 
 **Console output:**
-```
-PASS SKILLS azure-validation/unit.test.ts
-  azure-validation - Unit Tests
-    Skill Metadata
-      ✓ has valid SKILL.md with required fields (2 ms)
-      ✓ description mentions validation or pre-deployment
-```
 
 **CI output:** JUnit XML at `tests/reports/junit.xml` - parsed by GitHub Actions for PR annotations.
 
-**Debug Mode:** When enviorment variable `DEBUG=1` is set logs will be recorded at `test/reports/test-run-{time}`
+**Debug Mode:** When environment variable `DEBUG=1` is set, logs will be recorded under `tests/reports/test-run-{timestamp or TEST_RUN_ID}/...` (typically with per-test subdirectories).
 
 
 ### Generating Report
@@ -267,8 +215,8 @@ You can generate a report on the **Debug** logs using:
 
 | Command | Use Case |
 |---------|----------|
-| `npm run report` | Generates a report of the most recent debug logs. |
-| `npm run report path/to/directory` | Generates a report on the logs in the directory passed in. |
+| `npm run report -- --skill skill-name` | Generates a report for a skill of the most recent run. |
+
 ---
 
 ## Adding Tests for a New Skill
@@ -284,6 +232,10 @@ Scaffold tests for the skill "azure-redis"
 That's it. Copilot will read `tests/AGENTS.md` and create a complete test suite following all the patterns.
 
 > **Tip:** Replace `azure-redis` with any skill name from `/plugin/skills/`
+
+### Review and fix the AI-generated tests
+
+AI-generated tests commonly miss required setup for the agent to make sense. For example, asking an agent to deploy an app without giving an app to the agent won't make much sense. They also often don't have the fine-grained evaluation checks that would be useful. The test author needs to review the AI generated tests to make sure they are testing valid scenarios and the evaluation checks are sufficient.
 
 ---
 
@@ -343,7 +295,7 @@ test('documents cache tiers', () => {
 #### Step 5: Run and Verify
 
 ```bash
-npm test -- --testPathPattern={skill-name}
+npm run test:skill -- {skill-name}
 ```
 
 #### Step 6: Update Coverage Grid
@@ -353,18 +305,6 @@ npm run coverage:grid
 ```
 
 This updates the Skills Coverage Grid in this README.
-
-### Checklist for New Skill Tests
-
-- [ ] Copied `_template/` to `tests/{skill-name}/`
-- [ ] Updated `SKILL_NAME` in all test files
-- [ ] Added 5+ prompts that SHOULD trigger
-- [ ] Added 5+ prompts that should NOT trigger
-- [ ] Added unit tests for skill-specific content
-- [ ] All tests pass locally
-- [ ] Ran `npm run coverage:grid` to update README
-
----
 
 ## Directory Structure
 
@@ -414,19 +354,17 @@ tests/
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
+| azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
-| azure-diagnostics | ✅ | - | - | ✅ | - |
-| azure-functions | ✅ | - | - | ✅ | - |
-| azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
+| azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
-| azure-nodejs-production | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
 | azure-postgres | ✅ | - | - | ✅ | - |
 | azure-prepare | ✅ | - | - | ✅ | - |
 | azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
 | azure-resource-visualizer | ✅ | - | - | ✅ | - |
-| azure-role-selector | ✅ | ✅ | ✅ | ✅ | - |
+| azure-rbac | ✅ | ✅ | ✅ | ✅ | - |
 | azure-security | ✅ | - | - | ✅ | - |
 | azure-security-hardening | ✅ | - | - | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
