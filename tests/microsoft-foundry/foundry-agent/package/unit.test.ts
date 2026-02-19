@@ -1,5 +1,5 @@
 /**
- * Unit Tests for foundry-agent-package
+ * Unit Tests for package
  *
  * Test isolated skill logic and validation rules.
  */

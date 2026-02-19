@@ -47,13 +47,33 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Core Workflows");
-      expect(skill.content).toContain("## Prerequisites");
-      expect(skill.content).toContain("## Quick Reference");
+      expect(skill.content).toContain("## Agent Development Lifecycle");
+      expect(skill.content).toContain("## Sub-Skills");
+      expect(skill.content).toContain("## Agent: Project Context Resolution");
+      expect(skill.content).toContain("## Agent: Agent Types");
+    });
+
+    test("contains agent routing references", () => {
+      expect(skill.content).toContain("package");
+      expect(skill.content).toContain("deploy");
+      expect(skill.content).toContain("invoke");
+      expect(skill.content).toContain("troubleshoot");
     });
 
     test("contains MCP tool references", () => {
-      expect(skill.content).toContain("foundry_");
+      expect(skill.content).toContain("agent_get");
+      expect(skill.content).toContain("agent_update");
+      expect(skill.content).toContain("agent_invoke");
+    });
+
+    test("contains common project context resolution", () => {
+      expect(skill.content).toContain("azure.yaml");
+      expect(skill.content).toContain("azd env get-values");
+    });
+
+    test("documents azd variable mapping", () => {
+      expect(skill.content).toContain("AZURE_AI_PROJECT_ENDPOINT");
+      expect(skill.content).toContain("AZURE_CONTAINER_REGISTRY_NAME");
     });
   });
 
@@ -62,14 +82,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Sub-Skills");
     });
 
-    test("references foundry-agent sub-skill", () => {
-      expect(skill.content).toContain("foundry-agent");
-      expect(skill.content).toContain("foundry-agent/SKILL.md");
-    });
-
-    test("references foundry-agent sub-skill in table", () => {
-      expect(skill.content).toContain("foundry-agent");
-      expect(skill.content).toContain("Create, package, deploy, invoke, debug, logs");
+    test("references agent sub-skills in table", () => {
+      expect(skill.content).toContain("foundry-agent/package/package.md");
+      expect(skill.content).toContain("foundry-agent/deploy/deploy.md");
+      expect(skill.content).toContain("foundry-agent/invoke/invoke.md");
+      expect(skill.content).toContain("foundry-agent/troubleshoot/troubleshoot.md");
     });
 
     test("references quota sub-skill", () => {

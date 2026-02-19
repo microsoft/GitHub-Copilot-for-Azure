@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for foundry-agent-package
+ * Trigger Tests for troubleshoot
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -10,7 +10,7 @@ import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
 
-describe("package - Trigger Tests", () => {
+describe("troubleshoot - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,12 +21,12 @@ describe("package - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Containerize my agent project for Foundry",
-      "Create a Dockerfile for my Foundry hosted agent",
-      "Push my agent image to Azure Container Registry",
-      "Package my Python agent for deployment",
-      "Build a Docker image for my Foundry agent",
-      "Dockerize my agent project for Foundry ACR",
+      "Troubleshoot my Foundry agent that is not responding",
+      "Debug my hosted agent errors in Azure AI Foundry",
+      "Show me the container logs for my Foundry agent",
+      "My Foundry agent is failing, help me diagnose the issue",
+      "Check agent telemetry and traces for exceptions in Foundry",
+      "Why is my Foundry agent returning errors?",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -42,14 +42,11 @@ describe("package - Trigger Tests", () => {
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
-      "Help me with AWS Lambda",
+      "Help me write a poem about clouds",
+      "Help me with AWS CloudWatch metrics",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
-      "Help me write a poem about clouds",
-      "Set up monitoring for my web application",
-      "Create a serverless function endpoint",
-      "Send a request to my REST API",
-      "Run my unit tests locally",
+      "Set up a new React web application",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -82,14 +79,14 @@ describe("package - Trigger Tests", () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "containerize agent ".repeat(100);
+      const longPrompt = "troubleshoot agent ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("CONTAINERIZE MY AGENT");
-      const result2 = triggerMatcher.shouldTrigger("containerize my agent");
+      const result1 = triggerMatcher.shouldTrigger("TROUBLESHOOT MY AGENT");
+      const result2 = triggerMatcher.shouldTrigger("troubleshoot my agent");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

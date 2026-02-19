@@ -28,7 +28,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   test("invokes skill for relevant prompt", async () => {
     const agentMetadata = await agent.run({
-      prompt: "Containerize my agent project for Foundry"
+      prompt: "Containerize my agent project for Foundry",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME),
     });
 
     expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
@@ -36,7 +38,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   test("response mentions agent concepts", async () => {
     const agentMetadata = await agent.run({
-      prompt: "Containerize my agent project for Foundry"
+      prompt: "Containerize my agent project for Foundry",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME) &&
+        doesAssistantMessageIncludeKeyword(metadata, "agent"),
     });
 
     expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);

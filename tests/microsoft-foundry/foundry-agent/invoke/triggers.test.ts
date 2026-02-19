@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for foundry-agent-invoke
+ * Trigger Tests for invoke
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.

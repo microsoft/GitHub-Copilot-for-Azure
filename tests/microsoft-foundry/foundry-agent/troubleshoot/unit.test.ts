@@ -1,5 +1,5 @@
 /**
- * Unit Tests for foundry-agent-troubleshoot
+ * Unit Tests for troubleshoot
  *
  * Test isolated skill logic and validation rules.
  */

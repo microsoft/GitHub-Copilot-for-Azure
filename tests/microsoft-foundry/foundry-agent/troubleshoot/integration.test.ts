@@ -29,7 +29,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   test("invokes skill for relevant prompt", async () => {
     try {
       const agentMetadata = await agent.run({
-        prompt: "Troubleshoot my Foundry agent that is returning errors"
+        prompt: "Troubleshoot my Foundry agent that is returning errors",
+        shouldEarlyTerminate: (metadata) =>
+          isSkillInvoked(metadata, SKILL_NAME),
       });
 
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
@@ -45,7 +47,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   test("response mentions agent concepts", async () => {
     try {
       const agentMetadata = await agent.run({
-        prompt: "Troubleshoot my Foundry agent that is returning errors"
+        prompt: "Troubleshoot my Foundry agent that is returning errors",
+        shouldEarlyTerminate: (metadata) =>
+          isSkillInvoked(metadata, SKILL_NAME) &&
+          doesAssistantMessageIncludeKeyword(metadata, "agent"),
       });
 
       expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);

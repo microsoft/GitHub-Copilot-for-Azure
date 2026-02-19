@@ -1,15 +1,16 @@
 /**
- * Trigger Tests for foundry-agent-router (microsoft-foundry/agent)
+ * Trigger Tests for deploy
  *
- * Tests that verify the router skill triggers on appropriate prompts.
+ * Tests that verify the skill triggers on appropriate prompts
+ * and does NOT trigger on unrelated prompts.
  */
 
 import { TriggerMatcher } from "../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent";
+const SKILL_NAME = "microsoft-foundry";
 
-describe("agent router - Trigger Tests", () => {
+describe("deploy - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -20,12 +21,12 @@ describe("agent router - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Help me build a Foundry agent end to end",
-      "I want to create and ship a new Foundry agent",
-      "Walk me through the agent lifecycle in Azure AI Foundry",
-      "Manage my Foundry agent workflow",
-      "I need help with my Foundry agent",
-      "Create a new agent in Foundry",
+      "Deploy my agent to Azure AI Foundry",
+      "Create a hosted agent in Foundry",
+      "Start my agent container in Foundry",
+      "Stop my hosted agent in Foundry",
+      "Check agent container status in Foundry",
+      "Create a prompt agent with gpt-4o model",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -42,10 +43,13 @@ describe("agent router - Trigger Tests", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem about clouds",
-      "Help me with AWS Lambda functions",
+      "Help me with AWS SageMaker",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
-      "Set up a new React web application",
+      "Set up monitoring for my web application",
+      "Generate a Dockerfile for my Python web service",
+      "Push my image to a registry",
+      "Create a serverless function endpoint",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -78,14 +82,14 @@ describe("agent router - Trigger Tests", () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "foundry agent ".repeat(100);
+      const longPrompt = "deploy agent Foundry ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("FOUNDRY AGENT");
-      const result2 = triggerMatcher.shouldTrigger("foundry agent");
+      const result1 = triggerMatcher.shouldTrigger("DEPLOY AGENT FOUNDRY");
+      const result2 = triggerMatcher.shouldTrigger("deploy agent foundry");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

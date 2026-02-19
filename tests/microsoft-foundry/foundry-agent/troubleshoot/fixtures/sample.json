@@ -10,7 +10,7 @@
     ]
   },
   "sampleInput": {
-    "description": "End-to-end troubleshooting scenario for the foundry-agent-troubleshoot skill.",
+    "description": "End-to-end troubleshooting scenario for the troubleshoot skill.",
     "context": {
       "agentName": "foundry-troubleshooter",
       "environment": "dev",

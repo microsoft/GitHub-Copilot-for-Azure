@@ -1,5 +1,5 @@
 /**
- * Unit Tests for foundry-agent-invoke
+ * Unit Tests for deploy
  *
  * Test isolated skill logic and validation rules.
  */
@@ -8,7 +8,7 @@ import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
 
-describe("invoke - Unit Tests", () => {
+describe("deploy - Unit Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
