@@ -12,19 +12,19 @@
  *   npm run tokens help               # Show help
  */
 
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { count } from './commands/count.js';
-import { check } from './commands/check.js';
-import { compare } from './commands/compare.js';
-import { suggest } from './commands/suggest.js';
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { count } from "./commands/count.js";
+import { check } from "./commands/check.js";
+import { compare } from "./commands/compare.js";
+import { suggest } from "./commands/suggest.js";
 
-const COMMANDS = ['count', 'check', 'compare', 'suggest', 'help'] as const;
+const COMMANDS = ["count", "check", "compare", "suggest", "help"] as const;
 type Command = typeof COMMANDS[number];
 
 function getRepoRoot(): string {
   const scriptDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(scriptDir, '../../..');
+  return resolve(scriptDir, "../../..");
 }
 
 function printHelp(): void {
@@ -63,31 +63,31 @@ Examples:
 
 function main(): void {
   const args = process.argv.slice(2);
-  const command = (args[0] ?? 'help') as Command;
+  const command = (args[0] ?? "help") as Command;
   const commandArgs = args.slice(1);
   const rootDir = getRepoRoot();
 
   if (!COMMANDS.includes(command)) {
     console.error(`Unknown command: ${command}`);
-    console.error(`Available commands: ${COMMANDS.join(', ')}`);
+    console.error(`Available commands: ${COMMANDS.join(", ")}`);
     process.exitCode = 1;
     return;
   }
 
   switch (command) {
-    case 'count':
+    case "count":
       count(rootDir, commandArgs);
       break;
-    case 'check':
+    case "check":
       check(rootDir, commandArgs);
       break;
-    case 'compare':
+    case "compare":
       compare(rootDir, commandArgs);
       break;
-    case 'suggest':
+    case "suggest":
       suggest(rootDir, commandArgs);
       break;
-    case 'help':
+    case "help":
       printHelp();
       break;
   }

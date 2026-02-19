@@ -15,19 +15,19 @@
  *   npm run references <skill>      # Validate a single skill
  */
 
-import { dirname, resolve, relative, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, resolve, relative, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
 function getRepoRoot(): string {
   const scriptDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(scriptDir, '../../..');
+  return resolve(scriptDir, "../../..");
 }
 
 const REPO_ROOT = getRepoRoot();
-const SKILLS_DIR = resolve(REPO_ROOT, 'plugin', 'skills');
+const SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -69,10 +69,10 @@ const LINK_RE = /\[(?:[^\]]*)\]\(([^)]+)\)/g;
 
 function isIgnoredLink(rawTarget: string): boolean {
   const trimmed = rawTarget.trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return true;
-  if (trimmed.startsWith('mailto:')) return true;
-  if (trimmed.startsWith('mdc:')) return true;
-  if (trimmed.startsWith('#')) return true; // pure fragment
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return true;
+  if (trimmed.startsWith("mailto:")) return true;
+  if (trimmed.startsWith("mdc:")) return true;
+  if (trimmed.startsWith("#")) return true; // pure fragment
   return false;
 }
 
@@ -83,9 +83,9 @@ function isIgnoredLink(rawTarget: string): boolean {
 function cleanTarget(rawTarget: string): string {
   let target = rawTarget.trim();
   // Remove optional title ("title" or 'title') at the end
-  target = target.replace(/\s+["'][^"']*["']\s*$/, '');
+  target = target.replace(/\s+["'][^"']*["']\s*$/, "");
   // Remove fragment
-  target = target.replace(/#.*$/, '');
+  target = target.replace(/#.*$/, "");
   return target.trim();
 }
 
@@ -107,7 +107,7 @@ function findMarkdownFiles(dir: string): string[] {
         const stat = statSync(fullPath);
         if (stat.isDirectory()) {
           walk(fullPath);
-        } else if (entry.endsWith('.md')) {
+        } else if (entry.endsWith(".md")) {
           results.push(fullPath);
         }
       } catch {
@@ -125,7 +125,7 @@ function findMarkdownFiles(dir: string): string[] {
  * directories, but recursively for files).
  */
 function findReferenceFiles(skillDir: string): string[] {
-  const referencesDir = resolve(skillDir, 'references');
+  const referencesDir = resolve(skillDir, "references");
   if (!existsSync(referencesDir)) {
     return [];
   }
@@ -164,10 +164,10 @@ function findReferenceFiles(skillDir: string): string[] {
  * Extract all local markdown links from a file that need to be followed for
  * orphan detection. Returns resolved absolute paths.
  */
-function extractLocalLinks(mdFile: string, skillDir: string): string[] {
+function extractLocalLinks(mdFile: string, _skillDir: string): string[] {
   const links: string[] = [];
-  const content = readFileSync(mdFile, 'utf-8');
-  const lines = content.split('\n');
+  const content = readFileSync(mdFile, "utf-8");
+  const lines = content.split("\n");
 
   for (const line of lines) {
     let match: RegExpExecArray | null;
@@ -178,7 +178,7 @@ function extractLocalLinks(mdFile: string, skillDir: string): string[] {
       if (isIgnoredLink(rawTarget)) continue;
 
       const target = cleanTarget(rawTarget);
-      if (target === '') continue;
+      if (target === "") continue;
 
       const fileDir = dirname(mdFile);
       const resolved = resolve(fileDir, target);
@@ -201,8 +201,8 @@ function extractLocalLinks(mdFile: string, skillDir: string): string[] {
 
 function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
   const issues: LinkIssue[] = [];
-  const content = readFileSync(mdFile, 'utf-8');
-  const lines = content.split('\n');
+  const content = readFileSync(mdFile, "utf-8");
+  const lines = content.split("\n");
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -214,7 +214,7 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
       if (isIgnoredLink(rawTarget)) continue;
 
       const target = cleanTarget(rawTarget);
-      if (target === '') continue; // pure fragment after cleaning
+      if (target === "") continue; // pure fragment after cleaning
 
       const fileDir = dirname(mdFile);
       const resolved = resolve(fileDir, target);
@@ -249,12 +249,12 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
       const normalizedResolved = normalize(resolved).toLowerCase();
       const normalizedSkillDir = normalize(skillDir).toLowerCase();
 
-      const insideSkill = normalizedResolved.startsWith(normalizedSkillDir + '\\')
-        || normalizedResolved.startsWith(normalizedSkillDir + '/')
+      const insideSkill = normalizedResolved.startsWith(normalizedSkillDir + "\\")
+        || normalizedResolved.startsWith(normalizedSkillDir + "/")
         || normalizedResolved === normalizedSkillDir;
 
       if (!insideSkill) {
-        const rel = relative(SKILLS_DIR, resolved).replace(/\\/g, '/');
+        const rel = relative(SKILLS_DIR, resolved).replace(/\\/g, "/");
         issues.push({
           file: mdFile,
           line: i + 1,
@@ -284,7 +284,7 @@ function validateSkill(skillName: string): ValidationResult {
   const queue: string[] = [];
 
   // Start from SKILL.md if it exists
-  const skillMd = resolve(skillDir, 'SKILL.md');
+  const skillMd = resolve(skillDir, "SKILL.md");
   if (existsSync(skillMd)) {
     queue.push(skillMd);
     visited.add(normalize(skillMd).toLowerCase());
@@ -300,7 +300,7 @@ function validateSkill(skillName: string): ValidationResult {
       if (!visited.has(normalizedLink)) {
         visited.add(normalizedLink);
         // Only follow markdown links
-        if (link.endsWith('.md')) {
+        if (link.endsWith(".md")) {
           queue.push(link);
         }
       }
@@ -314,7 +314,7 @@ function validateSkill(skillName: string): ValidationResult {
   for (const refFile of referenceFiles) {
     const normalizedRefFile = normalize(refFile).toLowerCase();
     if (!visited.has(normalizedRefFile)) {
-      const relPath = relative(skillDir, refFile).replace(/\\/g, '/');
+      const relPath = relative(skillDir, refFile).replace(/\\/g, "/");
       orphanedFiles.push({
         file: refFile,
         reason: `File exists in references directory but is not linked from SKILL.md: ${relPath}`,
@@ -337,7 +337,7 @@ function listSkills(): string[] {
 }
 
 function formatPath(absPath: string): string {
-  return relative(REPO_ROOT, absPath).replace(/\\/g, '/');
+  return relative(REPO_ROOT, absPath).replace(/\\/g, "/");
 }
 
 function main(): void {
@@ -351,7 +351,7 @@ function main(): void {
     const skillDir = resolve(SKILLS_DIR, requestedSkill);
     if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) {
       console.error(`\n❌ Skill "${requestedSkill}" not found in ${formatPath(SKILLS_DIR)}\n`);
-      console.error('Available skills:');
+      console.error("Available skills:");
       for (const s of listSkills()) {
         console.error(`  - ${s}`);
       }
@@ -360,8 +360,8 @@ function main(): void {
     }
   }
 
-  console.log('\n🔗 Markdown Reference Validator\n');
-  console.log('────────────────────────────────────────────────────────────');
+  console.log("\n🔗 Markdown Reference Validator\n");
+  console.log("────────────────────────────────────────────────────────────");
 
   let totalIssues = 0;
   let totalOrphanedFiles = 0;
@@ -398,7 +398,7 @@ function main(): void {
     }
   }
 
-  console.log('\n────────────────────────────────────────────────────────────');
+  console.log("\n────────────────────────────────────────────────────────────");
 
   const allIssuesCount = totalIssues + totalOrphanedFiles;
   if (allIssuesCount === 0) {
@@ -410,7 +410,7 @@ function main(): void {
     } else if (totalOrphanedFiles > 0) {
       message += ` (${totalOrphanedFiles} orphaned file(s))`;
     }
-    message += '.\n';
+    message += ".\n";
     console.log(message);
     process.exitCode = 1;
   }

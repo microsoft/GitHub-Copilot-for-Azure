@@ -2,19 +2,19 @@
  * Count command - Token counting for markdown files
  */
 
-import { parseArgs } from 'node:util';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve, isAbsolute } from 'node:path';
+import { parseArgs } from "node:util";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join, relative, resolve, isAbsolute } from "node:path";
 import type { 
   TokenMetadata, 
   TokenCount
-} from './types.js';
+} from "./types.js";
 import { 
   estimateTokens,
   DEFAULT_SCAN_DIRS,
   getErrorMessage
-} from './types.js';
-import { findMarkdownFiles } from './utils.js';
+} from "./types.js";
+import { findMarkdownFiles } from "./utils.js";
 
 /**
  * Counts tokens, characters, and lines in a file.
@@ -24,8 +24,8 @@ import { findMarkdownFiles } from './utils.js';
  */
 function countFileTokens(filePath: string): TokenCount {
   try {
-    const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').length;
+    const content = readFileSync(filePath, "utf-8");
+    const lines = content.split("\n").length;
     
     return {
       tokens: estimateTokens(content),
@@ -58,7 +58,7 @@ function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
   
   for (const file of allFiles) {
     try {
-      const relativePath = relative(rootDir, file).replace(/[\\/]/g, '/');
+      const relativePath = relative(rootDir, file).replace(/[\\/]/g, "/");
       const tokenCount = countFileTokens(file);
       fileTokens[relativePath] = tokenCount;
       totalTokens += tokenCount.tokens;
@@ -81,25 +81,25 @@ function generateMetadata(rootDir: string, scanDirs: string[]): TokenMetadata {
 }
 
 function printSummary(metadata: TokenMetadata): void {
-  console.log('\n📊 Token Count Summary');
-  console.log('═'.repeat(60));
+  console.log("\n📊 Token Count Summary");
+  console.log("═".repeat(60));
   console.log(`Total Files: ${metadata.totalFiles.toLocaleString()}`);
   console.log(`Total Tokens: ${metadata.totalTokens.toLocaleString()}`);
   console.log(`Generated: ${metadata.generatedAt}`);
-  console.log('');
+  console.log("");
   
   const sorted = Object.entries(metadata.files)
     .sort(([, a], [, b]) => b.tokens - a.tokens);
   
-  console.log('Top 10 Files by Token Count:');
-  console.log('─'.repeat(60));
+  console.log("Top 10 Files by Token Count:");
+  console.log("─".repeat(60));
   
   for (const [file, count] of sorted.slice(0, 10)) {
     const tokens = count.tokens.toLocaleString().padStart(6);
     console.log(`  ${tokens} tokens │ ${file}`);
   }
   
-  console.log('');
+  console.log("");
 }
 
 /**
@@ -114,11 +114,11 @@ function isPathWithinRoot(targetPath: string, rootDir: string): boolean {
   const resolvedRoot = resolve(rootDir);
   
   // Normalize paths to prevent traversal attacks (unify separators)
-  const normalizedTarget = resolvedTarget.replace(/[\\/]+/g, '/');
-  const normalizedRoot = resolvedRoot.replace(/[\\/]+/g, '/');
-  const rootWithSep = normalizedRoot.endsWith('/') ? normalizedRoot : normalizedRoot + '/';
+  const normalizedTarget = resolvedTarget.replace(/[\\/]+/g, "/");
+  const normalizedRoot = resolvedRoot.replace(/[\\/]+/g, "/");
+  const rootWithSep = normalizedRoot.endsWith("/") ? normalizedRoot : normalizedRoot + "/";
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     // Windows file systems are typically case-insensitive
     const targetLower = normalizedTarget.toLowerCase();
     const rootLowerWithSep = rootWithSep.toLowerCase();
@@ -134,8 +134,8 @@ export function count(rootDir: string, args: string[]): void {
   const { values } = parseArgs({
     args,
     options: {
-      output: { type: 'string' },
-      json: { type: 'boolean', default: false }
+      output: { type: "string" },
+      json: { type: "boolean", default: false }
     },
     strict: false,
     allowPositionals: true
@@ -146,13 +146,13 @@ export function count(rootDir: string, args: string[]): void {
 
   const metadata = generateMetadata(rootDir, [...DEFAULT_SCAN_DIRS]);
   
-  if (outputPath && typeof outputPath === 'string') {
+  if (outputPath && typeof outputPath === "string") {
     const fullOutputPath = isAbsolute(outputPath) 
       ? outputPath 
       : join(rootDir, outputPath);
     
     if (!isPathWithinRoot(fullOutputPath, rootDir)) {
-      console.error(`❌ Error: Output path must be within the repository root`);
+      console.error("❌ Error: Output path must be within the repository root");
       console.error(`   Attempted path: ${fullOutputPath}`);
       console.error(`   Repository root: ${rootDir}`);
       process.exitCode = 1;

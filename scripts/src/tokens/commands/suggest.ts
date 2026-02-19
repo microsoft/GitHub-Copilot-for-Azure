@@ -2,14 +2,14 @@
  * Suggest command - Token optimization suggestions
  */
 
-import { parseArgs } from 'node:util';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { parseArgs } from "node:util";
+import { readFileSync, existsSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import type { 
   Suggestion, 
   FileAnalysis,
   TokenLimitsConfig
-} from './types.js';
+} from "./types.js";
 import { 
   estimateTokens,
   normalizePath,
@@ -21,17 +21,17 @@ import {
   TOKENS_PER_CODE_LINE,
   TOKENS_PER_TABLE_ROW,
   getErrorMessage
-} from './types.js';
-import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
+} from "./types.js";
+import { loadConfig, getLimitForFile, findMarkdownFiles } from "./utils.js";
 
 const VERBOSE_PHRASES: Record<string, string> = {
-  'in order to': 'to',
-  'it is important to note that': 'note:',
-  'due to the fact that': 'because',
-  'in the event that': 'if',
-  'for the purpose of': 'to/for',
-  'has the ability to': 'can',
-  'at the present time': 'now',
+  "in order to": "to",
+  "it is important to note that": "note:",
+  "due to the fact that": "because",
+  "in the event that": "if",
+  "for the purpose of": "to/for",
+  "has the ability to": "can",
+  "at the present time": "now",
 };
 
 /**
@@ -51,8 +51,8 @@ function findEmojis(lines: string[]): Suggestion[] {
     if (emojis && emojis.length > MAX_DECORATIVE_EMOJIS) {
       suggestions.push({
         line: index + 1,
-        issue: `Decorative emoji(s): ${emojis.join(' ')}`,
-        suggestion: 'Remove decorative emojis (keep functional ones like ✅❌⚠️)',
+        issue: `Decorative emoji(s): ${emojis.join(" ")}`,
+        suggestion: "Remove decorative emojis (keep functional ones like ✅❌⚠️)",
         estimatedSavings: emojis.length * TOKENS_PER_EMOJI
       });
     }
@@ -73,7 +73,7 @@ function findVerbosePhrases(content: string): Suggestion[] {
   for (const [verbose, concise] of Object.entries(VERBOSE_PHRASES)) {
     let idx = 0;
     while ((idx = lowerContent.indexOf(verbose, idx)) !== -1) {
-      const lineNum = content.substring(0, idx).split('\n').length;
+      const lineNum = content.substring(0, idx).split("\n").length;
       suggestions.push({
         line: lineNum,
         issue: `Verbose: "${verbose}"`,
@@ -92,7 +92,7 @@ function findLargeCodeBlocks(lines: string[]): Suggestion[] {
   let inBlock = false, blockStart = 0, blockLines = 0;
   
   lines.forEach((line, index) => {
-    if (line.startsWith('```')) {
+    if (line.startsWith("```")) {
       if (!inBlock) {
         inBlock = true;
         blockStart = index + 1;
@@ -103,7 +103,7 @@ function findLargeCodeBlocks(lines: string[]): Suggestion[] {
           suggestions.push({
             line: blockStart,
             issue: `Large code block (${blockLines} lines)`,
-            suggestion: 'Move to references/ or use shorter examples',
+            suggestion: "Move to references/ or use shorter examples",
             estimatedSavings: Math.ceil(blockLines * TOKENS_PER_CODE_LINE)
           });
         }
@@ -121,7 +121,7 @@ function findLargeTables(lines: string[]): Suggestion[] {
   let tableStart = -1, tableRows = 0;
   
   lines.forEach((line, index) => {
-    const isTableRow = line.trim().startsWith('|') && line.trim().endsWith('|');
+    const isTableRow = line.trim().startsWith("|") && line.trim().endsWith("|");
     // Improved separator: requires at least one dash per column
     const isSeparator = /^\|(\s*:?-+:?\s*\|)+$/.test(line.trim());
     
@@ -133,7 +133,7 @@ function findLargeTables(lines: string[]): Suggestion[] {
         suggestions.push({
           line: tableStart,
           issue: `Large table (${tableRows} rows)`,
-          suggestion: 'Move to references/ directory',
+          suggestion: "Move to references/ directory",
           estimatedSavings: Math.ceil(tableRows * TOKENS_PER_TABLE_ROW)
         });
       }
@@ -147,8 +147,8 @@ function findLargeTables(lines: string[]): Suggestion[] {
 
 function analyzeFile(filePath: string, rootDir: string, config: TokenLimitsConfig): FileAnalysis & { limit: number; exceeded: boolean } {
   try {
-    const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
+    const content = readFileSync(filePath, "utf-8");
+    const lines = content.split("\n");
     const tokens = estimateTokens(content);
     const relativePath = normalizePath(relative(rootDir, filePath));
     const { limit } = getLimitForFile(relativePath, config, rootDir);
@@ -176,25 +176,25 @@ function analyzeFile(filePath: string, rootDir: string, config: TokenLimitsConfi
 }
 
 function printAnalysis(analysis: FileAnalysis & { limit: number; exceeded: boolean }, rootDir: string): void {
-  const relativePath = relative(rootDir, analysis.file).replace(/\\/g, '/');
-  const overBy = analysis.exceeded ? ` (over by ${analysis.tokens - analysis.limit})` : '';
-  const status = analysis.exceeded ? '❌' : '✅';
+  const relativePath = relative(rootDir, analysis.file).replace(/\\/g, "/");
+  const overBy = analysis.exceeded ? ` (over by ${analysis.tokens - analysis.limit})` : "";
+  const status = analysis.exceeded ? "❌" : "✅";
   
-  console.log(`\n${'═'.repeat(60)}`);
+  console.log(`\n${"═".repeat(60)}`);
   console.log(`${status} ${relativePath}`);
-  console.log(`${'─'.repeat(60)}`);
+  console.log(`${"─".repeat(60)}`);
   console.log(`   Tokens: ${analysis.tokens.toLocaleString()} / ${analysis.limit.toLocaleString()}${overBy} | Lines: ${analysis.lines}`);
   
   if (analysis.suggestions.length === 0) {
     if (analysis.exceeded) {
-      console.log('\n   ⚠️  File exceeds limit but no automatic suggestions found');
-      console.log('   💡 Consider moving detailed content to references/ directory');
+      console.log("\n   ⚠️  File exceeds limit but no automatic suggestions found");
+      console.log("   💡 Consider moving detailed content to references/ directory");
     } else {
-      console.log('\n   ✅ No optimization suggestions');
+      console.log("\n   ✅ No optimization suggestions");
     }
   } else {
     const willFixExceeded = analysis.exceeded && analysis.potentialSavings >= (analysis.tokens - analysis.limit);
-    const fixIndicator = willFixExceeded ? ' (will fix ✅)' : '';
+    const fixIndicator = willFixExceeded ? " (will fix ✅)" : "";
     console.log(`\n   📋 ${analysis.suggestions.length} suggestions (~${analysis.potentialSavings} tokens)${fixIndicator}\n`);
     
     for (const s of analysis.suggestions) {
@@ -229,9 +229,9 @@ export function suggest(rootDir: string, args: string[]): void {
         : [targetPath];
     } catch (error) {
       const errMsg = getErrorMessage(error);
-      if (errMsg.includes('ENOENT')) {
+      if (errMsg.includes("ENOENT")) {
         console.error(`❌ Path does not exist: ${targetPath}`);
-      } else if (errMsg.includes('EACCES') || errMsg.includes('EPERM')) {
+      } else if (errMsg.includes("EACCES") || errMsg.includes("EPERM")) {
         console.error(`❌ Permission denied accessing: ${targetPath}`);
       } else {
         console.error(`❌ Failed to access path ${targetPath}: ${errMsg}`);
@@ -255,7 +255,7 @@ export function suggest(rootDir: string, args: string[]): void {
   }
   
   if (files.length === 0) {
-    console.log('No markdown files found.');
+    console.log("No markdown files found.");
     return;
   }
   
@@ -293,10 +293,10 @@ export function suggest(rootDir: string, args: string[]): void {
     const totalSavings = analyses.reduce((sum, a) => sum + a.potentialSavings, 0);
     const filesWithSuggestions = analyses.filter(a => a.suggestions.length > 0).length;
     
-    console.log(`\n${'═'.repeat(60)}`);
-    console.log(`📊 SUMMARY`);
+    console.log(`\n${"═".repeat(60)}`);
+    console.log("📊 SUMMARY");
     console.log(`   Files analyzed: ${analyses.length}`);
-    console.log(`   Files exceeding limits: ${exceeded.length}${exceeded.length > 0 ? ' ⚠️' : ''}`);
+    console.log(`   Files exceeding limits: ${exceeded.length}${exceeded.length > 0 ? " ⚠️" : ""}`);
     console.log(`   Files with suggestions: ${filesWithSuggestions}`);
     console.log(`   Total potential savings: ~${totalSavings} tokens`);
     
@@ -315,6 +315,6 @@ export function suggest(rootDir: string, args: string[]): void {
       }
     }
     
-    console.log('═'.repeat(60) + '\n');
+    console.log("═".repeat(60) + "\n");
   }
 }

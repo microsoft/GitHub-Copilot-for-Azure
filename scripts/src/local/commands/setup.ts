@@ -5,12 +5,12 @@
  * directly at the local plugin directory for development.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
 
-const MARKETPLACE_NAME = 'github-copilot-for-azure';
-const PLUGIN_NAME = 'azure';
+const MARKETPLACE_NAME = "github-copilot-for-azure";
+const PLUGIN_NAME = "azure";
 
 interface Marketplace {
   source: {
@@ -39,16 +39,16 @@ interface SetupOptions {
 
 function parseArgs(args: string[]): SetupOptions {
   return {
-    force: args.includes('--force') || args.includes('-f'),
+    force: args.includes("--force") || args.includes("-f"),
   };
 }
 
 function getCopilotDir(): string {
-  return join(homedir(), '.copilot');
+  return join(homedir(), ".copilot");
 }
 
 function getCopilotConfigPath(): string {
-  return join(getCopilotDir(), 'config.json');
+  return join(getCopilotDir(), "config.json");
 }
 
 function readCopilotConfig(): CopilotConfig | null {
@@ -57,7 +57,7 @@ function readCopilotConfig(): CopilotConfig | null {
     return null;
   }
   try {
-    return JSON.parse(readFileSync(configPath, 'utf-8'));
+    return JSON.parse(readFileSync(configPath, "utf-8"));
   } catch {
     return null;
   }
@@ -74,11 +74,11 @@ function writeCopilotConfig(config: CopilotConfig): boolean {
     }
     
     // Backup first
-    const backupPath = configPath + '.bak';
+    const backupPath = configPath + ".bak";
     if (existsSync(configPath)) {
       writeFileSync(backupPath, readFileSync(configPath));
     }
-    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
     return true;
   } catch {
     return false;
@@ -88,8 +88,8 @@ function writeCopilotConfig(config: CopilotConfig): boolean {
 function getExpectedMarketplace(): Marketplace {
   return {
     source: {
-      source: 'github',
-      repo: 'microsoft/github-copilot-for-azure',
+      source: "github",
+      repo: "microsoft/github-copilot-for-azure",
     },
   };
 }
@@ -105,7 +105,7 @@ function createExpectedPlugin(cachePath: string): InstalledPlugin {
 }
 
 function normalizePath(path: string): string {
-  return path.toLowerCase().replace(/\\/g, '/');
+  return path.toLowerCase().replace(/\\/g, "/");
 }
 
 function isMarketplaceCorrect(config: CopilotConfig): boolean {
@@ -128,35 +128,35 @@ function isPluginCorrect(config: CopilotConfig, expectedCachePath: string): bool
 
 export function setup(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
-  const localPluginPath = join(rootDir, 'plugin');
+  const localPluginPath = join(rootDir, "plugin");
   const configPath = getCopilotConfigPath();
 
-  console.log('\n🔧 Local Development Setup\n');
-  console.log('────────────────────────────────────────────────────────────');
+  console.log("\n🔧 Local Development Setup\n");
+  console.log("────────────────────────────────────────────────────────────");
 
   // Check local plugin exists
-  console.log(`\n📁 Local plugin path:`);
+  console.log("\n📁 Local plugin path:");
   console.log(`   ${localPluginPath}`);
   if (!existsSync(localPluginPath)) {
-    console.log('   ❌ Not found\n');
-    console.error('Error: Local plugin directory not found.');
+    console.log("   ❌ Not found\n");
+    console.error("Error: Local plugin directory not found.");
     process.exitCode = 1;
     return;
   }
-  console.log('   ✅ Exists');
+  console.log("   ✅ Exists");
 
   // Read or create config
-  console.log(`\n📄 Copilot config:`);
+  console.log("\n📄 Copilot config:");
   console.log(`   ${configPath}`);
   
   let config = readCopilotConfig();
   const configExisted = config !== null;
   
   if (!config) {
-    console.log('   📂 Creating new config...');
+    console.log("   📂 Creating new config...");
     config = {};
   } else {
-    console.log('   ✅ Exists');
+    console.log("   ✅ Exists");
   }
 
   // Check if already configured correctly
@@ -164,14 +164,14 @@ export function setup(rootDir: string, args: string[]): void {
   const pluginOk = isPluginCorrect(config, localPluginPath);
 
   if (marketplaceOk && pluginOk) {
-    console.log('\n✅ Already configured correctly!');
-    console.log('────────────────────────────────────────────────────────────');
-    console.log('\n✅ Setup complete! Config is already pointing to local repo.\n');
+    console.log("\n✅ Already configured correctly!");
+    console.log("────────────────────────────────────────────────────────────");
+    console.log("\n✅ Setup complete! Config is already pointing to local repo.\n");
     return;
   }
 
   // Show what needs to be updated
-  console.log('\n📝 Configuration changes needed:');
+  console.log("\n📝 Configuration changes needed:");
   
   if (!marketplaceOk) {
     console.log(`   • Add/update marketplace: ${MARKETPLACE_NAME}`);
@@ -182,7 +182,7 @@ export function setup(rootDir: string, args: string[]): void {
       p => p.name === PLUGIN_NAME && p.marketplace === MARKETPLACE_NAME
     );
     if (existingPlugin) {
-      console.log(`   • Update plugin cache_path from:`);
+      console.log("   • Update plugin cache_path from:");
       console.log(`     ${existingPlugin.cache_path}`);
       console.log(`     to: ${localPluginPath}`);
     } else {
@@ -196,8 +196,8 @@ export function setup(rootDir: string, args: string[]): void {
       p => p.name === PLUGIN_NAME
     );
     if (existingPlugin && normalizePath(existingPlugin.cache_path) !== normalizePath(localPluginPath)) {
-      console.log('\n   ⚠️  Plugin already exists with different cache_path.');
-      console.log('   Use --force to update.\n');
+      console.log("\n   ⚠️  Plugin already exists with different cache_path.");
+      console.log("   Use --force to update.\n");
       process.exitCode = 1;
       return;
     }
@@ -234,17 +234,17 @@ export function setup(rootDir: string, args: string[]): void {
   }
 
   // Write config
-  console.log('\n💾 Writing config...');
+  console.log("\n💾 Writing config...");
   if (!writeCopilotConfig(config)) {
-    console.log('   ❌ Failed to write config\n');
+    console.log("   ❌ Failed to write config\n");
     process.exitCode = 1;
     return;
   }
-  console.log('   ✅ Config updated');
+  console.log("   ✅ Config updated");
 
-  console.log('\n────────────────────────────────────────────────────────────');
-  console.log('\n✅ Setup complete!\n');
-  console.log('   Your config now points to the local plugin. Changes to skills');
-  console.log('   will be picked up by Copilot CLI (restart CLI after changes).\n');
+  console.log("\n────────────────────────────────────────────────────────────");
+  console.log("\n✅ Setup complete!\n");
+  console.log("   Your config now points to the local plugin. Changes to skills");
+  console.log("   will be picked up by Copilot CLI (restart CLI after changes).\n");
   console.log('   Run "npm run local verify" to confirm the setup.\n');
 }

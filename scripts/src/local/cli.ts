@@ -10,17 +10,17 @@
  *   npm run local help     # Show help
  */
 
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { setup } from './commands/setup.js';
-import { verify } from './commands/verify.js';
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { setup } from "./commands/setup.js";
+import { verify } from "./commands/verify.js";
 
-const COMMANDS = ['setup', 'verify', 'help'] as const;
+const COMMANDS = ["setup", "verify", "help"] as const;
 type Command = typeof COMMANDS[number];
 
 function getRepoRoot(): string {
   const scriptDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(scriptDir, '../../..');
+  return resolve(scriptDir, "../../..");
 }
 
 function printHelp(): void {
@@ -49,25 +49,25 @@ Examples:
 
 function main(): void {
   const args = process.argv.slice(2);
-  const command = (args[0] ?? 'help') as Command;
+  const command = (args[0] ?? "help") as Command;
   const commandArgs = args.slice(1);
   const rootDir = getRepoRoot();
 
   if (!COMMANDS.includes(command)) {
     console.error(`Unknown command: ${command}`);
-    console.error(`Available commands: ${COMMANDS.join(', ')}`);
+    console.error(`Available commands: ${COMMANDS.join(", ")}`);
     process.exitCode = 1;
     return;
   }
 
   switch (command) {
-    case 'setup':
+    case "setup":
       setup(rootDir, commandArgs);
       break;
-    case 'verify':
+    case "verify":
       verify(rootDir, commandArgs);
       break;
-    case 'help':
+    case "help":
       printHelp();
       break;
   }
