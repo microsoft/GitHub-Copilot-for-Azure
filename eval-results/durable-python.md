@@ -3,7 +3,7 @@
 **Date:** 2026-02-19T04:56:00Z
 **Recipe:** durable
 **Language:** Python
-**Status:** ✅ PASS (after fix)
+**Status:** ✅ PASS (after setting storage flags)
 
 ## Deployment
 
@@ -16,17 +16,21 @@
 
 ## Root Cause of Initial Failure
 
-The base HTTP template doesn't include the Storage Queue and Table settings needed for Durable Functions:
+The base template's storage module defaults to `enableQueue: false` and `enableTable: false`. Durable Functions requires both.
 
-### Missing App Settings (CRITICAL)
-```
-AzureWebJobsStorage__queueServiceUri=https://<storage>.queue.core.windows.net/
-AzureWebJobsStorage__tableServiceUri=https://<storage>.table.core.windows.net/
+### Solution: Set Storage Flags
+
+In `main.bicep`, set:
+```bicep
+enableQueue: true   // Required for Durable task hub
+enableTable: true   // Required for Durable orchestration history
 ```
 
-### Missing RBAC Roles (CRITICAL)
-- `Storage Queue Data Contributor` 
-- `Storage Table Data Contributor`
+When these flags are `true`, the base template automatically:
+1. Adds `AzureWebJobsStorage__queueServiceUri` app setting
+2. Adds `AzureWebJobsStorage__tableServiceUri` app setting  
+3. Assigns `Storage Queue Data Contributor` RBAC role
+4. Assigns `Storage Table Data Contributor` RBAC role
 
 ## Test Results (After Fix)
 

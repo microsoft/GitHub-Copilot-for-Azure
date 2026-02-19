@@ -14,7 +14,20 @@ enabling AI agents (like GitHub Copilot, Claude, etc.) to invoke your functions 
 | **Trigger** | HTTP (MCP protocol) |
 | **Protocol** | JSON-RPC 2.0 over HTTP |
 | **Auth** | Function key or Entra ID |
-| **IaC** | ❌ None required |
+| **IaC** | ⚠️ Set `enableQueue: true` in main.bicep |
+
+## Storage Endpoint Flags
+
+MCP uses Queue storage for state management and backplane. Set the flag in main.bicep:
+
+```bicep
+module storage './shared/storage.bicep' = {
+  params: {
+    enableBlob: true    // Default - deployment packages
+    enableQueue: true   // Required for MCP - state management and backplane
+  }
+}
+```
 
 ## Composition Steps
 

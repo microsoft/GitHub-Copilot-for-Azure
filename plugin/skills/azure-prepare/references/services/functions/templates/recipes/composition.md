@@ -213,8 +213,8 @@ Some integrations require additional storage endpoints. Toggle these in `main.bi
 | HTTP        | ✓          | -           | -           | Default |
 | Timer       | ✓          | -           | -           | Checkpointing uses blob |
 | Cosmos DB   | ✓          | -           | -           | Standard |
-| **Durable** | ✓          | **✓**       | **✓**       | Task hub + history |
-| **MCP**     | ✓          | **✓**       | -           | Message coordination |
+| **Durable** | ✓          | **✓**       | **✓**       | Queue=task hub, Table=history |
+| **MCP**     | ✓          | **✓**       | -           | Queue=state mgmt + backplane |
 
 ## Recipe Classification
 

@@ -45,12 +45,12 @@ func start
 
 ## Storage Requirements
 
-MCP needs Queue storage for message coordination. Ensure `enableQueue: true` in `main.bicep`:
+MCP needs Queue storage for state management and backplane. Ensure `enableQueue: true` in `main.bicep`:
 
 ```bicep
 var storageEndpointConfig = {
   enableBlob: true   // Required for deployment
-  enableQueue: true  // Required for MCP
+  enableQueue: true  // Required for MCP state management and backplane
   enableTable: false // Not required for MCP
 }
 ```
