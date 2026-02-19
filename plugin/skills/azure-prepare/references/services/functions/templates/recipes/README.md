@@ -28,11 +28,11 @@ HTTP Base Template (per language, from AZD gallery)
 | [cosmosdb](cosmosdb/README.md) | ✅ Cosmos account + DB + containers + RBAC + PE | ✅ CosmosDBTrigger | ✅ Available |
 | [eventhubs](eventhubs/README.md) | ✅ EH namespace + hub + consumer group + RBAC + PE | ✅ EventHubTrigger | ✅ Available |
 | [servicebus](servicebus/README.md) | ✅ SB namespace + queue + RBAC + PE | ✅ ServiceBusTrigger | ✅ Available |
+| [timer](timer/README.md) | ❌ None | ✅ TimerTrigger + cron | ✅ Available |
+| [durable](durable/README.md) | ❌ None (uses base Storage) | ✅ Orchestrator + Activity + Client | ⚠️ Testing |
+| [mcp](mcp/README.md) | ❌ None | ✅ MCP JSON-RPC tools | ✅ Available |
 | sql | ✅ SQL server + DB + firewall + identity | ✅ SqlTrigger | 🔲 Planned |
 | blob-eventgrid | ✅ EventGrid subscription + system topic | ✅ BlobTrigger (EG) | 🔲 Planned |
-| timer | ❌ None | ✅ TimerTrigger + cron | 🔲 Planned |
-| durable | ⚙️ Toggle `enableQueue`+`enableTable` in base | ✅ Orchestrator + Activity + Client | 🔲 Planned |
-| mcp | ⚙️ Toggle `enableQueue`+`enableTable` in base | ✅ MCPTrigger / `@app.mcp_tool` | 🔲 Planned |
 
 ## How It Works
 
