@@ -8,7 +8,7 @@ These errors can be caught **before** running `azd up`:
 |-------|-------|------------|
 | `Please run 'az login'` | Not authenticated | `az login` or `azd auth login` |
 | `No environment selected` | Missing azd environment | `azd env select <name>` or `azd env new <name>` |
-| `no default response for prompt 'Enter a unique environment name'` | No azd environment created | Run `azd env new <name>` FIRST |
+| `no default response for prompt 'Enter a unique environment name'` | No azd environment created, or missing `-e` flag | Run `azd env new <name>` OR use `azd init --from-code -e <name>` with the `-e` flag |
 | `no default response for prompt 'Enter a value for the 'environmentName'` | Environment variables not set | Run `azd env set AZURE_ENV_NAME <name>` |
 | `Service not found` | Service name mismatch | Check service name in azure.yaml |
 | `Invalid azure.yaml` | YAML syntax error | Fix YAML syntax |
