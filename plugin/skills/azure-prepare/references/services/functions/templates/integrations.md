@@ -10,11 +10,11 @@
 | Cosmos DB | [recipes/cosmosdb/](recipes/cosmosdb/README.md) | ✅ Available |
 | Event Hubs | [recipes/eventhubs/](recipes/eventhubs/README.md) | ✅ Available |
 | Service Bus | [recipes/servicebus/](recipes/servicebus/README.md) | ✅ Available |
+| Timer | [recipes/timer/](recipes/timer/README.md) | ✅ Available (source-only) |
+| Durable | [recipes/durable/](recipes/durable/README.md) | ✅ Available (source-only, requires IaC) |
+| MCP | [recipes/mcp/](recipes/mcp/README.md) | ✅ Available (source-only) |
 | Azure SQL | recipes/sql/ | 🔲 Planned |
 | Blob/Event Grid | recipes/blob-eventgrid/ | 🔲 Planned |
-| Timer | recipes/timer/ | 🔲 Planned (source-only) |
-| Durable | recipes/durable/ | 🔲 Planned (source-only) |
-| MCP | [mcp.md](mcp.md) | ✅ Available (source-only) |
 
 ## Legacy: Browse by Service
 

@@ -1,9 +1,9 @@
 # Durable Functions Recipe Evaluation
 
-**Date:** 2026-02-19T04:25:00Z
+**Date:** 2026-02-19T04:56:00Z
 **Recipe:** durable
 **Language:** Python
-**Status:** ❌ FAIL - Host not starting
+**Status:** ✅ PASS (after fix)
 
 ## Deployment
 
@@ -14,47 +14,58 @@
 | Region | eastus2 |
 | Base Template | `functions-quickstart-python-http-azd` |
 
-## Test Results
+## Root Cause of Initial Failure
+
+The base HTTP template doesn't include the Storage Queue and Table settings needed for Durable Functions:
+
+### Missing App Settings (CRITICAL)
+```
+AzureWebJobsStorage__queueServiceUri=https://<storage>.queue.core.windows.net/
+AzureWebJobsStorage__tableServiceUri=https://<storage>.table.core.windows.net/
+```
+
+### Missing RBAC Roles (CRITICAL)
+- `Storage Queue Data Contributor` 
+- `Storage Table Data Contributor`
+
+## Test Results (After Fix)
 
 ### Health Endpoint
-```bash
-curl "https://func-api-x7xtff7z2udxe.azurewebsites.net/api/health?code=<key>"
+```json
+{"status": "healthy", "type": "durable"}
 ```
 
-**Response:**
+### Start Orchestration
+```json
+{
+  "id": "0fe900e532dc4c11912eb31e65e822dc",
+  "statusQueryGetUri": "https://..."
+}
 ```
-Function host is not running.
-HTTP Status: 503
+
+### Orchestration Completed
+```json
+{
+  "runtimeStatus": "Completed",
+  "output": ["Hello Seattle", "Hello Tokyo", "Hello London"]
+}
 ```
 
-### Functions Listed (via CLI)
-- `health_check` - httpTrigger
-- `hello_orchestrator` - orchestrationTrigger  
-- `http_start` - httpTrigger
-- `say_hello` - activityTrigger
+## Code Requirements
 
-## Issue Analysis
-
-The functions are registered but the host fails to start. Possible causes:
-1. `azure-functions-durable` package compatibility with Flex Consumption
-2. Python durable functions decorator syntax issue
-3. Cold start timeout
-
-## Requirements.txt
-```
-azure-functions
-azure-functions-durable>=1.2.0
+Must use `df.DFApp()` instead of `func.FunctionApp()`:
+```python
+import azure.durable_functions as df
+app = df.DFApp(http_auth_level=func.AuthLevel.FUNCTION)
 ```
 
 ## Verdict
 
-❌ **FAIL** - Durable recipe needs debugging:
-- Functions listed correctly via CLI
-- Host returns 503 "Function host is not running"
-- May need to test on Consumption plan instead of Flex Consumption
-- May need different durable functions syntax
+✅ **PASS** - Durable recipe works after adding:
+1. Queue and Table service URIs to app settings
+2. Queue and Table RBAC roles to managed identity
+3. Using `df.DFApp()` instead of `func.FunctionApp()`
 
-## Next Steps
-- [ ] Test on standard Consumption plan
-- [ ] Verify durable-functions package version compatibility
-- [ ] Check Azure Functions runtime logs
+## Action Items
+- [ ] Update durable recipe README with required app settings
+- [ ] Add IaC module to set Queue/Table URIs and RBAC roles

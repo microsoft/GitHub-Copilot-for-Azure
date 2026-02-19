@@ -18,7 +18,55 @@ No additional Azure resources required — uses the existing Storage account for
 | **Trigger** | `OrchestrationTrigger` + `ActivityTrigger` |
 | **Client** | `DurableClient` / `DurableOrchestrationClient` |
 | **Auth** | N/A — internal orchestration |
-| **IaC** | ❌ None required (uses base Storage) |
+| **IaC** | ⚠️ Requires Queue/Table Storage config (see below) |
+
+## ⚠️ CRITICAL: Flex Consumption Requirements
+
+Durable Functions on Flex Consumption with User-Assigned Managed Identity (UAMI) requires **additional Storage configuration** beyond the base HTTP template.
+
+### Required App Settings
+
+The base template only configures Blob storage. Durable Functions also needs Queue and Table storage:
+
+```
+AzureWebJobsStorage__blobServiceUri=https://<storage>.blob.core.windows.net/
+AzureWebJobsStorage__queueServiceUri=https://<storage>.queue.core.windows.net/  # REQUIRED
+AzureWebJobsStorage__tableServiceUri=https://<storage>.table.core.windows.net/  # REQUIRED
+AzureWebJobsStorage__credential=managedidentity
+AzureWebJobsStorage__clientId=<uami-client-id>
+```
+
+### Required RBAC Roles
+
+Add these roles to the UAMI on the Storage account:
+
+| Role | Role ID | Purpose |
+|------|---------|---------|
+| Storage Blob Data Owner | b7e6dc6d-f1e8-4753-8033-0f276bb0955b | ✅ Base template includes |
+| Storage Queue Data Contributor | 974c5e8b-45b9-4653-ba55-5f855dd0fb88 | ⚠️ MUST ADD |
+| Storage Table Data Contributor | 0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3 | ⚠️ MUST ADD |
+
+### IaC Addition (main.bicep)
+
+Add to base template's `main.bicep`:
+
+```bicep
+// Add to roleAssignments array in storage module
+{
+  principalId: userAssignedIdentity.properties.principalId
+  principalType: 'ServicePrincipal'
+  roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88') // Storage Queue Data Contributor
+}
+{
+  principalId: userAssignedIdentity.properties.principalId
+  principalType: 'ServicePrincipal'
+  roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3') // Storage Table Data Contributor
+}
+
+// Add to Function App settings
+AzureWebJobsStorage__queueServiceUri: 'https://${storage.name}.queue.${environment().suffixes.storage}/'
+AzureWebJobsStorage__tableServiceUri: 'https://${storage.name}.table.${environment().suffixes.storage}/'
+```
 
 ## Composition Steps
 
@@ -67,11 +115,15 @@ HTTP Start → Orchestrator → [Activity1, Activity2, Activity3] → Aggregate 
 
 ## Common Issues
 
-### Storage Connection Error
+### Storage Connection Error (Flex Consumption with UAMI)
 
-**Cause:** `AzureWebJobsStorage` not configured.
+**Symptoms:** 503 "Function host is not running", or "Storage Queue connection failed"
 
-**Solution:** Ensure Storage account connection is set. Durable Functions requires Storage for state persistence.
+**Cause:** Missing Queue/Table storage URIs and RBAC roles.
+
+**Solution:** 
+1. Add `AzureWebJobsStorage__queueServiceUri` and `AzureWebJobsStorage__tableServiceUri` app settings
+2. Add `Storage Queue Data Contributor` and `Storage Table Data Contributor` RBAC roles to UAMI
 
 ### Orchestrator Replay Issues
 
