@@ -92,6 +92,7 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 - [.NET Aspire Projects](../../aspire.md)
 - [azure.yaml Schema](azure-yaml.md)
+- [.NET Aspire Apps](aspire.md)
 - [Terraform with AZD](terraform.md)
 - [Docker Configuration](docker.md)
 - [IAC Rules](iac-rules.md)
