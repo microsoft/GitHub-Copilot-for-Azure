@@ -146,12 +146,9 @@ System.InvalidOperationException: Secret initialization from Blob storage failed
 an Azure Storage connection string and a SAS connection uri.
 ```
 
-**Cause:** When using `AddAzureFunctionsProject` with `WithHostStorage(storage)`, Aspire configures identity-based storage access (managed identity). However, Azure Functions' internal secret management requires either:
-- A full connection string
-- A SAS URI
-- File-based secret storage
+**Cause:** When using `AddAzureFunctionsProject` with `WithHostStorage(storage)`, Aspire configures identity-based storage access (managed identity). However, Azure Functions' internal secret management does not support identity-based URIs and requires file-based secret storage for Container Apps deployments.
 
-**Solution:** Add `AzureWebJobsSecretStorageType=Files` environment variable to the Functions resource in the AppHost:
+**Solution:** Add `AzureWebJobsSecretStorageType=Files` environment variable to the Functions resource in the AppHost **before running `azd up`**:
 
 ```csharp
 var functions = builder.AddAzureFunctionsProject<Projects.ImageGallery_Functions>("functions")
@@ -164,30 +161,38 @@ var functions = builder.AddAzureFunctionsProject<Projects.ImageGallery_Functions
                        .WithUrlForEndpoint("http", u => u.DisplayText = "Functions App");
 ```
 
-> 💡 **Why this is needed:**
+> 💡 **Why this is required:**
 > - `WithHostStorage(storage)` sets identity-based URIs like `AzureWebJobsStorage__blobServiceUri`
 > - This is correct and secure for runtime storage operations
 > - However, Functions' secret/key management doesn't support these URIs
-> - File-based secrets are the recommended approach for Container Apps deployments
+> - File-based secrets are mandatory for Container Apps deployments
 
-> ⚠️ **Important:** This is specifically required when:
+> ⚠️ **Important:** This is required when:
 > - Using `AddAzureFunctionsProject` in Aspire
 > - Using `WithHostStorage()` with identity-based storage
 > - Deploying to Azure Container Apps (the default for Aspire Functions)
 
 **Generated Infrastructure Note:**
 
-If modifying the generated Bicep templates directly, ensure the Functions app has this setting:
+If you need to modify the generated Container Apps infrastructure directly, ensure the Functions container app has this environment variable:
 
 ```bicep
-siteConfig: {
-  appSettings: [
-    {
-      name: 'AzureWebJobsSecretStorageType'
-      value: 'Files'
+resource functionsContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  properties: {
+    template: {
+      containers: [
+        {
+          env: [
+            {
+              name: 'AzureWebJobsSecretStorageType'
+              value: 'Files'
+            }
+            // ... other environment variables
+          ]
+        }
+      ]
     }
-    // ... other settings
-  ]
+  }
 }
 ```
 

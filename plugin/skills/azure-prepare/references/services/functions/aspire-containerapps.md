@@ -1,58 +1,70 @@
-# Azure Functions on Container Apps (Aspire)
+# Azure Functions on Azure Container Apps (Aspire)
 
-When deploying Azure Functions to Container Apps (common in .NET Aspire apps), **file-based secret storage must be configured** when using identity-based storage access.
+When .NET Aspire deploys Azure Functions via `azd`, Functions run as containerized workloads on Azure Container Apps. **File-based secret storage is required** when using identity-based storage access.
 
-> ⚠️ **Critical for Aspire:** If your Function App uses identity-based storage (e.g., `AzureWebJobsStorage__accountName` or `AzureWebJobsStorage__blobServiceUri`), you **must** add `AzureWebJobsSecretStorageType=Files`.
+> ⚠️ **Critical:** When Azure Functions use identity-based storage (e.g., `AzureWebJobsStorage__accountName` or `AzureWebJobsStorage__blobServiceUri`), you **must** set `AzureWebJobsSecretStorageType=Files`.
 
-## Bicep Configuration
+## Proactive Configuration in AppHost
+
+**Best Practice:** Add this setting in your AppHost BEFORE running `azd up`:
+
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.Functions>("functions")
+    .WithHostStorage(storage)
+    .WithEnvironment("AzureWebJobsSecretStorageType", "Files")  // Required for Container Apps
+    // ... other configuration
+```
+
+This ensures the environment variable is automatically included in the generated infrastructure.
+
+## Container Apps Bicep Configuration
+
+When Aspire generates infrastructure, the Functions container app should include this environment variable. If you need to customize the generated Bicep or create it manually, the configuration looks like this:
+
+> **Note:** This example shows partial configuration. Assumes `containerAppEnv`, `storageAccount`, and `appInsights` resources are defined elsewhere in your Bicep templates.
 
 ```bicep
-resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
+resource functionsContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
   location: location
-  kind: 'functionapp,linux'
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
-    serverFarmId: functionAppPlan.id
-    httpsOnly: true
-    functionAppConfig: {
-      deployment: {
-        storage: {
-          type: 'blobContainer'
-          value: '${storageAccount.properties.primaryEndpoints.blob}deploymentpackage'
-          authentication: {
-            type: 'SystemAssignedIdentity'
-          }
-        }
-      }
-      runtime: {
-        name: 'dotnet-isolated'
-        version: '8.0'
+    environmentId: containerAppEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
       }
     }
-    siteConfig: {
-      appSettings: [
+    template: {
+      containers: [
         {
-          name: 'AzureWebJobsStorage__accountName'
-          value: storageAccount.name
-        }
-        {
-          name: 'AzureWebJobsSecretStorageType'
-          value: 'Files'  // Required for Container Apps with identity-based storage
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: appInsights.properties.ConnectionString
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'dotnet-isolated'
+          name: 'functions-app'
+          image: containerImage
+          env: [
+            {
+              name: 'AzureWebJobsStorage__accountName'
+              value: storageAccount.name
+            }
+            {
+              name: 'AzureWebJobsSecretStorageType'
+              value: 'Files'  // Required for Container Apps with identity-based storage
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: appInsights.properties.ConnectionString
+            }
+            {
+              name: 'FUNCTIONS_EXTENSION_VERSION'
+              value: '~4'
+            }
+            {
+              name: 'FUNCTIONS_WORKER_RUNTIME'
+              value: 'dotnet-isolated'
+            }
+          ]
         }
       ]
     }
@@ -60,14 +72,11 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
 }
 ```
 
-## Why This Is Needed
+## Why This Is Required
 
 - Identity-based storage URIs (e.g., `AzureWebJobsStorage__blobServiceUri`) work for runtime operations
-- However, Functions' internal secret/key management requires either:
-  - A full connection string with account keys
-  - A SAS URI
-  - File-based secret storage (recommended for Container Apps)
-- File-based secrets are the correct, secure approach for Container Apps deployments
+- However, Functions' internal secret/key management does not support these identity-based URIs
+- File-based secret storage is mandatory for Container Apps deployments with identity-based storage
 
 ## Common Error Without This Setting
 
@@ -78,7 +87,7 @@ an Azure Storage connection string and a SAS connection uri.
 
 ## When to Use This Configuration
 
-- Deploying Azure Functions to Container Apps
-- Using .NET Aspire with `AddAzureFunctionsProject` and `WithHostStorage`
+- Deploying Azure Functions to Container Apps via .NET Aspire
+- Using `AddAzureFunctionsProject` with `WithHostStorage` in your AppHost
 - Using identity-based storage access (no connection strings)
 - Setting environment variables like `AzureWebJobsStorage__accountName` or `AzureWebJobsStorage__blobServiceUri`
