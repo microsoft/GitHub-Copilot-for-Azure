@@ -43,24 +43,26 @@ grep -r "Aspire.Hosting" . --include="*.csproj"
 
 ### Step 2: Initialize with azd
 
-**CRITICAL: For Aspire projects, use `azd init --from-code` instead of creating azure.yaml manually.**
+**CRITICAL: For Aspire projects, use `azd init --from-code -e <environment-name>` instead of creating azure.yaml manually.**
+
+**⚠️ ALWAYS include the `-e <environment-name>` flag:** Without it, `azd init` will fail in non-interactive environments (agents, CI/CD) with the error: `no default response for prompt 'Enter a unique environment name:'`
 
 The `--from-code` flag:
 - Auto-detects the AppHost orchestrator
 - Reads the Aspire service definitions
 - Generates appropriate `azure.yaml` and infrastructure
-- Works in non-interactive/CI environments (no TTY prompts)
+- Works in non-interactive/CI environments when combined with `-e` flag
 
 ```bash
-# Non-interactive initialization for Aspire projects
+# Non-interactive initialization for Aspire projects (REQUIRED for agents)
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init --from-code -e "$ENV_NAME"
 ```
 
-**Why `--from-code` is required:**
-- Without it, `azd init` prompts: "How do you want to initialize your app?" (requires TTY)
-- With `--from-code`, azd automatically detects the AppHost and proceeds without prompts
-- This is essential for automation, agents, and CI/CD pipelines
+**Why both flags are required:**
+- `--from-code`: Tells azd to detect the AppHost automatically (no "How do you want to initialize?" prompt)
+- `-e <name>`: Provides environment name upfront (no "Enter environment name:" prompt)
+- Together, they enable fully non-interactive operation essential for automation, agents, and CI/CD pipelines
 
 ### Step 3: Configure Subscription and Location
 
@@ -149,6 +151,25 @@ azd env get-values
 | eShop | [dotnet/eShop](https://github.com/dotnet/eShop) | Reference microservices app |
 
 ## Troubleshooting
+
+### Error: "no default response for prompt 'Enter a unique environment name:'"
+
+**Cause:** Missing `-e` flag when running `azd init --from-code` in non-interactive environment  
+**Solution:** Always include the `-e <environment-name>` flag
+
+```bash
+# ❌ Wrong - fails in non-interactive environments (agents, CI/CD)
+azd init --from-code
+
+# ✅ Correct - provides environment name upfront
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+azd init --from-code -e "$ENV_NAME"
+```
+
+**Important:** This error typically occurs when:
+- Running in an agent or automation context
+- No TTY is available for interactive prompts
+- The `-e` flag was omitted
 
 ### Error: "no default response for prompt 'How do you want to initialize your app?'"
 

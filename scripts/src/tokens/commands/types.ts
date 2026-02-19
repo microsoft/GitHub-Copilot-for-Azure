@@ -3,6 +3,7 @@
  */
 
 import { extname } from 'node:path';
+import * as micromatch from "micromatch";
 
 export interface TokenCount {
   readonly tokens: number;
@@ -103,9 +104,6 @@ export interface FileAnalysis {
 /** Characters per token approximation */
 const CHARS_PER_TOKEN = 4;
 
-/** Maximum pattern length to prevent ReDoS attacks */
-export const MAX_PATTERN_LENGTH = 500;
-
 /** Maximum buffer size for git operations (10MB) */
 export const MAX_GIT_BUFFER_SIZE = 10 * 1024 * 1024;
 
@@ -135,6 +133,7 @@ export const DEFAULT_LIMITS: TokenLimitsConfig = {
     'SKILL.md': 500,
     'references/**/*.md': 1000,
     'docs/**/*.md': 1500,
+    '**/*.md': 2000,
     '*.md': 2000
   },
   overrides: {
@@ -160,31 +159,15 @@ export function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
 }
 
-/** Converts glob pattern to regex, preventing ReDoS attacks */
-export function globToRegex(pattern: string): RegExp {
-  if (pattern.length > MAX_PATTERN_LENGTH) {
-    throw new Error(`Pattern too long (max ${MAX_PATTERN_LENGTH} characters)`);
-  }
-  
-  const regexPattern = pattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '{{GLOBSTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/{{GLOBSTAR}}/g, '.*?')  // Non-greedy to prevent catastrophic backtracking
-    .replace(/\//g, '\\/');
-  
-  return new RegExp(`(^|\\/)${regexPattern}$`);
-}
-
 /** Checks if file path matches a glob pattern */
 export function matchesPattern(filePath: string, pattern: string): boolean {
   const normalizedPath = normalizePath(filePath);
-  
+
   if (!pattern.includes('/') && !pattern.includes('*')) {
     return normalizedPath.endsWith('/' + pattern) || normalizedPath === pattern;
   }
-  
-  return globToRegex(pattern).test(normalizedPath);
+
+  return micromatch.isMatch(normalizedPath, pattern);
 }
 
 /**
