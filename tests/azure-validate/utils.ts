@@ -27,3 +27,38 @@ export function hasValidationCommand(metadata: AgentMetadata): boolean {
     return VALIDATION_COMMAND_PATTERNS.some(pattern => pattern.test(cmd));
   });
 }
+
+/**
+ * Extract all powershell command strings from agent metadata.
+ */
+function getPowershellCommands(metadata: AgentMetadata): string[] {
+  return getToolCalls(metadata, "powershell").map(event => {
+    const data = event.data as Record<string, unknown>;
+    const args = data.arguments as { command?: string } | undefined;
+    return args?.command ?? "";
+  });
+}
+
+/**
+ * Check whether any powershell command executed by the agent matches
+ * the given pattern.
+ */
+export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
+  return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+}
+
+/**
+ * Check whether any tool call's serialized arguments match the given
+ * pattern. Searches across all tool types (powershell, create, edit, etc.)
+ * unless a specific toolName is provided.
+ */
+export function matchesToolCallArgs(
+  metadata: AgentMetadata,
+  pattern: RegExp,
+  toolName?: string,
+): boolean {
+  return getToolCalls(metadata, toolName).some(event => {
+    const argsStr = JSON.stringify(event.data);
+    return pattern.test(argsStr);
+  });
+}
