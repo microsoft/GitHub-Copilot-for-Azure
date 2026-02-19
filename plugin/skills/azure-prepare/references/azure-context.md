@@ -117,3 +117,49 @@ After confirmation, record in `.azure/plan.md`:
 - **Subscription**: jongdevdiv (25fd0362-aa79-488b-b37b-d6e892009fdf)
 - **Location**: eastus2
 ```
+
+---
+
+## Step 5: Apply to AZD Environment
+
+> **⛔ CRITICAL for Aspire and azd projects**: After user confirms subscription and location, you **MUST** set these values in the azd environment immediately after running `azd init` or `azd env new`.
+>
+> **DO NOT** wait until validation or deployment. The Azure CLI and azd maintain separate configuration contexts.
+
+**For Aspire projects using `azd init --from-code`:**
+
+```bash
+# 1. Run azd init
+azd init --from-code -e <environment-name>
+
+# 2. IMMEDIATELY set the user-confirmed subscription
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+
+# 3. Set the location
+azd env set AZURE_LOCATION <location>
+
+# 4. Verify
+azd env get-values
+```
+
+**For non-Aspire projects using `azd env new`:**
+
+```bash
+# 1. Create environment
+azd env new <environment-name>
+
+# 2. IMMEDIATELY set the user-confirmed subscription
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+
+# 3. Set the location
+azd env set AZURE_LOCATION <location>
+
+# 4. Verify
+azd env get-values
+```
+
+**Why this is critical:**
+- `az account show` returns the Azure CLI's default subscription
+- `azd` maintains its own configuration with potentially different defaults
+- If you don't set `AZURE_SUBSCRIPTION_ID` explicitly, azd will use its own default
+- This can result in deploying to the wrong subscription despite user confirmation
