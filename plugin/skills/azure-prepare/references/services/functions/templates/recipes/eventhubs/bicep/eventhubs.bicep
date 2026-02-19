@@ -1,5 +1,10 @@
 // Event Hubs Recipe - IaC Module
 // Adds Azure Event Hubs namespace, event hub, consumer group, and RBAC for managed identity
+//
+// REQUIREMENTS FOR BASE TEMPLATE:
+// 1. Storage account MUST have: allowSharedKeyAccess: false (Azure policy)
+// 2. Storage account MUST have: allowBlobPublicAccess: false
+// 3. Function app MUST have tag: union(tags, { 'azd-service-name': 'api' })
 
 @description('Resource name (used as prefix for Event Hubs namespace)')
 param name string

@@ -1,5 +1,12 @@
 # Event Hubs Recipe - Terraform Module
 # Adds Azure Event Hubs namespace, event hub, consumer group, and RBAC for managed identity
+#
+# REQUIREMENTS FOR BASE TEMPLATE:
+# 1. Storage account MUST have: shared_access_key_enabled = false (Azure policy)
+# 2. Storage account MUST have: allow_nested_items_to_be_public = false
+# 3. Function app SHOULD use: storage_uses_managed_identity = true
+# 4. Provider SHOULD set: storage_use_azuread = true
+# 5. Function app MUST have tag: "azd-service-name" = "api" (for azd deploy)
 
 # Variables
 variable "name_prefix" {

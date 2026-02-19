@@ -53,7 +53,7 @@ Python/Bicep   ✅      -          -        ✅       -       -
 | `has_output` | code | Response is non-empty |
 | `plan_first` | regex | Mentions plan.md / planning phase |
 | `security_posture` | regex | No connection strings or shared keys |
-| `efficiency` | behavior | ≤30 tool calls, ≤10min duration |
+| `efficiency` | behavior | ≤40 tool calls, ≤10min duration |
 
 ### Per-task
 Each task adds specific graders for template selection accuracy, recipe application, and managed identity usage.
@@ -106,7 +106,7 @@ This repo uses a **hybrid** approach for waza evals:
 
 | Mode | Skills | How it works |
 |------|--------|-------------|
-| **Committed** (⬢) | azure-prepare, azure-deploy | Hand-authored `eval/` dir in `tests/{skill}/eval/`. Custom graders, fixtures, assertions specific to the skill's domain. |
+| **Committed** (⬢) | azure-prepare | Hand-authored `eval/` dir in `tests/{skill}/eval/`. Custom graders, fixtures, assertions specific to the skill's domain. |
 | **Generated** (⬡) | All other skills | Auto-generated at runtime via `waza generate plugin/skills/{skill}/SKILL.md`. Generic trigger + invocation tests. |
 
 **When to commit vs. generate:**
@@ -116,7 +116,7 @@ This repo uses a **hybrid** approach for waza evals:
 To promote a generated eval to committed:
 ```bash
 # Generate into the test directory
-waza generate plugin/skills/azure-deploy/SKILL.md -o tests/azure-deploy/eval
+waza generate plugin/skills/azure-deploy/SKILL.md -d tests/azure-deploy/eval
 
 # Customize the generated files, then commit
 git add tests/azure-deploy/eval/

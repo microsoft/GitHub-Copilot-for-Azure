@@ -45,9 +45,10 @@ IF integration IN [timer]:
   → Source-only recipe. Skip to Step 5.
 
 IF integration IN [durable, mcp]:
-  → Source-only recipe, BUT toggle storage endpoints in main.bicep first:
-    - Set `enableQueue: true`  (required for Durable task hub and MCP)
-    - Set `enableTable: true`  (required for Durable history and OpenAI bindings)
+  → Source-only recipe with storage configuration:
+    - Set `enableQueue: true` in main.bicep (required for Durable task hub and MCP)
+    - Set `enableTable: true` in main.bicep (required for Durable only; NOT required for MCP)
+    Note: These are minimal parameter toggles, not structural changes to IaC.
   → Then skip to Step 5.
 
 IF integration IN [cosmosdb, sql, servicebus, eventhubs, blob]:
@@ -220,13 +221,13 @@ Some integrations require additional storage endpoints. Toggle these in `main.bi
 
 | Category | Integrations | What Recipe Provides |
 |----------|-------------|---------------------|
-| **Source-only** | timer, durable, mcp | Source code snippet only — no IaC changes |
+| **Source-only** | timer, durable, mcp | Source code snippet; may require minimal parameter toggles (e.g., `enableQueue`) but no new IaC modules |
 | **Full recipe** | cosmosdb, sql, servicebus, eventhubs, blob | IaC modules + RBAC + networking + source code |
 
 ## Critical Rules
 
 1. **NEVER synthesize Bicep or Terraform from scratch** — always start from base template IaC
-2. **NEVER modify base IaC files** — only ADD recipe modules alongside them
+2. **Do not restructure or replace base IaC files** — only ADD recipe modules alongside them and perform minimal parameter toggles (e.g., `enableQueue: true`) where the algorithm explicitly requires
 3. **ALWAYS use recipe RBAC role GUIDs** — never let the LLM guess role IDs
 4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
 5. **ALWAYS verify the base template initialized successfully** before applying recipe
@@ -238,3 +239,103 @@ Some integrations require additional storage endpoints. Toggle these in `main.bi
    - `{Connection}__credential: 'managedidentity'`
    - `{Connection}__clientId: apiUserAssignedIdentity.outputs.clientId`
 10. **ALWAYS use recipe module's `appSettings` output** — do not manually construct app settings; use `union(baseSettings, recipe.outputs.appSettings)` to prevent missing UAMI settings
+
+## Terraform-Specific Requirements
+
+Validated requirements from production deployments with Azure policy enforcement:
+
+### Storage Account Configuration
+
+```hcl
+resource "azurerm_storage_account" "storage" {
+  # ... standard config ...
+  allow_nested_items_to_be_public = false     # Required by Azure policy
+  local_user_enabled              = false     # Required for RBAC-only
+  shared_access_key_enabled       = false     # Required by Azure policy
+}
+```
+
+### Function App with Managed Identity Storage
+
+```hcl
+provider "azurerm" {
+  features {}
+  storage_use_azuread = true   # Required for MI-based storage access
+}
+
+resource "azurerm_linux_function_app" "function" {
+  # ... standard config ...
+  storage_uses_managed_identity = true   # Use MI instead of access key
+  
+  # When using MI storage, assign RBAC BEFORE creating function:
+  depends_on = [azurerm_role_assignment.storage_blob_owner]
+}
+
+# RBAC for deploying user (required to create function with MI storage)
+resource "azurerm_role_assignment" "storage_blob_owner" {
+  scope                = azurerm_storage_account.storage.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# RBAC for function app after creation
+resource "azurerm_role_assignment" "function_storage_blob" {
+  scope                = azurerm_storage_account.storage.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = azurerm_linux_function_app.function.identity[0].principal_id
+}
+```
+
+### Service Bus with Disabled Local Auth
+
+```hcl
+resource "azurerm_servicebus_namespace" "sb" {
+  # ... standard config ...
+  local_auth_enabled = false   # Required by Azure policy - RBAC only
+}
+```
+
+### Event Hubs with Disabled Local Auth
+
+```hcl
+resource "azurerm_eventhub_namespace" "main" {
+  # ... standard config ...
+  local_authentication_enabled = false   # Required by Azure policy - RBAC only
+}
+```
+
+### Cosmos DB with Disabled Local Auth
+
+```hcl
+resource "azurerm_cosmosdb_account" "cosmos" {
+  # ... standard config ...
+  local_authentication_disabled = true   # Required by Azure policy - RBAC only
+}
+```
+
+### Required: azd-service-name Tag
+
+```hcl
+resource "azurerm_linux_function_app" "function" {
+  # ... standard config ...
+  tags = {
+    "azd-service-name" = "api"   # MUST match service name in azure.yaml
+  }
+}
+```
+
+> ⚠️ **Without `azd-service-name` tag, `azd deploy` fails with:**
+> `resource not found: unable to find a resource tagged with 'azd-service-name: api'`
+
+### Terraform Provider Configuration
+
+```hcl
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"   # Use AzureRM 4.x for latest features
+    }
+  }
+}
+```

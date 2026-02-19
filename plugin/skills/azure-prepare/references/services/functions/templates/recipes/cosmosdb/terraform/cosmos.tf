@@ -2,6 +2,13 @@
 # Cosmos DB recipe module for Terraform — adds Cosmos DB account, database,
 # containers, RBAC, and networking to an Azure Functions base template.
 #
+# REQUIREMENTS FOR BASE TEMPLATE:
+# 1. Storage account MUST have: shared_access_key_enabled = false (Azure policy)
+# 2. Storage account MUST have: allow_nested_items_to_be_public = false
+# 3. Function app SHOULD use: storage_uses_managed_identity = true
+# 4. Provider SHOULD set: storage_use_azuread = true
+# 5. Function app MUST have tag: "azd-service-name" = "api" (for azd deploy)
+#
 # USAGE: Copy this file into infra/ alongside the base template's main.tf.
 # Reference the function app identity from the base template.
 
@@ -98,10 +105,11 @@ resource "azurerm_cosmosdb_sql_container" "leases" {
 # RBAC: Azure Control Plane — Cosmos DB Account Reader
 # ============================================================================
 resource "azurerm_role_assignment" "cosmos_account_reader" {
-  scope                = azurerm_cosmosdb_account.main.id
-  role_definition_name = "Cosmos DB Account Reader Role"
-  principal_id         = azurerm_user_assigned_identity.func_identity.principal_id
-  principal_type       = "ServicePrincipal"
+  scope              = azurerm_cosmosdb_account.main.id
+  # Cosmos DB Account Reader Role - use GUID to avoid localization issues
+  role_definition_id = "/providers/Microsoft.Authorization/roleDefinitions/5bd9cd88-fe45-4216-938b-f97437e15450"
+  principal_id       = azurerm_user_assigned_identity.func_identity.principal_id
+  principal_type     = "ServicePrincipal"
 }
 
 # ============================================================================

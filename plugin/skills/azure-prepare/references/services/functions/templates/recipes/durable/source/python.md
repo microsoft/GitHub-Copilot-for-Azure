@@ -10,7 +10,8 @@ import azure.durable_functions as df
 import logging
 import json
 
-app = func.FunctionApp()
+# IMPORTANT: Use df.DFApp() for Durable Functions, NOT func.FunctionApp()
+app = df.DFApp()
 
 # Durable Functions client for HTTP endpoints
 @app.route(route="orchestrators/{name}", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)

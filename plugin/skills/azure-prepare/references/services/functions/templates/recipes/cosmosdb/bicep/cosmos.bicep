@@ -2,6 +2,11 @@
 // Cosmos DB recipe module — adds Cosmos DB account, database, containers, and RBAC
 // to an Azure Functions base template.
 //
+// REQUIREMENTS FOR BASE TEMPLATE:
+// 1. Storage account MUST have: allowSharedKeyAccess: false (Azure policy)
+// 2. Storage account MUST have: allowBlobPublicAccess: false
+// 3. Function app MUST have tag: union(tags, { 'azd-service-name': 'api' })
+//
 // USAGE: Add this as a module in your main.bicep:
 //   module cosmos './app/cosmos.bicep' = {
 //     name: 'cosmos'
@@ -157,6 +162,7 @@ resource cosmosSqlRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleA
 // ============================================================================
 output cosmosAccountEndpoint string = cosmosAccount.properties.documentEndpoint
 output cosmosAccountName string = cosmosAccount.name
+output cosmosAccountId string = cosmosAccount.id
 output cosmosDatabaseName string = databaseName
 output cosmosContainerName string = containerName
 

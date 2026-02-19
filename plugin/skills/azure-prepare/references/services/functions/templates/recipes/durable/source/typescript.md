@@ -7,7 +7,6 @@ Replace the contents of `src/functions/` with these files.
 ```typescript
 import { app, HttpHandler, HttpRequest, HttpResponse, InvocationContext } from '@azure/functions';
 import * as df from 'durable-functions';
-import { OrchestrationContext, ActivityHandler } from 'durable-functions';
 
 // HTTP endpoint to start an orchestration
 const httpStart: HttpHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponse> => {

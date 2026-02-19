@@ -7,6 +7,7 @@ Replace the contents of `function_app.py` with this file.
 ```python
 import azure.functions as func
 import logging
+import os
 from datetime import datetime
 
 app = func.FunctionApp()

@@ -1,5 +1,10 @@
 // Service Bus Recipe - IaC Module
 // Adds Azure Service Bus namespace, queue, and RBAC for managed identity
+//
+// REQUIREMENTS FOR BASE TEMPLATE:
+// 1. Storage account MUST have: allowSharedKeyAccess: false (Azure policy)
+// 2. Storage account MUST have: allowBlobPublicAccess: false
+// 3. Function app MUST have tag: union(tags, { 'azd-service-name': 'api' })
 
 @description('Resource name prefix')
 param name string

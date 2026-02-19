@@ -8,6 +8,7 @@ Replace the HTTP trigger class with:
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Net;
 using System.Text.Json;
 

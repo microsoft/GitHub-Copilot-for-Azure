@@ -35,16 +35,21 @@ const skillsDir = path.join(repoRoot, "plugin", "skills");
 const rawArgs = process.argv.slice(2);
 let skillName = null;
 let runAll = false;
-let executor = null;
 const extraArgs = [];
 
-for (const arg of rawArgs) {
+for (let i = 0; i < rawArgs.length; i++) {
+  const arg = rawArgs[i];
   if (arg === "--all") {
     runAll = true;
   } else if (arg === "--executor" || arg === "-e") {
-    extraArgs.push(arg);
+    // Consume next arg as executor value
+    if (i + 1 < rawArgs.length && !rawArgs[i + 1].startsWith("-")) {
+      extraArgs.push(`--executor=${rawArgs[i + 1]}`);
+      i++; // Skip next arg since we consumed it
+    } else {
+      extraArgs.push(arg);
+    }
   } else if (arg.startsWith("--executor=")) {
-    executor = arg.split("=")[1];
     extraArgs.push(arg);
   } else if (!arg.startsWith("-") && !skillName) {
     skillName = arg;
@@ -53,14 +58,17 @@ for (const arg of rawArgs) {
   }
 }
 
-// Detect waza CLI
+// Detect waza CLI (cross-platform)
 function findWaza() {
+  const isWindows = process.platform === "win32";
+  const whichCmd = isWindows ? "where" : "which";
+  
   try {
-    execSync("which waza", { stdio: "ignore" });
+    execSync(`${whichCmd} waza`, { stdio: "ignore" });
     return ["waza"];
   } catch {
     try {
-      execSync("which azd", { stdio: "ignore" });
+      execSync(`${whichCmd} azd`, { stdio: "ignore" });
       return ["azd", "waza"];
     } catch {
       return null;

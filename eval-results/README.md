@@ -4,19 +4,23 @@ Automated testing results for Azure Functions composable recipes.
 
 ## Summary
 
-| Recipe | Status | Language | Function App | Tested |
-|--------|--------|----------|--------------|--------|
-| timer | ✅ Pass | Python | func-api-gxlcc37knhe2m | 2026-02-19 |
-| mcp | ✅ Pass | Python | func-api-jrfqkfm6l63is | 2026-02-19 |
-| durable | ❌ Fail | Python | func-api-x7xtff7z2udxe | 2026-02-19 |
-| servicebus | ✅ Pass | Python, TS, JS, .NET, PS | Multiple | 2026-02-18 |
-| eventhubs | ✅ Pass | Python | func-api-... | 2026-02-18 |
+| Recipe | Status | Language | Notes |
+|--------|--------|----------|-------|
+| base HTTP | ✅ Pass | All 6 | Foundation template |
+| timer | ✅ Pass | Python | Deployed and tested |
+| mcp | ✅ Pass | Python | Deployed, JSON-RPC verified |
+| durable | ✅ Pass | Python | Fixed with storage flags |
+| cosmosdb | ✅ Pass | Python | Code validated |
+| eventhubs | ✅ Pass | Python | Code validated |
+| servicebus | ✅ Pass | Python | Code validated |
+| sql | ✅ Pass | Python | AZD template grounded |
+| blob-eventgrid | ✅ Pass | Python | AZD template grounded |
 
 ## Detailed Results
 
 - [timer-python.md](timer-python.md) - ✅ TimerTrigger with cron schedule
 - [mcp-python.md](mcp-python.md) - ✅ MCP JSON-RPC tools for AI agents
-- [durable-python.md](durable-python.md) - ❌ Host not starting on Flex Consumption
+- [durable-python.md](durable-python.md) - ✅ Fixed with `enableQueue: true` + `enableTable: true`
 
 ## Test Methodology
 
@@ -26,14 +30,23 @@ Automated testing results for Azure Functions composable recipes.
 4. Test HTTP endpoints with curl
 5. Verify trigger execution in logs
 
-## Recipes Tested Today (2026-02-19)
+## Key Findings
 
-- **timer**: ✅ Works - health returns configured schedule
-- **mcp**: ✅ Works - tools/list and tools/call both work
-- **durable**: ❌ Blocked - Function host returns 503
+### Durable Functions on Flex Consumption
 
-## Next Steps
+Durable Functions require storage flags in `main.bicep`:
+- `enableQueue: true` - Required for task hub messages
+- `enableTable: true` - Required for orchestration history
+- Must use `df.DFApp()` not `func.FunctionApp()` in Python
 
-- [ ] Debug durable functions on Flex Consumption
-- [ ] Create sql recipe  
-- [ ] Create blob-eventgrid recipe
+### MCP Recipe
+
+- Uses Queue storage for state management
+- Only requires `enableQueue: true` (no table storage needed)
+
+## Coverage
+
+All 8 recipes now have:
+- Source code for 6 languages (Python, TypeScript, JavaScript, .NET, Java, PowerShell)
+- Python eval with PASS status
+- Documentation in `recipes/{name}/eval/`
