@@ -166,64 +166,13 @@ azd init --from-code -e "my-env"
 - [Aspire Samples Repository](https://github.com/dotnet/aspire-samples)
 - [azd + Aspire Integration](https://learn.microsoft.com/en-us/dotnet/aspire/deployment/azure/aca-deployment-azd-in-depth)
 
-## Environment Variables for Container Apps
-
-> ⚠️ **CRITICAL:** When using Aspire with Container Apps, azd may generate infrastructure in "limited mode" (in-memory) without populating all required environment variables. Follow these steps to ensure successful deployment.
-
-### Required Variables
-
-For Container Apps deployments with Azure Container Registry and Managed Identity, these environment variables are **required** by `azd deploy`:
-
-| Variable | Purpose | Source |
-|----------|---------|--------|
-| `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR login server URL | Container Registry resource |
-| `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID` | Full resource ID of managed identity | Managed Identity resource |
-| `MANAGED_IDENTITY_CLIENT_ID` | Client ID of managed identity | Managed Identity resource |
-
-### Proactive Setup (Recommended)
-
-**Do this AFTER `azd provision` but BEFORE `azd deploy` to avoid deployment failures:**
-
-Set variables manually after `azd provision`:
-
-```bash
-# 1. Provision infrastructure first
-azd provision --no-prompt
-
-# 2. Get resource group name
-RG_NAME=$(azd env get-values | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"')
-
-# 3. Query and set required variables
-azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr list --resource-group "$RG_NAME" --query "[0].loginServer" -o tsv)
-azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID $(az identity list --resource-group "$RG_NAME" --query "[0].id" -o tsv)
-azd env set MANAGED_IDENTITY_CLIENT_ID $(az identity list --resource-group "$RG_NAME" --query "[0].clientId" -o tsv)
-
-# 4. Deploy application
-azd deploy --no-prompt
-```
-
-**PowerShell:**
-```powershell
-# 1. Provision infrastructure first
-azd provision --no-prompt
-
-# 2. Get resource group name
-$rgName = (azd env get-values | Select-String 'AZURE_RESOURCE_GROUP').Line.Split('=')[1].Trim('"')
-
-# 3. Query and set required variables
-azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr list --resource-group $rgName --query "[0].loginServer" -o tsv)
-azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID (az identity list --resource-group $rgName --query "[0].id" -o tsv)
-azd env set MANAGED_IDENTITY_CLIENT_ID (az identity list --resource-group $rgName --query "[0].clientId" -o tsv)
-
-# 4. Deploy application
-azd deploy --no-prompt
-```
-
 ## Next Steps
 
 After `azd init --from-code`:
 1. Review generated `azure.yaml` and `infra/` files (if present)
-2. **IMPORTANT:** Set up environment variables using one of the methods above
+2. Set AZURE_SUBSCRIPTION_ID and AZURE_LOCATION with `azd env set`
 3. Customize infrastructure as needed
 4. Proceed to **azure-validate** skill
-5. Deploy with **azure-deploy** skill (`azd up` or `azd provision` + `azd deploy`)
+5. Deploy with **azure-deploy** skill
+
+> ⚠️ **Important for Container Apps:** If using Aspire with Container Apps, azure-validate will check and help set up required environment variables after provisioning.
