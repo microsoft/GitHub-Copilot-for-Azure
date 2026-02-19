@@ -46,7 +46,8 @@ export default tseslint.config(
             "reports/**",
             "**/resources/**",
             "**/__snapshots__/**",
-            "swa-deployment-tests/**"
+            "swa-deployment-tests/**",
+            "**/eval/fixtures/**",  // Test fixtures - not real TS projects
         ],
     },
     // TypeScript files - use TypeScript parser with project
