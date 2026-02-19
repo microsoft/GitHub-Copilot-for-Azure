@@ -8,7 +8,7 @@
  * Usage: npm run verify-local
  */
 
-import { existsSync, lstatSync, realpathSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';

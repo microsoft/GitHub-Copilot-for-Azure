@@ -9,11 +9,10 @@
  * 4. Verifying the plugin directory exists and has expected content
  */
 
-import { 
-  existsSync, 
-  readFileSync, 
-  writeFileSync, 
-  readdirSync, 
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
   rmSync
 } from 'node:fs';
 import { join } from 'node:path';
@@ -93,12 +92,12 @@ interface MarketplaceCheckResult {
 
 function checkMarketplace(config: CopilotConfig): MarketplaceCheckResult {
   const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
-  
+
   if (!marketplace) {
     return { passed: false, exists: false, hasCorrectSource: false };
   }
 
-  const hasCorrectSource = 
+  const hasCorrectSource =
     marketplace.source?.source === 'github' &&
     marketplace.source?.repo === 'microsoft/github-copilot-for-azure';
 
@@ -126,10 +125,10 @@ function checkPlugin(config: CopilotConfig, expectedCachePath: string): PluginCh
   );
 
   if (!plugin) {
-    return { 
-      passed: false, 
-      exists: false, 
-      hasCorrectCachePath: false, 
+    return {
+      passed: false,
+      exists: false,
+      hasCorrectCachePath: false,
       isEnabled: false,
       expectedCachePath,
     };
@@ -150,7 +149,7 @@ function checkPlugin(config: CopilotConfig, expectedCachePath: string): PluginCh
 
 function checkNestedInstall(localPath: string): { passed: boolean; error?: string } {
   const nestedPluginPath = join(localPath, 'azure');
-  
+
   if (existsSync(nestedPluginPath)) {
     // Check if it has skills (confirming it's an installed plugin copy)
     const nestedSkillsPath = join(nestedPluginPath, 'skills');
@@ -158,17 +157,17 @@ function checkNestedInstall(localPath: string): { passed: boolean; error?: strin
       return {
         passed: false,
         error: `Found nested plugin at ${nestedPluginPath}. This was likely created by "/plugin install". ` +
-               `Remove it with: Remove-Item "${nestedPluginPath}" -Recurse -Force`
+          `Remove it with: Remove-Item "${nestedPluginPath}" -Recurse -Force`
       };
     }
   }
-  
+
   return { passed: true };
 }
 
 function checkPluginContent(pluginPath: string, verbose: boolean): { passed: boolean; details: string[] } {
   const details: string[] = [];
-  
+
   if (!existsSync(pluginPath)) {
     return { passed: false, details: ['Plugin directory does not exist'] };
   }
@@ -233,15 +232,15 @@ export function verify(rootDir: string, args: string[]): void {
   // Check config file
   console.log(`\n📄 Copilot config:`);
   console.log(`   ${configPath}`);
-  
+
   const configResult = readCopilotConfig();
-  
+
   if (configResult.error) {
     console.log(`   ❌ ${configResult.error}`);
     process.exitCode = 1;
     return;
   }
-  
+
   if (!configResult.config) {
     console.log('   ❌ Config file not found');
     if (options.fix) {
@@ -260,7 +259,7 @@ export function verify(rootDir: string, args: string[]): void {
   // Test 1: Check for nested plugin install
   console.log('\n🧪 Test 1: Nested Plugin Check');
   const nestedCheck = checkNestedInstall(localPluginPath);
-  
+
   if (nestedCheck.passed) {
     console.log('   ✅ No nested plugin install detected');
   } else {
@@ -270,7 +269,7 @@ export function verify(rootDir: string, args: string[]): void {
   // Test 2: Check marketplace configuration
   console.log('\n🧪 Test 2: Marketplace Configuration');
   const marketplaceCheck = checkMarketplace(configResult.config);
-  
+
   if (marketplaceCheck.passed) {
     console.log(`   ✅ Marketplace "${MARKETPLACE_NAME}" is correctly configured`);
   } else {
@@ -288,7 +287,7 @@ export function verify(rootDir: string, args: string[]): void {
   // Test 3: Check plugin configuration
   console.log('\n🧪 Test 3: Plugin Configuration');
   const pluginCheck = checkPlugin(configResult.config, localPluginPath);
-  
+
   if (pluginCheck.passed) {
     console.log(`   ✅ Plugin "${PLUGIN_NAME}" is correctly configured`);
     console.log(`      cache_path: ${pluginCheck.actual?.cache_path}`);
@@ -310,7 +309,7 @@ export function verify(rootDir: string, args: string[]): void {
   // Test 4: Check plugin content
   console.log('\n🧪 Test 4: Plugin Content Check');
   const contentCheck = checkPluginContent(localPluginPath, options.verbose);
-  
+
   if (contentCheck.passed) {
     console.log('   ✅ Plugin directory has expected structure');
   } else {
@@ -324,9 +323,9 @@ export function verify(rootDir: string, args: string[]): void {
 
   // Summary
   const allPassed = nestedCheck.passed &&
-                    marketplaceCheck.passed &&
-                    pluginCheck.passed &&
-                    contentCheck.passed;
+    marketplaceCheck.passed &&
+    pluginCheck.passed &&
+    contentCheck.passed;
 
   if (allPassed) {
     console.log('\n✅ VERIFICATION PASSED\n');
@@ -334,7 +333,7 @@ export function verify(rootDir: string, args: string[]): void {
     console.log('   Changes to skills will be picked up by Copilot CLI.\n');
   } else {
     console.log('\n❌ VERIFICATION FAILED\n');
-    
+
     if (!nestedCheck.passed) {
       console.log('   ⚠️  Nested plugin install detected (plugin/azure/).');
       console.log('      This shadows your local skills. Remove it to use local development.');
@@ -349,29 +348,29 @@ export function verify(rootDir: string, args: string[]): void {
         }
       }
     }
-    
+
     if (!marketplaceCheck.passed || !pluginCheck.passed) {
       console.log('   ⚠️  Config needs to be updated.');
       if (options.fix) {
         console.log('\n   🔧 Running setup to fix config...\n');
         setup(rootDir, ['--force']);
-        
+
         // Re-verify after fix
         console.log('\n   🔄 Re-running verification...\n');
         verify(rootDir, args.filter(a => a !== '--fix'));
         return;
       }
     }
-    
+
     if (!contentCheck.passed) {
       console.log('   ⚠️  Plugin directory is missing expected content.');
     }
-    
+
     if (!options.fix) {
       console.log('\n   Run "npm run local verify --fix" to attempt automatic fixes.');
       console.log('   Or run "npm run local setup --force" to reconfigure.\n');
     }
-    
+
     process.exitCode = 1;
   }
 }

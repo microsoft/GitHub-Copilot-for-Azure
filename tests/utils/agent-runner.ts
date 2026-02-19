@@ -172,7 +172,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
           lines.push("```");
         } else {
           // Regular tool call
-          let argsJson = "{}";
+          let argsJson: string;
           try {
             argsJson = JSON.stringify(args, null, 2);
           } catch {

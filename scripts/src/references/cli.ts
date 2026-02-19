@@ -310,7 +310,6 @@ function validateSkill(skillName: string): ValidationResult {
   // Find orphaned files in the references directory
   const orphanedFiles: OrphanedFile[] = [];
   const referenceFiles = findReferenceFiles(skillDir);
-  const referencesDir = resolve(skillDir, 'references');
 
   for (const refFile of referenceFiles) {
     const normalizedRefFile = normalize(refFile).toLowerCase();
