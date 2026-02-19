@@ -237,6 +237,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use standard SKUs.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          matchesCommand(metadata, /azd\s+(deploy|up)/),
       });
 
       const setAll = CONTAINER_DEPLOY_ENV_PATTERNS.every(p => matchesCommand(agentMetadata, p));
@@ -300,6 +302,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use standard SKUs.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          matchesCommand(metadata, /azd\s+(deploy|up)/) ||
+          matchesToolCallArgs(metadata, /AzureWebJobsSecretStorageType/i),
       });
 
       const setsSecretStorageType = matchesToolCallArgs(
