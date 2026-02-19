@@ -39,6 +39,8 @@ ERROR: failed executing template file: template: manifest template:39:26: execut
 
 **Cause:** This typically occurs with .NET Aspire projects using azd "limited mode" (in-memory infrastructure generation without explicit `infra/` folder). The `azd provision` command creates the Azure Container Registry and Managed Identity resources but doesn't automatically populate the environment variables that `azd deploy` needs to reference them.
 
+> ⚠️ **Prevention is Better:** For .NET Aspire projects, this issue should be addressed PROACTIVELY before deployment by setting up environment variables after `azd init` but before `azd up`. This avoids deployment failures entirely.
+
 **Solution:**
 
 After `azd provision` succeeds, manually set the missing environment variables by querying the provisioned resources:

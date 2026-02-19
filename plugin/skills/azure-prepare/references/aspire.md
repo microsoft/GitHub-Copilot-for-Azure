@@ -166,10 +166,96 @@ azd init --from-code -e "my-env"
 - [Aspire Samples Repository](https://github.com/dotnet/aspire-samples)
 - [azd + Aspire Integration](https://learn.microsoft.com/en-us/dotnet/aspire/deployment/azure/aca-deployment-azd-in-depth)
 
+## Environment Variables for Container Apps
+
+> ⚠️ **CRITICAL:** When using Aspire with Container Apps, azd may generate infrastructure in "limited mode" (in-memory) without populating all required environment variables. Follow these steps to ensure successful deployment.
+
+### Required Variables
+
+For Container Apps deployments with Azure Container Registry and Managed Identity, these environment variables are **required** by `azd deploy`:
+
+| Variable | Purpose | Source |
+|----------|---------|--------|
+| `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR login server URL | Container Registry resource |
+| `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID` | Full resource ID of managed identity | Managed Identity resource |
+| `MANAGED_IDENTITY_CLIENT_ID` | Client ID of managed identity | Managed Identity resource |
+
+### Proactive Setup (Recommended)
+
+**Do this BEFORE running `azd up` to avoid deployment failures:**
+
+#### Option 1: Use `azd infra synth` (azd 1.5.0+)
+
+Generate explicit infrastructure with proper outputs:
+
+```bash
+# 1. After azd init, generate infrastructure to disk
+azd infra synth
+
+# 2. Add outputs to infra/main.bicep (or the main module file)
+cat >> infra/main.bicep << 'EOF'
+
+// Environment variables for Container Apps deployment
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.properties.loginServer
+output AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID string = managedIdentity.id
+output MANAGED_IDENTITY_CLIENT_ID string = managedIdentity.properties.clientId
+EOF
+
+# 3. Now azd up will automatically populate these variables
+azd up --no-prompt
+```
+
+> 💡 **Note:** Replace `containerRegistry` and `managedIdentity` with the actual Bicep resource names in your generated `infra/` files. Check `infra/main.bicep` or `infra/resources.bicep` for the exact resource declaration names.
+
+#### Option 2: Set Variables After Provisioning
+
+If you can't use `azd infra synth`, set variables manually after `azd provision`:
+
+```bash
+# 1. Provision infrastructure first
+azd provision --no-prompt
+
+# 2. Get resource group name
+RG_NAME=$(azd env get-values | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"')
+
+# 3. Query and set required variables
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr list --resource-group "$RG_NAME" --query "[0].loginServer" -o tsv)
+azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID $(az identity list --resource-group "$RG_NAME" --query "[0].id" -o tsv)
+azd env set MANAGED_IDENTITY_CLIENT_ID $(az identity list --resource-group "$RG_NAME" --query "[0].clientId" -o tsv)
+
+# 4. Deploy application
+azd deploy --no-prompt
+```
+
+**PowerShell:**
+```powershell
+# 1. Provision infrastructure first
+azd provision --no-prompt
+
+# 2. Get resource group name
+$rgName = (azd env get-values | Select-String 'AZURE_RESOURCE_GROUP').Line.Split('=')[1].Trim('"')
+
+# 3. Query and set required variables
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr list --resource-group $rgName --query "[0].loginServer" -o tsv)
+azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID (az identity list --resource-group $rgName --query "[0].id" -o tsv)
+azd env set MANAGED_IDENTITY_CLIENT_ID (az identity list --resource-group $rgName --query "[0].clientId" -o tsv)
+
+# 4. Deploy application
+azd deploy --no-prompt
+```
+
+### Why This is Needed
+
+Aspire's "limited mode" generates infrastructure in-memory during `azd provision`. While it creates all necessary Azure resources (Container Registry, Managed Identity, Container Apps Environment), it doesn't populate the environment variables that reference those resources. The `azd deploy` phase needs these variables to:
+- Log in to the Container Registry
+- Configure Managed Identity authentication
+- Set up Container App identity bindings
+
 ## Next Steps
 
 After `azd init --from-code`:
-1. Review generated `azure.yaml` and `infra/` files
-2. Customize infrastructure as needed
-3. Proceed to **azure-validate** skill
-4. Deploy with **azure-deploy** skill (`azd up`)
+1. Review generated `azure.yaml` and `infra/` files (if present)
+2. **IMPORTANT:** Set up environment variables using one of the methods above
+3. Customize infrastructure as needed
+4. Proceed to **azure-validate** skill
+5. Deploy with **azure-deploy** skill (`azd up` or `azd provision` + `azd deploy`)
