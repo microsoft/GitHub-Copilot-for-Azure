@@ -1,4 +1,5 @@
 import eslint from "@eslint/js";
+import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
 import integrationTestNameRule from "./eslint-rules/integration-test-name.mjs";
@@ -37,7 +38,7 @@ const sharedRules = {
     "quotes": ["error", "double", { "avoidEscape": true }],
 };
 
-export default tseslint.config(
+export default defineConfig(
     // Global ignores
     {
         ignores: [
@@ -46,7 +47,8 @@ export default tseslint.config(
             "reports/**",
             "**/resources/**",
             "**/__snapshots__/**",
-            "swa-deployment-tests/**"
+            "swa-deployment-tests/**",
+            "**/eval/fixtures/**",  // Test fixtures - not real TS projects
         ],
     },
     // TypeScript files - use TypeScript parser with project

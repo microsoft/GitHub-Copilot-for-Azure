@@ -1,6 +1,5 @@
-import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked, getToolCalls } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked } from "../utils/agent-runner";
 import { matchesCommand } from "../utils/evaluate";
-export { matchesCommand } from "../utils/evaluate";
 
 /** Env-var patterns expected when deploying container-based Aspire apps. */
 const CONTAINER_DEPLOY_ENV_PATTERNS: readonly RegExp[] = [
@@ -59,44 +58,4 @@ export function softCheckDeploySkills(agentMetadata: AgentMetadata): void {
   if (!isPrepareInvoked) {
     agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
   }
-}
-
-/**
- * Check if Terraform (.tf) files were generated
- * Searches broadly in agent metadata including tool calls, responses, and messages
- */
-export function hasTerraformFiles(agentMetadata: AgentMetadata): boolean {
-  // Check create tool calls (original method)
-  const fileToolCalls = getToolCalls(agentMetadata, "create");
-  const foundInToolCalls = fileToolCalls.some(event => {
-    const args = JSON.stringify(event.data);
-    return /\.tf"/i.test(args);
-  });
-
-  if (foundInToolCalls) return true;
-
-  // Also check all assistant messages for references to .tf files
-  // This catches cases where files were created via PowerShell or other methods
-  const allContent = getAllAssistantMessages(agentMetadata);
-  return /infra[/\\][\w.-]*\.tf"/i.test(allContent);
-}
-
-/**
- * Check if Bicep (.bicep) files were generated
- * Searches broadly in agent metadata including tool calls, responses, and messages
- */
-export function hasBicepFiles(agentMetadata: AgentMetadata): boolean {
-  // Check create tool calls (original method)
-  const fileToolCalls = getToolCalls(agentMetadata, "create");
-  const foundInToolCalls = fileToolCalls.some(event => {
-    const args = JSON.stringify(event.data);
-    return /\.bicep"/i.test(args);
-  });
-
-  if (foundInToolCalls) return true;
-
-  // Also check all assistant messages for references to .bicep files
-  // This catches cases where files were created via PowerShell or other methods
-  const allContent = getAllAssistantMessages(agentMetadata);
-  return /infra[/\\][\w.-]*\.bicep"/i.test(allContent);
 }

@@ -64,7 +64,31 @@ azd init --from-code -e "$ENV_NAME"
 - `-e <name>`: Provides environment name upfront (no "Enter environment name:" prompt)
 - Together, they enable fully non-interactive operation essential for automation, agents, and CI/CD pipelines
 
-### Step 3: What azd Generates
+### Step 3: Configure Subscription and Location
+
+> **⛔ CRITICAL**: After `azd init --from-code` completes, you **MUST** immediately set the user-confirmed subscription and location.
+>
+> **DO NOT** skip this step or delay it until validation. The `azd init` command creates an environment but does NOT inherit the Azure CLI's subscription. If you skip this step, azd will use its own default subscription, which may differ from the user's confirmed choice.
+
+**Set the subscription and location immediately after initialization:**
+
+```bash
+# Set the user-confirmed subscription ID
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+
+# Set the location
+azd env set AZURE_LOCATION <location>
+```
+
+**Verify the configuration:**
+
+```bash
+azd env get-values
+```
+
+Confirm that `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` match the user's confirmed choices from [Azure Context](azure-context.md).
+
+### Step 4: What azd Generates
 
 `azd init --from-code` creates:
 
@@ -101,10 +125,20 @@ services:
 | `-e <name>` | ✅ Yes | Environment name (required for non-interactive) |
 | `--no-prompt` | Optional | Skip additional confirmations |
 
-**Complete command:**
+**Complete initialization sequence:**
 ```bash
+# 1. Initialize the environment
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init --from-code -e "$ENV_NAME"
+
+# 2. IMMEDIATELY set the user-confirmed subscription
+azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+
+# 3. Set the location
+azd env set AZURE_LOCATION <location>
+
+# 4. Verify configuration
+azd env get-values
 ```
 
 ## Common Aspire Samples
@@ -158,6 +192,83 @@ azd init --from-code -e "my-env"
 1. Verify AppHost project exists: `find . -name "*.AppHost.csproj"`
 2. Check project builds: `dotnet build`
 3. Ensure Aspire.Hosting package is referenced in AppHost project
+
+### Azure Functions: Secret initialization from Blob storage failed
+
+**Symptoms:** Azure Functions app fails at startup with error:
+```
+System.InvalidOperationException: Secret initialization from Blob storage failed due to missing both
+an Azure Storage connection string and a SAS connection uri.
+```
+
+**Cause:** When using `AddAzureFunctionsProject` with `WithHostStorage(storage)`, Aspire configures identity-based storage access (managed identity). However, Azure Functions' internal secret management does not support identity-based URIs and requires file-based secret storage for Container Apps deployments.
+
+**Solution:** Add `AzureWebJobsSecretStorageType=Files` environment variable to the Functions resource in the AppHost **before running `azd up`**:
+
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.ImageGallery_Functions>("functions")
+                       .WithReference(queues)
+                       .WithReference(blobs)
+                       .WaitFor(storage)
+                       .WithRoleAssignments(storage, ...)
+                       .WithHostStorage(storage)
+                       .WithEnvironment("AzureWebJobsSecretStorageType", "Files")  // Required for Container Apps
+                       .WithUrlForEndpoint("http", u => u.DisplayText = "Functions App");
+```
+
+> 💡 **Why this is required:**
+> - `WithHostStorage(storage)` sets identity-based URIs like `AzureWebJobsStorage__blobServiceUri`
+> - This is correct and secure for runtime storage operations
+> - However, Functions' secret/key management doesn't support these URIs
+> - File-based secrets are mandatory for Container Apps deployments
+
+> ⚠️ **Important:** This is required when:
+> - Using `AddAzureFunctionsProject` in Aspire
+> - Using `WithHostStorage()` with identity-based storage
+> - Deploying to Azure Container Apps (the default for Aspire Functions)
+
+**Generated Infrastructure Note:**
+
+If you need to modify the generated Container Apps infrastructure directly, ensure the Functions container app has this environment variable:
+
+```bicep
+resource functionsContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  properties: {
+    template: {
+      containers: [
+        {
+          env: [
+            {
+              name: 'AzureWebJobsSecretStorageType'
+              value: 'Files'
+            }
+            // ... other environment variables
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+### Error: azd uses wrong subscription despite user confirmation
+
+**Symptoms:** `azd provision --preview` shows a different subscription than the one the user confirmed
+
+**Cause:** The `AZURE_SUBSCRIPTION_ID` was not set immediately after `azd init --from-code`. The Azure CLI and azd can have different default subscriptions.
+
+**Solution:** Always set the subscription immediately after initialization:
+
+```bash
+# After azd init --from-code completes:
+azd env set AZURE_SUBSCRIPTION_ID <user-confirmed-subscription-id>
+azd env set AZURE_LOCATION <location>
+
+# Verify before proceeding:
+azd env get-values
+```
+
+**Prevention:** Follow the complete initialization sequence in the [Flags Reference](#azd-init-for-aspire) section above.
 
 ## References
 

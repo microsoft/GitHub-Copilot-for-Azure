@@ -54,5 +54,6 @@ services:
 
 - [AZD Templates](templates/README.md)
 - [Bicep Patterns](bicep.md)
+- [Terraform Patterns](terraform.md)
 - [Trigger Types](triggers.md)
 - [Durable Functions](durable.md)

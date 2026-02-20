@@ -231,3 +231,9 @@ resource functionAppPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   }
 }
 ```
+
+## Functions on Azure Container Apps (Aspire)
+
+> ⚠️ **Important for .NET Aspire:** When deploying Azure Functions to Azure Container Apps with identity-based storage, you must configure `AzureWebJobsSecretStorageType=Files`.
+
+See [aspire-containerapps.md](aspire-containerapps.md) for complete guidance on Functions running on Azure Container Apps and configuration examples.

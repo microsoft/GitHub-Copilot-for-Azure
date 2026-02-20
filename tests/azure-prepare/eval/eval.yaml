@@ -1,0 +1,82 @@
+# Waza eval specification for azure-prepare skill
+# Tests composable template selection, plan-first workflow, and IaC generation quality
+#
+# Run:  waza run tests/azure-prepare/eval/eval.yaml --context-dir tests/azure-prepare/eval/fixtures -v
+# Or:   azd waza run tests/azure-prepare/eval/eval.yaml --context-dir tests/azure-prepare/eval/fixtures -v
+name: azure-prepare-eval
+description: |
+  Evaluation suite for the azure-prepare skill.
+  Tests across dimensions:
+  - Template selection accuracy (HTTP base, Cosmos DB, Service Bus, Timer, Durable)
+  - Plan-first workflow compliance (creates .azure/plan.md before code)
+  - IaC generation quality (Bicep and Terraform)
+  - Language coverage (C#, TypeScript, Python, Java, PowerShell)
+  - Security posture (managed identity, RBAC, no connection strings)
+
+skill: azure-prepare
+version: "1.0"
+
+config:
+  trials_per_task: 3
+  timeout_seconds: 600
+  parallel: false
+  # Use mock for fast local iteration, copilot-sdk for real agent tests
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+metrics:
+  - name: task_completion
+    weight: 0.3
+    threshold: 0.8
+    description: Did the skill complete the preparation task?
+
+  - name: trigger_accuracy
+    weight: 0.2
+    threshold: 0.9
+    description: Does the skill trigger on appropriate prompts?
+
+  - name: template_selection
+    weight: 0.3
+    threshold: 0.8
+    description: Did the skill select the correct base template and recipe?
+
+  - name: behavior_quality
+    weight: 0.2
+    threshold: 0.7
+    description: Plan-first workflow, security posture, no user prompts for info we have
+
+graders:
+  # All tasks must produce real output
+  - type: code
+    name: has_output
+    config:
+      assertions:
+        - "len(output) > 10"
+
+  # Plan-first workflow compliance — look for planning indicators
+  - type: regex
+    name: plan_first
+    config:
+      must_match:
+        - "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      must_not_match:
+        - "(?i)fatal error|crashed|exception occurred"
+
+  # Security posture — should never suggest connection strings
+  - type: regex
+    name: security_posture
+    config:
+      must_not_match:
+        - "(?i)connection.?string.*=.*Account(Key|Name)="
+        - "(?i)SharedAccessKey="
+
+  # Behavior constraints — only evaluated when session digest available
+  - type: behavior
+    name: efficiency
+    config:
+      max_tool_calls: 40
+      max_duration_ms: 600000
+      skip_if_no_digest: true
+
+tasks:
+  - "tasks/*.yaml"
