@@ -85,4 +85,33 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("mcp_azure_mcp_documentation");
     });
   });
+
+  describe("Reference Files", () => {
+    test("links to all language-specific Event Hubs SDK guides", () => {
+      expect(skill.content).toContain("references/sdk/azure-eventhubs-py.md");
+      expect(skill.content).toContain("references/sdk/azure-eventhubs-java.md");
+      expect(skill.content).toContain("references/sdk/azure-eventhubs-js.md");
+      expect(skill.content).toContain("references/sdk/azure-eventhubs-dotnet.md");
+    });
+
+    test("links to all language-specific Service Bus SDK guides", () => {
+      expect(skill.content).toContain("references/sdk/azure-servicebus-py.md");
+      expect(skill.content).toContain("references/sdk/azure-servicebus-java.md");
+      expect(skill.content).toContain("references/sdk/azure-servicebus-js.md");
+      expect(skill.content).toContain("references/sdk/azure-servicebus-dotnet.md");
+    });
+
+    test("links to service-level troubleshooting guide", () => {
+      expect(skill.content).toContain("references/service-troubleshooting.md");
+    });
+  });
+
+  describe("Diagnosis Workflow", () => {
+    test("includes systematic diagnosis steps", () => {
+      expect(skill.content).toContain("Identify the SDK and version");
+      expect(skill.content).toContain("Check resource health");
+      expect(skill.content).toContain("Review the error message");
+      expect(skill.content).toContain("Recommend fix");
+    });
+  });
 });
