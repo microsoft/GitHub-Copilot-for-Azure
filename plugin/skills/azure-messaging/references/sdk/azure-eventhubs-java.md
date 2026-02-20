@@ -11,7 +11,7 @@ Package: `azure-messaging-eventhubs` | [README](https://github.com/Azure/azure-s
 | `AmqpException` (connection:forced) | Idle connection disconnected | Auto-recovers; no action needed |
 | `AmqpException` (unauthorized-access) | Bad credentials or missing permissions | Verify connection string, SAS, or RBAC roles |
 | `AmqpException` (resource-limit-exceeded) | Too many concurrent receivers | Reduce receiver count or upgrade tier |
-| `OperationTimeoutException` | Network issue or throttling | Check firewall, try AMQP over WebSockets |
+| `OperationTimeoutException` | Network issue or throttling | Check firewall, try AMQP over WebSockets (port 443) |
 
 ## Enable Logging
 
@@ -31,7 +31,7 @@ See [Java SDK logging docs](https://learn.microsoft.com/azure/developer/java/sdk
 ## Key Issues
 
 - **High CPU / partition imbalance**: Limit to 1.5–3 partitions per CPU core.
-- **Consumer disconnected during epoch conflict**: Expected during load balancing. Persistent issues without scaling indicate a problem.
+- **Consumer disconnected**: Higher priority consumer took ownership. Expected during load balancing. Persistent issues without scaling indicate a problem.
 - **Connection sharing**: Reuse `EventHubClientBuilder` connections; avoid creating new clients per operation.
 
 ## Checkpointing (BlobCheckpointStore)

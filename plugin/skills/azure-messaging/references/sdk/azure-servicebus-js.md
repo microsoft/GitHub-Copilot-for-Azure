@@ -10,7 +10,7 @@ Package: `@azure/service-bus` | [README](https://github.com/Azure/azure-sdk-for-
 | `MessageLockLost` | Processing exceeded lock duration or link detached | Reduce processing time, ensure autolock renewal works |
 | `SessionLockLost` | Session lock expired or link detached | Re-accept session, keep renewing lock |
 | `QuotaExceeded` | Too many concurrent receives | Reduce receivers or use batch receives |
-| `MessageSizeExceeded` | Message > max size | Reduce payload. Batches must be ≤1MB even on Premium |
+| `MessageSizeExceeded` | Message or batch > max size | Reduce payload. Premium supports individual messages up to 100MB. Batch limit is computed from max message size on the client, so batches can also be impacted |
 | `UnauthorizedAccess` | Bad credentials | Verify connection string, SAS, or RBAC roles |
 
 `ServiceBusError` fields: `code`, `retryable`, `name`, `info`, `address`.
@@ -39,6 +39,6 @@ node app.js > out.log 2>debug.log
 - **Lock lost before expiry**: Can happen on link detach (transient network issue or 10-min idle timeout). Not always due to processing time.
 - **Batch receive returns fewer messages**: After first message arrives, receiver waits only 1s for additional messages. `maxWaitTimeInMs` controls wait for the *first* message only.
 - **Autolock renewal not working**: Ensure system clock is accurate. Autolock relies on system time.
-- **Batch >1MB fails**: Even with Premium large message support, batches cannot exceed 1MB. Send large messages individually.
+- **Batch size limits**: Batch limit is artificially computed on the client from the max message size sent by the service. Send large messages individually if batch creation fails.
 - **WebSockets**: Pass `webSocketOptions` to `ServiceBusClient` constructor for port 443 connectivity.
 - **Distributed tracing**: Experimental OpenTelemetry support via `@azure/opentelemetry-instrumentation-azure-sdk`.

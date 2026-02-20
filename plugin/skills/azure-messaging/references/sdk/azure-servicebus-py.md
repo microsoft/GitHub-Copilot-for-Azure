@@ -12,7 +12,7 @@ Package: `azure-servicebus` | [README](https://github.com/Azure/azure-sdk-for-py
 | `OperationTimeoutError` | Service didn't respond in time | Adjust retry config, verify network |
 | `MessageLockLostError` | Processing exceeded lock duration | Use `AutoLockRenewer`, reduce processing time |
 | `SessionLockLostError` | Session lock expired | Reconnect to session, keep renewing lock |
-| `MessageSizeExceededError` | Message too large | Reduce payload or split messages |
+| `MessageSizeExceededError` | Message or batch too large | Reduce payload. Premium supports individual messages up to 100MB. Batch limit is computed from max message size on the client, so batches can also be impacted |
 
 ## Enable Logging
 
