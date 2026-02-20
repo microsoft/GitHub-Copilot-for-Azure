@@ -102,5 +102,5 @@ Do **not** promise a specific fix timeline. Do **not** repeat the entire issue b
    - Zero or more skill labels
    - Exactly one type label
    - Optionally `assign-to-copilot`
-5. Update the issue with the selected labels.
+5. Update the issue by adding the selected labels and removing the `untriaged` label if it is present.
 6. Post a helpful acknowledgement comment on the issue.
