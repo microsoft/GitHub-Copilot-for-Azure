@@ -171,7 +171,7 @@ Delegate status polling to a sub-agent. Provide the project endpoint, agent name
 
 ### Step 9: Test the Agent
 
-Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vnext experience.
+Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
 
 ## Workflow: Prompt Agent Deployment
 
