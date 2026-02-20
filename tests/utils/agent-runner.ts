@@ -18,6 +18,8 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
 import { getAllAssistantMessages } from "./evaluate";
+// Re-export for backward compatibility (consumers still import from agent-runner)
+export { getAllAssistantMessages } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -789,13 +791,15 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
         resolveIdle = resolve;
       });
 
+      let timeoutHandle: ReturnType<typeof setTimeout>;
       const timeout = new Promise<"timeout">((resolve) => {
-        setTimeout(() => resolve("timeout"), TURN_TIMEOUT);
+        timeoutHandle = setTimeout(() => resolve("timeout"), TURN_TIMEOUT);
       });
 
       await session.send({ prompt: promptEntry.prompt });
 
       const result = await Promise.race([done.then(() => "done" as const), timeout]);
+      clearTimeout(timeoutHandle!);
       if (result === "timeout") {
         console.warn(`⚠️  ${currentLabel} timed out after ${TURN_TIMEOUT / 1000}s — aborting`);
         aborted = true;

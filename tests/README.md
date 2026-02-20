@@ -389,11 +389,10 @@ tests/
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
-| azure-create-app | ❌ | - | - | - | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
-| azure-deployment-preflight | ❌ | - | - | - | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
 | azure-functions | ✅ | - | - | ✅ | - |
+| azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
