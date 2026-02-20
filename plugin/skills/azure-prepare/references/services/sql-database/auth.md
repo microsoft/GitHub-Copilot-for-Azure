@@ -30,6 +30,15 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
 az ad signed-in-user show --query "{id:id, name:displayName}" -o json
 ```
 
+**Set as azd environment variables:**
+```bash
+PRINCIPAL_INFO=$(az ad signed-in-user show --query "{id:id, name:displayName}" -o json)
+azd env set AZURE_PRINCIPAL_ID $(echo $PRINCIPAL_INFO | jq -r '.id')
+azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
+```
+
+> 💡 **Tip:** Set these immediately after `azd init` to avoid deployment failures.
+
 ## Entra ID Admin Configuration (Group)
 
 **Recommended for production** — Uses Entra group for admin access.

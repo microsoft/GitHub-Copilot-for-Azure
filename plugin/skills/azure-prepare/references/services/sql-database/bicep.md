@@ -48,10 +48,21 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2022-05-01-previe
 }
 ```
 
-**Get current user's principal ID:**
+**Set Entra admin parameters:**
+
+1. Get current user info:
 ```bash
 az ad signed-in-user show --query "{id:id, name:displayName}" -o json
 ```
+
+2. Set as azd environment variables:
+```bash
+PRINCIPAL_INFO=$(az ad signed-in-user show --query "{id:id, name:displayName}" -o json)
+azd env set AZURE_PRINCIPAL_ID $(echo $PRINCIPAL_INFO | jq -r '.id')
+azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
+```
+
+> 💡 **Tip:** Set these variables immediately after `azd init` to avoid deployment failures. The Bicep `principalId` and `principalName` parameters will automatically use these environment variables.
 
 ## Serverless Configuration
 
