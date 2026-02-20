@@ -11,6 +11,7 @@
 import {
   useAgentRunner,
   isSkillInvoked,
+  doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
@@ -126,5 +127,90 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       "eventhub-duplicate-events-in-memory-checkpoint",
       "My EventHubConsumerClient using in-memory checkpoint starts consuming duplicate old events after running for 2-3 hours. The offsets reset to old values without any exception. Using azure-eventhub Python SDK 5.7.0 with receive_batch and update_checkpoint."
     );
+  });
+
+  describe("response-content-validation", () => {
+    test("session-lock-diagnosis", async () => {
+      const prompt =
+        "I'm using azure-servicebus Python SDK with session-enabled queues. After processing a few messages, I get 'SessionLockLostError: The session lock has expired on the session'. My processing takes about 2 minutes but the session lock duration is 30 seconds. How do I fix this?";
+
+      let invoked = false;
+      let hasRelevantContent = false;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt,
+            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invoked = true;
+            // Validate response addresses session lock with actionable guidance
+            hasRelevantContent =
+              doesAssistantMessageIncludeKeyword(agentMetadata, "session", { caseSensitive: false }) &&
+              doesAssistantMessageIncludeKeyword(agentMetadata, "lock", { caseSensitive: false }) &&
+              (doesAssistantMessageIncludeKeyword(agentMetadata, "renew", { caseSensitive: false }) ||
+               doesAssistantMessageIncludeKeyword(agentMetadata, "duration", { caseSensitive: false }) ||
+               doesAssistantMessageIncludeKeyword(agentMetadata, "auto_lock_renewer", { caseSensitive: false }));
+            if (hasRelevantContent) break;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+
+      const logLine = `${SKILL_NAME} session-lock-diagnosis: invoked=${invoked}, relevant_content=${hasRelevantContent}`;
+      console.log(logLine);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, logLine + "\n");
+      expect(invoked).toBe(true);
+      expect(hasRelevantContent).toBe(true);
+    });
+
+    test("sdk-configuration-guidance", async () => {
+      const prompt =
+        "How do I configure retry policy and prefetch count for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
+
+      let invoked = false;
+      let hasRelevantContent = false;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt,
+            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invoked = true;
+            // Validate response provides SDK configuration guidance
+            hasRelevantContent =
+              (doesAssistantMessageIncludeKeyword(agentMetadata, "retry", { caseSensitive: false }) ||
+               doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch", { caseSensitive: false })) &&
+              (doesAssistantMessageIncludeKeyword(agentMetadata, "EventHubConsumerClient", { caseSensitive: false }) ||
+               doesAssistantMessageIncludeKeyword(agentMetadata, "retry_total", { caseSensitive: false }) ||
+               doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }) ||
+               doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch_count", { caseSensitive: false }));
+            if (hasRelevantContent) break;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+
+      const logLine = `${SKILL_NAME} sdk-configuration-guidance: invoked=${invoked}, relevant_content=${hasRelevantContent}`;
+      console.log(logLine);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, logLine + "\n");
+      expect(invoked).toBe(true);
+      expect(hasRelevantContent).toBe(true);
+    });
   });
 });
