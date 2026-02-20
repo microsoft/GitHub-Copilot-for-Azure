@@ -72,4 +72,17 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("references/sdk/azure-servicebus-py.md");
     });
   });
+
+  describe("MCP Tools Documentation", () => {
+    test("references messaging MCP tools", () => {
+      expect(skill.content).toContain("mcp_azure_mcp_eventhubs");
+      expect(skill.content).toContain("mcp_azure_mcp_servicebus");
+    });
+
+    test("references diagnostic MCP tools", () => {
+      expect(skill.content).toContain("mcp_azure_mcp_monitor");
+      expect(skill.content).toContain("mcp_azure_mcp_resourcehealth");
+      expect(skill.content).toContain("mcp_azure_mcp_documentation");
+    });
+  });
 });
