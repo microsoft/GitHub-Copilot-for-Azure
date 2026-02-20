@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       skills:
-        description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-role-selector")'
+        description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-rbac")'
         required: true
         type: string
       deploy-test-pattern:
@@ -206,23 +206,3 @@ jobs:
           name: integration-report-${{ matrix.skill }}
           path: tests/reports/
           retention-days: 30
-
-  report:
-    name: Aggregate results
-    needs: [test, azure-deploy]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all report artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: '{integration-report-*,azure-deploy-*-reports}'
-          path: all-reports
-          merge-multiple: true
-
-      - name: Summarize
-        run: |
-          echo "## Integration Test Results" >> "$GITHUB_STEP_SUMMARY"
-          for f in all-reports/*-SKILL-REPORT.md; do
-            [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY" && echo "" >> "$GITHUB_STEP_SUMMARY"
-          done

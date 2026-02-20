@@ -180,24 +180,3 @@ jobs:
           name: azure-deploy-${{ matrix.test-group }}-reports
           path: tests/reports/
           retention-days: 30
-
-  report:
-    name: Aggregate results
-    needs: test
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all report artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: azure-deploy-*-reports
-          path: all-reports
-          merge-multiple: true
-
-      - name: Summarize
-        run: |
-          echo "## azure-deploy Integration Test Results" >> "$GITHUB_STEP_SUMMARY"
-          for f in all-reports/*-SKILL-REPORT.md; do
-            [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY" && echo "" >> "$GITHUB_STEP_SUMMARY"
-          done
-
