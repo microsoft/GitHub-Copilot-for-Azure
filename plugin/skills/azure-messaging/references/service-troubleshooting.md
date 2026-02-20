@@ -65,5 +65,9 @@ If connectivity is **intermittent**:
 
 - [Event Hubs troubleshooting guide](https://learn.microsoft.com/azure/event-hubs/troubleshooting-guide)
 - [Service Bus troubleshooting guide](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-troubleshooting-guide)
+- [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas)
+- [Service Bus quotas and limits](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-quotas)
+- [Event Hubs AMQP troubleshooting](https://learn.microsoft.com/azure/event-hubs/event-hubs-amqp-troubleshoot)
+- [Service Bus AMQP troubleshooting](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-amqp-troubleshoot)
 - [Event Hubs IP addresses and service tags](https://learn.microsoft.com/azure/event-hubs/troubleshooting-guide#what-ip-addresses-do-i-need-to-allow)
 - [Service Bus IP addresses](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-faq#what-ip-addresses-do-i-need-to-add-to-allowlist-)

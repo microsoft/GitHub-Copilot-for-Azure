@@ -24,67 +24,40 @@ description: |
 
 ## When to Use This Skill
 
-- User reports connection failures with Event Hubs or Service Bus SDK
-- Authentication or authorization errors (SAS, Entra ID / Managed Identity)
-- Message send/receive timeouts or AMQP link errors
+- SDK connection failures, auth errors, or AMQP link errors
+- Message lock lost, session lock, or send/receive timeouts
 - Event processor or message handler stops processing
-- Message lock lost or session lock errors in Service Bus
-- SDK configuration questions (retry policy, prefetch, batch size)
+- SDK configuration questions (retry, prefetch, batch size)
 
 ## MCP Tools
 
 | Tool | Command | Use |
 |------|---------|-----|
-| `azure-eventhubs` | Namespace and hub operations | List namespaces, hubs, consumer groups |
-| `azure-servicebus` | Queue and topic operations | List namespaces, queues, topics, subscriptions |
+| `azure-eventhubs` | Namespace/hub ops | List namespaces, hubs, consumer groups |
+| `azure-servicebus` | Queue/topic ops | List namespaces, queues, topics, subscriptions |
 | `azure-monitor` | `logs_query` | Query diagnostic logs with KQL |
 | `azure-resourcehealth` | `get` | Check service health status |
-| `azure-documentation` | Doc search | Look up official Microsoft Learn troubleshooting docs for Event Hubs and Service Bus |
+| `azure-documentation` | Doc search | Search Microsoft Learn for troubleshooting docs |
 
 ## Diagnosis Workflow
 
 1. **Identify the SDK and version** — Ask which language SDK and version the user is on
 2. **Check resource health** — Use `azure-resourcehealth` to verify the namespace is healthy
 3. **Review the error message** — Match against language-specific troubleshooting guide
-4. **Look up documentation** — Use the `azure-documentation` tool to search Microsoft Learn for the specific error message, SDK issue, or configuration topic (e.g., "Event Hubs Python SDK connection timeout", "Service Bus message lock lost")
+4. **Look up documentation** — Use `azure-documentation` to search Microsoft Learn for the error or topic
 5. **Check configuration** — Verify connection string, entity name, consumer group
-6. **Recommend fix** — Apply the appropriate remediation, citing documentation found via `azure-documentation`
+6. **Recommend fix** — Apply remediation, citing documentation found
 
 
 ## Connectivity Troubleshooting
 
-| Check | Details |
-|-------|---------|
-| **Required ports** | AMQP: 5671/5672, HTTPS: 443, Kafka (Event Hubs): 9093 |
-| **WebSocket fallback** | Use AMQP over WebSockets (port 443) when AMQP ports are blocked |
-| **Service outage** | Check [Azure status](https://azure.status.microsoft/status) |
-| **Verify endpoint** | `nslookup <namespace>.servicebus.windows.net` |
-| **Test connectivity** | `curl -v https://<namespace>.servicebus.windows.net/` — expect Atom feed XML |
-| **IP firewall** | Verify client IP is allowed if IP filtering is enabled |
-| **Private endpoints** | Confirm client is in the correct VNet/subnet |
-| **Service tags** | Allow `EventHub` / `ServiceBus` tags in NSGs |
-
-For detailed network and service-level troubleshooting, see [Service Troubleshooting Guide](references/service-troubleshooting.md).
+See [Service Troubleshooting Guide](references/service-troubleshooting.md) for ports, WebSocket fallback, IP firewall, private endpoints, and service tags.
 
 ## SDK Troubleshooting Guides
 
-Language-specific error handling, common issues, and configuration for each SDK:
-
-- **Event Hubs**: [Python](references/sdk/azure-eventhubs-py.md) | [Java](references/sdk/azure-eventhubs-java.md) | [JavaScript](references/sdk/azure-eventhubs-js.md) | [.NET](references/sdk/azure-eventhubs-dotnet.md)
-- **Service Bus**: [Python](references/sdk/azure-servicebus-py.md) | [Java](references/sdk/azure-servicebus-java.md) | [JavaScript](references/sdk/azure-servicebus-js.md) | [.NET](references/sdk/azure-servicebus-dotnet.md)
+- **Event Hubs**: [Python](references/sdk/azure-eventhubs-py.md) | [Java](references/sdk/azure-eventhubs-java.md) | [JS](references/sdk/azure-eventhubs-js.md) | [.NET](references/sdk/azure-eventhubs-dotnet.md)
+- **Service Bus**: [Python](references/sdk/azure-servicebus-py.md) | [Java](references/sdk/azure-servicebus-java.md) | [JS](references/sdk/azure-servicebus-js.md) | [.NET](references/sdk/azure-servicebus-dotnet.md)
 
 ## References
 
-Use the `azure-documentation` tool to search Microsoft Learn for the latest troubleshooting guidance. Example queries:
-- "Azure Event Hubs troubleshooting guide"
-- "Azure Service Bus message lock lost"
-- "Event Hubs AMQP connection errors"
-- "Service Bus dead letter queue troubleshooting"
-
-Key documentation pages:
-- [Event Hubs service troubleshooting guide](https://learn.microsoft.com/azure/event-hubs/troubleshooting-guide)
-- [Service Bus service troubleshooting guide](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-troubleshooting-guide)
-- [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas)
-- [Service Bus quotas and limits](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-quotas)
-- [Event Hubs AMQP troubleshooting](https://learn.microsoft.com/azure/event-hubs/event-hubs-amqp-troubleshoot)
-- [Service Bus AMQP troubleshooting](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-amqp-troubleshoot)
+Use `azure-documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](references/service-troubleshooting.md) for network and service-level docs.
