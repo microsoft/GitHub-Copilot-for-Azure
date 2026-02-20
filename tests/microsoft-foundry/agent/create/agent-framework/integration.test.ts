@@ -37,7 +37,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
+describeIntegration("agent-framework - Integration Tests", () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for agent creation prompt", async () => {
