@@ -149,7 +149,6 @@ jobs:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
       - name: Run tests – ${{ matrix.test-group }}
-        if: false
         env:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}

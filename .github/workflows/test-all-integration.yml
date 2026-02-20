@@ -169,7 +169,6 @@ jobs:
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
       - name: Run integration tests – ${{ matrix.skill }}
-        if: false
         env:
           DEBUG: ${{ inputs.debug && '1' || '' }}
           TEST_RUN_ID: all-integration
