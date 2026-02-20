@@ -47,6 +47,21 @@ description: |
 5. **Recommend fix** — Apply the appropriate remediation
 
 
+## Connectivity Troubleshooting
+
+| Check | Details |
+|-------|---------|
+| **Required ports** | AMQP: 5671/5672, HTTPS: 443, Kafka (Event Hubs): 9093 |
+| **WebSocket fallback** | Use AMQP over WebSockets (port 443) when AMQP ports are blocked |
+| **Service outage** | Check [Azure status](https://azure.status.microsoft/status) |
+| **Verify endpoint** | `nslookup <namespace>.servicebus.windows.net` |
+| **Test connectivity** | `curl -v https://<namespace>.servicebus.windows.net/` — expect Atom feed XML |
+| **IP firewall** | Verify client IP is allowed if IP filtering is enabled |
+| **Private endpoints** | Confirm client is in the correct VNet/subnet |
+| **Service tags** | Allow `EventHub` / `ServiceBus` tags in NSGs |
+
+For detailed network and service-level troubleshooting, see [Service Troubleshooting Guide](references/service-troubleshooting.md).
+
 ## Diagnostic KQL Queries
 
 ```kql
@@ -79,6 +94,8 @@ Language-specific error handling, common issues, and configuration for each SDK:
 
 ## References
 
+- [Event Hubs service troubleshooting guide](https://learn.microsoft.com/azure/event-hubs/troubleshooting-guide)
+- [Service Bus service troubleshooting guide](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-troubleshooting-guide)
 - [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas)
 - [Service Bus quotas and limits](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-quotas)
 - [Event Hubs AMQP troubleshooting](https://learn.microsoft.com/azure/event-hubs/event-hubs-amqp-troubleshoot)
