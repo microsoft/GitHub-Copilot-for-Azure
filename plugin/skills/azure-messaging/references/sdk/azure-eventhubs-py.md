@@ -15,9 +15,12 @@ Package: `azure-eventhub` | [README](https://github.com/Azure/azure-sdk-for-pyth
 
 ```python
 from azure.eventhub import EventHubProducerClient
+from azure.identity import DefaultAzureCredential
 
-client = EventHubProducerClient.from_connection_string(
-    conn_str,
+client = EventHubProducerClient(
+    fully_qualified_namespace="<your-namespace>.servicebus.windows.net",
+    eventhub_name="<your-eventhub>",
+    credential=DefaultAzureCredential(),
     retry_total=3,
     retry_backoff_factor=0.8,
     retry_backoff_max=120,
@@ -55,10 +58,20 @@ Package: `azure-eventhub-checkpointstoreblob` (sync) / `azure-eventhub-checkpoin
 ```python
 from azure.eventhub import EventHubConsumerClient
 from azure.eventhub.extensions.checkpointstoreblobaio import BlobCheckpointStore
+from azure.identity.aio import DefaultAzureCredential
 
-checkpoint_store = BlobCheckpointStore.from_connection_string(storage_conn_str, container_name)
-client = EventHubConsumerClient.from_connection_string(
-    eventhub_conn_str, consumer_group="$Default", checkpoint_store=checkpoint_store
+credential = DefaultAzureCredential()
+checkpoint_store = BlobCheckpointStore(
+    blob_account_url="https://<storage-account>.blob.core.windows.net",
+    container_name="<checkpoint-container>",
+    credential=credential
+)
+client = EventHubConsumerClient(
+    fully_qualified_namespace="<your-namespace>.servicebus.windows.net",
+    eventhub_name="<your-eventhub>",
+    consumer_group="$Default",
+    credential=credential,
+    checkpoint_store=checkpoint_store
 )
 ```
 

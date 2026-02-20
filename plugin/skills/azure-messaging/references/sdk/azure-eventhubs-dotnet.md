@@ -40,10 +40,18 @@ Configure via `EventHubsRetryOptions` when creating the client. See [Configuring
 Package: `Azure.Messaging.EventHubs.Processor` (includes `EventProcessorClient` + blob checkpoint store)
 
 ```csharp
+var credential = new DefaultAzureCredential();
+
+var storageClient = new BlobContainerClient(
+    new Uri("https://<storage-account>.blob.core.windows.net/<checkpoint-container>"),
+    credential);
+
 var processor = new EventProcessorClient(
-    new BlobContainerClient(storageConnStr, containerName),
+    storageClient,
     "$Default",
-    eventhubConnStr);
+    "<your-namespace>.servicebus.windows.net",
+    "<your-eventhub>",
+    credential);
 
 processor.ProcessEventAsync += async (args) =>
 {

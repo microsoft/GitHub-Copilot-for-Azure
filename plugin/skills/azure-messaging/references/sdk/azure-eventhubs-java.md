@@ -39,13 +39,15 @@ See [Java SDK logging docs](https://learn.microsoft.com/azure/developer/java/sdk
 Package: `azure-messaging-eventhubs-checkpointstore-blob`
 
 ```java
+TokenCredential credential = new DefaultAzureCredentialBuilder().build();
+
 BlobContainerAsyncClient blobClient = new BlobContainerClientBuilder()
-    .connectionString(storageConnStr)
-    .containerName(containerName)
+    .endpoint("https://<storage-account>.blob.core.windows.net/<checkpoint-container>")
+    .credential(credential)
     .buildAsyncClient();
 
 EventProcessorClient processor = new EventProcessorClientBuilder()
-    .connectionString(eventhubConnStr)
+    .credential("<your-namespace>.servicebus.windows.net", "<your-eventhub>", credential)
     .consumerGroup("$Default")
     .checkpointStore(new BlobCheckpointStore(blobClient))
     .processEvent(eventContext -> {
