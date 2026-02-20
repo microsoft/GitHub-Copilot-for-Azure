@@ -10,6 +10,13 @@ Managed relational database with ACID compliance and full SQL Server compatibili
 - Reporting and analytics
 - Strong schema enforcement
 
+## Authentication
+
+**Default:** Entra-only authentication (recommended)
+- Required for subscriptions with Entra-only policies
+- More secure than SQL authentication
+- Eliminates password management
+
 ## Required Supporting Resources
 
 | Resource | Purpose |
@@ -29,11 +36,20 @@ Managed relational database with ACID compliance and full SQL Server compatibili
 
 ## Environment Variables
 
-| Variable | Value |
-|----------|-------|
-| `SQL_SERVER` | `{server}.database.windows.net` |
-| `SQL_DATABASE` | Database name |
-| `SQL_CONNECTION_STRING` | Full connection string (Key Vault) |
+| Variable | Value | When to Set |
+|----------|-------|-------------|
+| `AZURE_PRINCIPAL_ID` | Current user's object ID | After `azd init`, before `azd provision` |
+| `AZURE_PRINCIPAL_NAME` | Current user's display name | After `azd init`, before `azd provision` |
+| `SQL_SERVER` | `{server}.database.windows.net` | Runtime (from Bicep outputs) |
+| `SQL_DATABASE` | Database name | Runtime (from Bicep outputs) |
+| `SQL_CONNECTION_STRING` | Full connection string (Key Vault) | Runtime (from Bicep outputs) |
+
+**Set principal variables:**
+```bash
+PRINCIPAL_INFO=$(az ad signed-in-user show --query "{id:id, name:displayName}" -o json)
+azd env set AZURE_PRINCIPAL_ID $(echo $PRINCIPAL_INFO | jq -r '.id')
+azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
+```
 
 ## References
 
