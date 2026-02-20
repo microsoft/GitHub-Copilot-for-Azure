@@ -59,7 +59,7 @@ A skill is **Medium** if:
 
 **Examples of Medium-adherence descriptions:**
 ```yaml
-description: |
+description: >-
   Deploy applications to Azure using Azure Developer CLI (azd). USE THIS SKILL 
   when users want to deploy, publish, host, or run their application on Azure. 
   Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure".
@@ -75,7 +75,7 @@ A skill is **Medium-High** if:
 
 **Example of Medium-High adherence:**
 ```yaml
-description: |
+description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring".
   DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
@@ -90,7 +90,7 @@ A skill is **High** if:
 
 **Example of High adherence:**
 ```yaml
-description: |
+description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring".
   DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
@@ -120,7 +120,7 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 | Ideal | 300-600 chars |
 | Max | 1024 chars |
 
-**Format Rule:** Descriptions over 200 characters MUST use multi-line YAML format (`|`) for maintainability.
+**Format Rule:** Descriptions over 200 characters MUST use folded YAML format (`>-`) for maintainability. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries. Do NOT use `|` (literal block) as it preserves newlines.
 
 ### 3. Trigger Phrase Detection
 
