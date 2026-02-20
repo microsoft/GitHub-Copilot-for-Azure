@@ -1,4 +1,4 @@
-import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
 import { softCheckSkill } from "../utils/evaluate";
 export { expectFiles } from "../azure-prepare/utils";
 
