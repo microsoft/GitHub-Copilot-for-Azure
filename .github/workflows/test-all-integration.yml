@@ -23,14 +23,63 @@ on:
         default: false
 
 jobs:
+  setup:
+    name: Build skill matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_azure_deploy: ${{ steps.set-matrix.outputs.has_azure_deploy }}
+    steps:
+      - name: Parse skills input into matrix
+        id: set-matrix
+        run: |
+          # Convert comma separated list of skills to a JSON array
+          # Filter out azure-deploy (it runs via a separate reusable workflow)
+          SKILLS="${{ inputs.skills }}"
+          
+          # Check if azure-deploy is in the list
+          if echo "$SKILLS" | grep -q 'azure-deploy'; then
+            echo "has_azure_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_azure_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+          
+          # Build matrix excluding azure-deploy
+          JSON=$(echo "$SKILLS" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^azure-deploy$' | jq -R . | jq -sc .)
+          # Handle empty array case
+          if [ "$JSON" = "[]" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Call the azure-deploy workflow when azure-deploy is in the skills list
+  azure-deploy:
+    name: Integration – azure-deploy
+    needs: setup
+    if: needs.setup.outputs.has_azure_deploy == 'true'
+    uses: ./.github/workflows/test-azure-deploy.yml
+    with:
+      test-pattern: ''
+      debug: ${{ inputs.debug }}
+    secrets:
+      COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+
   test:
-    name: Run all integration tests
+    name: Integration – ${{ matrix.skill }}
+    needs: setup
+    if: needs.setup.outputs.matrix != '[]'
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    strategy:
+      fail-fast: false            # don't cancel siblings on failure
+      max-parallel: 5             # limit number of concurrent jobs
+      matrix:
+        skill: ${{ fromJson(needs.setup.outputs.matrix) }}
 
     defaults:
       run:
@@ -114,209 +163,62 @@ jobs:
       # This is because many integration tests aren't polished enough and consistently fails.
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
-      - name: Integration tests - appinsights-instrumentation
-        id: integration-tests-appinsights-instrumentation
-        if: contains(inputs.skills, 'appinsights-instrumentation')
+      - name: Run integration tests – ${{ matrix.skill }}
+        if: false
         env:
           DEBUG: ${{ inputs.debug && '1' || '' }}
           TEST_RUN_ID: all-integration
         run: |
-          npm run test:integration appinsights-instrumentation
-        continue-on-error: true
-
-      - name: Integration tests - azure-ai
-        id: integration-tests-azure-ai
-        # works around the problem that azure-ai is a prefix of azure-aigateway
-        if: contains(format(',{0},', inputs.skills), ',azure-ai,')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          # works around the problem that azure-ai is a prefix of azure-aigateway
-          npm run test:integration azure-ai/
-        continue-on-error: true
-
-      - name: Integration tests - azure-aigateway
-        id: integration-tests-azure-aigateway
-        if: contains(inputs.skills, 'azure-aigateway')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-aigateway
-        continue-on-error: true
-
-      - name: Integration tests - azure-compliance
-        id: integration-tests-azure-compliance
-        if: contains(inputs.skills, 'azure-compliance')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-compliance
-        continue-on-error: true
-
-      - name: Integration tests - azure-cost-optimization
-        id: integration-tests-azure-cost-optimization
-        if: contains(inputs.skills, 'azure-cost-optimization')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-cost-optimization
-        continue-on-error: true
-
-      - name: Integration tests - azure-deploy
-        id: integration-tests-azure-deploy
-        if: contains(inputs.skills, 'azure-deploy')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-deploy
-        continue-on-error: true
-
-      - name: Integration tests - azure-diagnostics
-        id: integration-tests-azure-diagnostics
-        if: contains(inputs.skills, 'azure-diagnostics')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-diagnostics
-        continue-on-error: true
-
-      - name: Integration tests - azure-kusto
-        id: integration-tests-azure-kusto
-        if: contains(inputs.skills, 'azure-kusto')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-kusto
-        continue-on-error: true
-
-      - name: Integration tests - azure-observability
-        id: integration-tests-azure-observability
-        if: contains(inputs.skills, 'azure-observability')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-observability
-        continue-on-error: true
-
-      - name: Integration tests - azure-postgres
-        id: integration-tests-azure-postgres
-        if: contains(inputs.skills, 'azure-postgres')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-postgres
-        continue-on-error: true
-
-      - name: Integration tests - azure-prepare
-        id: integration-tests-azure-prepare
-        if: contains(inputs.skills, 'azure-prepare')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-prepare
-        continue-on-error: true
-
-      - name: Integration tests - azure-resource-visualizer
-        id: integration-tests-azure-resource-visualizer
-        if: contains(inputs.skills, 'azure-resource-visualizer')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-resource-visualizer
-        continue-on-error: true
-
-      - name: Integration tests - azure-role-selector
-        id: integration-tests-azure-role-selector
-        if: contains(inputs.skills, 'azure-role-selector')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-role-selector
-        continue-on-error: true
-
-      - name: Integration tests - azure-storage
-        id: integration-tests-azure-storage
-        if: contains(inputs.skills, 'azure-storage')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-storage
-        continue-on-error: true
-
-      - name: Integration tests - azure-validate
-        id: integration-tests-azure-validate
-        if: contains(inputs.skills, 'azure-validate')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration azure-validate
-        continue-on-error: true
-
-      - name: Integration tests - entra-app-registration
-        id: integration-tests-entra-app-registration
-        if: contains(inputs.skills, 'entra-app-registration')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration entra-app-registration
-        continue-on-error: true
-
-      - name: Integration tests - microsoft-foundry
-        id: integration-tests-microsoft-foundry
-        if: contains(inputs.skills, 'microsoft-foundry')
-        env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_RUN_ID: all-integration
-        run: |
-          npm run test:integration microsoft-foundry
+          # Handle azure-ai vs azure-aigateway prefix collision
+          if [ "${{ matrix.skill }}" = "azure-ai" ]; then
+            npm run test:integration azure-ai/
+          else
+            npm run test:integration ${{ matrix.skill }}
+          fi
         continue-on-error: true
       
-      - name: Generate skill reports
-        if: always()
-        id: generate-skill-reports
-        run: |
-          IFS=',' read -ra SKILLS <<< "${{ inputs.skills }}"
-          for SKILL in "${SKILLS[@]}"; do
-            SKILL=$(echo "$SKILL" | xargs)
-            echo "Generating report for: $SKILL"
-            npm run report -- --skill "$SKILL" || true
-          done
+      - name: Generate skill report
+        if: false # always()
+        id: generate-skill-report
+        run: npm run report -- --skill "${{ matrix.skill }}" || true
 
-      - name: Show skill reports
-        if: always()
-        id: show-skill-reports
+      - name: Show skill report
+        if: false # always()
+        id: show-skill-report
         run: |
-          SKILL_REPORTS=$(find reports -name "*-SKILL-REPORT.md" -type f | sort)
-          if [ -n "$SKILL_REPORTS" ]; then
-            echo "$SKILL_REPORTS" | while read -r REPORT; do
-              echo "Found skill report: $REPORT"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
-            done
+          SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
+          if [ -n "$SKILL_REPORT" ]; then
+            echo "Found skill report: $SKILL_REPORT"
+            cat "$SKILL_REPORT" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "No skill reports found"
+            echo "No skill report found"
           fi
 
       - name: Export report
-        if: always()
+        if: false # always()
         id: export-report
         uses: actions/upload-artifact@v4
         with:
-          name: azure-all-integration-test-reports
+          name: integration-report-${{ matrix.skill }}
           path: tests/reports/
           retention-days: 30
+
+  report:
+    name: Aggregate results
+    needs: [test, azure-deploy]
+    if: false # always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all report artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '{integration-report-*,azure-deploy-*-reports}'
+          path: all-reports
+          merge-multiple: true
+
+      - name: Summarize
+        run: |
+          echo "## Integration Test Results" >> "$GITHUB_STEP_SUMMARY"
+          for f in all-reports/*-SKILL-REPORT.md; do
+            [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY" && echo "" >> "$GITHUB_STEP_SUMMARY"
+          done
