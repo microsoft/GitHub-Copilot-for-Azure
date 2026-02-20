@@ -1,8 +1,8 @@
 ---
 name: microsoft-foundry
 description: |
-  Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models, manage AI agents (create, deploy, invoke, troubleshoot Foundry Agents), manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, create agent, deploy agent, debug agent, invoke agent, run agent, agent chat, evaluate agent, agent monitoring,  deploy model, model catalog, knowledge index, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, quota, capacity, TPM, deployment failure, QuotaExceeded.
+  Use this skill to work with Microsoft Foundry (Azure AI Foundry) and tools from Foundry MCP server: deploy AI models, manage AI agents (create, deploy, invoke, run, troubleshoot Foundry Agents), manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
+  USE FOR: Microsoft Foundry, AI Foundry, create agent, deploy agent, debug agent, invoke agent, run agent, agent chat, evaluate agent, agent monitoring,  deploy model, model catalog, knowledge index, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, create Foundry resource, create AI Services, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, quota, capacity, TPM, deployment failure, QuotaExceeded.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
 ---
 
@@ -18,7 +18,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **deploy** | Containerize, build, push to ACR, create/update/start/stop agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
+| **deploy** | Containerize, build, push to ACR, create/update/start/stop/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
 | **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
 | **create/agent-framework** | Create agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [create/agent-framework](foundry-agent/create/agent-framework/SKILL.md) |

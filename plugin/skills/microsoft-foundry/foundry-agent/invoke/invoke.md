@@ -6,10 +6,11 @@ Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-t
 
 | Property | Value |
 |----------|-------|
-| Agent types | Prompt (LLM-based), Hosted (container-based) |
+| Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
 | MCP server | `foundry-mcp` |
 | Key MCP tools | `agent_invoke`, `agent_container_status_get`, `agent_get` |
 | Conversation support | Single-turn and multi-turn (via `conversationId`) |
+| Session support | Sticky sessions for vNext hosted agents (via `sessionId` in response) |
 
 ## When to Use This Skill
 
@@ -35,10 +36,12 @@ Delegate the readiness check to a sub-agent. Provide the project endpoint and ag
 
 **Prompt agents** → Use `agent_get` to verify the agent exists.
 
-**Hosted agents** → Use `agent_container_status_get` to check:
+**Hosted agents (ACA)** → Use `agent_container_status_get` to check:
 - Status `Running` ✅ → Proceed to Step 2
 - Status `Starting` → Wait and re-check
 - Status `Stopped` or `Failed` ❌ → Warn the user and suggest using the deploy skill to start the container
+
+**Hosted agents (vNext)** → Ready immediately after deployment (no container status check needed)
 
 ### Step 2: Invoke Agent
 
@@ -51,7 +54,17 @@ Use `agent_invoke` to send a message:
 
 **Optional parameters:**
 - `agentVersion` — Target a specific agent version
-- `containerEndpoint` — Route to a specific container endpoint (hosted agents only)
+- `sessionId` — MANDATORY for vNext hosted agents, include the session ID to maintain sticky sessions with the same compute resource
+
+#### Session Support for vNext Hosted Agents
+In vNext hosted agents, the invoke endpoint accepts a 25 character alphanumeric `sessionId` parameter. Sessions are **sticky** - they route the request to same underlying comptute resource, so agent can re-use the state stored in compute's file across multiple turns.
+
+Rules:
+1. You MUST generate a unique `sessionId` before making the first `agent_invoke` call.
+2. If you have a session ID, you MUST include it in every subsequent `agent_invoke` call for that conversation.
+3. When the user explicitly requests a new session, create a new `sessionId` and use it for rest of the `agent_invoke` calls.
+
+This is different from `conversationId` which tracks conversation history — `sessionId` controls which compute instance handles the request.
 
 ### Step 3: Multi-Turn Conversations
 

@@ -6,7 +6,7 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 
 | Property | Value |
 |----------|-------|
-| Agent types | Prompt (LLM-based), Hosted (container-based) |
+| Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
 | MCP server | `foundry-mcp` |
 | Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
@@ -28,13 +28,15 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `agent_definition_schema_get` | Get JSON schema for agent definitions | `projectEndpoint` (required), `schemaType` (`prompt`, `hosted`, `tools`, `all`) |
-| `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName` |
+| `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName`, `creationOptions` (JSON with `description` and `metadata`) |
 | `agent_get` | List all agents or get a specific agent | `projectEndpoint` (required), `agentName` (optional) |
 | `agent_delete` | Delete an agent with container cleanup | `projectEndpoint`, `agentName` (required) |
 | `agent_container_control` | Start or stop a hosted agent container | `projectEndpoint`, `agentName`, `action` (`start`/`stop`) (required); `agentVersion`, `minReplicas`, `maxReplicas` |
 | `agent_container_status_get` | Check container running status | `projectEndpoint`, `agentName` (required); `agentVersion` |
 
 ## Workflow: Hosted Agent Deployment
+There are two types of hosted agent - ACA based and vNext. There is only one change in the deployment flow for vNext which is indicated in the steps below. You must use vNext experience only when user explicitly asks you to deploy the agent to vNext (or v2, or v-next, or similar words). For all other cases, use the ACA based deployment flow.
+
 
 ### Step 1: Detect and Scan Project
 
@@ -114,8 +116,11 @@ Use `agent_definition_schema_get` with `schemaType: hosted` to retrieve the curr
 
 ### Step 6: Create the Agent
 
+> **VNext Experience:** You MUST pass `enableVnextExperience = true` in the `metadata` field of `creationOptions`. This is required for vNext deployments.
+
 Use `agent_update` with the agent definition:
 
+For ACA one:
 ```json
 {
   "kind": "hosted",
@@ -126,6 +131,27 @@ Use `agent_update` with the agent definition:
     { "protocol": "<protocol>", "version": "<version>" }
   ],
   "environment_variables": { "<var>": "<value>" }
+}
+```
+
+For vNext one:
+```json
+{
+   "agentDefinition": {
+    "kind": "hosted",
+    "image": "<acr-name>.azurecr.io/<repository>:<tag>",
+    "cpu": "<cpu-cores>",
+    "memory": "<memory>",
+    "container_protocol_versions": [
+      { "protocol": "<protocol>", "version": "<version>" }
+    ],
+    "environment_variables": { "<var>": "<value>" }
+  },
+  "creationOptions": {
+    "metadata": {
+      "enableVnextExperience": "true"
+    }
+  }
 }
 ```
 
@@ -142,6 +168,10 @@ Delegate status polling to a sub-agent. Provide the project endpoint, agent name
 - `Running` — Container is active and ready ✅
 - `Stopped` — Container has been stopped
 - `Failed` — Container failed to start ❌
+
+### Step 9: Test the Agent
+
+Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vnext experience.
 
 ## Workflow: Prompt Agent Deployment
 
@@ -171,6 +201,10 @@ Use `agent_update` with the agent definition:
 }
 ```
 
+### Step 4: Test the Agent
+
+Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
+
 ## Agent Definition Schemas
 
 ### Prompt Agent
@@ -198,6 +232,8 @@ Use `agent_update` with the agent definition:
 | `environment_variables` | object | | Key-value pairs for container env vars |
 | `tools` | array | | Tool configurations |
 | `rai_config` | object | | Responsible AI configuration |
+
+> **Reminder:** Always pass `creationOptions.metadata.enableVnextExperience: "true"` when creating vNext hosted agents.
 
 ### Container Protocols
 
