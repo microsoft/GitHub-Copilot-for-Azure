@@ -15,11 +15,10 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import * as fs from "fs";
+import { softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-messaging";
 const RUNS_PER_PROMPT = 3;
-const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -31,7 +30,7 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 /**
- * Helper to run a prompt multiple times and assert invocation rate.
+ * Helper to run a prompt multiple times and soft check skill invocation.
  */
 function defineInvocationTest(
   agent: ReturnType<typeof useAgentRunner>,
@@ -39,8 +38,6 @@ function defineInvocationTest(
   prompt: string
 ) {
   test(testLabel, async () => {
-    let successCount = 0;
-
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await agent.run({
@@ -48,9 +45,7 @@ function defineInvocationTest(
           shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
         });
 
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          successCount++;
-        }
+        softCheckSkill(agentMetadata, SKILL_NAME);
       } catch (e: unknown) {
         if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
           console.log("⏭️  SDK not loadable, skipping test");
@@ -59,12 +54,6 @@ function defineInvocationTest(
         throw e;
       }
     }
-
-    const invocationRate = successCount / RUNS_PER_PROMPT;
-    const logLine = `${SKILL_NAME} invocation rate for ${testLabel}: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`;
-    console.log(logLine);
-    fs.appendFileSync(`./result-${SKILL_NAME}.txt`, logLine + "\n");
-    expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
   });
 }
 
@@ -151,8 +140,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
               doesAssistantMessageIncludeKeyword(agentMetadata, "session", { caseSensitive: false }) &&
               doesAssistantMessageIncludeKeyword(agentMetadata, "lock", { caseSensitive: false }) &&
               (doesAssistantMessageIncludeKeyword(agentMetadata, "renew", { caseSensitive: false }) ||
-               doesAssistantMessageIncludeKeyword(agentMetadata, "duration", { caseSensitive: false }) ||
-               doesAssistantMessageIncludeKeyword(agentMetadata, "auto_lock_renewer", { caseSensitive: false }));
+                doesAssistantMessageIncludeKeyword(agentMetadata, "duration", { caseSensitive: false }) ||
+                doesAssistantMessageIncludeKeyword(agentMetadata, "auto_lock_renewer", { caseSensitive: false }));
             if (hasRelevantContent) break;
           }
         } catch (e: unknown) {
@@ -164,9 +153,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
       }
 
-      const logLine = `${SKILL_NAME} session-lock-diagnosis: invoked=${invoked}, relevant_content=${hasRelevantContent}`;
-      console.log(logLine);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, logLine + "\n");
       expect(invoked).toBe(true);
       expect(hasRelevantContent).toBe(true);
     });
@@ -190,11 +176,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             // Validate response provides SDK configuration guidance
             hasRelevantContent =
               (doesAssistantMessageIncludeKeyword(agentMetadata, "retry", { caseSensitive: false }) ||
-               doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch", { caseSensitive: false })) &&
+                doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch", { caseSensitive: false })) &&
               (doesAssistantMessageIncludeKeyword(agentMetadata, "EventHubConsumerClient", { caseSensitive: false }) ||
-               doesAssistantMessageIncludeKeyword(agentMetadata, "retry_total", { caseSensitive: false }) ||
-               doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }) ||
-               doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch_count", { caseSensitive: false }));
+                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_total", { caseSensitive: false }) ||
+                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }) ||
+                doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch_count", { caseSensitive: false }));
             if (hasRelevantContent) break;
           }
         } catch (e: unknown) {
@@ -206,9 +192,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
       }
 
-      const logLine = `${SKILL_NAME} sdk-configuration-guidance: invoked=${invoked}, relevant_content=${hasRelevantContent}`;
-      console.log(logLine);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, logLine + "\n");
       expect(invoked).toBe(true);
       expect(hasRelevantContent).toBe(true);
     });

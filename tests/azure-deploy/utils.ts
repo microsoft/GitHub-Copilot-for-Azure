@@ -1,4 +1,5 @@
-import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
+import { softCheckSkill } from "../utils/evaluate";
 export { expectFiles } from "../azure-prepare/utils";
 
 /**
@@ -24,17 +25,7 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
 }
 
 export function softCheckDeploySkills(agentMetadata: AgentMetadata): void {
-  const isDeploySkillUsed = isSkillInvoked(agentMetadata, "azure-deploy");
-  const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-  const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-
-  if (!isDeploySkillUsed) {
-    agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-  }
-  if (!isValidateInvoked) {
-    agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-  }
-  if (!isPrepareInvoked) {
-    agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-  }
+  softCheckSkill(agentMetadata, "azure-deploy");
+  softCheckSkill(agentMetadata, "azure-validate");
+  softCheckSkill(agentMetadata, "azure-prepare");
 }
