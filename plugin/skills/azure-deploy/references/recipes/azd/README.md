@@ -15,54 +15,13 @@ Deploy to Azure using Azure Developer CLI (azd).
 
 ## Workflow
 
-> ⚠️ **CRITICAL:** The deployment workflow differs based on project type. Follow the correct workflow below.
-
-### For .NET Aspire Projects (Container Apps)
-
-**If the project has `*.AppHost.csproj` or uses Aspire, you MUST use the split workflow:**
-
-| Step | Task | Command |
-|------|------|---------|
-| 1 | **Verify environment** | `azd env get-values` — Confirm AZURE_SUBSCRIPTION_ID and AZURE_LOCATION set |
-| 2 | **Provision infrastructure** | `azd provision --no-prompt` |
-| 3 | **Set environment variables** | See [Aspire Environment Variables](#aspire-environment-variables) section below |
-| 4 | **Deploy application** | `azd deploy --no-prompt` |
-| 5 | **Verify** | See [Verification](verify.md) |
-
-> 🛑 **DO NOT use `azd up` for Aspire projects.** It combines provision + deploy without the intermediate env var setup step, causing deployment failures.
-
-### For Non-Aspire Projects
-
 | Step | Task | Command |
 |------|------|---------|
 | 1 | **Verify environment** | `azd env get-values` — Confirm AZURE_SUBSCRIPTION_ID and AZURE_LOCATION set |
 | 2 | **Deploy** | `azd up --no-prompt` |
 | 3 | **Verify** | See [Verification](verify.md) |
 
-## Aspire Environment Variables
-
-**Required for .NET Aspire Container Apps projects after `azd provision`:**
-
-```bash
-# Get resource group name
-RG_NAME=$(azd env get-values | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"')
-
-# Set required variables
-azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr list --resource-group "$RG_NAME" --query "[0].loginServer" -o tsv)
-azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID $(az identity list --resource-group "$RG_NAME" --query "[0].id" -o tsv)
-azd env set MANAGED_IDENTITY_CLIENT_ID $(az identity list --resource-group "$RG_NAME" --query "[0].clientId" -o tsv)
-```
-
-**PowerShell:**
-```powershell
-# Get resource group name
-$rgName = (azd env get-values | Select-String 'AZURE_RESOURCE_GROUP').Line.Split('=')[1].Trim('"')
-
-# Set required variables
-azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr list --resource-group $rgName --query "[0].loginServer" -o tsv)
-azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID (az identity list --resource-group $rgName --query "[0].id" -o tsv)
-azd env set MANAGED_IDENTITY_CLIENT_ID (az identity list --resource-group $rgName --query "[0].clientId" -o tsv)
-```
+> ⚠️ **Important:** For .NET Aspire projects or projects using azd "limited mode" (no explicit `infra/` folder), verify that `azd provision` populated all required environment variables. If `azd deploy` fails with errors about missing `AZURE_CONTAINER_REGISTRY_ENDPOINT`, `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, or `MANAGED_IDENTITY_CLIENT_ID`, see [Error Handling](errors.md#missing-container-registry-variables) for the resolution.
 
 ## Common Mistakes
 
@@ -77,37 +36,29 @@ azd env set MANAGED_IDENTITY_CLIENT_ID (az identity list --resource-group $rgNam
 
 ## Deployment Commands
 
-### Full Deployment (Non-Aspire Projects Only)
+### Full Deployment
 
-Provisions infrastructure AND deploys application in one command:
+Provisions infrastructure AND deploys application:
 
 ```bash
 azd up --no-prompt
 ```
 
-> 🛑 **DO NOT use `azd up` for .NET Aspire projects.** Use the split workflow above instead.
-
-### Split Workflow (Required for Aspire, Optional for Others)
-
-**1. Provision infrastructure:**
+### Infrastructure Only
 
 ```bash
 azd provision --no-prompt
 ```
 
-**2. Set environment variables (if needed for Aspire):**
+### Application Only
 
-See [Aspire Environment Variables](#aspire-environment-variables) section.
-
-**3. Deploy application:**
+Deploy code to existing infrastructure:
 
 ```bash
 azd deploy --no-prompt
 ```
 
 ### Single Service
-
-Deploy a specific service only:
 
 ```bash
 azd deploy api --no-prompt
