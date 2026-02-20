@@ -10,7 +10,7 @@ Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-t
 | MCP server | `foundry-mcp` |
 | Key MCP tools | `agent_invoke`, `agent_container_status_get`, `agent_get` |
 | Conversation support | Single-turn and multi-turn (via `conversationId`) |
-| Session support | Sticky sessions for vNext hosted agents (via `sessionId` in response) |
+| Session support | Sticky sessions for vNext hosted agents (via client-generated `sessionId`) |
 
 ## When to Use This Skill
 
