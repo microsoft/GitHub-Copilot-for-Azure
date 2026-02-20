@@ -15,7 +15,6 @@ import {
   getIntegrationSkipReason,
   useAgentRunner
 } from "../utils/agent-runner";
-import * as fs from "fs";
 import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import { expectFiles, softCheckSkill } from "../utils/evaluate";

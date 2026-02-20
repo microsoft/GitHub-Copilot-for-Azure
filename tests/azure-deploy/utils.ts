@@ -1,4 +1,4 @@
-import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
 import { matchesCommand, softCheckSkill } from "../utils/evaluate";
 
 /** Env-var patterns expected when deploying container-based Aspire apps. */
