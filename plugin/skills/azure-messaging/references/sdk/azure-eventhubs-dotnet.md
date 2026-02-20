@@ -34,3 +34,25 @@ Configure via `EventHubsRetryOptions` when creating the client. See [Configuring
 - **High CPU**: Limit to 1.5–3 partitions per CPU core.
 - **Azure Functions**: After upgrading to v5.0+ extensions, update binding types. Reduce logging noise by filtering `Azure.Messaging.EventHubs` to Warning.
 - **WebSockets**: Use `EventHubsTransportType.AmqpWebSockets` to connect over port 443 when AMQP ports are blocked.
+
+## Checkpointing (BlobCheckpointStore)
+
+Package: `Azure.Messaging.EventHubs.Processor` (includes `EventProcessorClient` + blob checkpoint store)
+
+```csharp
+var processor = new EventProcessorClient(
+    new BlobContainerClient(storageConnStr, containerName),
+    "$Default",
+    eventhubConnStr);
+
+processor.ProcessEventAsync += async (args) =>
+{
+    // process event
+    await args.UpdateCheckpointAsync();
+};
+```
+
+**Common issues:**
+- **Soft delete / blob versioning**: Disable both on the storage account — they cause delays during load balancing.
+- **HTTP 412/409 from storage**: Normal during partition ownership negotiation; not an error.
+- **Checkpoint frequency**: Call `UpdateCheckpointAsync()` per batch, not per event, to reduce storage calls.

@@ -44,7 +44,25 @@ client = EventHubProducerClient(..., logging_enable=True)
 
 - **Buffered producer not sending**: Ensure enough `ThreadPoolExecutor` workers (one per partition). Use `buffer_concurrency` kwarg.
 - **Blocking calls in async**: Run CPU-bound code in an executor; blocking the event loop impacts load balancing and checkpointing.
-- **High CPU**: Limit to 1.5–3 partitions per CPU core.
 - **Consumer disconnected**: Expected during load balancing. If persistent with no scaling, file an issue.
 - **Soft delete on checkpoint store**: Disable "soft delete" and "blob versioning" on the storage account used for checkpointing.
 - **Always close clients**: Use `with` statement or call `close()` to avoid socket/connection leaks.
+
+## Checkpointing (BlobCheckpointStore)
+
+Package: `azure-eventhub-checkpointstoreblob` (sync) / `azure-eventhub-checkpointstoreblob-aio` (async)
+
+```python
+from azure.eventhub import EventHubConsumerClient
+from azure.eventhub.extensions.checkpointstoreblobaio import BlobCheckpointStore
+
+checkpoint_store = BlobCheckpointStore.from_connection_string(storage_conn_str, container_name)
+client = EventHubConsumerClient.from_connection_string(
+    eventhub_conn_str, consumer_group="$Default", checkpoint_store=checkpoint_store
+)
+```
+
+**Common issues:**
+- **Soft delete / blob versioning**: Disable both on the storage account — they cause large delays during load balancing.
+- **HTTP 412/409 from storage**: Normal during partition ownership negotiation; not an error.
+- **Checkpoint frequency**: Checkpoint after processing each batch, not each event, to avoid storage throttling.

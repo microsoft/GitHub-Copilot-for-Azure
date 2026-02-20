@@ -39,3 +39,25 @@ localStorage.debug = "azure:*:info";
 - **Subscription stops receiving**: Often a symptom of an underlying race condition during error recovery. File a GitHub issue with DEBUG logs.
 - **WebSockets**: Pass `webSocketOptions` to client constructor to connect over port 443.
 - **IoT Hub**: Use [iothubConnectionString sample](https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/eventhub/event-hubs/samples/v6/javascript/iothubConnectionString.js) to translate IoT connection strings.
+
+## Checkpointing (BlobCheckpointStore)
+
+Package: `@azure/eventhubs-checkpointstore-blob`
+
+```javascript
+const { BlobCheckpointStore } = require("@azure/eventhubs-checkpointstore-blob");
+const { BlobServiceClient } = require("@azure/storage-blob");
+
+const containerClient = new BlobServiceClient(storageEndpoint, credential)
+  .getContainerClient("checkpointstore");
+const checkpointStore = new BlobCheckpointStore(containerClient);
+
+const consumerClient = new EventHubConsumerClient(
+  consumerGroup, fullyQualifiedNamespace, eventHubName, credential, checkpointStore
+);
+```
+
+**Common issues:**
+- **Soft delete / blob versioning**: Disable both on the storage account — they cause delays during load balancing.
+- **412 precondition failures**: Normal during partition ownership negotiation; not an error.
+- **Checkpoint frequency**: Call `updateCheckpoint()` per batch, not per event, to reduce storage calls.

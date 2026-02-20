@@ -34,6 +34,32 @@ See [Java SDK logging docs](https://learn.microsoft.com/azure/developer/java/sdk
 - **Consumer disconnected during epoch conflict**: Expected during load balancing. Persistent issues without scaling indicate a problem.
 - **Connection sharing**: Reuse `EventHubClientBuilder` connections; avoid creating new clients per operation.
 
+## Checkpointing (BlobCheckpointStore)
+
+Package: `azure-messaging-eventhubs-checkpointstore-blob`
+
+```java
+BlobContainerAsyncClient blobClient = new BlobContainerClientBuilder()
+    .connectionString(storageConnStr)
+    .containerName(containerName)
+    .buildAsyncClient();
+
+EventProcessorClient processor = new EventProcessorClientBuilder()
+    .connectionString(eventhubConnStr)
+    .consumerGroup("$Default")
+    .checkpointStore(new BlobCheckpointStore(blobClient))
+    .processEvent(eventContext -> {
+        // process event
+        eventContext.updateCheckpoint();
+    })
+    .buildEventProcessorClient();
+```
+
+**Common issues:**
+- **Soft delete / blob versioning**: Disable both on the storage account — they cause delays during load balancing.
+- **HTTP 412/409 from storage**: Normal during partition ownership negotiation; not an error.
+- **Checkpoint frequency**: Call `updateCheckpoint()` per batch, not per event, to reduce storage calls.
+
 ## Filing Issues
 
 Include: partition count, machine specs, instance count, max heap (`-Xmx`), average `EventData` size, traffic pattern, and DEBUG-level logs (±10 min from issue).
