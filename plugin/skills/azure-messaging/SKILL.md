@@ -5,7 +5,9 @@ description: |
   Covers connection failures, authentication errors, message processing issues, and SDK configuration problems.
   USE FOR: event hub SDK error, service bus SDK issue, messaging connection failure, AMQP error,
   event processor host issue, message lock lost, send timeout, receiver disconnected, SDK troubleshooting,
-  azure messaging SDK, event hub consumer, service bus queue issue, topic subscription error
+  azure messaging SDK, event hub consumer, service bus queue issue, topic subscription error,
+  enable logging event hub, service bus logging, eventhub python, servicebus java, eventhub javascript,
+  servicebus dotnet, event hub checkpoint, event hub not receiving messages, service bus dead letter
   DO NOT USE FOR: creating Event Hub or Service Bus resources (use azure-prepare), monitoring metrics
   (use azure-observability), cost analysis (use azure-cost-optimization)
 ---
