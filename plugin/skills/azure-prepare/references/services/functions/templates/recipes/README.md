@@ -49,11 +49,16 @@ All recipes should use these shared patterns:
 ### Step 1: Fetch HTTP Base
 
 ```bash
-# Bicep base (default)
-azd init -t functions-quickstart-{language}-azd -e "$ENV_NAME" --no-prompt
+# Bicep base (default) - template name varies by language
+# C#:         azd init -t functions-quickstart-dotnet-azd
+# TypeScript: azd init -t functions-quickstart-typescript-azd  
+# JavaScript: azd init -t functions-quickstart-javascript-azd
+# Python:     azd init -t functions-quickstart-python-http-azd  ← Note: "python-http"
+# Java:       azd init -t azure-functions-java-flex-consumption-azd
+# PowerShell: azd init -t functions-quickstart-powershell-azd
 
-# Terraform base
-azd init -t functions-quickstart-{language}-azd-tf -e "$ENV_NAME" --no-prompt
+# Terraform base (append -tf)
+# Same names as above with -tf suffix
 ```
 
 ### Step 2: Apply Recipe

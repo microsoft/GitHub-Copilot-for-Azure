@@ -18,7 +18,7 @@ No additional IaC is needed — the base template already includes Storage for t
 
 ## Composition Steps
 
-Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
+Apply these steps AFTER `azd init` with the appropriate base template (see [composition.md](../composition.md) for full template lookup):
 
 | # | Step | Details |
 |---|------|---------|
