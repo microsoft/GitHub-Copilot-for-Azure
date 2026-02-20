@@ -16,6 +16,11 @@ on:
         description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-role-selector")'
         required: true
         type: string
+      deploy-test-pattern:
+        description: 'Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests.'
+        required: false
+        type: string
+        default: ''
       debug:
         description: 'Whether to set DEBUG=1 for jest tests'
         required: false
@@ -60,7 +65,7 @@ jobs:
     if: needs.setup.outputs.has_azure_deploy == 'true'
     uses: ./.github/workflows/test-azure-deploy.yml
     with:
-      test-pattern: ''
+      test-pattern: ${{ inputs.deploy-test-pattern }}
       debug: ${{ inputs.debug }}
     secrets:
       COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
@@ -178,12 +183,12 @@ jobs:
         continue-on-error: true
       
       - name: Generate skill report
-        if: false # always()
+        if: always()
         id: generate-skill-report
         run: npm run report -- --skill "${{ matrix.skill }}" || true
 
       - name: Show skill report
-        if: false # always()
+        if: always()
         id: show-skill-report
         run: |
           SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
@@ -195,7 +200,7 @@ jobs:
           fi
 
       - name: Export report
-        if: false # always()
+        if: always()
         id: export-report
         uses: actions/upload-artifact@v4
         with:
@@ -206,7 +211,7 @@ jobs:
   report:
     name: Aggregate results
     needs: [test, azure-deploy]
-    if: false # always()
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Download all report artifacts
