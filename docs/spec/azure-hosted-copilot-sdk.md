@@ -54,7 +54,7 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 
 ### Local Template Support (`azd init` from local path) — ✅ Complete (separate repo)
 
-Support for `azd init --template <local-dir>` has been implemented in the `azure-dev` CLI repo (`C:\code\azure-dev`, branch `feature/local-template-support`). This enables template development workflows where uncommitted changes need to be tested without pushing to GitHub first.
+Support for `azd init --template <local-dir>` has been implemented in the `azure-dev` CLI repo. This enables template development workflows where uncommitted changes need to be tested without pushing to GitHub first.
 
 | Component | Change | Status |
 |-----------|--------|--------|
@@ -196,12 +196,4 @@ tests/azure-hosted-copilot-sdk/
 
 tests/utils/
 └── regression-detectors.ts                     # Regression detectors (secrets, ACR spirals, port confusion, etc.)
-
-# Related: azure-dev CLI local template support
-# Branch: feature/local-template-support in C:\code\azure-dev
-cli/azd/pkg/templates/path.go                   # Absolute() + IsLocalPath()
-cli/azd/pkg/templates/path_test.go              # 13 test cases
-cli/azd/internal/repository/initializer.go      # copyLocalTemplate() with .gitignore
-cli/azd/internal/repository/initializer_test.go # 3 local template tests
-cli/azd/cmd/init.go                             # Updated --template help text
 ```
