@@ -7,7 +7,7 @@ description: |
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
   roles: all
 
 permissions:

@@ -26,13 +26,14 @@
 # enhancement, question, documentation), and the assign-to-copilot label when a coding
 # agent can meaningfully assist with the issue.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"34da6b6763f34d7dc90bb9eb6cd65a37e98017f958824c8ead6dc703f38623f8","compiler_version":"v0.47.4"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"6061e3e65ab0c2aa69936edcb38c148870da5a3ed8a76e0168eab7298d2bcc6d","compiler_version":"v0.47.4"}
 
 name: "Issue Triage"
 "on":
   issues:
     types:
     - opened
+    - reopened
   # roles: all # Roles processed as role check in pre-activation job
 
 permissions: {}
