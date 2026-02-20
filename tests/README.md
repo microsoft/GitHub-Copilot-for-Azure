@@ -391,6 +391,9 @@ tests/
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
+| azure-functions | ✅ | - | - | ✅ | - |
+| azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
+| azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
 | azure-postgres | ✅ | - | - | ✅ | - |
