@@ -117,14 +117,14 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 ```yaml
 ---
 name: skill-name
-description: |
+description: >-
   [1-2 sentence description of what the skill does]
   USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]
   DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)
 ---
 ```
 
-> **IMPORTANT:** Always use multi-line YAML format (`|`) for descriptions over 200 characters. Single-line descriptions become difficult to read, review, and maintain. See [azure-ai](../../plugin/skills/azure-ai/SKILL.md), [azure-functions](../../plugin/skills/azure-functions/SKILL.md) for examples.
+> **IMPORTANT:** Always use folded YAML format (`>-`) for descriptions over 200 characters. Single-line descriptions become difficult to read, review, and maintain. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries.
 
 > Keep total description under 1024 characters.
 
