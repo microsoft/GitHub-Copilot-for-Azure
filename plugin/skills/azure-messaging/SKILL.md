@@ -79,6 +79,7 @@ Language-specific error handling, common issues, and configuration for each SDK:
 
 ## References
 
-- [Event Hubs SDK docs](https://learn.microsoft.com/azure/event-hubs/sdks)
-- [Service Bus SDK docs](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-messaging-overview)
-- [AMQP troubleshooting](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-amqp-troubleshoot)
+- [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas)
+- [Service Bus quotas and limits](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-quotas)
+- [Event Hubs AMQP troubleshooting](https://learn.microsoft.com/azure/event-hubs/event-hubs-amqp-troubleshoot)
+- [Service Bus AMQP troubleshooting](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-amqp-troubleshoot)
