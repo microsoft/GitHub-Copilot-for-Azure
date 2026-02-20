@@ -1,5 +1,6 @@
 import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked } from "../utils/agent-runner";
 import { matchesCommand } from "../utils/evaluate";
+export { expectFiles } from "../azure-prepare/utils";
 
 /** Env-var patterns expected when deploying container-based Aspire apps. */
 const CONTAINER_DEPLOY_ENV_PATTERNS: readonly RegExp[] = [
