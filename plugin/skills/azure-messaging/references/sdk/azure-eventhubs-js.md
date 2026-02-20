@@ -38,7 +38,6 @@ localStorage.debug = "azure:*:info";
 - **High CPU**: Limit to 1.5–3 partitions per CPU core.
 - **Subscription stops receiving**: Often a symptom of an underlying race condition during error recovery. File a GitHub issue with DEBUG logs.
 - **WebSockets**: Pass `webSocketOptions` to client constructor to connect over port 443.
-- **IoT Hub**: Use [iothubConnectionString sample](https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/eventhub/event-hubs/samples/v6/javascript/iothubConnectionString.js) to translate IoT connection strings.
 
 ## Checkpointing (BlobCheckpointStore)
 
