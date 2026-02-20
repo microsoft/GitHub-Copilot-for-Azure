@@ -13,12 +13,13 @@ import {
   useAgentRunner,
   isSkillInvoked,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason
+  getIntegrationSkipReason,
+  getToolCalls
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, expectFiles, getDockerContext } from "./utils";
+import { hasPlanReadyForValidation, getDockerContext } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { softCheckSkill } from "../utils/evaluate";
+import { expectFiles, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
@@ -260,6 +261,55 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const dockerContext = getDockerContext(workspacePath!, "ginapp");
       expect(dockerContext).toBeDefined();
       expect(dockerContext).toMatch(/ginapp/);
+    });
+  });
+
+  describe("entra-sql-auth", () => {
+    test("generates Entra-only SQL auth for ASP.NET Core EF Core app (not SQL admin password)", async () => {
+      const agentMetadata = await agent.run({
+        prompt:
+          "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. " +
+          "Then prepare it for Azure deployment. " +
+          "Use the eastus2 region and my current subscription.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) ||
+          hasValidationCommand(metadata) ||
+          isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      // Preconditions
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      // Collect all file contents the agent wrote via create tool calls
+      const createCalls = getToolCalls(agentMetadata, "create");
+      const bicepContents = createCalls
+        .filter(event => {
+          const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
+          return args?.path?.endsWith(".bicep");
+        })
+        .map(event => {
+          const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
+          return args?.file_text ?? "";
+        });
+      const bicepContent = bicepContents.join("\n");
+      expect(bicepContent.length).toBeGreaterThan(0);
+
+      // Must NOT use legacy SQL admin login/password auth
+      expect(/administratorLoginPassword/i.test(bicepContent)).toBe(false);
+
+      // Must use Entra-only authentication
+      expect(/azureADOnlyAuthentication\s*:\s*true/i.test(bicepContent)).toBe(true);
+
+      // Connection string should use Active Directory auth (Default or Managed Identity)
+      const allFileContents = createCalls
+        .map(event => {
+          const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
+          return args?.file_text ?? "";
+        })
+        .join("\n");
+      expect(/Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i.test(allFileContents)).toBe(true);
     });
   });
 });
