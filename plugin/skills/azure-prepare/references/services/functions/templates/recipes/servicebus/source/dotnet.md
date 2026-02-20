@@ -1,5 +1,7 @@
 # C# (.NET) Service Bus Trigger - Isolated Worker Model
 
+> ⚠️ **IMPORTANT**: Do NOT modify `Program.cs` — the base template's entry point already has the correct configuration (`ConfigureFunctionsWebApplication()` with App Insights). Only add trigger-specific files.
+
 Replace the contents of `src/api/` with these files.
 
 ## ServiceBusFunctions.cs
@@ -92,18 +94,6 @@ public class ServiceBusFunctions
         return response;
     }
 }
-```
-
-## Program.cs
-
-```csharp
-using Microsoft.Extensions.Hosting;
-
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .Build();
-
-host.Run();
 ```
 
 ## .csproj additions

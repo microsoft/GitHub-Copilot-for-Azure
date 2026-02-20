@@ -46,6 +46,7 @@ metrics:
     description: Plan-first workflow, security posture, no user prompts for info we have
 
 graders:
+  # Graders to catch issue #852 — missing entry point detection
   # All tasks must produce real output
   - type: code
     name: has_output
@@ -77,6 +78,15 @@ graders:
       max_tool_calls: 40
       max_duration_ms: 600000
       skip_if_no_digest: true
+
+  # Node.js entry point verification — catches #852-type bugs
+  - type: regex
+    name: nodejs_entry_point
+    config:
+      must_match:
+        # Agent output should mention preserving or creating index.js/index.ts
+        - "(?i)index\\.(js|ts)|app\\.setup|entry.?point"
+      description: "Verifies agent mentions Node.js entry point requirements"
 
 tasks:
   - "tasks/*.yaml"

@@ -155,6 +155,18 @@ app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
 3. Remove the HTTP trigger files listed in "Files to Remove"
 4. Add any package dependencies (NuGet, npm, pip, Maven)
 
+> ⛔ **Node.js CRITICAL**: Do NOT delete `src/index.js` (JavaScript) or `src/index.ts` (TypeScript).
+> This file contains `app.setup()` which initializes the Functions runtime.
+> Without it, functions deploy but return 404 on all endpoints.
+> See [common/nodejs-entry-point.md](common/nodejs-entry-point.md).
+
+> 📦 **TypeScript Build**: Run `npm run build` before deployment to compile to `dist/`.
+
+> ⛔ **C# (.NET) CRITICAL**: Do NOT replace `Program.cs` from the base template.
+> The base template uses `ConfigureFunctionsWebApplication()` with App Insights integration.
+> Recipes only add trigger function files (`.cs`) and package references (`.csproj`).
+> See [common/dotnet-entry-point.md](common/dotnet-entry-point.md).
+
 ### Step 6: Update azure.yaml (if needed)
 
 Some recipes require hooks (e.g., Cosmos firewall scripts for VNet):

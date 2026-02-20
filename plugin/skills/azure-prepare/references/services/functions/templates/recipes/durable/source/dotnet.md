@@ -1,5 +1,7 @@
 # C# (.NET) Durable Functions - Isolated Worker Model
 
+> ⚠️ **IMPORTANT**: Do NOT modify `Program.cs` — the base template's entry point already has the correct configuration (`ConfigureFunctionsWebApplication()` with App Insights). Only add trigger-specific files.
+
 Replace the contents of the function project with these files.
 
 ## DurableFunctions.cs
@@ -90,18 +92,6 @@ public class DurableFunctions
         return response;
     }
 }
-```
-
-## Program.cs
-
-```csharp
-using Microsoft.Extensions.Hosting;
-
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .Build();
-
-host.Run();
 ```
 
 ## .csproj additions

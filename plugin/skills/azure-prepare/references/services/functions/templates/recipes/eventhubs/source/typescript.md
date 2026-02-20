@@ -89,6 +89,7 @@ No additional packages required - Event Hubs bindings are included in the extens
 
 ## Common Patterns
 
+- [Node.js Entry Point](../../common/nodejs-entry-point.md) — **REQUIRED** src/index.ts setup + build
 - [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
 - [Health Check](../../common/health-check.md) — Health endpoint for monitoring
 - [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings
