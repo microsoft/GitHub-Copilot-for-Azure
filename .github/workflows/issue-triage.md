@@ -23,6 +23,8 @@ tools:
 safe-outputs:
   update-issue:
     max: 1
+  add-comment:
+    max: 1
 
 engine: copilot
 ---
@@ -42,6 +44,7 @@ Analyze the issue and apply the most relevant labels.
 1. Fetch the full issue details for issue #${{ github.event.issue.number }} using the GitHub issues tool to read the complete title and body.
 2. List all available labels in the repository using the labels tool.
 3. Assign appropriate labels based on the content.
+4. Post a helpful acknowledgement comment on the issue.
 
 ## Label Assignment Guidelines
 
@@ -78,6 +81,18 @@ Assign **`assign-to-copilot`** if the issue describes work a coding agent could 
 
 Do **not** assign `assign-to-copilot` for questions, docs-only requests, or issues that require human judgment/architectural decisions.
 
+## Responding
+
+After labeling the issue, post a single friendly acknowledgement comment that:
+
+- Thanks the reporter for opening the issue.
+- Briefly confirms what labels were applied and why (one sentence per label group).
+- If `assign-to-copilot` was applied, mention that a coding agent will look into it.
+- If the issue is a `question`, point them to any relevant documentation or suggest next steps.
+- Keeps the tone warm, concise, and professional — no more than 4–5 sentences total.
+
+Do **not** promise a specific fix timeline. Do **not** repeat the entire issue body back.
+
 ## Process
 
 1. Fetch issue #${{ github.event.issue.number }} using the GitHub issues tool to read the full title and body.
@@ -88,3 +103,4 @@ Do **not** assign `assign-to-copilot` for questions, docs-only requests, or issu
    - Exactly one type label
    - Optionally `assign-to-copilot`
 5. Update the issue with the selected labels.
+6. Post a helpful acknowledgement comment on the issue.
