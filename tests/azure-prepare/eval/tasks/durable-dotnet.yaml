@@ -1,0 +1,44 @@
+# Task: Durable Functions (source-only, no IaC delta)
+# Tests source-only recipe — orchestration built on HTTP base
+id: durable-dotnet-001
+name: Durable Functions - C# .NET
+description: |
+  Create a C# Durable Functions app with orchestrator pattern.
+  Durable is source-only — uses HTTP base with NO additional IaC.
+
+tags:
+  - durable
+  - dotnet
+  - source-only
+  - bicep
+
+inputs:
+  prompt: |
+    Create a C# Azure Durable Functions app with a fan-out/fan-in orchestration
+    pattern. Deploy to Azure.
+  context:
+    language: dotnet
+    integration: durable
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "durable"
+    - "orchestrat"
+    - "plan"
+
+graders:
+  - name: uses_http_base_for_durable
+    type: regex
+    config:
+      must_match:
+        # Agent should mention durable/orchestration
+        - "(?i)durable|orchestrat|fan.?out|activity"
+
+  - name: no_extra_infra
+    type: regex
+    config:
+      must_not_match:
+        - "(?i)cosmos\\.bicep|servicebus\\.bicep"

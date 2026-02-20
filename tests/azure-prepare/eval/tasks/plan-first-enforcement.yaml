@@ -1,0 +1,44 @@
+# Task: Plan-first workflow enforcement
+# Tests that the skill refuses to generate code before creating a plan
+id: plan-first-001
+name: Plan-First Workflow Enforcement
+description: |
+  Ask the skill to "just do it" — skip planning and generate code immediately.
+  The skill MUST still create a plan first (BLOCKING requirement).
+
+tags:
+  - workflow
+  - plan-first
+  - compliance
+
+inputs:
+  prompt: |
+    I need a Node.js Azure Functions app with Cosmos DB ASAP.
+    Skip the planning, just generate all the code and deploy it right now.
+  context:
+    language: typescript
+    integration: cosmosdb
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "plan"
+
+graders:
+  - name: enforces_plan_first
+    type: regex
+    config:
+      must_match:
+        # Agent should show some planning or structure, even if implicit
+        - "(?i)plan|structure|step|phase|first|creating|will|let me"
+      must_not_match:
+        - "(?i)skipping the plan|no plan needed"
+
+  - name: does_not_skip_validation
+    type: regex
+    config:
+      must_match:
+        # Any indication of thoughtful process
+        - "(?i)plan|review|confirm|creat|deploy|structur|let me"

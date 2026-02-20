@@ -14,3 +14,10 @@ Default templates for HTTP-triggered Azure Functions. Use when no specific integ
 | PowerShell | `azd init -t functions-quickstart-powershell-azd` |
 
 **Browse all:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)
+
+## Evaluation Results
+
+| Path | Description |
+|------|-------------|
+| [base/eval/summary.md](base/eval/summary.md) | Base HTTP template evaluation summary |
+| [base/eval/python.md](base/eval/python.md) | Python evaluation results |

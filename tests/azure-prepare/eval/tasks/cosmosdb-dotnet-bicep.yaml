@@ -1,0 +1,64 @@
+# Task: Cosmos DB integration (C#/.NET + Bicep)
+# Tests composable recipe: HTTP base + cosmosdb recipe
+id: cosmosdb-dotnet-bicep-001
+name: Cosmos DB Functions - C# Bicep
+description: |
+  Create an Azure Functions app with Cosmos DB change feed trigger in C#.
+  Must select HTTP base + apply cosmosdb recipe (Bicep IaC + RBAC + source).
+
+tags:
+  - cosmosdb
+  - dotnet
+  - recipe
+  - bicep
+
+inputs:
+  prompt: |
+    Create a C# Azure Functions app that processes Cosmos DB change feed events.
+    Use Bicep for infrastructure. Set up managed identity with proper RBAC roles.
+  context:
+    language: dotnet
+    integration: cosmosdb
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "plan.md"
+    - "cosmos"
+  tool_calls:
+    required:
+      - pattern: "azd|azure"
+
+graders:
+  - name: selects_http_base_plus_recipe
+    type: regex
+    config:
+      must_match:
+        # Agent must mention cosmos somewhere - the trigger type or integration
+        - "(?i)cosmos"
+      must_not_match:
+        # Should not use monolithic cosmos template
+        - "(?i)functions-quickstart-dotnet-azd-cosmosdb"
+
+  - name: uses_rbac_not_keys
+    type: regex
+    config:
+      must_match:
+        - "(?i)RBAC|role.?assignment|managed.?identity"
+      must_not_match:
+        - "(?i)AccountKey=|masterKey|connection.?string.*key"
+
+  - name: cosmos_app_settings
+    type: regex
+    config:
+      must_match:
+        # Agent may use different spellings/casings
+        - "(?i)cosmos.*(connection|endpoint)|CosmosDb.*accountEndpoint|COSMOS_CONNECTION"
+
+  - name: plan_before_code
+    type: regex
+    config:
+      must_match:
+        - "(?i)plan"
