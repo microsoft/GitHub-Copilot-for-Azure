@@ -26,6 +26,7 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 # Enable AMQP frame tracing
+from azure.servicebus import ServiceBusClient
 client = ServiceBusClient(..., logging_enable=True)
 ```
 
