@@ -17,9 +17,10 @@ import {
   getToolCalls
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, expectFiles, getDockerContext } from "./utils";
+import { hasPlanReadyForValidation, getDockerContext } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
+import { expectFiles } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;

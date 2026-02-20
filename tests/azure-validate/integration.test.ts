@@ -17,11 +17,12 @@ import {
 } from "../utils/agent-runner";
 import {
   hasValidationCommand,
-  matchesCommand,
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
+import { matchesCommand } from "../utils/evaluate";
+
 
 const SKILL_NAME = "azure-validate";
 const RUNS_PER_PROMPT = 5;

@@ -16,8 +16,9 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, expectFiles } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
+import { expectFiles } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 5;

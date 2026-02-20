@@ -1,5 +1,4 @@
 import { type AgentMetadata, getToolCalls } from "../utils/agent-runner";
-export { matchesCommand } from "../utils/evaluate";
 
 /**
  * Validation command patterns that indicate the agent is performing
