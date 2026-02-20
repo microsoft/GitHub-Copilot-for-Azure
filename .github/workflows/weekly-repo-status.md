@@ -48,8 +48,8 @@ Create an upbeat weekly status report for the repo as a GitHub issue.
 Include the following statistics for the current week (since last Friday):
 
 ### Issues
-- **Weekly issues opened** — total count, and a breakdown by skill (e.g. azure-deploy, azure-prepare, azure-validate, etc.)
-- **Weekly issues closed** — total count with links to each closed issue (no duplicates)
+- **Weekly issues opened** — total count, and a breakdown by skill (e.g. azure-deploy, azure-prepare, azure-validate, etc.); issues not specific to any individual skill should be grouped under **extension**
+- **Weekly issues closed** — total count with links to each closed issue (no duplicates); likewise group non-skill issues under **extension**
 
 ### Pull Requests
 - **PRs created and in progress** — count of new PRs opened this week that are still open
