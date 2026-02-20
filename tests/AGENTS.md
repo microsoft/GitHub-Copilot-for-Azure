@@ -24,7 +24,7 @@ Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 - `references/services/` - Multiple Azure services the skill supports
 - References load only when explicitly linked, so understand what paths SKILL.md links to
 
-> **Frontmatter Format Rule:** Descriptions over 200 characters MUST use multi-line YAML format (`|`) for maintainability. See [azure-ai](../plugin/skills/azure-ai/SKILL.md), [azure-functions](../plugin/skills/azure-functions/SKILL.md) for examples.
+> **Frontmatter Format Rule:** Descriptions over 200 characters MUST use folded YAML format (`>-`) for maintainability. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries. Do NOT use `|` (literal block) as it preserves newlines.
 
 ### Step 3: Update test files
 In each test file (`unit.test.ts`, `triggers.test.ts`), change:
