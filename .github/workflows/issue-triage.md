@@ -58,7 +58,7 @@ Assign one or more skill labels if the issue is related to a specific Azure skil
 - `azure-diagnostics` — diagnostics, troubleshooting, logs, error investigation
 - `azure-cost-optimization` — cost management, billing, resource optimization
 - `azure-messaging` — Service Bus, Event Hubs, messaging services
-- `azure-monitor` — monitoring, alerts, Azure Monitor, Application Insights
+- `azure-observability` — monitoring, alerts, Azure Monitor, Application Insights
 
 If the issue doesn't map to any skill, skip skill labels.
 
