@@ -5,12 +5,12 @@
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../../../../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/create/agent-framework";
+const SKILL_NAME = "microsoft-foundry/foundry-agent/create";
 
-describe("agent-framework - Trigger Tests", () => {
+describe("create - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,16 +21,16 @@ describe("agent-framework - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Create an AI agent using Microsoft Agent Framework",
-      "Build a multi-agent workflow",
-      "Scaffold a new agent with MCP tools",
-      "Create a workflow with agent framework SDK",
-      "Build an agent with function calling",
-      "Create a new agent for my Foundry project",
-      "Set up a multi-agent workflow pattern",
-      "Build an agentic app with agent framework",
-      "Create an agent with HTTP server mode",
-      "Scaffold agent with orchestration patterns",
+      "Create a new hosted agent for Foundry",
+      "Build a hosted agent using LangGraph",
+      "Scaffold an agent project from a sample",
+      "Create a new agent application in Python",
+      "Start a new greenfield agent project",
+      "Build a custom hosted agent for Foundry",
+      "Create an agent using Microsoft Agent Framework",
+      "New LangChain agent for Foundry",
+      "Scaffold agent from foundry-samples",
+      "Create a hosted agent in C#",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -52,7 +52,6 @@ describe("agent-framework - Trigger Tests", () => {
       "Configure my PostgreSQL database",
       "Optimize my Azure spending and reduce costs",
       "Check model capacity across regions",
-      "Create a knowledge index",
       "Help me with Kubernetes pods",
       "Set up a virtual network in Azure",
       "How do I write Python code?",

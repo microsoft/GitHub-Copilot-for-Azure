@@ -17,7 +17,7 @@ import {
   getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-} from "../../../../utils/agent-runner";
+} from "../../../utils/agent-runner";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -37,7 +37,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for agent creation prompt", async () => {
@@ -46,7 +46,7 @@ describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a foundry agent using Microsoft Agent Framework SDK in Python.",
+            prompt: "Create a new hosted agent for Foundry using Python.",
             shouldEarlyTerminate: terminateOnCreate,
           });
 
@@ -63,8 +63,8 @@ describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
       }
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`agent-framework invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync("./result-agent-framework.txt", `agent-framework invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      console.log(`create invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync("./result-create.txt", `create invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
@@ -74,7 +74,7 @@ describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create multi-agent workflow as foundry agent in Python with orchestration using Agent Framework.",
+            prompt: "Create a LangGraph hosted agent for Foundry in Python.",
             shouldEarlyTerminate: terminateOnCreate,
           });
 
@@ -91,8 +91,8 @@ describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
       }
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`agent-framework invocation rate for multi-agent workflow: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync("./result-agent-framework.txt", `agent-framework invocation rate for multi-agent workflow: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      console.log(`create invocation rate for langgraph: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync("./result-create.txt", `create invocation rate for langgraph: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
