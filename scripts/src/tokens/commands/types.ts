@@ -3,7 +3,7 @@
  */
 
 import { extname } from "node:path";
-import * as micromatch from "micromatch";
+import isMatch from "micromatch";
 
 export interface TokenCount {
   readonly tokens: number;
@@ -167,7 +167,7 @@ export function matchesPattern(filePath: string, pattern: string): boolean {
     return normalizedPath.endsWith("/" + pattern) || normalizedPath === pattern;
   }
 
-  return micromatch.isMatch(normalizedPath, pattern);
+  return isMatch(normalizedPath, pattern);
 }
 
 /**
