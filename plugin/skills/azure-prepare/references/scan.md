@@ -55,6 +55,7 @@ Analyze workspace to identify components, technologies, and dependencies.
 - Use `azd init --from-code -e <environment-name>` instead of manual azure.yaml creation
 - The `--from-code` flag automatically detects the AppHost and generates appropriate configuration
 - The `-e` flag is **required** for non-interactive environments (agents, CI/CD)
+- ⚠️ **CRITICAL:** Aspire projects using Container Apps require environment variable setup BEFORE deployment. See [aspire.md](aspire.md) for proactive configuration steps to avoid deployment failures.
 - See [aspire.md](aspire.md) for detailed Aspire-specific guidance
 
 ## Output
