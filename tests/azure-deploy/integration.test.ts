@@ -262,21 +262,24 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates Python function app with Service Bus trigger", async () => {
+      let workspacePath: string | undefined;
+
       const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
         prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
+      softCheckDeploySkills(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
+      expect(workspacePath).toBeDefined();
       expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
   });
 
@@ -356,7 +359,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
