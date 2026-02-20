@@ -1,6 +1,6 @@
 ---
 name: azure-messaging
-description: |
+description: >-
   Troubleshoot and resolve issues with Azure Messaging SDKs for Event Hubs and Service Bus.
   Covers connection failures, authentication errors, message processing issues, and SDK configuration problems.
   USE FOR: event hub SDK error, service bus SDK issue, messaging connection failure, AMQP error,
