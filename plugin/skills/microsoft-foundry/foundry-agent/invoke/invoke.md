@@ -24,7 +24,7 @@ Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-t
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `agent_invoke` | Send a message to an agent and get a response | `projectEndpoint`, `agentName`, `inputText` (required); `agentVersion`, `conversationId`, `containerEndpoint` |
+| `agent_invoke` | Send a message to an agent and get a response | `projectEndpoint`, `agentName`, `inputText` (required); `agentVersion`, `conversationId`, `containerEndpoint`, `sessionId` (mandatory for vNext hosted agents) |
 | `agent_container_status_get` | Check container running status (hosted agents) | `projectEndpoint`, `agentName` (required); `agentVersion` |
 | `agent_get` | Get agent details to verify existence and type | `projectEndpoint` (required), `agentName` (optional) |
 
