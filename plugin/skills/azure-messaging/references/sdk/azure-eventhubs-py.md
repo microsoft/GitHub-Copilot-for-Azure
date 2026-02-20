@@ -57,8 +57,8 @@ Package: `azure-eventhub-checkpointstoreblob` (sync) / `azure-eventhub-checkpoin
 
 ```python
 from azure.eventhub import EventHubConsumerClient
-from azure.eventhub.extensions.checkpointstoreblobaio import BlobCheckpointStore
-from azure.identity.aio import DefaultAzureCredential
+from azure.eventhub.extensions.checkpointstoreblob import BlobCheckpointStore
+from azure.identity import DefaultAzureCredential
 
 credential = DefaultAzureCredential()
 checkpoint_store = BlobCheckpointStore(
