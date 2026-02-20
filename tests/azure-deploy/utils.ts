@@ -1,4 +1,27 @@
 import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked, getToolCalls } from "../utils/agent-runner";
+import { matchesCommand } from "../utils/evaluate";
+export { matchesCommand } from "../utils/evaluate";
+
+/** Env-var patterns expected when deploying container-based Aspire apps. */
+const CONTAINER_DEPLOY_ENV_PATTERNS: readonly RegExp[] = [
+  /AZURE_CONTAINER_REGISTRY_ENDPOINT/i,
+  /AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID/i,
+  /MANAGED_IDENTITY_CLIENT_ID/i,
+];
+
+/**
+ * Soft-check that the agent set the expected container deploy env vars.
+ * Emits warnings (testComments) instead of failing the test.
+ */
+export function softCheckContainerDeployEnvVars(agentMetadata: AgentMetadata): void {
+  for (const pattern of CONTAINER_DEPLOY_ENV_PATTERNS) {
+    if (!matchesCommand(agentMetadata, pattern)) {
+      agentMetadata.testComments.push(
+        `⚠️ Expected container deploy env var matching ${pattern} to be set, but it was not found.`
+      );
+    }
+  }
+}
 
 /**
  * Common Azure deployment link patterns

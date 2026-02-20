@@ -1,4 +1,5 @@
 import { type AgentMetadata, getToolCalls } from "../utils/agent-runner";
+export { matchesCommand } from "../utils/evaluate";
 
 /**
  * Validation command patterns that indicate the agent is performing
@@ -26,25 +27,6 @@ export function hasValidationCommand(metadata: AgentMetadata): boolean {
     const cmd = args?.command ?? "";
     return VALIDATION_COMMAND_PATTERNS.some(pattern => pattern.test(cmd));
   });
-}
-
-/**
- * Extract all powershell command strings from agent metadata.
- */
-function getPowershellCommands(metadata: AgentMetadata): string[] {
-  return getToolCalls(metadata, "powershell").map(event => {
-    const data = event.data as Record<string, unknown>;
-    const args = data.arguments as { command?: string } | undefined;
-    return args?.command ?? "";
-  });
-}
-
-/**
- * Check whether any powershell command executed by the agent matches
- * the given pattern.
- */
-export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
-  return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
 }
 
 /**

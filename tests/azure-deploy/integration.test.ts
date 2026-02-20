@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import * as fs from "fs";
-import { hasDeployLinks, softCheckDeploySkills, hasTerraformFiles, hasBicepFiles } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, hasTerraformFiles, hasBicepFiles } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 
 const SKILL_NAME = "azure-deploy";
@@ -587,6 +587,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
   
       softCheckDeploySkills(agentMetadata);
+      softCheckContainerDeployEnvVars(agentMetadata);
       const containsDeployLinks = hasDeployLinks(agentMetadata);
 
       expect(containsDeployLinks).toBe(true);
