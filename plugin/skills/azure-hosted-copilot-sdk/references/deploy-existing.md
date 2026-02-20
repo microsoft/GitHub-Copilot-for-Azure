@@ -1,79 +1,55 @@
 # Deploy Existing Copilot SDK App
 
-Adapt a user's existing Copilot SDK app for Azure using patterns from the reference templates.
+Adapt a user's existing Copilot SDK app for Azure by scaffolding the template to a temp directory, then copying infra into the user's project.
 
-## 1. Study Template Infra
+> ⚠️ **Warning:** Do NOT run `azd init` inside the user's project — it overwrites existing files. Always scaffold to a temp dir.
 
-Read the template via GitHub MCP before generating any files:
+## 1. Scaffold Template to Temp Dir
 
-`github-mcp-server-get_file_contents` owner: `azure-samples`, repo: `copilot-sdk-service`
-
-Key files to read: `azure.yaml`, `infra/main.bicep`, `infra/resources.bicep`, `scripts/get-github-token.mjs`, `AGENTS.md`
-
-## 2. GitHub Token Flow
-
-The Copilot SDK requires a `GITHUB_TOKEN` with `copilot` scope at runtime. The template pattern:
-
-1. **`scripts/get-github-token.mjs`** — azd hook script that runs `gh auth token`, verifies `copilot` scope, stores token via `azd env set GITHUB_TOKEN`
-2. **`azure.yaml` hooks** — `preprovision` and `prerun` both call the token script
-3. **Bicep `@secure() param githubToken`** — azd auto-maps the env var to the Bicep param
-4. **Key Vault** — stores `github-token` secret; Managed Identity gets `Key Vault Secrets User` role
-5. **Container App env** — `{ name: 'GITHUB_TOKEN', secretRef: 'github-token' }` pulls from Key Vault URL
-
-> ⚠️ Copy `scripts/get-github-token.mjs` from the template — do NOT rewrite it.
-
-## 3. Bicep Pattern (AVM Modules)
-
-Use these AVM modules — match the template exactly:
-
-| Resource | AVM Module |
-|----------|-----------|
-| Monitoring | `br/public:avm/ptn/azd/monitoring:0.2.1` |
-| Managed Identity | `br/public:avm/res/managed-identity/user-assigned-identity:0.5.0` |
-| Key Vault | `br/public:avm/res/key-vault/vault:0.13.3` |
-| Container Apps Stack | `br/public:avm/ptn/azd/container-apps-stack:0.3.0` |
-| Container App | `br/public:avm/ptn/azd/acr-container-app:0.4.0` |
-
-Key Vault config: `enableRbacAuthorization: true`, `enablePurgeProtection: false`, `softDeleteRetentionInDays: 7`.
-
-## 4. azure.yaml Structure
-
-```yaml
-hooks:
-  preprovision:
-    windows:
-      shell: pwsh
-      run: node scripts/get-github-token.mjs
-    posix:
-      shell: sh
-      run: node scripts/get-github-token.mjs
-  prerun:
-    windows:
-      shell: pwsh
-      run: node scripts/get-github-token.mjs
-    posix:
-      shell: sh
-      run: node scripts/get-github-token.mjs
-
-services:
-  api:
-    project: <user-api-path>
-    language: <detected-language>
-    host: containerapp
-    ports: ["<detected-port>"]
-    docker:
-      path: ./Dockerfile
+```bash
+azd init --template azure-samples/copilot-sdk-service --cwd <temp-dir>
 ```
 
-Adapt `project`, `language`, `ports` to the user's app. Add a `web` service if the app has a frontend.
+This gives you the working infra, scripts, and Dockerfiles without touching the user's project.
+
+## 2. Copy Infra Into User's Project
+
+From the temp scaffold, copy these into the user's project root:
+
+| Source | Purpose |
+|--------|---------|
+| `infra/` | Bicep modules (AVM-based), main.bicep, resources.bicep |
+| `scripts/get-github-token.mjs` | azd hook — gets `GITHUB_TOKEN` via `gh auth token` |
+| `azure.yaml` | Deployment manifest (will need editing) |
+
+> ⚠️ Copy `scripts/get-github-token.mjs` exactly — do NOT rewrite it.
+
+## 3. Adapt azure.yaml
+
+Edit the copied `azure.yaml` to point at the user's app:
+
+- Set `services.api.project` to the user's API directory
+- Set `services.api.language` to the detected language
+- Set `services.api.ports` to the user's port
+- Add a `web` service if the app has a frontend
+- Keep the `hooks` section unchanged (preprovision + prerun call the token script)
+
+## 4. GitHub Token Flow
+
+The template's token flow (already in the copied files):
+
+1. **`scripts/get-github-token.mjs`** — runs `gh auth token`, verifies `copilot` scope, stores via `azd env set`
+2. **`azure.yaml` hooks** — `preprovision` and `prerun` call the token script
+3. **Bicep `@secure() param githubToken`** — azd auto-maps the env var
+4. **Key Vault** — stores secret; Managed Identity gets `Key Vault Secrets User` role
 
 ## 5. Dockerfile
 
-If the user has no Dockerfile, read the template's Dockerfile for the detected language via GitHub MCP and adapt it to the user's project structure (entry point, build steps, port).
+If the user has no Dockerfile, copy the template's Dockerfile for the detected language from the temp dir and adapt entry point, build steps, and port.
 
 ## 6. BYOM Infrastructure (Azure Model)
 
-If the user wants Azure BYOM, add these to Bicep:
+If the user wants Azure BYOM, add to the copied Bicep:
 
 | Resource | Purpose |
 |----------|---------|
