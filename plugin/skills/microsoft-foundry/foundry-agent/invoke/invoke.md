@@ -57,7 +57,7 @@ Use `agent_invoke` to send a message:
 - `sessionId` — MANDATORY for vNext hosted agents, include the session ID to maintain sticky sessions with the same compute resource
 
 #### Session Support for vNext Hosted Agents
-In vNext hosted agents, the invoke endpoint accepts a 25 character alphanumeric `sessionId` parameter. Sessions are **sticky** - they route the request to same underlying comptute resource, so agent can re-use the state stored in compute's file across multiple turns.
+In vNext hosted agents, the invoke endpoint accepts a 25 character alphanumeric `sessionId` parameter. Sessions are **sticky** - they route the request to same underlying compute resource, so agent can re-use the state stored in compute's file across multiple turns.
 
 Rules:
 1. You MUST generate a unique `sessionId` before making the first `agent_invoke` call.
