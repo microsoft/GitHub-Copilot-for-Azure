@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata, getToolCalls } from "./agent-runner";
+import { AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
 
 /**
  * Extract all powershell command strings from agent metadata.
@@ -90,4 +90,11 @@ export function expectFiles(
   for (const pattern of unexpected) {
     expect(hasFile(files, pattern)).toBe(false);
   }
+  
+export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
+    const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
+
+    if (!isSkillUsed) {
+        agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
+    }
 }

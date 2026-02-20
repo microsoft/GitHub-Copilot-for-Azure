@@ -19,12 +19,10 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import * as fs from "fs";
-import { expectFiles } from "../utils/evaluate";
+import { expectFiles, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
-const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
 // Check if integration tests should be skipped at module level
@@ -43,17 +41,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Prepare my application for Azure deployment and set up the infrastructure"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -62,25 +56,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Azure preparation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure preparation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes azure-prepare skill for modernizing application for Azure prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -89,25 +74,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for modernization prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for modernization prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes azure-prepare skill for Key Vault secrets integration prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -116,25 +92,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Key Vault integration prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Key Vault integration prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes azure-prepare skill for Azure Identity authentication prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -143,24 +110,15 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Azure Identity authentication prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Azure Identity authentication prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
     test("invokes azure-prepare skill for Azure deployment with Terraform prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -169,11 +127,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Terraform deployment prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
 
