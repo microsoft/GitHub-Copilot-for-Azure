@@ -57,8 +57,9 @@ Activate this skill when user wants to:
 | 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
 | 3 | **Load Recipe** — Based on `recipe.type` in `.azure/plan.md` | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
-| 5 | **Handle Errors** — See recipe's `errors.md` | — |
-| 6 | **Verify Success** — Confirm deployment completed and endpoints are accessible | — |
+| 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
+| 6 | **Handle Errors** — See recipe's `errors.md` | — |
+| 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
 
 > **⛔ VALIDATION PROOF CHECK**
 >
@@ -80,3 +81,4 @@ Activate this skill when user wants to:
 ## References
 
 - [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
+- [Post-Deployment Steps](references/recipes/azd/post-deployment.md) - SQL + EF Core setup

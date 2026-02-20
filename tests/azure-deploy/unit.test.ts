@@ -71,5 +71,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("includes verification step", () => {
       expect(skill.content.toLowerCase()).toContain("verify");
     });
+
+    test("includes post-deployment step", () => {
+      expect(skill.content.toLowerCase()).toContain("post-deploy");
+    });
+  });
+
+  describe("Post-Deployment Support", () => {
+    test("references post-deployment documentation", () => {
+      expect(skill.content).toContain("Post-Deployment");
+      expect(skill.content).toContain("post-deployment.md");
+    });
+
+    test("mentions SQL and EF migrations support", () => {
+      const lowerContent = skill.content.toLowerCase();
+      expect(lowerContent).toMatch(/sql|entity framework|ef|migrations/);
+    });
   });
 });
