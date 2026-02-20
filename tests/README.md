@@ -166,6 +166,39 @@ npm install
 | `npm run test:verbose` | Show individual test names |
 | `npm run update:snapshots` | Update Jest snapshots after intentional changes |
 
+### Waza Eval Mode (Alternative)
+
+Skills can also be evaluated using [waza](https://github.com/spboyer/waza), a Go CLI for skill benchmarking.
+
+```bash
+# Install waza via azd extension
+azd ext source add -n waza -t url -l https://raw.githubusercontent.com/spboyer/waza/main/registry.json
+azd ext install microsoft.azd.waza
+
+# Or via Go
+go install github.com/spboyer/waza/cmd/waza@latest
+```
+
+**Hybrid model**: Key skills have committed (hand-tuned) eval suites. All other skills auto-generate evals from their SKILL.md at runtime.
+
+| Command | Use Case |
+|---------|----------|
+| `npm run waza -- azure-prepare` | Run committed eval for a key skill |
+| `npm run waza -- azure-storage` | Auto-generate + run eval from SKILL.md |
+| `npm run waza -- --all` | Run all skills (committed + generated) |
+| `npm run waza:live -- azure-prepare` | Run with real Copilot SDK |
+| `waza run tests/azure-prepare/eval/eval.yaml -v` | Run directly with waza CLI |
+| `waza run eval.yaml --cache` | Cached re-runs (skip unchanged tasks) |
+| `waza compare results-a.json results-b.json` | Compare results across models |
+| `waza check plugin/skills/azure-prepare` | Check skill readiness for submission |
+
+**Committed eval suites** (⬢ customized graders, fixtures, and assertions):
+- `azure-prepare` — template selection, recipe composition, plan-first workflow
+
+**Auto-generated** (⬡ from SKILL.md frontmatter): all other skills
+
+See [tests/azure-prepare/eval/README.md](azure-prepare/eval/README.md) for the committed eval suite documentation.
+
 ### Integration Tests
 
 To run integration tests locally:

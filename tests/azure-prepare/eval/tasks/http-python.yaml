@@ -1,0 +1,37 @@
+# Task: HTTP-only Azure Functions app (Python)
+# Tests the base template for Python + Bicep
+id: http-python-001
+name: HTTP Functions - Python
+description: |
+  Create a simple HTTP-triggered Azure Functions app in Python.
+  Validates correct base template selection for Python.
+
+tags:
+  - http
+  - python
+  - base-template
+  - bicep
+
+inputs:
+  prompt: |
+    Create a Python Azure Functions app with an HTTP trigger that returns JSON.
+    Use Bicep for infrastructure as code.
+  context:
+    language: python
+    integration: http
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "functions-quickstart-python"
+    - "plan"
+
+graders:
+  - name: selects_python_base
+    type: regex
+    config:
+      must_match:
+        # Agent should mention python or http/api
+        - "(?i)python|http|function|api"

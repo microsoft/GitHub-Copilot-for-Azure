@@ -1,0 +1,83 @@
+# Trigger accuracy tests for azure-prepare skill
+# Tests prompt routing — which prompts should and shouldn't invoke this skill
+skill: azure-prepare
+
+should_trigger_prompts:
+  - prompt: "Create a dad joke generator and deploy to Azure"
+    reason: "Create app + Azure deployment intent"
+
+  - prompt: "Build a web app and host it on Azure"
+    reason: "Build + Azure hosting intent"
+
+  - prompt: "I want to deploy my application to Azure"
+    reason: "Explicit Azure deployment"
+
+  - prompt: "Set up Azure infrastructure for my project"
+    reason: "Infrastructure setup intent"
+
+  - prompt: "Prepare my app for Azure deployment"
+    reason: "Exact skill trigger phrase"
+
+  - prompt: "Create an API and run it on Azure"
+    reason: "Create + Azure intent"
+
+  - prompt: "Add Azure services to my existing app"
+    reason: "Add services to existing app"
+
+  - prompt: "Migrate my application to Azure"
+    reason: "Migration intent"
+
+  - prompt: "Create a C# Azure Functions app with Cosmos DB"
+    reason: "Create specific Azure app with integration"
+
+  - prompt: "Build a TypeScript API with Service Bus queue processing"
+    reason: "Build app with Azure service integration"
+
+  - prompt: "Create a Python scheduled task running on Azure Functions"
+    reason: "Timer trigger detection"
+
+  - prompt: "Set up a Durable Functions orchestration in C#"
+    reason: "Durable Functions intent"
+
+  - prompt: "Create an MCP server on Azure Functions"
+    reason: "MCP trigger detection"
+
+  - prompt: "I need a Terraform-based Azure Functions deployment"
+    reason: "IaC preference specified"
+
+  - prompt: "Add a database to my Azure app"
+    reason: "Add component to Azure app"
+
+  - prompt: "Modernize my legacy .NET app for Azure hosting"
+    reason: "Modernization intent"
+
+should_not_trigger_prompts:
+  - prompt: "What is the weather today?"
+    reason: "Completely unrelated to Azure"
+
+  - prompt: "Help me write a poem"
+    reason: "Creative writing, not Azure"
+
+  - prompt: "Explain quantum computing"
+    reason: "Science question, not Azure"
+
+  - prompt: "Deploy my already-prepared app with azd up"
+    reason: "Should use azure-deploy, not azure-prepare"
+
+  - prompt: "Run azd up to push my app to Azure"
+    reason: "Deployment execution, not preparation"
+
+  - prompt: "Validate my Azure infrastructure files are correct"
+    reason: "Should use azure-validate, not azure-prepare"
+
+  - prompt: "Check if my Bicep files have errors"
+    reason: "Validation only — azure-validate territory"
+
+  - prompt: "Help me with AWS Lambda functions"
+    reason: "Wrong cloud provider"
+
+  - prompt: "Configure my GCP Cloud Functions"
+    reason: "Wrong cloud provider"
+
+  - prompt: "Parse this JSON file"
+    reason: "Generic coding task, no Azure"
