@@ -39,14 +39,16 @@ description: |
 | `azure-servicebus` | Queue and topic operations | List namespaces, queues, topics, subscriptions |
 | `azure-monitor` | `logs_query` | Query diagnostic logs with KQL |
 | `azure-resourcehealth` | `get` | Check service health status |
+| `azure-documentation` | Doc search | Look up official Microsoft Learn troubleshooting docs for Event Hubs and Service Bus |
 
 ## Diagnosis Workflow
 
 1. **Identify the SDK and version** — Ask which language SDK and version the user is on
 2. **Check resource health** — Use `azure-resourcehealth` to verify the namespace is healthy
 3. **Review the error message** — Match against language-specific troubleshooting guide
-4. **Check configuration** — Verify connection string, entity name, consumer group
-5. **Recommend fix** — Apply the appropriate remediation
+4. **Look up documentation** — Use the `azure-documentation` tool to search Microsoft Learn for the specific error message, SDK issue, or configuration topic (e.g., "Event Hubs Python SDK connection timeout", "Service Bus message lock lost")
+5. **Check configuration** — Verify connection string, entity name, consumer group
+6. **Recommend fix** — Apply the appropriate remediation, citing documentation found via `azure-documentation`
 
 
 ## Connectivity Troubleshooting
@@ -73,6 +75,13 @@ Language-specific error handling, common issues, and configuration for each SDK:
 
 ## References
 
+Use the `azure-documentation` tool to search Microsoft Learn for the latest troubleshooting guidance. Example queries:
+- "Azure Event Hubs troubleshooting guide"
+- "Azure Service Bus message lock lost"
+- "Event Hubs AMQP connection errors"
+- "Service Bus dead letter queue troubleshooting"
+
+Key documentation pages:
 - [Event Hubs service troubleshooting guide](https://learn.microsoft.com/azure/event-hubs/troubleshooting-guide)
 - [Service Bus service troubleshooting guide](https://learn.microsoft.com/azure/service-bus-messaging/service-bus-troubleshooting-guide)
 - [Event Hubs quotas and limits](https://learn.microsoft.com/azure/event-hubs/event-hubs-quotas)
