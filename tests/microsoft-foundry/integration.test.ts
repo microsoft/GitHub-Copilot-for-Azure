@@ -250,6 +250,35 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for validate permissions prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
+
+    test("invokes microsoft-foundry skill for agent lifecycle prompt", async () => {
+      let successCount = 0;
+
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Help me build and deploy a Foundry agent",
+            shouldEarlyTerminate: (metadata) =>
+              isSkillInvoked(metadata, SKILL_NAME),
+          });
+
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            successCount++;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+
+      const invocationRate = successCount / RUNS_PER_PROMPT;
+      console.log(`${SKILL_NAME} invocation rate for agent lifecycle prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for agent lifecycle prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
+    });
   });
 
 });

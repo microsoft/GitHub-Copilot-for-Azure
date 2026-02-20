@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Use this skill to work with Microsoft Foundry (Azure AI Foundry): deploy AI models from catalog, complete AI agent dev lifecycle, manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
-USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, deploy agent, debug agent, invoke agent, agent chat, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, deployment failure, QuotaExceeded.
+USE FOR: Microsoft Foundry, AI Foundry, deploy model, model catalog, RAG, knowledge index, create agent, deploy agent, debug agent, invoke agent, evaluate agent, agent monitoring, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, provision Foundry infrastructure, create Foundry resource, create AI Services, multi-service resource, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, deployment failure, QuotaExceeded.
 DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
 ",
   "extractedKeywords": [
@@ -17,11 +17,9 @@ DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-cr
     "azure-functions",
     "capacity",
     "catalog",
-    "chat",
     "cli",
     "cognitive",
     "complete",
-    "container",
     "create",
     "creation",
     "debug",
@@ -44,7 +42,6 @@ DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-cr
     "lifecycle",
     "manage",
     "managed",
-    "mcp",
     "microsoft",
     "model",
     "models",
@@ -76,7 +73,7 @@ DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-cr
 }
 `;
 
-exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`deploy - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "account",
   "agent",
@@ -88,11 +85,9 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
   "azure-functions",
   "capacity",
   "catalog",
-  "chat",
   "cli",
   "cognitive",
   "complete",
-  "container",
   "create",
   "creation",
   "debug",
@@ -115,7 +110,6 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
   "lifecycle",
   "manage",
   "managed",
-  "mcp",
   "microsoft",
   "model",
   "models",

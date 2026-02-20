@@ -1,0 +1,38 @@
+{
+  "samplePrompts": {
+    "shouldTrigger": [
+      "Troubleshoot why my foundry agent is not responding to Azure MCP tools.",
+      "Diagnose connectivity issues between the agent and the Azure bicep schema MCP tool."
+    ],
+    "shouldNotTrigger": [
+      "Write a haiku about cloud computing.",
+      "Explain the history of JavaScript."
+    ]
+  },
+  "sampleInput": {
+    "description": "End-to-end troubleshooting scenario for the troubleshoot skill.",
+    "context": {
+      "agentName": "foundry-troubleshooter",
+      "environment": "dev",
+      "errorMessage": "MCP tool 'azure__bicepschema' timed out after 30s",
+      "lastUserAction": "User asked the agent to validate a Bicep template."
+    }
+  },
+  "expectedOutput": {
+    "description": "The skill should identify MCP connectivity issues and propose remediation steps.",
+    "keyBehaviors": [
+      "Confirm that this is a troubleshooting request.",
+      "Inspect MCP tool configuration for 'azure__bicepschema'.",
+      "Suggest checking network connectivity and MCP credentials.",
+      "Provide a concise summary of likely root causes."
+    ]
+  },
+  "mcpResponses": {
+    "azure__bicepschema": {
+      "status": "error",
+      "errorType": "TimeoutError",
+      "message": "Request to Azure Bicep schema service exceeded the 30 second timeout.",
+      "requestId": "test-request-id-12345"
+    }
+  }
+}
