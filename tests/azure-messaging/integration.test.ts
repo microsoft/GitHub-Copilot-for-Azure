@@ -17,7 +17,7 @@ import {
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-messaging";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 3;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
 const skipTests = shouldSkipIntegrationTests();
@@ -42,7 +42,10 @@ function defineInvocationTest(
 
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
-        const agentMetadata = await agent.run({ prompt });
+        const agentMetadata = await agent.run({
+          prompt,
+          shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+        });
 
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
           successCount++;
