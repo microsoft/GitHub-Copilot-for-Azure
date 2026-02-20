@@ -96,7 +96,7 @@ interface McpConfig {
 }
 
 function getMcpConfigPath(): string {
-  return join(getCopilotDir(), 'mcp-config.json');
+  return join(getCopilotDir(), "mcp-config.json");
 }
 
 function readMcpConfig(): McpConfig | null {
@@ -105,7 +105,7 @@ function readMcpConfig(): McpConfig | null {
     return null;
   }
   try {
-    return JSON.parse(readFileSync(configPath, 'utf-8'));
+    return JSON.parse(readFileSync(configPath, "utf-8"));
   } catch {
     return null;
   }
@@ -119,11 +119,11 @@ function writeMcpConfig(config: McpConfig): boolean {
     if (!existsSync(copilotDir)) {
       mkdirSync(copilotDir, { recursive: true });
     }
-    const backupPath = configPath + '.bak';
+    const backupPath = configPath + ".bak";
     if (existsSync(configPath)) {
       writeFileSync(backupPath, readFileSync(configPath));
     }
-    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
     return true;
   } catch {
     return false;
@@ -131,28 +131,28 @@ function writeMcpConfig(config: McpConfig): boolean {
 }
 
 function readPluginMcpJson(pluginPath: string): McpConfig | null {
-  const mcpJsonPath = join(pluginPath, '.mcp.json');
+  const mcpJsonPath = join(pluginPath, ".mcp.json");
   if (!existsSync(mcpJsonPath)) {
     return null;
   }
   try {
-    return JSON.parse(readFileSync(mcpJsonPath, 'utf-8'));
+    return JSON.parse(readFileSync(mcpJsonPath, "utf-8"));
   } catch {
     return null;
   }
 }
 
 export function setupMcpServers(pluginPath: string, options: { force: boolean }): boolean {
-  console.log('\n🔌 MCP Server Registration\n');
+  console.log("\n🔌 MCP Server Registration\n");
 
   const pluginMcp = readPluginMcpJson(pluginPath);
   if (!pluginMcp?.mcpServers || Object.keys(pluginMcp.mcpServers).length === 0) {
-    console.log('   ⚠️  No MCP servers found in plugin/.mcp.json');
+    console.log("   ⚠️  No MCP servers found in plugin/.mcp.json");
     return true;
   }
 
   const serverNames = Object.keys(pluginMcp.mcpServers);
-  console.log(`   Found ${serverNames.length} MCP servers: ${serverNames.join(', ')}`);
+  console.log(`   Found ${serverNames.length} MCP servers: ${serverNames.join(", ")}`);
 
   let userMcp = readMcpConfig();
   if (!userMcp) {
@@ -171,7 +171,7 @@ export function setupMcpServers(pluginPath: string, options: { force: boolean })
       continue;
     }
     userMcp.mcpServers[name] = {
-      type: (entry as Record<string, unknown>).type as string ?? 'stdio',
+      type: (entry as Record<string, unknown>).type as string ?? "stdio",
       ...(entry as Record<string, unknown>),
     };
     console.log(`   ✅ ${name}: registered`);
@@ -180,7 +180,7 @@ export function setupMcpServers(pluginPath: string, options: { force: boolean })
 
   if (added > 0) {
     if (!writeMcpConfig(userMcp)) {
-      console.log('   ❌ Failed to write MCP config');
+      console.log("   ❌ Failed to write MCP config");
       return false;
     }
     console.log(`\n   📝 Updated ${getMcpConfigPath()}`);

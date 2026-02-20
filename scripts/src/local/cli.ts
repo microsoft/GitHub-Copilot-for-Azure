@@ -10,13 +10,13 @@
  *   npm run local help     # Show help
  */
 
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { setup } from './commands/setup.js';
-import { verify } from './commands/verify.js';
-import { test } from './commands/test.js';
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { setup } from "./commands/setup.js";
+import { verify } from "./commands/verify.js";
+import { test } from "./commands/test.js";
 
-const COMMANDS = ['setup', 'verify', 'test', 'smoke', 'help'] as const;
+const COMMANDS = ["setup", "verify", "test", "smoke", "help"] as const;
 type Command = typeof COMMANDS[number];
 
 function getRepoRoot(): string {
