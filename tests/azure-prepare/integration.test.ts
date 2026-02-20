@@ -17,7 +17,7 @@ import {
   getToolCalls
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, expectFiles, getDockerContext, listFilesRecursive } from "./utils";
+import { hasPlanReadyForValidation, expectFiles, getDockerContext } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
 

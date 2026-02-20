@@ -18,7 +18,6 @@ import {
 import {
   hasValidationCommand,
   matchesCommand,
-  matchesToolCallArgs,
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
