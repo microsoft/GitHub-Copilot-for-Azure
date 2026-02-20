@@ -6,9 +6,9 @@ Covers connectivity, firewall, and network issues that apply regardless of SDK l
 
 If the client **cannot connect at all**:
 
-1. **Verify connection string** — Get from Azure portal. Kafka clients: check `producer.config` / `consumer.config`.
+1. **Verify connection string** — Get from Azure portal. For **Event Hubs (Kafka endpoint)** clients, also check `producer.config` / `consumer.config`.
 2. **Check service outage** — [Azure status page](https://azure.status.microsoft/status)
-3. **Firewall / ports** — Open AMQP 5671 and 5672, HTTPS 443, Kafka 9093. Use WebSockets (port 443) as fallback.
+3. **Firewall / ports** — Open AMQP 5671 and 5672, HTTPS 443. For **Event Hubs (Kafka endpoint)** only, also open Kafka 9093. Use WebSockets (port 443) as fallback.
 4. **IP firewall** — If enabled on namespace, ensure client IP is allowed.
 5. **VNet / private endpoints** — Confirm app runs in correct subnet. Check service endpoint and NSG rules.
 6. **Proxy / SSL** — Intercepting proxies can cause SSL handshake failures. Test with proxy disabled.

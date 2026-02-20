@@ -19,7 +19,7 @@ description: |
 | Property | Value |
 |----------|-------|
 | **Services** | Azure Event Hubs, Azure Service Bus |
-| **MCP Tools** | `azure-eventhubs`, `azure-servicebus` |
+| **MCP Tools** | `mcp_azure_mcp_eventhubs`, `mcp_azure_mcp_servicebus` |
 | **Best For** | Diagnosing SDK connection, auth, and message processing issues |
 
 ## When to Use This Skill
@@ -33,18 +33,18 @@ description: |
 
 | Tool | Command | Use |
 |------|---------|-----|
-| `azure-eventhubs` | Namespace/hub ops | List namespaces, hubs, consumer groups |
-| `azure-servicebus` | Queue/topic ops | List namespaces, queues, topics, subscriptions |
-| `azure-monitor` | `logs_query` | Query diagnostic logs with KQL |
-| `azure-resourcehealth` | `get` | Check service health status |
-| `azure-documentation` | Doc search | Search Microsoft Learn for troubleshooting docs |
+| `mcp_azure_mcp_eventhubs` | Namespace/hub ops | List namespaces, hubs, consumer groups |
+| `mcp_azure_mcp_servicebus` | Queue/topic ops | List namespaces, queues, topics, subscriptions |
+| `mcp_azure_mcp_monitor` | `logs_query` | Query diagnostic logs with KQL |
+| `mcp_azure_mcp_resourcehealth` | `get` | Check service health status |
+| `mcp_azure_mcp_documentation` | Doc search | Search Microsoft Learn for troubleshooting docs |
 
 ## Diagnosis Workflow
 
 1. **Identify the SDK and version** — Ask which language SDK and version the user is on
-2. **Check resource health** — Use `azure-resourcehealth` to verify the namespace is healthy
+2. **Check resource health** — Use `mcp_azure_mcp_resourcehealth` to verify the namespace is healthy
 3. **Review the error message** — Match against language-specific troubleshooting guide
-4. **Look up documentation** — Use `azure-documentation` to search Microsoft Learn for the error or topic
+4. **Look up documentation** — Use `mcp_azure_mcp_documentation` to search Microsoft Learn for the error or topic
 5. **Check configuration** — Verify connection string, entity name, consumer group
 6. **Recommend fix** — Apply remediation, citing documentation found
 
@@ -60,4 +60,4 @@ See [Service Troubleshooting Guide](references/service-troubleshooting.md) for p
 
 ## References
 
-Use `azure-documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](references/service-troubleshooting.md) for network and service-level docs.
+Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](references/service-troubleshooting.md) for network and service-level docs.
