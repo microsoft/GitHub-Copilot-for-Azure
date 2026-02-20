@@ -43,6 +43,21 @@ Create an upbeat weekly status report for the repo as a GitHub issue.
 - Project status and recommendations
 - Actionable next steps for maintainers
 
+## Required Stats
+
+Include the following statistics for the current week (since last Friday):
+
+### Issues
+- **Weekly issues opened** — total count, and a breakdown by skill (e.g. azure-deploy, azure-prepare, azure-validate, etc.)
+- **Weekly issues closed** — total count with links to each closed issue (no duplicates)
+
+### Pull Requests
+- **PRs created and in progress** — count of new PRs opened this week that are still open
+- **PRs merged and closed** — count of PRs that were merged or closed this week
+- **PRs discarded** — count of PRs closed without merging (abandoned/rejected)
+
+> Do not include duplicate issue or PR links. Each issue/PR should appear at most once.
+
 ## Style
 
 - Be positive, encouraging, and helpful 🌟
@@ -51,6 +66,8 @@ Create an upbeat weekly status report for the repo as a GitHub issue.
 
 ## Process
 
-1. Gather recent activity from the repository
+1. Gather recent activity from the repository for the past 7 days
 2. Study the repository, its issues and its pull requests
-3. Create a new GitHub issue with your findings and insights
+3. Collect closed issues from this week and group opened issues by skill label
+4. Tally PR counts: merged/closed vs. open vs. discarded (closed without merge)
+5. Create a new GitHub issue with your findings, stats, and insights
