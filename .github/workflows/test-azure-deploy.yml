@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       test-pattern:
-        description: 'Optional: Filter tests by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
+        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
         required: false
         type: string
         default: ''
@@ -22,17 +22,58 @@ on:
         required: false
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      test-pattern:
+        description: 'Optional: Comma delimited tests by name or describe block'
+        required: false
+        type: string
+        default: ''
+      debug:
+        description: 'Whether to set DEBUG=1 for jest tests'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      COPILOT_CLI_TOKEN:
+        required: true
 
 jobs:
+  setup:
+    name: Build test matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Parse test-pattern input into matrix
+        id: set-matrix
+        run: |
+          INPUT="${{ inputs.test-pattern }}"
+          # Default test groups if input is empty
+          DEFAULT='["skill-invocation","static-web-apps-deploy","app-service-deploy","azure-functions-deploy","azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
+          
+          if [ -z "$INPUT" ]; then
+            echo "matrix=$DEFAULT" >> "$GITHUB_OUTPUT"
+          else
+            # Convert comma-delimited input to JSON array
+            JSON=$(echo "$INPUT" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | jq -R . | jq -sc .)
+            echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
-    name: Run azure-deploy deployment tests
+    name: azure-deploy – ${{ matrix.test-group }}
+    needs: setup
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        test-group: ${{ fromJson(needs.setup.outputs.matrix) }}
     defaults:
       run:
         working-directory: tests
@@ -107,25 +148,21 @@ jobs:
         with:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
-      - name: Integration tests
-        id: integration-tests
+      - name: Run tests – ${{ matrix.test-group }}
         env:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}
-          TEST_NAME_PATTERN: ${{ inputs.test-pattern }}
         run: |
-          if [ -n "$TEST_NAME_PATTERN" ]; then
-            npm run test:integration -- azure-deploy "$TEST_NAME_PATTERN"
-          else
-            npm run test:integration -- azure-deploy
-          fi
+          npm run test:integration -- azure-deploy "${{ matrix.test-group }}"
         continue-on-error: true
 
       - name: Generate report
+        if: always()
         id: generate-report
         run: npm run report -- --skill azure-deploy
 
       - name: Show skill report
+        if: always()
         id: show-skill-report
         run: |
           SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
@@ -137,9 +174,9 @@ jobs:
           fi
 
       - name: Export report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: azure-deploy-test-reports
+          name: azure-deploy-${{ matrix.test-group }}-reports
           path: tests/reports/
           retention-days: 30
-

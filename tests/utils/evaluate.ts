@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { AgentMetadata, isSkillInvoked } from "./agent-runner";
 
 /**
  * Scans files as text in the given workspace and checks whether there is text content matching the value pattern.
@@ -35,4 +36,12 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
     };
 
     return scanDirectory(workspace);
+}
+
+export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
+    const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
+
+    if (!isSkillUsed) {
+        agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
+    }
 }

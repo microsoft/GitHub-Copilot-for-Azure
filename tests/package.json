@@ -17,7 +17,6 @@
     "report": "npx tsx scripts/generate-test-reports.ts",
     "results": "node scripts/show-test-results.js",
     "update:snapshots": "cross-env jest --updateSnapshot",
-    "mergeSkillInvocationTestResult": "node scripts/generate-skill-invocation-test-summary.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
