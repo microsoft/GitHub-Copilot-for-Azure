@@ -22,7 +22,13 @@ Template includes API (Express/TS) + Web UI (React/Vite) + infra (Bicep) + Docke
 
 ## Step 2B: Deploy Existing SDK App
 
-Read the template repo first via `github-mcp-server-get_file_contents` (owner: `azure-samples`, repo: `copilot-sdk-service`), then adapt. See [deploy ref](references/deploy-existing.md).
+Scaffold to a temp dir, then copy infra into the user's project:
+
+```bash
+azd init --template azure-samples/copilot-sdk-service --cwd <temp-dir>
+```
+
+Copy `infra/`, `scripts/get-github-token.mjs`, and `azure.yaml` into the user's project. Adapt `azure.yaml` to point at their code. See [deploy ref](references/deploy-existing.md).
 
 ## Step 2C: Model Configuration
 
