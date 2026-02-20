@@ -97,7 +97,8 @@ output fullyQualifiedNamespace string = '${eventHubNamespace.name}.servicebus.wi
 // ============================================================================
 
 @description('UAMI client ID from base template identity module - REQUIRED for UAMI auth')
-param uamiClientId string = ''
+@minLength(36)
+param uamiClientId string
 
 output appSettings object = {
   EventHubConnection__fullyQualifiedNamespace: '${eventHubNamespace.name}.servicebus.windows.net'

@@ -22,7 +22,8 @@ param functionAppPrincipalId string
 param queueName string = 'orders'
 
 @description('UAMI client ID from base template identity module - REQUIRED for UAMI auth')
-param uamiClientId string = ''
+@minLength(36)
+param uamiClientId string
 
 // Service Bus Namespace
 resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {

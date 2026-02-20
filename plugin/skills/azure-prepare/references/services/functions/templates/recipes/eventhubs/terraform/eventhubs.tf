@@ -59,6 +59,11 @@ variable "partition_count" {
   default     = 2
 }
 
+variable "uami_client_id" {
+  description = "Client ID of the user-assigned managed identity for Event Hubs connection"
+  type        = string
+}
+
 variable "vnet_enabled" {
   description = "Enable VNet integration with private endpoint"
   type        = bool
@@ -183,6 +188,7 @@ locals {
   eventhubs_app_settings = {
     "EventHubConnection__fullyQualifiedNamespace" = "${azurerm_eventhub_namespace.main.name}.servicebus.windows.net"
     "EventHubConnection__credential"              = "managedidentity"
+    "EventHubConnection__clientId"                = var.uami_client_id
     "EVENTHUB_NAME"                               = azurerm_eventhub.main.name
     "EVENTHUB_CONSUMER_GROUP"                     = azurerm_eventhub_consumer_group.funcapp.name
   }

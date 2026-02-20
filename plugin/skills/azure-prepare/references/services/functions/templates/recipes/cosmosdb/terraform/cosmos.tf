@@ -27,6 +27,11 @@ variable "cosmos_container_name" {
   description = "Cosmos DB container name"
 }
 
+variable "environment_name" {
+  type        = string
+  description = "Environment name used for resource naming (e.g., dev, prod)"
+}
+
 # ============================================================================
 # Naming
 # ============================================================================
