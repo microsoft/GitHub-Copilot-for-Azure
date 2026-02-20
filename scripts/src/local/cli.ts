@@ -14,9 +14,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setup } from './commands/setup.js';
 import { verify } from './commands/verify.js';
-import { smoke } from './commands/smoke.js';
+import { test } from './commands/test.js';
 
-const COMMANDS = ['setup', 'verify', 'smoke', 'help'] as const;
+const COMMANDS = ['setup', 'verify', 'test', 'smoke', 'help'] as const;
 type Command = typeof COMMANDS[number];
 
 function getRepoRoot(): string {
@@ -33,7 +33,8 @@ Usage: npm run local <command> [options]
 Commands:
   setup     Configure ~/.copilot/config.json and mcp-config.json for local dev
   verify    Verify config, MCP servers, and skills are correctly set up
-  smoke     Live test: launch Copilot CLI and verify plugin + MCP servers load
+  test      Live test: launch Copilot CLI and verify plugin + MCP servers load
+  smoke     Alias for 'test'
   help      Show this help message
 
 Options:
@@ -46,8 +47,8 @@ Examples:
   npm run local setup -- --force  # Force update existing config
   npm run local verify            # Verify config is correct
   npm run local verify -- --fix   # Automatically fix config issues
-  npm run local smoke             # Live test with Copilot CLI
-  npm run local smoke -- -v       # Live test with verbose output
+  npm run local test             # Live test with Copilot CLI
+  npm run local test -- -v       # Live test with verbose output
 `);
 }
 
@@ -72,7 +73,8 @@ function main(): void {
       verify(rootDir, commandArgs);
       break;
     case "smoke":
-      smoke(rootDir, commandArgs);
+    case "test":
+      test(rootDir, commandArgs);
       break;
     case "help":
       printHelp();
