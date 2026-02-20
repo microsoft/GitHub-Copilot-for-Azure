@@ -46,7 +46,7 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | `unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ Complete — checks `copilot-sdk-service` and `AZURE_OPENAI_ENDPOINT` |
 | `integration.test.ts` | 4 invocation rate + 2 content quality | ✅ Complete — removed Foundry/agent from prompts |
 | `__snapshots__/triggers.test.ts.snap` | Keyword snapshots | ✅ Regenerated |
-| `regression-detectors.ts` | `countApiKeyInByomConfig()` detector | ✅ Unchanged |
+| `regression-detectors.ts` | Regression detectors incl. `countApiKeyInByomConfig()` | ✅ New — added in this PR |
 
 **Integration test detail:**
 - Content quality tests (2): ✅ **Passing** — agent produces correct Copilot SDK and BYOM output
@@ -195,7 +195,7 @@ tests/azure-hosted-copilot-sdk/
 └── __snapshots__/triggers.test.ts.snap         # Trigger keyword snapshots
 
 tests/utils/
-└── regression-detectors.ts                     # countApiKeyInByomConfig() detector
+└── regression-detectors.ts                     # Regression detectors (secrets, ACR spirals, port confusion, etc.)
 
 # Related: azure-dev CLI local template support
 # Branch: feature/local-template-support in C:\code\azure-dev
