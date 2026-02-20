@@ -62,29 +62,6 @@ description: |
 
 For detailed network and service-level troubleshooting, see [Service Troubleshooting Guide](references/service-troubleshooting.md).
 
-## Diagnostic KQL Queries
-
-```kql
-// Event Hubs failures in the last hour
-AzureDiagnostics
-| where ResourceProvider == "MICROSOFT.EVENTHUB"
-| where Category == "OperationalLogs"
-| where Level == "Error"
-| project TimeGenerated, OperationName, ResultDescription
-| order by TimeGenerated desc
-| take 50
-```
-
-```kql
-// Service Bus dead-letter messages
-AzureDiagnostics
-| where ResourceProvider == "MICROSOFT.SERVICEBUS"
-| where OperationName == "DeadLetter"
-| project TimeGenerated, _ResourceId, properties_s
-| order by TimeGenerated desc
-| take 50
-```
-
 ## SDK Troubleshooting Guides
 
 Language-specific error handling, common issues, and configuration for each SDK:
