@@ -80,7 +80,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.2"
     }
     azurecaf = {
       source  = "aztfmod/azurecaf"
@@ -101,6 +101,19 @@ provider "azurerm" {
   features {}
 }
 ```
+
+> **⚠️ IMPORTANT**: For **Azure Functions Flex Consumption**, use azurerm provider **v4.2 or later**:
+> ```hcl
+> terraform {
+>   required_providers {
+>     azurerm = {
+>       source  = "hashicorp/azurerm"
+>       version = "~> 4.2"
+>     }
+>   }
+> }
+> ```
+> See [Terraform Functions patterns](../../services/functions/terraform.md) for Flex Consumption examples.
 
 ### 4. Variables and Outputs
 
