@@ -74,7 +74,7 @@ curl https://<functionapp>.azurewebsites.net/api/random
 
 ## 3. Test File Updates
 
-After adding a new function, update existing test files or scaffold new ones.
+After adding a new function, update the project's test files.
 
 ### If a `test.http` file exists
 
@@ -88,29 +88,32 @@ GET http://localhost:7071/api/<route>
 GET https://{{functionAppName}}.azurewebsites.net/api/<route>
 ```
 
-### If a `tests/` directory with unit tests exists
+For POST endpoints, include a body:
 
-Add a test case for the new function (language-specific):
+```http
+### <FunctionName> POST - local
+POST http://localhost:7071/api/<route>
+Content-Type: application/json
 
-**JavaScript/TypeScript:**
-```javascript
-test('<functionName> returns 200', async () => {
-    const response = await fetch('http://localhost:7071/api/<route>');
-    expect(response.status).toBe(200);
-});
+{
+  "key": "value"
+}
 ```
 
-**Python:**
-```python
-def test_<function_name>():
-    response = requests.get("http://localhost:7071/api/<route>")
-    assert response.status_code == 200
+### If a `testdata.json` (or similar data file used with curl) exists
+
+Append an entry for the new function's expected input/output:
+
+```json
+{
+  "<functionName>": {
+    "route": "/api/<route>",
+    "method": "GET",
+    "expectedStatus": 200
+  }
+}
 ```
 
-### If no test infrastructure exists
+### If neither `test.http` nor a testdata file exists
 
-Add a comment in `README.md`:
-
-```markdown
-<!-- TODO: Add tests for <functionName> endpoint (/api/<route>) -->
-```
+Create a `test.http` file at the project root with a request block for the new function (see template above).
