@@ -228,17 +228,23 @@ variable "function_runtime" {
 }
 
 variable "function_runtime_version" {
-  default = "20"    # See table below
+  default = "20"    # Query docs for latest - see below
 }
 ```
 
-| Language | `function_runtime` | `function_runtime_version` |
-|----------|-------------------|---------------------------|
-| C# (.NET 8) | `dotnet-isolated` | `8.0` |
-| TypeScript/JS | `node` | `20` |
-| Python | `python` | `3.11` |
-| Java | `java` | `17` |
-| PowerShell | `powershell` | `7.4` |
+| Language | `function_runtime` | Version Source |
+|----------|-------------------|----------------|
+| C# (.NET) | `dotnet-isolated` | Latest LTS from docs |
+| TypeScript/JS | `node` | Latest LTS from docs |
+| Python | `python` | Latest GA from docs |
+| Java | `java` | Latest LTS from docs |
+| PowerShell | `powershell` | Latest GA from docs |
+
+> **⚠️ ALWAYS QUERY OFFICIAL DOCUMENTATION** — Do NOT use hardcoded versions.
+>
+> **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
+>
+> Query for latest GA/LTS versions before generating IaC.
 
 > ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
 
