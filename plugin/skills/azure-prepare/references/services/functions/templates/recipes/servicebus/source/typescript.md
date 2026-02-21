@@ -2,6 +2,10 @@
 
 Replace the contents of `src/functions/` with these files.
 
+> ⚠️ **IMPORTANT**: Do NOT delete `src/index.ts` — it's required for function discovery. See [nodejs-entry-point.md](../../common/nodejs-entry-point.md).
+
+> 📦 **Build Required**: Run `npm run build` before deployment to compile TypeScript to `dist/`.
+
 ## src/functions/serviceBusTrigger.ts
 
 ```typescript
@@ -122,6 +126,7 @@ Set these in `local.settings.json`:
 
 ## Common Patterns
 
+- [Node.js Entry Point](../../common/nodejs-entry-point.md) — **REQUIRED** src/index.ts setup + build
 - [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
 - [Health Check](../../common/health-check.md) — Health endpoint for monitoring
 - [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

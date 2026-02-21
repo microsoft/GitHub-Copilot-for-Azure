@@ -163,6 +163,10 @@ module "function_app" {
 
 ## Consumption Plan (Legacy)
 
+> ⛔ **DO NOT USE** — Y1/Dynamic SKU is deprecated for new deployments.
+> **ALWAYS use Flex Consumption (FC1)** for all new Azure Functions.
+> The Y1 example below is only for reference when migrating legacy apps.
+
 **⚠️ Not recommended for new deployments. Use Flex Consumption instead.**
 
 ```hcl
