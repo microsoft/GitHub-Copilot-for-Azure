@@ -1,6 +1,6 @@
 # Scoring Criteria
 
-Detailed scoring criteria for evaluating skill frontmatter compliance.
+Detailed scoring criteria for evaluating skill frontmatter compliance per the [agentskills.io specification](https://agentskills.io/specification).
 
 ## Overview
 
@@ -103,10 +103,19 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 
 ### 1. Name Validation
 
+Per the [agentskills.io spec](https://agentskills.io/specification), the `name` field:
+- Must be 1-64 characters
+- May only contain lowercase alphanumeric characters and hyphens (`a-z`, `0-9`, `-`)
+- Must not start or end with a hyphen
+- Must not contain consecutive hyphens (`--`)
+- Must match the parent directory name
+
 | Check | Pass | Fail |
 |-------|------|------|
 | Lowercase only | `azure-deploy` | `Azure-Deploy` |
-| Hyphens allowed | `azure-cost-optimization` | `azure_cost_optimization` |
+| Alphanumeric + hyphens | `azure-cost-optimization` | `azure_cost_optimization` |
+| No start/end hyphen | `azure-deploy` | `-azure-deploy`, `azure-deploy-` |
+| No consecutive hyphens | `azure-deploy` | `azure--deploy` |
 | Matches directory | `skill-name` = folder name | Mismatch |
 | Length ≤ 64 | 20 chars ✓ | 65+ chars ✗ |
 
@@ -151,6 +160,8 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 
 ### 5. Compatibility Field
 
+Per the spec, `compatibility` is optional (max 500 characters). Indicates environment requirements.
+
 **What to include:**
 - Required tools (azd, az cli, Docker)
 - Supported frameworks (.NET 6+, Node.js 18+)
@@ -165,12 +176,43 @@ compatibility: |
   Optional: Docker (for containerized apps)
 ```
 
+### 6. Optional Spec Fields
+
+The [agentskills.io spec](https://agentskills.io/specification) defines additional optional fields that sensei should preserve if present but does not require:
+
+| Field | Spec Status | Description |
+|-------|-------------|-------------|
+| `license` | Optional | License name or reference to bundled license file |
+| `metadata` | Optional | Arbitrary key-value mapping (e.g., author, version) |
+| `allowed-tools` | Experimental | Space-delimited list of pre-approved tools |
+
+> ⚠️ **Warning:** When improving frontmatter, never remove these fields if they already exist. Sensei does not require them for any adherence level but should not strip them.
+
+### 7. SKILL.md Size Limits
+
+Per the spec, SKILL.md should follow progressive disclosure:
+
+| Metric | Limit | Type |
+|--------|-------|------|
+| SKILL.md tokens | 500 | Soft limit |
+| SKILL.md tokens | 5000 | Hard limit |
+| SKILL.md lines | 500 | Spec recommendation |
+| Description chars | 1024 | Hard limit |
+| references/*.md tokens | 1000 | Per-file soft limit |
+
+**Line count check:** The spec recommends keeping SKILL.md under 500 lines. Report a warning if exceeded.
+
 ---
 
 ## Scoring Algorithm
 
 ```
 function scoreSkill(skill):
+    # Validate name per agentskills.io spec (fail-fast)
+    if not isValidName(skill.name):
+        report "INVALID: name fails spec validation"
+        return "Invalid"
+    
     score = "Low"
     
     # Check description length
@@ -193,6 +235,17 @@ function scoreSkill(skill):
         score = "High"
     
     return score
+
+function isValidName(name):
+    if name.length < 1 OR name.length > 64:
+        return false
+    if not matches(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/):
+        return false    # start/end with alphanumeric
+    if contains("--"):
+        return false    # no consecutive hyphens
+    if name != parentDirectoryName:
+        return false
+    return true
 ```
 
 ---

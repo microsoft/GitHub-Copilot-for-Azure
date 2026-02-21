@@ -120,15 +120,25 @@ tests/{skill-name}/integration.test.ts # If exists
 
 ### Step 2: SCORE
 
-**Action:** Evaluate frontmatter compliance
+**Action:** Evaluate frontmatter compliance per the [agentskills.io specification](https://agentskills.io/specification)
 
 **Checks:**
-1. Description length >= 150 chars
-2. Contains trigger phrases ("USE FOR:" etc.)
-3. Contains anti-triggers ("DO NOT USE FOR:" etc.)
-4. Has compatibility field (optional for Medium-High)
+1. **Name validation** (spec-required):
+   - Lowercase alphanumeric + hyphens only
+   - No consecutive hyphens (`--`)
+   - Must not start or end with `-`
+   - Must match parent directory name
+   - Length 1-64 characters
+2. Description length >= 150 chars
+3. Description ≤ 1024 chars (spec hard limit)
+4. Contains trigger phrases ("USE FOR:" etc.)
+5. Contains anti-triggers ("DO NOT USE FOR:" etc.)
+6. Has compatibility field (optional for Medium-High)
+7. Optional fields preserved if present (`license`, `metadata`, `allowed-tools`)
 
-**Output:** Low | Medium | Medium-High | High
+**Output:** Invalid | Low | Medium | Medium-High | High
+
+> ⚠️ **Warning:** If name validation fails, report as **Invalid** and fix before proceeding. A name like `azure--deploy` or `-azure-deploy` violates the spec.
 
 ### Step 3: SCAFFOLD (Conditional)
 
@@ -255,13 +265,19 @@ cd scripts && npm run references {skill-name}
 
 ### Step 6: CHECK TOKENS
 
-**Action:** Analyze token usage and gather optimization suggestions
+**Action:** Analyze token usage, line count, and gather optimization suggestions
 
 **Commands:**
 ```bash
 cd scripts && npm run tokens -- check plugin/skills/{skill-name}/SKILL.md
 cd scripts && npm run tokens -- suggest plugin/skills/{skill-name}/SKILL.md
 ```
+
+**Line count check (per spec):**
+```bash
+wc -l plugin/skills/{skill-name}/SKILL.md
+```
+Report a warning if SKILL.md exceeds 500 lines (spec recommendation).
 
 **Token Budgets** (from [skill-authoring](/.github/skills/skill-authoring)):
 - SKILL.md: < 500 tokens (soft limit), < 5000 (hard limit)

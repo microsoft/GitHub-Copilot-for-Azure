@@ -89,22 +89,28 @@ Run sensei on all skills
 For each skill, execute this loop until score >= Medium-High AND tests pass:
 
 1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md`, tests, and token count
-2. **SCORE** - Run rule-based compliance check (see [SCORING.md](references/SCORING.md))
+2. **SCORE** - Run spec-based compliance check (see [SCORING.md](references/SCORING.md)):
+   - Validate `name` per [agentskills.io spec](https://agentskills.io/specification) (no `--`, no start/end `-`, lowercase alphanumeric)
+   - Check description length, triggers, anti-triggers
+   - Preserve optional spec fields (`license`, `metadata`, `allowed-tools`) if present
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
 8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
-9. **TOKENS** - Check token budget, gather optimization suggestions
+9. **TOKENS** - Check token budget and line count (< 500 lines per spec), gather optimization suggestions
 10. **SUMMARY** - Display before/after comparison with unimplemented suggestions
 11. **PROMPT** - Ask user: Commit, Create Issue, or Skip?
 12. **REPEAT** - Go to step 2 (max 5 iterations per skill)
 
 ## Scoring Criteria (Quick Reference)
 
+Sensei validates skills against the [agentskills.io specification](https://agentskills.io/specification). See [SCORING.md](references/SCORING.md) for full details.
+
 | Score | Requirements |
 |-------|--------------|
+| **Invalid** | Name fails spec validation (consecutive hyphens, start/end hyphen, uppercase, etc.) |
 | **Low** | Basic description, no explicit triggers, no anti-triggers |
 | **Medium** | Has trigger keywords/phrases, description > 150 chars |
 | **Medium-High** | Has "USE FOR:" triggers AND "DO NOT USE FOR:" anti-triggers |
@@ -114,6 +120,8 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 
 ## Frontmatter Template
 
+Per the [agentskills.io spec](https://agentskills.io/specification), required and optional fields:
+
 ```yaml
 ---
 name: skill-name
@@ -121,6 +129,12 @@ description: >-
   [1-2 sentence description of what the skill does]
   USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]
   DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)
+# Optional spec fields — preserve if already present:
+# license: Apache-2.0
+# metadata:
+#   author: example-org
+#   version: "1.0"
+# allowed-tools: Bash(git:*) Read
 ---
 ```
 
