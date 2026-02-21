@@ -208,21 +208,26 @@ azd deploy --no-prompt        # Deploy code (RBAC now active)
 
 ## Base Template Lookup
 
-| Language | Bicep Template | Terraform |
-|----------|---------------|-----------|
-| dotnet | `functions-quickstart-dotnet-azd` | Use Bicep template, convert to TF |
-| typescript | `functions-quickstart-typescript-azd` | Use Bicep template, convert to TF |
-| javascript | `functions-quickstart-javascript-azd` | Use Bicep template, convert to TF |
-| python | `functions-quickstart-python-http-azd` | Use Bicep template, convert to TF |
-| java | `azure-functions-java-flex-consumption-azd` | Use Bicep template, convert to TF |
-| powershell | `functions-quickstart-powershell-azd` | Use Bicep template, convert to TF |
+| Language | Bicep Template | Terraform Template |
+|----------|---------------|-------------------|
+| dotnet | `functions-quickstart-dotnet-azd` | `functions-quickstart-dotnet-azd-tf` |
+| typescript | `functions-quickstart-typescript-azd` | — |
+| javascript | `functions-quickstart-javascript-azd` | — |
+| python | `functions-quickstart-python-http-azd` | — |
+| java | `azure-functions-java-flex-consumption-azd` | — |
+| powershell | `functions-quickstart-powershell-azd` | — |
 
-> ⚠️ **Terraform Note**: No official Terraform AZD templates exist for Functions.
-> When user requests Terraform:
-> 1. Initialize with Bicep template first: `azd init -t functions-quickstart-{lang}-azd`
-> 2. Convert to Terraform OR synthesize using [terraform.md](../../terraform.md)
-> 3. **MUST use `sku_name = "FC1"` (Flex Consumption)** — NEVER use Y1
-> 4. See [azd/terraform.md](../../../recipes/azd/terraform.md) for azd+Terraform patterns
+### Terraform Users
+
+For Terraform deployments, options by language:
+
+| Language | Approach |
+|----------|----------|
+| **dotnet** | `azd init -t functions-quickstart-dotnet-azd-tf` ✅ |
+| **Other languages** | Use Bicep template, then copy TF from [azure-functions-flex-consumption-samples/IaC/terraformazurerm](https://github.com/Azure-Samples/azure-functions-flex-consumption-samples/tree/main/IaC/terraformazurerm) |
+
+> ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
+> See [terraform.md](../../terraform.md) for Flex Consumption patterns.
 
 ## Storage Endpoint Requirements
 
