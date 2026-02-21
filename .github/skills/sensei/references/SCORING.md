@@ -233,6 +233,9 @@ function scoreSkill(skill):
     score = "Low"
     
     # Check description length
+    if skill.description.length > 1024:
+        report "INVALID: description exceeds 1024-char spec limit"
+        return "Invalid"
     if skill.description.length < 150:
         return "Low"
     
