@@ -118,6 +118,10 @@ Sensei validates skills against the [agentskills.io specification](https://agent
 
 **Target: Medium-High** (triggers + anti-triggers present)
 
+**Strongly recommended** (reported as suggestions if missing):
+- `license` — identifies the license applied to the skill
+- `metadata.version` — tracks the skill version for consumers
+
 ## Frontmatter Template
 
 Per the [agentskills.io spec](https://agentskills.io/specification), required and optional fields:
@@ -129,11 +133,11 @@ description: >-
   [1-2 sentence description of what the skill does]
   USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]
   DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)
-# Optional spec fields — preserve if already present:
-# license: Apache-2.0
-# metadata:
-#   author: example-org
-#   version: "1.0"
+license: MIT
+metadata:
+  version: "1.0"
+# Other optional spec fields — preserve if already present:
+# metadata.author: example-org
 # allowed-tools: Bash(git:*) Read
 ---
 ```

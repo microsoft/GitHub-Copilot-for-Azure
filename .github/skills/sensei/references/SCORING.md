@@ -88,13 +88,22 @@ A skill is **High** if:
 - Has `compatibility` field documenting requirements
 - Has examples section (optional but recommended)
 
+**Strongly recommended** (reported as suggestions if missing):
+- `license` field — identifies the license applied to the skill
+- `metadata.version` — tracks the skill version for consumers
+
 **Example of High adherence:**
 ```yaml
+name: appinsights-instrumentation
 description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring".
   DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
+license: MIT
 compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
+metadata:
+  author: example-org
+  version: "1.0"
 ```
 
 ---
@@ -178,15 +187,23 @@ compatibility: |
 
 ### 6. Optional Spec Fields
 
-The [agentskills.io spec](https://agentskills.io/specification) defines additional optional fields that sensei should preserve if present but does not require:
+The [agentskills.io spec](https://agentskills.io/specification) defines additional optional fields. Sensei **strongly recommends** `license` and `metadata.version` — report a suggestion in the summary if either is missing.
 
-| Field | Spec Status | Description |
-|-------|-------------|-------------|
-| `license` | Optional | License name or reference to bundled license file |
-| `metadata` | Optional | Arbitrary key-value mapping (e.g., author, version) |
-| `allowed-tools` | Experimental | Space-delimited list of pre-approved tools |
+| Field | Spec Status | Sensei Policy |
+|-------|-------------|---------------|
+| `license` | Optional | **Strongly recommended.** Report suggestion if missing. |
+| `metadata.version` | Optional | **Strongly recommended.** Report suggestion if missing. |
+| `metadata.*` (other) | Optional | Preserve if present, do not require. |
+| `allowed-tools` | Experimental | Preserve if present, do not require. |
 
-> ⚠️ **Warning:** When improving frontmatter, never remove these fields if they already exist. Sensei does not require them for any adherence level but should not strip them.
+> ⚠️ **Warning:** When improving frontmatter, never remove these fields if they already exist.
+
+**Example suggestions in summary:**
+```
+SUGGESTIONS:
+• Add license field (e.g., license: MIT)
+• Add metadata.version field (e.g., metadata: { version: "1.0" })
+```
 
 ### 7. SKILL.md Size Limits
 
@@ -246,6 +263,14 @@ function isValidName(name):
     if name != parentDirectoryName:
         return false
     return true
+
+function collectSuggestions(skill):
+    suggestions = []
+    if skill.license == null:
+        suggestions.add("Add license field (e.g., license: MIT)")
+    if skill.metadata == null OR skill.metadata.version == null:
+        suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0\" })")
+    return suggestions
 ```
 
 ---

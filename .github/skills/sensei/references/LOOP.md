@@ -308,6 +308,10 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 ║  Triggers: 0                     Triggers: 5                     ║
 ║  Anti-triggers: 0                Anti-triggers: 3                ║
 ║                                                                  ║
+║  SPEC RECOMMENDATIONS:                                           ║
+║  • Add license field (e.g., license: MIT)                        ║
+║  • Add metadata.version (e.g., metadata: { version: "1.0" })    ║
+║                                                                  ║
 ║  SUGGESTIONS NOT IMPLEMENTED:                                    ║
 ║  • Remove emoji decorations (-12 tokens)                         ║
 ║  • Consolidate duplicate headings (-8 tokens)                    ║
@@ -320,6 +324,7 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 - Token delta (+/- tokens)
 - Trigger count change
 - Anti-trigger count change
+- Spec recommendations (missing `license`, `metadata.version`)
 - Unimplemented token suggestions
 
 ### Step 8: PROMPT USER
