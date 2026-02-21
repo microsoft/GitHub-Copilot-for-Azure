@@ -56,7 +56,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("includes deploy-existing path", () => {
-      expect(skill.content).toContain("deploy ref");
+      expect(skill.content).toContain("deploy existing ref");
       expect(skill.content).toContain("deploy-existing");
     });
   });
