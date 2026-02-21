@@ -109,8 +109,15 @@ azd deploy --no-prompt        # Deploy code
 | Language | Bicep Template | Terraform Template |
 |----------|---------------|-------------------|
 | C# (.NET) | `functions-quickstart-dotnet-azd` | `functions-quickstart-dotnet-azd-tf` |
-| TypeScript | `functions-quickstart-typescript-azd` | `functions-quickstart-typescript-azd-tf` |
-| JavaScript | `functions-quickstart-javascript-azd` | `functions-quickstart-javascript-azd-tf` |
-| Python | `functions-quickstart-python-http-azd` | `functions-quickstart-python-http-azd-tf` |
-| Java | `azure-functions-java-flex-consumption-azd` | `azure-functions-java-flex-consumption-azd-tf` |
-| PowerShell | `functions-quickstart-powershell-azd` | `functions-quickstart-powershell-azd-tf` |
+| TypeScript | `functions-quickstart-typescript-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| JavaScript | `functions-quickstart-javascript-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| Python | `functions-quickstart-python-http-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| Java | `azure-functions-java-flex-consumption-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| PowerShell | `functions-quickstart-powershell-azd` | `functions-quickstart-dotnet-azd-tf` * |
+
+> \* **Terraform Note**: Only `functions-quickstart-dotnet-azd-tf` exists. For other languages:
+> 1. Initialize with `azd init -t functions-quickstart-dotnet-azd-tf`
+> 2. Change runtime settings in `main.tf`: `runtime = { name = "node", version = "22" }`
+> 3. Replace source code with your language's files
+>
+> See [composition.md](composition.md) for the full algorithm.

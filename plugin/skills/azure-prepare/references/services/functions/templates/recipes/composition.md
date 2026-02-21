@@ -339,6 +339,10 @@ resource "azurerm_storage_account" "storage" {
 
 ### Function App with Managed Identity Storage
 
+> **Note**: For **Flex Consumption (FC1)**, use `azapi_resource` instead of `azurerm_linux_function_app`.
+> The AzureRM provider doesn't yet support FC1's `functionAppConfig` block. See examples below.
+
+**Standard Consumption/Premium (azurerm)**
 ```hcl
 provider "azurerm" {
   features {}
@@ -352,6 +356,39 @@ resource "azurerm_linux_function_app" "function" {
   # When using MI storage, assign RBAC BEFORE creating function:
   depends_on = [azurerm_role_assignment.storage_blob_owner]
 }
+```
+
+**Flex Consumption FC1 (azapi) — REQUIRED for FC1**
+```hcl
+resource "azapi_resource" "function_app" {
+  type      = "Microsoft.Web/sites@2023-12-01"
+  name      = "func-${local.name}"
+  location  = azurerm_resource_group.rg.location
+  parent_id = azurerm_resource_group.rg.id
+  
+  body = {
+    kind = "functionapp,linux"
+    properties = {
+      serverFarmId = azapi_resource.plan.id
+      functionAppConfig = {
+        runtime = { name = "node", version = "22" }
+        scaleAndConcurrency = { maximumInstanceCount = 100, instanceMemoryMB = 2048 }
+        deployment = {
+          storage = {
+            type  = "blobContainer"
+            value = "${azurerm_storage_account.storage.primary_blob_endpoint}deploymentpackage"
+            authentication = {
+              type                           = "UserAssignedIdentity"
+              userAssignedIdentityResourceId = azurerm_user_assigned_identity.api.id
+            }
+          }
+        }
+      }
+    }
+  }
+  depends_on = [time_sleep.rbac_propagation]
+}
+```
 
 # RBAC for deploying user (required to create function with MI storage)
 resource "azurerm_role_assignment" "storage_blob_owner" {
@@ -359,14 +396,6 @@ resource "azurerm_role_assignment" "storage_blob_owner" {
   role_definition_name = "Storage Blob Data Owner"
   principal_id         = data.azurerm_client_config.current.object_id
 }
-
-# RBAC for function app after creation
-resource "azurerm_role_assignment" "function_storage_blob" {
-  scope                = azurerm_storage_account.storage.id
-  role_definition_name = "Storage Blob Data Owner"
-  principal_id         = azurerm_linux_function_app.function.identity[0].principal_id
-}
-```
 
 ### RBAC Propagation Delay (CRITICAL)
 
