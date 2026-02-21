@@ -155,6 +155,20 @@ app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
 3. Remove the HTTP trigger files listed in "Files to Remove"
 4. Add any package dependencies (NuGet, npm, pip, Maven)
 
+> **File Naming:** Name function source files after their **route or purpose**, not the generic trigger type.
+> - Route `/api/random` → `src/functions/random.js` (not `httpTrigger.js`)
+> - Route `/api/users` → `src/functions/users.js` (not `httpTrigger.js`)
+> - See [common/post-generation.md](common/post-generation.md) for full naming rules.
+
+### Step 5.5: Post-Generation Updates
+
+After creating or modifying function source files, always perform these updates:
+
+1. **Update README.md** — add the new function to the endpoints table with a curl example
+2. **Update test files** — add a test case if `test.http` or `tests/` exists; otherwise add a TODO comment in README.md
+
+See [common/post-generation.md](common/post-generation.md) for templates and examples.
+
 ### Step 6: Update azure.yaml (if needed)
 
 Some recipes require hooks (e.g., Cosmos firewall scripts for VNet):
