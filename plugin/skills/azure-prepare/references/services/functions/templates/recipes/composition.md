@@ -208,14 +208,21 @@ azd deploy --no-prompt        # Deploy code (RBAC now active)
 
 ## Base Template Lookup
 
-| Language | Bicep Template | Terraform Template |
-|----------|---------------|-------------------|
-| dotnet | `functions-quickstart-dotnet-azd` | `functions-quickstart-dotnet-azd-tf` |
-| typescript | `functions-quickstart-typescript-azd` | `functions-quickstart-typescript-azd-tf` |
-| javascript | `functions-quickstart-javascript-azd` | `functions-quickstart-javascript-azd-tf` |
-| python | `functions-quickstart-python-http-azd` | `functions-quickstart-python-http-azd-tf` |
-| java | `azure-functions-java-flex-consumption-azd` | `azure-functions-java-flex-consumption-azd-tf` |
-| powershell | `functions-quickstart-powershell-azd` | `functions-quickstart-powershell-azd-tf` |
+| Language | Bicep Template | Terraform |
+|----------|---------------|-----------|
+| dotnet | `functions-quickstart-dotnet-azd` | Use Bicep template, convert to TF |
+| typescript | `functions-quickstart-typescript-azd` | Use Bicep template, convert to TF |
+| javascript | `functions-quickstart-javascript-azd` | Use Bicep template, convert to TF |
+| python | `functions-quickstart-python-http-azd` | Use Bicep template, convert to TF |
+| java | `azure-functions-java-flex-consumption-azd` | Use Bicep template, convert to TF |
+| powershell | `functions-quickstart-powershell-azd` | Use Bicep template, convert to TF |
+
+> ⚠️ **Terraform Note**: No official Terraform AZD templates exist for Functions.
+> When user requests Terraform:
+> 1. Initialize with Bicep template first: `azd init -t functions-quickstart-{lang}-azd`
+> 2. Convert to Terraform OR synthesize using [terraform.md](../../terraform.md)
+> 3. **MUST use `sku_name = "FC1"` (Flex Consumption)** — NEVER use Y1
+> 4. See [azd/terraform.md](../../../recipes/azd/terraform.md) for azd+Terraform patterns
 
 ## Storage Endpoint Requirements
 
