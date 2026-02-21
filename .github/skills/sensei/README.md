@@ -300,7 +300,7 @@ description: 'Instrument a webapp to send useful telemetry data to Azure App Ins
 ```yaml
 ---
 name: appinsights-instrumentation
-description: |
+description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring",
   "add telemetry", "track requests", "ASP.NET Core telemetry", "Node.js monitoring".

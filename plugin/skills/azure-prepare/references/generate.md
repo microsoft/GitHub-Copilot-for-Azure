@@ -36,6 +36,8 @@ After verifying the project is NOT Aspire, check for these patterns:
 | **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code` |
 | **Existing azure.yaml** | File already present | MODIFY mode - update existing config |
 
+> **CRITICAL:** After running `azd init --from-code`, you **MUST** immediately set the user-confirmed subscription with `azd env set AZURE_SUBSCRIPTION_ID <id>`. Do NOT skip this step. See [aspire.md](aspire.md) Step 3 for the complete sequence.
+
 ## CRITICAL: Research Must Be Complete
 
 **DO NOT generate any files without first completing the [Research Components](research.md) step.**

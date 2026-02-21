@@ -166,7 +166,7 @@ const SKILL_NAME = '{skill-name}';  // Replace placeholder
 ```yaml
 ---
 name: {skill-name}
-description: |
+description: >-
   [What the skill does - 1-2 sentences]
   USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5]
   DO NOT USE FOR: [scenario1] (use other-skill), [scenario2] (use another-skill)

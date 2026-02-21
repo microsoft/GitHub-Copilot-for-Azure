@@ -1,6 +1,6 @@
 import { type AgentMetadata, getToolCalls } from "../utils/agent-runner";
 import * as fs from "fs";
-import * as path from "path";
+import { listFilesRecursive } from "../utils/evaluate";
 
 /**
  * Check if the agent has set the plan status to "Ready for Validation"
@@ -18,41 +18,6 @@ export function hasPlanReadyForValidation(metadata: AgentMetadata): boolean {
     const newStr = args?.new_str ?? "";
     return filePath.includes("plan.md") && /ready\s+for\s+validation/i.test(newStr);
   });
-}
-
-/**
- * Recursively list all files under a directory, returning paths relative to the root.
- * Paths are normalized to use forward slashes for cross-platform regex matching.
- */
-export function listFilesRecursive(dir: string): string[] {
-  return fs
-    .readdirSync(dir, { recursive: true })
-    .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
-}
-
-/**
- * Check if any file in the list matches the given regex pattern.
- */
-export function hasFile(files: string[], pattern: RegExp): boolean {
-  return files.some(f => pattern.test(f));
-}
-
-/**
- * List files in a workspace, log them, and assert expected/unexpected file patterns.
- */
-export function expectFiles(
-  workspacePath: string,
-  expected: RegExp[],
-  unexpected: RegExp[],
-): void {
-  const files = listFilesRecursive(workspacePath);
-
-  for (const pattern of expected) {
-    expect(hasFile(files, pattern)).toBe(true);
-  }
-  for (const pattern of unexpected) {
-    expect(hasFile(files, pattern)).toBe(false);
-  }
 }
 
 /**
