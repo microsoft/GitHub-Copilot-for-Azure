@@ -1,6 +1,20 @@
 # Analyze Workspace
 
-Determine the preparation path based on workspace state.
+## ⛔ MANDATORY FIRST — Specialized Technology Delegation
+
+**STOP. Before choosing a mode, check the user's prompt for specialized technology keywords.**
+If matched, invoke the corresponding skill **immediately** — it has tested templates and correct SDK usage.
+
+| User prompt mentions | Action |
+|---------------------|--------|
+| copilot SDK, copilot app, @github/copilot-sdk, CopilotClient, sendAndWait | **Invoke azure-hosted-copilot-sdk skill NOW** → then resume azure-prepare at Step 4 |
+| Azure Functions, function app, serverless function, timer trigger, func new | **Invoke azure-functions skill NOW** → then resume azure-prepare at Step 4 |
+
+> ⚠️ Check the user's **prompt text** — not just existing code. This is critical for greenfield projects with no codebase. See [full routing table](specialized-routing.md).
+
+If no match, continue below.
+
+---
 
 ## Three Modes — Always Choose One
 
@@ -66,3 +80,5 @@ Converting an existing application to run on Azure.
 | `infra/*.tf` exists | Terraform IaC |
 | `Dockerfile` exists | Containerized app |
 | No Azure files | NEW or MODERNIZE mode |
+
+

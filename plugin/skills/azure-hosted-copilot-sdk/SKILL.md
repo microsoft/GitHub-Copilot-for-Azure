@@ -9,28 +9,27 @@ description: "Build and deploy GitHub Copilot SDK apps to Azure. USE FOR: build 
 
 | User wants | Action |
 |------------|--------|
-| Build/create new | Step 2A (scaffold) |
-| Deploy existing | Step 2B (adapt + deploy) |
-| Add SDK to existing app | [Integrate SDK](references/existing-project-integration.md) |
-| Use Azure/own model | Step 2C (BYOM config) |
+| Build new (empty project) | Step 2A (scaffold) |
+| Add new SDK service to existing repo | Step 2B (scaffold alongside) |
+| Deploy existing SDK app to Azure | Step 2C (add infra to existing SDK app) |
+| Add SDK to existing app code | [Integrate SDK](references/existing-project-integration.md) |
+| Use Azure/own model | Step 3 (BYOM config) |
 
-## Step 2A: Scaffold New
+## Step 2A: Scaffold New (Greenfield)
 
 `azd init --template azure-samples/copilot-sdk-service`
 
 Template includes API (Express/TS) + Web UI (React/Vite) + infra (Bicep) + Dockerfiles + token scripts — do NOT recreate. See [SDK ref](references/copilot-sdk.md).
 
-## Step 2B: Deploy Existing SDK App
+## Step 2B: Add SDK Service to Existing Repo
 
-Scaffold to a temp dir, then copy infra into the user's project:
+User has existing code and wants a new Copilot SDK service alongside it. Scaffold template to a temp dir, copy the API service + infra into the user's repo, adapt `azure.yaml` to include both existing and new services. See [deploy existing ref](references/deploy-existing.md).
 
-```bash
-azd init --template azure-samples/copilot-sdk-service --cwd <temp-dir>
-```
+## Step 2C: Deploy Existing SDK App
 
-Copy `infra/`, `scripts/get-github-token.mjs`, and `azure.yaml` into the user's project. Adapt `azure.yaml` to point at their code. See [deploy ref](references/deploy-existing.md).
+User already has a working Copilot SDK app and needs Azure infra. See [deploy existing ref](references/deploy-existing.md).
 
-## Step 2C: Model Configuration
+## Step 3: Model Configuration
 
 Three model paths (layers on top of 2A/2B):
 
@@ -42,7 +41,7 @@ Three model paths (layers on top of 2A/2B):
 
 See [model config ref](references/azure-model-config.md).
 
-## Step 3: Deploy
+## Step 4: Deploy
 
 Invoke **azure-prepare** → **azure-validate** → **azure-deploy** in order.
 

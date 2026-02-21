@@ -72,6 +72,7 @@ Invoke related skills for specialized scenarios:
 
 | Scenario | Action |
 |----------|--------|
+| **Using GitHub Copilot SDK** | **Invoke `azure-hosted-copilot-sdk`** (scaffold + config, then resume azure-prepare) |
 | Using Azure Functions | Load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
 | PostgreSQL with passwordless auth | Invoke `azure-postgres` skill |
 | Need detailed security hardening | `azure-security-hardening` |
@@ -93,24 +94,7 @@ For **PostgreSQL**:
 
 ### Step 3: Document in Plan
 
-Add research findings to `.azure/plan.md`:
-
-```markdown
-## Research Summary
-
-### Container Apps
-- **Source**: services/container-apps/README.md, scaling.md, health-probes.md
-- **Key Insights**: 
-  - Use min replicas: 1 for APIs to avoid cold starts
-  - Configure health probes for liveness and readiness
-  - Use queue-based scaling for workers
-
-### Security
-- **Source**: azure-security-hardening skill
-- **Key Insights**:
-  - Use Managed Identity for all service-to-service auth
-  - Store secrets in Key Vault, not env vars
-```
+Add research findings to `.azure/plan.md` under a `## Research Summary` section with source references and key insights per component.
 
 ## Common Research Patterns
 
@@ -135,6 +119,11 @@ Add research findings to `.azure/plan.md`:
 2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md)
 3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
 4. Invoke: `azure-security` (API key management)
+
+### GitHub Copilot SDK Application
+
+1. Invoke: `azure-hosted-copilot-sdk` skill (scaffold, infra, model config)
+2. After it completes, resume azure-prepare workflow (validate → deploy)
 
 ## After Research
 
