@@ -368,6 +368,38 @@ resource "azurerm_role_assignment" "function_storage_blob" {
 }
 ```
 
+### RBAC Propagation Delay (CRITICAL)
+
+Azure RBAC assignments take 30-60 seconds to propagate through Azure AD. Terraform's `depends_on` only waits for the **resource** to be created, not for RBAC to propagate. This causes 403 errors on first deployment.
+
+**Solution 1: Add `time_sleep` resource**
+```hcl
+resource "time_sleep" "rbac_propagation" {
+  depends_on      = [azurerm_role_assignment.storage_blob_owner]
+  create_duration = "60s"
+}
+
+resource "azapi_resource" "function_app" {
+  depends_on = [time_sleep.rbac_propagation]
+  # ...
+}
+```
+
+**Solution 2: Create deployment container explicitly**
+```hcl
+resource "azurerm_storage_container" "deployment" {
+  name                  = "deploymentpackage"
+  storage_account_id    = azurerm_storage_account.storage.id
+  container_access_type = "private"
+  depends_on            = [azurerm_role_assignment.storage_blob_owner]
+}
+```
+
+> ⚠️ **Common Failures Without These Fixes:**
+> - `403 Forbidden` — RBAC not yet propagated
+> - `404 Container Not Found` — deployment container not created
+> - `Tag Not Found: azd-service-name` — Azure resource tags take time to be queryable
+
 ### Service Bus with Disabled Local Auth
 
 ```hcl
