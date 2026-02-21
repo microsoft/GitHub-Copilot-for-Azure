@@ -2,7 +2,7 @@
 
 > ⚠️ **IMPORTANT**: Do NOT modify `Program.cs` — the base template's entry point already has the correct configuration (`ConfigureFunctionsWebApplication()` with App Insights). Only add trigger-specific files.
 
-Replace the contents of the function project with these files.
+Add the following trigger file and `.csproj` additions to your function project (keep the existing `Program.cs` and other base template files intact).
 
 ## TimerFunctions.cs
 

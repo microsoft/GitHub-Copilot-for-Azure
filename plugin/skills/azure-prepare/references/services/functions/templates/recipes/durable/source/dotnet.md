@@ -2,7 +2,7 @@
 
 > ⚠️ **IMPORTANT**: Do NOT modify `Program.cs` — the base template's entry point already has the correct configuration (`ConfigureFunctionsWebApplication()` with App Insights). Only add trigger-specific files.
 
-Replace the contents of the function project with these files.
+Add the `DurableFunctions.cs` trigger file to your function project and add the `.csproj` additions shown below (keep the existing `Program.cs` from the template unchanged).
 
 ## DurableFunctions.cs
 

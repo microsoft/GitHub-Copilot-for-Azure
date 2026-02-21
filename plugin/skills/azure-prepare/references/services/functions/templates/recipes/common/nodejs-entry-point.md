@@ -30,10 +30,12 @@ app.setup({
 
 ## package.json Configuration
 
+The Azure Functions Node.js v4 runtime automatically discovers functions in the `src/functions/` directory. The `main` field points to the entry point.
+
 ### JavaScript
 ```json
 {
-  "main": "src/{index.js,functions/*.js}",
+  "main": "src/index.js",
   "scripts": {
     "start": "func start"
   }
@@ -43,7 +45,7 @@ app.setup({
 ### TypeScript
 ```json
 {
-  "main": "dist/src/functions/*.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
     "prestart": "npm run build",
@@ -51,6 +53,8 @@ app.setup({
   }
 }
 ```
+
+> **Note**: Functions in `src/functions/*.js` are auto-discovered by the runtime when they call `app.http()`, `app.timer()`, etc. The `main` field only needs to point to the entry point that calls `app.setup()`.
 
 ## Build Requirements (TypeScript only)
 

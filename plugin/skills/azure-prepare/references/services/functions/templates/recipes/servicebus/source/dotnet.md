@@ -2,7 +2,7 @@
 
 > ⚠️ **IMPORTANT**: Do NOT modify `Program.cs` — the base template's entry point already has the correct configuration (`ConfigureFunctionsWebApplication()` with App Insights). Only add trigger-specific files.
 
-Replace the contents of `src/api/` with these files.
+Add the following trigger file under `src/api/` (keep the existing `Program.cs` and other base template files intact).
 
 ## ServiceBusFunctions.cs
 
