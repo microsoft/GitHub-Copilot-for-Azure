@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for agent-framework
+ * Trigger Tests for create
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/create";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("create - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
@@ -22,15 +22,17 @@ describe("create - Trigger Tests", () => {
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
       "Create a new hosted agent for Foundry",
-      "Build a hosted agent using LangGraph",
+      "Build a hosted agent using LangGraph for Foundry",
       "Scaffold an agent project from a sample",
-      "Create a new agent application in Python",
-      "Start a new greenfield agent project",
+      "Create a new agent application for Foundry",
+      "Start a new greenfield agent project for Foundry",
       "Build a custom hosted agent for Foundry",
       "Create an agent using Microsoft Agent Framework",
       "New LangChain agent for Foundry",
       "Scaffold agent from foundry-samples",
-      "Create a hosted agent in C#",
+      "Create a hosted agent in C# for Foundry",
+      "Convert my agent to a Foundry hosted agent",
+      "Add hosting adapter to my Foundry agent project",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -48,13 +50,13 @@ describe("create - Trigger Tests", () => {
       "What is the weather today?",
       "Help me write a poem",
       "Explain quantum computing",
-      "Help me with AWS SageMaker",
       "Configure my PostgreSQL database",
-      "Optimize my Azure spending and reduce costs",
-      "Check model capacity across regions",
       "Help me with Kubernetes pods",
-      "Set up a virtual network in Azure",
-      "How do I write Python code?",
+      "How do I configure a timer-based Azure function?",
+      "Help me deploy a static website",
+      "Write a unit test for my React component",
+      "How do I use Git branches?",
+      "Explain Docker networking basics",
     ];
 
     test.each(shouldNotTriggerPrompts)(

@@ -81,11 +81,13 @@ Delegate Dockerfile creation to a sub-agent. Guidelines:
 - Use multi-stage builds for compiled languages
 - Use Alpine or slim variants for smaller images
 - Always target `linux/amd64` platform
-- Expose the correct port (ask user if not detectable)
+- Expose the correct port (usually 8088)
 
 > 💡 **Tip:** Reference [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples) for containerized agent examples.
 
 Also generate `docker-compose.yml` and `.env` files for local development.
+
+**IMPORTANT**: You MUST always generate image tag as current timestamp (e.g., `myagent:202401011230`) to ensure uniqueness and avoid conflicts with existing images in ACR. DO NOT use static tags like `latest` or `v1`.
 
 Collect ACR details from project context. Let the user choose the build method:
 

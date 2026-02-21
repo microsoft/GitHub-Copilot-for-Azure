@@ -50,6 +50,10 @@ Required `.env` variables:
 - `FOUNDRY_PROJECT_ENDPOINT` — project endpoint URL
 - `FOUNDRY_MODEL_DEPLOYMENT_NAME` — model deployment name
 
+### Authentication
+
+If explicitly asked to use API key instead of managed identity, then use AzureOpenAIResponsesClient and pass in api_key parameter to it.
+
 ### Agent Naming Rules
 
 Agent names must: start/end with alphanumeric characters, may contain hyphens in the middle, max 63 characters. Examples: `MyAgent`, `agent-1`. Invalid: `-agent`, `agent-`, `sample_agent`.
