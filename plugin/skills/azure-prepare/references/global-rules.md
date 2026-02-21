@@ -30,6 +30,8 @@ ask_user(
 - Do NOT assume user wants to delete/overwrite
 - Do NOT proceed based on "the user asked to deploy" (deploy ≠ delete old)
 - Do NOT batch destructive actions without individual confirmation
+- ⛔ Do NOT delete user project directories (`rm -rf <project>`) even when adding features, converting, or migrating — use MODIFY mode to edit existing files instead
+- ⛔ `azd init` and template commands are for NEW projects only — NEVER run on an existing workspace without explicit user confirmation
 
 ---
 
