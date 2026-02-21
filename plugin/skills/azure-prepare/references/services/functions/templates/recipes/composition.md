@@ -211,23 +211,36 @@ azd deploy --no-prompt        # Deploy code (RBAC now active)
 | Language | Bicep Template | Terraform Template |
 |----------|---------------|-------------------|
 | dotnet | `functions-quickstart-dotnet-azd` | `functions-quickstart-dotnet-azd-tf` |
-| typescript | `functions-quickstart-typescript-azd` | — |
-| javascript | `functions-quickstart-javascript-azd` | — |
-| python | `functions-quickstart-python-http-azd` | — |
-| java | `azure-functions-java-flex-consumption-azd` | — |
-| powershell | `functions-quickstart-powershell-azd` | — |
+| typescript | `functions-quickstart-typescript-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| javascript | `functions-quickstart-javascript-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| python | `functions-quickstart-python-http-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| java | `azure-functions-java-flex-consumption-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| powershell | `functions-quickstart-powershell-azd` | `functions-quickstart-dotnet-azd-tf` * |
 
-### Terraform Users
+### Terraform: Language Configuration
 
-For Terraform deployments, options by language:
+\* All languages use `functions-quickstart-dotnet-azd-tf` as base, then modify runtime settings:
 
-| Language | Approach |
-|----------|----------|
-| **dotnet** | `azd init -t functions-quickstart-dotnet-azd-tf` ✅ |
-| **Other languages** | Use Bicep template, then copy TF from [azure-functions-flex-consumption-samples/IaC/terraformazurerm](https://github.com/Azure-Samples/azure-functions-flex-consumption-samples/tree/main/IaC/terraformazurerm) |
+```hcl
+# In variables.tf or main.tf - change these values for your language:
+variable "function_runtime" {
+  default = "node"  # dotnet-isolated | node | python | java | powershell
+}
+
+variable "function_runtime_version" {
+  default = "20"    # See table below
+}
+```
+
+| Language | `function_runtime` | `function_runtime_version` |
+|----------|-------------------|---------------------------|
+| C# (.NET 8) | `dotnet-isolated` | `8.0` |
+| TypeScript/JS | `node` | `20` |
+| Python | `python` | `3.11` |
+| Java | `java` | `17` |
+| PowerShell | `powershell` | `7.4` |
 
 > ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
-> See [terraform.md](../../terraform.md) for Flex Consumption patterns.
 
 ## Storage Endpoint Requirements
 
