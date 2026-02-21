@@ -120,6 +120,8 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 
 ## Consumption Plan (Legacy)
 
+**⚠️ Not recommended for new deployments. Use Flex Consumption instead.**
+
 ```bicep
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: '${resourcePrefix}func${uniqueHash}'
