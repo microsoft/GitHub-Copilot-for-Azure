@@ -160,11 +160,18 @@ app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
 > Without it, functions deploy but return 404 on all endpoints.
 > See [common/nodejs-entry-point.md](common/nodejs-entry-point.md).
 
+> ⛔ **Node.js GLOB PATTERN REQUIRED**: The `package.json` `main` field MUST use the glob pattern:
+> ```json
+> { "main": "src/{index.js,functions/*.js}" }
+> ```
+> Using `"main": "src/index.js"` alone will result in 404 on ALL endpoints because functions won't be discovered.
+
 > ⛔ **Node.js Project Structure**: `package.json` MUST be at project ROOT (same level as `azure.yaml`), NOT inside `src/`.
 > The `azure.yaml` must have `project: .` (not `project: ./src/`).
 > This is the SAME structure for both Bicep and Terraform — source code is IaC-agnostic.
 
 > 📦 **TypeScript Build**: Run `npm run build` before deployment to compile to `dist/`.
+> TypeScript `main` field: `"main": "dist/src/{index.js,functions/*.js}"`
 
 > ⛔ **C# (.NET) CRITICAL**: Do NOT replace `Program.cs` from the base template.
 > The base template uses `ConfigureFunctionsWebApplication()` with App Insights integration.

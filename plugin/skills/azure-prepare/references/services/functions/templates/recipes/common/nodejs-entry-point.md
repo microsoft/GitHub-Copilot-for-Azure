@@ -52,7 +52,11 @@ app.setup({
 
 The `package.json` MUST be at the project root (same level as `azure.yaml`).
 
-### JavaScript (using glob pattern)
+> ⛔ **CRITICAL: The glob pattern is REQUIRED for function discovery!**
+> Using `"main": "src/index.js"` alone will result in 404 on all endpoints.
+> You MUST use the glob pattern that includes function files.
+
+### JavaScript (REQUIRED pattern)
 ```json
 {
   "main": "src/{index.js,functions/*.js}",
@@ -62,20 +66,10 @@ The `package.json` MUST be at the project root (same level as `azure.yaml`).
 }
 ```
 
-### JavaScript (simple entry point)
+### TypeScript (REQUIRED pattern)
 ```json
 {
-  "main": "src/index.js",
-  "scripts": {
-    "start": "func start"
-  }
-}
-```
-
-### TypeScript
-```json
-{
-  "main": "dist/src/index.js",
+  "main": "dist/src/{index.js,functions/*.js}",
   "scripts": {
     "build": "tsc",
     "prestart": "npm run build",
@@ -84,9 +78,10 @@ The `package.json` MUST be at the project root (same level as `azure.yaml`).
 }
 ```
 
-> **How Auto-Discovery Works**: Functions in `src/functions/*.js` are auto-discovered when they call `app.http()`, `app.timer()`, etc. Both glob pattern and simple entry point work because:
-> - The glob `src/{index.js,functions/*.js}` explicitly includes all function files
-> - The simple `src/index.js` works because Node.js require() loads the functions when they register with `app.*`
+> **Why the Glob Pattern is Required**: The Azure Functions Node.js v4 runtime uses the `main` field to determine which files to load. Unlike CommonJS where `require()` chains work, the runtime needs ALL function files explicitly listed in the glob pattern. Without the glob, only `index.js` loads and functions in `src/functions/` are never registered.
+>
+> ❌ **WRONG**: `"main": "src/index.js"` — Functions not discovered, 404 on all routes
+> ✅ **CORRECT**: `"main": "src/{index.js,functions/*.js}"` — All functions discovered
 
 ## azure.yaml Configuration
 
@@ -114,12 +109,15 @@ This outputs JavaScript to `dist/` which is what Azure Functions actually runs.
 
 | Mistake | Symptom | Fix |
 |---------|---------|-----|
-| Missing `src/index.js` | 404 on all endpoints | Add the entry point file |
+| **Using `"main": "src/index.js"` without glob** | **404 on all endpoints** | **Use `"main": "src/{index.js,functions/*.js}"`** |
+| Missing `src/index.js` | 404 on all endpoints | Add the entry point file with `app.setup()` |
 | Deleting `src/index.js` when replacing triggers | 404 after recipe applied | Keep index.js, only replace function files |
 | `package.json` in `src/` instead of root | 404, functions not found | Move `package.json` to project root |
 | `project: ./src/` in azure.yaml | Deployment fails or 404 | Use `project: .` |
 | Missing `npm run build` for TypeScript | 404 or old code runs | Run build before deploy |
-| Wrong `main` field in package.json | Functions not discovered | Use `src/index.js` or glob pattern |
+
+> ⛔ **#1 CAUSE OF 404 ERRORS**: Using `"main": "src/index.js"` instead of the glob pattern.
+> The glob `src/{index.js,functions/*.js}` is **REQUIRED** — it's not optional!
 
 ## Terraform vs Bicep: Source Code is IDENTICAL
 
