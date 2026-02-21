@@ -160,6 +160,10 @@ app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
 > Without it, functions deploy but return 404 on all endpoints.
 > See [common/nodejs-entry-point.md](common/nodejs-entry-point.md).
 
+> ⛔ **Node.js Project Structure**: `package.json` MUST be at project ROOT (same level as `azure.yaml`), NOT inside `src/`.
+> The `azure.yaml` must have `project: .` (not `project: ./src/`).
+> This is the SAME structure for both Bicep and Terraform — source code is IaC-agnostic.
+
 > 📦 **TypeScript Build**: Run `npm run build` before deployment to compile to `dist/`.
 
 > ⛔ **C# (.NET) CRITICAL**: Do NOT replace `Program.cs` from the base template.
@@ -247,6 +251,34 @@ variable "function_runtime_version" {
 > Query for latest GA/LTS versions before generating IaC.
 
 > ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
+
+### Terraform: Source Code is IaC-Agnostic
+
+**The application source code is IDENTICAL for Bicep and Terraform deployments.**
+
+When using `functions-quickstart-dotnet-azd-tf` for a non-.NET language:
+
+1. **Change runtime in Terraform** — modify `function_runtime` and `function_runtime_version` in `main.tf` or `variables.tf`
+2. **Replace source code** — delete the `.NET` code in `src/` and add your language's code (JavaScript, Python, etc.)
+3. **Keep project structure** — `package.json` (Node.js) or equivalent at project ROOT, not inside `src/`
+
+**Example: Node.js on Terraform**
+
+```
+project-root/
+├── azure.yaml              # project: .
+├── package.json            # Node.js deps - MUST be at root
+├── host.json
+├── src/
+│   ├── index.js            # Entry point
+│   └── functions/
+│       └── myFunction.js
+└── infra/
+    └── *.tf                # Only difference from Bicep
+```
+
+> ⛔ **If you find yourself changing imports or application code because of IaC choice, something is wrong.**
+> The only changes for Terraform vs Bicep should be in the `infra/` folder.
 
 ## Storage Endpoint Requirements
 
