@@ -7,7 +7,7 @@ If matched, invoke the corresponding skill **immediately** — it has tested tem
 
 | User prompt mentions | Action |
 |---------------------|--------|
-| copilot SDK, copilot app, @github/copilot-sdk, CopilotClient, sendAndWait | **Invoke azure-hosted-copilot-sdk skill NOW** → then resume azure-prepare at Step 4 |
+| copilot SDK, copilot app, copilot-powered, copilot-sdk-service, @github/copilot-sdk, CopilotClient, sendAndWait | **Invoke azure-hosted-copilot-sdk skill NOW** → then resume azure-prepare at Step 4 |
 | Azure Functions, function app, serverless function, timer trigger, func new | **Invoke azure-functions skill NOW** → then resume azure-prepare at Step 4 |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. This is critical for greenfield projects with no codebase. See [full routing table](specialized-routing.md).

@@ -73,7 +73,7 @@ async function setupCopilotSdkApp(workspace: string): Promise<void> {
     name: "copilot-review-app",
     version: "1.0.0",
     dependencies: {
-      "@github/copilot-sdk": "^1.0.0",
+      "@github/copilot-sdk": "^0.1.22",
       "express": "^4.18.2",
       "@types/express": "^4.17.21",
       "typescript": "^5.3.3"

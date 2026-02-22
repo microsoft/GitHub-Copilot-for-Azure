@@ -62,7 +62,7 @@ const credential = new DefaultAzureCredential();
 const { token } = await credential.getToken("https://cognitiveservices.azure.com/.default");
 
 const session = await client.createSession({
-    model: process.env.AZURE_DEPLOYMENT_NAME || "o4-mini",
+    model: process.env.MODEL_NAME || "o4-mini",
     provider: {
         type: "azure",
         baseUrl: process.env.AZURE_OPENAI_ENDPOINT,
@@ -78,7 +78,7 @@ const session = await client.createSession({
 | Variable | Value | Required |
 |----------|-------|----------|
 | `AZURE_OPENAI_ENDPOINT` | `https://<resource>.openai.azure.com` | Yes |
-| `AZURE_DEPLOYMENT_NAME` | Model deployment name | Yes |
+| `MODEL_NAME` | Model deployment name | Yes |
 | `AZURE_CLIENT_ID` | Managed identity client ID | Yes (Container Apps with user-assigned MI) |
 
 ### Token Refresh
