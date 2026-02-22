@@ -83,7 +83,7 @@ Delegate Dockerfile creation to a sub-agent. Guidelines:
 - Always target `linux/amd64` platform
 - Expose the correct port (usually 8088)
 
-> 💡 **Tip:** Reference [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples) for containerized agent examples.
+> 💡 **Tip:** Reference [Hosted Agents Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for containerized agent examples.
 
 Also generate `docker-compose.yml` and `.env` files for local development.
 
@@ -287,4 +287,4 @@ When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode)
 
 - [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
-- [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
+- [Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/)

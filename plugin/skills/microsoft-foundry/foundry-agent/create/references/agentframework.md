@@ -22,7 +22,7 @@ Best practices when building hosted agents with Microsoft Agent Framework for de
 
 **.NET:** `dotnet add package Microsoft.Agents.AI`
 
-> ⚠️ **Warning:** Do not pin specific pre-release versions. Use `--pre` to get the latest. Check the [PyPI page](https://pypi.org/project/agent-framework/) or [NuGet profile](https://www.nuget.org/profiles/MicrosoftAgentFramework/) for current stable versions.
+> ⚠️ **Warning:** Always pin specific pre-release versions. Use `--pre` to get the latest. Check the [PyPI page](https://pypi.org/project/agent-framework/) or [NuGet profile](https://www.nuget.org/profiles/MicrosoftAgentFramework/) for current stable versions.
 
 ## Hosting Adapter
 
