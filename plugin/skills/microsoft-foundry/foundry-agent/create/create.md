@@ -58,25 +58,29 @@ If the user has specified any information on what they want their agent to do, j
 
 ### Step 4: Download Sample Files
 
-Download only the selected sample directory — do NOT clone the entire repo.
+Download only the selected sample directory — do NOT clone the entire repo. Preserve the directory structure by creating subdirectories as needed.
 
 **Using `gh` CLI (preferred if available):**
 ```bash
 gh api repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}/{sample} \
-  --jq '.[].download_url' | while read url; do
-  curl -sL "$url" -o "$(basename "$url")"
+  --jq '.[] | select(.type=="file") | .download_url' | while read url; do
+  filepath="${url##*/samples/{language}/hosted-agents/{framework}/{sample}/}"
+  mkdir -p "$(dirname "$filepath")"
+  curl -sL "$url" -o "$filepath"
 done
 ```
 
 **Using curl (fallback):**
 ```bash
 curl -s "https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}/{sample}" | \
-  jq -r '.[] | select(.type=="file") | .download_url' | while read url; do
-    curl -sL "$url" -o "$(basename "$url")"
+  jq -r '.[] | select(.type=="file") | .path + "\t" + .download_url' | while IFS=$'\t' read path url; do
+    relpath="${path#samples/{language}/hosted-agents/{framework}/{sample}/}"
+    mkdir -p "$(dirname "$relpath")"
+    curl -sL "$url" -o "$relpath"
   done
 ```
 
-For nested directories, recursively fetch contents for entries where `type == "dir"`.
+For nested directories, recursively fetch the GitHub contents API for entries where `type == "dir"` and repeat the download for each.
 
 ### Step 5: Customize and Implement
 
@@ -175,7 +179,7 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 ### Step B4: Configure Environment
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
-2. For Python: ensure the code uses `load_dotenv(override=False)` so Foundry-injected environment variables take precedence at runtime
+2. For Python: ensure the code uses `load_dotenv()` so Foundry-injected environment variables is available at runtime.
 3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version), not `azure.identity.DefaultAzureCredential`
 
 ### Step B5: Create agent.yaml
