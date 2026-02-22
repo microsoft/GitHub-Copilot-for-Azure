@@ -54,6 +54,7 @@ Read `AGENTS.md` FIRST — it lists every source file with its purpose. Then:
 1. Adapt routes — update endpoints, system message, and tool definitions
 2. Customize the UI — the template UI is just an example
 3. Keep template infra — do NOT regenerate Dockerfile, Bicep, or `azure.yaml`
+4. If using multi-tool AI sessions, increase `proxy_read_timeout` in `nginx.conf.template` to 300s (default 60s causes 504)
 
 **Existing project:** See [Existing Project Integration](existing-project-integration.md) for adding Copilot SDK to your codebase.
 
@@ -74,3 +75,4 @@ Read `AGENTS.md` FIRST — it lists every source file with its purpose. Then:
 | `ECONNREFUSED` on JSON-RPC | Set autoStart or start CLI manually |
 | `Model not available` | Check model name; for BYOM verify provider config |
 | Session hangs | Set a max turns limit or add a hook to break |
+| `504 Gateway Timeout` | Increase `proxy_read_timeout` in `nginx.conf.template` to 300s |

@@ -41,10 +41,10 @@ Use your own Azure AI deployment with `DefaultAzureCredential`.
 
 ### Required API Settings
 
-| Setting | Value |
-|---------|-------|
-| `wireApi` | `"responses"` |
-| `apiVersion` | `"2025-04-01-preview"` or later |
+| Setting | Value | Notes |
+|---------|-------|-------|
+| `wireApi` | `"completions"` | ⚠️ Do NOT use `"responses"` — breaks multi-turn tool calls (`store: false` causes 400) |
+| `azure.apiVersion` | `"2025-04-01-preview"` or later | ⚠️ Must be nested under `azure:`, NOT top-level |
 
 ### Provider Config
 
@@ -67,8 +67,8 @@ const session = await client.createSession({
         type: "azure",
         baseUrl: process.env.AZURE_OPENAI_ENDPOINT,
         bearerToken: token,
-        wireApi: "responses",
-        apiVersion: "2025-04-01-preview",
+        wireApi: "completions",
+        azure: { apiVersion: "2025-04-01-preview" },
     },
 });
 ```
@@ -79,6 +79,7 @@ const session = await client.createSession({
 |----------|-------|----------|
 | `AZURE_OPENAI_ENDPOINT` | `https://<resource>.openai.azure.com` | Yes |
 | `AZURE_DEPLOYMENT_NAME` | Model deployment name | Yes |
+| `AZURE_CLIENT_ID` | Managed identity client ID | Yes (Container Apps with user-assigned MI) |
 
 ### Token Refresh
 
@@ -111,7 +112,10 @@ The template uses env vars for model path selection:
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `400 Encrypted content is not supported` | Model doesn't support SDK encryption | Use o-series or gpt-5 family only |
+| `400` with tool calls / multi-turn | `wireApi: "responses"` with `store: false` | Use `wireApi: "completions"` instead |
+| `CAPIError: 404 Resource not found` | `apiVersion` at top level instead of nested | Use `azure: { apiVersion: "..." }` |
 | Silent timeout | Unsupported model (e.g., gpt-4o, gpt-4.1) | Switch to o4-mini or gpt-5 family |
 | `model is required` | Missing `model` in BYOM config | Set `MODEL_NAME` env var |
 | `401 Unauthorized` | Token expired or wrong scope | Refresh via `DefaultAzureCredential` |
 | `404 Not Found` | Wrong endpoint or deployment name | Verify URL and deployment exists |
+| `500` in Container Apps | Missing `AZURE_CLIENT_ID` env var | Set to managed identity client ID in Bicep |

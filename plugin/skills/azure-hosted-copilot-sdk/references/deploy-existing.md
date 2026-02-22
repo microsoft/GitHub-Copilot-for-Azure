@@ -56,7 +56,9 @@ If the user wants Azure BYOM, add to the copied Bicep:
 | Azure OpenAI / AI Services account | Hosts model deployments |
 | Role assignment | `Cognitive Services OpenAI User` for Managed Identity |
 
-Add env vars to Container App: `AZURE_OPENAI_ENDPOINT`, `MODEL_PROVIDER=azure`, `MODEL_NAME=<deployment>`.
+Add env vars to Container App: `AZURE_OPENAI_ENDPOINT`, `MODEL_PROVIDER=azure`, `MODEL_NAME=<deployment>`, `AZURE_CLIENT_ID=<managed-identity-client-id>`.
+
+> ⚠️ **Warning:** The template's `main.parameters.json` defaults to `gpt-4o` which does NOT support BYOM (encrypted content). Change the default to an o-series or gpt-5 family model.
 
 See [Azure Model Configuration](azure-model-config.md) for provider config and auth pattern.
 
