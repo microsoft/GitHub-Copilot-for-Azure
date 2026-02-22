@@ -10,6 +10,7 @@ Automated testing framework for Azure Copilot Skills using **Jest**. This system
 - [When Tests Run](#when-tests-run)
 - [What Tests Validate](#what-tests-validate)
 - [Running Tests Locally](#running-tests-locally)
+- [Running Tests on CI](#running-tests-on-ci)
 - [Adding Tests for a New Skill](#adding-tests-for-a-new-skill)
 - [Directory Structure](#directory-structure)
 - [Skills Coverage Grid](#skills-coverage-grid)
@@ -166,6 +167,39 @@ npm install
 | `npm run test:verbose` | Show individual test names |
 | `npm run update:snapshots` | Update Jest snapshots after intentional changes |
 
+### Waza Eval Mode (Alternative)
+
+Skills can also be evaluated using [waza](https://github.com/spboyer/waza), a Go CLI for skill benchmarking.
+
+```bash
+# Install waza via azd extension
+azd ext source add -n waza -t url -l https://raw.githubusercontent.com/spboyer/waza/main/registry.json
+azd ext install microsoft.azd.waza
+
+# Or via Go
+go install github.com/spboyer/waza/cmd/waza@latest
+```
+
+**Hybrid model**: Key skills have committed (hand-tuned) eval suites. All other skills auto-generate evals from their SKILL.md at runtime.
+
+| Command | Use Case |
+|---------|----------|
+| `npm run waza -- azure-prepare` | Run committed eval for a key skill |
+| `npm run waza -- azure-storage` | Auto-generate + run eval from SKILL.md |
+| `npm run waza -- --all` | Run all skills (committed + generated) |
+| `npm run waza:live -- azure-prepare` | Run with real Copilot SDK |
+| `waza run tests/azure-prepare/eval/eval.yaml -v` | Run directly with waza CLI |
+| `waza run eval.yaml --cache` | Cached re-runs (skip unchanged tasks) |
+| `waza compare results-a.json results-b.json` | Compare results across models |
+| `waza check plugin/skills/azure-prepare` | Check skill readiness for submission |
+
+**Committed eval suites** (⬢ customized graders, fixtures, and assertions):
+- `azure-prepare` — template selection, recipe composition, plan-first workflow
+
+**Auto-generated** (⬡ from SKILL.md frontmatter): all other skills
+
+See [tests/azure-prepare/eval/README.md](azure-prepare/eval/README.md) for the committed eval suite documentation.
+
 ### Integration Tests
 
 To run integration tests locally:
@@ -216,6 +250,36 @@ You can generate a report on the **Debug** logs using:
 | Command | Use Case |
 |---------|----------|
 | `npm run report -- --skill skill-name` | Generates a report for a skill of the most recent run. |
+
+---
+
+## Running Tests on CI
+
+All workflows are defined in `.github/workflows/`. Trigger them from the **Actions** tab in GitHub.
+
+| Pipeline | Workflow File | Trigger | What It Runs |
+|----------|---------------|---------|--------------|
+| Test All Skills - non-integration | `test-all-skills.yml` | Push to `main`, PRs, or manual | Unit + trigger tests (no Azure auth) |
+| Integration Tests - all | `test-all-integration.yml` | Manual only | Integration tests for selected skills |
+| Integration Tests - azure-deploy | `test-azure-deploy.yml` | Manual only | Deployment tests for `azure-deploy` |
+
+### How to Manually Trigger Each Workflow
+
+**Test All Skills - non-integration:** Go to **Actions → Test All Skills - non-integration → Run workflow**. Optionally enter a skill name to scope the run, or leave empty for all skills.
+
+**Integration Tests - all:** Go to **Actions → Integration Tests - all → Run workflow**. Enter a comma-separated list of skills (e.g. `azure-validate,azure-storage,azure-ai`). Skill names must match test folder names under `tests/`. Optionally enable `debug` for detailed logs.
+
+**Integration Tests - azure-deploy:** Go to **Actions → Integration Tests - azure-deploy → Run workflow**. Optionally enter a test pattern to filter by test name or `describe` block (e.g. `static-web-apps-deploy`, `Terraform`, `"creates todo list"`). Leave empty to run all deploy tests.
+
+> **⏱ Deploy test timing:** Each deploy test can take up to **30 minutes**, and brownfield tests up to **45 minutes**. The pipeline has a **6-hour maximum**, so be selective about how many tests you run at once.
+
+### CI Notes
+
+- Integration workflows require Azure OIDC credentials (`cideploytest` environment) and a `COPILOT_CLI_TOKEN` secret.
+- OIDC tokens are auto-refreshed every 5 minutes to avoid auth expiry during long runs.
+- Each skill step uses `continue-on-error: true`, so one failure won't block others.
+- Enable the `debug` input to write per-test agent logs under `tests/reports/test-run-{id}/`.
+- Skill reports are appended to the **Job Summary** tab and uploaded as artifacts (retained 30 days).
 
 ---
 

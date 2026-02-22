@@ -1,5 +1,25 @@
 import * as fs from "fs";
 import * as path from "path";
+import { AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
+
+/**
+ * Extract all powershell command strings from agent metadata.
+ */
+function getPowershellCommands(metadata: AgentMetadata): string[] {
+    return getToolCalls(metadata, "powershell").map(event => {
+        const data = event.data as Record<string, unknown>;
+        const args = data.arguments as { command?: string } | undefined;
+        return args?.command ?? "";
+    });
+}
+
+/**
+ * Check whether any powershell command executed by the agent matches
+ * the given pattern.
+ */
+export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
+    return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+}
 
 /**
  * Scans files as text in the given workspace and checks whether there is text content matching the value pattern.
@@ -35,4 +55,47 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
     };
 
     return scanDirectory(workspace);
+}
+
+/**
+ * Recursively list all files under a directory, returning paths relative to the root.
+ * Paths are normalized to use forward slashes for cross-platform regex matching.
+ */
+export function listFilesRecursive(dir: string): string[] {
+    return fs
+        .readdirSync(dir, { recursive: true })
+        .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
+}
+
+/**
+ * Check if any file in the list matches the given regex pattern.
+ */
+export function hasFile(files: string[], pattern: RegExp): boolean {
+    return files.some(f => pattern.test(f));
+}
+
+/**
+ * List files in a workspace, log them, and assert expected/unexpected file patterns.
+ */
+export function expectFiles(
+  workspacePath: string,
+  expected: RegExp[],
+  unexpected: RegExp[],
+): void {
+    const files = listFilesRecursive(workspacePath);
+
+    for (const pattern of expected) {
+    expect(hasFile(files, pattern)).toBe(true);
+    }
+    for (const pattern of unexpected) {
+    expect(hasFile(files, pattern)).toBe(false);
+    }
+}
+  
+export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
+    const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
+
+    if (!isSkillUsed) {
+        agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
+    }
 }

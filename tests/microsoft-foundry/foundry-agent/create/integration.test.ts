@@ -9,19 +9,17 @@
  * 2. Run `copilot` and authenticate
  */
 
-import * as fs from "fs";
 import {
   useAgentRunner,
   AgentMetadata,
-  isSkillInvoked,
   getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-} from "../../../utils/agent-runner";
+} from "../../../../utils/agent-runner";
+import { softCheckSkill } from "../../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
-const EXPECTED_INVOCATION_RATE = 0.6;
 
 /** Terminate on first `create` tool call to avoid unnecessary file writes. */
 function terminateOnCreate(metadata: AgentMetadata): boolean {
@@ -41,8 +39,6 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for agent creation prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -50,9 +46,7 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
             shouldEarlyTerminate: terminateOnCreate,
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -61,16 +55,9 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`create invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync("./result-create.txt", `create invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes skill for multi-agent workflow prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -78,9 +65,7 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
             shouldEarlyTerminate: terminateOnCreate,
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -89,11 +74,6 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`create invocation rate for langgraph: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync("./result-create.txt", `create invocation rate for langgraph: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
 });

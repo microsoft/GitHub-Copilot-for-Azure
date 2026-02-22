@@ -1,0 +1,18 @@
+{
+  "name": "my-functions-app",
+  "version": "1.0.0",
+  "description": "Azure Functions TypeScript HTTP API",
+  "main": "dist/src/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "func start",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
