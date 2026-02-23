@@ -143,10 +143,7 @@ azure-samples/copilot-sdk-service/
 
 ## Known Issues
 
-| Issue | Impact | Severity |
-|-------|--------|----------|
-| Skill rarely invoked by agent (0% invocation rate) | Users don't get skill-specific guidance; `azure-prepare` captures prompts first | **High** |
-| `listModels()` doesn't return Azure deployments | Users must use CLI to discover deployment names | Low |
+No blocking issues at this time.
 
 ## Future Work
 
