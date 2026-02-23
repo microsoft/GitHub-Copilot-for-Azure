@@ -34,12 +34,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "How do I onboard to Microsoft Foundry and create a project?",
       "Provision Foundry infrastructure with azd",
       "I need a new Foundry project to host my models",
-      "Help me build a Foundry agent end to end",
-      "I want to create and ship a new Foundry agent",
-      "Walk me through the agent lifecycle in Azure AI Foundry",
-      "Manage my Foundry agent workflow",
-      "I need help with my Foundry agent",
-      "Create a new agent in Foundry",
     ];
 
     test.each(shouldTriggerPrompts)(

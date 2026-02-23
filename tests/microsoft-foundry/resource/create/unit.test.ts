@@ -44,7 +44,7 @@ describe("microsoft-foundry:resource/create - Unit Tests", () => {
 
   describe("Skill Metadata", () => {
     test("has valid frontmatter with required fields", () => {
-      expect(resourceCreateContent).toMatch(/^---\n/);
+      expect(resourceCreateContent).toMatch(/^---\r?\n/);
       expect(resourceCreateContent).toContain("name: microsoft-foundry:resource/create");
       expect(resourceCreateContent).toContain("description:");
     });
