@@ -1,6 +1,6 @@
 ---
 name: customize
-description: >-
+description: |
   Interactive guided deployment flow for Azure OpenAI models with full customization control. Step-by-step selection of model version, SKU (GlobalStandard/Standard/ProvisionedManaged), capacity, RAI policy (content filter), and advanced options (dynamic quota, priority processing, spillover). USE FOR: custom deployment, customize model deployment, choose version, select SKU, set capacity, configure content filter, RAI policy, deployment options, detailed deployment, advanced deployment, PTU deployment, provisioned throughput. DO NOT USE FOR: quick deployment to optimal region (use preset).
 ---
 
@@ -87,16 +87,17 @@ If user accepts all defaults (latest version, GlobalStandard SKU, recommended ca
 | **1. Verify Auth** | Check `az account show`; prompt `az login` if needed | Verify correct subscription is active |
 | **2. Get Project ID** | Read `PROJECT_RESOURCE_ID` env var or prompt user | ARM resource ID format required |
 | **3. Verify Project** | Parse resource ID, call `az cognitiveservices account show` | Extracts subscription, RG, account, project, region |
-| **4. Get Model** | List models via `az cognitiveservices account list-models` | User selects from available or enters custom name |
+| **4. Get Model** | List models via `az cognitiveservices account list-models`, detect model format | User selects from available; format determines deployment path |
 | **5. Select Version** | Query versions for chosen model | Recommend latest; user picks from list |
 | **6. Select SKU** | Query model catalog + subscription quota, show only deployable SKUs | ⚠️ Never hardcode SKU lists — always query live data |
-| **7. Configure Capacity** | Query capacity API, validate min/max/step, user enters value | Cross-region fallback if no capacity in current region |
-| **8. Select RAI Policy** | Present content filter options | Default: `Microsoft.DefaultV2` |
+| **7. Configure Capacity** | OpenAI: query capacity API, user enters TPM value. Non-OpenAI (MaaS): capacity=1 auto | Cross-region fallback if no capacity in current region |
+| **7c. Provider Data** | *Anthropic only:* Prompt user for industry, fetch tenant country/org | ⚠️ Never hardcode industry — always ask user |
+| **8. Select RAI Policy** | Present content filter options | Default: `Microsoft.DefaultV2` (skipped for non-OpenAI models) |
 | **9. Advanced Options** | Dynamic quota (GlobalStandard), priority processing (PTU), spillover | SKU-dependent availability |
-| **10. Upgrade Policy** | Choose: OnceNewDefaultVersionAvailable / OnceCurrentVersionExpired / NoAutoUpgrade | Default: auto-upgrade on new default |
+| **10. Upgrade Policy** | Choose: OnceNewDefaultVersionAvailable / OnceCurrentVersionExpired / NoAutoUpgrade | OpenAI only; skipped for non-OpenAI models |
 | **11. Deployment Name** | Auto-generate unique name, allow custom override | Validates format: `^[\w.-]{2,64}$` |
 | **12. Review** | Display full config summary, confirm before proceeding | User approves or cancels |
-| **13. Deploy & Monitor** | `az cognitiveservices account deployment create`, poll status | Timeout after 5 min; show endpoint + portal link |
+| **13. Deploy & Monitor** | Create deployment (CLI for non-Anthropic, REST API for Anthropic), poll status | Anthropic uses `az rest` with `modelProviderData`; timeout after 5 min |
 
 
 ---
@@ -163,3 +164,4 @@ az cognitiveservices account deployment delete --name <account> --resource-group
 - Custom RAI policies can be configured in Azure Portal
 - Automatic version upgrades occur during maintenance windows
 - Use Azure Monitor and Application Insights for production deployments
+- **Anthropic models** (e.g., `claude-sonnet-4-6`) require `modelProviderData` with user-selected industry, tenant country code, and organization name. These models must be deployed via `az rest` (ARM REST API) instead of `az cognitiveservices account deployment create`. See [parent SKILL.md](../SKILL.md#third-party-model-provider-data-anthropic-models) for full details.

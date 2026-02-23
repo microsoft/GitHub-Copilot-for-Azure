@@ -1,9 +1,9 @@
 ---
 name: deploy-model
-description: >-
-  Unified Azure OpenAI model deployment skill with intelligent intent-based routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI policy), and capacity discovery across regions and projects.
-  USE FOR: deploy model, deploy gpt, create deployment, model deployment, deploy openai model, set up model, provision model, find capacity, check model availability, where can I deploy, best region for model, capacity analysis.
-  DO NOT USE FOR: listing existing deployments (use foundry_models_deployments_list MCP tool), deleting deployments, agent creation (use agent/create), project creation (use project/create).
+description: |
+  Unified Azure OpenAI model deployment skill with intelligent intent-based routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI policy), and capacity discovery across regions and projects. Works with or without an existing Foundry project — automatically discovers or creates one if needed.
+  USE FOR: deploy model, deploy gpt, create deployment, model deployment, deploy openai model, set up model, provision model, find capacity, check model availability, where can I deploy, best region for model, capacity analysis, deploy model without project, first time model deployment, deploy to new project, GPT deployment, Foundry deployment.
+  DO NOT USE FOR: listing existing deployments (use foundry_models_deployments_list MCP tool), deleting deployments, agent creation (use agent/create), project creation only (use project/create), quota management (use quota sub-skill), AI Search queries (use azure-ai), speech-to-text (use azure-ai).
 ---
 
 # Deploy Model
@@ -75,11 +75,28 @@ When a user specifies a capacity requirement AND wants deployment:
 
 Before any deployment, resolve which project to deploy to. This applies to **all** modes (preset, customize, and after capacity discovery).
 
+> ⚠️ **Important:** Project context is **not required** to start this skill. If no project exists, this skill will discover resources or create a new project before proceeding.
+
 ### Resolution Order
 
 1. **Check `PROJECT_RESOURCE_ID` env var** — if set, use it as the default
 2. **Check user prompt** — if user named a specific project or region, use that
-3. **If neither** — query the user's projects and suggest the current one
+3. **Discover existing resources** — query Azure for AIServices resources:
+   ```bash
+   az cognitiveservices account list \
+     --query "[?kind=='AIServices'].{Name:name, ResourceGroup:resourceGroup, Location:location}" \
+     --output table
+   ```
+   - If resources found → list projects, let user select
+   - If no resources found → continue to step 4
+4. **Offer to create a new project** — ask the user:
+   ```
+   No Foundry project found in your subscription. Would you like to:
+     1. Create a new Foundry project (recommended for first-time setup)
+     2. Specify a subscription or resource manually
+   ```
+   - Option 1 → Use [project/create](../../project/create/create-foundry-project.md) for comprehensive setup, or create minimal project inline for quick deployment
+   - Option 2 → Ask for subscription ID and resource details
 
 ### Confirmation Step (Required)
 
@@ -109,6 +126,24 @@ Projects in <region>:
 
 > ⚠️ **Never deploy without showing the user which project will be used.** This prevents accidental deployments to the wrong resource.
 
+## Model Format Detection (All Modes)
+
+Before deployment, detect the model format to determine the deployment path:
+
+```bash
+MODEL_FORMAT=$(az cognitiveservices account list-models \
+  --name "$ACCOUNT_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "[?name=='$MODEL_NAME'].format" -o tsv | head -1)
+MODEL_FORMAT=${MODEL_FORMAT:-"OpenAI"}
+```
+
+| Format | Capacity | Deploy Method | RAI Policy | Version Upgrade | Provider Data |
+|--------|----------|---------------|------------|-----------------|---------------|
+| `OpenAI` | TPM-based (user configures) | CLI | ✅ Yes | ✅ Yes | ❌ No |
+| `Anthropic` | 1 (MaaS) | REST API (`az rest`) | ❌ Skip | ❌ Skip | ✅ Required |
+| All others (`Meta-Llama`, `Mistral`, `Cohere`, etc.) | 1 (MaaS) | CLI | ❌ Skip | ❌ Skip | ❌ No |
+
 ## Pre-Deployment Validation (All Modes)
 
 Before presenting any deployment options (SKU, capacity), always validate both of these:
@@ -128,6 +163,59 @@ Before presenting any deployment options (SKU, capacity), always validate both o
 > ⚠️ **Warning:** Only present options that pass both checks. Do NOT show hardcoded SKU lists — always query dynamically. SKUs with 0 available quota should be shown as ❌ informational items, not selectable options.
 
 > 💡 **Quota management:** For quota increase requests, usage monitoring, and troubleshooting quota errors, defer to the [quota skill](../../quota/quota.md) instead of duplicating that guidance inline.
+
+## Third-Party Model Provider Data (Anthropic Models)
+
+When deploying **Anthropic models** (format `"Anthropic"`, e.g., `claude-sonnet-4-6`, `claude-sonnet-4-5`), the ARM API requires a `modelProviderData` object in the deployment payload. This includes:
+
+1. **Industry** — User must select from a fixed list (no API to fetch these):
+   ```
+   none, biotechnology, consulting, education, finance,
+   food_and_beverage, government, healthcare, insurance, law,
+   manufacturing, media, nonprofit, technology, telecommunications,
+   sport_and_recreation, real_estate, retail, other
+   ```
+
+2. **Country Code** — Fetched automatically from the Azure Tenants API:
+   ```bash
+   az rest --method GET \
+     --url "https://management.azure.com/tenants?api-version=2024-11-01" \
+     --query "value[0].{countryCode:countryCode, displayName:displayName}" -o json
+   ```
+
+3. **Organization Name** — The tenant's `displayName` from the same API call above.
+
+> ⚠️ **Important:** The industry list is a static set — there is no REST API to fetch it. The Azure AI Foundry UX also uses a hardcoded list. Always prompt the user to choose an industry; never pick one randomly or hardcode a default.
+
+### Detection
+
+A model is an Anthropic model when:
+- `model.format == "Anthropic"` (from `az cognitiveservices account list-models`)
+- OR the model name contains `claude` (e.g., `claude-sonnet-4-6`)
+
+### Deployment Payload Difference
+
+Anthropic models **cannot** use `az cognitiveservices account deployment create` CLI because it lacks `--model-provider-data` support. You **must** use `az rest` with the ARM API directly:
+
+```bash
+az rest --method PUT \
+  --url "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$ACCOUNT_NAME/deployments/$DEPLOYMENT_NAME?api-version=2024-10-01" \
+  --body '{
+    "sku": { "name": "GlobalStandard", "capacity": 1 },
+    "properties": {
+      "model": {
+        "format": "Anthropic",
+        "name": "<model-name>",
+        "version": "<version>"
+      },
+      "modelProviderData": {
+        "industry": "<user-selected-industry>",
+        "countryCode": "<from-tenants-api>",
+        "organizationName": "<from-tenants-api>"
+      }
+    }
+  }'
+```
 
 ## Prerequisites
 
