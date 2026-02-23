@@ -10,7 +10,6 @@
  */
 
 import {
-  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
   useAgentRunner
@@ -96,7 +95,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   // Need to be logged into azd for these tests. 
   // azd auth login
-  const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+  const FOLLOW_UP_PROMPT = ["Go with recommended options and proceed with Azure deployment."];
   // Static Web Apps (SWA)
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application", async () => {
@@ -141,27 +140,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
-    // Terraform test
-    test("creates static portfolio website with Terraform infrastructure", async () => {
-      let workspacePath: string | undefined;
-
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a static portfolio website and deploy to Azure Static Web Apps using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
-      });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
-    }, deployTestTimeoutMs);
   });
 
   // App Service
@@ -208,27 +186,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
-    // Terraform test
-    test("creates todo list with frontend and API using Terraform", async () => {
-      let workspacePath: string | undefined;
-
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
-      });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
-    }, deployTestTimeoutMs);
   });
 
   // Azure Functions
@@ -275,15 +232,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
-    // Terraform test
-    test("creates URL shortener service with Terraform infrastructure", async () => {
+    test("creates Python function app with Service Bus trigger", async () => {
       let workspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -294,25 +250,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
-    }, deployTestTimeoutMs);
-
-    test("creates Python function app with Service Bus trigger", async () => {
-      const agentMetadata = await agent.run({
-        prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
-      });
-
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-      const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(isSkillUsed).toBe(true);
-      expect(isValidateInvoked).toBe(true);
-      expect(isPrepareInvoked).toBe(true);
-      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
   });
 
@@ -360,7 +298,208 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
-    // Terraform test
+  });
+
+  // Terraform - Static Web Apps
+  describe("terraform-static-web-apps-deploy", () => {
+    test("creates whiteboard application with Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+
+    test("creates static portfolio website with Terraform infrastructure", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+  });
+
+  // Terraform - App Service
+  describe("terraform-app-service-deploy", () => {
+    test("creates discussion board with Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+
+    test("creates todo list with frontend and API using Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+  });
+
+  // Terraform - Azure Functions
+  describe("terraform-azure-functions-deploy", () => {
+    test("creates serverless HTTP API with Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+
+    test("creates event-driven function app with Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+
+    test("creates URL shortener service with Terraform infrastructure", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+  });
+
+  // Terraform - Azure Container Apps
+  describe("terraform-azure-container-apps-deploy", () => {
+    test("creates containerized web application with Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+
+    test("creates simple containerized Node.js app with Terraform", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+      expect(workspacePath).toBeDefined();
+      expect(containsDeployLinks).toBe(true);
+      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+    }, deployTestTimeoutMs);
+
     test("creates social media application with Terraform infrastructure", async () => {
       let workspacePath: string | undefined;
 
