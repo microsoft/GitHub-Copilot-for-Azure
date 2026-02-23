@@ -12,11 +12,11 @@ stages:
     displayName: 'Run Copilot Benchmarks'
     steps:
     - task: AzureCLI@2
-        displayName: 'Run Copilot Benchmarks script'
-        inputs:
-          azureSubscription: 'Azure SDK Engineering System'
-          scriptType: 'pscore'
-          scriptLocation: 'scriptPath'
-          scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
-          arguments: >
-            -BuildId $(OfficialBuildId)
+      displayName: 'Run Copilot Benchmarks script'
+      inputs:
+        azureSubscription: 'Azure SDK Engineering System'
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+        arguments: >
+          -BuildId $(OfficialBuildId)
