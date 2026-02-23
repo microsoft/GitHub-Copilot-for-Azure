@@ -20,7 +20,7 @@ After architecture planning, research each selected component to gather best pra
 | **Hosting** | | |
 | Container Apps | [Container Apps](services/container-apps/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
 | App Service | [App Service](services/app-service/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
-| Azure Functions | [Functions](services/functions/README.md) | `azure-functions` (invoke for detailed guidance) |
+| Azure Functions | [Functions](services/functions/README.md) | — |
 | Static Web Apps | [Static Web Apps](services/static-web-apps/README.md) | — |
 | AKS | [AKS](services/aks/README.md) | `azure-networking`, `azure-security-hardening` |
 | **Data** | | |
@@ -70,22 +70,26 @@ Selected: Container Apps, Cosmos DB, Key Vault
 
 Invoke related skills for specialized scenarios:
 
-| Scenario | Invoke Skill |
-|----------|--------------|
-| Using Azure Functions | `azure-functions` |
-| PostgreSQL with passwordless auth | `azure-postgres` |
+| Scenario | Action |
+|----------|--------|
+| Using Azure Functions | Load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
+| PostgreSQL with passwordless auth | Invoke `azure-postgres` skill |
 | Need detailed security hardening | `azure-security-hardening` |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
 | Building AI applications | `microsoft-foundry` |
 | Cost-sensitive deployment | `azure-cost-optimization` |
 
-**Skill Invocation Pattern:**
-```
-For Component: Azure Functions
-→ Invoke: azure-functions skill
-→ Extract: trigger patterns, bindings, hosting options
-→ Apply: to artifact generation
-```
+**Skill/Reference Invocation Pattern:**
+
+For **Azure Functions**:
+1. Load: [selection.md](services/functions/templates/selection.md) (decision tree)
+2. Follow: [composition.md](services/functions/templates/recipes/composition.md) (algorithm)
+3. Result: Base template + recipe composition (never synthesize IaC)
+
+For **PostgreSQL**:
+1. Invoke: `azure-postgres` skill
+2. Extract: passwordless auth patterns
+3. Apply: to artifact generation
 
 ### Step 3: Document in Plan
 
@@ -112,25 +116,24 @@ Add research findings to `.azure/plan.md`:
 
 ### Web Application + API + Database
 
-1. Load: `services/container-apps/README.md` → `bicep.md`, `scaling.md`
-2. Load: `services/cosmos-db/README.md` → `partitioning.md`
-3. Load: `services/key-vault/README.md`
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
 5. Invoke: `azure-security-hardening` (security baseline)
 
 ### Serverless Event-Driven
 
-1. Invoke: `azure-functions` (detailed function guidance)
-2. Load: `services/functions/README.md` → `triggers.md`
-3. Load: `services/event-grid/README.md` or `services/service-bus/README.md`
-4. Load: `services/storage/README.md` (if using queues/blobs)
-5. Invoke: `azure-observability` (distributed tracing)
+1. Load: [services/functions/README.md](services/functions/README.md) (contains mandatory composition workflow)
+2. Load: [services/event-grid/README.md](services/event-grid/README.md) or [services/service-bus/README.md](services/service-bus/README.md) (if using messaging)
+3. Load: [services/storage/README.md](services/storage/README.md) (if using queues/blobs)
+4. Invoke: `azure-observability` (distributed tracing)
 
 ### AI Application
 
 1. Invoke: `microsoft-foundry` (AI patterns and best practices)
-2. Load: `services/container-apps/README.md` → `bicep.md`
-3. Load: `services/cosmos-db/README.md` → `partitioning.md` (vector storage)
+2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md)
+3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
 4. Invoke: `azure-security` (API key management)
 
 ## After Research
