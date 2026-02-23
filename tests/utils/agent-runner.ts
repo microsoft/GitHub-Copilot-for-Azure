@@ -24,6 +24,23 @@ export { getAllAssistantMessages } from "./evaluate";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/** Redact token-like values from report text to prevent secret leakage */
+const SECRET_PATTERNS = [
+  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWT
+  /Bearer\s+[A-Za-z0-9_\-.~+/]{20,}/gi, // Bearer tokens
+  /gh[pousr]_[A-Za-z0-9_]{36,}/g, // GitHub tokens
+  /(?:password|passwd|secret|token|api[_-]?key|connection[_-]?string)\s*[:=]\s*["']?[^\s"',]{8,}/gi, // key=value secrets
+];
+
+function redactSecrets(text: string): string {
+  let result = text;
+  for (const pattern of SECRET_PATTERNS) {
+    pattern.lastIndex = 0;
+    result = result.replace(pattern, "[REDACTED]");
+  }
+  return result;
+}
+
 export interface AgentMetadata {
   /**
    * Events emitted by the Copilot SDK agent during the agent run.
@@ -271,7 +288,7 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const markdown = generateMarkdownReport(config, agentMetadata);
+    const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     fs.writeFileSync(filePath, markdown, "utf-8");
 
     if (process.env.DEBUG) {

@@ -205,6 +205,10 @@ function getExpectedMcpServers(pluginPath: string): string[] {
 }
 
 function runCopilotPrompt(prompt: string, verbose: boolean): string {
+  // Reject prompts that could be interpreted as CLI flags
+  if (prompt.startsWith("-")) {
+    throw new Error("Invalid prompt: must not start with '-'");
+  }
   const args = ["-p", prompt, "--allow-all-tools", "--allow-all-paths"];
   if (verbose) {
     console.log(`   🔧 Running: copilot ${args.join(" ")}`);
