@@ -356,7 +356,6 @@ This updates the Skills Coverage Grid in this README.
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
-| azure-functions | ✅ | - | - | ✅ | - |
 | azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |

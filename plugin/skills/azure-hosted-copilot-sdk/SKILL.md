@@ -43,7 +43,7 @@ See [model config ref](references/azure-model-config.md).
 
 ## Step 4: Deploy
 
-Invoke **azure-prepare** → **azure-validate** → **azure-deploy** in order.
+Invoke **azure-prepare** (skip its Step 0 routing — scaffolding is done) → **azure-validate** → **azure-deploy** in order.
 
 ## Rules
 

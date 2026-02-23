@@ -56,7 +56,7 @@ Activate this skill when user wants to:
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient | **azure-hosted-copilot-sdk** |
-| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | **azure-functions** |
+| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 

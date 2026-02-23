@@ -7,18 +7,20 @@
 | User prompt mentions | Invoke skill FIRST | Then resume azure-prepare at |
 |---------------------|--------------------|-----------------------------|
 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
-| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | **azure-functions** | Phase 1 Step 4 (Select Recipe) |
+| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
 
 > ⚠️ This checks the user's **prompt text**, not just existing code. Essential for greenfield projects where there is no codebase to scan.
 
 ## Why This Step Exists
 
-azure-prepare is the default entry point for all Azure app work. Some technologies (Copilot SDK, Azure Functions) have dedicated skills with:
+azure-prepare is the default entry point for all Azure app work. Some technologies (Copilot SDK) have dedicated skills with:
 - Pre-tested `azd` templates that avoid manual scaffolding errors
-- Specialized configuration (BYOM model config, function bindings)
+- Specialized configuration (BYOM model config)
 - Optimized infrastructure patterns
 
 Without this check, azure-prepare generates generic infrastructure that misses these optimizations.
+
+> ⚠️ **Re-entry guard**: When azure-prepare is invoked as a **resume** from a specialized skill (e.g., azure-hosted-copilot-sdk Step 4), **skip this routing check** and proceed directly to Step 4. The specialized skill has already completed its work.
 
 ## Flow
 
