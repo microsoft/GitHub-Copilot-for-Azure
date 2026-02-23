@@ -216,6 +216,7 @@ interface McpCheckResult {
   missing: string[];
   present: string[];
   expected: string[];
+  parseError?: string;
 }
 
 function checkMcpServers(pluginPath: string): McpCheckResult {
@@ -227,8 +228,8 @@ function checkMcpServers(pluginPath: string): McpCheckResult {
   let pluginMcp: { mcpServers?: Record<string, unknown> };
   try {
     pluginMcp = JSON.parse(readFileSync(mcpJsonPath, "utf-8"));
-  } catch {
-    return { passed: false, missing: [], present: [], expected: [] };
+  } catch (e) {
+    return { passed: false, missing: [], present: [], expected: [], parseError: `.mcp.json is invalid JSON: ${e instanceof Error ? e.message : String(e)}` };
   }
 
   const expected = Object.keys(pluginMcp.mcpServers ?? {});
@@ -402,7 +403,9 @@ export function verify(rootDir: string, args: string[]): void {
   console.log("\n🧪 Test 5: MCP Server Registration");
   const mcpCheck = checkMcpServers(localPluginPath);
 
-  if (mcpCheck.expected.length === 0) {
+  if (mcpCheck.parseError) {
+    console.log(`   ❌ ${mcpCheck.parseError}`);
+  } else if (mcpCheck.expected.length === 0) {
     console.log("   ⚠️  No .mcp.json found or no servers defined");
   } else if (mcpCheck.passed) {
     console.log(`   ✅ All ${mcpCheck.expected.length} MCP servers registered: ${mcpCheck.present.join(", ")}`);
