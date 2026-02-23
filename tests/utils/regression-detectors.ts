@@ -420,15 +420,19 @@ export function countApiKeyInByomConfig(metadata: AgentMetadata): number {
   const allText = getAllToolText(metadata);
 
   // Only flag if Azure BYOM context is present
-  const azureByomIndicators = [
+  const azureByomPatterns = [
     /AZURE_AI_FOUNDRY_PROJECT_ENDPOINT/i,
-    /\bhttps?:\/\/[\w.-]+\.services\.ai\.azure\.com\b/i,
-    /\bhttps?:\/\/[\w.-]+\.openai\.azure\.com\b/i,
     /DefaultAzureCredential/i,
     /bearerToken/i,
   ];
+  const azureByomDomains = [
+    ".services.ai.azure.com",
+    ".openai.azure.com",
+  ];
+  const lowerText = allText.toLowerCase();
 
-  const hasAzureByom = azureByomIndicators.some(p => p.test(allText));
+  const hasAzureByom = azureByomPatterns.some(p => p.test(allText)) ||
+    azureByomDomains.some(d => lowerText.includes(d));
   if (!hasAzureByom) return 0;
 
   // Count apiKey usage in provider config context
