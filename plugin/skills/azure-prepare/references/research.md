@@ -72,7 +72,7 @@ Invoke related skills for specialized scenarios:
 
 | Scenario | Action |
 |----------|--------|
-| Using Azure Functions | Load [services/functions/templates/selection.md](services/functions/templates/selection.md) → Follow [recipes/composition.md](services/functions/templates/recipes/composition.md) algorithm |
+| Using Azure Functions | Load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
 | PostgreSQL with passwordless auth | Invoke `azure-postgres` skill |
 | Need detailed security hardening | `azure-security-hardening` |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
