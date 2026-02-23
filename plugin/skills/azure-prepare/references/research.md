@@ -116,24 +116,24 @@ Add research findings to `.azure/plan.md`:
 
 ### Web Application + API + Database
 
-1. Load: `services/container-apps/README.md` → `bicep.md`, `scaling.md`
-2. Load: `services/cosmos-db/README.md` → `partitioning.md`
-3. Load: `services/key-vault/README.md`
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
 5. Invoke: `azure-security-hardening` (security baseline)
 
 ### Serverless Event-Driven
 
-1. Load: `services/functions/README.md` (contains mandatory composition workflow)
-2. Load: `services/event-grid/README.md` or `services/service-bus/README.md` (if using messaging)
-3. Load: `services/storage/README.md` (if using queues/blobs)
+1. Load: [services/functions/README.md](services/functions/README.md) (contains mandatory composition workflow)
+2. Load: [services/event-grid/README.md](services/event-grid/README.md) or [services/service-bus/README.md](services/service-bus/README.md) (if using messaging)
+3. Load: [services/storage/README.md](services/storage/README.md) (if using queues/blobs)
 4. Invoke: `azure-observability` (distributed tracing)
 
 ### AI Application
 
 1. Invoke: `microsoft-foundry` (AI patterns and best practices)
-2. Load: `services/container-apps/README.md` → `bicep.md`
-3. Load: `services/cosmos-db/README.md` → `partitioning.md` (vector storage)
+2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md)
+3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
 4. Invoke: `azure-security` (API key management)
 
 ## After Research
