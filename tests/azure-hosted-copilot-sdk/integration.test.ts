@@ -140,7 +140,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     // Scenario 1: Greenfield + explicit SDK mention
     test("greenfield: invokes skill when prompt mentions copilot SDK", async () => {
       const rate = await measureInvocationRate(agent, {
-        prompt: "Build an Azure app that uses the Copilot SDK to brutally review Github repos based on user input",
+        prompt: "Build an Azure app that uses the Copilot SDK to brutally review GitHub repos based on user input",
       }, "greenfield-explicit");
       if (rate >= 0) expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     }, 600000);
