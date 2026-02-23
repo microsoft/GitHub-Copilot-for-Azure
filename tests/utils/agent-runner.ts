@@ -625,7 +625,7 @@ function getTestName(): string {
  */
 function sanitizeFileName(name: string): string {
   return name
-    .replace(/[<>:"\/\\|?*]/g, "-") // Replace invalid chars
+    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
     .replace(/\s+/g, "_")           // Replace spaces with underscores
     .replace(/-+/g, "-")            // Collapse multiple dashes
     .replace(/_+/g, "_")            // Collapse multiple underscores
