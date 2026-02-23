@@ -53,14 +53,21 @@ export function countAcrAuthSpirals(metadata: AgentMetadata): number {
   let consecutiveFailures = 0;
   let maxSpiral = 0;
 
+  // Pre-index completions by toolCallId for O(1) lookup
+  const completionsByCallId = new Map<string, { success: boolean }>();
+  for (const event of metadata.events) {
+    if (event.type === "tool.execution_complete") {
+      completionsByCallId.set(
+        event.data.toolCallId as string,
+        { success: (event.data as Record<string, unknown>).success as boolean }
+      );
+    }
+  }
+
   for (const event of metadata.events) {
     if (event.type === "tool.execution_start" && acrPattern.test(argsString(event))) {
-      // Find matching completion
-      const toolCallId = event.data.toolCallId as string;
-      const completion = metadata.events.find(
-        e => e.type === "tool.execution_complete" && e.data.toolCallId === toolCallId
-      );
-      if (completion && !((completion.data as Record<string, unknown>).success as boolean)) {
+      const completion = completionsByCallId.get(event.data.toolCallId as string);
+      if (completion && !completion.success) {
         consecutiveFailures++;
         maxSpiral = Math.max(maxSpiral, consecutiveFailures);
       } else {

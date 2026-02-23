@@ -10,7 +10,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 
 const TIMEOUT_MS = 120_000;
 const MARKETPLACE_NAME = "github-copilot-for-azure";
@@ -205,13 +205,13 @@ function getExpectedMcpServers(pluginPath: string): string[] {
 }
 
 function runCopilotPrompt(prompt: string, verbose: boolean): string {
-  const cmd = `copilot -p "${prompt}" --allow-all-tools --allow-all-paths`;
+  const args = ["-p", prompt, "--allow-all-tools", "--allow-all-paths"];
   if (verbose) {
-    console.log(`   🔧 Running: ${cmd}`);
+    console.log(`   🔧 Running: copilot ${args.join(" ")}`);
   }
 
   try {
-    const output = execSync(cmd, {
+    const output = execFileSync("copilot", args, {
       encoding: "utf-8",
       timeout: TIMEOUT_MS,
       stdio: ["pipe", "pipe", "pipe"],
