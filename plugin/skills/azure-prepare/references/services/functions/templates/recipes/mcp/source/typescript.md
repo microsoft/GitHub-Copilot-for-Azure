@@ -2,6 +2,10 @@
 
 Replace the contents of `src/functions/` with these files.
 
+> ⚠️ **IMPORTANT**: Do NOT delete `src/index.ts` — it's required for function discovery. See [nodejs-entry-point.md](../../common/nodejs-entry-point.md).
+
+> 📦 **Build Required**: Run `npm run build` before deployment to compile TypeScript to `dist/`.
+
 ## src/functions/mcp.ts
 
 ```typescript

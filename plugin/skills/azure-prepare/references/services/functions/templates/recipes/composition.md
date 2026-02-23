@@ -155,19 +155,28 @@ app_setting = merge(local.base_app_settings, local.cosmos_app_settings)
 3. Remove the HTTP trigger files listed in "Files to Remove"
 4. Add any package dependencies (NuGet, npm, pip, Maven)
 
-> **File Naming:** Name function source files after their **route or purpose**, not the generic trigger type.
-> - Route `/api/random` → `src/functions/random.js` (not `httpTrigger.js`)
-> - Route `/api/users` → `src/functions/users.js` (not `httpTrigger.js`)
-> - See [common/post-generation.md](common/post-generation.md) for full naming rules.
+> ⛔ **Node.js CRITICAL**: Do NOT delete `src/index.js` (JavaScript) or `src/index.ts` (TypeScript).
+> This file contains `app.setup()` which initializes the Functions runtime.
+> Without it, functions deploy but return 404 on all endpoints.
+> See [common/nodejs-entry-point.md](common/nodejs-entry-point.md).
 
-### Step 5.5: Post-Generation Updates
+> ⛔ **Node.js GLOB PATTERN REQUIRED**: The `package.json` `main` field MUST use the glob pattern:
+> ```json
+> { "main": "src/{index.js,functions/*.js}" }
+> ```
+> Using `"main": "src/index.js"` alone will result in 404 on ALL endpoints because functions won't be discovered.
 
-After creating or modifying function source files, always perform these updates:
+> ⛔ **Node.js Project Structure**: `package.json` MUST be at project ROOT (same level as `azure.yaml`), NOT inside `src/`.
+> The `azure.yaml` must have `project: .` (not `project: ./src/`).
+> This is the SAME structure for both Bicep and Terraform — source code is IaC-agnostic.
 
-1. **Update README.md** — add the new function to the endpoints table with a curl example
-2. **Update test files** — add a test case if `test.http` or `tests/` exists; otherwise add a TODO comment in README.md
+> 📦 **TypeScript Build**: Run `npm run build` before deployment to compile to `dist/`.
+> TypeScript `main` field: `"main": "dist/src/{index.js,functions/*.js}"`
 
-See [common/post-generation.md](common/post-generation.md) for templates and examples.
+> ⛔ **C# (.NET) CRITICAL**: Do NOT replace `Program.cs` from the base template.
+> The base template uses `ConfigureFunctionsWebApplication()` with App Insights integration.
+> Recipes only add trigger function files (`.cs`) and package references (`.csproj`).
+> See [common/dotnet-entry-point.md](common/dotnet-entry-point.md).
 
 ### Step 6: Update azure.yaml (if needed)
 
@@ -213,11 +222,70 @@ azd deploy --no-prompt        # Deploy code (RBAC now active)
 | Language | Bicep Template | Terraform Template |
 |----------|---------------|-------------------|
 | dotnet | `functions-quickstart-dotnet-azd` | `functions-quickstart-dotnet-azd-tf` |
-| typescript | `functions-quickstart-typescript-azd` | `functions-quickstart-typescript-azd-tf` |
-| javascript | `functions-quickstart-javascript-azd` | `functions-quickstart-javascript-azd-tf` |
-| python | `functions-quickstart-python-http-azd` | `functions-quickstart-python-http-azd-tf` |
-| java | `azure-functions-java-flex-consumption-azd` | `azure-functions-java-flex-consumption-azd-tf` |
-| powershell | `functions-quickstart-powershell-azd` | `functions-quickstart-powershell-azd-tf` |
+| typescript | `functions-quickstart-typescript-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| javascript | `functions-quickstart-javascript-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| python | `functions-quickstart-python-http-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| java | `azure-functions-java-flex-consumption-azd` | `functions-quickstart-dotnet-azd-tf` * |
+| powershell | `functions-quickstart-powershell-azd` | `functions-quickstart-dotnet-azd-tf` * |
+
+### Terraform: Language Configuration
+
+\* All languages use `functions-quickstart-dotnet-azd-tf` as base, then modify runtime settings:
+
+```hcl
+# In variables.tf or main.tf - change these values for your language:
+variable "function_runtime" {
+  default = "node"  # dotnet-isolated | node | python | java | powershell
+}
+
+variable "function_runtime_version" {
+  default = "20"    # Query docs for latest - see below
+}
+```
+
+| Language | `function_runtime` | Version Source |
+|----------|-------------------|----------------|
+| C# (.NET) | `dotnet-isolated` | Latest LTS from docs |
+| TypeScript/JS | `node` | Latest LTS from docs |
+| Python | `python` | Latest GA from docs |
+| Java | `java` | Latest LTS from docs |
+| PowerShell | `powershell` | Latest GA from docs |
+
+> **⚠️ ALWAYS QUERY OFFICIAL DOCUMENTATION** — Do NOT use hardcoded versions.
+>
+> **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
+>
+> Query for latest GA/LTS versions before generating IaC.
+
+> ⚠️ **CRITICAL**: All Terraform must use `sku_name = "FC1"` (Flex Consumption). **NEVER use Y1/Dynamic.**
+
+### Terraform: Source Code is IaC-Agnostic
+
+**The application source code is IDENTICAL for Bicep and Terraform deployments.**
+
+When using `functions-quickstart-dotnet-azd-tf` for a non-.NET language:
+
+1. **Change runtime in Terraform** — modify `function_runtime` and `function_runtime_version` in `main.tf` or `variables.tf`
+2. **Replace source code** — delete the `.NET` code in `src/` and add your language's code (JavaScript, Python, etc.)
+3. **Keep project structure** — `package.json` (Node.js) or equivalent at project ROOT, not inside `src/`
+
+**Example: Node.js on Terraform**
+
+```
+project-root/
+├── azure.yaml              # project: .
+├── package.json            # Node.js deps - MUST be at root
+├── host.json
+├── src/
+│   ├── index.js            # Entry point
+│   └── functions/
+│       └── myFunction.js
+└── infra/
+    └── *.tf                # Only difference from Bicep
+```
+
+> ⛔ **If you find yourself changing imports or application code because of IaC choice, something is wrong.**
+> The only changes for Terraform vs Bicep should be in the `infra/` folder.
 
 ## Storage Endpoint Requirements
 
@@ -271,6 +339,10 @@ resource "azurerm_storage_account" "storage" {
 
 ### Function App with Managed Identity Storage
 
+> **Note**: For **Flex Consumption (FC1)**, use `azapi_resource` instead of `azurerm_linux_function_app`.
+> The AzureRM provider doesn't yet support FC1's `functionAppConfig` block. See examples below.
+
+**Standard Consumption/Premium (azurerm)**
 ```hcl
 provider "azurerm" {
   features {}
@@ -284,6 +356,39 @@ resource "azurerm_linux_function_app" "function" {
   # When using MI storage, assign RBAC BEFORE creating function:
   depends_on = [azurerm_role_assignment.storage_blob_owner]
 }
+```
+
+**Flex Consumption FC1 (azapi) — REQUIRED for FC1**
+```hcl
+resource "azapi_resource" "function_app" {
+  type      = "Microsoft.Web/sites@2023-12-01"
+  name      = "func-${local.name}"
+  location  = azurerm_resource_group.rg.location
+  parent_id = azurerm_resource_group.rg.id
+  
+  body = {
+    kind = "functionapp,linux"
+    properties = {
+      serverFarmId = azapi_resource.plan.id
+      functionAppConfig = {
+        runtime = { name = "node", version = "22" }
+        scaleAndConcurrency = { maximumInstanceCount = 100, instanceMemoryMB = 2048 }
+        deployment = {
+          storage = {
+            type  = "blobContainer"
+            value = "${azurerm_storage_account.storage.primary_blob_endpoint}deploymentpackage"
+            authentication = {
+              type                           = "UserAssignedIdentity"
+              userAssignedIdentityResourceId = azurerm_user_assigned_identity.api.id
+            }
+          }
+        }
+      }
+    }
+  }
+  depends_on = [time_sleep.rbac_propagation]
+}
+```
 
 # RBAC for deploying user (required to create function with MI storage)
 resource "azurerm_role_assignment" "storage_blob_owner" {
@@ -292,13 +397,37 @@ resource "azurerm_role_assignment" "storage_blob_owner" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# RBAC for function app after creation
-resource "azurerm_role_assignment" "function_storage_blob" {
-  scope                = azurerm_storage_account.storage.id
-  role_definition_name = "Storage Blob Data Owner"
-  principal_id         = azurerm_linux_function_app.function.identity[0].principal_id
+### RBAC Propagation Delay (CRITICAL)
+
+Azure RBAC assignments take 30-60 seconds to propagate through Azure AD. Terraform's `depends_on` only waits for the **resource** to be created, not for RBAC to propagate. This causes 403 errors on first deployment.
+
+**Solution 1: Add `time_sleep` resource**
+```hcl
+resource "time_sleep" "rbac_propagation" {
+  depends_on      = [azurerm_role_assignment.storage_blob_owner]
+  create_duration = "60s"
+}
+
+resource "azapi_resource" "function_app" {
+  depends_on = [time_sleep.rbac_propagation]
+  # ...
 }
 ```
+
+**Solution 2: Create deployment container explicitly**
+```hcl
+resource "azurerm_storage_container" "deployment" {
+  name                  = "deploymentpackage"
+  storage_account_id    = azurerm_storage_account.storage.id
+  container_access_type = "private"
+  depends_on            = [azurerm_role_assignment.storage_blob_owner]
+}
+```
+
+> ⚠️ **Common Failures Without These Fixes:**
+> - `403 Forbidden` — RBAC not yet propagated
+> - `404 Container Not Found` — deployment container not created
+> - `Tag Not Found: azd-service-name` — Azure resource tags take time to be queryable
 
 ### Service Bus with Disabled Local Auth
 

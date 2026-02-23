@@ -1,16 +1,16 @@
 /**
- * Trigger Tests for agent-framework
+ * Trigger Tests for create
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../../../../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
+import { TriggerMatcher } from "../../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/foundry-agent/create/agent-framework";
+const SKILL_NAME = "microsoft-foundry";
 
-describe("agent-framework - Trigger Tests", () => {
+describe("create - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,16 +21,18 @@ describe("agent-framework - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Create an AI agent using Microsoft Agent Framework",
-      "Build a multi-agent workflow",
-      "Scaffold a new agent with MCP tools",
-      "Create a workflow with agent framework SDK",
-      "Build an agent with function calling",
-      "Create a new agent for my Foundry project",
-      "Set up a multi-agent workflow pattern",
-      "Build an agentic app with agent framework",
-      "Create an agent with HTTP server mode",
-      "Scaffold agent with orchestration patterns",
+      "Create a new hosted agent for Foundry",
+      "Build a hosted agent using LangGraph for Foundry",
+      "Scaffold an agent project from a sample",
+      "Create a new agent application for Foundry",
+      "Start a new greenfield agent project for Foundry",
+      "Build a custom hosted agent for Foundry",
+      "Create an agent using Microsoft Agent Framework",
+      "New LangChain agent for Foundry",
+      "Scaffold agent from foundry-samples",
+      "Create a hosted agent in C# for Foundry",
+      "Convert my agent to a Foundry hosted agent",
+      "Add hosting adapter to my Foundry agent project",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -48,14 +50,13 @@ describe("agent-framework - Trigger Tests", () => {
       "What is the weather today?",
       "Help me write a poem",
       "Explain quantum computing",
-      "Help me with AWS SageMaker",
       "Configure my PostgreSQL database",
-      "Optimize my Azure spending and reduce costs",
-      "Check model capacity across regions",
-      "Create a knowledge index",
       "Help me with Kubernetes pods",
-      "Set up a virtual network in Azure",
-      "How do I write Python code?",
+      "How do I configure a timer-based Azure function?",
+      "Help me deploy a static website",
+      "Write a unit test for my React component",
+      "How do I use Git branches?",
+      "Explain Docker networking basics",
     ];
 
     test.each(shouldNotTriggerPrompts)(
