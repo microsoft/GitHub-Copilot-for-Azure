@@ -1,6 +1,6 @@
 ---
 name: azure-compliance
-description: |
+description: >-
   Comprehensive Azure compliance and security auditing capabilities including best practices assessment,
   Key Vault expiration monitoring, and resource configuration validation.
   USE FOR: compliance scan, security audit, azqr, Azure best practices, Key Vault expiration check,
@@ -52,6 +52,7 @@ Activate this skill when user wants to:
 |------------|-----------|
 | Comprehensive Compliance (azqr) | [references/azure-quick-review.md](references/azure-quick-review.md) |
 | Key Vault Expiration | [references/azure-keyvault-expiration-audit.md](references/azure-keyvault-expiration-audit.md) |
+| Resource Graph Queries | [references/azure-resource-graph.md](references/azure-resource-graph.md) |
 
 ## MCP Tools
 

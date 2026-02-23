@@ -11,6 +11,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { decode } from "html-entities";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,18 +32,6 @@ const colors = {
   bgRed: "\x1b[41m",
   bgGreen: "\x1b[42m",
 };
-
-/**
- * Decode HTML entities
- */
-function decodeHtmlEntities(str) {
-  return str
-    .replace(/&gt;/g, ">")
-    .replace(/&lt;/g, "<")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
 
 /**
  * Parse JUnit XML (simple regex-based parser for our use case)
@@ -100,7 +89,7 @@ function parseJunitXml(xmlContent) {
       const testAttrs = testAttrsMatch[0];
       const testcase = {
         classname: extractAttr(testAttrs, "classname") || "",
-        name: decodeHtmlEntities(extractAttr(testAttrs, "name") || "Unknown Test"),
+        name: decode(extractAttr(testAttrs, "name") || "Unknown Test"),
         time: parseFloat(extractAttr(testAttrs, "time") || "0"),
         status: "passed",
         failure: null
@@ -110,14 +99,14 @@ function parseJunitXml(xmlContent) {
       const failureMatch = testXml.match(/<failure[^>]*>([\s\S]*?)<\/failure>/);
       if (failureMatch) {
         testcase.status = "failed";
-        testcase.failure = decodeHtmlEntities(failureMatch[1].trim());
+        testcase.failure = decode(failureMatch[1].trim());
       }
 
       // Check for error
       const errorMatch = testXml.match(/<error[^>]*>([\s\S]*?)<\/error>/);
       if (errorMatch) {
         testcase.status = "error";
-        testcase.failure = decodeHtmlEntities(errorMatch[1].trim());
+        testcase.failure = decode(errorMatch[1].trim());
       }
 
       // Check for skipped

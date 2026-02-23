@@ -1,6 +1,6 @@
 ---
 name: azure-deploy
-description: |
+description: >-
   Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands.
   USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, bicep deploy, terraform apply.
   DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate).
@@ -76,3 +76,7 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
 | `mcp_azure_mcp_azd` | Execute AZD commands |
+
+## References
+
+- [Troubleshooting](references/troubleshooting.md) - Common issues and solutions

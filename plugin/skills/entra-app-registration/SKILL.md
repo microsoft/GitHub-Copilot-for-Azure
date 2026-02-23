@@ -1,9 +1,9 @@
 ---
 name: entra-app-registration
-description: |
+description: >-
   Guides Microsoft Entra ID app registration, OAuth 2.0 authentication, and MSAL integration.
   USE FOR: create app registration, register Azure AD app, configure OAuth, set up authentication, add API permissions, generate service principal, MSAL example, console app auth, Entra ID setup, Azure AD authentication.
-  DO NOT USE FOR: Azure RBAC or role assignments (use azure-role-selector), Key Vault secrets (use azure-keyvault-expiration-audit), Azure resource security (use azure-security).
+  DO NOT USE FOR: Azure RBAC or role assignments (use azure-rbac), Key Vault secrets (use azure-keyvault-expiration-audit), Azure resource security (use azure-security).
 ---
 
 ## Overview
@@ -43,7 +43,7 @@ Create an app registration in the Azure portal or using Azure CLI.
 3. Provide name, supported account types, and redirect URI
 4. Click "Register"
 
-**CLI Method:** See [references/CLI-COMMANDS.md](references/CLI-COMMANDS.md)
+**CLI Method:** See [references/cli-commands.md](references/cli-commands.md)
 **IaC Method:** See [references/BICEP-EXAMPLE.bicep](references/BICEP-EXAMPLE.bicep)
 
 It's highly recommended to use the IaC to manage Entra app registration if you already use IaC in your project, need a scalable solution for managing lots of app registrations or need fine-grained audit history of the configuration changes. 
@@ -67,7 +67,7 @@ Grant your application permission to access Microsoft APIs or your own APIs.
 - `Directory.Read.All` - Read directory data
 - `Mail.Send` - Send mail as a user
 
-**Details:** See [references/API-PERMISSIONS.md](references/API-PERMISSIONS.md)
+**Details:** See [references/api-permissions.md](references/api-permissions.md)
 
 ### Step 4: Create Client Credentials (if needed)
 
@@ -88,8 +88,8 @@ For confidential client applications (web apps, services), create a client secre
 Integrate the OAuth flow into your application code.
 
 **See:**
-- [references/OAUTH-FLOWS.md](references/OAUTH-FLOWS.md) - OAuth 2.0 flow details
-- [references/CONSOLE-APP-EXAMPLE.md](references/CONSOLE-APP-EXAMPLE.md) - Console app implementation
+- [references/oauth-flows.md](references/oauth-flows.md) - OAuth 2.0 flow details
+- [references/console-app-example.md](references/console-app-example.md) - Console app implementation
 
 ## Common Patterns
 
@@ -103,7 +103,7 @@ Walk user through their first app registration step-by-step.
 - Redirect URIs (if applicable)
 - Required permissions
 
-**Script:** See [references/FIRST-APP-REGISTRATION.md](references/FIRST-APP-REGISTRATION.md)
+**Script:** See [references/first-app-registration.md](references/first-app-registration.md)
 
 ### Pattern 2: Console Application with User Authentication
 
@@ -114,7 +114,7 @@ Create a .NET/Python/Node.js console app that authenticates users.
 - Authentication library (MSAL recommended)
 - Required permissions
 
-**Example:** See [references/CONSOLE-APP-EXAMPLE.md](references/CONSOLE-APP-EXAMPLE.md)
+**Example:** See [references/console-app-example.md](references/console-app-example.md)
 
 ### Pattern 3: Service-to-Service Authentication
 
@@ -125,7 +125,7 @@ Set up daemon/service authentication without user interaction.
 - Target API/resource
 - Whether to use secret or certificate
 
-**Implementation:** Use Client Credentials flow (see [references/OAUTH-FLOWS.md#client-credentials-flow](references/OAUTH-FLOWS.md#client-credentials-flow))
+**Implementation:** Use Client Credentials flow (see [references/oauth-flows.md#client-credentials-flow](references/oauth-flows.md#client-credentials-flow))
 
 ## MCP Tools and CLI
 
@@ -140,7 +140,7 @@ Set up daemon/service authentication without user interaction.
 | `az ad app credential reset` | Generate new client secret |
 | `az ad sp create` | Create service principal |
 
-**Complete reference:** See [references/CLI-COMMANDS.md](references/CLI-COMMANDS.md)
+**Complete reference:** See [references/cli-commands.md](references/cli-commands.md)
 
 ### Microsoft Authentication Library (MSAL)
 
@@ -151,7 +151,7 @@ MSAL is the recommended library for integrating Microsoft identity platform.
 - JavaScript/TypeScript - `@azure/msal-browser`, `@azure/msal-node`
 - Python - `msal`
 
-**Examples:** See [references/CONSOLE-APP-EXAMPLE.md](references/CONSOLE-APP-EXAMPLE.md)
+**Examples:** See [references/console-app-example.md](references/console-app-example.md)
 
 ## Security Best Practices
 
@@ -175,12 +175,12 @@ MSAL is the recommended library for integrating Microsoft identity platform.
 
 ## References
 
-- [OAuth Flows](references/OAUTH-FLOWS.md) - Detailed OAuth 2.0 flow explanations
-- [CLI Commands](references/CLI-COMMANDS.md) - Azure CLI reference for app registrations
-- [Console App Example](references/CONSOLE-APP-EXAMPLE.md) - Complete working examples
-- [First App Registration](references/FIRST-APP-REGISTRATION.md) - Step-by-step guide for beginners
-- [API Permissions](references/API-PERMISSIONS.md) - Understanding and configuring permissions
-- [Troubleshooting](references/TROUBLESHOOTING.md) - Common issues and solutions
+- [OAuth Flows](references/oauth-flows.md) - Detailed OAuth 2.0 flow explanations
+- [CLI Commands](references/cli-commands.md) - Azure CLI reference for app registrations
+- [Console App Example](references/console-app-example.md) - Complete working examples
+- [First App Registration](references/first-app-registration.md) - Step-by-step guide for beginners
+- [API Permissions](references/api-permissions.md) - Understanding and configuring permissions
+- [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
 
 ## External Resources
 

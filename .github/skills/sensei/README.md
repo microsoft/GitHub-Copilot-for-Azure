@@ -240,8 +240,12 @@ When running on multiple skills:
 
 ### Rule-Based Checks
 
+Per the [agentskills.io specification](https://agentskills.io/specification):
+
 1. **Name validation**
-   - Lowercase + hyphens only
+   - Lowercase alphanumeric + hyphens only
+   - No consecutive hyphens (`--`)
+   - Must not start or end with hyphen
    - Matches directory name
    - ≤ 64 characters
 
@@ -260,6 +264,14 @@ When running on multiple skills:
 5. **Compatibility** (optional for Medium-High)
    - Lists required tools/frameworks
    - Documents prerequisites
+   - Max 500 characters per spec
+
+6. **Optional spec fields** (preserve if present)
+   - `license`, `metadata`, `allowed-tools`
+
+7. **Size limits**
+   - SKILL.md < 500 lines (spec recommendation)
+   - SKILL.md < 500 tokens (soft), < 5000 (hard)
 
 ### Target: Medium-High
 
@@ -300,7 +312,7 @@ description: 'Instrument a webapp to send useful telemetry data to Azure App Ins
 ```yaml
 ---
 name: appinsights-instrumentation
-description: |
+description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring",
   "add telemetry", "track requests", "ASP.NET Core telemetry", "Node.js monitoring".

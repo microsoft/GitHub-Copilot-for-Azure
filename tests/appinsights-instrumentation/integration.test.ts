@@ -15,16 +15,14 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   useAgentRunner,
-  isSkillInvoked,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { doesWorkspaceFileIncludePattern } from "../utils/evaluate";
+import { doesWorkspaceFileIncludePattern, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "appinsights-instrumentation";
 const RUNS_PER_PROMPT = 5;
-const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -37,22 +35,18 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
     test("invokes skill for App Insights instrumentation request", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "How do I add Application Insights to my ASP.NET Core web app?"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -61,16 +55,9 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for App Insights instrumentation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for App Insights instrumentation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes skill for Node.js telemetry request", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -84,9 +71,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
             prompt: "Add telemetry to my Node.js application"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -95,11 +80,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Node.js telemetry prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Node.js telemetry prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
 

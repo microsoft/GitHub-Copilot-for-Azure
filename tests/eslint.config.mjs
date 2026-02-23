@@ -1,6 +1,8 @@
 import eslint from "@eslint/js";
+import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
+import integrationTestNameRule from "./eslint-rules/integration-test-name.mjs";
 
 const tsFiles = ["**/*.ts"];
 const jsFiles = ["**/*.js", "**/*.mjs"];
@@ -36,7 +38,7 @@ const sharedRules = {
     "quotes": ["error", "double", { "avoidEscape": true }],
 };
 
-export default tseslint.config(
+export default defineConfig(
     // Global ignores
     {
         ignores: [
@@ -45,7 +47,8 @@ export default tseslint.config(
             "reports/**",
             "**/resources/**",
             "**/__snapshots__/**",
-            "swa-deployment-tests/**"
+            "swa-deployment-tests/**",
+            "**/eval/fixtures/**",  // Test fixtures - not real TS projects
         ],
     },
     // TypeScript files - use TypeScript parser with project
@@ -74,6 +77,9 @@ export default tseslint.config(
             "@typescript-eslint/await-thenable": "error",
             "@typescript-eslint/no-explicit-any": "error",
             "@typescript-eslint/no-require-imports": "error",
+            // A significant number of integration tests generate reports for human review.
+            // We don't have deterministic metrics for them yet.
+            "jest/expect-expect": "off"
         },
     },
     // JavaScript files - no TypeScript project needed
@@ -104,6 +110,23 @@ export default tseslint.config(
             "no-restricted-globals": ["error", {
                 name: "require",
                 message: "Use ESM 'import' instead of 'require()'"
+            }],
+        },
+    },
+    // Enforce describe() naming in integration test files
+    {
+        files: ["**/integration.test.ts"],
+        plugins: {
+            "custom": {
+                rules: {
+                    "integration-test-name": integrationTestNameRule,
+                },
+            },
+        },
+        rules: {
+            // Update the pattern option below to change the required format.
+            "custom/integration-test-name": ["error", {
+                pattern: "^[a-z0-9-]+_[a-z0-9-]* - Integration Tests$"
             }],
         },
     }

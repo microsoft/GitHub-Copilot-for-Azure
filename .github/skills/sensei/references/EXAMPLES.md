@@ -44,7 +44,7 @@ const shouldNotTriggerPrompts = [
 ```yaml
 ---
 name: appinsights-instrumentation
-description: |
+description: >-
   Instrument web applications to send telemetry data to Azure Application Insights
   for monitoring and diagnostics. USE FOR: "add App Insights", "instrument my app",
   "set up application monitoring", "add telemetry", "track requests and dependencies",
@@ -114,13 +114,13 @@ description: 'Azure Security Services including Key Vault, Managed Identity, RBA
 ```yaml
 ---
 name: azure-security
-description: |
+description: >-
   Overview of Azure security services and concepts including Key Vault, Managed Identity,
   RBAC, Entra ID, and Defender for Cloud. USE FOR: "Azure security overview", "what
   security services are available", "explain managed identity", "RBAC basics", "Key Vault
   concepts", "Entra ID overview", "Defender for Cloud features". DO NOT USE FOR: hardening
   existing resources (use azure-security-hardening), Entra app registration setup (use
-  entra-app-registration), or role assignment guidance (use azure-role-selector).
+  entra-app-registration), or role assignment guidance (use azure-rbac).
 ---
 ```
 
@@ -139,7 +139,7 @@ description: |
 ```yaml
 ---
 name: azure-deploy
-description: |
+description: >-
   Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
   USE THIS SKILL when users want to deploy, publish, host, or run their application
   on Azure. This skill detects application type and recommends optimal Azure service.
@@ -157,7 +157,7 @@ description: |
 ```yaml
 ---
 name: azure-deploy
-description: |
+description: >-
   Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
   USE FOR: "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure",
   "azd up", "deploy my app", "push to Azure", "get this running in the cloud".
@@ -243,10 +243,10 @@ sensei: improve appinsights-instrumentation frontmatter
 description: Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
 ```
 
-**Problem:** Single-line descriptions over 200 characters are hard to read, review, and maintain. Use multi-line YAML format (`|`) instead:
+**Problem:** Single-line descriptions over 200 characters are hard to read, review, and maintain. Use folded YAML format (`>-`) instead:
 
 ```yaml
-description: |
+description: >-
   Identify and quantify cost savings across Azure subscriptions by analyzing actual costs,
   utilization metrics, and generating actionable optimization recommendations. USE FOR:
   optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings.
@@ -256,7 +256,7 @@ description: |
 ### ❌ Don't Do This: Overly Long Description
 
 ```yaml
-description: |
+description: >-
   This skill helps you instrument your web applications to send telemetry data
   to Azure Application Insights which is a feature of Azure Monitor that provides
   extensible application performance management (APM) and monitoring for live
@@ -275,7 +275,7 @@ description: |
 ### ❌ Don't Do This: Vague Anti-Triggers
 
 ```yaml
-description: |
+description: >-
   Deploy apps to Azure. USE FOR: deployment.
   DO NOT USE FOR: other stuff.
 ```

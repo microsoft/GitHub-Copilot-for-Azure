@@ -1,0 +1,43 @@
+# Task: HTTP-only Azure Functions app (TypeScript)
+# Tests the base template for TypeScript + Bicep
+id: http-typescript-001
+name: HTTP Functions - TypeScript
+description: |
+  Create a simple HTTP-triggered Azure Functions app in TypeScript.
+  Validates correct base template selection for TypeScript.
+
+tags:
+  - http
+  - typescript
+  - base-template
+  - bicep
+
+inputs:
+  prompt: |
+    Build a TypeScript Azure Functions API with an HTTP endpoint.
+    Use Bicep for the infrastructure.
+  context:
+    language: typescript
+    integration: http
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "functions-quickstart-typescript-azd"
+    - "plan"
+
+graders:
+  - name: selects_ts_base
+    type: regex
+    config:
+      must_match:
+        # Agent should mention typescript or http/api
+        - "(?i)typescript|node|http|function|api"
+
+  - name: no_wrong_language
+    type: regex
+    config:
+      must_not_match:
+        - "(?i)functions-quickstart-dotnet|functions-quickstart-python"

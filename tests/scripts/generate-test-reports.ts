@@ -54,24 +54,17 @@ function parseArgs(argv: string[]): { skill: string } {
 }
 
 /**
- * Extract the skill name from a subdirectory name.
- * Subdirectory names follow the pattern: {skill-name}-{TestSuite}_{test-details}
- * e.g., "azure-deploy-Integration_Tests_static-web-apps-deploy_creates_portfolio"
- * The skill name is the portion before the first occurrence of a known test suite marker.
- */
-function extractSkillName(subdirName: string): string | undefined {
-  // Match everything before -Integration_Tests, -Unit_Tests, -Triggers_Tests, etc.
-  const match = subdirName.match(/^(.+?)-(Integration_Tests|Unit_Tests|Triggers_Tests|E2E_Tests)/);
-  return match ? match[1] : undefined;
-}
-
-/**
  * Filter subdirectories belonging to a specific skill.
  */
 function filterSubdirectoriesBySkill(subdirectories: string[], skill: string): string[] {
   return subdirectories.filter(subdir => {
     const subdirName = path.basename(subdir);
-    const skillName = extractSkillName(subdirName);
+
+    // Skill name in the subdirectory name ends at the first underscore character.
+    // See tests/eslint-rules/integration-test-name.mjs for details.
+    const terminatorIndex = subdirName.indexOf("_");
+    const skillName = subdirName.substring(0, terminatorIndex);
+    
     return skillName === skill;
   });
 }

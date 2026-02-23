@@ -28,12 +28,20 @@ jobs:
         working-directory: ./tests
         run: npm ci
 
+      - name: Install scripts dependencies
+        working-directory: ./scripts
+        run: npm ci
+
       - name: Typecheck
         working-directory: ./tests
         run: npm run typecheck
 
       - name: Lint test
         working-directory: ./tests
+        run: npm run lint
+
+      - name: Lint scripts
+        working-directory: ./scripts
         run: npm run lint
 
   # Token limit check and comparison for markdown files
@@ -172,6 +180,8 @@ jobs:
   skill-validation:
     name: Skill Structure
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -265,13 +275,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Run reference check and capture output
-          if npm run references 2>&1 | tee reference-check.log; then
+          if OUTPUT=$(npm run references 2>&1); then
+            echo "$OUTPUT"
             echo "✅ All markdown references are valid" >> $GITHUB_STEP_SUMMARY
           else
+            echo "$OUTPUT"
             echo "❌ Found broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            cat reference-check.log >> $GITHUB_STEP_SUMMARY
+            echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi

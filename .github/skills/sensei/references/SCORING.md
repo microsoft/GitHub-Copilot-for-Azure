@@ -1,6 +1,6 @@
 # Scoring Criteria
 
-Detailed scoring criteria for evaluating skill frontmatter compliance.
+Detailed scoring criteria for evaluating skill frontmatter compliance per the [agentskills.io specification](https://agentskills.io/specification).
 
 ## Overview
 
@@ -59,7 +59,7 @@ A skill is **Medium** if:
 
 **Examples of Medium-adherence descriptions:**
 ```yaml
-description: |
+description: >-
   Deploy applications to Azure using Azure Developer CLI (azd). USE THIS SKILL 
   when users want to deploy, publish, host, or run their application on Azure. 
   Trigger phrases include "deploy to Azure", "host on Azure", "publish to Azure".
@@ -75,7 +75,7 @@ A skill is **Medium-High** if:
 
 **Example of Medium-High adherence:**
 ```yaml
-description: |
+description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring".
   DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
@@ -88,13 +88,22 @@ A skill is **High** if:
 - Has `compatibility` field documenting requirements
 - Has examples section (optional but recommended)
 
+**Strongly recommended** (reported as suggestions if missing):
+- `license` field — identifies the license applied to the skill
+- `metadata.version` — tracks the skill version for consumers
+
 **Example of High adherence:**
 ```yaml
-description: |
+name: appinsights-instrumentation
+description: >-
   Instrument web apps to send telemetry to Azure Application Insights.
   USE FOR: "add App Insights", "instrument my app", "set up monitoring".
   DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
+license: MIT
 compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
+metadata:
+  author: example-org
+  version: "1.0"
 ```
 
 ---
@@ -103,10 +112,19 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 
 ### 1. Name Validation
 
+Per the [agentskills.io spec](https://agentskills.io/specification), the `name` field:
+- Must be 1-64 characters
+- May only contain lowercase alphanumeric characters and hyphens (`a-z`, `0-9`, `-`)
+- Must not start or end with a hyphen
+- Must not contain consecutive hyphens (`--`)
+- Must match the parent directory name
+
 | Check | Pass | Fail |
 |-------|------|------|
 | Lowercase only | `azure-deploy` | `Azure-Deploy` |
-| Hyphens allowed | `azure-cost-optimization` | `azure_cost_optimization` |
+| Alphanumeric + hyphens | `azure-cost-optimization` | `azure_cost_optimization` |
+| No start/end hyphen | `azure-deploy` | `-azure-deploy`, `azure-deploy-` |
+| No consecutive hyphens | `azure-deploy` | `azure--deploy` |
 | Matches directory | `skill-name` = folder name | Mismatch |
 | Length ≤ 64 | 20 chars ✓ | 65+ chars ✗ |
 
@@ -120,7 +138,7 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 | Ideal | 300-600 chars |
 | Max | 1024 chars |
 
-**Format Rule:** Descriptions over 200 characters MUST use multi-line YAML format (`|`) for maintainability.
+**Format Rule:** Descriptions over 200 characters MUST use folded YAML format (`>-`) for maintainability. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries. Do NOT use `|` (literal block) as it preserves newlines.
 
 ### 3. Trigger Phrase Detection
 
@@ -151,6 +169,8 @@ compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights r
 
 ### 5. Compatibility Field
 
+Per the spec, `compatibility` is optional (max 500 characters). Indicates environment requirements.
+
 **What to include:**
 - Required tools (azd, az cli, Docker)
 - Supported frameworks (.NET 6+, Node.js 18+)
@@ -165,15 +185,57 @@ compatibility: |
   Optional: Docker (for containerized apps)
 ```
 
+### 6. Optional Spec Fields
+
+The [agentskills.io spec](https://agentskills.io/specification) defines additional optional fields. Sensei **strongly recommends** `license` and `metadata.version` — report a suggestion in the summary if either is missing.
+
+| Field | Spec Status | Sensei Policy |
+|-------|-------------|---------------|
+| `license` | Optional | **Strongly recommended.** Report suggestion if missing. |
+| `metadata.version` | Optional | **Strongly recommended.** Report suggestion if missing. |
+| `metadata.*` (other) | Optional | Preserve if present, do not require. |
+| `allowed-tools` | Experimental | Preserve if present, do not require. |
+
+> ⚠️ **Warning:** When improving frontmatter, never remove these fields if they already exist.
+
+**Example suggestions in summary:**
+```
+SUGGESTIONS:
+• Add license field (e.g., license: MIT)
+• Add metadata.version field (e.g., metadata: { version: "1.0" })
+```
+
+### 7. SKILL.md Size Limits
+
+Per the spec, SKILL.md should follow progressive disclosure:
+
+| Metric | Limit | Type |
+|--------|-------|------|
+| SKILL.md tokens | 500 | Soft limit |
+| SKILL.md tokens | 5000 | Hard limit |
+| SKILL.md lines | 500 | Spec recommendation |
+| Description chars | 1024 | Hard limit |
+| references/*.md tokens | 1000 | Per-file soft limit |
+
+**Line count check:** The spec recommends keeping SKILL.md under 500 lines. Report a warning if exceeded.
+
 ---
 
 ## Scoring Algorithm
 
 ```
 function scoreSkill(skill):
+    # Validate name per agentskills.io spec (fail-fast)
+    if not isValidName(skill.name):
+        report "INVALID: name fails spec validation"
+        return "Invalid"
+    
     score = "Low"
     
     # Check description length
+    if skill.description.length > 1024:
+        report "INVALID: description exceeds 1024-char spec limit"
+        return "Invalid"
     if skill.description.length < 150:
         return "Low"
     
@@ -193,6 +255,25 @@ function scoreSkill(skill):
         score = "High"
     
     return score
+
+function isValidName(name):
+    if name.length < 1 OR name.length > 64:
+        return false
+    if not matches(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/):
+        return false    # start/end with alphanumeric
+    if contains("--"):
+        return false    # no consecutive hyphens
+    if name != parentDirectoryName:
+        return false
+    return true
+
+function collectSuggestions(skill):
+    suggestions = []
+    if skill.license == null:
+        suggestions.add("Add license field (e.g., license: MIT)")
+    if skill.metadata == null OR skill.metadata.version == null:
+        suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0\" })")
+    return suggestions
 ```
 
 ---
@@ -220,7 +301,7 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 8. `azure-validation`
 9. `azure-nodejs-production`
 10. `entra-app-registration`
-11. `azure-role-selector`
+11. `azure-rbac`
 
 ### Medium-Adherence Skills
 
