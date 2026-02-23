@@ -15,8 +15,8 @@ import {
   getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-} from "../../../../utils/agent-runner";
-import { softCheckSkill } from "../../../../utils/evaluate";
+} from "../../../utils/agent-runner";
+import { softCheckSkill } from "../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -35,14 +35,14 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for agent creation prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a foundry agent using Microsoft Agent Framework SDK in Python.",
+            prompt: "Create a new hosted agent for Foundry using Python.",
             shouldEarlyTerminate: terminateOnCreate,
           });
 
@@ -61,7 +61,7 @@ describeIntegration(`${SKILL_NAME}_agent-framework - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create multi-agent workflow as foundry agent in Python with orchestration using Agent Framework.",
+            prompt: "Create a LangGraph hosted agent for Foundry in Python.",
             shouldEarlyTerminate: terminateOnCreate,
           });
 

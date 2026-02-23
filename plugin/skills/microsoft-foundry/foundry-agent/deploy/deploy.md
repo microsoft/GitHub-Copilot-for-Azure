@@ -81,11 +81,13 @@ Delegate Dockerfile creation to a sub-agent. Guidelines:
 - Use multi-stage builds for compiled languages
 - Use Alpine or slim variants for smaller images
 - Always target `linux/amd64` platform
-- Expose the correct port (ask user if not detectable)
+- Expose the correct port (usually 8088)
 
-> 💡 **Tip:** Reference [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples) for containerized agent examples.
+> 💡 **Tip:** Reference [Hosted Agents Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for containerized agent examples.
 
 Also generate `docker-compose.yml` and `.env` files for local development.
+
+**IMPORTANT**: You MUST always generate image tag as current timestamp (e.g., `myagent:202401011230`) to ensure uniqueness and avoid conflicts with existing images in ACR. DO NOT use static tags like `latest` or `v1`.
 
 Collect ACR details from project context. Let the user choose the build method:
 
@@ -205,6 +207,19 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
+## Display Agent Information
+Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
+
+Below the table you MUST also display Playground URL for direct access to the agent in Azure AI Foundry:
+
+Playground URL: https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion}
+
+To calculate the encodedSubId, you need to take subscription id and convert it into its 16-byte GUID, then encode it as URL-safe base64 without padding (= characters trimmed). You can use the following Python code to do this conversion:
+
+```
+python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRIPTION_ID>').bytes).rstrip(b'=').decode())"
+```
+
 ## Agent Definition Schemas
 
 ### Prompt Agent
@@ -285,4 +300,4 @@ When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode)
 
 - [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
-- [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
+- [Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/)

@@ -1,8 +1,8 @@
 ---
 name: microsoft-foundry
 description: >-
-  Use this skill to work with Microsoft Foundry (Azure AI Foundry) and tools from Foundry MCP server: deploy AI models, manage AI agents (create, deploy, invoke, run, troubleshoot Foundry Agents), manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, create agent, deploy agent, debug agent, invoke agent, run agent, agent chat, evaluate agent, agent monitoring, deploy model, model catalog, knowledge index, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, create Foundry resource, create AI Services, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, quota, capacity, TPM, deployment failure, QuotaExceeded.
+  Use this skill to work with Microsoft Foundry (Azure AI Foundry) and tools from Foundry MCP server: deploy AI models, manage hosted agent and prompt agent (create, deploy, invoke, run, troubleshoot Foundry Agents), manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
+  USE FOR: Microsoft Foundry, AI Foundry, hosted agent, create agent, deploy agent, debug agent, invoke agent, run agent, agent chat, evaluate agent, agent monitoring, deploy model, model catalog, knowledge index, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, create Foundry resource, create AI Services, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, quota, capacity, TPM, deployment failure, QuotaExceeded.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
 ---
 
@@ -21,7 +21,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **deploy** | Containerize, build, push to ACR, create/update/start/stop/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
 | **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create/agent-framework** | Create agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [create/agent-framework](foundry-agent/create/agent-framework/SKILL.md) |
+| **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
@@ -38,7 +38,7 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create a new agent from scratch | create/agent-framework → deploy → invoke |
+| Create a new agent from scratch | [create](foundry-agent/create/create.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Deploy an agent (code already exists) | deploy → invoke |
 | Update/redeploy an agent after code changes | deploy → invoke |
 | Invoke/test/chat with an agent | invoke |
