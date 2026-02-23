@@ -1,5 +1,7 @@
 # JavaScript MCP Tools
 
+> ⚠️ **IMPORTANT**: Do NOT delete `src/index.js` — it's required for function discovery. See [nodejs-entry-point.md](../../common/nodejs-entry-point.md).
+
 ## Dependencies
 
 **package.json:**
