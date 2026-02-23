@@ -217,8 +217,6 @@ Playground URL: https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{
 To calculate the encodedSubId, you need to take subscription id and convert it into its 16-byte GUID, then encode it as URL-safe base64 without padding (= characters trimmed). You can use the following Python code to do this conversion:
 
 ```
-Playground URL:
-
 python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRIPTION_ID>').bytes).rstrip(b'=').decode())"
 ```
 
