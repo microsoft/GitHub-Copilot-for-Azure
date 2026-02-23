@@ -10,7 +10,6 @@
  */
 
 import {
-  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
   useAgentRunner
@@ -96,7 +95,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   // Need to be logged into azd for these tests. 
   // azd auth login
-  const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+  const FOLLOW_UP_PROMPT = ["Go with recommended options and proceed with Azure deployment."];
   // Static Web Apps (SWA)
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application", async () => {
