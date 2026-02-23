@@ -68,15 +68,12 @@ function writeCopilotConfig(config: CopilotConfig): boolean {
   const copilotDir = getCopilotDir();
   
   try {
-    // Ensure .copilot directory exists
-    if (!existsSync(copilotDir)) {
-      mkdirSync(copilotDir, { recursive: true });
-    }
-    
-    // Backup first
+    mkdirSync(copilotDir, { recursive: true });
     const backupPath = configPath + ".bak";
-    if (existsSync(configPath)) {
+    try {
       writeFileSync(backupPath, readFileSync(configPath));
+    } catch {
+      // No existing file to back up
     }
     writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
     return true;
