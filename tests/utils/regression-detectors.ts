@@ -369,7 +369,7 @@ export function countWrongSessionOnPattern(metadata: AgentMetadata): number {
   for (const pattern of excludePatterns) {
     pattern.lastIndex = 0;
     const matches = allText.match(pattern);
-    if (matches) count = Math.max(0, count - matches.length);
+    if (matches) count -= matches.length;
   }
 
   // Also check for wrong event name
@@ -384,7 +384,7 @@ export function countWrongSessionOnPattern(metadata: AgentMetadata): number {
     if (matches) count += matches.length;
   }
 
-  return count;
+  return Math.max(0, count);
 }
 
 /**
