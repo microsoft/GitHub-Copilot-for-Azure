@@ -174,7 +174,7 @@ function checkSkills(pluginPath: string, verbose: boolean): TestResult {
 
     const nameMatch = frontmatter.match(/^name:\s*(.+)/m);
     if (nameMatch && nameMatch[1].trim() !== skill) {
-      invalid.push({ name: skill, error: `name "${nameMatch[1].trim()}" doesn"t match directory` });
+      invalid.push({ name: skill, error: `name "${nameMatch[1].trim()}" doesn't match directory` });
       continue;
     }
   }

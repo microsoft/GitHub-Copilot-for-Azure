@@ -63,7 +63,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("BYOM Content", () => {
     test("includes BYOM routing step", () => {
-      expect(skill.content).toContain("Step 2C");
+      expect(skill.content).toContain("Step 3");
       expect(skill.content).toContain("BYOM");
     });
 
@@ -92,7 +92,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("BYOM routing row in step 1 table", () => {
       expect(skill.content).toContain("Use Azure/own model");
-      expect(skill.content).toContain("Step 2C");
+      expect(skill.content).toContain("Step 3");
     });
   });
 
