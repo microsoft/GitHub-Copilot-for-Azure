@@ -422,8 +422,8 @@ export function countApiKeyInByomConfig(metadata: AgentMetadata): number {
   // Only flag if Azure BYOM context is present
   const azureByomIndicators = [
     /AZURE_AI_FOUNDRY_PROJECT_ENDPOINT/i,
-    /services\.ai\.azure\.com/i,
-    /openai\.azure\.com/i,
+    /https?:\/\/[^/]*services\.ai\.azure\.com/i,
+    /https?:\/\/[^/]*openai\.azure\.com/i,
     /DefaultAzureCredential/i,
     /bearerToken/i,
   ];

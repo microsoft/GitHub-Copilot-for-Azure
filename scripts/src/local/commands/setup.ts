@@ -116,12 +116,12 @@ function writeMcpConfig(config: McpConfig): boolean {
   const copilotDir = getCopilotDir();
 
   try {
-    if (!existsSync(copilotDir)) {
-      mkdirSync(copilotDir, { recursive: true });
-    }
+    mkdirSync(copilotDir, { recursive: true });
     const backupPath = configPath + ".bak";
-    if (existsSync(configPath)) {
+    try {
       writeFileSync(backupPath, readFileSync(configPath));
+    } catch {
+      // No existing file to back up
     }
     writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
     return true;
