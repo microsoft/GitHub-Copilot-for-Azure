@@ -207,6 +207,21 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
+## Display Agent Information
+Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
+
+Below the table you MUST also display Playground URL for direct access to the agent in Azure AI Foundry:
+
+Playground URL: https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion}
+
+To calculate the encodedSubId, you need to take subscription id and convert it into its 16-byte GUID, then encode it as URL-safe base64 without padding (= characters trimmed). You can use the following Python code to do this conversion:
+
+```
+Playground URL:
+
+python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRIPTION_ID>').bytes).rstrip(b'=').decode())"
+```
+
 ## Agent Definition Schemas
 
 ### Prompt Agent
