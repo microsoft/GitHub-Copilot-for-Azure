@@ -80,17 +80,16 @@ Invoke related skills for specialized scenarios:
 | Cost-sensitive deployment | `azure-cost-optimization` |
 
 **Skill/Reference Invocation Pattern:**
-```
-For Component: Azure Functions
-→ Load: services/functions/templates/selection.md (decision tree)
-→ Follow: services/functions/templates/recipes/composition.md (algorithm)
-→ Result: Base template + recipe composition (never synthesize IaC)
 
-For Component: PostgreSQL
-→ Invoke: azure-postgres skill
-→ Extract: passwordless auth patterns
-→ Apply: to artifact generation
-```
+For **Azure Functions**:
+1. Load: [selection.md](services/functions/templates/selection.md) (decision tree)
+2. Follow: [composition.md](services/functions/templates/recipes/composition.md) (algorithm)
+3. Result: Base template + recipe composition (never synthesize IaC)
+
+For **PostgreSQL**:
+1. Invoke: `azure-postgres` skill
+2. Extract: passwordless auth patterns
+3. Apply: to artifact generation
 
 ### Step 3: Document in Plan
 
