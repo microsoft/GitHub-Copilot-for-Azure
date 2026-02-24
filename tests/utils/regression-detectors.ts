@@ -94,7 +94,7 @@ export function countPortBindingConfusion(metadata: AgentMetadata): number {
 
   for (const { name, regex } of portPatterns) {
     regex.lastIndex = 0;
-    let match;
+    let match: RegExpExecArray | null = null;
     while ((match = regex.exec(allText)) !== null) {
       if (!portRefs[name]) portRefs[name] = new Set();
       portRefs[name].add(match[1]);
