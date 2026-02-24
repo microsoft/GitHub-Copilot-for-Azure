@@ -89,7 +89,9 @@ Generated: {timestamp}
 
 ### Phase 2: Execution
 - [ ] Research components (load references, invoke skills)
-- [ ] Generate infrastructure files
+- [ ] **⛔ For Azure Functions: Load composition rules** (`services/functions/templates/selection.md` → `composition.md`) and use `azd init -t <template>` — NEVER hand-write Bicep/Terraform
+- [ ] For other services: Generate infrastructure files following service-specific guidance
+- [ ] Apply recipes for integrations (if needed)
 - [ ] Generate application configuration
 - [ ] Generate Dockerfiles (if containerized)
 - [ ] Update plan status to "Ready for Validation"
