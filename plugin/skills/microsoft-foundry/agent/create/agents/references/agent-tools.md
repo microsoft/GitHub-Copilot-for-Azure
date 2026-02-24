@@ -1,6 +1,8 @@
 # Agent Tools — Simple Tools
 
 Add tools to agents to extend capabilities. This file covers tools that work without external connections. For tools requiring connections/RBAC setup, see:
+- [Web Search tool](tool-web-search.md) — real-time public web search with citations (default for web search)
+- [Bing Grounding tool](tool-bing-grounding.md) — web search via dedicated Bing resource (only when explicitly requested)
 - [Azure AI Search tool](tool-azure-ai-search.md) — private data grounding with vector search
 - [MCP tool](tool-mcp.md) — remote Model Context Protocol servers
 
@@ -114,69 +116,17 @@ with project_client:
 
 > **Security:** Treat tool arguments as untrusted input. Don't pass secrets in tool output. Use `strict=True` for schema validation.
 
-## Bing Grounding
-
-Access real-time web information via Bing Search. Requires a [Grounding with Bing Search resource](https://portal.azure.com/#create/Microsoft.BingGroundingSearch) and a [project connection](../../../../project/connections.md).
-
-**RBAC:** `Contributor` or `Owner` at subscription/RG level to create Bing resource and get keys. `Azure AI Project Manager` on project to create connection.
-
-**Setup:**
-1. Create Bing Grounding resource (`az provider register --namespace 'Microsoft.Bing'`)
-2. Create project connection with Bing resource key — see [connections](../../../../project/connections.md)
-3. Set `BING_PROJECT_CONNECTION_NAME` env var
-
-```python
-import os
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    PromptAgentDefinition, BingGroundingAgentTool,
-    BingGroundingSearchToolParameters, BingGroundingSearchConfiguration,
-)
-from azure.identity import DefaultAzureCredential
-
-with (
-    DefaultAzureCredential() as credential,
-    AIProjectClient(endpoint=os.environ["AZURE_AI_PROJECT_ENDPOINT"], credential=credential) as project_client,
-    project_client.get_openai_client() as openai_client,
-):
-    bing_conn = project_client.connections.get(os.environ["BING_PROJECT_CONNECTION_NAME"])
-
-    agent = project_client.agents.create_version(
-        agent_name="WebAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
-            instructions="You are a helpful assistant.",
-            tools=[
-                BingGroundingAgentTool(
-                    bing_grounding=BingGroundingSearchToolParameters(
-                        search_configurations=[
-                            BingGroundingSearchConfiguration(project_connection_id=bing_conn.id)
-                        ]
-                    )
-                )
-            ],
-        ),
-    )
-
-    # Stream response — use tool_choice="required" to force tool use
-    stream = openai_client.responses.create(
-        stream=True, tool_choice="required",
-        input="What is the top AI news today?",
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-    # Process: response.output_text.delta for text, url_citation annotations for sources
-```
-
-> **Important:** Bing data flows outside Azure compliance boundary. Review [terms of use](https://www.microsoft.com/bing/apis/grounding-legal-enterprise). Not supported with VPN/Private Endpoints.
-
 ## Tool Summary
 
 | Tool | Connection? | Reference |
 |------|-------------|-----------|
 | `CodeInterpreterTool` | No | This file |
 | `FunctionTool` | No | This file |
-| `BingGroundingAgentTool` | Yes (Bing) | This file |
+| `WebSearchPreviewTool` | No | [tool-web-search.md](tool-web-search.md) |
+| `BingGroundingAgentTool` | Yes (Bing) | [tool-bing-grounding.md](tool-bing-grounding.md) |
 | `AzureAISearchAgentTool` | Yes (Search) | [tool-azure-ai-search.md](tool-azure-ai-search.md) |
 | `MCPTool` | Optional | [tool-mcp.md](tool-mcp.md) |
+
+> ⚠️ **Default for web search:** Use `WebSearchPreviewTool` unless the user explicitly requests Bing Grounding or Bing Custom Search.
 
 > Combine multiple tools on one agent. The model decides which to invoke.

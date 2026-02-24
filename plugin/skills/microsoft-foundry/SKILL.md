@@ -19,7 +19,10 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
-| **agent/create/agent-framework** | Creating AI agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [agent/create/agent-framework/SKILL.md](agent/create/agent-framework/SKILL.md) |
+| **deploy** | Containerize, build, push to ACR, create/update/start/stop/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |Expand commentComment on line L21
+| **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
+| **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
+| **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
 | **agent/create/agents** | Managing Foundry Agent Service agents: create, list, get, update, delete prompt agents and workflows. Uses Foundry MCP server with SDK fallback. | [agent/create/agents/SKILL.md](agent/create/agents/SKILL.md) |
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
@@ -411,9 +414,12 @@ Agents can call custom functions to perform actions like querying databases, cal
 
 **Implementation:**
 
-Create an agent with web search capabilities by adding a Web Search tool:
+Create an agent with web search capabilities by adding a Web Search Preview tool:
+- No external resource or connection required — works out of the box
 - Optionally specify user location for localized results
 - Provide instructions to always cite web sources
+
+> ⚠️ **Default:** Use `WebSearchPreviewTool` for web search. Only use Bing Grounding (`BingGroundingAgentTool`) if the user explicitly requests Grounding with Bing Search or Grounding with Bing Custom Search.
 
 **For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#agent-with-web-search)
 
