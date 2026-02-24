@@ -1,5 +1,7 @@
 # Container Apps Bicep Patterns
 
+> **⚠️ Container Registry Naming:** If using Azure Container Registry, names must be alphanumeric only (5-50 characters). Use `replace()` to remove hyphens: `replace('cr${environmentName}${resourceSuffix}', '-', '')`
+
 ## Basic Resource
 
 ```bicep
