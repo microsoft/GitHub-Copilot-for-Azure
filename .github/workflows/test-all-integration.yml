@@ -1,7 +1,7 @@
 # Test all skills.
 #
 # Runs all integration tests.
-# Triggered manually.
+# Triggered manually or on schedule.
 
 name: Integration Tests - all
 
@@ -10,6 +10,13 @@ permissions:
   contents: read
 
 on:
+  schedule:
+    # 9:00 PM PST every day (5:00 AM UTC)
+    - cron: '0 5 * * *'
+    # 12:00 AM PST every day (8:00 AM UTC)
+    - cron: '0 8 * * *'
+    # 4:00 AM PST every day (12:00 PM UTC)
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       skills:
@@ -27,9 +34,79 @@ on:
         type: boolean
         default: false
 
+# SCHEDULE CONFIGURATION
+# Customize the inputs for each scheduled run by modifying these env vars.
+# Skills for each schedule are defined in tests/skills.json under integrationTestSchedule.
+env:  
+  SCHEDULED_DEBUG_21: 'false'        # debug flag for 9:00 PM PST run
+  SCHEDULED_DEBUG_00: 'false'        # debug flag for 12:00 AM PST run
+  SCHEDULED_DEBUG_04: 'false'         # debug flag for 4:00 AM PST run
+
 jobs:
+  resolve-inputs:
+    name: Resolve workflow inputs
+    runs-on: ubuntu-latest
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
+    outputs:
+      skills: ${{ steps.resolve.outputs.skills }}
+      deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
+      debug: ${{ steps.resolve.outputs.debug }}
+    steps:
+      - name: Checkout repository
+        if: github.event_name == 'schedule'
+        uses: actions/checkout@v4
+
+      - name: Resolve inputs based on trigger type
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger - use provided inputs
+            echo "skills=${{ inputs.skills }}" >> "$GITHUB_OUTPUT"
+            echo "deploy-test-pattern=${{ inputs.deploy-test-pattern }}" >> "$GITHUB_OUTPUT"
+            echo "debug=${{ inputs.debug }}" >> "$GITHUB_OUTPUT"
+          else
+            cd tests
+            # Scheduled trigger - read from tests/skills.json
+            CRON="${{ github.event.schedule }}"
+            echo "Schedule: $CRON"
+            
+            # Read skills from integrationTestSchedule in tests/skills.json
+            SKILLS=$(jq -r --arg cron "$CRON" '.integrationTestSchedule[$cron]' skills.json)
+            echo "Skills from schedule config: $SKILLS"
+            
+            # If skills is empty or null, exit
+            if [ -z "$SKILLS" ] || [ "$SKILLS" = "null" ]; then
+              echo "No skills specified for this schedule, using all skills from tests/skills.json"
+              exit 1
+            fi
+            
+            echo "skills=$SKILLS" >> "$GITHUB_OUTPUT"
+            echo "Final skills list: $SKILLS"
+            
+            # Set deploy-test-pattern and debug based on the schedule slot
+            case "$CRON" in
+              "0 5 * * *")
+                echo "debug=${{ env.SCHEDULED_DEBUG_21 }}" >> "$GITHUB_OUTPUT"
+                ;;
+              "0 8 * * *")
+                echo "debug=${{ env.SCHEDULED_DEBUG_00 }}" >> "$GITHUB_OUTPUT"
+                ;;
+              "0 12 * * *")
+                echo "debug=${{ env.SCHEDULED_DEBUG_04 }}" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "Unknown schedule: $CRON"
+                exit 1
+                ;;
+            esac
+          fi
+          
+          echo "Resolved inputs:"
+          cat "$GITHUB_OUTPUT"
+
   setup:
     name: Build skill matrix
+    needs: resolve-inputs
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -40,7 +117,7 @@ jobs:
         run: |
           # Convert comma separated list of skills to a JSON array
           # Filter out azure-deploy (it runs via a separate reusable workflow)
-          SKILLS="${{ inputs.skills }}"
+          SKILLS="${{ needs.resolve-inputs.outputs.skills }}"
           
           # Check if azure-deploy is in the list
           if echo "$SKILLS" | grep -q 'azure-deploy'; then
@@ -61,18 +138,18 @@ jobs:
   # Call the azure-deploy workflow when azure-deploy is in the skills list
   azure-deploy:
     name: Integration – azure-deploy
-    needs: setup
+    needs: [resolve-inputs, setup]
     if: needs.setup.outputs.has_azure_deploy == 'true'
     uses: ./.github/workflows/test-azure-deploy.yml
     with:
-      test-pattern: ${{ inputs.deploy-test-pattern }}
-      debug: ${{ inputs.debug }}
+      test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
+      debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
     secrets:
       COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
 
   test:
     name: Integration – ${{ matrix.skill }}
-    needs: setup
+    needs: [resolve-inputs, setup]
     if: needs.setup.outputs.matrix != '[]'
     environment: cideploytest
     runs-on: ubuntu-latest
@@ -136,13 +213,13 @@ jobs:
           cache-dependency-path: tests/package-lock.json
 
       - name: Setup .NET
-        if: contains(inputs.skills, 'azure-deploy')
+        if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
       
       - name: Setup Python
-        if: contains(inputs.skills, 'azure-deploy')
+        if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -170,7 +247,7 @@ jobs:
 
       - name: Run integration tests – ${{ matrix.skill }}
         env:
-          DEBUG: ${{ inputs.debug && '1' || '' }}
+          DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
           TEST_RUN_ID: all-integration
         run: |
           # Handle azure-ai vs azure-aigateway prefix collision
