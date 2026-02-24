@@ -250,7 +250,7 @@ jobs:
 
             let hasError = false;
 
-            # 1. skills.json enumerates all skills 
+            // 1. skills.json enumerates all skills 
             const skillDirsStr = JSON.stringify(skillDirs);
             const jsonSkillsStr = JSON.stringify(jsonSkills);
             if (skillDirsStr !== jsonSkillsStr) {
