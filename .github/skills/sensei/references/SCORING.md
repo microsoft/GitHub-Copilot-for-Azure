@@ -219,6 +219,27 @@ Per the spec, SKILL.md should follow progressive disclosure:
 
 **Line count check:** The spec recommends keeping SKILL.md under 500 lines. Report a warning if exceeded.
 
+### 8. YAML Description Safety
+
+Descriptions containing YAML special characters (especially `: ` colon-space) **must** use either:
+- Folded scalar (`>-`) — **preferred** for descriptions > 200 chars
+- Double-quoted string (`"..."`) — acceptable alternative
+
+Plain unquoted descriptions with `: ` patterns (e.g., `USE FOR:`, `Azure AI:`) cause YAML parse errors in many skill loaders:
+```
+Nested mappings are not allowed in compact mappings
+```
+
+| Check | Pass | Fail |
+|-------|------|------|
+| Uses `>-` or `"..."` | `description: >-` | `description: Use for Azure AI: Search...` |
+| No `: ` in plain value | `description: Simple text here` | `description: USE FOR: something` |
+| Over 200 chars uses `>-` | `description: >-` (multi-line) | `description: Very long plain text...` |
+
+**Scoring impact:**
+- Plain description with `: ` → **Invalid** (will fail to parse)
+- Description > 200 chars without `>-` → **Warning** (maintainability concern)
+
 ---
 
 ## Scoring Algorithm
@@ -228,6 +249,11 @@ function scoreSkill(skill):
     # Validate name per agentskills.io spec (fail-fast)
     if not isValidName(skill.name):
         report "INVALID: name fails spec validation"
+        return "Invalid"
+    
+    # Check YAML description safety
+    if isPlainUnquoted(skill.rawDescription) AND contains(skill.description, ": "):
+        report "INVALID: plain description contains ': ' — use >- or quotes"
         return "Invalid"
     
     score = "Low"
@@ -273,6 +299,8 @@ function collectSuggestions(skill):
         suggestions.add("Add license field (e.g., license: MIT)")
     if skill.metadata == null OR skill.metadata.version == null:
         suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0\" })")
+    if isPlainUnquoted(skill.rawDescription) AND skill.description.length > 200:
+        suggestions.add("Use >- folded scalar for description (over 200 chars)")
     return suggestions
 ```
 

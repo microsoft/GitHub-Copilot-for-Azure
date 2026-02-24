@@ -2,10 +2,7 @@
 
 exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands.
-USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, bicep deploy, terraform apply.
-DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate).
-",
+  "description": "Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands. USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, deploy function app, deploy serverless function, deploy Azure Functions to cloud, bicep deploy, terraform apply. DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate).",
   "extractedKeywords": [
     "after",
     "apply",
@@ -16,6 +13,8 @@ DO NOT USE FOR: creating or building apps (use azure-prepare), validating before
     "before",
     "bicep",
     "building",
+    "cli",
+    "cloud",
     "commands",
     "container",
     "creating",
@@ -25,6 +24,7 @@ DO NOT USE FOR: creating or building apps (use azure-prepare), validating before
     "final",
     "function",
     "functions",
+    "identity",
     "infrastructure",
     "live",
     "mcp",
@@ -34,6 +34,7 @@ DO NOT USE FOR: creating or building apps (use azure-prepare), validating before
     "provisioning",
     "push",
     "runs",
+    "serverless",
     "ship",
     "site",
     "static",
@@ -57,6 +58,8 @@ exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill keywords m
   "before",
   "bicep",
   "building",
+  "cli",
+  "cloud",
   "commands",
   "container",
   "creating",
@@ -66,6 +69,7 @@ exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill keywords m
   "final",
   "function",
   "functions",
+  "identity",
   "infrastructure",
   "live",
   "mcp",
@@ -75,6 +79,7 @@ exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill keywords m
   "provisioning",
   "push",
   "runs",
+  "serverless",
   "ship",
   "site",
   "static",

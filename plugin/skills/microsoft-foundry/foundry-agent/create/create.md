@@ -44,7 +44,7 @@ If the user hasn't already specified, use `ask_user` to collect:
 
 > ⚠️ **Warning:** LangGraph is Python-only. For C# + LangGraph, suggest Agent Framework or Custom instead.
 
-If user has no specific preference, suggest Microsoft Agent Framework + Python as defaults. When using Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
+If user has no specific preference, suggest Microsoft Agent Framework + Python as defaults.
 
 ### Step 3: Browse and Select Sample
 
@@ -228,6 +228,8 @@ Apply these to both greenfield and brownfield projects:
 1. **Logging** — Implement proper logging using the language's standard logging framework (Python `logging` module, .NET `ILogger`). Hosted agents stream container stdout/stderr logs to Foundry, so all log output is visible via the troubleshoot workflow. Use structured log levels (INFO, WARNING, ERROR) and include context like request IDs and agent names.
 
 2. **SSL Certificate Verification** — Applicable only For vNext Experience. Disable SSL certificate verification globally in the agent process. The hosted agent runtime environment uses internal certificates that may not be in the default trust store. For Python, set the environment variable `REQUESTS_CA_BUNDLE=""` and `SSL_CERT_FILE=""`, or configure `httpx`/`aiohttp` clients with `verify=False`. For .NET, configure `HttpClientHandler.ServerCertificateCustomValidationCallback` to always return true.
+
+3. **Framework-specific best practices** — When using Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
 
 ## Error Handling
 
