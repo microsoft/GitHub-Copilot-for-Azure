@@ -46,6 +46,7 @@ jobs:
   resolve-inputs:
     name: Resolve workflow inputs
     runs-on: ubuntu-latest
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     outputs:
       skills: ${{ steps.resolve.outputs.skills }}
       deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
