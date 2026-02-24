@@ -2,8 +2,8 @@
 name: agents
 description: |
   Manage Foundry Agent Service agents: create, list, get, update, delete prompt agents and workflows.
-  USE FOR: create agent, delete agent, update agent, list agents, get agent, foundry agent, agent service, prompt agent, workflow agent, manage agent, agent CRUD, new foundry agent, remove agent.
-  DO NOT USE FOR: creating agents with Microsoft Agent Framework SDK (use agent-framework), deploying agents to production (use agent/deploy), evaluating agents (use agent/evaluate).
+  USE FOR: create agent, delete agent, update agent, list agents, get agent, foundry agent, agent service, prompt agent, workflow agent, manage agent, agent CRUD, new foundry agent, remove agent, agent memory, enable memory, persistent memory, conversation history.
+  DO NOT USE FOR: deploying agents to production (use agent/deploy), evaluating agents (use agent/evaluate).
 ---
 
 # Foundry Agent Service Operations
@@ -29,6 +29,7 @@ Use when the user wants to:
 - **Get** details of a specific agent
 - **Update** an agent's instructions, model, or tools
 - **Delete** an agent from a Foundry project
+- **Enable memory** for persistent conversation history across sessions
 
 ## Agent Types
 
@@ -86,7 +87,7 @@ Endpoint format: `https://<resource>.services.ai.azure.com/api/projects/<project
 
 For a **prompt agent**:
 - Provide: agent name, model deployment name, instructions
-- Optional: tools (code interpreter, file search, function calling, Bing grounding)
+- Optional: tools (code interpreter, file search, function calling, web search, Bing grounding, memory)
 
 For a **workflow**:
 - Workflows are created in the Foundry portal visual builder
@@ -103,17 +104,24 @@ If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 
 | Tool Category | Tools | Use Case |
 |---------------|-------|----------|
-| **Knowledge** | Azure AI Search, File Search, Bing Grounding, Microsoft Fabric | Ground agent with data |
+| **Knowledge** | Azure AI Search, File Search, Microsoft Fabric | Ground agent with private data |
+| **Web Search** | Web Search (default), Bing Grounding, Bing Custom Search | Ground agent with public web data |
+| **Memory** | Memory Search | Persistent long-term memory across sessions |
 | **Action** | Function Calling, Azure Functions, OpenAPI, MCP, Logic Apps | Take actions, call APIs |
 | **Code** | Code Interpreter | Write and execute Python in sandbox |
 | **Research** | Deep Research | Web-based research with o3-deep-research |
+
+> ⚠️ **Web Search Default:** When users ask for web search, use the **Web Search** tool (`WebSearchPreviewTool`) by default. Only use **Bing Grounding** or **Bing Custom Search** when the user explicitly requests them.
 
 ## References
 
 | Topic | File | Description |
 |-------|------|-------------|
 | SDK Operations | [references/sdk-operations.md](references/sdk-operations.md) | Python SDK code for CRUD operations |
-| Simple Tools | [references/agent-tools.md](references/agent-tools.md) | Code Interpreter, Function Calling, Bing Grounding |
+| Simple Tools | [references/agent-tools.md](references/agent-tools.md) | Code Interpreter, Function Calling |
+| Web Search | [references/tool-web-search.md](references/tool-web-search.md) | Default web search tool (no connection required) |
+| Bing Grounding | [references/tool-bing-grounding.md](references/tool-bing-grounding.md) | Bing Grounding with dedicated resource + connection |
+| Memory | [references/tool-memory.md](references/tool-memory.md) | Persistent long-term memory across sessions (requires embedding model) |
 | Azure AI Search | [references/tool-azure-ai-search.md](references/tool-azure-ai-search.md) | Search index grounding with RBAC setup + connection |
 | MCP Tool | [references/tool-mcp.md](references/tool-mcp.md) | Connect to remote MCP servers with approval workflow |
 | Connections | [project/connections.md](../../../project/connections.md) | Reusable connection CRUD helpers (list, get, create) |
