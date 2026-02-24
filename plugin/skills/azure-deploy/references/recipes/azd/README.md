@@ -36,6 +36,8 @@ Deploy to Azure using Azure Developer CLI (azd).
 
 ## Deployment Commands
 
+> ⚠️ `azd up` takes 5-15 min. Run with output **streamed visibly to the user** — do NOT run silently or suppress output. The user must see provisioning progress in real time.
+
 ### Full Deployment
 
 Provisions infrastructure AND deploys application:

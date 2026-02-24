@@ -68,21 +68,123 @@ function writeCopilotConfig(config: CopilotConfig): boolean {
   const copilotDir = getCopilotDir();
   
   try {
-    // Ensure .copilot directory exists
-    if (!existsSync(copilotDir)) {
-      mkdirSync(copilotDir, { recursive: true });
-    }
-    
-    // Backup first
+    mkdirSync(copilotDir, { recursive: true });
     const backupPath = configPath + ".bak";
-    if (existsSync(configPath)) {
+    try {
       writeFileSync(backupPath, readFileSync(configPath));
+    } catch {
+      // No existing file to back up
     }
     writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
     return true;
   } catch {
     return false;
   }
+}
+
+interface McpConfig {
+  mcpServers?: Record<string, {
+    type?: string;
+    command?: string;
+    args?: string[];
+    url?: string;
+    tools?: string[];
+  }>;
+}
+
+function getMcpConfigPath(): string {
+  return join(getCopilotDir(), "mcp-config.json");
+}
+
+function readMcpConfig(): McpConfig | null {
+  const configPath = getMcpConfigPath();
+  if (!existsSync(configPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(readFileSync(configPath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeMcpConfig(config: McpConfig): boolean {
+  const configPath = getMcpConfigPath();
+  const copilotDir = getCopilotDir();
+
+  try {
+    mkdirSync(copilotDir, { recursive: true });
+    const backupPath = configPath + ".bak";
+    try {
+      writeFileSync(backupPath, readFileSync(configPath));
+    } catch {
+      // No existing file to back up
+    }
+    writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readPluginMcpJson(pluginPath: string): McpConfig | null {
+  const mcpJsonPath = join(pluginPath, ".mcp.json");
+  if (!existsSync(mcpJsonPath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(readFileSync(mcpJsonPath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+export function setupMcpServers(pluginPath: string, options: { force: boolean }): boolean {
+  console.log("\n🔌 MCP Server Registration\n");
+
+  const pluginMcp = readPluginMcpJson(pluginPath);
+  if (!pluginMcp?.mcpServers || Object.keys(pluginMcp.mcpServers).length === 0) {
+    console.log("   ⚠️  No MCP servers found in plugin/.mcp.json");
+    return true;
+  }
+
+  const serverNames = Object.keys(pluginMcp.mcpServers);
+  console.log(`   Found ${serverNames.length} MCP servers: ${serverNames.join(", ")}`);
+
+  let userMcp = readMcpConfig();
+  if (!userMcp) {
+    userMcp = { mcpServers: {} };
+  }
+  if (!userMcp.mcpServers) {
+    userMcp.mcpServers = {};
+  }
+
+  let added = 0;
+  let skipped = 0;
+  for (const [name, entry] of Object.entries(pluginMcp.mcpServers)) {
+    if (userMcp.mcpServers[name] && !options.force) {
+      console.log(`   ⏭️  ${name}: already registered (use --force to overwrite)`);
+      skipped++;
+      continue;
+    }
+    userMcp.mcpServers[name] = {
+      type: (entry as Record<string, unknown>).type as string ?? "stdio",
+      ...(entry as Record<string, unknown>),
+    };
+    console.log(`   ✅ ${name}: registered`);
+    added++;
+  }
+
+  if (added > 0) {
+    if (!writeMcpConfig(userMcp)) {
+      console.log("   ❌ Failed to write MCP config");
+      return false;
+    }
+    console.log(`\n   📝 Updated ${getMcpConfigPath()}`);
+  }
+
+  console.log(`\n   Summary: ${added} added, ${skipped} skipped`);
+  return true;
 }
 
 function getExpectedMarketplace(): Marketplace {
@@ -164,9 +266,11 @@ export function setup(rootDir: string, args: string[]): void {
   const pluginOk = isPluginCorrect(config, localPluginPath);
 
   if (marketplaceOk && pluginOk) {
-    console.log("\n✅ Already configured correctly!");
+    console.log("\n✅ Plugin config already correct!");
+    // Still register MCP servers
+    setupMcpServers(localPluginPath, options);
     console.log("────────────────────────────────────────────────────────────");
-    console.log("\n✅ Setup complete! Config is already pointing to local repo.\n");
+    console.log("\n✅ Setup complete!\n");
     return;
   }
 
@@ -241,6 +345,9 @@ export function setup(rootDir: string, args: string[]): void {
     return;
   }
   console.log("   ✅ Config updated");
+
+  // Register MCP servers
+  setupMcpServers(localPluginPath, options);
 
   console.log("\n────────────────────────────────────────────────────────────");
   console.log("\n✅ Setup complete!\n");

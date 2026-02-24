@@ -304,6 +304,7 @@ FakesAssemblies/
 FodyWeavers.xsd
 Generated_Code/
 Generated\ Files/
+GitHub-Copilot-for-Azure.sln
 healthchecksdb
 ipch/
 MigrationBackup/
@@ -330,6 +331,7 @@ ServiceFabricBackup/
 skill-invocation-test-summary.md
 StyleCopReport.xml
 TestResult.xml
+tests/reports/
 tests/reports/.DS_Store
 token-metadata.json
 UpgradeLog*.htm

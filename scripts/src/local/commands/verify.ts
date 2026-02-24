@@ -211,6 +211,86 @@ function checkPluginContent(pluginPath: string, verbose: boolean): { passed: boo
   return { passed: allExist, details };
 }
 
+interface McpCheckResult {
+  passed: boolean;
+  missing: string[];
+  present: string[];
+  expected: string[];
+  parseError?: string;
+}
+
+function checkMcpServers(pluginPath: string): McpCheckResult {
+  const mcpJsonPath = join(pluginPath, ".mcp.json");
+  if (!existsSync(mcpJsonPath)) {
+    return { passed: true, missing: [], present: [], expected: [] };
+  }
+
+  let pluginMcp: { mcpServers?: Record<string, unknown> };
+  try {
+    pluginMcp = JSON.parse(readFileSync(mcpJsonPath, "utf-8"));
+  } catch (e) {
+    return { passed: false, missing: [], present: [], expected: [], parseError: `.mcp.json is invalid JSON: ${e instanceof Error ? e.message : String(e)}` };
+  }
+
+  const expected = Object.keys(pluginMcp.mcpServers ?? {});
+  if (expected.length === 0) {
+    return { passed: true, missing: [], present: [], expected };
+  }
+
+  const mcpConfigPath = join(homedir(), ".copilot", "mcp-config.json");
+  let userMcp: { mcpServers?: Record<string, unknown> } = {};
+  if (existsSync(mcpConfigPath)) {
+    try {
+      userMcp = JSON.parse(readFileSync(mcpConfigPath, "utf-8"));
+    } catch { /* empty */ }
+  }
+
+  const registered = Object.keys(userMcp.mcpServers ?? {});
+  const missing = expected.filter(s => !registered.includes(s));
+  const present = expected.filter(s => registered.includes(s));
+
+  return { passed: missing.length === 0, missing, present, expected };
+}
+
+interface SkillCheckResult {
+  passed: boolean;
+  valid: string[];
+  invalid: { name: string; error: string }[];
+}
+
+function checkSkills(pluginPath: string): SkillCheckResult {
+  const skillsDir = join(pluginPath, "skills");
+  if (!existsSync(skillsDir)) {
+    return { passed: false, valid: [], invalid: [{ name: "skills/", error: "directory not found" }] };
+  }
+
+  const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !d.name.startsWith("_"))
+    .map(d => d.name);
+
+  const valid: string[] = [];
+  const invalid: { name: string; error: string }[] = [];
+
+  for (const dir of skillDirs) {
+    const skillMdPath = join(skillsDir, dir, "SKILL.md");
+    if (!existsSync(skillMdPath)) {
+      invalid.push({ name: dir, error: "missing SKILL.md" });
+      continue;
+    }
+
+    const content = readFileSync(skillMdPath, "utf-8");
+    const hasFrontmatter = content.startsWith("---") && content.indexOf("---", 3) > 3;
+    if (!hasFrontmatter) {
+      invalid.push({ name: dir, error: "SKILL.md missing YAML frontmatter" });
+      continue;
+    }
+
+    valid.push(dir);
+  }
+
+  return { passed: invalid.length === 0, valid, invalid };
+}
+
 export function verify(rootDir: string, args: string[]): void {
   const options = parseArgs(args);
   const localPluginPath = join(rootDir, "plugin");
@@ -319,13 +399,47 @@ export function verify(rootDir: string, args: string[]): void {
     console.log(`      ${detail}`);
   }
 
+  // Test 5: Check MCP servers
+  console.log("\n🧪 Test 5: MCP Server Registration");
+  const mcpCheck = checkMcpServers(localPluginPath);
+
+  if (mcpCheck.parseError) {
+    console.log(`   ❌ ${mcpCheck.parseError}`);
+  } else if (mcpCheck.expected.length === 0) {
+    console.log("   ⚠️  No .mcp.json found or no servers defined");
+  } else if (mcpCheck.passed) {
+    console.log(`   ✅ All ${mcpCheck.expected.length} MCP servers registered: ${mcpCheck.present.join(", ")}`);
+  } else {
+    console.log(`   ❌ Missing MCP servers: ${mcpCheck.missing.join(", ")}`);
+    if (mcpCheck.present.length > 0) {
+      console.log(`   ✅ Registered: ${mcpCheck.present.join(", ")}`);
+    }
+  }
+
+  // Test 6: Check production skills
+  console.log("\n🧪 Test 6: Production Skills Validation");
+  const skillsCheck = checkSkills(localPluginPath);
+
+  if (skillsCheck.passed) {
+    console.log(`   ✅ All ${skillsCheck.valid.length} skills have valid SKILL.md with frontmatter`);
+  } else {
+    for (const inv of skillsCheck.invalid) {
+      console.log(`   ❌ ${inv.name}: ${inv.error}`);
+    }
+    if (skillsCheck.valid.length > 0) {
+      console.log(`   ✅ ${skillsCheck.valid.length} skills valid`);
+    }
+  }
+
   console.log("\n────────────────────────────────────────────────────────────");
 
   // Summary
   const allPassed = nestedCheck.passed &&
     marketplaceCheck.passed &&
     pluginCheck.passed &&
-    contentCheck.passed;
+    contentCheck.passed &&
+    mcpCheck.passed &&
+    skillsCheck.passed;
 
   if (allPassed) {
     console.log("\n✅ VERIFICATION PASSED\n");
