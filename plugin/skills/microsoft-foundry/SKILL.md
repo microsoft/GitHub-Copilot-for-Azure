@@ -174,7 +174,7 @@ Proceeding with: <requested-operation>
 ### Language-Specific Requirements
 
 For SDK examples and implementation details in specific programming languages, refer to:
-- **Python**: See [language/python.md](language/python.md) for Python SDK setup, authentication, and examples
+- **Python**: See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md) for Python SDK setup, authentication, and examples
 
 ## Core Workflows
 
@@ -345,7 +345,7 @@ To create a RAG agent with Azure AI Search tool integration:
      - Index name
      - Query type (HYBRID recommended)
 
-**For SDK Implementation:** See [language/python.md](language/python.md#rag-applications-with-python-sdk)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#rag-agent-with-azure-ai-search)
 
 **Key Best Practices:**
 - **Always request citations** in agent instructions
@@ -362,7 +362,7 @@ To create a RAG agent with Azure AI Search tool integration:
 3. **Capture citations** from the response annotations
 4. **Validate** that citations are properly formatted and included
 
-**For SDK Implementation:** See [language/python.md](language/python.md#testing-the-rag-agent)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#querying-a-rag-agent-streaming)
 
 **Troubleshooting RAG Issues:**
 
@@ -393,7 +393,7 @@ Create an agent with:
 - **Agent name**: Unique identifier
 - **Instructions**: Clear, specific guidance for the agent's behavior
 
-**For SDK Implementation:** See [language/python.md](language/python.md#basic-agent)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#basic-agent)
 
 #### Step 3: Create an Agent with Custom Function Tools
 
@@ -405,7 +405,7 @@ Agents can call custom functions to perform actions like querying databases, cal
 2. **Create a function toolset** with your custom functions
 3. **Create the agent** with the toolset and instructions on when to use the tools
 
-**For SDK Implementation:** See [language/python.md](language/python.md#agent-with-custom-function-tools)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#agent-with-custom-function-tools)
 
 #### Step 4: Create an Agent with Web Search
 
@@ -415,7 +415,7 @@ Create an agent with web search capabilities by adding a Web Search tool:
 - Optionally specify user location for localized results
 - Provide instructions to always cite web sources
 
-**For SDK Implementation:** See [language/python.md](language/python.md#agent-with-web-search)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#agent-with-web-search)
 
 #### Step 5: Interact with the Agent
 
@@ -428,7 +428,7 @@ Create an agent with web search capabilities by adding a Web Search tool:
 5. **Retrieve messages** to see the agent's responses
 6. **Cleanup** by deleting the agent when done
 
-**For SDK Implementation:** See [language/python.md](language/python.md#interacting-with-agents)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#interacting-with-agents)
 
 **Agent Best Practices:**
 
@@ -495,7 +495,7 @@ If you already have the agent's response, you can evaluate it directly.
 
 Use the `foundry_agents_evaluate` MCP tool to evaluate a specific query/response pair with a single evaluator.
 
-**For SDK Implementation:** See [language/python.md](language/python.md#single-response-evaluation-using-mcp)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#single-response-evaluation-mcp)
 
 #### Step 3: Batch Evaluation
 
@@ -506,7 +506,7 @@ For evaluating multiple agent runs across multiple conversation threads:
 3. **Set up evaluators** with appropriate configuration
 4. **Run batch evaluation** and view results in the Foundry portal
 
-**For SDK Implementation:** See [language/python.md](language/python.md#batch-evaluation)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#batch-evaluation)
 
 #### Interpreting Evaluation Results
 
@@ -572,7 +572,7 @@ az cognitiveservices account show \
 
 Update the agent's instructions to explicitly request citations in the format `[message_idx:search_idx†source]` and to only use the knowledge base, never the agent's own knowledge.
 
-**For SDK Implementation:** See [language/python.md](language/python.md#update-agent-instructions)
+**For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#creating-agents)
 
 **Problem: "Index Not Found" Error**
 
@@ -624,7 +624,7 @@ az role assignment list \
 
 **Diagnostics:**
 
-Check evaluation run status to identify issues. For SDK implementation, see [language/python.md](language/python.md#checking-evaluation-status).
+Check evaluation run status to identify issues. For SDK implementation, see [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#agent-evaluation).
 
 **Resolution:**
 1. Verify the evaluation rule is enabled
@@ -707,7 +707,7 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o
 ### Language-Specific Quick References
 
 For SDK-specific details, authentication, and code examples:
-- **Python**: See [language/python.md](language/python.md)
+- **Python**: See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md)
 
 ## Additional Resources
 
