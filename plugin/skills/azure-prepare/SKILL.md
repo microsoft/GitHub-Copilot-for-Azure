@@ -49,12 +49,28 @@ Activate this skill when user wants to:
 
 ---
 
+## ⛔ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
+
+**BEFORE starting Phase 1**, check if the user's prompt mentions a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
+
+| Prompt keywords | Invoke FIRST |
+|----------------|-------------|
+| copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient | **azure-hosted-copilot-sdk** |
+| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
+
+> ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
+
+After the specialized skill completes, **resume azure-prepare** at Phase 1 Step 4 (Select Recipe) for remaining infrastructure, validation, and deployment.
+
+---
+
 ## Phase 1: Planning (BLOCKING — Complete Before Any Execution)
 
 Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts until the plan is approved.
 
 | # | Action | Reference |
 |---|--------|-----------|
+| 0 | **⛔ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |

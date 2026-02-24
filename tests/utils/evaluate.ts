@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
+import { type AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
 
 /**
  * Extract all powershell command strings from agent metadata.
@@ -98,4 +98,71 @@ export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string):
     if (!isSkillUsed) {
         agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
     }
+}
+
+// ─── Agent metadata helpers ──────────────────────────────────────────────────
+
+/**
+ * Get all assistant messages from agent metadata
+ */
+export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
+  const allMessages: Record<string, string> = {};
+
+  agentMetadata.events.forEach(event => {
+    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
+      allMessages[event.data.messageId] = event.data.content;
+    }
+    if (event.type === "assistant.message_delta" && event.data.messageId) {
+      if (allMessages[event.data.messageId]) {
+        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
+      } else {
+        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
+      }
+    }
+  });
+
+  return Object.values(allMessages).join("\n");
+}
+
+/** Stringify tool call arguments safely */
+export function argsString(event: { data: Record<string, unknown> }): string {
+  try {
+    return JSON.stringify(event.data.arguments ?? {});
+  } catch {
+    return String(event.data.arguments);
+  }
+}
+
+/** Get all tool execution results (complete events) */
+export function getToolResults(metadata: AgentMetadata): Array<{
+  toolCallId: string;
+  success: boolean;
+  content: string;
+  error: string;
+}> {
+  return metadata.events
+    .filter(e => e.type === "tool.execution_complete")
+    .map(e => ({
+      toolCallId: e.data.toolCallId as string,
+      success: e.data.success as boolean,
+      content: (e.data.result as { content?: string })?.content ?? "",
+      error: (e.data.error as { message?: string })?.message ?? ""
+    }));
+}
+
+/** Get combined text of all tool args and results for scanning */
+export function getAllToolText(metadata: AgentMetadata): string {
+  const parts: string[] = [];
+  for (const event of metadata.events) {
+    if (event.type === "tool.execution_start") {
+      parts.push(argsString(event));
+    }
+    if (event.type === "tool.execution_complete") {
+      const result = event.data.result as { content?: string } | undefined;
+      if (result?.content) parts.push(result.content);
+      const error = event.data.error as { message?: string } | undefined;
+      if (error?.message) parts.push(error.message);
+    }
+  }
+  return parts.join("\n");
 }

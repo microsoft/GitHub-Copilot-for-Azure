@@ -19,7 +19,25 @@ az account show --query "{name:name, id:id}" -o json
 
 ## Step 2: Prompt User for Subscription
 
-**You MUST use `ask_user`** to confirm the subscription. Include the actual subscription name and ID from Step 1 in the choices.
+**You MUST use `ask_user`** to confirm the subscription. Find the default subscription (marked `isDefault: true`) from Step 1 results and present it as the recommended choice.
+
+✅ **Correct — show actual name and ID as a choice:**
+```
+ask_user(
+  question: "Which Azure subscription would you like to deploy to?",
+  choices: [
+    "Use current: <subscription-name> (<subscription-id>) (Recommended)",
+    "Let me specify a different subscription"
+  ]
+)
+```
+
+❌ **Wrong — never use freeform input for subscription:**
+```
+ask_user(
+  question: "Which Azure subscription should I deploy to? I'll need the subscription name or ID."
+)
+```
 
 ## Step 3: Create AZD Environment FIRST
 
@@ -77,7 +95,10 @@ az group show --name rg-<environment-name> --query "{location:location}" -o json
 az resource list --resource-group rg-<env-name> --tag azd-service-name=<service-name> --query "[].name" -o table
 ```
 
-Check for each service in `azure.yaml`. If duplicates exist **in the target RG**, delete or rename.
+Check for each service in `azure.yaml`. If duplicates exist **in the target RG**:
+
+1. **Preferred — Fresh environment**: Run `azd env new <new-name>` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
+2. **Alternative — Delete conflicts**: Use `ask_user` to confirm deletion of old resources (required by global rules).
 
 ## Step 6: Prompt User for Location
 

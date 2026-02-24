@@ -41,10 +41,11 @@ description: >-
 |---|--------|-----------|
 | 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/plan.md` |
 | 2 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
-| 3 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
-| 4 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 5 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
-| 6 | **Deploy** — Invoke **azure-deploy** skill | — |
+| 3 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
+| 4 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
+| 5 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
+| 6 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
+| 7 | **Deploy** — Invoke **azure-deploy** skill | — |
 
 > **⛔ VALIDATION AUTHORITY**
 >
