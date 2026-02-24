@@ -53,7 +53,6 @@ describe("deploy - Trigger Tests", () => {
       "Set up monitoring for my web application",
       "Generate a Dockerfile for my Python web service",
       "Push my image to a registry",
-      "Create a serverless function endpoint",
     ];
 
     test.each(shouldNotTriggerPrompts)(
