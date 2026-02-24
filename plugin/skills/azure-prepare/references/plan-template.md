@@ -89,7 +89,7 @@ Generated: {timestamp}
 
 ### Phase 2: Execution
 - [ ] Research components (load references, invoke skills)
-- [ ] **⛔ For Azure Functions: Load composition rules** (`services/functions/templates/selection.md` → `composition.md`) and use `azd init -t <template>` — NEVER hand-write Bicep/Terraform
+- [ ] **⛔ For Azure Functions: Load composition rules** (`services/functions/templates/selection.md` → `services/functions/templates/recipes/composition.md`) and use `azd init -t <template>` — NEVER hand-write Bicep/Terraform
 - [ ] For other services: Generate infrastructure files following service-specific guidance
 - [ ] Apply recipes for integrations (if needed)
 - [ ] Generate application configuration
