@@ -109,7 +109,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "Copilot SDK");
       expect(mentionsTemplate).toBe(true);
-      expect(countSecretsInCode(agentMetadata)).toBe(0);
+      // Run regression detector on raw metadata so redaction doesn't mask leaks
+      expect(countSecretsInCode(rawMetadata)).toBe(0);
     }, TEST_TIMEOUT);
 
     test("BYOM prompt mentions DefaultAzureCredential", async () => {
@@ -123,7 +124,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         doesAssistantMessageIncludeKeyword(agentMetadata, "bearerToken") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "provider");
       expect(mentionsByom).toBe(true);
-      expect(countApiKeyInByomConfig(agentMetadata)).toBe(0);
+      // Run regression detector on raw metadata so redaction doesn't mask leaks
+      expect(countApiKeyInByomConfig(rawMetadata)).toBe(0);
     }, TEST_TIMEOUT);
 
     test("existing copilot SDK app deploy uses correct SDK patterns", async () => {
@@ -139,7 +141,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk-service") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "CopilotClient");
       expect(mentionsSdk).toBe(true);
-      expect(countSecretsInCode(agentMetadata)).toBe(0);
+      // Run regression detector on raw metadata so redaction doesn't mask leaks
+      expect(countSecretsInCode(rawMetadata)).toBe(0);
     }, TEST_TIMEOUT);
   });
 });
