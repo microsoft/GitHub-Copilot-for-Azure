@@ -231,7 +231,7 @@ jobs:
           
           echo "All skill files have valid frontmatter"
 
-      - name: Validate skill.json
+      - name: Validate skills.json
         uses: actions/github-script@v7
         with:
           script: |
