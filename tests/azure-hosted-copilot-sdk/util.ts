@@ -81,8 +81,8 @@ const TOKEN_PATTERNS = [
   /Bearer\s+[A-Za-z0-9_\-.~+/]{20,}/gi,
   // GitHub tokens
   /gh[pousr]_[A-Za-z0-9_]{36,}/g,
-  // Azure / generic API keys (hex strings 32+ chars)
-  /[0-9a-fA-F]{32,}/g,
+  // Azure / generic API keys (hex strings 32+ chars preceded by key/secret keyword)
+  /(?:api[_-]?key|secret|token|password|credential)\s*[:=]\s*["']?[0-9a-fA-F]{32,}/gi,
 ];
 
 /**
@@ -118,7 +118,15 @@ function sanitizeData(data: Record<string, unknown>): Record<string, unknown> {
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === "string") {
       result[key] = redactTokens(value);
-    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+    } else if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        typeof item === "string"
+          ? redactTokens(item)
+          : item && typeof item === "object" && !Array.isArray(item)
+            ? sanitizeData(item as Record<string, unknown>)
+            : item
+      );
+    } else if (value && typeof value === "object") {
       result[key] = sanitizeData(value as Record<string, unknown>);
     } else {
       result[key] = value;
