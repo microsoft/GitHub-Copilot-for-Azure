@@ -30,7 +30,7 @@ if (args.length > 0 && !args[0].startsWith("-")) {
     jestArgs.push(...args);
 }
 
-console.log(`Updating snapshots...`);
+console.log("Updating snapshots...");
 console.log(`jest ${jestArgs.join(" ")}\n`);
 
 // Set NODE_OPTIONS for ESM support (append to existing if present)

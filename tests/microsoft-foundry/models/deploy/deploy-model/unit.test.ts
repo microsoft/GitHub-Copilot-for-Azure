@@ -18,7 +18,7 @@ interface NestedSkillMetadata {
   [key: string]: unknown;
 }
 
-describe(`deploy-model (router) - Unit Tests`, () => {
+describe("deploy-model (router) - Unit Tests", () => {
   let skill: LoadedSkill;
   let nestedMetadata: NestedSkillMetadata;
   let nestedContent: string;
