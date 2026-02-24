@@ -16,7 +16,7 @@
     "coverage:grid": "node scripts/generate-coverage-grid.js",
     "report": "npx tsx scripts/generate-test-reports.ts",
     "results": "node scripts/show-test-results.js",
-    "update:snapshots": "cross-env jest --updateSnapshot",
+    "update:snapshots": "node scripts/update-snapshots.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "lint:fix": "eslint --fix",

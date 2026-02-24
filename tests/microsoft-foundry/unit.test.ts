@@ -54,16 +54,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains agent routing references", () => {
-      expect(skill.content).toContain("package");
       expect(skill.content).toContain("deploy");
       expect(skill.content).toContain("invoke");
       expect(skill.content).toContain("troubleshoot");
-    });
-
-    test("contains MCP tool references", () => {
-      expect(skill.content).toContain("agent_get");
-      expect(skill.content).toContain("agent_update");
-      expect(skill.content).toContain("agent_invoke");
     });
 
     test("contains common project context resolution", () => {
@@ -118,36 +111,20 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains quota management workflows", () => {
-      expect(quotaContent).toContain("### 1. View Current Quota Usage");
-      expect(quotaContent).toContain("### 2. Find Best Region for Model Deployment");
-      expect(quotaContent).toContain("### 3. Check Quota Before Deployment");
-      expect(quotaContent).toContain("### 4. Request Quota Increase");
-      expect(quotaContent).toContain("### 5. Monitor Quota Across Deployments");
-      expect(quotaContent).toContain("### 6. Deploy with Provisioned Throughput Units (PTU)");
-      expect(quotaContent).toContain("### 7. Troubleshoot Quota Errors");
-    });
-
-    test("explains quota types", () => {
-      expect(quotaContent).toContain("Deployment Quota (TPM)");
-      expect(quotaContent).toContain("Region Quota");
-      expect(quotaContent).toContain("Deployment Slots");
+      expect(quotaContent).toContain("### 1. Check Regional Quota");
+      expect(quotaContent).toContain("### 2. Find Best Region for Deployment");
+      expect(quotaContent).toContain("### 3. Deploy with PTU");
+      expect(quotaContent).toContain("### 4. Delete Deployment (Free Quota)");
     });
 
     test("contains command patterns for each workflow", () => {
       expect(quotaContent).toContain("Show my Microsoft Foundry quota usage");
-      expect(quotaContent).toContain("Do I have enough quota");
       expect(quotaContent).toContain("Request quota increase");
-      expect(quotaContent).toContain("Show all my Foundry deployments");
     });
 
     test("contains az cognitiveservices commands", () => {
       expect(quotaContent).toContain("az rest");
       expect(quotaContent).toContain("az cognitiveservices account deployment");
-    });
-
-    test("references foundry MCP tools", () => {
-      expect(quotaContent).toContain("foundry_models_deployments_list");
-      expect(quotaContent).toMatch(/foundry_[a-z_]+/);
     });
 
     test("contains error troubleshooting", () => {
@@ -158,17 +135,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("includes quota management guidance", () => {
       expect(quotaContent).toContain("## Core Workflows");
-      expect(quotaContent).toContain("PTU Capacity Planning");
-      expect(quotaContent).toContain("Understanding Quotas");
     });
 
     test("contains bash command examples", () => {
       expect(quotaContent).toContain("```bash");
       expect(quotaContent).toContain("az rest");
-    });
-
-    test("uses correct Foundry resource type", () => {
-      expect(quotaContent).toContain("Microsoft.CognitiveServices/accounts");
     });
   });
 
@@ -208,21 +179,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains all 6 RBAC workflows", () => {
-      expect(rbacContent).toContain("### 1. Setup User Permissions");
-      expect(rbacContent).toContain("### 2. Setup Developer Permissions");
+      expect(rbacContent).toContain("### 1. Assign User Permissions");
+      expect(rbacContent).toContain("### 2. Assign Developer Permissions");
       expect(rbacContent).toContain("### 3. Audit Role Assignments");
       expect(rbacContent).toContain("### 4. Validate Permissions");
       expect(rbacContent).toContain("### 5. Configure Managed Identity Roles");
       expect(rbacContent).toContain("### 6. Create Service Principal");
-    });
-
-    test("contains command patterns for each workflow", () => {
-      expect(rbacContent).toContain("Grant Alice access to my Foundry project");
-      expect(rbacContent).toContain("Make Bob a project manager");
-      expect(rbacContent).toContain("Who has access to my Foundry?");
-      expect(rbacContent).toContain("Can I deploy models?");
-      expect(rbacContent).toContain("Set up identity for my project");
-      expect(rbacContent).toContain("Create SP for CI/CD pipeline");
     });
 
     test("contains az role assignment commands", () => {

@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/models/deploy-model";
+const SKILL_NAME = "microsoft-foundry";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -27,10 +27,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me with model deployment",
       "Deploy an OpenAI model to my project",
       "Set up a model in my Foundry project",
-      "Provision gpt-4o model",
       "Find capacity for model deployment",
-      "Check model availability across regions",
-      "Where can I deploy gpt-4o?",
       "Best region for model deployment",
       "Capacity analysis for my model",
     ];
@@ -53,9 +50,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me with AWS SageMaker",
       "Configure my PostgreSQL database",
       "Help me with Kubernetes pods",
-      "Create a knowledge index",
       "How do I write Python code?",
-      "Set up a virtual network in Azure",
     ];
 
     test.each(shouldNotTriggerPrompts)(

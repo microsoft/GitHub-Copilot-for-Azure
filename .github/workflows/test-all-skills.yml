@@ -74,7 +74,6 @@ jobs:
           fi
         env:
           CI: true
-        continue-on-error: true
 
       - name: Upload test results
         if: always()
