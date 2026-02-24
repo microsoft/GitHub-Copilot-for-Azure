@@ -62,12 +62,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Sub-Skills");
     });
 
-    test("references agent/create sub-skill", () => {
-      expect(skill.content).toContain("agent/create");
-    });
-
-    test("references agent/deploy sub-skill", () => {
-      expect(skill.content).toContain("agent/deploy");
+    test("references foundry-agent sub-skill", () => {
+      expect(skill.content).toContain("foundry-agent");
+      expect(skill.content).toContain("foundry-agent/SKILL.md");
     });
 
     test("references quota sub-skill", () => {

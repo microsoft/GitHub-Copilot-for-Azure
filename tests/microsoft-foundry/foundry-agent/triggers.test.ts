@@ -1,16 +1,16 @@
 /**
- * Trigger Tests for invoke
+ * Trigger Tests for foundry-agent
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
  */
 
-import { TriggerMatcher } from "../../../utils/trigger-matcher";
-import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
+import { TriggerMatcher } from "../../utils/trigger-matcher";
+import { loadSkill, LoadedSkill } from "../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry";
+const SKILL_NAME = "microsoft-foundry/foundry-agent";
 
-describe("invoke - Trigger Tests", () => {
+describe("foundry-agent - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
   let skill: LoadedSkill;
 
@@ -21,12 +21,22 @@ describe("invoke - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
+      "Create a new agent in Microsoft Foundry",
+      "Deploy my agent to Azure AI Foundry",
       "Invoke my Foundry agent with a test message",
-      "Send a message to my deployed agent",
-      "Test my deployed agent in Foundry",
-      "Run my Foundry agent with a test prompt",
-      "Have a conversation with my Foundry agent",
-      "Chat with my agent in Azure AI Foundry",
+      "Troubleshoot my Foundry agent that is not responding",
+      "Create a prompt agent with gpt-4o model",
+      "Build a hosted agent using Python for Foundry",
+      "List all agents in my Foundry project",
+      "Delete an agent from my Foundry project",
+      "Update my agent instructions in Foundry",
+      "Add web search tool to my Foundry agent",
+      "Add memory tool to my agent",
+      "Set up MCP tool for my agent",
+      "Chat with my agent in Foundry",
+      "Show agent logs for debugging",
+      "Create an agent with Bing grounding",
+      "Add Azure AI Search to my agent",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -43,14 +53,14 @@ describe("invoke - Trigger Tests", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem about clouds",
-      "Help me with AWS Lambda",
-      "How do I configure my PostgreSQL database?",
-      "Explain how Kubernetes pods work",
-      "Set up alerts for high CPU usage",
-      "Write a README for my open source library",
-      "Push my image to a registry",
-      "Set up a serverless endpoint on AWS",
-      "Package my Node.js app into a tarball",
+      "Explain quantum computing",
+      "Configure my PostgreSQL database",
+      "Help me with Kubernetes pods",
+      "How do I set up a cron job in Linux?",
+      "Help me deploy a static website",
+      "Write a unit test for my React component",
+      "How do I use Git branches?",
+      "Explain Docker networking basics",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -83,14 +93,14 @@ describe("invoke - Trigger Tests", () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "invoke agent ".repeat(100);
+      const longPrompt = "create agent Foundry ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("INVOKE MY AGENT");
-      const result2 = triggerMatcher.shouldTrigger("invoke my agent");
+      const result1 = triggerMatcher.shouldTrigger("CREATE AGENT FOUNDRY");
+      const result2 = triggerMatcher.shouldTrigger("create agent foundry");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });
