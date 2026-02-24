@@ -1,6 +1,9 @@
 ---
 name: azure-postgres
-description: Create new Azure Database for PostgreSQL Flexible Server instances and configure passwordless authentication with Microsoft Entra ID. Set up developer access, managed identities for apps, group-based permissions, and migrate from password-based to Entra ID authentication. Trigger phrases include "passwordless for postgres", "entra id postgres", "azure ad postgres authentication", "postgres managed identity", "migrate postgres to passwordless".
+description: >-
+  Create new Azure Database for PostgreSQL Flexible Server instances and configure passwordless authentication with Microsoft Entra ID. Set up developer access, managed identities for apps, group-based permissions, and migrate from password-based to Entra ID authentication.
+  USE FOR: passwordless for postgres, entra id postgres, azure ad postgres authentication, postgres managed identity, migrate postgres to passwordless, create postgres server, configure postgres auth.
+  DO NOT USE FOR: MySQL databases (use azure-prepare), Cosmos DB (use azure-prepare), general Azure resource creation (use azure-prepare).
 ---
 
 # Azure Database for PostgreSQL
