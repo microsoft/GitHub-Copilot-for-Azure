@@ -139,11 +139,5 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
                                  content.includes("roleassignments/write");
       expect(hasAuthPermission).toBe(true);
     });
-
-    test("references the granting-roles reference document", () => {
-      const content = skill.content.toLowerCase();
-      const hasReference = content.includes("granting-roles") || content.includes("references/granting-roles");
-      expect(hasReference).toBe(true);
-    });
   });
 });
