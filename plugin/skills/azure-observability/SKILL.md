@@ -1,9 +1,17 @@
 ---
 name: azure-observability
 description: >-
-  Azure Observability Services including Azure Monitor, Application Insights, Log Analytics, Alerts, and Workbooks. Provides metrics, APM, distributed tracing, KQL queries, and interactive reports.
-  USE FOR: Azure Monitor, Application Insights, Log Analytics, Alerts, Workbooks, metrics, APM, distributed tracing, KQL queries, interactive reports, observability, monitoring dashboards.
-  DO NOT USE FOR: instrumenting apps with App Insights SDK (use appinsights-instrumentation), querying Kusto/ADX clusters (use azure-kusto), cost analysis (use azure-cost-optimization).
+  Monitor Azure applications and infrastructure using Azure Monitor, Application
+  Insights, Log Analytics, Alerts, and Workbooks. Query metrics, analyze logs
+  with KQL, configure alert rules, set up dashboards, and troubleshoot
+  performance.
+  USE FOR: monitor my app, set up Azure Monitor, configure Application Insights,
+  query logs with KQL, create alert rules, build monitoring dashboards, analyze
+  metrics, view distributed traces, set up observability, check application
+  performance.
+  DO NOT USE FOR: instrumenting apps with App Insights SDK code (use
+  appinsights-instrumentation), querying Kusto/ADX clusters (use azure-kusto),
+  cost analysis (use azure-cost-optimization).
 ---
 
 # Azure Observability Services
