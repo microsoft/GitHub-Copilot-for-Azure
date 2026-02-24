@@ -9,7 +9,7 @@ Ground agent responses with data from an Azure AI Search vector index. Requires 
   - One or more `Collection(Edm.Single)` vector fields (searchable)
   - At least one retrievable text field with content for citations
   - A retrievable field with source URL for citation links
-- A [project connection](../../../../project/connections.md) between your Foundry project and search service
+- A [project connection](../../../project/connections.md) between your Foundry project and search service
 - `azure-ai-projects` package (`pip install azure-ai-projects --pre`)
 
 ## Required RBAC Roles
@@ -43,7 +43,7 @@ az role assignment create \
 
 ## Create the Connection
 
-See [Project Connections](../../../../project/connections.md) for full connection CRUD helpers.
+See [Project Connections](../../../project/connections.md) for full connection CRUD helpers.
 
 **Quick setup (keyless):**
 ```bash
