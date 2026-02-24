@@ -2,15 +2,19 @@
 name: azure-postgres
 description: >-
   Create new Azure Database for PostgreSQL Flexible Server instances and configure passwordless authentication with Microsoft Entra ID. Set up developer access, managed identities for apps, group-based permissions, and migrate from password-based to Entra ID authentication.
-  USE FOR: passwordless for postgres, entra id postgres, azure ad postgres authentication, postgres managed identity, migrate postgres to passwordless, create postgres server, configure postgres auth.
+  USE FOR: passwordless for postgres, entra id postgres, azure ad postgres authentication, postgres managed identity, migrate postgres to passwordless, create postgres server, configure postgres auth, set up passwordless authentication with entra id for azure postgresql, configure entra id postgres authentication.
   DO NOT USE FOR: MySQL databases (use azure-prepare), Cosmos DB (use azure-prepare), general Azure resource creation (use azure-prepare).
 ---
 
 # Azure Database for PostgreSQL
 
-Configure passwordless authentication with Microsoft Entra ID for existing Azure Database for PostgreSQL Flexible Server. This skill focuses on setting up Entra ID authentication, managing user access, and migrating from password-based authentication.
+Create new or configure existing Azure Database for PostgreSQL Flexible Server instances with passwordless authentication using Microsoft Entra ID. This skill supports both **new server provisioning** and **configuring authentication on existing servers**, focusing on Entra ID authentication, managing user access, and migrating from password-based authentication.
+
+> ⚠️ **Important:** When a user asks to **create** a new PostgreSQL server, never assume they want to modify or reuse an existing server even if names look similar. Always ask for explicit confirmation before modifying any existing resource.
 
 **Primary use cases:**
+- Creating new PostgreSQL Flexible Server instances with passwordless authentication from the start
+- Configuring passwordless Entra ID authentication on existing PostgreSQL servers
 - Migrating existing PostgreSQL databases from password to Entra ID authentication
 - Setting up developer access with Azure identities
 - Configuring managed identity access for Azure-hosted applications
@@ -50,9 +54,11 @@ az postgres flexible-server create --name SERVER -g RG --location REGION --admin
 
 ---
 
-## Working with Existing PostgreSQL Servers
+## Working with New and Existing PostgreSQL Servers
 
-This skill primarily focuses on configuring authentication for existing PostgreSQL servers. If you need to reference or create servers, use MCP tools or CLI commands, and provide Azure Portal links for easy access.
+This skill supports both creating new PostgreSQL Flexible Server instances and configuring authentication for existing servers. Use MCP tools or CLI commands to list, create, or reference servers, and always provide Azure Portal links for easy access.
+
+> ⚠️ **Never assume the user wants to modify an existing server when they ask to create a new one.** Even if an existing server has a similar name, always ask for explicit user permission before modifying any existing resource.
 
 **Portal Link Format:**
 ```

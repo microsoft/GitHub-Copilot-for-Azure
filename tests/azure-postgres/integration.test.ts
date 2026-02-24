@@ -70,4 +70,42 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
   });
+
+  describe("passwordless-entra-id-setup", () => {
+    test("invokes azure-postgres skill to set up passwordless authentication with Entra ID", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "set up passwordless authentication with Entra ID for Azure PostgreSQL using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-postgres skill to configure Entra ID postgres authentication", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "configure entra id postgres authentication using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+  });
 });
