@@ -41,8 +41,11 @@ export async function setupCopilotSdkApp(workspace: string): Promise<void> {
 
 export function logRate(skillName: string, label: string, successCount: number, runsPerPrompt: number): number {
   const rate = successCount / runsPerPrompt;
-  console.log(`${skillName} invocation rate for ${label}: ${(rate * 100).toFixed(1)}% (${successCount}/${runsPerPrompt})`);
-  fs.appendFileSync(`./result-${skillName}.txt`, `${skillName} invocation rate for ${label}: ${(rate * 100).toFixed(1)}% (${successCount}/${runsPerPrompt})\n`);
+  const msg = `${skillName} invocation rate for ${label}: ${(rate * 100).toFixed(1)}% (${successCount}/${runsPerPrompt})`;
+  console.log(msg);
+  const reportsDir = path.join(__dirname, "..", "reports");
+  fs.mkdirSync(reportsDir, { recursive: true });
+  fs.appendFileSync(path.join(reportsDir, `result-${skillName}.txt`), msg + "\n");
   return rate;
 }
 
