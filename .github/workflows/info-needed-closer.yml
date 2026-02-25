@@ -41,8 +41,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get the cutoff timestamp (14 days ago) as Unix timestamp
-          CUTOFF_TIMESTAMP=$(($(date +%s) - 14*24*60*60))
+          # Get the cutoff timestamp (28 days ago) as Unix timestamp
+          CUTOFF_TIMESTAMP=$(($(date +%s) - 28*24*60*60))
 
           REPO_OWNER="microsoft"
           REPO_NAME="GitHub-Copilot-for-Azure"
@@ -96,7 +96,7 @@ jobs:
             fi
             LATEST_COMMIT_TIMESTAMP=$(date -d "$LATEST_COMMIT_DATE" +%s 2>/dev/null || echo "0")
 
-            # Check if latest commit was more than 14 days ago
+            # Check if latest commit was more than 28 days ago
             if [[ "$LATEST_COMMIT_TIMESTAMP" -lt "$CUTOFF_TIMESTAMP" ]]; then
               UNRESOLVED_THREADS=$(echo "$PR_DATA" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' 2>/dev/null || echo "0")
 
@@ -110,7 +110,7 @@ jobs:
                 # Add comment and close the PR
                 gh pr comment "$PR_NUMBER" \
                   --repo "${REPO_OWNER}/${REPO_NAME}" \
-                  --body $'This PR has been automatically closed because it has unresolved review comments and no new commits in the last 14 days.\n\nIf you would still like to merge these changes, please:\n1. Resolve all outstanding review comments\n2. Reopen this PR\n\nThank you for your contribution!'
+                  --body $'This PR has been automatically closed because it has unresolved review comments and no new commits in the last 28 days.\n\nIf you would still like to merge these changes, please:\n1. Resolve all outstanding review comments\n2. Reopen this PR\n\nThank you for your contribution!'
 
                 gh pr close "$PR_NUMBER" \
                   --repo "${REPO_OWNER}/${REPO_NAME}"
