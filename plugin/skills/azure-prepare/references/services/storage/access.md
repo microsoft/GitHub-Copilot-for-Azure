@@ -7,8 +7,21 @@
 > - The role must include the `Microsoft.Authorization/roleAssignments/write` permission
 
 **Common scenarios**:
-- Granting Storage Blob Data Owner to a Web App or Function App's managed identity
+- Granting Storage Blob Data Owner to a Web App or Function App's managed identity (System Assigned or User Assigned)
+- Adding read/write access to blobs, queues, and tables for application workloads
+- Allowing user identities (developers, data admins) access in dev/test environments
 - Allowing applications to access storage using managed identity instead of connection strings
+
+**Scope best practices**:
+- Grant roles at the **smallest scope possible** (e.g., specific storage account, not resource group or subscription)
+- Avoid broad scopes (Resource Group, Subscription, Tenant) unless absolutely necessary
+- Prefer resource-level assignments for production workloads
+
+**Managed identity types**:
+- **System Assigned**: Automatically created with the resource (Web App, Function). Default when using `DefaultAzureCredential`.
+- **User Assigned**: Standalone identity that can be shared across resources. Requires additional configuration:
+  - Set `AZURE_CLIENT_ID` app setting to the User Assigned Managed Identity's client ID
+  - Configure identity in Bicep with both `type: 'SystemAssigned, UserAssigned'` and `userAssignedIdentities`
 
 If you encounter `AuthorizationFailed` errors when assigning roles, ensure you have User Access Administrator or Owner permissions at the target scope.
 
