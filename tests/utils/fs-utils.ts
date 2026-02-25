@@ -78,7 +78,7 @@ export const DEFAULT_EXCLUDE_DIRECTORIES = [
     ".env",
     ".tox",
     ".eggs",
-    "*.egg-info",
+    ".egg-info",
     ".gradle",
     ".idea",
     ".vscode",
@@ -162,8 +162,11 @@ export async function createZipArchive(
     timeoutMs: number = 5 * 60 * 1000
 ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
+        let archive: archiver.Archiver | undefined;
         const timeoutId = setTimeout(() => {
-            archive.abort();
+            if (archive) {
+                archive.abort();
+            }
             reject(new Error(`Zip archive creation timed out after ${timeoutMs / 1000} seconds`));
         }, timeoutMs);
 
@@ -174,7 +177,7 @@ export async function createZipArchive(
         }
 
         const output = fs.createWriteStream(outputPath);
-        const archive = archiver("zip", {
+        archive = archiver("zip", {
             zlib: { level: 6 } // Compression level (0-9)
         });
 
