@@ -89,7 +89,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me write a poem",
       "Explain quantum computing",
       "Help me with AWS SageMaker", // Wrong cloud provider
-      "Configure my PostgreSQL database", // Use azure-postgres
+      "Configure my PostgreSQL database", // Unrelated database task
       "Help me with Kubernetes pods", // Use azure-aks
       "How do I write Python code?", // Generic programming
       "How do I configure a timer-based cron job in my web app?", // Use azure-functions

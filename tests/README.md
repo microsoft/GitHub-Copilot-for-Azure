@@ -360,7 +360,6 @@ This updates the Skills Coverage Grid in this README.
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
-| azure-postgres | ✅ | - | - | ✅ | - |
 | azure-prepare | ✅ | - | - | ✅ | - |
 | azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
 | azure-resource-visualizer | ✅ | - | - | ✅ | - |
