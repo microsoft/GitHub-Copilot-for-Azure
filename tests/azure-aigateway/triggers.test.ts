@@ -64,7 +64,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       // Wrong cloud provider
       "Set up AWS API Gateway",
       "Configure Google Cloud Endpoints",
-      // Databases (azure-postgres)
+      // Databases
       "Set up a PostgreSQL database",
       "Create a Cosmos DB instance",
       // Unrelated Azure services

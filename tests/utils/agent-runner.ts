@@ -18,6 +18,8 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
 import { getAllAssistantMessages } from "./evaluate";
+import { redactSecrets } from "./redact";
+
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate";
 
@@ -34,23 +36,6 @@ const __dirname = path.dirname(__filename);
  */
 function getBundledCliPath(): string {
   return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
-}
-
-/** Redact token-like values from report text to prevent secret leakage */
-const SECRET_PATTERNS = [
-  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWT
-  /Bearer\s+[A-Za-z0-9_\-.~+/]{20,}/gi, // Bearer tokens
-  /gh[pousr]_[A-Za-z0-9_]{36,}/g, // GitHub tokens
-  /(?:password|passwd|secret|token|api[_-]?key|connection[_-]?string)\s*[:=]\s*["']?[^\s"',]{8,}/gi, // key=value secrets
-];
-
-function redactSecrets(text: string): string {
-  let result = text;
-  for (const pattern of SECRET_PATTERNS) {
-    pattern.lastIndex = 0;
-    result = result.replace(pattern, "[REDACTED]");
-  }
-  return result;
 }
 
 export interface AgentMetadata {
