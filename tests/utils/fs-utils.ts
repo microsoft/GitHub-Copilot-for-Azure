@@ -161,7 +161,7 @@ export async function createZipArchive(
     outputPath: string,
     timeoutMs: number = 5 * 60 * 1000
 ): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const timeoutId = setTimeout(() => {
             archive.abort();
             reject(new Error(`Zip archive creation timed out after ${timeoutMs / 1000} seconds`));
@@ -180,7 +180,7 @@ export async function createZipArchive(
 
         output.on("close", () => {
             clearTimeout(timeoutId);
-            resolve();
+            resolve(undefined);
         });
         output.on("error", (err) => {
             clearTimeout(timeoutId);
@@ -208,6 +208,6 @@ export async function createZipArchive(
             }
         }
 
-        archive.finalize();
+        void archive.finalize();
     });
 }
