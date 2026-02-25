@@ -162,7 +162,7 @@ export async function createZipArchive(
     timeoutMs: number = 5 * 60 * 1000
 ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        let archive: archiver.Archiver | undefined;
+        let archive: archiver.Archiver | undefined = undefined;
         const timeoutId = setTimeout(() => {
             if (archive) {
                 archive.abort();
