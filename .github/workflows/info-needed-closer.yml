@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     steps:
       - name: Checkout Actions
         uses: actions/checkout@v2
@@ -29,3 +30,91 @@ jobs:
           closeComment: "This issue has been closed automatically because it needs more information and has not had recent activity. See also our [issue reporting](https://aka.ms/azcodeissuereporting) guidelines.\n\nHappy Coding!"
           pingDays: 80
           pingComment: "Hey @${assignee}, this issue might need further attention.\n\n@${author}, you can help us out by closing this issue if the problem no longer exists, or adding more information."
+
+  stale-pr-with-unresolved-comments:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
+    steps:
+      - name: Find stale PRs with unresolved comments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          # Get the date 14 days ago in ISO format (cross-platform)
+          FOURTEEN_DAYS_AGO=$(($(date +%s) - 14*24*60*60))
+          # macOS uses -r, GNU/Linux uses -d @
+          CUTOFF_DATE=$(date -d @$FOURTEEN_DAYS_AGO +%Y-%m-%dT%H:%M:%S%z)
+
+          REPO_OWNER="microsoft"
+          REPO_NAME="GitHub-Copilot-for-Azure"
+
+          echo "Finding open non-draft PRs with latest commit before: $CUTOFF_DATE"
+          echo ""
+
+          # Get all open, non-draft PRs
+          gh pr list \
+            --repo ${REPO_OWNER}/${REPO_NAME} \
+            --state open \
+            --json number,title,isDraft,author \
+            --jq '.[] | select(.isDraft == false)' | jq -s '.' > prs.json
+
+          # Process each PR
+          echo "Stale PRs with unresolved comments:"
+          echo "===================================="
+
+          jq -c '.[]' prs.json | while read -r pr; do
+            PR_NUMBER=$(echo "$pr" | jq -r '.number')
+            PR_TITLE=$(echo "$pr" | jq -r '.title')
+            PR_AUTHOR=$(echo "$pr" | jq -r '.author.login')
+
+            # Get review threads and latest commit time using GraphQL
+            PR_DATA=$(gh api graphql -f query='
+              query($owner: String!, $repo: String!, $pr: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $pr) {
+                    reviewThreads(first: 100) {
+                      nodes {
+                        isResolved
+                      }
+                    }
+                    commits(last: 1) {
+                      nodes {
+                        commit {
+                          committedDate
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ' -f owner="$REPO_OWNER" -f repo="$REPO_NAME" -F pr="$PR_NUMBER" 2>/dev/null)
+
+            LATEST_COMMIT_DATE=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.commits.nodes[0].commit.committedDate' 2>/dev/null || echo "")
+
+            # Check if latest commit was more than 14 days ago
+            if [[ -n "$LATEST_COMMIT_DATE" && "$LATEST_COMMIT_DATE" < "$CUTOFF_DATE" ]]; then
+              UNRESOLVED_THREADS=$(echo "$PR_DATA" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' 2>/dev/null || echo "0")
+
+              if [[ "$UNRESOLVED_THREADS" -gt 0 ]]; then
+                echo "PR #${PR_NUMBER}: ${PR_TITLE}"
+                echo "  Author: ${PR_AUTHOR}"
+                echo "  Latest Commit: ${LATEST_COMMIT_DATE}"
+                echo "  Unresolved Threads: ${UNRESOLVED_THREADS}"
+                echo ""
+
+                # Add comment and close the PR
+                gh pr comment "$PR_NUMBER" \
+                  --repo "${REPO_OWNER}/${REPO_NAME}" \
+                  --body "This PR has been automatically closed because it has unresolved review comments and no new commits in the last 14 days.\n\nIf you would still like to merge these changes, please:\n1. Resolve all outstanding review comments\n2. Reopen this PR\n\nThank you for your contribution!"
+
+                gh pr close "$PR_NUMBER" \
+                  --repo "${REPO_OWNER}/${REPO_NAME}"
+
+                echo "  -> Closed PR #${PR_NUMBER}"
+                echo ""
+              fi
+            fi
+          done
