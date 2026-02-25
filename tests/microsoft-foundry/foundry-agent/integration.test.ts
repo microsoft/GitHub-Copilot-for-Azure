@@ -30,7 +30,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration("foundry-agent - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}_foundry-agent - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
@@ -57,7 +57,7 @@ describeIntegration("foundry-agent - Integration Tests", () => {
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`foundry-agent invocation rate for prompt agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-foundry-agent.txt`, `foundry-agent invocation rate for prompt agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      fs.appendFileSync("./result-foundry-agent.txt", `foundry-agent invocation rate for prompt agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
@@ -84,7 +84,7 @@ describeIntegration("foundry-agent - Integration Tests", () => {
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
       console.log(`foundry-agent invocation rate for troubleshooting: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-foundry-agent.txt`, `foundry-agent invocation rate for troubleshooting: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      fs.appendFileSync("./result-foundry-agent.txt", `foundry-agent invocation rate for troubleshooting: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });

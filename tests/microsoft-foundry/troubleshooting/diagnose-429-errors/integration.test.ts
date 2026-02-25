@@ -21,7 +21,7 @@ const SKILL_NAME = "microsoft-foundry";
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration("diagnose-429-errors - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}_diagnose-429-errors - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("Rate Limit Diagnosis", () => {
