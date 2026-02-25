@@ -18,6 +18,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
 import { getAllAssistantMessages } from "./evaluate";
+import { collectFiles, createZipArchive } from "./fs-utils";
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate";
 
@@ -349,11 +350,49 @@ export function useAgentRunner() {
     }
   }
 
+  async function publishWorkspaceArtifacts(): Promise<void> {
+    for (const entry of currentCleanups) {
+      try {
+        if (!isTest() || !entry.workspace || !fs.existsSync(entry.workspace)) {
+          continue;
+        }
+
+        // Collect meaningful files using shared utility
+        const files = collectFiles(entry.workspace);
+
+        if (files.length === 0) {
+          continue;
+        }
+
+        // Build output path next to the report
+        const shareFilePath = buildShareFilePath();
+        const reportDir = path.dirname(shareFilePath);
+
+        // Example: agent-metadata-2026-02-24T23-43-47-740Z.md
+        const shareFileName = path.basename(shareFilePath);
+        const zipPath = path.join(reportDir, shareFileName.replace("agent-metadata-", "artifacts-")).replace(".md", ".zip");
+
+        // Create zip archive using cross-platform archiver
+        await createZipArchive(entry.workspace, files, zipPath);
+
+        if (process.env.DEBUG) {
+          console.log(`Workspace artifact written to: ${zipPath} (${files.length} files)`);
+        }
+      } catch (error) {
+        // Don't fail the test if artifact collection fails
+        if (process.env.DEBUG) {
+          console.error("Failed to publish workspace artifacts:", error);
+        }
+      }
+    }
+  }
+
   if (isTest()) {
     // Guarantees cleanup even if it times out in a test.
     // No harm in running twice if the test also calls cleanup.
     afterEach(async () => {
       await createMarkdownReport();
+      await publishWorkspaceArtifacts();
       await cleanup();
     });
   }
