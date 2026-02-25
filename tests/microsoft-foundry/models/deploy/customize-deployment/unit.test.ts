@@ -4,63 +4,85 @@
  * Test isolated skill logic and validation rules.
  */
 
+import * as fs from "fs";
+import * as path from "path";
+import matter from "gray-matter";
 import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/models/deploy-model/customize";
+const SKILL_NAME = "microsoft-foundry";
+const NESTED_FILE = "models/deploy-model/customize/SKILL.md";
+
+interface NestedSkillMetadata {
+  name: string;
+  description: string;
+  [key: string]: unknown;
+}
 
 describe("customize (customize-deployment) - Unit Tests", () => {
   let skill: LoadedSkill;
+  let nestedMetadata: NestedSkillMetadata;
+  let nestedContent: string;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
+    const nestedFilePath = path.join(skill.path, NESTED_FILE);
+    const fileContent = fs.readFileSync(nestedFilePath, "utf-8");
+    const { data: metadata, content } = matter(fileContent);
+
+    nestedMetadata = {
+      name: (metadata.name as string) || "",
+      description: (metadata.description as string) || "",
+      ...metadata
+    };
+    nestedContent = content.trim();
   });
 
   describe("Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
-      expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("customize");
-      expect(skill.metadata.description).toBeDefined();
-      expect(skill.metadata.description.length).toBeGreaterThan(10);
+      expect(nestedMetadata).toBeDefined();
+      expect(nestedMetadata.name).toBe("customize");
+      expect(nestedMetadata.description).toBeDefined();
+      expect(nestedMetadata.description.length).toBeGreaterThan(10);
     });
 
     test("description is appropriately sized", () => {
-      expect(skill.metadata.description.length).toBeGreaterThan(150);
-      expect(skill.metadata.description.length).toBeLessThan(1024);
+      expect(nestedMetadata.description.length).toBeGreaterThan(150);
+      expect(nestedMetadata.description.length).toBeLessThan(1024);
     });
 
     test("description contains USE FOR triggers", () => {
-      expect(skill.metadata.description).toMatch(/USE FOR:/i);
+      expect(nestedMetadata.description).toMatch(/USE FOR:/i);
     });
 
     test("description contains DO NOT USE FOR anti-triggers", () => {
-      expect(skill.metadata.description).toMatch(/DO NOT USE FOR:/i);
+      expect(nestedMetadata.description).toMatch(/DO NOT USE FOR:/i);
     });
   });
 
   describe("Skill Content", () => {
     test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(100);
+      expect(nestedContent).toBeDefined();
+      expect(nestedContent.length).toBeGreaterThan(100);
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Quick Reference");
-      expect(skill.content).toContain("## Prerequisites");
+      expect(nestedContent).toContain("## Quick Reference");
+      expect(nestedContent).toContain("## Prerequisites");
     });
 
     test("documents customization options", () => {
-      expect(skill.content).toContain("SKU");
-      expect(skill.content).toContain("capacity");
-      expect(skill.content).toContain("RAI");
+      expect(nestedContent).toContain("SKU");
+      expect(nestedContent).toContain("capacity");
+      expect(nestedContent).toContain("RAI");
     });
 
     test("documents PTU deployment support", () => {
-      expect(skill.content).toContain("PTU");
-      expect(skill.content).toContain("ProvisionedManaged");
+      expect(nestedContent).toContain("PTU");
+      expect(nestedContent).toContain("ProvisionedManaged");
     });
 
     test("contains comparison with preset mode", () => {
-      expect(skill.content).toContain("## When to Use");
+      expect(nestedContent).toContain("## When to Use");
     });
   });
 });

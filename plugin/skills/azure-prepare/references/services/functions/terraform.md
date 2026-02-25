@@ -1,4 +1,15 @@
-# Functions Terraform Patterns
+# Functions Terraform Patterns — REFERENCE ONLY
+
+> ⛔ **DO NOT COPY THIS CODE DIRECTLY**
+>
+> This file contains **reference patterns** for understanding Azure Functions Terraform structure.
+> **You MUST use the composition algorithm** to generate infrastructure:
+>
+> 1. Load `templates/selection.md` to choose the correct base template
+> 2. Follow `templates/recipes/composition.md` for the exact algorithm
+> 3. Run `azd init -t functions-quickstart-dotnet-azd-tf` to get the proven Terraform base, then adjust runtime/language per the composition recipes
+>
+> Hand-writing Terraform from these patterns will result in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
 ## Flex Consumption (Recommended)
 
