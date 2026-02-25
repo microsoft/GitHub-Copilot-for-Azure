@@ -30,7 +30,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration("deploy-model - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for simple model deployment prompt", async () => {

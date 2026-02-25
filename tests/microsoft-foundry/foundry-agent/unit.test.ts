@@ -152,7 +152,7 @@ describe("foundry-agent - Unit Tests", () => {
     ];
 
     test.each(referenceFiles)(
-      'reference file exists: %s',
+      "reference file exists: %s",
       (file) => {
         const fullPath = path.join(SKILL_DIR, file);
         expect(fs.existsSync(fullPath)).toBe(true);

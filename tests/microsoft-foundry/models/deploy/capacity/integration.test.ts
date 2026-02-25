@@ -30,7 +30,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration("capacity - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
     test("invokes skill for capacity discovery prompt", async () => {

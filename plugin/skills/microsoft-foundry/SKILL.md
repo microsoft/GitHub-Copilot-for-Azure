@@ -2,114 +2,91 @@
 name: microsoft-foundry
 description: |
   Use this skill for Microsoft Foundry (Azure AI Foundry): deploy models from catalog, build RAG apps, create/evaluate AI agents, manage RBAC/permissions, manage quotas/capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, deploy model, deploy GPT, OpenAI model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, AIServices, register resource provider, RBAC, role assignment, managed identity, service principal, quota, capacity, TPM, PTU, QuotaExceeded, InsufficientQuota, DeploymentLimitReached, check quota, quota increase, model deployment, rate limiting, 429 errors, deployment health, inference failures, model availability, regional availability.
+  USE FOR: Microsoft Foundry, AI Foundry, deploy model, deploy GPT, OpenAI model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, AIServices, register resource provider, RBAC, role assignment, managed identity, service principal, quota, capacity, TPM, PTU, QuotaExceeded, InsufficientQuota, DeploymentLimitReached, check quota, quota increase, model deployment, rate limiting, 429 errors, deployment health, inference failures, model availability, regional availability, azd deploy agent, azd up agent.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic resource creation (use azure-create-app), AI Search/speech/OCR (use azure-ai).
 ---
 
 # Microsoft Foundry Skill
 
-This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, RAG (Retrieval-Augmented Generation) applications, AI agent creation, evaluation workflows, and troubleshooting.
+This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, complete dev lifecycle of AI agent, evaluation workflows, and troubleshooting.
 
 ## Sub-Skills
+
+> **MANDATORY: Before executing ANY workflow, you MUST read the corresponding sub-skill document.** Do not call MCP tools for a workflow without reading its skill document. This applies even if you already know the MCP tool parameters — the skill document contains required workflow steps, pre-checks, and validation logic that must be followed. This rule applies on every new user message that triggers a different workflow, even if the skill is already loaded.
 
 This skill includes specialized sub-skills for specific workflows. **Use these instead of the main skill when they match your task:**
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
+| **deploy** | Full deployment pipeline: project scan → env vars → Dockerfile → ACR build → agent creation → container startup → verification. **Use this skill instead of manually calling agent_update or az acr build.** USE FOR: deploy agent to foundry, push agent, build container, redeploy, start/stop container, clone/delete agent. | [deploy](foundry-agent/deploy/deploy.md) |
+| **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
+| **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
+| **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
+| **observe** | Eval-driven optimization loop for Foundry agents. Orchestrates the full pipeline: auto-create evaluators & test dataset → batch evaluate → cluster failures → optimize prompt → re-deploy → compare versions → iterate. **Use this skill instead of manually calling evaluation MCP tools.** USE FOR: evaluate agent, run eval, test agent quality, analyze eval results, cluster failures, optimize prompt, compare versions, CI/CD evals, agent monitoring. | [observe](foundry-agent/observe/observe.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
 | **foundry-agent** | Full agent lifecycle: create, deploy, invoke, and troubleshoot both prompt and hosted agents. Routes to create-prompt (MCP/SDK), create-hosted (sample-based), deploy, invoke, and troubleshoot workflows. | [foundry-agent/SKILL.md](foundry-agent/SKILL.md) |
-| **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
+| **quota**| Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
-| **troubleshooting/diagnose-429-errors** | Diagnosing and resolving HTTP 429 rate limiting errors. Use when encountering "Rate limit exceeded" errors, quota issues, or planning capacity. Covers quota analysis, retry strategies, and multi-region scaling. | [troubleshooting/diagnose-429-errors.md](troubleshooting/diagnose-429-errors.md) |
-| **troubleshooting/check-deployment-health** | Diagnosing deployment health issues, monitoring deployed models, troubleshooting inference failures. Use when deployments fail, get stuck, or show degraded performance after initial provisioning. | [troubleshooting/check-deployment-health.md](troubleshooting/check-deployment-health.md) |
-| **troubleshooting/check-model-availability** | Checking regional availability of AI models, finding regions that support a specific model, troubleshooting "model not found" or "SKU not available" errors. Use for pre-deployment planning and multi-region deployment strategies. | [troubleshooting/check-model-availability.md](troubleshooting/check-model-availability.md) |
 
 > 💡 **Tip:** For a complete onboarding flow: `project/create` → `foundry-agent` (create → deploy → invoke). The `foundry-agent` SKILL.md routes between prompt agent creation (MCP/SDK) and hosted agent creation (sample-based).
 
 > 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
-## When to Use This Skill
+## Agent Development Lifecycle
 
-Use this skill when the user wants to:
+Match user intent to the correct workflow. Read each sub-skill in order before executing.
 
-- **Discover and deploy AI models** from the Microsoft Foundry catalog
-- **Build RAG applications** using knowledge indexes and vector search
-- **Create AI agents** with tools like Azure AI Search, web search, or custom functions
-- **Evaluate agent performance** using built-in evaluators
-- **Set up monitoring** and continuous evaluation for production agents
-- **Troubleshoot issues** with deployments, agents, or evaluations
-- **Manage quotas** — check usage, troubleshoot quota errors, request increases, plan capacity
-- **Deploy models without an existing project** — this skill handles project discovery and creation automatically
+| User Intent | Workflow (read in order) |
+|-------------|------------------------|
+| Create a new agent from scratch | [create](foundry-agent/create/create.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
+| Deploy an agent (code already exists) | deploy → invoke |
+| Update/redeploy an agent after code changes | deploy → invoke |
+| Invoke/test/chat with an agent | invoke |
+| Troubleshoot an agent issue | invoke → troubleshoot |
+| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
+| Start/stop agent container | deploy |
+| Evaluate/optimize an agent | [observe](foundry-agent/observe/observe.md) |
 
-> ⚠️ **Important:** This skill works **with or without** an existing Foundry project. If no project context is available, the skill will discover existing resources or guide the user through creating one before proceeding.
+## Agent: Project Context Resolution
 
-## Pre-Flight Checklist (Required for All Operations)
+Agent skills should run this step **only when they need configuration values they don't already have**. If a value (e.g., project endpoint, agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
 
-> ⚠️ **Warning:** Every Foundry operation **must** execute this checklist before proceeding to the sub-skill workflow. Do NOT skip phases.
+### Step 1: Detect azd Project
 
-```
-User Request
-    │
-    ▼
-Phase 1: Verify Authentication
-    │
-    ▼
-Phase 2: Verify Permissions
-    │
-    ▼
-Phase 3: Discover Projects
-    │  ├─ Projects found → list and ask user to select
-    │  └─ No projects   → offer to create one
-    │
-    ▼
-Phase 4: Confirm Selected Project
-    │
-    ▼
-Route to Sub-Skill Workflow
-```
+If any required configuration value is missing, check if `azure.yaml` exists in the project root (workspace root or user-specified project path). If found, run `azd env get-values` to load environment variables.
 
-### Phase 1: Verify Azure Authentication
+### Step 2: Resolve Common Configuration
 
-```bash
-az account show --query "{Subscription:name, SubscriptionId:id, User:user.name}" -o table
-```
+Match missing values against the azd environment:
 
-| Result | Action |
-|--------|--------|
-| ✅ Success | Continue to Phase 2 |
-| ❌ Not logged in | Run `az login` and retry |
-| ❌ Wrong subscription | `az account list -o table` → ask user to select → `az account set --subscription <id>` |
+| azd Variable | Resolves To | Used By |
+|-------------|-------------|---------|
+| `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | Project endpoint | deploy, invoke, troubleshoot |
+| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix | deploy |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription | troubleshoot |
 
-### Phase 2: Verify RBAC Permissions
+### Step 3: Collect Missing Values
 
-```bash
-az role assignment list \
-  --assignee "$(az ad signed-in-user show --query id -o tsv)" \
-  --query "[?contains(roleDefinitionName, 'Owner') || contains(roleDefinitionName, 'Contributor') || contains(roleDefinitionName, 'Azure AI')].{Role:roleDefinitionName, Scope:scope}" \
-  -o table
-```
+Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, or azd environment. Common values skills may need:
+- **Project endpoint** — AI Foundry project endpoint URL
+- **Agent name** — Name of the target agent
 
-| Result | Action |
-|--------|--------|
-| ✅ Has Owner, Contributor, or Azure AI role | Continue to Phase 3 |
-| ❌ No relevant roles | STOP — inform user they need elevated permissions. Refer to [RBAC skill](rbac/rbac.md) for role assignment guidance |
+> 💡 **Tip:** If the user provides a project endpoint or agent name in their initial message, extract it directly — do not ask again.
 
-> 💡 **Tip:** Minimum required roles by operation:
+## Agent: Agent Types
 
-| Operation | Minimum Role |
-|-----------|-------------|
-| Deploy models | Azure AI User |
-| Create projects | Azure AI Project Manager or Contributor |
-| Manage RBAC | Azure AI Owner or Owner |
-| View quota | Azure AI User or Reader |
+All agent skills support two agent types:
 
-### Phase 3: Discover Foundry Resources
+| Type | Kind | Description |
+|------|------|-------------|
+| **Prompt** | `"prompt"` | LLM-based agents backed by a model deployment |
+| **Hosted** | `"hosted"` | Container-based agents running custom code |
 
-**Step 1:** Check if `PROJECT_RESOURCE_ID` env var is set. If set, parse it and skip to Phase 4.
+Use `agent_get` MCP tool to determine an agent's type when needed.
 
-**Step 2:** If not set, query all Foundry resources (`AIServices` kind) in the subscription:
+## Tool Usage Conventions
 
 ```bash
 az cognitiveservices account list \
@@ -713,13 +690,10 @@ For SDK-specific details, authentication, and code examples:
 
 ## Additional Resources
 
-### Documentation Links
-- [Microsoft Foundry Documentation](https://learn.microsoft.com/azure/ai-foundry/)
-- [Microsoft Foundry Quickstart](https://learn.microsoft.com/azure/ai-foundry/quickstarts/get-started-code)
-- [RAG and Knowledge Indexes](https://learn.microsoft.com/azure/ai-foundry/concepts/retrieval-augmented-generation)
-- [Agent Evaluation Guide](https://learn.microsoft.com/azure/ai-foundry/how-to/develop/agent-evaluate-sdk)
+- [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
+- [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
+- [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
 
-### GitHub Samples
-- [Microsoft Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
-- [Azure Search OpenAI Demo](https://github.com/Azure-Samples/azure-search-openai-demo)
-- [Azure Search Classic RAG](https://github.com/Azure-Samples/azure-search-classic-rag)
+## SDK Quick Reference
+
+- [Python](references/sdk/foundry-sdk-py.md)

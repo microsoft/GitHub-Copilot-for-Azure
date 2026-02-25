@@ -21,7 +21,7 @@ const SKILL_NAME = "microsoft-foundry";
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration("check-model-availability - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}_check-model-availability - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("Model Availability Check", () => {

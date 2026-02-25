@@ -21,7 +21,7 @@ const SKILL_NAME = "microsoft-foundry";
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration("check-deployment-health - Integration Tests", () => {
+describeIntegration(`${SKILL_NAME}_check-deployment-health - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("Deployment Status Check", () => {

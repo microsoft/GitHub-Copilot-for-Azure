@@ -8,7 +8,7 @@ import { loadSkill, type LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
 
-describe("microsoft-foundry:resource/create - Integration Tests", () => {
+describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
