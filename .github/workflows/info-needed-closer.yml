@@ -40,18 +40,14 @@ jobs:
       - name: Find stale PRs with unresolved comments
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO_OWNER: ${{ github.repository_owner }}
-          REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          # Get the date 14 days ago in ISO format (cross-platform)
-          FOURTEEN_DAYS_AGO=$(($(date +%s) - 14*24*60*60))
-          # macOS uses -r, GNU/Linux uses -d @
-          CUTOFF_DATE=$(date -d @$FOURTEEN_DAYS_AGO +%Y-%m-%dT%H:%M:%S%z)
+          # Get the cutoff timestamp (14 days ago) as Unix timestamp
+          CUTOFF_TIMESTAMP=$(($(date +%s) - 14*24*60*60))
 
           REPO_OWNER="microsoft"
           REPO_NAME="GitHub-Copilot-for-Azure"
 
-          echo "Finding open non-draft PRs with latest commit before: $CUTOFF_DATE"
+          echo "Finding open non-draft PRs with latest commit before: $(date -d @$CUTOFF_TIMESTAMP +%Y-%m-%dT%H:%M:%S%z)"
           echo ""
 
           # Get all open, non-draft PRs
@@ -94,8 +90,14 @@ jobs:
 
             LATEST_COMMIT_DATE=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.commits.nodes[0].commit.committedDate' 2>/dev/null || echo "")
 
+            # Convert LATEST_COMMIT_DATE to Unix timestamp for comparison
+            if [[ -z "$LATEST_COMMIT_DATE" ]]; then
+              continue
+            fi
+            LATEST_COMMIT_TIMESTAMP=$(date -d "$LATEST_COMMIT_DATE" +%s 2>/dev/null || echo "0")
+
             # Check if latest commit was more than 14 days ago
-            if [[ -n "$LATEST_COMMIT_DATE" && "$LATEST_COMMIT_DATE" < "$CUTOFF_DATE" ]]; then
+            if [[ "$LATEST_COMMIT_TIMESTAMP" -lt "$CUTOFF_TIMESTAMP" ]]; then
               UNRESOLVED_THREADS=$(echo "$PR_DATA" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' 2>/dev/null || echo "0")
 
               if [[ "$UNRESOLVED_THREADS" -gt 0 ]]; then
