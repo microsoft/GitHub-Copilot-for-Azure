@@ -30,6 +30,7 @@ All recipes should use these shared patterns:
 | [UAMI Bindings](common/uami-bindings.md) | `common/uami-bindings.md` | **MANDATORY** — App settings for managed identity connections |
 | [Error Handling](common/error-handling.md) | `common/error-handling.md` | Try/catch + logging patterns per language |
 | [Health Check](common/health-check.md) | `common/health-check.md` | Health endpoint for monitoring/load balancers |
+| [Post-Generation](common/post-generation.md) | `common/post-generation.md` | **MANDATORY** — File naming, README updates, test scaffolding |
 
 ## Available Recipes
 
