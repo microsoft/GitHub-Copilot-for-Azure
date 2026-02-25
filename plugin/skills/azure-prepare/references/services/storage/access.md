@@ -58,7 +58,7 @@ var containerClient = blobServiceClient.GetBlobContainerClient("uploads");
 
 ## Managed Identity Access
 
-Use `DefaultAzureCredential` instead of connection strings:
+Use `DefaultAzureCredential` for local development (in production, use `ManagedIdentityCredential` — see [auth-best-practices.md](../../auth-best-practices.md)):
 
 ```javascript
 const { DefaultAzureCredential } = require("@azure/identity");
