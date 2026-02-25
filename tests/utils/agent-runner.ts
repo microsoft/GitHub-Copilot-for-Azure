@@ -382,10 +382,16 @@ export function useAgentRunner() {
         cliArgs.push(buildLogFilePath());
       }
 
+      // Resolve the bundled CLI path manually to avoid import.meta.resolve(),
+      // which is not supported in Jest's ESM VM context, and createRequire is
+      // intercepted by Jest's module resolver which cannot find the sub-path export.
+      const cliPath = path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
         cwd: testWorkspace,
         cliArgs: cliArgs,
+        cliPath: cliPath,
       }) as CopilotClient;
       entry.client = client;
 
