@@ -2,8 +2,8 @@
 name: microsoft-foundry
 description: |
   Use this skill for Microsoft Foundry (Azure AI Foundry): deploy models from catalog, build RAG apps, create/evaluate AI agents, manage RBAC/permissions, manage quotas/capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, deploy model, deploy GPT, OpenAI model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, AI Services, AIServices kind, register resource provider, RBAC, role assignment, managed identity, service principal, permissions, quota, capacity, TPM, PTU, QuotaExceeded, InsufficientQuota, DeploymentLimitReached, check quota, monitor quota, quota increase, first model deployment, model deployment. FOR TROUBLESHOOTING: rate limiting, 429 errors, quota issues, deployment health, inference failures, model availability, regional availability.
-  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app), AI Search queries (use azure-ai), speech-to-text (use azure-ai), OCR (use azure-ai).
+  USE FOR: Microsoft Foundry, AI Foundry, deploy model, deploy GPT, OpenAI model, model catalog, RAG, knowledge index, create agent, evaluate agent, agent monitoring, create Foundry project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, AIServices, register resource provider, RBAC, role assignment, managed identity, service principal, quota, capacity, TPM, PTU, QuotaExceeded, InsufficientQuota, DeploymentLimitReached, check quota, quota increase, model deployment, rate limiting, 429 errors, deployment health, inference failures, model availability, regional availability.
+  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic resource creation (use azure-create-app), AI Search/speech/OCR (use azure-ai).
 ---
 
 # Microsoft Foundry Skill
@@ -19,15 +19,14 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
-| **agent/create/agent-framework** | Creating AI agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [agent/create/agent-framework/SKILL.md](agent/create/agent-framework/SKILL.md) |
-| **agent/create/agents** | Managing Foundry Agent Service agents: create, list, get, update, delete prompt agents and workflows. Uses Foundry MCP server with SDK fallback. | [agent/create/agents/SKILL.md](agent/create/agents/SKILL.md) |
+| **foundry-agent** | Full agent lifecycle: create, deploy, invoke, and troubleshoot both prompt and hosted agents. Routes to create-prompt (MCP/SDK), create-hosted (sample-based), deploy, invoke, and troubleshoot workflows. | [foundry-agent/SKILL.md](foundry-agent/SKILL.md) |
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 | **troubleshooting/diagnose-429-errors** | Diagnosing and resolving HTTP 429 rate limiting errors. Use when encountering "Rate limit exceeded" errors, quota issues, or planning capacity. Covers quota analysis, retry strategies, and multi-region scaling. | [troubleshooting/diagnose-429-errors.md](troubleshooting/diagnose-429-errors.md) |
 | **troubleshooting/check-deployment-health** | Diagnosing deployment health issues, monitoring deployed models, troubleshooting inference failures. Use when deployments fail, get stuck, or show degraded performance after initial provisioning. | [troubleshooting/check-deployment-health.md](troubleshooting/check-deployment-health.md) |
 | **troubleshooting/check-model-availability** | Checking regional availability of AI models, finding regions that support a specific model, troubleshooting "model not found" or "SKU not available" errors. Use for pre-deployment planning and multi-region deployment strategies. | [troubleshooting/check-model-availability.md](troubleshooting/check-model-availability.md) |
 
-> 💡 **Tip:** For a complete onboarding flow: `project/create` → `agent/create` → `agent/deploy`. If the user wants to **create AND deploy** an agent, start with `agent/create` which can optionally invoke `agent/deploy` automatically.
+> 💡 **Tip:** For a complete onboarding flow: `project/create` → `foundry-agent` (create → deploy → invoke). The `foundry-agent` SKILL.md routes between prompt agent creation (MCP/SDK) and hosted agent creation (sample-based).
 
 > 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
@@ -411,9 +410,12 @@ Agents can call custom functions to perform actions like querying databases, cal
 
 **Implementation:**
 
-Create an agent with web search capabilities by adding a Web Search tool:
+Create an agent with web search capabilities by adding a Web Search Preview tool:
+- No external resource or connection required — works out of the box
 - Optionally specify user location for localized results
 - Provide instructions to always cite web sources
+
+> ⚠️ **Default:** Use `WebSearchPreviewTool` for web search. Only use Bing Grounding (`BingGroundingAgentTool`) if the user explicitly requests Grounding with Bing Search or Grounding with Bing Custom Search.
 
 **For SDK Implementation:** See [references/sdk/foundry-sdk-py.md](references/sdk/foundry-sdk-py.md#agent-with-web-search)
 

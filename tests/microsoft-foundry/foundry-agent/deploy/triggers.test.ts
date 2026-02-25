@@ -50,10 +50,10 @@ describe("deploy - Trigger Tests", () => {
       "Help me with AWS SageMaker",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
-      "Set up monitoring for my web application",
-      "Generate a Dockerfile for my Python web service",
+      "Set up alerts for high CPU usage",
+      "Write a README for my open source library",
       "Push my image to a registry",
-      "Create a serverless function endpoint",
+      "Set up a REST API with Express",
     ];
 
     test.each(shouldNotTriggerPrompts)(

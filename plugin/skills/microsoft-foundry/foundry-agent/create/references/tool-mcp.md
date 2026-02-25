@@ -6,7 +6,7 @@ Connect agents to remote MCP servers to extend capabilities with external tools 
 
 - `azure-ai-projects` package (`pip install azure-ai-projects --pre`)
 - A remote MCP server endpoint (e.g., `https://api.githubcopilot.com/mcp`)
-- For authenticated servers: a [project connection](../../../../project/connections.md) storing credentials
+- For authenticated servers: a [project connection](../../../project/connections.md) storing credentials
 - RBAC: **Contributor** or **Owner** role on the Foundry project
 
 ## Environment Variables
@@ -19,7 +19,7 @@ export MCP_PROJECT_CONNECTION_NAME="my-mcp-connection"  # only for authenticated
 
 ## Create MCP Connection (Authenticated Servers)
 
-For authenticated MCP servers, create a project connection to store credentials. See [Project Connections](../../../../project/connections.md).
+For authenticated MCP servers, create a project connection to store credentials. See [Project Connections](../../../project/connections.md).
 
 ```bash
 # API key connection for authenticated MCP server

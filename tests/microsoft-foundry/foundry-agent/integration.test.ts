@@ -1,32 +1,25 @@
 /**
- * Integration Tests for agent-framework
- * 
+ * Integration Tests for foundry-agent
+ *
  * Tests skill behavior with a real Copilot agent session.
  * Runs prompts multiple times to measure skill invocation rate.
- * 
+ *
  * Prerequisites:
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
  */
 
-import * as fs from "fs";
 import {
   useAgentRunner,
-  AgentMetadata,
   isSkillInvoked,
-  getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-} from "../../../../utils/agent-runner";
+} from "../../utils/agent-runner";
+import * as fs from "fs";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
-const EXPECTED_INVOCATION_RATE = 0.6;
-
-/** Terminate on first `create` tool call to avoid unnecessary file writes. */
-function terminateOnCreate(metadata: AgentMetadata): boolean {
-  return getToolCalls(metadata, "create").length > 0;
-}
+const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -37,17 +30,17 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration("agent-framework - Integration Tests", () => {
+describeIntegration("foundry-agent - Integration Tests", () => {
   const agent = useAgentRunner();
+
   describe("skill-invocation", () => {
-    test("invokes skill for agent creation prompt", async () => {
+    test("invokes skill for prompt agent creation", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a foundry agent using Microsoft Agent Framework SDK in Python.",
-            shouldEarlyTerminate: terminateOnCreate,
+            prompt: "Create a new prompt agent with gpt-4o model in Foundry"
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -63,19 +56,18 @@ describeIntegration("agent-framework - Integration Tests", () => {
       }
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`agent-framework invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync("./result-agent-framework.txt", `agent-framework invocation rate for agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      console.log(`foundry-agent invocation rate for prompt agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-foundry-agent.txt`, `foundry-agent invocation rate for prompt agent creation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
-    test("invokes skill for multi-agent workflow prompt", async () => {
+    test("invokes skill for agent troubleshooting", async () => {
       let successCount = 0;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create multi-agent workflow as foundry agent in Python with orchestration using Agent Framework.",
-            shouldEarlyTerminate: terminateOnCreate,
+            prompt: "Troubleshoot my Foundry agent that is returning errors"
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -91,8 +83,8 @@ describeIntegration("agent-framework - Integration Tests", () => {
       }
 
       const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`agent-framework invocation rate for multi-agent workflow: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync("./result-agent-framework.txt", `agent-framework invocation rate for multi-agent workflow: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
+      console.log(`foundry-agent invocation rate for troubleshooting: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
+      fs.appendFileSync(`./result-foundry-agent.txt`, `foundry-agent invocation rate for troubleshooting: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
       expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
