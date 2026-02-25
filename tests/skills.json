@@ -8,6 +8,7 @@
         "azure-deploy",
         "azure-diagnostics",
         "azure-hosted-copilot-sdk",
+        "azure-kubernetes",
         "azure-kusto",
         "azure-messaging",
         "azure-observability",
