@@ -24,6 +24,18 @@ export { getAllAssistantMessages } from "./evaluate";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Resolve the bundled Copilot CLI entry point.
+ *
+ * The SDK's default `getBundledCliPath()` uses `import.meta.resolve()`, which
+ * is not available inside Jest's ESM VM context (even with
+ * `--experimental-vm-modules`). We replicate the same path arithmetic here
+ * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ */
+function getBundledCliPath(): string {
+  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+}
+
 /** Redact token-like values from report text to prevent secret leakage */
 const SECRET_PATTERNS = [
   /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWT
@@ -382,16 +394,11 @@ export function useAgentRunner() {
         cliArgs.push(buildLogFilePath());
       }
 
-      // Resolve the bundled CLI path manually to avoid import.meta.resolve(),
-      // which is not supported in Jest's ESM VM context, and createRequire is
-      // intercepted by Jest's module resolver which cannot find the sub-path export.
-      const cliPath = path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
-
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
         cwd: testWorkspace,
         cliArgs: cliArgs,
-        cliPath: cliPath,
+        cliPath: getBundledCliPath(),
       }) as CopilotClient;
       entry.client = client;
 
@@ -736,6 +743,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
+      cliPath: getBundledCliPath(),
     }) as CopilotClient;
 
     const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
