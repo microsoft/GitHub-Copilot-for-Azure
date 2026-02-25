@@ -2,7 +2,7 @@
   "name": "copilot-review-app",
   "version": "1.0.0",
   "dependencies": {
-    "@github/copilot-sdk": "0.1.125",
+    "@github/copilot-sdk": "^0.1.125",
     "express": "^4.18.2",
     "@types/express": "^4.17.21",
     "typescript": "^5.3.3"
