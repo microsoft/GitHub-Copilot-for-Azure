@@ -12,7 +12,6 @@
         "azure-kusto",
         "azure-messaging",
         "azure-observability",
-        "azure-postgres",
         "azure-prepare",
         "azure-rbac",
         "azure-resource-lookup",
