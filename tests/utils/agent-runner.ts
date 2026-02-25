@@ -26,6 +26,18 @@ export { getAllAssistantMessages } from "./evaluate";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Resolve the bundled Copilot CLI entry point.
+ *
+ * The SDK's default `getBundledCliPath()` uses `import.meta.resolve()`, which
+ * is not available inside Jest's ESM VM context (even with
+ * `--experimental-vm-modules`). We replicate the same path arithmetic here
+ * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ */
+function getBundledCliPath(): string {
+  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+}
+
 export interface AgentMetadata {
   /**
    * Events emitted by the Copilot SDK agent during the agent run.
@@ -371,6 +383,7 @@ export function useAgentRunner() {
         logLevel: process.env.DEBUG ? "all" : "error",
         cwd: testWorkspace,
         cliArgs: cliArgs,
+        cliPath: getBundledCliPath(),
       }) as CopilotClient;
       entry.client = client;
 
@@ -715,6 +728,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
+      cliPath: getBundledCliPath(),
     }) as CopilotClient;
 
     const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
