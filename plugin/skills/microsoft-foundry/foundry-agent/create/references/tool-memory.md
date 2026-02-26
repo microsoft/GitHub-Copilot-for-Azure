@@ -13,19 +13,7 @@ Managed long-term memory for Foundry agents. Enables agent continuity across ses
 
 An embedding model is **required** before enabling memory. Check if one is already deployed:
 
-**Using MCP Tools (preferred):**
-
-Use `foundry-mcp-model_deployment_get` with the Foundry account resource ID to list all deployments. Look for an embedding model (e.g., `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002`).
-
-**Using Azure CLI:**
-
-```bash
-az cognitiveservices account deployment list \
-  --name <foundry-resource-name> \
-  --resource-group <resource-group> \
-  --query "[?contains(properties.model.name, 'embedding')].{Name:name, Model:properties.model.name, Version:properties.model.version}" \
-  -o table
-```
+Use `foundry_models_list` MCP tool to list all deployments and look for an embedding model (e.g., `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002`).
 
 | Result | Action |
 |--------|--------|
@@ -34,27 +22,10 @@ az cognitiveservices account deployment list \
 
 ### Deploy Embedding Model
 
-If no embedding model exists, deploy one:
-
-**Using MCP Tools (preferred):**
-
-Use `foundry-mcp-model_deploy` with:
+If no embedding model exists, use `foundry_models_deploy` MCP tool with:
 - `deploymentName`: `text-embedding-3-small` (or preferred name)
 - `modelName`: `text-embedding-3-small`
 - `modelFormat`: `OpenAI`
-
-**Using Azure CLI:**
-
-```bash
-az cognitiveservices account deployment create \
-  --name <foundry-resource-name> \
-  --resource-group <resource-group> \
-  --deployment-name text-embedding-3-small \
-  --model-name text-embedding-3-small \
-  --model-format OpenAI \
-  --sku-capacity 10 \
-  --sku-name Standard
-```
 
 ## Authorization and Permissions
 
@@ -87,83 +58,36 @@ Step 3: Attach memory tool to agent
 Step 4: Test with conversation
 ```
 
-## Create Memory Store
+## Key Concepts
 
-```python
-import os
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import MemoryStoreDefaultDefinition, MemoryStoreDefaultOptions
-from azure.identity import DefaultAzureCredential
+### Memory Store Options
 
-project_client = AIProjectClient(
-    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-
-options = MemoryStoreDefaultOptions(
-    chat_summary_enabled=True,
-    user_profile_enabled=True,
-    user_profile_details="Avoid sensitive data such as age, financials, location, credentials"
-)
-
-memory_store = project_client.memory_stores.create(
-    name="my_memory_store",
-    definition=MemoryStoreDefaultDefinition(
-        chat_model="gpt-5.2",
-        embedding_model="text-embedding-3-small",
-        options=options,
-    ),
-    description="Memory store for agent",
-)
-```
+| Option | Description |
+|--------|-------------|
+| `chat_summary_enabled` | Summarize conversations for memory |
+| `user_profile_enabled` | Build and maintain user profile |
+| `user_profile_details` | Control what data gets stored (e.g., `"Avoid sensitive data such as age, financials, location, credentials"`) |
 
 > 💡 **Tip:** Use `user_profile_details` to control what the agent stores — e.g., `"flight carrier preference and dietary restrictions"` for a travel agent, or exclude sensitive data.
 
-## Attach Memory to Agent
-
-```python
-from azure.ai.projects.models import MemorySearchTool, PromptAgentDefinition
-
-tool = MemorySearchTool(
-    memory_store_name="my_memory_store",
-    scope="{{$userId}}",  # auto-extracts TID+OID from auth header
-    update_delay=300,      # 5 minutes of inactivity before updating
-)
-
-agent = project_client.agents.create_version(
-    agent_name="MemoryAgent",
-    definition=PromptAgentDefinition(
-        model="gpt-5.2",
-        instructions="You are a helpful assistant that remembers user preferences.",
-        tools=[tool],
-    ),
-)
-```
-
 ### Scope
 
-The `scope` parameter partitions memory per user. Options:
+The `scope` parameter partitions memory per user:
 
 | Scope Value | Behavior |
 |-------------|----------|
 | `{{$userId}}` | Auto-extracts TID+OID from auth token (recommended) |
 | `"user_123"` | Static identifier — you manage user mapping |
 
-## Manage Memory Stores
+### Memory Store Operations
 
-```python
-# List memory stores
-stores = project_client.memory_stores.list()
-
-# Update description
-project_client.memory_stores.update(name="my_memory_store", description="Updated")
-
-# Delete memories for a scope
-project_client.memory_stores.delete_scope(name="my_memory_store", scope="user_123")
-
-# Delete entire memory store (irreversible)
-project_client.memory_stores.delete("my_memory_store")
-```
+| Operation | Description |
+|-----------|-------------|
+| Create | Initialize a memory store with chat/embedding models and options |
+| List | List all memory stores in the project |
+| Update | Update memory store description or configuration |
+| Delete scope | Delete memories for a specific user scope |
+| Delete store | Delete entire memory store (irreversible — all scopes lost) |
 
 > ⚠️ **Warning:** Deleting a memory store removes all memories across all scopes. Agents with attached memory stores lose access to historical context.
 
@@ -179,6 +103,7 @@ project_client.memory_stores.delete("my_memory_store")
 
 ## References
 
-- [Memory Usage Guide](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/memory-usage)
+- [Memory tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/memory-usage?view=foundry)
 - [Memory Concepts](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/what-is-memory)
+- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
 - [Python Samples](https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/ai/azure-ai-projects/samples/memories)

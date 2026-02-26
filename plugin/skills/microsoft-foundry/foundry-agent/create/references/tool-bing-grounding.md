@@ -32,60 +32,19 @@ Access real-time web information via Bing Search. Unlike the [Web Search tool](t
 - Not supported with VPN/Private Endpoints
 - Usage incurs costs — see [pricing](https://www.microsoft.com/bing/apis/grounding-pricing)
 
-## Python SDK
-
-```python
-import os
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    PromptAgentDefinition, BingGroundingAgentTool,
-    BingGroundingSearchToolParameters, BingGroundingSearchConfiguration,
-)
-from azure.identity import DefaultAzureCredential
-
-with (
-    DefaultAzureCredential() as credential,
-    AIProjectClient(endpoint=os.environ["AZURE_AI_PROJECT_ENDPOINT"], credential=credential) as project_client,
-    project_client.get_openai_client() as openai_client,
-):
-    bing_conn = project_client.connections.get(os.environ["BING_PROJECT_CONNECTION_NAME"])
-
-    agent = project_client.agents.create_version(
-        agent_name="BingAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
-            instructions="You are a helpful assistant.",
-            tools=[
-                BingGroundingAgentTool(
-                    bing_grounding=BingGroundingSearchToolParameters(
-                        search_configurations=[
-                            BingGroundingSearchConfiguration(project_connection_id=bing_conn.id)
-                        ]
-                    )
-                )
-            ],
-        ),
-    )
-
-    stream = openai_client.responses.create(
-        stream=True, tool_choice="required",
-        input="What is the top AI news today?",
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-    # Process: response.output_text.delta for text, url_citation annotations for sources
-```
-
 ## Troubleshooting
 
 | Issue | Cause | Resolution |
 |-------|-------|------------|
-| Connection not found | Name mismatch or wrong project | List connections to find correct name |
+| Connection not found | Name mismatch or wrong project | Use `foundry_connections_list` to find correct name |
 | Unauthorized creating connection | Missing Azure AI Project Manager role | Assign role on the Foundry project |
 | Bing resource creation fails | Provider not registered | Run `az provider register --namespace 'Microsoft.Bing'` |
 | No results returned | Connection misconfigured | Verify Bing resource key and connection setup |
 
 ## References
 
+- [Bing Grounding tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/bing-grounding?view=foundry)
+- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
 - [Grounding with Bing Terms](https://www.microsoft.com/bing/apis/grounding-legal-enterprise)
 - [Connections Guide](../../../project/connections.md)
 - [Web Search Tool (default)](tool-web-search.md)
