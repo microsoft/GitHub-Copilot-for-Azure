@@ -58,10 +58,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Can I deploy models to Foundry? Check my permissions",
       "Validate my permissions on the Foundry project",
       "Set up managed identity for my Foundry project",
-      "Configure managed identity roles for Storage access",
+      "Configure RBAC setup for my Foundry project Storage access",
       "Create a service principal for Foundry CI/CD pipeline",
       "Set up service principal for Microsoft Foundry automation",
-      "Assign Azure AI Owner role to developer",
+      "Set up RBAC for a developer on my Foundry resource",
       "List all RBAC assignments on my Foundry resource",
       "Setup developer permissions for Foundry",
     ];

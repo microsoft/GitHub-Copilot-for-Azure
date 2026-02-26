@@ -10,111 +10,17 @@ Add tools to agents to extend capabilities. This file covers tools that work wit
 
 Enables agents to write and run Python in a sandboxed environment. Supports data analysis, chart generation, and file processing. Has [additional charges](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/) beyond token-based fees.
 
-```python
-import os
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    PromptAgentDefinition, CodeInterpreterTool, CodeInterpreterToolAuto,
-)
-from azure.identity import DefaultAzureCredential
-
-project_client = AIProjectClient(
-    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-with project_client:
-    openai_client = project_client.get_openai_client()
-
-    # Optional: upload a file for analysis
-    with open("data.csv", "rb") as f:
-        file = openai_client.files.create(purpose="assistants", file=f)
-
-    agent = project_client.agents.create_version(
-        agent_name="CodingAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["FOUNDRY_MODEL_DEPLOYMENT_NAME"],
-            instructions="You are a helpful assistant.",
-            tools=[CodeInterpreterTool(container=CodeInterpreterToolAuto(file_ids=[file.id]))],
-        ),
-    )
-
-    # Send request — response annotations contain generated file IDs
-    conversation = openai_client.conversations.create()
-    response = openai_client.responses.create(
-        conversation=conversation.id,
-        input="Create a bar chart from the uploaded CSV.",
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-    # Download generated files via container_file_citation annotations
-    # ann.file_id + ann.container_id → openai_client.containers.files.content.retrieve(...)
-```
-
 > Sessions: 1-hour active / 30-min idle timeout. Each conversation = separate billable session.
+
+For code samples, see: [Code Interpreter tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/code-interpreter?view=foundry)
 
 ## Function Calling
 
 Define custom functions the agent can invoke. Your app executes the function and returns results. Runs expire 10 minutes after creation — return tool outputs promptly.
 
-```python
-import os, json
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import PromptAgentDefinition, FunctionTool
-from azure.identity import DefaultAzureCredential
-from openai.types.responses.response_input_param import FunctionCallOutput
-
-project_client = AIProjectClient(
-    endpoint=os.environ["AZURE_AI_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-
-func_tool = FunctionTool(
-    name="get_weather",
-    parameters={
-        "type": "object",
-        "properties": {"location": {"type": "string", "description": "City name"}},
-        "required": ["location"],
-        "additionalProperties": False,
-    },
-    description="Get current weather for a location.",
-    strict=True,
-)
-
-def get_weather(location: str) -> str:
-    return f"Weather in {location}: 72°F, partly cloudy."
-
-with project_client:
-    agent = project_client.agents.create_version(
-        agent_name="WeatherAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
-            instructions="Use functions to answer questions.",
-            tools=[func_tool],
-        ),
-    )
-    openai_client = project_client.get_openai_client()
-    response = openai_client.responses.create(
-        input="What's the weather in Seattle?",
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-
-    # Process function calls — execute and return results
-    input_list = []
-    for item in response.output:
-        if item.type == "function_call":
-            result = get_weather(**json.loads(item.arguments))
-            input_list.append(FunctionCallOutput(
-                type="function_call_output", call_id=item.call_id,
-                output=json.dumps({"weather": result}),
-            ))
-
-    # Send output back for final response
-    response = openai_client.responses.create(
-        input=input_list, previous_response_id=response.id,
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-```
-
 > **Security:** Treat tool arguments as untrusted input. Don't pass secrets in tool output. Use `strict=True` for schema validation.
+
+For code samples, see: [Function Calling tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/function-calling?view=foundry)
 
 ## Tool Summary
 
@@ -130,3 +36,9 @@ with project_client:
 > ⚠️ **Default for web search:** Use `WebSearchPreviewTool` unless the user explicitly requests Bing Grounding or Bing Custom Search.
 
 > Combine multiple tools on one agent. The model decides which to invoke.
+
+## References
+
+- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
+- [Code Interpreter](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/code-interpreter?view=foundry)
+- [Function Calling](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/function-calling?view=foundry)
