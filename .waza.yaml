@@ -4,4 +4,4 @@
 # and by 'waza run' as fallback values when not specified in eval.yaml.
 defaults:
   engine: mock
-  model: claude-sonnet-4.6
+  model: claude-sonnet-4-20250514

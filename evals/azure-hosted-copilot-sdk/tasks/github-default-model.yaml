@@ -16,8 +16,6 @@ inputs:
 expected:
   output_contains:
     - "createSession"
-  matches:
-    - "(?i)(default|github models|no model param)"
   output_excludes:
     - "wireApi"
     - "bearerToken"

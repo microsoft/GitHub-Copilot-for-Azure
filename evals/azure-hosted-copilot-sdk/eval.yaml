@@ -3,7 +3,7 @@ name: azure-hosted-copilot-sdk-eval
 description: >
   Evaluation suite for the azure-hosted-copilot-sdk skill.
   Validates routing logic (scaffold, add-alongside, deploy-existing),
-  model configuration paths (GitHub default, GitHub specific, Azure BYOM),
+  model configuration paths (GitHub default, Azure BYOM),
   and negative-match behavior (skill should not activate for unrelated prompts).
 skill: azure-hosted-copilot-sdk
 version: "1.0"
@@ -13,7 +13,7 @@ config:
   timeout_seconds: 600
   parallel: false
   executor: mock
-  model: claude-sonnet-4.6
+  model: claude-sonnet-4-20250514
 
 graders:
   # Global grader: ensure no fatal errors appear in any task output

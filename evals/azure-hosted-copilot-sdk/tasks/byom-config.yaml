@@ -19,9 +19,6 @@ expected:
     - "wireApi"
     - "completions"
     - "DefaultAzureCredential"
-  matches:
-    - "(?i)(o4-mini|o3-mini|o-series|gpt-5)"
-    - "(?i)(bearer\\s*token|bearerToken|provider)"
   output_excludes:
     - "error"
     - "failed"

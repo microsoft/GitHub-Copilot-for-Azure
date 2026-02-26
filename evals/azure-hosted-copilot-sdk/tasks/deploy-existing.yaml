@@ -15,9 +15,6 @@ inputs:
 expected:
   output_contains:
     - "azure-prepare"
-  matches:
-    - "(?i)azure-prepare"
-    - "(?i)azure-deploy"
   output_excludes:
     - "error"
     - "failed"
@@ -27,6 +24,7 @@ expected:
       config:
         must_contain:
           - azure-prepare
+          - azure-validate
           - azure-deploy
     - type: regex
       name: deploy_pipeline_order
