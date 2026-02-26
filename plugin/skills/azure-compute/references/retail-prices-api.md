@@ -4,12 +4,12 @@ The [Azure Retail Prices API](https://learn.microsoft.com/en-us/rest/api/cost-ma
 
 ## Endpoint
 
-```
+```text
 https://prices.azure.com/api/retail/prices
 ```
 
 Preview version (includes savings plan rates):
-```
+```text
 https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview
 ```
 
@@ -17,26 +17,26 @@ https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview
 
 ### Basic VM price lookup
 
-```
+```http
 GET https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and armRegionName eq 'eastus' and armSkuName eq 'Standard_D4s_v5' and priceType eq 'Consumption'
 ```
 
 ### Filter by family (all D-series in a region)
 
-```
+```http
 GET https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and armRegionName eq 'eastus' and contains(armSkuName, 'Standard_D') and priceType eq 'Consumption'
 ```
 
 ### Reservation pricing
 
-```
+```http
 GET https://prices.azure.com/api/retail/prices?$filter=serviceName eq 'Virtual Machines' and armSkuName eq 'Standard_D4s_v5' and priceType eq 'Reservation'
 ```
 
 ### Non-USD currency
 
 Append `currencyCode` parameter:
-```
+```http
 GET https://prices.azure.com/api/retail/prices?currencyCode='EUR'&$filter=serviceName eq 'Virtual Machines' and armSkuName eq 'Standard_D4s_v5'
 ```
 

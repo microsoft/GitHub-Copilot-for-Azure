@@ -25,7 +25,7 @@ Select a VM family by matching the user's workload to the right category. Famili
 
 ## Decision Tree
 
-```
+```text
 Workload needs GPU?
 ├─ Yes → training/inference? → NC/ND-series
 │        visualization/VDI?  → NV/NG-series

@@ -4,8 +4,6 @@
  * Tests skill behavior with a real Copilot agent session.
  * Runs prompts multiple times to measure skill invocation rate.
  *
- * Covers the parent azure-compute skill and its recommender sub-skill.
- *
  * Prerequisites:
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
@@ -33,7 +31,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     const agent = useAgentRunner();
 
     describe("skill-invocation", () => {

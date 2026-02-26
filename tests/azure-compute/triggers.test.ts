@@ -4,7 +4,6 @@
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
  *
- * Covers both the parent azure-compute skill and the recommender sub-skill domain.
  */
 
 import { TriggerMatcher } from "../utils/trigger-matcher";
@@ -97,6 +96,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
             "Create a serverless function with AWS Lambda", // Wrong cloud provider
             "What is Docker Compose and how does it work?", // Unrelated
             "Help me configure nginx as a reverse proxy", // Unrelated
+            "Deploy my Node.js app to Azure"
         ];
 
         test.each(shouldNotTriggerPrompts)(
@@ -142,14 +142,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
                 "recommend an azure vm size"
             );
             expect(result1.triggered).toBe(result2.triggered);
-        });
-
-        test("disambiguates from deploy intent", () => {
-            // Deploy-only prompts should not trigger compute recommender
-            const result = triggerMatcher.shouldTrigger(
-                "Deploy my Node.js app to Azure"
-            );
-            expect(result.triggered).toBe(false);
         });
     });
 });
