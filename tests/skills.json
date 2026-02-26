@@ -4,6 +4,7 @@
         "azure-ai",
         "azure-aigateway",
         "azure-compliance",
+        "azure-compute",
         "azure-cost-optimization",
         "azure-deploy",
         "azure-diagnostics",
