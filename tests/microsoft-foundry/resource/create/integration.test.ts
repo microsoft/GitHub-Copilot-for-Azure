@@ -4,12 +4,7 @@
  * Tests the skill"s behavior when invoked with real scenarios
  */
 
-import path from "path";
-import { fileURLToPath } from "url";
 import { loadSkill, type LoadedSkill } from "../../../utils/skill-loader";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const SKILL_NAME = "microsoft-foundry";
 
