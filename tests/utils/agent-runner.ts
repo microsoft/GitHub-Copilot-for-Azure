@@ -390,7 +390,7 @@ export function useAgentRunner() {
       const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
       const session = await client.createSession({
-        model: "claude-sonnet-4.5",
+        model: process.env.MODEL_OVERRIDE || "claude-sonnet-4.5",
         onPermissionRequest: approveAll,
         skillDirectories: [skillDirectory],
         mcpServers: {
@@ -735,7 +735,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
     const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
     session = await client.createSession({
-      model: "claude-sonnet-4.5",
+      model: process.env.MODEL_OVERRIDE || "claude-sonnet-4.5",
       onPermissionRequest: approveAll,
       skillDirectories: [skillDirectory],
       mcpServers: {

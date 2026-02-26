@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"migrate my app\", \"deploy to Azure\", \"host on Azure\", \"generate azure.yaml\", \"generate Bicep\", \"prepare Azure Functions\", \"create function app\"."
+description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with terraform, Azure with azd, generate azure.yaml, generate Bicep, generate Terraform, prepare Azure Functions, create Azure Functions app, create serverless HTTP API, create function app, create event-driven function."
 ---
 
 # Azure Prepare
