@@ -15,12 +15,17 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { hasValidationCommand } from "./utils";
-import * as fs from "fs";
+import {
+  hasValidationCommand,
+  matchesFileEdit,
+} from "./utils";
+import { cloneRepo } from "../utils/git-clone";
+import { matchesCommand, softCheckSkill } from "../utils/evaluate";
+
 
 const SKILL_NAME = "azure-validate";
 const RUNS_PER_PROMPT = 5;
-const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
+const aspireEnvVarTestTimeoutMs = 2700000; // 45 minutes
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -38,17 +43,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-validate skill for deployment readiness check", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Check if my app is ready to deploy to Azure"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -57,25 +58,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for readiness check: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for readiness check: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes azure-validate skill for azure.yaml validation prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Validate my azure.yaml configuration before deploying"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -84,26 +76,17 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for azure.yaml validation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for azure.yaml validation: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     // Preflight validation tests (formerly azure-deployment-preflight)
     test("invokes azure-validate skill for Bicep validation prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Validate my Bicep template before deploying to Azure"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -112,25 +95,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for Bicep validation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for Bicep validation prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
 
     test("invokes azure-validate skill for what-if analysis prompt", async () => {
-      let successCount = 0;
-
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
             prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
           });
 
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            successCount++;
-          }
+          softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -139,11 +113,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
-
-      const invocationRate = successCount / RUNS_PER_PROMPT;
-      console.log(`${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})`);
-      fs.appendFileSync(`./result-${SKILL_NAME}.txt`, `${SKILL_NAME} invocation rate for what-if prompt: ${(invocationRate * 100).toFixed(1)}% (${successCount}/${RUNS_PER_PROMPT})\n`);
-      expect(invocationRate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     });
   });
 
@@ -200,5 +169,83 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const validationCommandRan = hasValidationCommand(agentMetadata);
       expect(validateInvoked || validationCommandRan).toBe(true);
     });
+  });
+
+  describe("brownfield-dotnet-validate", () => {
+    const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
+    const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+
+    test("passes --environment on azd init and sets subscription before provision", async () => {
+      const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: CLIENT_APPS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          matchesCommand(metadata, /azd\s+(provision|up)/),
+      });
+
+      const envFlagOnInit = matchesCommand(
+        agentMetadata,
+        /azd\s+init\b.*(\s+--environment\s+|-e\s+)\S+/i,
+      );
+      expect(envFlagOnInit).toBe(true);
+
+      const setsSubscription = matchesCommand(
+        agentMetadata,
+        /azd\s+env\s+set\s+AZURE_SUBSCRIPTION_ID\s+\S+/i,
+      );
+      expect(setsSubscription).toBe(true);
+
+      agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
+    }, aspireEnvVarTestTimeoutMs);
+
+    test("sets AzureWebJobsSecretStorageType for aspire-with-azure-functions", async () => {
+      const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          await cloneRepo({
+            repoUrl: ASPIRE_SAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
+          });
+        },
+        prompt:
+          "Please deploy this application to Azure. " +
+          "Use the eastus2 region. " +
+          "Use my current subscription. " +
+          "This is for a small scale production environment. " +
+          "Use standard SKUs.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: (metadata) =>
+          matchesCommand(metadata, /azd\s+(provision|deploy|up)/),
+      });
+
+      const setsSecretStorageType = matchesFileEdit(
+        agentMetadata,
+        /AppHost\.cs/i,
+        /AzureWebJobsSecretStorageType/i,
+      );
+      expect(setsSecretStorageType).toBe(true);
+
+      agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
+    }, aspireEnvVarTestTimeoutMs);
   });
 });

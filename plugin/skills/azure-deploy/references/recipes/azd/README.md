@@ -22,6 +22,8 @@ Deploy to Azure using Azure Developer CLI (azd).
 | 3 | **Post-Deploy** | [Post-Deployment Steps](post-deployment.md) — If using SQL + managed identity |
 | 4 | **Verify** | See [Verification](verify.md) |
 
+> ⚠️ **Important:** For .NET Aspire projects or projects using azd "limited mode" (no explicit `infra/` folder), verify that `azd provision` populated all required environment variables. If `azd deploy` fails with errors about missing `AZURE_CONTAINER_REGISTRY_ENDPOINT`, `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, or `MANAGED_IDENTITY_CLIENT_ID`, see [Error Handling](errors.md#missing-container-registry-variables) for the resolution.
+
 ## Common Mistakes
 
 | ❌ Wrong | Why It Fails |
@@ -34,6 +36,8 @@ Deploy to Azure using Azure Developer CLI (azd).
 | `language: html` or `language: static` | Not valid - use `language: js` with `dist: .` for static sites |
 
 ## Deployment Commands
+
+> ⚠️ `azd up` takes 5-15 min. Run with output **streamed visibly to the user** — do NOT run silently or suppress output. The user must see provisioning progress in real time.
 
 ### Full Deployment
 

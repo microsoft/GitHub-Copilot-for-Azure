@@ -44,27 +44,20 @@ const shouldNotTriggerPrompts = [
 ```yaml
 ---
 name: appinsights-instrumentation
-description: |
-  Instrument web applications to send telemetry data to Azure Application Insights
-  for monitoring and diagnostics. USE FOR: "add App Insights", "instrument my app",
-  "set up application monitoring", "add telemetry", "track requests and dependencies",
-  "ASP.NET Core telemetry", "Node.js Application Insights". DO NOT USE FOR: querying
-  existing logs (use azure-observability), creating alerts or dashboards, analyzing
-  costs, or Azure Monitor metrics queries.
+description: "Instrument web applications to send telemetry to Azure Application Insights for monitoring and diagnostics. WHEN: \"add App Insights\", \"instrument my app\", \"set up application monitoring\", \"add telemetry\", \"track requests and dependencies\", \"ASP.NET Core telemetry\", \"Node.js Application Insights\"."
 ---
 ```
 
 **Metrics:**
 - Score: Medium-High ✅
 - Tokens: ~385 (under 500 budget ✅)
-- Triggers: 7
-- Anti-triggers: 4
+- Triggers: 7 (WHEN: format)
 
 **Improvements:**
-- ✅ 385 characters - informative but under 1024 limit
-- ✅ Clear description of purpose
-- ✅ Explicit "USE FOR:" trigger phrases
-- ✅ "DO NOT USE FOR:" anti-triggers prevent collision
+- ✅ Informative but concise (under 60 words)
+- ✅ Uses inline double-quoted string (skills.sh compatible)
+- ✅ Explicit "WHEN:" trigger phrases with quoted keywords
+- ✅ No "DO NOT USE FOR:" (avoids keyword contamination)
 
 **triggers.test.ts:**
 ```javascript
@@ -114,20 +107,14 @@ description: 'Azure Security Services including Key Vault, Managed Identity, RBA
 ```yaml
 ---
 name: azure-security
-description: |
-  Overview of Azure security services and concepts including Key Vault, Managed Identity,
-  RBAC, Entra ID, and Defender for Cloud. USE FOR: "Azure security overview", "what
-  security services are available", "explain managed identity", "RBAC basics", "Key Vault
-  concepts", "Entra ID overview", "Defender for Cloud features". DO NOT USE FOR: hardening
-  existing resources (use azure-security-hardening), Entra app registration setup (use
-  entra-app-registration), or role assignment guidance (use azure-rbac).
+description: "Overview of Azure security services and concepts including Key Vault, Managed Identity, RBAC, Entra ID, and Defender for Cloud. WHEN: \"Azure security overview\", \"what security services are available\", \"explain managed identity\", \"RBAC basics\", \"Key Vault concepts\", \"Entra ID overview\", \"Defender for Cloud features\"."
 ---
 ```
 
 **Improvements:**
 - ✅ Reframed as "overview/concepts" skill
-- ✅ Explicit triggers for educational queries
-- ✅ Clear anti-triggers pointing to specialized skills
+- ✅ Explicit WHEN: triggers for educational queries
+- ✅ No "DO NOT USE FOR:" (avoids keyword contamination with azure-security-hardening, entra-app-registration)
 
 ---
 
@@ -139,7 +126,7 @@ description: |
 ```yaml
 ---
 name: azure-deploy
-description: |
+description: >-
   Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
   USE THIS SKILL when users want to deploy, publish, host, or run their application
   on Azure. This skill detects application type and recommends optimal Azure service.
@@ -157,20 +144,14 @@ description: |
 ```yaml
 ---
 name: azure-deploy
-description: |
-  Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
-  USE FOR: "deploy to Azure", "host on Azure", "publish to Azure", "run on Azure",
-  "azd up", "deploy my app", "push to Azure", "get this running in the cloud".
-  DO NOT USE FOR: initial project setup (use azure-create-app), validating Bicep
-  before deployment (use azure-deployment-preflight), or troubleshooting failed
-  deployments (use azure-diagnostics).
+description: "Deploy applications to Azure App Service, Azure Functions, and Static Web Apps. WHEN: \"deploy to Azure\", \"host on Azure\", \"publish to Azure\", \"run on Azure\", \"azd up\", \"deploy my app\", \"push to Azure\", \"get this running in the cloud\"."
 ---
 ```
 
 **Improvements:**
-- ✅ Added "DO NOT USE FOR:" section
-- ✅ Clear handoff to related skills
-- ✅ Prevents deployment vs. setup confusion
+- ✅ Uses WHEN: with distinctive quoted trigger phrases
+- ✅ No "DO NOT USE FOR:" — previously mentioned "azure-create-app" and "azure-deployment-preflight" which caused keyword contamination
+- ✅ Concise and cross-model optimized
 
 ---
 
@@ -237,26 +218,36 @@ sensei: improve appinsights-instrumentation frontmatter
 
 ## Anti-Pattern Examples
 
-### ❌ Don't Do This: Single-Line Long Description
+### ❌ Don't Do This: Anti-Trigger Keyword Contamination
 
 ```yaml
-description: Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings. DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
+description: "Deploy to Azure. USE FOR: \"deploy app\", \"push to production\". DO NOT USE FOR: Function apps (use azure-functions), storage accounts (use azure-storage), Kubernetes (use azure-aks)."
 ```
 
-**Problem:** Single-line descriptions over 200 characters are hard to read, review, and maintain. Use multi-line YAML format (`|`) instead:
+**Problem:** The "DO NOT USE FOR" clause introduces "Function apps", "storage", "Kubernetes" — on Claude Sonnet these keywords cause this skill to activate for Functions, Storage, and AKS tasks. Remove anti-triggers and use positive routing with distinctive `WHEN:` phrases instead.
+
+### ❌ Don't Do This: Description Too Dense (>60 words)
 
 ```yaml
-description: |
-  Identify and quantify cost savings across Azure subscriptions by analyzing actual costs,
-  utilization metrics, and generating actionable optimization recommendations. USE FOR:
-  optimize Azure costs, reduce Azure spending, analyze Azure costs, find cost savings.
-  DO NOT USE FOR: cost estimation for new resources (use azure-cost-estimation).
+description: "This skill orchestrates the complete Azure deployment workflow including preparation, validation, and execution phases for web applications, APIs, Function apps, container apps, and static web apps. It generates Bicep templates, Terraform configurations, azure.yaml files, and Dockerfiles. USE FOR: deploy, create app, build, migrate, modernize, prepare, validate, provision, configure, set up, initialize..."
 ```
+
+**Problem:** At 60+ words, Sonnet's attention is diluted across all 24+ skill descriptions. Cap at ≤60 words and front-load the unique signal.
+
+### ❌ Don't Do This: Using >- Folded Scalars
+
+```yaml
+description: >-
+  Deploy applications to Azure App Service, Azure Functions, and Static Web Apps.
+  USE FOR: "deploy to Azure", "host on Azure", "publish to Azure".
+```
+
+**Problem:** The `>-` folded scalar syntax is incompatible with skills.sh and other registries. Use inline double-quoted strings instead.
 
 ### ❌ Don't Do This: Overly Long Description
 
 ```yaml
-description: |
+description: >-
   This skill helps you instrument your web applications to send telemetry data
   to Azure Application Insights which is a feature of Azure Monitor that provides
   extensible application performance management (APM) and monitoring for live
@@ -275,7 +266,7 @@ description: |
 ### ❌ Don't Do This: Vague Anti-Triggers
 
 ```yaml
-description: |
+description: >-
   Deploy apps to Azure. USE FOR: deployment.
   DO NOT USE FOR: other stuff.
 ```
@@ -387,3 +378,25 @@ Creates GitHub issue:
   
   - [OPTIMIZATION-PATTERNS.md](/.github/skills/markdown-token-optimizer/references/OPTIMIZATION-PATTERNS.md)
   ```
+
+
+---
+
+## Skill Body Patterns
+
+Templates for structuring the SKILL.md body content, adapted from Anthropic's [Complete Guide to Building Skills](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf).
+
+### Pattern 1: Sequential Workflow
+Use when users need multi-step processes in a specific order. Key techniques: explicit step ordering, dependencies between steps, validation at each stage.
+
+### Pattern 2: Multi-MCP Coordination
+Use when workflows span multiple services or MCP servers. Key techniques: clear phase separation, data passing between MCPs, validation before next phase.
+
+### Pattern 3: Iterative Refinement
+Use when output quality improves with iteration. Generate draft, run validation, address issues, re-validate, repeat until quality threshold met.
+
+### Pattern 4: Context-Aware Tool Selection
+Use when the same outcome requires different tools depending on context. Build a decision tree with clear criteria, fallback options, and transparency about choices.
+
+### Pattern 5: Domain-Specific Intelligence
+Use when the skill adds specialized knowledge beyond tool access. Apply domain rules before processing, document compliance decisions, maintain audit trail.

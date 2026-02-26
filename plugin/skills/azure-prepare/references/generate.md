@@ -2,16 +2,41 @@
 
 Generate infrastructure and configuration files based on selected recipe.
 
-## CRITICAL: Check for Special Patterns First
+## ⛔ CRITICAL: Check for .NET Aspire Projects FIRST
 
-**Before manual generation, check if the project uses patterns that require `azd init --from-code`:**
+**MANDATORY: Before generating any files, detect .NET Aspire projects:**
+
+```bash
+# Method 1: Find AppHost project files
+find . -name "*.AppHost.csproj" -o -name "*AppHost.csproj"
+
+# Method 2: Search for Aspire packages
+grep -r "Aspire\.Hosting\|Aspire\.AppHost\.Sdk" . --include="*.csproj"
+```
+
+**If Aspire is detected:**
+1. ⛔ **STOP** - Do NOT manually create `azure.yaml`
+2. ⛔ **STOP** - Do NOT manually create `infra/` files
+3. ✅ **USE** - `azd init --from-code -e <env-name>` instead
+4. 📖 **READ** - [aspire.md](aspire.md) and [recipes/azd/aspire.md](recipes/azd/aspire.md) for complete guidance
+
+**Why this is critical:**
+- Aspire AppHost auto-generates infrastructure from code
+- Manual `azure.yaml` without `services` section causes "infra\main.bicep not found" error
+- `azd init --from-code` correctly detects AppHost and generates proper configuration
+
+> ⚠️ **Manually creating azure.yaml for Aspire projects is the most common deployment failure.** Always use `azd init --from-code`.
+
+## Check for Other Special Patterns
+
+After verifying the project is NOT Aspire, check for these patterns:
 
 | Pattern | Detection | Action |
 |---------|-----------|--------|
-| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code` → [aspire.md](aspire.md) |
 | **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code` |
+| **Existing azure.yaml** | File already present | MODIFY mode - update existing config |
 
-> ⚠️ **For .NET Aspire projects:** Do NOT manually create azure.yaml. Use `azd init --from-code` instead to auto-detect the AppHost. See [aspire.md](aspire.md) for details.
+> **CRITICAL:** After running `azd init --from-code`, you **MUST** immediately set the user-confirmed subscription with `azd env set AZURE_SUBSCRIPTION_ID <id>`. Do NOT skip this step. See [aspire.md](aspire.md) Step 3 for the complete sequence.
 
 ## CRITICAL: Research Must Be Complete
 

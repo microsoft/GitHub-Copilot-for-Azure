@@ -1,4 +1,15 @@
-# Functions Bicep Patterns
+# Functions Bicep Patterns — REFERENCE ONLY
+
+> ⛔ **DO NOT COPY THIS CODE DIRECTLY**
+>
+> This file contains **reference patterns** for understanding Azure Functions Bicep structure.
+> **You MUST use the composition algorithm** to generate infrastructure:
+>
+> 1. Load `templates/selection.md` to choose the correct base template
+> 2. Follow `templates/recipes/composition.md` for the exact algorithm
+> 3. Run `azd init -t <template>` to get proven, tested IaC
+>
+> Hand-writing Bicep from these patterns will result in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
 ## Flex Consumption (Recommended)
 
@@ -120,6 +131,12 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 
 ## Consumption Plan (Legacy)
 
+> ⛔ **DO NOT USE** — Y1/Dynamic SKU is deprecated for new deployments.
+> **ALWAYS use Flex Consumption (FC1)** for all new Azure Functions.
+> The Y1 example below is only for reference when migrating legacy apps.
+
+**⚠️ Not recommended for new deployments. Use Flex Consumption instead.**
+
 ```bicep
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: '${resourcePrefix}func${uniqueHash}'
@@ -231,3 +248,9 @@ resource functionAppPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   }
 }
 ```
+
+## Functions on Azure Container Apps (Aspire)
+
+> ⚠️ **Important for .NET Aspire:** When deploying Azure Functions to Azure Container Apps with identity-based storage, you must configure `AzureWebJobsSecretStorageType=Files`.
+
+See [aspire-containerapps.md](aspire-containerapps.md) for complete guidance on Functions running on Azure Container Apps and configuration examples.

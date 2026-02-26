@@ -1,9 +1,6 @@
 ---
 name: azure-deploy
-description: |
-  Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands.
-  USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, bicep deploy, terraform apply.
-  DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate).
+description: "Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands. USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, deploy function app, deploy serverless function, deploy Azure Functions to cloud, bicep deploy, terraform apply. DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate)."
 ---
 
 # Azure Deploy

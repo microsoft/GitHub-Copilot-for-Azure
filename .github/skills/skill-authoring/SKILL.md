@@ -1,6 +1,6 @@
 ---
 name: skill-authoring
-description: "Guidelines for writing Agent Skills. TRIGGERS: create a skill, new skill, write a skill, skill template, skill structure, review skill, skill PR, skill compliance, agentskills spec, SKILL.md format, skill frontmatter, skill best practices"
+description: "Guidelines for writing Agent Skills that comply with the agentskills.io specification. WHEN: \"create a skill\", \"new skill\", \"write a skill\", \"skill template\", \"skill structure\", \"review skill\", \"skill PR\", \"skill compliance\", \"SKILL.md format\", \"skill frontmatter\", \"skill best practices\"."
 ---
 
 # Skill Authoring Guide
@@ -17,7 +17,10 @@ This skill provides guidance for writing Agent Skills that comply with the [agen
 ## Constraints
 
 - `name`: 1-64 chars, lowercase + hyphens, match directory
-- `description`: 1-1024 chars, explain WHAT and WHEN
+- `description`: 1-1024 chars, ≤60 words, explain WHAT and WHEN
+- Use `WHEN:` with quoted trigger phrases (preferred over `USE FOR:`)
+- Do NOT use `DO NOT USE FOR:` (keyword contamination on Sonnet)
+- Use inline double-quoted strings (not `>-` folded scalars)
 - SKILL.md: <500 tokens (soft), <5000 (hard)
 - references/*.md: <1000 tokens each
 

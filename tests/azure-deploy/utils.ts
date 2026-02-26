@@ -1,4 +1,26 @@
-import { type AgentMetadata, getAllAssistantMessages, isSkillInvoked, getToolCalls } from "../utils/agent-runner";
+import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
+import { matchesCommand, softCheckSkill } from "../utils/evaluate";
+
+/** Env-var patterns expected when deploying container-based Aspire apps. */
+const CONTAINER_DEPLOY_ENV_PATTERNS: readonly RegExp[] = [
+  /AZURE_CONTAINER_REGISTRY_ENDPOINT/i,
+  /AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID/i,
+  /MANAGED_IDENTITY_CLIENT_ID/i,
+];
+
+/**
+ * Soft-check that the agent set the expected container deploy env vars.
+ * Emits warnings (testComments) instead of failing the test.
+ */
+export function softCheckContainerDeployEnvVars(agentMetadata: AgentMetadata): void {
+  for (const pattern of CONTAINER_DEPLOY_ENV_PATTERNS) {
+    if (!matchesCommand(agentMetadata, pattern)) {
+      agentMetadata.testComments.push(
+        `⚠️ Expected container deploy env var matching ${pattern} to be set, but it was not found.`
+      );
+    }
+  }
+}
 
 /**
  * Common Azure deployment link patterns
@@ -23,57 +45,7 @@ export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
 }
 
 export function softCheckDeploySkills(agentMetadata: AgentMetadata): void {
-  const isDeploySkillUsed = isSkillInvoked(agentMetadata, "azure-deploy");
-  const isValidateInvoked = isSkillInvoked(agentMetadata, "azure-validate");
-  const isPrepareInvoked = isSkillInvoked(agentMetadata, "azure-prepare");
-
-  if (!isDeploySkillUsed) {
-    agentMetadata.testComments.push("⚠️ azure-deploy skill was expected to be used but was not used.");
-  }
-  if (!isValidateInvoked) {
-    agentMetadata.testComments.push("⚠️ azure-validate skill was expected to be used but was not used.");
-  }
-  if (!isPrepareInvoked) {
-    agentMetadata.testComments.push("⚠️ azure-prepare skill was expected to be used but was not used.");
-  }
-}
-
-/**
- * Check if Terraform (.tf) files were generated
- * Searches broadly in agent metadata including tool calls, responses, and messages
- */
-export function hasTerraformFiles(agentMetadata: AgentMetadata): boolean {
-  // Check create tool calls (original method)
-  const fileToolCalls = getToolCalls(agentMetadata, "create");
-  const foundInToolCalls = fileToolCalls.some(event => {
-    const args = JSON.stringify(event.data);
-    return /\.tf"/i.test(args);
-  });
-
-  if (foundInToolCalls) return true;
-
-  // Also check all assistant messages for references to .tf files
-  // This catches cases where files were created via PowerShell or other methods
-  const allContent = getAllAssistantMessages(agentMetadata);
-  return /infra[/\\][\w.-]*\.tf"/i.test(allContent);
-}
-
-/**
- * Check if Bicep (.bicep) files were generated
- * Searches broadly in agent metadata including tool calls, responses, and messages
- */
-export function hasBicepFiles(agentMetadata: AgentMetadata): boolean {
-  // Check create tool calls (original method)
-  const fileToolCalls = getToolCalls(agentMetadata, "create");
-  const foundInToolCalls = fileToolCalls.some(event => {
-    const args = JSON.stringify(event.data);
-    return /\.bicep"/i.test(args);
-  });
-
-  if (foundInToolCalls) return true;
-
-  // Also check all assistant messages for references to .bicep files
-  // This catches cases where files were created via PowerShell or other methods
-  const allContent = getAllAssistantMessages(agentMetadata);
-  return /infra[/\\][\w.-]*\.bicep"/i.test(allContent);
+  softCheckSkill(agentMetadata, "azure-deploy");
+  softCheckSkill(agentMetadata, "azure-validate");
+  softCheckSkill(agentMetadata, "azure-prepare");
 }

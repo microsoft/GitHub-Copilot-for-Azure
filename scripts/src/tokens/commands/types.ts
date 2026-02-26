@@ -2,7 +2,8 @@
  * Shared types and utilities for token management
  */
 
-import { extname } from 'node:path';
+import { extname } from "node:path";
+import isMatch from "micromatch";
 
 export interface TokenCount {
   readonly tokens: number;
@@ -58,7 +59,7 @@ export interface FileComparison {
   readonly after: FileTokens | null;
   readonly diff: number;
   readonly percentChange: number;
-  readonly status: 'added' | 'removed' | 'modified' | 'unchanged';
+  readonly status: "added" | "removed" | "modified" | "unchanged";
 }
 
 export interface ComparisonSummary {
@@ -103,9 +104,6 @@ export interface FileAnalysis {
 /** Characters per token approximation */
 const CHARS_PER_TOKEN = 4;
 
-/** Maximum pattern length to prevent ReDoS attacks */
-export const MAX_PATTERN_LENGTH = 500;
-
 /** Maximum buffer size for git operations (10MB) */
 export const MAX_GIT_BUFFER_SIZE = 10 * 1024 * 1024;
 
@@ -121,26 +119,27 @@ export const TOKENS_PER_CODE_LINE = 16;
 export const TOKENS_PER_TABLE_ROW = 12;
 
 /** Common directories to exclude from scanning */
-export const EXCLUDED_DIRS = ['node_modules', '.git', 'dist', 'coverage'] as const;
+export const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "coverage"] as const;
 
 /** Default directories to scan for skills/agents */
-export const DEFAULT_SCAN_DIRS = ['.github/skills', 'plugin/skills', '.github/agents'] as const;
+export const DEFAULT_SCAN_DIRS = [".github/skills", "plugin/skills", ".github/agents"] as const;
 
 /** Supported markdown extensions */
-export const MARKDOWN_EXTENSIONS = ['.md', '.mdx'] as const;
+export const MARKDOWN_EXTENSIONS = [".md", ".mdx"] as const;
 
 /** Default token limits configuration */
 export const DEFAULT_LIMITS: TokenLimitsConfig = {
   defaults: {
-    'SKILL.md': 500,
-    'references/**/*.md': 1000,
-    'docs/**/*.md': 1500,
-    '*.md': 2000
+    "SKILL.md": 500,
+    "references/**/*.md": 1000,
+    "docs/**/*.md": 1500,
+    "**/*.md": 2000,
+    "*.md": 2000
   },
   overrides: {
-    'README.md': 3000,
-    'CONTRIBUTING.md': 2500,
-    'plugin/README.md': 3000
+    "README.md": 3000,
+    "CONTRIBUTING.md": 2500,
+    "plugin/README.md": 3000
   }
 };
 
@@ -157,34 +156,18 @@ export function isMarkdownFile(filename: string): boolean {
 
 /** Normalizes path separators to forward slashes */
 export function normalizePath(filePath: string): string {
-  return filePath.replace(/\\/g, '/');
-}
-
-/** Converts glob pattern to regex, preventing ReDoS attacks */
-export function globToRegex(pattern: string): RegExp {
-  if (pattern.length > MAX_PATTERN_LENGTH) {
-    throw new Error(`Pattern too long (max ${MAX_PATTERN_LENGTH} characters)`);
-  }
-  
-  const regexPattern = pattern
-    .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '{{GLOBSTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/{{GLOBSTAR}}/g, '.*?')  // Non-greedy to prevent catastrophic backtracking
-    .replace(/\//g, '\\/');
-  
-  return new RegExp(`(^|\\/)${regexPattern}$`);
+  return filePath.replace(/\\/g, "/");
 }
 
 /** Checks if file path matches a glob pattern */
 export function matchesPattern(filePath: string, pattern: string): boolean {
   const normalizedPath = normalizePath(filePath);
-  
-  if (!pattern.includes('/') && !pattern.includes('*')) {
-    return normalizedPath.endsWith('/' + pattern) || normalizedPath === pattern;
+
+  if (!pattern.includes("/") && !pattern.includes("*")) {
+    return normalizedPath.endsWith("/" + pattern) || normalizedPath === pattern;
   }
-  
-  return globToRegex(pattern).test(normalizedPath);
+
+  return isMatch(normalizedPath, pattern);
 }
 
 /**

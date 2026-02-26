@@ -28,12 +28,20 @@ jobs:
         working-directory: ./tests
         run: npm ci
 
+      - name: Install scripts dependencies
+        working-directory: ./scripts
+        run: npm ci
+
       - name: Typecheck
         working-directory: ./tests
         run: npm run typecheck
 
       - name: Lint test
         working-directory: ./tests
+        run: npm run lint
+
+      - name: Lint scripts
+        working-directory: ./scripts
         run: npm run lint
 
   # Token limit check and comparison for markdown files
@@ -172,6 +180,8 @@ jobs:
   skill-validation:
     name: Skill Structure
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout repository
@@ -220,6 +230,56 @@ jobs:
           done
           
           echo "All skill files have valid frontmatter"
+
+      - name: Validate skills.json
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Get all skill directories
+            const skillsDir = 'plugin/skills';
+            const skillDirs = fs.readdirSync(skillsDir)
+                .filter(f => fs.statSync(path.join(skillsDir, f)).isDirectory())
+                .sort();
+
+            // Read skills.json
+            const skillsJson = JSON.parse(fs.readFileSync('tests/skills.json', 'utf8'));
+            const jsonSkills = [...skillsJson.skills].sort();
+
+            let hasError = false;
+
+            // 1. skills.json enumerates all skills 
+            const skillDirsStr = JSON.stringify(skillDirs);
+            const jsonSkillsStr = JSON.stringify(jsonSkills);
+            if (skillDirsStr !== jsonSkillsStr) {
+                console.log();
+                console.log("skills in skills.json doesn't match available skills in plugin/skills/");
+                hasError = true;
+            }
+
+            // 2. Integration test schedule coverages all skills
+            let scheduledSkills = [];
+            Object.values(skillsJson.integrationTestSchedule).forEach(value => {
+                if (value) {
+                    value.split(',').forEach(s => scheduledSkills.push(s));
+                }
+            });
+
+            scheduledSkills = scheduledSkills.sort();
+
+            const scheduledSkillsStr = JSON.stringify(scheduledSkills);
+            if (skillDirsStr !== scheduledSkillsStr) {
+                console.log("skillDirs", JSON.stringify(skillDirs));
+                console.log("scheduledSkills", JSON.stringify(scheduledSkills));
+                console.log("integrationTestSchedule in skills.json doesn't match available skills in plugin/skills/");
+                hasError = true;
+            }
+
+            if (hasError) {
+                core.setFailed('tests/skills.json validation failed');
+            }
 
       - name: Skip message
         if: steps.changed-skills.outputs.any_changed != 'true'

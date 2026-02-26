@@ -1,6 +1,6 @@
 import { type AgentMetadata, getToolCalls } from "../utils/agent-runner";
 import * as fs from "fs";
-import * as path from "path";
+import { listFilesRecursive } from "../utils/evaluate";
 
 /**
  * Check if the agent has set the plan status to "Ready for Validation"
@@ -18,41 +18,6 @@ export function hasPlanReadyForValidation(metadata: AgentMetadata): boolean {
     const newStr = args?.new_str ?? "";
     return filePath.includes("plan.md") && /ready\s+for\s+validation/i.test(newStr);
   });
-}
-
-/**
- * Recursively list all files under a directory, returning paths relative to the root.
- * Paths are normalized to use forward slashes for cross-platform regex matching.
- */
-export function listFilesRecursive(dir: string): string[] {
-  return fs
-    .readdirSync(dir, { recursive: true })
-    .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
-}
-
-/**
- * Check if any file in the list matches the given regex pattern.
- */
-export function hasFile(files: string[], pattern: RegExp): boolean {
-  return files.some(f => pattern.test(f));
-}
-
-/**
- * List files in a workspace, log them, and assert expected/unexpected file patterns.
- */
-export function expectFiles(
-  workspacePath: string,
-  expected: RegExp[],
-  unexpected: RegExp[],
-): void {
-  const files = listFilesRecursive(workspacePath);
-
-  for (const pattern of expected) {
-    expect(hasFile(files, pattern)).toBe(true);
-  }
-  for (const pattern of unexpected) {
-    expect(hasFile(files, pattern)).toBe(false);
-  }
 }
 
 /**
@@ -75,6 +40,47 @@ export function getDockerContext(
   // Looks for: <serviceName>:\n  ...\n    docker:\n      ...\n      context: <value>
   const servicePattern = new RegExp(
     `^[ \\t]*${serviceName}:\\s*$[\\s\\S]*?^[ \\t]+docker:\\s*$[\\s\\S]*?^[ \\t]+context:\\s*(.+)$`,
+    "m"
+  );
+  const match = content.match(servicePattern);
+  return match?.[1]?.trim();
+}
+
+/**
+ * Check if azure.yaml has a services section with at least one service defined.
+ * Returns true if services section exists and has content, false otherwise.
+ */
+export function hasServicesSection(workspacePath: string): boolean {
+  const files = listFilesRecursive(workspacePath);
+  const azureYamlPath = files.find(f => f.endsWith("/azure.yaml"));
+  if (!azureYamlPath) return false;
+
+  const content = fs.readFileSync(azureYamlPath, "utf-8");
+
+  // Look for services: section with at least one service defined
+  // Pattern: services:\n  <service-name>:
+  const servicesPattern = /^services:\s*$\n^[ \t]+\S+:/m;
+  return servicesPattern.test(content);
+}
+
+/**
+ * Get the service name and project path from azure.yaml.
+ * Returns undefined if not found.
+ */
+export function getServiceProject(
+  workspacePath: string,
+  serviceName: string,
+): string | undefined {
+  const files = listFilesRecursive(workspacePath);
+  const azureYamlPath = files.find(f => f.endsWith("/azure.yaml"));
+  if (!azureYamlPath) return undefined;
+
+  const content = fs.readFileSync(azureYamlPath, "utf-8");
+
+  // Match the service block and find project: value
+  // Looks for: <serviceName>:\n  ...\n    project: <value>
+  const servicePattern = new RegExp(
+    `^[ \\t]*${serviceName}:\\s*$[\\s\\S]*?^[ \\t]+project:\\s*(.+)$`,
     "m"
   );
   const match = content.match(servicePattern);
