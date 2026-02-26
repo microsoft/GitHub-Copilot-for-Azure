@@ -1,5 +1,10 @@
 # Durable Task Scheduler — Python
 
+## Learn More
+
+- [Durable Task Scheduler documentation](https://learn.microsoft.com/azure/durable-task-scheduler/)
+- [Durable Functions Python guide](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-overview?tabs=python)
+
 ## Durable Functions Setup
 
 ### Required Packages
@@ -211,3 +216,4 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+

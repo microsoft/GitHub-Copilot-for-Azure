@@ -1,5 +1,10 @@
 # Durable Task Scheduler — Java
 
+## Learn More
+
+- [Durable Task Scheduler documentation](https://learn.microsoft.com/azure/durable-task-scheduler/)
+- [Durable Functions Java guide](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-overview?tabs=java)
+
 ## Durable Functions Setup
 
 ### Required Maven Dependencies
@@ -235,3 +240,4 @@ public class App {
     }
 }
 ```
+
