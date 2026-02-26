@@ -136,24 +136,7 @@ The report MUST be saved as `migration-assessment-report.md` in the workspace ro
 | `event` object | Trigger-specific parameter |
 | `context` object | `InvocationContext` |
 
-## 12. Risks & Mitigations
-
-| # | Risk | Severity | Mitigation |
-|---|------|----------|------------|
-| 1 | | High / Medium / Low | |
-
-> **⚠️ Include these risks when they apply to the migration:**
->
-> | Risk | Severity | When It Applies | Mitigation |
-> |------|----------|-----------------|------------|
-> | Blob trigger with EventGrid source requires always-ready instances on Flex Consumption (bootstrap problem) | High | S3 event → Blob trigger + EventGrid | Configure `alwaysReady: [{ name: 'blob', instanceCount: 1 }]` in Flex Consumption |
-> | Blob extension requires queue endpoint even when not using queue triggers | High | Any blob trigger with `source: 'EventGrid'` | Enable `AzureWebJobsStorage__queueServiceUri` + Storage Queue Data Contributor RBAC |
-> | Event Grid subscription must be deployed via Bicep/ARM, not CLI | High | EventGrid source blob triggers | Use Bicep with `listKeys()` for webhook URL — CLI webhook validation times out on Flex Consumption |
-> | Azure AI Vision SDK is beta-only | Medium | Rekognition → Azure AI Computer Vision | Pin exact beta version (e.g., `1.0.0-beta.3`); `^1.0.0` semver won't resolve |
-> | `azd init` refuses non-empty directories | Low | Any migration adding azd to existing project | Use temp directory approach: init in empty dir, copy infra files back |
-> | DefaultAzureCredential tries System Assigned identity first | Medium | UAMI-based auth for Azure AI or other SDK services | Pass `{ managedIdentityClientId: process.env.AZURE_CLIENT_ID }` explicitly |
-
-## 13. Recommendations
+## 12. Recommendations
 
 1. **Runtime**: <recommended Azure Functions runtime and version>
 2. **Hosting Plan**: <Flex Consumption / Premium>
@@ -161,7 +144,7 @@ The report MUST be saved as `migration-assessment-report.md` in the workspace ro
 4. **Auth Strategy**: <Managed Identity for all service-to-service>
 5. **Monitoring**: <Application Insights + Azure Monitor>
 
-## 14. Next Steps
+## 13. Next Steps
 
 - [ ] Review and approve this assessment report
 - [ ] Proceed to code migration (azure-migrate Phase 2)
