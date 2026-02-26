@@ -61,6 +61,11 @@ export interface AgentMetadata {
  */
 const testRunId = process.env.TEST_RUN_ID;
 
+/**
+ * The model to use for the agent run.
+ */
+const modelOverride = process.env.MODEL_OVERRIDE?.trim();
+
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
   prompt: string;
@@ -390,7 +395,7 @@ export function useAgentRunner() {
       const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
       const session = await client.createSession({
-        model: process.env.MODEL_OVERRIDE || "claude-sonnet-4.5",
+        model: modelOverride || "claude-sonnet-4.5",
         onPermissionRequest: approveAll,
         skillDirectories: [skillDirectory],
         mcpServers: {
@@ -735,7 +740,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
     const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
     session = await client.createSession({
-      model: process.env.MODEL_OVERRIDE || "claude-sonnet-4.5",
+      model: modelOverride || "claude-sonnet-4.5",
       onPermissionRequest: approveAll,
       skillDirectories: [skillDirectory],
       mcpServers: {
