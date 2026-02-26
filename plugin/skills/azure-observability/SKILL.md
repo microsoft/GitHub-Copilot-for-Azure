@@ -1,9 +1,17 @@
 ---
 name: azure-observability
 description: >-
-  Azure Observability Services including Azure Monitor, Application Insights, Log Analytics, Alerts, and Workbooks. Provides metrics, APM, distributed tracing, KQL queries, and interactive reports.
-  USE FOR: Azure Monitor, Application Insights, Log Analytics, Alerts, Workbooks, metrics, APM, distributed tracing, KQL queries, interactive reports, observability, monitoring dashboards.
-  DO NOT USE FOR: instrumenting apps with App Insights SDK (use appinsights-instrumentation), querying Kusto/ADX clusters (use azure-kusto), cost analysis (use azure-cost-optimization).
+  Monitor Azure applications and infrastructure using Azure Monitor, Application
+  Insights, Log Analytics, Alerts, and Workbooks. Query metrics, analyze logs
+  with KQL, configure alert rules, set up dashboards, and troubleshoot
+  performance.
+  USE FOR: monitor my app, set up Azure Monitor, configure Application Insights,
+  query logs with KQL, create alert rules, build monitoring dashboards, analyze
+  metrics, view distributed traces, set up observability, check application
+  performance.
+  DO NOT USE FOR: instrumenting apps with App Insights SDK code (use
+  appinsights-instrumentation), querying Kusto/ADX clusters (use azure-kusto),
+  cost analysis (use azure-cost-optimization).
 ---
 
 # Azure Observability Services
@@ -22,18 +30,38 @@ description: >-
 
 When Azure MCP is enabled:
 
-### Monitor
-- `azure__monitor` with command `monitor_metrics_query` - Query metrics
-- `azure__monitor` with command `monitor_logs_query` - Query logs with KQL
+### Monitor (azure__monitor)
+- `monitor_workspace_list` - List Log Analytics workspaces
+- `monitor_workspace_log_query` - Query logs across entire workspace with KQL
+- `monitor_resource_log_query` - Query logs for specific resource with KQL
+- `monitor_table_list` - List tables in workspace
+- `monitor_table_type_list` - List table types
+- `monitor_metrics_query` - Query metrics for resources
+- `monitor_metrics_definitions` - List available metric definitions
+- `monitor_activitylog_list` - List activity logs for resources
+- `monitor_healthmodels_entity_get` - Get health status of entity
+- `monitor_webtests_get` - Get or list web tests
+- `monitor_webtests_createorupdate` - Create/update availability web tests
 
-### Application Insights
-- `azure__applicationinsights` with command `applicationinsights_component_list` - List App Insights resources
+### Application Insights (azure__applicationinsights)
+- `applicationinsights_recommendation_list` - List code optimization recommendations from Profiler
 
-### Log Analytics
-- `azure__kusto` with command `kusto_cluster_list` - List clusters
-- `azure__kusto` with command `kusto_query` - Execute KQL queries
+### Azure Data Explorer (azure__kusto)
+Note: For Log Analytics workspace queries, use `azure__monitor` commands above.
+- `kusto_cluster_list` - List ADX clusters
+- `kusto_cluster_get` - Get cluster details
+- `kusto_database_list` - List databases
+- `kusto_table_list` - List tables
+- `kusto_table_schema` - Get table schema
+- `kusto_sample` - Sample table data
+- `kusto_query` - Execute KQL queries on ADX
 
-**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+### Workbooks (azure__workbooks)
+- `workbooks_list` - List workbooks in resource group
+- `workbooks_show` - Get workbook details
+- `workbooks_create` - Create new workbook
+- `workbooks_update` - Update existing workbook
+- `workbooks_delete` - Delete workbook (soft delete, 90-day retention)
 
 ## CLI Reference
 
