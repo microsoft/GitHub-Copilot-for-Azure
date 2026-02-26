@@ -19,7 +19,9 @@ Select a VM family by matching the user's workload to the right category. Famili
 | ML training, inference, rendering    | **GPU**               | NC-series (NCadsH100v5, NCasT4v3)  | NVIDIA GPU compute                                    |
 | Large-scale AI/ML training           | **GPU**               | ND-series (ND_MI300X_v5, NDH100v5) | Multi-GPU, high memory                                |
 | Virtual desktop, cloud gaming        | **GPU**               | NV-series (NVadsA10v5)             | GPU graphics/visualization                            |
+| Cloud gaming, VDI (AMD GPU)          | **GPU**               | NG-series (NGadsV620v1)            | AMD Radeon GPU; cost-effective graphics               |
 | Confidential workloads               | **Confidential**      | DC-series (DCasv5, DCadsv5)        | Hardware-based TEE isolation                          |
+| Confidential + encrypted memory      | **Confidential**      | EC-series (ECasv5, ECadsv5)        | TEE isolation with memory encryption                  |
 | CFD, weather simulation, FEA         | **HPC**               | HB/HC-series (HBv4, HBv5)          | InfiniBand, high memory bandwidth                     |
 | EDA, large memory HPC                | **HPC**               | HX-series                          | Very large memory capacity                            |
 

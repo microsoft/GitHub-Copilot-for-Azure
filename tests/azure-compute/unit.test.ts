@@ -26,8 +26,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
         test("description is appropriately sized", () => {
             // Descriptions should be 150-1024 chars for Medium-High compliance
-            expect(skill.metadata.description.length).toBeGreaterThan(150);
-            expect(skill.metadata.description.length).toBeLessThan(1024);
+            expect(skill.metadata.description.length).toBeGreaterThanOrEqual(150);
+            expect(skill.metadata.description.length).toBeLessThanOrEqual(1024);
         });
 
         test("description contains USE FOR triggers", () => {
