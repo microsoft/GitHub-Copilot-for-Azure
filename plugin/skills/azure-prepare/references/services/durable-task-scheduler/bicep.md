@@ -63,18 +63,17 @@ Include these entries in the Function App resource's `siteConfig.appSettings` ar
 
 ```bicep
 {
-  name: 'DTS_CONNECTION_STRING'
-  value: 'Endpoint=https://${scheduler.name}.durabletask.io;Authentication=ManagedIdentity'
-}
-{
-  name: 'TASKHUB_NAME'
-  value: taskHub.name
+  name: 'DURABLE_TASK_SCHEDULER_CONNECTION_STRING'
+  value: 'Endpoint=https://${scheduler.name}.durabletask.io;TaskHub=${taskHub.name};Authentication=ManagedIdentity'
 }
 ```
 
 ## Provision via CLI
 
 ```bash
+# Install the durabletask CLI extension (if not already installed)
+az extension add --name durabletask
+
 # Create scheduler (consumption SKU for getting started)
 az durabletask scheduler create \
     --resource-group myResourceGroup \

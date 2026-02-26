@@ -1,5 +1,10 @@
 # Durable Task Scheduler — JavaScript
 
+## Learn More
+
+- [Durable Task Scheduler documentation](https://learn.microsoft.com/azure/durable-task-scheduler/)
+- [Durable Functions JavaScript guide](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-overview?tabs=javascript)
+
 ## Durable Functions Setup
 
 ### Required npm Packages
@@ -203,3 +208,4 @@ async function main() {
 
 main().catch(console.error);
 ```
+

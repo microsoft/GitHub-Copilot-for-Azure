@@ -1,5 +1,10 @@
 # Durable Task Scheduler — .NET
 
+## Learn More
+
+- [Durable Task Scheduler documentation](https://learn.microsoft.com/azure/durable-task-scheduler/)
+- [Durable Functions .NET isolated worker guide](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-dotnet-isolated-overview)
+
 ## Durable Functions Setup
 
 ### Required NuGet Packages
@@ -23,15 +28,15 @@
     "durableTask": {
       "storageProvider": {
         "type": "azureManaged",
-        "connectionStringName": "DTS_CONNECTION_STRING"
+        "connectionStringName": "DURABLE_TASK_SCHEDULER_CONNECTION_STRING"
       },
-      "hubName": "%TASKHUB_NAME%"
+      "hubName": "default"
     }
   }
 }
 ```
 
-> **💡 NOTE**: .NET isolated uses the `DurableTask.AzureManaged` NuGet package, which registers the `azureManaged` storage provider type. Other runtimes (Python, Java, JavaScript) use extension bundles and require `durabletask-scheduler` instead — see the respective language files.
+> **💡 NOTE**: .NET isolated uses the `DurableTask.AzureManaged` NuGet package, which registers the `azureManaged` storage provider type. Other runtimes (Python, Java, JavaScript) use extension bundles and require `durabletask-scheduler` instead — see the respective language files. All runtimes use the same `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` environment variable.
 
 ### local.settings.json
 
@@ -41,8 +46,7 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "DTS_CONNECTION_STRING": "Endpoint=http://localhost:8080;Authentication=None",
-    "TASKHUB_NAME": "default"
+    "DURABLE_TASK_SCHEDULER_CONNECTION_STRING": "Endpoint=http://localhost:8080;TaskHub=default;Authentication=None"
   }
 }
 ```
@@ -183,3 +187,4 @@ builder.Services.AddDurableTaskWorker()
 var client = DurableTaskClientBuilder.UseDurableTaskScheduler(connectionString).Build();
 string instanceId = await client.ScheduleNewOrchestrationInstanceAsync("MyOrchestration", input);
 ```
+

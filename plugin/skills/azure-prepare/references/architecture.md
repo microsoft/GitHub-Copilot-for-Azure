@@ -51,7 +51,10 @@ Select hosting stack and map components to Azure services.
 | Message Queue | Service Bus |
 | Pub/Sub | Event Grid |
 | Streaming | Event Hubs |
-| Workflow | Logic Apps, Durable Functions, Durable Task Scheduler |
+### Workflow & Orchestration
+
+| Need | Service |
+|------|---------||| Workflow | Logic Apps, Durable Functions, Durable Task Scheduler |
 
 ### Supporting (Always Include)
 
