@@ -2,4 +2,5 @@ param(
     [string]$BuildId
 )
 
-Write-Host "Invoking Copilot Benchmarks for Build ID: $BuildId"
+Write-Host "Listing key vaults in the resource group"
+az keyvault list --resource-group rg-msbench-eval-kv-azure-mcp --query "[].name" -o tsv
