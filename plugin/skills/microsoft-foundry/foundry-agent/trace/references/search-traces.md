@@ -24,16 +24,49 @@ dependencies
 
 ## Search by Response ID
 
+Auto-detect the response ID format to determine agent type:
+- `caresp_...` → Hosted agent (AgentServer)
+- `resp_...` → Prompt agent (Foundry Responses API)
+- `chatcmpl-...` → Azure OpenAI chat completions
+
 ```kql
 dependencies
 | where timestamp > ago(24h)
 | where customDimensions["gen_ai.response.id"] == "<response_id>"
-| project timestamp, name, duration, resultCode, success, operation_Id
+| project timestamp, name, duration, resultCode, success,
+    operation = tostring(customDimensions["gen_ai.operation.name"]),
+    model = tostring(customDimensions["gen_ai.request.model"]),
+    inputTokens = toint(customDimensions["gen_ai.usage.input_tokens"]),
+    outputTokens = toint(customDimensions["gen_ai.usage.output_tokens"]),
+    operation_Id, id, operation_ParentId
 ```
 
-Then use the `operation_Id` to fetch the full conversation (see [Conversation Detail](conversation-detail.md)).
+Then drill into the full conversation:
+
+> ⚠️ **STOP — read [Conversation Detail](conversation-detail.md) before writing your own drill-down query.** It contains the correct span tree reconstruction logic, event/exception queries, and eval correlation steps.
+
+Quick drill-down using the `operation_Id` from above:
+
+```kql
+dependencies
+| where operation_Id == "<operation_id_from_above>"
+| project timestamp, name, duration, resultCode, success,
+    spanId = id, parentSpanId = operation_ParentId,
+    operation = tostring(customDimensions["gen_ai.operation.name"]),
+    model = tostring(customDimensions["gen_ai.request.model"]),
+    inputTokens = toint(customDimensions["gen_ai.usage.input_tokens"]),
+    outputTokens = toint(customDimensions["gen_ai.usage.output_tokens"]),
+    responseId = tostring(customDimensions["gen_ai.response.id"]),
+    errorType = tostring(customDimensions["error.type"]),
+    toolName = tostring(customDimensions["gen_ai.tool.name"])
+| order by timestamp asc
+```
+
+Also check for eval results: see [Eval Correlation](eval-correlation.md).
 
 ## Search by Agent Name
+
+> **Note:** For hosted agents, `gen_ai.agent.name` in `dependencies` refers to *sub-agents* (e.g., `BingSearchAgent`), not the top-level hosted agent. See "Search by Hosted Agent Name" below.
 
 ```kql
 dependencies
@@ -50,6 +83,31 @@ dependencies
     totalOutputTokens = sum(toint(customDimensions["gen_ai.usage.output_tokens"]))
   by conversationId = tostring(customDimensions["gen_ai.conversation.id"]),
      operation_Id
+| order by startTime desc
+| take 50
+```
+
+## Search by Hosted Agent Name
+
+For hosted agents, the top-level agent name is recorded in the `traces` table under `azure.ai.agentserver.agent_name`, not in `dependencies`.
+
+```kql
+let ops = traces
+| where timestamp > ago(24h)
+| where customDimensions["azure.ai.agentserver.agent_name"] == "<agent_name>"
+| distinct operation_Id;
+dependencies
+| where timestamp > ago(24h)
+| where operation_Id in (ops)
+| where isnotempty(customDimensions["gen_ai.operation.name"])
+| summarize
+    startTime = min(timestamp),
+    endTime = max(timestamp),
+    spanCount = count(),
+    errorCount = countif(success == false),
+    totalInputTokens = sum(toint(customDimensions["gen_ai.usage.input_tokens"])),
+    totalOutputTokens = sum(toint(customDimensions["gen_ai.usage.output_tokens"]))
+  by operation_Id
 | order by startTime desc
 | take 50
 ```
@@ -77,3 +135,7 @@ union dependencies, requests, exceptions, traces
 | order by count_ desc
 | take 20
 ```
+
+## After Successful Query
+
+> 📝 **Reminder:** If this is the first trace query in this session, ensure App Insights connection info was persisted to `.env` (see [trace.md — Before Starting](../trace.md#before-starting--resolve-app-insights-connection)).

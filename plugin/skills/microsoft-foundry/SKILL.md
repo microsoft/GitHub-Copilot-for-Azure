@@ -2,8 +2,8 @@
 name: microsoft-foundry
 description: >-
   Use this skill for Microsoft Foundry (Azure AI Foundry) and all operation from Foundry MCP server: manage model deployment, manage hosted agent and prompt agent (create, deploy, invoke, run, troubleshoot, evaluate Foundry Agents), manage RBAC/permissions, manage quotas and capacity of deployments, manage Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, hosted agent, create agent, deploy agent, debug agent, invoke agent, run agent, evaluate agent, agent monitoring, analyze traces, trace analysis, App Insights agent telemetry, GenAI traces, agent KQL queries, slow agent latency, agent errors in production, deploy models, create project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, RBAC setup, deployment capacity, Deployment quota, manage deployments, model availability, azd deploy agent.
-  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic resource creation (use azure-create-app), AI Search/speech/OCR (use azure-ai).
+  USE FOR: Microsoft Foundry, AI Foundry, hosted agent, create agent, deploy agent, invoke agent, evaluate agent, evaluation results, evaluation scores, find by response ID, agent traces, agent App Insights, GenAI telemetry, slow agent, agent errors, conversation ID, deploy models, create project, set up Foundry, RBAC setup, deployment capacity, Deployment quota, model availability, azd deploy agent.
+  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), AI Search/speech/OCR (use azure-ai). USE INSTEAD OF azure-monitor or azure-applicationinsights for Foundry agent traces, evaluations, or GenAI telemetry.
 ---
 
 # Microsoft Foundry Skill
@@ -51,6 +51,7 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 | Start/stop agent container | deploy |
 | Evaluate/optimize an agent | [observe](foundry-agent/observe/observe.md) |
 | Analyze production traces / find errors | [trace](foundry-agent/trace/trace.md) |
+| Look up response ID / conversation ID | [trace](foundry-agent/trace/trace.md) |
 
 ## Agent: Project Context Resolution
 

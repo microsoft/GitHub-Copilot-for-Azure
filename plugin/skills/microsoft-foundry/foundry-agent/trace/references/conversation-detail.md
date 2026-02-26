@@ -19,7 +19,9 @@ dependencies
     outputTokens = toint(customDimensions["gen_ai.usage.output_tokens"]),
     responseId = tostring(customDimensions["gen_ai.response.id"]),
     finishReason = tostring(customDimensions["gen_ai.response.finish_reasons"]),
-    errorType = tostring(customDimensions["error.type"])
+    errorType = tostring(customDimensions["error.type"]),
+    toolName = tostring(customDimensions["gen_ai.tool.name"]),
+    toolCallId = tostring(customDimensions["gen_ai.tool.call.id"])
 | order by timestamp asc
 ```
 
@@ -39,7 +41,7 @@ Use `spanId` and `parentSpanId` to reconstruct the hierarchy:
 invoke_agent (root) ─── 4200ms
 ├── chat (LLM call #1) ─── 1800ms, gpt-4o, 450→120 tokens
 │   └── [output: "Let me check the weather..."]
-├── execute_tool (get_weather) ─── 200ms
+├── execute_tool (get_weather) [tool: remote_functions.weather_api] ─── 200ms
 │   └── [result: "rainy, 57°F"]
 ├── chat (LLM call #2) ─── 1500ms, gpt-4o, 620→85 tokens
 │   └── [output: "The weather in Paris is rainy, 57°F"]
@@ -76,3 +78,7 @@ exceptions
 ```
 
 Present exceptions inline in the span tree at their position in the timeline.
+
+## Step 5 — Fetch Evaluation Results
+
+See [Eval Correlation](eval-correlation.md) for the full workflow to look up evaluation scores by response ID or conversation ID. Use `gen_ai.response.id` values from Step 1 spans to correlate.

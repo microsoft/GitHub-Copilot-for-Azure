@@ -10,4 +10,5 @@ Use this table to find the right skill for the user's intent:
 | Test / invoke / chat with agent | [invoke/](invoke/invoke.md) |
 | Evaluate & optimize agent quality | [observe/](observe/observe.md) |
 | Analyze production traces / App Insights / errors / latency | [trace/](trace/trace.md) |
+| Look up response ID / conversation ID from traces | [trace/](trace/trace.md) |
 | Debug container issues / check logs | [troubleshoot/](troubleshoot/) |
