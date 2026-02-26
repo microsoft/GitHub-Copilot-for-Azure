@@ -36,6 +36,9 @@ Activate this skill when user wants to:
 - Run `azd up` or `az deployment`
 - Ship code to production
 - Deploy Azure Functions to the cloud
+- Deploy API Management (APIM) gateway
+
+> **APIM / AI Gateway**: For APIM deployment, see [APIM Deployment Guide](../azure-prepare/references/apim.md). For AI governance policies, invoke **azure-aigateway** skill.
 
 ## Rules
 
