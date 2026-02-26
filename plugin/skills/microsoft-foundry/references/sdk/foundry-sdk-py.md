@@ -36,6 +36,8 @@ foundry_models_deploy(
 
 ## RAG Agent with Azure AI Search
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```python
 import os
 from azure.ai.projects import AIProjectClient

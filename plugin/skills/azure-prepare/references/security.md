@@ -245,7 +245,7 @@ Use Microsoft Defender for Cloud for:
 
 ## Azure Identity SDK
 
-All Azure SDKs use their language's Identity library for credential-free authentication via `DefaultAzureCredential` or managed identity. Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
+All Azure SDKs use their language's Identity library for credential-free authentication. Use `DefaultAzureCredential` for **local development only**; in production, use `ManagedIdentityCredential` or another deterministic credential — see [auth-best-practices.md](auth-best-practices.md). Rust uses `DeveloperToolsCredential` as it doesn't have a `DefaultAzureCredential` equivalent.
 
 | Language | Package | Install |
 |----------|---------|---------|
