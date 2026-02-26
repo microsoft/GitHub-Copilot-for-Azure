@@ -1,7 +1,10 @@
 ```skill
 ---
 name: azure-migrate
-description: "Assess and migrate applications to Azure, including AWS Lambda to Azure Functions migration. USE FOR: migrate Lambda to Functions, migrate AWS to Azure, Lambda migration assessment, migrate serverless to Azure, convert Lambda to Functions, AWS to Azure migration, migration readiness, migration assessment report, migrate code to Azure Functions. Handles assessment and code migration, then hands off to azure-prepare for IaC, azure-validate for validation, and azure-deploy for deployment. DO NOT USE FOR: creating new Azure apps from scratch (use azure-prepare), generating IaC from scratch (use azure-prepare), deploying apps (use azure-deploy), validating existing Azure configs (use azure-validate)."
+description: "Assess and migrate existing cloud workloads to Azure, including AWS Lambda to Azure Functions migration. WHEN: \"migrate Lambda to Functions\", \"migrate AWS to Azure\", \"Lambda migration assessment\", \"convert serverless to Azure\", \"migration readiness report\", \"migrate code to Azure Functions\"."
+license: MIT
+metadata:
+  version: "1.0"
 ---
 
 # Azure Migrate
