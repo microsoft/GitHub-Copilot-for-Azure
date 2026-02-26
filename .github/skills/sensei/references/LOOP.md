@@ -161,25 +161,24 @@ const SKILL_NAME = '{skill-name}';  // Replace placeholder
 **Action:** Enhance the SKILL.md frontmatter
 
 **Goals:**
-1. Add "USE FOR:" section with trigger phrases
-2. Add "DO NOT USE FOR:" section with anti-triggers
-3. Keep description under 1024 characters
-4. Maintain clarity and usefulness
+1. Add "WHEN:" section with distinctive quoted trigger phrases (preferred over "USE FOR:")
+2. Remove any "DO NOT USE FOR:" clauses (keyword contamination risk)
+3. Keep description under 60 words and 1024 characters
+4. Lead with unique action verb + domain
+
+> ⚠️ **Do NOT add "DO NOT USE FOR:" clauses.** They cause keyword contamination on Claude Sonnet — anti-triggers introduce the very keywords that trigger wrong-skill activation. Use positive routing with distinctive `WHEN:` phrases instead.
 
 **Strategy:**
 - Read skill content to understand purpose
-- Identify related skills for anti-triggers
-- Extract keywords that should trigger this skill
-- Identify scenarios that should NOT trigger this skill
+- Identify distinctive action verbs and domain for lead sentence
+- Extract 3-5 quoted phrases unique to this skill for WHEN: triggers
+- Keep total description ≤60 words for cross-model reliability
 
 **Template:**
 ```yaml
 ---
 name: {skill-name}
-description: >-
-  [What the skill does - 1-2 sentences]
-  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5]
-  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2] (use another-skill)
+description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\", \"[phrase4]\", \"[phrase5]\"."
 ---
 ```
 
@@ -193,12 +192,11 @@ description: >-
 **Updates needed:**
 
 1. **shouldTriggerPrompts** (minimum 5):
-   - Match the "USE FOR:" phrases
+   - Match the "WHEN:" or "USE FOR:" phrases
    - Include variations and natural language
    - Cover the skill's primary use cases
 
 2. **shouldNotTriggerPrompts** (minimum 5):
-   - Match the "DO NOT USE FOR:" scenarios
    - Include unrelated topics (weather, poetry)
    - Include other cloud providers (AWS, GCP)
    - Include related but different Azure services
