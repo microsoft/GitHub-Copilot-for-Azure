@@ -35,6 +35,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What role should I use for my identity to write to Event Hubs?",
       "Help me find the minimal RBAC role for SQL Database read access",
       "I want to assign a role to read secrets from Key Vault with least privilege",
+      // New: Permissions to grant roles
+      "what RBAC/access roles do I need to grant access to storage accounts in the azure portal, or in copilot, for Web Apps and Functions",
+      "what role do I need to grant Storage Blob Data Owner access to a Web App or Function resource",
+      "what RBAC role needs to be given so a portal user can grant Storage Blob Data Owner access to a Web App or Function resource",
+      "What permissions do I need to assign roles to managed identities?",
+      "I'm getting authorization errors when trying to assign roles, what do I need?",
+      "What role allows me to grant access to other identities?",
+      "Do I need User Access Administrator to assign roles?",
     ];
 
     test.each(shouldTriggerPrompts)(
