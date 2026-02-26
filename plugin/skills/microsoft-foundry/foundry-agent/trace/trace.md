@@ -33,10 +33,9 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 
 ## Before Starting — Resolve App Insights Connection
 
-1. Check `.env` for `APPLICATIONINSIGHTS_CONNECTION_STRING` or `AZURE_APPINSIGHTS_RESOURCE_ID`
+1. Check `.env` (or the same config file hosting other project variables) for `APPLICATIONINSIGHTS_CONNECTION_STRING` or `AZURE_APPINSIGHTS_RESOURCE_ID`
 2. If not found, use `project_connection_list` (foundry-mcp tool) to discover App Insights linked to the Foundry project — this is the most reliable way to find the correct App Insights resource. Filter results for Application Insights connection type.
-3. Confirm the App Insights resource with the user before querying
-4. **Persist to `.env`** — after successfully resolving App Insights, save the connection info so future sessions don't repeat discovery:
+3. **IMMEDIATELY write back to `.env`** — as soon as `project_connection_list` returns App Insights info, write it to `.env` (or the same config file where `AZURE_AI_PROJECT_ENDPOINT` etc. live) BEFORE running any queries. Do not defer this step. This ensures future sessions skip discovery entirely.
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
@@ -45,6 +44,7 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 
 If a `.env` file already exists, read it first and merge — do not overwrite existing values without confirmation.
 
+4. Confirm the App Insights resource with the user before querying
 5. Delegate KQL execution to the `azure-kusto` skill
 
 ## Behavioral Rules
