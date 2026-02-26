@@ -31,6 +31,8 @@
 }
 ```
 
+> **💡 NOTE**: .NET isolated uses the `DurableTask.AzureManaged` NuGet package, which registers the `azureManaged` storage provider type. Other runtimes (Python, Java, JavaScript) use extension bundles and require `durabletask-scheduler` instead — see the respective language files.
+
 ### local.settings.json
 
 ```json
@@ -151,6 +153,8 @@ var retryOptions = new TaskOptions
         backoffCoefficient: 2.0,
         maxRetryInterval: TimeSpan.FromMinutes(1))
 };
+
+var input = context.GetInput<string>();
 
 try
 {

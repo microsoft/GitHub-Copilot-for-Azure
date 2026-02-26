@@ -20,15 +20,21 @@ azure-identity
   "version": "2.0",
   "extensions": {
     "durableTask": {
+      "hubName": "default",
       "storageProvider": {
-        "type": "azureManaged",
-        "connectionStringName": "DTS_CONNECTION_STRING"
-      },
-      "hubName": "%TASKHUB_NAME%"
+        "type": "durabletask-scheduler",
+        "connectionStringName": "DURABLE_TASK_SCHEDULER_CONNECTION_STRING"
+      }
     }
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[4.*, 5.0.0)"
   }
 }
 ```
+
+> **💡 NOTE**: Python uses extension bundles, so the storage provider type is `durabletask-scheduler`. .NET isolated uses the NuGet package directly and requires `azureManaged` instead — see [dotnet.md](dotnet.md).
 
 ### local.settings.json
 
@@ -38,8 +44,7 @@ azure-identity
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "DTS_CONNECTION_STRING": "Endpoint=http://localhost:8080;Authentication=None",
-    "TASKHUB_NAME": "default"
+    "DURABLE_TASK_SCHEDULER_CONNECTION_STRING": "Endpoint=http://localhost:8080;TaskHub=default;Authentication=None"
   }
 }
 ```
