@@ -21,129 +21,11 @@ For **keyless authentication** (recommended), assign these roles to the **Foundr
 | **Search Index Data Contributor** | AI Search resource | Read/write index data |
 | **Search Service Contributor** | AI Search resource | Manage search service config |
 
-### Assign via CLI
-
-```bash
-# Get the project managed identity principal ID from the Foundry portal or CLI
-SEARCH_RESOURCE_ID="/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Search/searchServices/<search-name>"
-PRINCIPAL_ID="<project-managed-identity-object-id>"
-
-az role assignment create \
-  --assignee "$PRINCIPAL_ID" \
-  --role "Search Index Data Contributor" \
-  --scope "$SEARCH_RESOURCE_ID"
-
-az role assignment create \
-  --assignee "$PRINCIPAL_ID" \
-  --role "Search Service Contributor" \
-  --scope "$SEARCH_RESOURCE_ID"
-```
-
 > **If RBAC assignment fails:** Ask the user to manually assign roles in Azure portal → AI Search resource → Access control (IAM). They need Owner or User Access Administrator on the search resource.
 
-## Create the Connection
+## Connection Setup
 
-See [Project Connections](../../../project/connections.md) for full connection CRUD helpers.
-
-**Quick setup (keyless):**
-```bash
-# connection.yml
-cat <<EOF > connection.yml
-name: my-search-connection
-type: azure_ai_search
-endpoint: https://<search-name>.search.windows.net/
-EOF
-
-az ml connection create --file connection.yml \
-  --resource-group <rg> --workspace-name <project-name>
-```
-
-## Environment Variables
-
-```bash
-export FOUNDRY_PROJECT_ENDPOINT="https://<resource>.services.ai.azure.com/api/projects/<project>"
-export FOUNDRY_MODEL_DEPLOYMENT_NAME="gpt-4o"
-export AZURE_AI_SEARCH_CONNECTION_NAME="my-search-connection"
-export AI_SEARCH_INDEX_NAME="my-index"
-```
-
-## Full Code Sample
-
-```python
-import os
-from dotenv import load_dotenv
-from azure.identity import DefaultAzureCredential
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    AzureAISearchAgentTool,
-    PromptAgentDefinition,
-    AzureAISearchToolResource,
-    AISearchIndexResource,
-    AzureAISearchQueryType,
-)
-
-load_dotenv()
-
-project_client = AIProjectClient(
-    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-openai_client = project_client.get_openai_client()
-
-with project_client:
-    # Resolve connection ID from name
-    azs_connection = project_client.connections.get(
-        os.environ["AZURE_AI_SEARCH_CONNECTION_NAME"]
-    )
-    connection_id = azs_connection.id
-    print(f"Connection ID: {connection_id}")
-
-    agent = project_client.agents.create_version(
-        agent_name="SearchAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["FOUNDRY_MODEL_DEPLOYMENT_NAME"],
-            instructions="""You are a helpful assistant. Always provide citations
-            using the search tool. Render as: [message_idx:search_idx†source].""",
-            tools=[
-                AzureAISearchAgentTool(
-                    azure_ai_search=AzureAISearchToolResource(
-                        indexes=[
-                            AISearchIndexResource(
-                                project_connection_id=connection_id,
-                                index_name=os.environ["AI_SEARCH_INDEX_NAME"],
-                                query_type=AzureAISearchQueryType.VECTOR_SEMANTIC_HYBRID,
-                            ),
-                        ]
-                    )
-                )
-            ],
-        ),
-    )
-    print(f"Agent created: {agent.name} v{agent.version}")
-
-    # Stream a query with citations
-    stream = openai_client.responses.create(
-        stream=True,
-        tool_choice="required",
-        input="What services are available?",
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-    for event in stream:
-        if event.type == "response.output_text.delta":
-            print(event.delta, end="")
-        elif event.type == "response.output_item.done":
-            if event.item.type == "message":
-                text = event.item.content[-1]
-                if text.type == "output_text":
-                    for ann in text.annotations:
-                        if ann.type == "url_citation":
-                            print(f"\nCitation: {ann.url}")
-
-    # Cleanup
-    project_client.agents.delete_version(
-        agent_name=agent.name, agent_version=agent.version
-    )
-```
+A project connection between your Foundry project and the Azure AI Search resource is required. See [Project Connections](../../../project/connections.md) for connection management via Foundry MCP tools.
 
 ## Query Types
 
@@ -159,7 +41,7 @@ with project_client:
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `project_connection_id` | Yes | Connection ID (resolve via `connections.get(name).id`) |
+| `project_connection_id` | Yes | Connection ID (resolve via `foundry_connections_get`) |
 | `index_name` | Yes | Search index name |
 | `top_k` | No | Number of results (default: 5) |
 | `query_type` | No | Search type (default: `vector_semantic_hybrid`) |
@@ -179,3 +61,9 @@ with project_client:
 | Index not found | Name mismatch | Verify `AI_SEARCH_INDEX_NAME` matches exactly (case-sensitive) |
 | No citations in response | Instructions don't request them | Add citation instructions to agent prompt |
 | Wrong connection endpoint | Connection points to different search resource | Re-create connection with correct endpoint |
+
+## References
+
+- [Azure AI Search tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/azure-ai-search?view=foundry)
+- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
+- [Project Connections](../../../project/connections.md)

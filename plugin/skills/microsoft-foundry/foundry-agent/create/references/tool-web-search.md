@@ -14,72 +14,11 @@ Enables agents to retrieve and ground responses with real-time public web inform
 ## Prerequisites
 
 - A [basic or standard agent environment](https://learn.microsoft.com/azure/ai-foundry/agents/environment-setup)
-- Latest prerelease SDK package (`azure-ai-projects`, `azure-identity`)
 - Azure credentials configured (e.g., `DefaultAzureCredential`)
-- Environment variables: `AZURE_AI_PROJECT_ENDPOINT`, `AZURE_AI_MODEL_DEPLOYMENT_NAME`
 
 ## Setup
 
 No external resource or project connection is required. The web search tool works out of the box when added to an agent definition.
-
-## Python SDK
-
-```python
-import os
-from azure.ai.projects import AIProjectClient
-from azure.ai.projects.models import (
-    PromptAgentDefinition, WebSearchPreviewTool, ApproximateLocation,
-)
-from azure.identity import DefaultAzureCredential
-
-project_client = AIProjectClient(
-    endpoint=os.environ["AZURE_AI_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-
-with project_client:
-    openai_client = project_client.get_openai_client()
-
-    agent = project_client.agents.create_version(
-        agent_name="WebSearchAgent",
-        definition=PromptAgentDefinition(
-            model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
-            instructions="You are a helpful assistant that can search the web.",
-            tools=[
-                WebSearchPreviewTool(
-                    user_location=ApproximateLocation(
-                        country="US", city="Seattle", region="Washington"
-                    )
-                )
-            ],
-        ),
-    )
-
-    stream = openai_client.responses.create(
-        stream=True, tool_choice="required",
-        input="What is the latest AI news today?",
-        extra_body={"agent": {"name": agent.name, "type": "agent_reference"}},
-    )
-    for event in stream:
-        if event.type == "response.output_text.delta":
-            print(event.delta, end="", flush=True)
-        elif event.type == "response.output_item.done":
-            if event.item.type == "message" and event.item.content[-1].type == "output_text":
-                for ann in event.item.content[-1].annotations:
-                    if ann.type == "url_citation":
-                        print(f"\nCitation: {ann.url}")
-```
-
-## REST API
-
-```bash
-curl --request POST \
-  --url "$AZURE_AI_PROJECT_ENDPOINT/openai/responses?api-version=$API_VERSION" \
-  -H "Authorization: Bearer $AGENT_TOKEN" \
-  -H "Content-Type: application/json" \
-  --data '{"model": "'$AZURE_AI_MODEL_DEPLOYMENT_NAME'", "input": "Latest AI news",
-    "tool_choice": "required", "tools": [{"type": "web_search_preview"}]}'
-```
 
 ## Configuration Options
 
@@ -92,21 +31,8 @@ curl --request POST \
 
 Admins can enable or disable web search at the subscription level via Azure CLI. Requires Owner or Contributor access.
 
-**Disable:**
-```bash
-az feature register \
-  --name OpenAI.BlockedTools.web_search \
-  --namespace Microsoft.CognitiveServices \
-  --subscription "<subscription-id>"
-```
-
-**Enable:**
-```bash
-az feature unregister \
-  --name OpenAI.BlockedTools.web_search \
-  --namespace Microsoft.CognitiveServices \
-  --subscription "<subscription-id>"
-```
+- **Disable:** `az feature register --name OpenAI.BlockedTools.web_search --namespace Microsoft.CognitiveServices --subscription "<subscription-id>"`
+- **Enable:** `az feature unregister --name OpenAI.BlockedTools.web_search --namespace Microsoft.CognitiveServices --subscription "<subscription-id>"`
 
 ## Security Considerations
 
@@ -126,5 +52,6 @@ az feature unregister \
 
 ## References
 
-- [Web Search Tool Docs](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/web-search)
+- [Web Search tool documentation](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/tools/web-search?view=foundry)
+- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
 - [Bing Pricing](https://www.microsoft.com/bing/apis/grounding-pricing)

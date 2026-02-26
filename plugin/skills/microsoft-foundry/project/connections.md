@@ -2,69 +2,18 @@
 
 Connections authenticate and link external resources to a Foundry project. Many agent tools (Azure AI Search, Bing Grounding, MCP) require a project connection before use.
 
-## List Connections
+## Managing Connections via MCP
 
-```python
-from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential
+Use the Foundry MCP server for all connection operations. The MCP tools handle authentication, validation, and project scoping automatically.
 
-project_client = AIProjectClient(
-    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-with project_client:
-    for conn in project_client.connections.list():
-        print(f"  {conn.name} (type: {conn.connection_type})")
-```
+| Operation | MCP Tool | Description |
+|-----------|----------|-------------|
+| List all connections | `foundry_connections_list` | Lists all connections in the current project |
+| Get connection details | `foundry_connections_get` | Retrieves a specific connection by name, including its ID |
+| Create a connection | `foundry_connections_create` | Creates a new connection to an external resource |
+| Delete a connection | `foundry_connections_delete` | Removes a connection from the project |
 
-## Get Connection by Name
-
-```python
-conn = project_client.connections.get("my-connection-name")
-print(f"ID: {conn.id}")
-print(f"Type: {conn.connection_type}")
-```
-
-The `conn.id` is the value you pass as `project_connection_id` when configuring tools.
-
-## Create Connection via Azure CLI
-
-### Azure AI Search (key-based)
-
-```yaml
-# connection.yml
-name: my-search-connection
-type: azure_ai_search
-endpoint: https://my-search.search.windows.net/
-api_key: <your-api-key>
-```
-
-### Azure AI Search (keyless / Entra ID)
-
-```yaml
-# connection.yml
-name: my-search-connection-keyless
-type: azure_ai_search
-endpoint: https://my-search.search.windows.net/
-```
-
-### Bing Grounding
-
-```yaml
-# connection.yml
-name: my-bing-connection
-type: bing
-api_key: <your-bing-resource-key>
-```
-
-### Apply Connection
-
-```bash
-az ml connection create \
-  --file connection.yml \
-  --resource-group <resource-group> \
-  --workspace-name <project-name>
-```
+> 💡 **Tip:** The `connection_id` returned by `foundry_connections_get` is the value you pass as `project_connection_id` when configuring agent tools.
 
 ## Create Connection via Portal
 
@@ -72,29 +21,6 @@ az ml connection create \
 2. Navigate to **Operate** → **Admin** → select your project
 3. Select **Add connection** → choose service type
 4. Browse for resource, select auth method, click **Add connection**
-
-## Verify Connection Exists
-
-```python
-import os
-from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential
-
-project_client = AIProjectClient(
-    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    credential=DefaultAzureCredential(),
-)
-with project_client:
-    try:
-        conn = project_client.connections.get("my-connection-name")
-        print(f"Connection verified: {conn.name}")
-        print(f"Connection ID: {conn.id}")
-    except Exception as e:
-        print(f"Connection not found: {e}")
-        print("Available connections:")
-        for c in project_client.connections.list():
-            print(f"  - {c.name}")
-```
 
 ## Connection ID Format
 
@@ -127,6 +53,6 @@ Python and C# SDKs resolve this automatically from the connection name.
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `Connection not found` | Name mismatch or wrong project | List connections to find correct name |
+| `Connection not found` | Name mismatch or wrong project | Use `foundry_connections_list` to find correct name |
 | `Unauthorized` creating connection | Missing Azure AI Project Manager role | Assign role on the Foundry project |
-| `Invalid connection ID format` | Using name instead of full resource ID | Use SDK `connections.get(name).id` to resolve |
+| `Invalid connection ID format` | Using name instead of full resource ID | Use `foundry_connections_get` to resolve the full ID |

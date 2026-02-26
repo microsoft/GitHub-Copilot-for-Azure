@@ -52,7 +52,7 @@ describe("observe - Trigger Tests", () => {
       "Explain how Kubernetes pods work",
       "Create a REST API in Python",
       "Set up a React application",
-      "Deploy a Docker container to ECS",
+      "Set up a Jenkins CI pipeline for my Java project",
       "Write unit tests for my JavaScript code",
     ];
 

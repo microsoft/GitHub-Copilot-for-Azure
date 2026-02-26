@@ -47,8 +47,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Core Workflows");
-      expect(skill.content).toContain("## Prerequisites");
+      expect(skill.content).toContain("## Sub-Skills");
+      expect(skill.content).toContain("## Agent Development Lifecycle");
       expect(skill.content).toContain("## Quick Reference");
     });
 
@@ -62,9 +62,25 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Sub-Skills");
     });
 
-    test("references foundry-agent sub-skill", () => {
+    test("references foundry-agent sub-skills", () => {
       expect(skill.content).toContain("foundry-agent");
-      expect(skill.content).toContain("foundry-agent/SKILL.md");
+      expect(skill.content).toContain("foundry-agent/deploy/deploy.md");
+      expect(skill.content).toContain("foundry-agent/create/create-prompt.md");
+    });
+
+    test("contains Agent MCP Tools section", () => {
+      expect(skill.content).toContain("## Agent: MCP Tools");
+      expect(skill.content).toContain("foundry_agents_create");
+      expect(skill.content).toContain("foundry_agents_update");
+      expect(skill.content).toContain("foundry_agents_delete");
+    });
+
+    test("contains Agent Available Tools section", () => {
+      expect(skill.content).toContain("## Agent: Available Tools");
+    });
+
+    test("contains Agent Error Handling section", () => {
+      expect(skill.content).toContain("## Agent: Error Handling");
     });
 
     test("references quota sub-skill", () => {
