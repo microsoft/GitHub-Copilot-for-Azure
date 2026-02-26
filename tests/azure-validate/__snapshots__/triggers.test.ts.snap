@@ -2,7 +2,7 @@
 
 exports[`azure-validate - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure, permissions, and prerequisites before deploying. WHEN: "validate my app", "check deployment readiness", "run preflight checks", "verify configuration", "validate azure.yaml", "validate Bicep", "troubleshoot deployment errors", "validate Azure Functions".",
+  "description": "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment.",
   "extractedKeywords": [
     "azure",
     "before",
@@ -15,6 +15,7 @@ exports[`azure-validate - Trigger Tests Trigger Keywords Snapshot skill descript
     "deploying",
     "deployment",
     "errors",
+    "function",
     "functions",
     "infrastructure",
     "permissions",
@@ -22,7 +23,10 @@ exports[`azure-validate - Trigger Tests Trigger Keywords Snapshot skill descript
     "preflight",
     "prerequisites",
     "readiness",
+    "ready",
+    "serverless",
     "terraform",
+    "test",
     "troubleshoot",
     "validate",
     "validation",
@@ -47,6 +51,7 @@ exports[`azure-validate - Trigger Tests Trigger Keywords Snapshot skill keywords
   "deploying",
   "deployment",
   "errors",
+  "function",
   "functions",
   "infrastructure",
   "permissions",
@@ -54,7 +59,10 @@ exports[`azure-validate - Trigger Tests Trigger Keywords Snapshot skill keywords
   "preflight",
   "prerequisites",
   "readiness",
+  "ready",
+  "serverless",
   "terraform",
+  "test",
   "troubleshoot",
   "validate",
   "validation",
