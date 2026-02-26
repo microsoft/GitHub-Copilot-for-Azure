@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../../../../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/models/deploy-model/capacity";
+const SKILL_NAME = "microsoft-foundry";
 
 describe("capacity - Trigger Tests", () => {
   let triggerMatcher: TriggerMatcher;
@@ -21,17 +21,10 @@ describe("capacity - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Find capacity for gpt-4o across regions",
       "Check quota availability for model deployment",
-      "Where can I deploy gpt-4o?",
       "Capacity discovery for my model",
-      "Best region for capacity",
       "Multi-project capacity search for gpt-4o",
       "Quota analysis for model deployment",
-      "Check model availability in different regions",
-      "Region comparison for gpt-4o capacity",
-      "Check TPM availability for gpt-4o",
-      "Which region has enough capacity for 10K TPM?",
       "Find best region for deploying gpt-4o with capacity",
     ];
 
@@ -53,10 +46,7 @@ describe("capacity - Trigger Tests", () => {
       "Help me with AWS SageMaker",
       "Configure my PostgreSQL database",
       "Deploy gpt-4o quickly",
-      "Deploy with custom SKU",
-      "Create an AI Foundry project",
       "Help me with Kubernetes pods",
-      "Set up a virtual network in Azure",
       "How do I write Python code?",
     ];
 

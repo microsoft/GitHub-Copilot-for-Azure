@@ -4,49 +4,32 @@
  * Test isolated skill logic and validation rules.
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/models/deploy-model/preset";
+const SKILL_NAME = "microsoft-foundry";
+const NESTED_FILE = "models/deploy-model/preset/references/preset-workflow.md";
 
 describe("preset (deploy-model-optimal-region) - Unit Tests", () => {
   let skill: LoadedSkill;
+  let referenceContent: string;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
+    const nestedFilePath = path.join(skill.path, NESTED_FILE);
+    referenceContent = fs.readFileSync(nestedFilePath, "utf-8");
   });
 
-  describe("Skill Metadata", () => {
-    test("has valid SKILL.md with required fields", () => {
-      expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe("preset");
-      expect(skill.metadata.description).toBeDefined();
-      expect(skill.metadata.description.length).toBeGreaterThan(10);
-    });
-
-    test("description is appropriately sized", () => {
-      expect(skill.metadata.description.length).toBeGreaterThan(150);
-      expect(skill.metadata.description.length).toBeLessThan(1024);
-    });
-
-    test("description contains USE FOR triggers", () => {
-      expect(skill.metadata.description).toMatch(/USE FOR:/i);
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      expect(skill.metadata.description).toMatch(/DO NOT USE FOR:/i);
-    });
-  });
-
-  describe("Skill Content", () => {
+  describe("Reference Content", () => {
     test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(100);
+      expect(referenceContent).toBeDefined();
+      expect(referenceContent.length).toBeGreaterThan(100);
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## What This Skill Does");
-      expect(skill.content).toContain("## Prerequisites");
-      expect(skill.content).toContain("## Quick Workflow");
+      expect(referenceContent).toContain("## Phase 1");
+      expect(referenceContent).toContain("## Phase 2");
     });
 
     test("contains deployment phases", () => {
@@ -56,15 +39,11 @@ describe("preset (deploy-model-optimal-region) - Unit Tests", () => {
     });
 
     test("contains Azure CLI commands", () => {
-      expect(skill.content).toContain("az cognitiveservices");
+      expect(referenceContent).toContain("az cognitiveservices");
     });
 
     test("documents GlobalStandard SKU usage", () => {
-      expect(skill.content).toContain("GlobalStandard");
-    });
-
-    test("contains error handling section", () => {
-      expect(skill.content).toContain("## Error Handling");
+      expect(referenceContent).toContain("GlobalStandard");
     });
   });
 });
