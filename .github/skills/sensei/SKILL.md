@@ -120,7 +120,7 @@ Sensei validates skills against the [agentskills.io specification](https://agent
 
 **Target: Medium-High** (distinctive triggers, concise description)
 
-> ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (10+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
+> ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (15+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
 
 **Strongly recommended** (reported as suggestions if missing):
 - `license` — identifies the license applied to the skill
