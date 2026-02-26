@@ -466,7 +466,7 @@ Beyond frontmatter scoring, Anthropic's [Complete Guide](https://resources.anthr
 
 ### Overtriggering
 **Symptoms:** Skill loads for irrelevant queries, users disabling it.
-**Fixes:** Make description more specific, use distinctive WHEN: phrases. In small skill sets: adding negative triggers may help. In large sets (10+): prefer positive-only routing.
+**Fixes:** Make description more specific, use distinctive WHEN: phrases. In small skill sets: adding negative triggers may help. In large sets (15+): prefer positive-only routing.
 
 ### Execution Issues
 **Symptoms:** Inconsistent results, API failures, user corrections needed.
