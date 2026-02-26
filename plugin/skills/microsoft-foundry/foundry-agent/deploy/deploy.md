@@ -210,7 +210,7 @@ Read and follow the [invoke skill](../invoke/invoke.md) to send a test message a
 ## Display Agent Information
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
-Below the table you MUST also display Playground URL for direct access to the agent in Azure AI Foundry:
+Below the table you MUST also display a Playground link for direct access to the agent in Azure AI Foundry:
 
 [Open in Playground](https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion})
 
