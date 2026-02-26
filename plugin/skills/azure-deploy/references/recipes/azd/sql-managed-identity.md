@@ -99,7 +99,7 @@ az sql db query \
 
 ```bash
 eval $(azd env get-values)
-APP_NAME=$(echo "$SERVICE_API_NAME")  # or SERVICE_WEB_NAME
+APP_NAME=$SERVICE_API_NAME  # or SERVICE_WEB_NAME
 
 az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
   --auth-mode ActiveDirectoryDefault --queries "
