@@ -149,6 +149,9 @@ public String approvalWorkflow(
 ### Replay-Safe Logging
 
 ```java
+private static final java.util.logging.Logger logger =
+    java.util.logging.Logger.getLogger("MyOrchestration");
+
 @FunctionName("MyOrchestration")
 public String myOrchestration(
         @DurableOrchestrationTrigger(name = "ctx") TaskOrchestrationContext ctx) {

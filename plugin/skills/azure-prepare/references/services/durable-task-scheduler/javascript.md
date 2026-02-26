@@ -169,7 +169,7 @@ df.app.orchestration("workflowWithRetry", function* (context) {
 For applications running outside Azure Functions (containers, VMs, ACA, AKS):
 
 ```javascript
-import { createAzureManagedWorkerBuilder, createAzureManagedClient } from "@microsoft/durabletask-js-azuremanaged";
+const { createAzureManagedWorkerBuilder, createAzureManagedClient } = require("@microsoft/durabletask-js-azuremanaged");
 
 const connectionString = "Endpoint=http://localhost:8080;Authentication=None;TaskHub=default";
 
@@ -182,20 +182,24 @@ const myOrchestration = async function* (ctx, name) {
   return result;
 };
 
-// Worker
-const worker = createAzureManagedWorkerBuilder(connectionString)
-  .addOrchestrator(myOrchestration)
-  .addActivity(sayHello)
-  .build();
+async function main() {
+  // Worker
+  const worker = createAzureManagedWorkerBuilder(connectionString)
+    .addOrchestrator(myOrchestration)
+    .addActivity(sayHello)
+    .build();
 
-await worker.start();
+  await worker.start();
 
-// Client
-const client = createAzureManagedClient(connectionString);
-const instanceId = await client.scheduleNewOrchestration("myOrchestration", "World");
-const state = await client.waitForOrchestrationCompletion(instanceId, true, 30);
-console.log("Output:", state.serializedOutput);
+  // Client
+  const client = createAzureManagedClient(connectionString);
+  const instanceId = await client.scheduleNewOrchestration("myOrchestration", "World");
+  const state = await client.waitForOrchestrationCompletion(instanceId, true, 30);
+  console.log("Output:", state.serializedOutput);
 
-await client.stop();
-await worker.stop();
+  await client.stop();
+  await worker.stop();
+}
+
+main().catch(console.error);
 ```
