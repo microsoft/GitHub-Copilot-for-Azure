@@ -59,7 +59,6 @@ resource taskHub 'Microsoft.DurableTask/schedulers/taskHubs@2025-11-01' = {
 // REQUIRED: Assign Durable Task Data Contributor to the Function App's managed identity
 var durableTaskDataContributorRoleId = '5f6a3c3e-0da3-4079-b4f3-4db62a1d3c09'
 
-// --- Option A: System-Assigned Managed Identity (SAMI) ---
 resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(scheduler.id, functionApp.id, durableTaskDataContributorRoleId)
   scope: scheduler
@@ -69,44 +68,12 @@ resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
     principalType: 'ServicePrincipal'
   }
 }
-
-// --- Option B: User-Assigned Managed Identity (UAMI) ---
-// Uncomment this block and comment out Option A above if you prefer UAMI.
-//
-// resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-//   name: '<uami-name>'
-//   location: location
-// }
-//
-// // Assign the UAMI to the Function App
-// // (include in functionApp resource properties)
-// // identity: {
-// //   type: 'SystemAssigned, UserAssigned'
-// //   userAssignedIdentities: { '${uami.id}': {} }
-// // }
-// //
-// // Also set the AZURE_CLIENT_ID app setting to the UAMI's clientId.
-//
-// // Assign Durable Task Data Contributor to the UAMI
-// resource durableTaskUamiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-//   name: guid(scheduler.id, uami.id, durableTaskDataContributorRoleId)
-//   scope: scheduler
-//   properties: {
-//     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', durableTaskDataContributorRoleId)
-//     principalId: uami.properties.principalId
-//     principalType: 'ServicePrincipal'
-//   }
-// }
-//
-// // Set the connection string app setting to include the UAMI ClientID:
-// // DTS_CONNECTION_STRING = 'Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity;ClientID=${uami.properties.clientId}'
 ```
 
 > **⚠️ WARNING**: Without the `Durable Task Data Contributor` role assignment, the Function App will receive a **403 PermissionDenied** error when attempting to start orchestrations via gRPC. Always include this role assignment in your infrastructure-as-code.
 
 ## Configure Managed Identity Access
 
-**Option A: System-Assigned Managed Identity (SAMI) — Recommended default:**
 ```bash
 # Get Function App system-assigned identity
 PRINCIPAL_ID=$(az functionapp identity show --name my-func-app --resource-group myRG --query principalId -o tsv)
@@ -117,31 +84,6 @@ az role assignment create \
     --role "Durable Task Data Contributor" \
     --scope /subscriptions/<sub-id>/resourceGroups/myRG/providers/Microsoft.DurableTask/schedulers/my-scheduler
 ```
-
-<!--
-**Option B: User-Assigned Managed Identity (UAMI)**
-Use this instead of Option A if you prefer a user-assigned managed identity.
-
-```bash
-# Get UAMI principal ID
-UAMI_PRINCIPAL_ID=$(az identity show --name my-uami --resource-group myRG --query principalId -o tsv)
-UAMI_CLIENT_ID=$(az identity show --name my-uami --resource-group myRG --query clientId -o tsv)
-
-# Assign UAMI to Function App
-az functionapp identity assign --name my-func-app --resource-group myRG \
-    --identities /subscriptions/<sub-id>/resourceGroups/myRG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/my-uami
-
-# Grant Durable Task Data Contributor to the UAMI
-az role assignment create \
-    --assignee $UAMI_PRINCIPAL_ID \
-    --role "Durable Task Data Contributor" \
-    --scope /subscriptions/<sub-id>/resourceGroups/myRG/providers/Microsoft.DurableTask/schedulers/my-scheduler
-
-# Set the connection string with ClientID in app settings
-az functionapp config appsettings set --name my-func-app --resource-group myRG \
-    --settings "DTS_CONNECTION_STRING=Endpoint=https://my-scheduler.durabletask.io;Authentication=ManagedIdentity;ClientID=$UAMI_CLIENT_ID"
-```
--->
 
 ## AZD Deployment
 
