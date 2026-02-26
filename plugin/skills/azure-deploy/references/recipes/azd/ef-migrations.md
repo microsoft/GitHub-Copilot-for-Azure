@@ -73,10 +73,31 @@ az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
   --auth-mode ActiveDirectoryDefault --queries "
     IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$SERVICE_API_NAME')
       CREATE USER [$SERVICE_API_NAME] FROM EXTERNAL PROVIDER;
-    ALTER ROLE db_datareader ADD MEMBER [$SERVICE_API_NAME];
-    ALTER ROLE db_datawriter ADD MEMBER [$SERVICE_API_NAME];
-    ALTER ROLE db_ddladmin ADD MEMBER [$SERVICE_API_NAME];
-  " || true
+    
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_datareader' AND m.name = '$SERVICE_API_NAME'
+    )
+      ALTER ROLE db_datareader ADD MEMBER [$SERVICE_API_NAME];
+    
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_datawriter' AND m.name = '$SERVICE_API_NAME'
+    )
+      ALTER ROLE db_datawriter ADD MEMBER [$SERVICE_API_NAME];
+    
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_ddladmin' AND m.name = '$SERVICE_API_NAME'
+    )
+      ALTER ROLE db_ddladmin ADD MEMBER [$SERVICE_API_NAME];
+  "
 
 # Apply migrations
 cd src/api

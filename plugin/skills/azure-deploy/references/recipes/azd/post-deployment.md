@@ -35,9 +35,10 @@ See [SQL Managed Identity Access](sql-managed-identity.md) for detailed SQL scri
 
 ```bash
 # Get the app identity name from azd
-APP_NAME=$(azd env get-values | grep SERVICE_NAME | cut -d'=' -f2)
-SQL_SERVER=$(azd env get-values | grep SQL_SERVER | cut -d'=' -f2)
-SQL_DATABASE=$(azd env get-values | grep SQL_DATABASE | cut -d'=' -f2)
+eval $(azd env get-values)
+APP_NAME=$(echo "$SERVICE_API_NAME")  # or SERVICE_WEB_NAME
+SQL_SERVER=$(echo "$SQL_SERVER")
+SQL_DATABASE=$(echo "$SQL_DATABASE")
 
 # Connect as Entra admin and grant permissions
 # See sql-managed-identity.md for connection patterns

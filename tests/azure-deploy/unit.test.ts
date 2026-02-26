@@ -85,7 +85,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("mentions SQL and EF migrations support", () => {
       const lowerContent = skill.content.toLowerCase();
-      expect(lowerContent).toMatch(/sql|entity framework|ef|migrations/);
+      expect(lowerContent).toMatch(/\bsql\b|entity framework|\bef\b|\bmigrations\b/);
     });
   });
 });

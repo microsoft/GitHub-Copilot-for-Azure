@@ -66,10 +66,31 @@ az sql db query \
   --queries "
     IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$SERVICE_API_NAME')
       CREATE USER [$SERVICE_API_NAME] FROM EXTERNAL PROVIDER;
-    ALTER ROLE db_datareader ADD MEMBER [$SERVICE_API_NAME];
-    ALTER ROLE db_datawriter ADD MEMBER [$SERVICE_API_NAME];
-    ALTER ROLE db_ddladmin ADD MEMBER [$SERVICE_API_NAME];
-  " || true
+    
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_datareader' AND m.name = '$SERVICE_API_NAME'
+    )
+      ALTER ROLE db_datareader ADD MEMBER [$SERVICE_API_NAME];
+    
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_datawriter' AND m.name = '$SERVICE_API_NAME'
+    )
+      ALTER ROLE db_datawriter ADD MEMBER [$SERVICE_API_NAME];
+    
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_ddladmin' AND m.name = '$SERVICE_API_NAME'
+    )
+      ALTER ROLE db_ddladmin ADD MEMBER [$SERVICE_API_NAME];
+  "
 ```
 
 > 💡 Make executable: `chmod +x scripts/*.sh`. For PowerShell: Use `azd env get-values | ForEach-Object` pattern.
@@ -77,6 +98,9 @@ az sql db query \
 ## Verification
 
 ```bash
+eval $(azd env get-values)
+APP_NAME=$(echo "$SERVICE_API_NAME")  # or SERVICE_WEB_NAME
+
 az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
   --auth-mode ActiveDirectoryDefault --queries "
     SELECT dp.name AS UserName, dr.name AS RoleName
@@ -100,13 +124,22 @@ Expected: UserName matches `$APP_NAME`, RoleName includes `db_datareader`, `db_d
 **Idempotent Script Pattern:**
 
 ```sql
+-- Check if user exists before creating
 IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'my-app')
   CREATE USER [my-app] FROM EXTERNAL PROVIDER;
-ALTER ROLE db_datareader ADD MEMBER [my-app];  -- Safe to repeat
+
+-- Check role membership before adding
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_datareader' AND m.name = 'my-app'
+)
+  ALTER ROLE db_datareader ADD MEMBER [my-app];
 ```
 
 ## References
 
-- [Azure SQL Entra Authentication Overview](/plugin/skills/azure-prepare/references/services/sql-database/auth.md)
+- [SQL Entra Authentication](sql-entra-auth.md)
 - [EF Core Migrations](ef-migrations.md)
 - [Post-Deployment Guide](post-deployment.md)
