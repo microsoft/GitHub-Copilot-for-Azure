@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Invoke for ANY app work related to Azure: creating, building, updating, migrating, or modernizing apps. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with Terraform, Azure with azd, generate azure.yaml, generate Bicep or Terraform, prepare Azure Functions, create Azure Functions app, create serverless HTTP API, create function app, create event-driven function. DO NOT USE FOR: only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy), pure Terraform without azd (prefer azd+Terraform)."
+description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"migrate my app\", \"deploy to Azure\", \"host on Azure\", \"generate azure.yaml\", \"generate Bicep\", \"prepare Azure Functions\", \"create function app\"."
 ---
 
 # Azure Prepare
