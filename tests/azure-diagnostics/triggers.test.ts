@@ -42,6 +42,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Investigate health probe failures",
       "My health probes are failing",
       
+      // Function App diagnostics
+      "Troubleshoot my function app",
+      "My Azure Function is not working",
+      "Debug function invocation failures",
+      "Find the App Insights for my function app",
+      "Troubleshoot Azure Function invocation failures and timeout issues",
+      
       // Resource health
       "Check resource health of my container app",
       "Check the health of my Azure resources",
@@ -72,11 +79,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "How do I bake a cake?",
       
       // Wrong cloud provider - without diagnostic keywords
-      "Debug my AWS Lambda function",
+      "Debug my AWS Lambda",
       
       // Deployment tasks (not diagnostics)
       "Publish my app to Azure",
       "Create a new Container App",
+      "Create a new function app",
       
       // Monitoring setup (not diagnostics)
       "Configure Application Insights",
