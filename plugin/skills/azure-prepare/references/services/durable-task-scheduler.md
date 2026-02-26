@@ -814,7 +814,7 @@ await worker.stop();
 
 ## Azure Deployment
 
-For provisioning, Bicep templates, managed identity configuration, and deployment workflows, see the [DTS Deployment Guide](../../../../skills/azure-deploy/references/recipes/azd/durable-task-scheduler-deploy.md).
+For provisioning, Bicep templates, managed identity configuration, and deployment workflows, invoke the **azure-deploy** skill which includes DTS-specific deployment guidance.
 
 ## Troubleshooting
 
