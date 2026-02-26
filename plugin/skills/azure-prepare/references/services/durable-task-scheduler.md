@@ -25,9 +25,9 @@ Build reliable, fault-tolerant workflows using durable execution with Azure Dura
 ## Quick Start - Local Emulator
 
 ```bash
-# Start the emulator
-docker pull mcr.microsoft.com/dts/dts-emulator:latest
-docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dts/dts-emulator:latest
+# Start the emulator (update the tag as needed; see https://mcr.microsoft.com/v2/dts/dts-emulator/tags/list for newer versions)
+docker pull mcr.microsoft.com/dts/dts-emulator:v0.0.10
+docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dts/dts-emulator:v0.0.10
 
 # Dashboard available at http://localhost:8082
 ```
@@ -38,9 +38,9 @@ docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dt
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.*" />
-  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" Version="*" />
-  <PackageReference Include="Azure.Identity" Version="1.*" />
+  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.14.1" />
+  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" Version="1.4.0" />
+  <PackageReference Include="Azure.Identity" Version="1.17.1" />
 </ItemGroup>
 ```
 
