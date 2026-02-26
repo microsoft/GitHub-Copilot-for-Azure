@@ -180,7 +180,7 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
 2. For Python: ensure the code uses `load_dotenv()` so Foundry-injected environment variables is available at runtime.
-3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version), not `azure.identity.DefaultAzureCredential`
+3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version) for **local development**, not `azure.identity.DefaultAzureCredential`. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
 
 ### Step B5: Create agent.yaml
 
