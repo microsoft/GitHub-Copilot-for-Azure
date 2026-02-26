@@ -6,7 +6,7 @@ Deployment workflows for Durable Task Scheduler on Azure, including provisioning
 
 - Application prepared with azure-prepare skill
 - `azure.yaml` exists and validated
-- `.azure/preparation-manifest.md` status = `Validated`
+- `.azure/plan.md` exists; Validation Proof section status = `Validated`
 - Docker (for local emulator development)
 
 ## SKU Selection
@@ -32,9 +32,16 @@ az durabletask scheduler create \
 ## Bicep Example
 
 ```bicep
+// Parameters — define these at file level or pass from a parent module
+param schedulerName string
+param location string = resourceGroup().location
+
 @allowed(['consumption', 'dedicated'])
 @description('Use consumption for quickstarts/variable workloads, dedicated for high-demand/predictable throughput')
 param skuName string = 'consumption'
+
+// Assumes functionApp is defined elsewhere in the same Bicep file, e.g.:
+// resource functionApp 'Microsoft.Web/sites@2023-12-01' = { ... }
 
 resource scheduler 'Microsoft.DurableTask/schedulers@2025-11-01' = {
   name: schedulerName
@@ -74,9 +81,11 @@ resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
 // // Assign the UAMI to the Function App
 // // (include in functionApp resource properties)
 // // identity: {
-// //   type: 'UserAssigned'
+// //   type: 'SystemAssigned, UserAssigned'
 // //   userAssignedIdentities: { '${uami.id}': {} }
 // // }
+// //
+// // Also set the AZURE_CLIENT_ID app setting to the UAMI's clientId.
 //
 // // Assign Durable Task Data Contributor to the UAMI
 // resource durableTaskUamiRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
