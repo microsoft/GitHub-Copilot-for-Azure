@@ -87,3 +87,4 @@ Activate this skill when user wants to:
 
 - [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
 - [Post-Deployment Steps](references/recipes/azd/post-deployment.md) - SQL + EF Core setup
+- [Durable Task Scheduler Deployment](references/recipes/azd/durable-task-scheduler-deploy.md) - DTS provisioning, Bicep, and managed identity setup
