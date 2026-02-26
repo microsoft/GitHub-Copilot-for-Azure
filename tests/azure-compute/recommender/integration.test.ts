@@ -12,7 +12,6 @@
 import {
     useAgentRunner,
     isSkillInvoked,
-    doesAssistantMessageIncludeKeyword,
     shouldSkipIntegrationTests,
     getIntegrationSkipReason,
 } from "../../utils/agent-runner";
