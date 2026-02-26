@@ -20,6 +20,8 @@ From [skill-authoring](/.github/skills/skill-authoring):
 
 **Check with:** `cd scripts && npm run tokens -- check plugin/skills/{skill}/SKILL.md`
 
+> **Units note:** Sensei measures in **tokens** (cl100k_base tokenizer), not words. Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends "under 5,000 words" for SKILL.md, while the [Agent Skills spec](https://agentskills.io/specification) recommends "< 5000 tokens" and "under 500 lines." Sensei uses the spec's token-based limits. As a rough conversion: 5000 tokens ≈ 3,750 words.
+
 ### Reference Loading Impact
 
 References load **only when explicitly linked** in SKILL.md, not on activation:
@@ -74,7 +76,7 @@ A skill is **Medium-High** if:
 
 > **Note:** `WHEN:` scores higher than `USE FOR:` because quoted trigger phrases are more distinctive for cross-model pattern matching.
 
-> ⚠️ **"DO NOT USE FOR:" is actively discouraged.** Anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and other models that use fast pattern matching rather than deep negation reasoning. Use positive routing instead.
+> ⚠️ **"DO NOT USE FOR:" is risky in multi-skill environments.** Anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and other models that use fast pattern matching rather than deep negation reasoning. Use positive routing instead. See Check 4 for context-dependent guidance.
 
 **Example of Medium-High adherence (cross-model optimized):**
 ```yaml
@@ -155,9 +157,21 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 
 ### 4. Anti-Trigger Detection
 
-> ⚠️ **Deprecation warning:** "DO NOT USE FOR:" clauses are **actively discouraged** for cross-model compatibility. On Claude Sonnet and similar models, anti-trigger clauses introduce competing keywords that cause wrong-skill activation (keyword contamination). Use positive routing (`WHEN:` with distinctive phrases) instead of negative exclusion.
+> ⚠️ **Context-dependent risk.** Anti-trigger clauses like "DO NOT USE FOR:" carry different risk levels depending on the skill set size and deployment context.
 
-**Legacy indicators** (still detected but trigger warning):
+**Risk assessment by context:**
+
+| Context | Risk Level | Guidance |
+|---------|------------|----------|
+| Single skill or small set (1-5 skills) with clear domain boundaries | Low | Anti-triggers are low-risk — domain boundaries are obvious |
+| Medium skill set (5-15 skills) with some overlap | Moderate | Anti-trigger keywords start competing with other skills' triggers |
+| Large skill set (15+ skills) with overlapping domains | **High** | Keyword contamination is measurable — negative keywords become activation keywords on fast-pattern-matching models |
+
+**Why large skill sets are risky:** On Claude Sonnet and similar models that use fast pattern matching (first ~20 words), `DO NOT USE FOR: Function apps` causes Sonnet to key on "Function apps" and **activate** the skill for Functions queries. This was empirically demonstrated across 24 Azure skills ([analysis](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). Anthropic's own published skills confirm this pattern — 4 of 5 skills in `anthropics/skills` use positive-only routing.
+
+> **Note:** Anthropic's [Complete Guide to Building Skills](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends negative triggers for overtriggering (p25). This is reasonable for small, isolated skill sets. For multi-skill production environments like this repo, Sensei recommends positive routing with `WHEN:` and distinctive quoted phrases as the cross-model-safe alternative.
+
+**Legacy indicators** (still detected, trigger context-dependent warning):
 - `DO NOT USE FOR:`
 - `NOT FOR:`
 - `Don't use this skill`
@@ -165,8 +179,9 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 - `Defer to`
 
 **Scoring:**
-- Present → emits cross-model compatibility warning
-- Absent → no penalty (this is the desired state)
+- Present in large skill sets → emits cross-model compatibility warning
+- Present in small skill sets → informational note only
+- Absent → no penalty (preferred for cross-model compatibility)
 
 ### 5. Compatibility Field
 
@@ -235,6 +250,38 @@ Do NOT use `>-` folded scalars (incompatible with skills.sh per [microsoft/GitHu
 **Scoring impact:**
 - Plain description with `: ` → **Invalid** (will fail to parse)
 - Description > 200 chars without `>-` → **Warning** (maintainability concern)
+
+### 9. Security Restrictions
+
+Per Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf):
+
+| Check | What it validates |
+|-------|-------------------|
+| No XML tags | Frontmatter must not contain `<` or `>` (security — frontmatter appears in system prompt) |
+| No reserved prefixes | Name must not start with `claude-` or `anthropic-` (reserved by Anthropic) |
+
+---
+
+## Advisory Checks
+
+**Advisory only** — informational, does not change scoring levels.
+
+### 10. Body Structure Quality
+
+Checks whether the SKILL.md body follows Anthropic's recommended structure for effective instructions.
+
+**Sub-checks:**
+- **Actionable instructions** — Body uses specific commands, code examples, or step-by-step guidance
+- **Examples section** — Has at least one example scenario
+- **Error handling** — Documents common failure modes and recovery steps
+
+### 11. Body Progressive Disclosure
+
+Checks whether SKILL.md properly uses progressive disclosure — keeping core instructions in SKILL.md and detailed reference material in `references/`.
+
+**Flag when:**
+- SKILL.md body exceeds 500 lines (spec recommends under 500)
+- Large code blocks (> 50 lines) that could be in `references/` or `scripts/`
 
 ---
 

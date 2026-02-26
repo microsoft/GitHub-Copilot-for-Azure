@@ -8,12 +8,14 @@ Use this checklist before submitting a new skill or updating an existing one.
 - [ ] `name` uses only lowercase letters, numbers, and hyphens
 - [ ] `name` does not start or end with a hyphen
 - [ ] `name` matches the parent directory name
+- [ ] `name` does not start with `claude-` or `anthropic-` (reserved)
 - [ ] `description` field is present and 1-1024 characters
 - [ ] `description` explains WHAT the skill does
 - [ ] `description` explains WHEN to use it (use `WHEN:` with quoted trigger phrases)
-- [ ] `description` does NOT contain `DO NOT USE FOR:` (keyword contamination risk)
+- [ ] `description` does NOT contain `DO NOT USE FOR:` (risky in multi-skill environments — see [SCORING.md](/.github/skills/sensei/references/SCORING.md) check 4)
 - [ ] `description` is ≤ 60 words (cross-model density)
 - [ ] `description` uses inline double-quoted string (not `>-` folded scalar)
+- [ ] No XML angle brackets (`< >`) in frontmatter
 
 ## Token Budget
 
@@ -44,6 +46,8 @@ See [Token Budgets](token-budgets.md) for detailed limits.
 ## Content Quality
 
 - [ ] Instructions are action-oriented (step-by-step)
+- [ ] Has examples section (input → expected output)
+- [ ] Has error handling (common failures and recovery)
 - [ ] Tables used for dense information
 - [ ] No decorative emojis (only functional ones if needed)
 - [ ] No repeated content across sections

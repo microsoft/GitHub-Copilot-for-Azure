@@ -378,3 +378,25 @@ Creates GitHub issue:
   
   - [OPTIMIZATION-PATTERNS.md](/.github/skills/markdown-token-optimizer/references/OPTIMIZATION-PATTERNS.md)
   ```
+
+
+---
+
+## Skill Body Patterns
+
+Templates for structuring the SKILL.md body content, adapted from Anthropic's [Complete Guide to Building Skills](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf).
+
+### Pattern 1: Sequential Workflow
+Use when users need multi-step processes in a specific order. Key techniques: explicit step ordering, dependencies between steps, validation at each stage.
+
+### Pattern 2: Multi-MCP Coordination
+Use when workflows span multiple services or MCP servers. Key techniques: clear phase separation, data passing between MCPs, validation before next phase.
+
+### Pattern 3: Iterative Refinement
+Use when output quality improves with iteration. Generate draft, run validation, address issues, re-validate, repeat until quality threshold met.
+
+### Pattern 4: Context-Aware Tool Selection
+Use when the same outcome requires different tools depending on context. Build a decision tree with clear criteria, fallback options, and transparency about choices.
+
+### Pattern 5: Domain-Specific Intelligence
+Use when the skill adds specialized knowledge beyond tool access. Apply domain rules before processing, document compliance decisions, maintain audit trail.
