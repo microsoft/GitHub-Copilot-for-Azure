@@ -1,0 +1,37 @@
+id: scaffold-alongside-001
+name: "Scaffold Alongside — Add SDK Service to Existing Repo"
+description: >
+  Verifies that when a user has an existing Node.js app and wants to add
+  a Copilot SDK service alongside it, the skill routes to Step 2B
+  (scaffold alongside) and references the deploy-existing workflow.
+tags:
+  - scaffold
+  - happy-path
+  - step-2b
+
+inputs:
+  prompt: "Add a Copilot SDK service to my existing Node.js app"
+
+expected:
+  output_contains:
+    - "azure.yaml"
+  matches:
+    - "(?i)(step 2b|scaffold alongside|existing repo|alongside)"
+    - "(?i)(deploy-existing|temp dir|copy)"
+  output_excludes:
+    - "error"
+    - "failed"
+  graders:
+    - type: regex
+      name: routes_to_step_2b
+      config:
+        must_match:
+          - "(?i)(alongside|existing.*(repo|project|app)|step.?2b|add.*service)"
+    - type: keyword
+      name: step_2b_keywords
+      config:
+        must_contain:
+          - azure.yaml
+  behavior:
+    max_tool_calls: 10
+    max_response_time_ms: 60000

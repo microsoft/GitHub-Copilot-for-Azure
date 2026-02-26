@@ -1,0 +1,39 @@
+id: deploy-existing-001
+name: "Deploy Existing — Route to Azure Prepare/Validate/Deploy"
+description: >
+  Verifies that when a user already has a working Copilot SDK app
+  and wants to deploy it, the skill routes to Step 2C and invokes
+  the azure-prepare → azure-validate → azure-deploy pipeline.
+tags:
+  - deploy
+  - happy-path
+  - step-2c
+
+inputs:
+  prompt: "Deploy my existing copilot SDK app to Azure"
+
+expected:
+  output_contains:
+    - "azure-prepare"
+  matches:
+    - "(?i)azure-prepare"
+    - "(?i)azure-deploy"
+  output_excludes:
+    - "error"
+    - "failed"
+  graders:
+    - type: keyword
+      name: deploy_routing_keywords
+      config:
+        must_contain:
+          - azure-prepare
+          - azure-deploy
+    - type: regex
+      name: deploy_pipeline_order
+      config:
+        must_match:
+          - "(?i)azure-prepare"
+          - "(?i)azure-deploy"
+  behavior:
+    max_tool_calls: 15
+    max_response_time_ms: 60000
