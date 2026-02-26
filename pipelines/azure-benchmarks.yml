@@ -17,7 +17,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Run Copilot Benchmarks script'
       inputs:
-        connectedServiceNameARM: 'azure-sdk_to_ghcp4a-testing'
+        connectedServiceNameARM: 'azure_msbench_eval'
         addSpnToEnvironment: true
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
