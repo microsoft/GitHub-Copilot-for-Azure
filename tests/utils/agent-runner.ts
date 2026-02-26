@@ -16,29 +16,26 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
 import { getAllAssistantMessages } from "./evaluate";
+import { redactSecrets } from "./redact";
+
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** Redact token-like values from report text to prevent secret leakage */
-const SECRET_PATTERNS = [
-  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWT
-  /Bearer\s+[A-Za-z0-9_\-.~+/]{20,}/gi, // Bearer tokens
-  /gh[pousr]_[A-Za-z0-9_]{36,}/g, // GitHub tokens
-  /(?:password|passwd|secret|token|api[_-]?key|connection[_-]?string)\s*[:=]\s*["']?[^\s"',]{8,}/gi, // key=value secrets
-];
-
-function redactSecrets(text: string): string {
-  let result = text;
-  for (const pattern of SECRET_PATTERNS) {
-    pattern.lastIndex = 0;
-    result = result.replace(pattern, "[REDACTED]");
-  }
-  return result;
+/**
+ * Resolve the bundled Copilot CLI entry point.
+ *
+ * The SDK's default `getBundledCliPath()` uses `import.meta.resolve()`, which
+ * is not available inside Jest's ESM VM context (even with
+ * `--experimental-vm-modules`). We replicate the same path arithmetic here
+ * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ */
+function getBundledCliPath(): string {
+  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
 }
 
 export interface AgentMetadata {
@@ -386,6 +383,7 @@ export function useAgentRunner() {
         logLevel: process.env.DEBUG ? "all" : "error",
         cwd: testWorkspace,
         cliArgs: cliArgs,
+        cliPath: getBundledCliPath(),
       }) as CopilotClient;
       entry.client = client;
 
@@ -393,6 +391,7 @@ export function useAgentRunner() {
 
       const session = await client.createSession({
         model: "claude-sonnet-4.5",
+        onPermissionRequest: approveAll,
         skillDirectories: [skillDirectory],
         mcpServers: {
           azure: {
@@ -730,12 +729,14 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
       logLevel: process.env.DEBUG ? "all" : "error",
       cwd: testWorkspace,
       cliArgs: cliArgs,
+      cliPath: getBundledCliPath(),
     }) as CopilotClient;
 
     const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
     session = await client.createSession({
       model: "claude-sonnet-4.5",
+      onPermissionRequest: approveAll,
       skillDirectories: [skillDirectory],
       mcpServers: {
         azure: {
