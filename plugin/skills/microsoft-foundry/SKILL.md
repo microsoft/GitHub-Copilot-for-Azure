@@ -2,7 +2,7 @@
 name: microsoft-foundry
 description: >-
   Use this skill for Microsoft Foundry (Azure AI Foundry) and all operation from Foundry MCP server: manage model deployment, manage hosted agent and prompt agent (create, deploy, invoke, run, troubleshoot, evaluate Foundry Agents), manage RBAC/permissions, manage quotas and capacity of deployments, manage Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, hosted agent, create agent, deploy agent, debug agent, invoke agent, run agent, evaluate agent, agent monitoring, deploy models, create project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, enable Cognitive Services, AIServices account, register resource provider, RBAC setup, deployment capacity, Deployment quota, manage deployments, inference failures, model availability, regional availability, azd deploy agent.
+  USE FOR: Microsoft Foundry, AI Foundry, hosted agent, create agent, deploy agent, debug agent, invoke agent, run agent, evaluate agent, agent monitoring, analyze traces, trace analysis, App Insights agent telemetry, GenAI traces, agent KQL queries, slow agent latency, agent errors in production, deploy models, create project, set up Foundry, onboard Foundry, provision Foundry, create Foundry resource, RBAC setup, deployment capacity, Deployment quota, manage deployments, model availability, azd deploy agent.
   DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic resource creation (use azure-create-app), AI Search/speech/OCR (use azure-ai).
 ---
 
@@ -24,6 +24,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
 | **create-prompt** | Create prompt (LLM-based) agents via MCP tools or SDK. No container needed. Covers tool selection, model config, and instructions. | [create-prompt](foundry-agent/create/create-prompt.md) |
 | **observe** | Eval-driven optimization loop for Foundry agents. Orchestrates the full pipeline: auto-create evaluators & test dataset → batch evaluate → cluster failures → optimize prompt → re-deploy → compare versions → iterate. **Use this skill instead of manually calling evaluation MCP tools.** USE FOR: evaluate agent, run eval, test agent quality, analyze eval results, cluster failures, optimize prompt, compare versions, CI/CD evals, agent monitoring. | [observe](foundry-agent/observe/observe.md) |
+| **trace** | Analyze production traces for Foundry agents using App Insights and GenAI OTel conventions. Search conversations, diagnose failures, identify latency bottlenecks, reconstruct span trees. **Use this for runtime trace analysis, not troubleshoot (which is for container logs).** USE FOR: analyze traces, search conversations, find errors, slow traces, latency analysis, App Insights, GenAI telemetry. | [trace](foundry-agent/trace/trace.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
@@ -49,6 +50,7 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 | Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
 | Start/stop agent container | deploy |
 | Evaluate/optimize an agent | [observe](foundry-agent/observe/observe.md) |
+| Analyze production traces / find errors | [trace](foundry-agent/trace/trace.md) |
 
 ## Agent: Project Context Resolution
 

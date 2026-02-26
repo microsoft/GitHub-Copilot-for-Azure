@@ -41,3 +41,11 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 3. **Prompt for next steps.** After each step, present options. Never assume the path forward.
 4. **Write scripts to files.** Python scripts go in `scripts/` — no inline code blocks.
 5. **Persist eval artifacts.** Save to `evaluators/`, `datasets/`, and `results/` for version tracking (see [deploy-and-setup](references/deploy-and-setup.md) for structure).
+
+## Related Skills
+
+| User Intent | Skill |
+|-------------|-------|
+| "Analyze production traces" / "Search conversations" / "Find errors in App Insights" | [trace skill](../trace/trace.md) |
+| "Debug container issues" / "Container logs" | [troubleshoot skill](../../troubleshoot/) |
+| "Deploy or redeploy agent" | [deploy skill](../deploy/deploy.md) |

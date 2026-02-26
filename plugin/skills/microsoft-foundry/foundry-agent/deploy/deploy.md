@@ -233,7 +233,8 @@ If a `.env` file already exists, read it first and merge — do not overwrite ex
 
 After a successful deployment, ask the user: *"Would you like to set up evaluation and monitoring for this agent?"*
 
-If yes, follow the [observe skill](../observe/observe.md) to configure evaluators, run batch evaluations, and optimize the agent.
+- **Evaluation & optimization** → follow the [observe skill](../observe/observe.md) to configure evaluators, run batch evaluations, and optimize the agent.
+- **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
 
 ## Agent Definition Schemas
 
