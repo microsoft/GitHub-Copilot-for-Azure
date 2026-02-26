@@ -3,6 +3,8 @@
 Select a VM family by matching the user's workload to the right category. Families describe hardware intent — not individual SKUs.
 
 > **Source**: [Azure VM sizes overview](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview)
+>
+> **Note:** This reference may become stale. Before making final recommendations, verify critical specifications (especially Spot VM support, newer series availability, and specific family capabilities) by fetching the relevant learn.microsoft.com documentation.
 
 ## Family Selection Table
 
