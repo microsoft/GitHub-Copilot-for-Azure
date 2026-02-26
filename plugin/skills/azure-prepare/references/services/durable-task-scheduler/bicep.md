@@ -85,4 +85,4 @@ az durabletask scheduler create \
 
 ## Full Deployment Reference
 
-For complete deployment workflows, AZD commands, and managed identity CLI setup, see the [Durable Task Scheduler Deployment](../../../../azure-deploy/references/recipes/azd/durable-task-scheduler-deploy.md) recipe in the azure-deploy skill.
+For complete deployment workflows, AZD commands, and managed identity CLI setup, invoke the **azure-deploy** skill which includes a DTS-specific deployment recipe.
