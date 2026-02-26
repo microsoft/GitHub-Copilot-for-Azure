@@ -83,3 +83,4 @@ If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 | Agent name conflict | Name already exists | Use a unique name or update the existing agent |
 | Tool not available | Tool not configured for project | Verify tool prerequisites (e.g., Bing resource for grounding) |
 | SDK version mismatch | Using 1.x instead of 2.x | Install `azure-ai-projects --pre` for v2.x preview |
+| Tenant mismatch | MCP token tenant differs from resource tenant | Fall back to SDK — `DefaultAzureCredential` resolves the correct tenant |

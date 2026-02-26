@@ -6,24 +6,32 @@ Use the Foundry MCP tools for agent CRUD operations. When MCP tools are unavaila
 
 | Operation | MCP Tool | Description |
 |-----------|----------|-------------|
-| Create agent | `foundry_agents_create` | Create a new agent with model and instructions |
-| List agents | `foundry_agents_list` | List all agents in the project |
-| Get agent | `foundry_agents_connect` | Get details of a specific agent |
-| Update agent | `foundry_agents_update` | Update agent configuration (creates new version) |
-| Delete agent | `foundry_agents_delete` | Delete an agent |
+| Create/Update agent | `agent_update` | Create a new agent or update an existing one (creates new version) |
+| List/Get agents | `agent_get` | List all agents, or get a specific agent by name |
+| Delete agent | `agent_delete` | Delete an agent |
+| Invoke agent | `agent_invoke` | Send a message to an agent and get a response |
+| Get schema | `agent_definition_schema_get` | Get the full JSON schema for agent definitions |
 
 ## SDK Agent Operations
 
 When MCP tools are unavailable, use the `azure-ai-projects` Python SDK (`pip install azure-ai-projects --pre`):
 
+```python
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+endpoint = "https://<resource>.services.ai.azure.com/api/projects/<project>"
+client = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
+```
+
 | Operation | SDK Method |
 |-----------|------------|
-| Create | `project_client.agents.create_version(agent_name, definition)` |
-| List | `project_client.agents.list()` |
-| Get | `project_client.agents.get(agent_name)` |
-| Update | `project_client.agents.create_version(agent_name, definition)` (creates new version) |
-| Delete | `project_client.agents.delete(agent_name)` |
-| Chat | `openai_client.responses.create(input, extra_body={"agent": {"name": agent_name, "type": "agent_reference"}})` |
+| Create | `client.agents.create_version(agent_name, definition)` |
+| List | `client.agents.list()` |
+| Get | `client.agents.get(agent_name)` |
+| Update | `client.agents.create_version(agent_name, definition)` (creates new version) |
+| Delete | `client.agents.delete(agent_name)` |
+| Chat | `client.get_openai_client().responses.create(model=<deployment>, input=<text>, extra_body={"agent": {"name": agent_name, "type": "agent_reference"}})` |
 
 ## Environment Variables
 
