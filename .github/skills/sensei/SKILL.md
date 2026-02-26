@@ -46,7 +46,7 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║  TARGET SCORE: Medium-High                                       ║
 ║    ✓ Description > 150 chars, ≤ 60 words                         ║
 ║    ✓ Has "WHEN:" trigger phrases (preferred)                     ║
-║    ✓ No "DO NOT USE FOR:" (cross-model compat)                   ║
+║    ✓ No "DO NOT USE FOR:" (risky in multi-skill envs)             ║
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
 ║  MORE INFO:                                                      ║
@@ -93,7 +93,7 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
    - Validate `name` per [agentskills.io spec](https://agentskills.io/specification) (no `--`, no start/end `-`, lowercase alphanumeric)
    - Check description length and word count (≤60 words)
    - Check triggers (WHEN: preferred, USE FOR: accepted)
-   - Warn on "DO NOT USE FOR:" (cross-model contamination)
+   - Warn on "DO NOT USE FOR:" (risky in multi-skill environments)
    - Preserve optional spec fields (`license`, `metadata`, `allowed-tools`) if present
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
@@ -120,7 +120,7 @@ Sensei validates skills against the [agentskills.io specification](https://agent
 
 **Target: Medium-High** (distinctive triggers, concise description)
 
-> ⚠️ "DO NOT USE FOR:" is **actively discouraged** — causes keyword contamination on Claude Sonnet and similar models. Use positive routing with `WHEN:` instead.
+> ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (10+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
 
 **Strongly recommended** (reported as suggestions if missing):
 - `license` — identifies the license applied to the skill
@@ -145,7 +145,7 @@ metadata:
 
 > **IMPORTANT:** Use inline double-quoted strings for descriptions. Do NOT use `>-` folded scalars (incompatible with skills.sh). Do NOT use `|` literal blocks (preserves newlines). Keep total description under 1024 characters and ≤60 words.
 
-> ⚠️ **Do NOT add "DO NOT USE FOR:" clauses.** Anti-trigger clauses cause keyword contamination on Claude Sonnet and similar models — they introduce the very keywords that trigger wrong-skill activation. Use positive routing with distinctive `WHEN:` phrases instead.
+> ⚠️ **"DO NOT USE FOR:" carries context-dependent risk.** In multi-skill environments (10+ skills with overlapping domains), anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and fast-pattern-matching models ([evidence](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). For small, isolated skill sets (1-5 skills), the risk is low. When in doubt, use positive routing with `WHEN:` and distinctive quoted phrases.
 
 ## Test Scaffolding
 

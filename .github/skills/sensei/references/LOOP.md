@@ -437,3 +437,37 @@ git log --oneline -- plugin/skills/{skill-name}/SKILL.md
 # See diff for a commit
 git show {commit-hash}
 ```
+
+
+## Success Criteria
+
+Beyond frontmatter scoring, Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends defining runtime success criteria.
+
+### Quantitative Metrics
+
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| Trigger accuracy | 90%+ of relevant queries | Run 10-20 test queries that should trigger the skill |
+| Tool call efficiency | Fewer calls with skill than without | Compare same task with/without skill |
+| Error rate | 0 failed API calls per workflow | Monitor MCP logs during test runs |
+
+### Qualitative Metrics
+
+| Metric | How to Assess |
+|--------|---------------|
+| No next-step prompting needed | Note how often you redirect or clarify during testing |
+| Workflows complete without correction | Run same request 3-5 times, compare consistency |
+
+## Runtime Iteration Signals
+
+### Undertriggering
+**Symptoms:** Skill doesn't load when it should, users manually enabling it.
+**Fixes:** Add more trigger phrases, include technical term keywords, test with paraphrased requests.
+
+### Overtriggering
+**Symptoms:** Skill loads for irrelevant queries, users disabling it.
+**Fixes:** Make description more specific, use distinctive WHEN: phrases. In small skill sets: adding negative triggers may help. In large sets (10+): prefer positive-only routing.
+
+### Execution Issues
+**Symptoms:** Inconsistent results, API failures, user corrections needed.
+**Fixes:** Add error handling to body, add validation steps, consider bundling validation scripts.
