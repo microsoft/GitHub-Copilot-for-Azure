@@ -2,4 +2,11 @@ param(
     [string]$BuildId
 )
 
-Write-Host "Invoking Copilot Benchmarks for Build ID: $BuildId"
+
+
+# Install MSBench CLI
+Write-Host "Installing keyring"
+pip install keyring artifacts-keyring
+
+Write-Host "Listing key vaults in the resource group"
+az keyvault list --resource-group rg-msbench-eval-kv-azure-mcp --query "[].name" -o tsv

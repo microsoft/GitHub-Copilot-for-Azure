@@ -1,3 +1,6 @@
+trigger: none
+pr: none
+
 stages:
 - stage: RunBenchmark
   pool:
@@ -14,7 +17,8 @@ stages:
     - task: AzureCLI@2
       displayName: 'Run Copilot Benchmarks script'
       inputs:
-        azureSubscription: 'Azure SDK Engineering System'
+        connectedServiceNameARM: 'azure_msbench_eval'
+        addSpnToEnvironment: true
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
