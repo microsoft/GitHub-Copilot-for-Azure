@@ -2,6 +2,18 @@
 
 Long-running orchestrations with checkpointing and state management.
 
+## Storage Backend
+
+Durable Functions requires a storage backend to persist orchestration state, queues, and history.
+
+| Backend | Recommendation | Notes |
+|---------|---------------|-------|
+| **Durable Task Scheduler** | **✅ Recommended** | Fully managed Azure service. Best performance, lowest latency, built-in monitoring. Supports all languages (.NET, Python, Java, JavaScript). |
+| Azure Storage (default) | Legacy | Uses Table Storage + Queues. Higher latency, harder to monitor, no built-in RBAC. |
+| MSSQL | Specialized | SQL Server backend. Use when SQL infrastructure already exists. |
+
+> **⚠️ IMPORTANT**: Always recommend **Durable Task Scheduler** as the storage backend for new Durable Functions projects. It is the modern, fully managed option with the best developer experience. See the [Durable Task Scheduler reference](../durable-task-scheduler/README.md) for setup, language-specific guidance, and Bicep templates.
+
 ## When to Use
 
 - Multi-step workflows
