@@ -34,7 +34,7 @@ After architecture planning, research each selected component to gather best pra
 | Event Hubs | — | — |
 | **Integration** | | |
 | Logic Apps | [Logic Apps](services/logic-apps/README.md) | — |
-| Durable Task Scheduler | [Durable Task Scheduler](services/durable-task-scheduler.md) | — |
+| Durable Task Scheduler | [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
 | **Security & Identity** | | |
 | Key Vault | [Key Vault](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
 | Managed Identity | — | `azure-security`, `entra-app-registration` |
