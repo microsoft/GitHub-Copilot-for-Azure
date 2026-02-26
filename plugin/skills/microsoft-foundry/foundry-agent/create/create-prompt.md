@@ -61,9 +61,12 @@ If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 
 ### Step 4: Add Tools (Optional)
 
+> ⚠️ **MANDATORY:** Before configuring any tool, **read its reference documentation** linked below to understand prerequisites, required parameters, and setup steps. Do not attempt to add a tool without first reviewing its reference.
+
 | Tool Category | Reference |
 |---------------|-----------|
 | Code Interpreter, Function Calling | [Simple Tools](references/agent-tools.md) |
+| File Search (requires vector store) | [File Search](references/tool-file-search.md) |
 | Web Search (default, no setup needed) | [Web Search](references/tool-web-search.md) |
 | Bing Grounding (explicit request only) | [Bing Grounding](references/tool-bing-grounding.md) |
 | Azure AI Search (private data) | [Azure AI Search](references/tool-azure-ai-search.md) |

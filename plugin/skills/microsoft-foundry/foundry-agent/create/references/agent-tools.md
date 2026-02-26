@@ -27,6 +27,7 @@ For code samples, see: [Function Calling tool documentation](https://learn.micro
 | Tool | Connection? | Reference |
 |------|-------------|-----------|
 | `CodeInterpreterTool` | No | This file |
+| `FileSearchTool` | No (vector store required) | [tool-file-search.md](tool-file-search.md) |
 | `FunctionTool` | No | This file |
 | `WebSearchPreviewTool` | No | [tool-web-search.md](tool-web-search.md) |
 | `BingGroundingAgentTool` | Yes (Bing) | [tool-bing-grounding.md](tool-bing-grounding.md) |
