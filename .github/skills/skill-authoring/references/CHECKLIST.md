@@ -10,7 +10,10 @@ Use this checklist before submitting a new skill or updating an existing one.
 - [ ] `name` matches the parent directory name
 - [ ] `description` field is present and 1-1024 characters
 - [ ] `description` explains WHAT the skill does
-- [ ] `description` explains WHEN to use it (activation triggers)
+- [ ] `description` explains WHEN to use it (use `WHEN:` with quoted trigger phrases)
+- [ ] `description` does NOT contain `DO NOT USE FOR:` (keyword contamination risk)
+- [ ] `description` is ≤ 60 words (cross-model density)
+- [ ] `description` uses inline double-quoted string (not `>-` folded scalar)
 
 ## Token Budget
 

@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
 import { getAllAssistantMessages } from "./evaluate";
 import { redactSecrets } from "./redact";
 
@@ -391,6 +391,7 @@ export function useAgentRunner() {
 
       const session = await client.createSession({
         model: "claude-sonnet-4.5",
+        onPermissionRequest: approveAll,
         skillDirectories: [skillDirectory],
         mcpServers: {
           azure: {
@@ -735,6 +736,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
 
     session = await client.createSession({
       model: "claude-sonnet-4.5",
+      onPermissionRequest: approveAll,
       skillDirectories: [skillDirectory],
       mcpServers: {
         azure: {
