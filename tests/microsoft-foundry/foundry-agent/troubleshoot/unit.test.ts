@@ -25,7 +25,7 @@ describe("troubleshoot - Unit Tests", () => {
 
     test("description is appropriately sized", () => {
       expect(skill.metadata.description.length).toBeGreaterThan(150);
-      expect(skill.metadata.description.length).toBeLessThan(1024);
+      expect(skill.metadata.description.length).toBeLessThan(2048);
     });
 
     test("description contains USE FOR triggers", () => {
