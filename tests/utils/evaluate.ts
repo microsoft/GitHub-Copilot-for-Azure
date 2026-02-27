@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner";
 
 /**
  * Extract all powershell command strings from agent metadata.
@@ -78,20 +78,35 @@ export function hasFile(files: string[], pattern: RegExp): boolean {
  * List files in a workspace, log them, and assert expected/unexpected file patterns.
  */
 export function expectFiles(
-  workspacePath: string,
-  expected: RegExp[],
-  unexpected: RegExp[],
+    workspacePath: string,
+    expected: RegExp[],
+    unexpected: RegExp[],
 ): void {
     const files = listFilesRecursive(workspacePath);
 
     for (const pattern of expected) {
-    expect(hasFile(files, pattern)).toBe(true);
+        expect(hasFile(files, pattern)).toBe(true);
     }
     for (const pattern of unexpected) {
-    expect(hasFile(files, pattern)).toBe(false);
+        expect(hasFile(files, pattern)).toBe(false);
     }
 }
-  
+
+// ─── Agent metadata helpers ──────────────────────────────────────────────────
+
+/**
+ * Check if a skill was invoked during the session
+ */
+export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
+    return metadata.events
+        .filter(event => event.type === "tool.execution_start")
+        .filter(event => event.data.toolName === "skill")
+        .some(event => {
+            const args = event.data.arguments;
+            return JSON.stringify(args).includes(skillName);
+        });
+}
+
 export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
     const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
 
@@ -100,69 +115,94 @@ export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string):
     }
 }
 
-// ─── Agent metadata helpers ──────────────────────────────────────────────────
-
 /**
  * Get all assistant messages from agent metadata
  */
 export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
-  const allMessages: Record<string, string> = {};
+    const allMessages: Record<string, string> = {};
 
-  agentMetadata.events.forEach(event => {
-    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
-      allMessages[event.data.messageId] = event.data.content;
-    }
-    if (event.type === "assistant.message_delta" && event.data.messageId) {
-      if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
-      } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
-      }
-    }
-  });
+    agentMetadata.events.forEach(event => {
+        if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
+            allMessages[event.data.messageId] = event.data.content;
+        }
+        if (event.type === "assistant.message_delta" && event.data.messageId) {
+            if (allMessages[event.data.messageId]) {
+                allMessages[event.data.messageId] += event.data.deltaContent ?? "";
+            } else {
+                allMessages[event.data.messageId] = event.data.deltaContent ?? "";
+            }
+        }
+    });
 
-  return Object.values(allMessages).join("\n");
+    return Object.values(allMessages).join("\n");
 }
 
 /** Stringify tool call arguments safely */
 export function argsString(event: { data: Record<string, unknown> }): string {
-  try {
-    return JSON.stringify(event.data.arguments ?? {});
-  } catch {
-    return String(event.data.arguments);
-  }
+    try {
+        return JSON.stringify(event.data.arguments ?? {});
+    } catch {
+        return String(event.data.arguments);
+    }
+}
+
+/**
+ * Get all tool calls made during the session
+ */
+export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): Array<{
+    id: string;
+    timestamp: string;
+    parentId: string | null;
+    ephemeral?: boolean;
+    type: "tool.execution_start";
+    data: {
+        toolCallId: string;
+        toolName: string;
+        arguments?: unknown;
+        mcpServerName?: string;
+        mcpToolName?: string;
+        parentToolCallId?: string;
+    };
+}> {
+    let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
+
+    if (toolName) {
+        calls = calls.filter(event => event.data.toolName === toolName);
+    }
+
+    return calls;
 }
 
 /** Get all tool execution results (complete events) */
 export function getToolResults(metadata: AgentMetadata): Array<{
-  toolCallId: string;
-  success: boolean;
-  content: string;
-  error: string;
+    toolCallId: string;
+    success: boolean;
+    content: string;
+    error: string;
 }> {
-  return metadata.events
-    .filter(e => e.type === "tool.execution_complete")
-    .map(e => ({
-      toolCallId: e.data.toolCallId as string,
-      success: e.data.success as boolean,
-      content: (e.data.result as { content?: string })?.content ?? "",
-      error: (e.data.error as { message?: string })?.message ?? ""
-    }));
+    return metadata.events
+        .filter(e => e.type === "tool.execution_complete")
+        .map(e => ({
+            toolCallId: e.data.toolCallId as string,
+            success: e.data.success as boolean,
+            content: (e.data.result as { content?: string })?.content ?? "",
+            error: (e.data.error as { message?: string })?.message ?? ""
+        }));
 }
 
 /** Get combined text of all tool args and results for scanning */
 export function getAllToolText(metadata: AgentMetadata): string {
-  const parts: string[] = [];
-  for (const event of metadata.events) {
-    if (event.type === "tool.execution_start") {
-      parts.push(argsString(event));
+    const parts: string[] = [];
+    for (const event of metadata.events) {
+        if (event.type === "tool.execution_start") {
+            parts.push(argsString(event));
+        }
+        if (event.type === "tool.execution_complete") {
+            const result = event.data.result as { content?: string } | undefined;
+            if (result?.content) parts.push(result.content);
+            const error = event.data.error as { message?: string } | undefined;
+            if (error?.message) parts.push(error.message);
+        }
     }
-    if (event.type === "tool.execution_complete") {
-      const result = event.data.result as { content?: string } | undefined;
-      if (result?.content) parts.push(result.content);
-      const error = event.data.error as { message?: string } | undefined;
-      if (error?.message) parts.push(error.message);
-    }
-  }
-  return parts.join("\n");
+    return parts.join("\n");
 }
