@@ -12,6 +12,13 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
+      model-override:
+        description: 'Model to use for testing'
+        required: false
+        type: choice
+        options:
+          - claude-sonnet-4.5
+          - claude-opus-4.5
       test-pattern:
         description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
         required: false
@@ -24,6 +31,10 @@ on:
         default: false
   workflow_call:
     inputs:
+      model-override:
+        description: 'Model to use for testing'
+        required: false
+        type: string
       test-pattern:
         description: 'Optional: Comma delimited tests by name or describe block'
         required: false
@@ -152,7 +163,9 @@ jobs:
         env:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}
+          MODEL_OVERRIDE: ${{ inputs.model-override }}
         run: |
+          echo test with $MODEL_OVERRIDE
           npm run test:integration -- azure-deploy "${{ matrix.test-group }}"
         continue-on-error: true
 
