@@ -20,6 +20,7 @@
 import { dirname, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { parseSkillContent } from "../shared/parse-skill.js";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -43,55 +44,6 @@ export interface ValidationResult {
   skill: string;
   file: string;
   issues: ValidationIssue[];
-}
-
-// ── Frontmatter extraction ───────────────────────────────────────────────────
-
-/**
- * Extract the raw frontmatter block (between --- delimiters) from file content.
- * Returns null if no valid frontmatter is found.
- */
-export function extractFrontmatter(content: string): string | null {
-  if (!content.startsWith("---")) return null;
-
-  const endIndex = content.indexOf("\n---", 3);
-  if (endIndex === -1) return null;
-
-  return content.substring(3, endIndex).trim();
-}
-
-/**
- * Extract a simple YAML field value from raw frontmatter text.
- * Handles inline double-quoted strings (with escaped quotes inside).
- * Returns null if the field is not found.
- */
-export function extractField(frontmatter: string, field: string): string | null {
-  const lines = frontmatter.split("\n");
-  const prefix = `${field}:`;
-
-  for (const line of lines) {
-    if (line.startsWith(prefix)) {
-      const value = line.substring(prefix.length).trim();
-
-      // Handle double-quoted strings
-      if (value.startsWith('"')) {
-        // May span multiple lines — collect until closing quote
-        // For single-line (the common case), strip quotes
-        if (value.endsWith('"') && value.length > 1) {
-          return value.slice(1, -1).replace(/\\"/g, '"');
-        }
-      }
-
-      // Handle single-quoted strings
-      if (value.startsWith("'") && value.endsWith("'") && value.length > 1) {
-        return value.slice(1, -1);
-      }
-
-      return value || null;
-    }
-  }
-
-  return null;
 }
 
 // ── Validation checks ────────────────────────────────────────────────────────
@@ -229,16 +181,16 @@ export function validateNoReservedPrefix(name: string | null): ValidationIssue[]
 export function validateSkillFile(filePath: string): ValidationResult {
   const parentDir = basename(dirname(filePath));
   const content = readFileSync(filePath, "utf-8");
-  const rawFrontmatter = extractFrontmatter(content);
+  const parsed = parseSkillContent(content);
   const issues: ValidationIssue[] = [];
 
-  if (rawFrontmatter === null) {
+  if (parsed === null) {
     issues.push({ check: "frontmatter", message: "Missing YAML frontmatter (file must start with ---)" });
     return { skill: parentDir, file: filePath, issues };
   }
 
-  const name = extractField(rawFrontmatter, "name");
-  const description = extractField(rawFrontmatter, "description");
+  const name = typeof parsed.data.name === "string" ? parsed.data.name : null;
+  const description = typeof parsed.data.description === "string" ? parsed.data.description : null;
 
   // Check required fields
   if (description === null) {
@@ -248,11 +200,11 @@ export function validateSkillFile(filePath: string): ValidationResult {
   // Check 1: Name validation
   issues.push(...validateName(name, parentDir));
 
-  // Check 2: Description format
-  issues.push(...validateDescriptionFormat(rawFrontmatter));
+  // Check 2: Description format (needs raw YAML source)
+  issues.push(...validateDescriptionFormat(parsed.raw));
 
-  // Check 3: No XML tags
-  issues.push(...validateNoXmlTags(rawFrontmatter));
+  // Check 3: No XML tags (needs raw YAML source)
+  issues.push(...validateNoXmlTags(parsed.raw));
 
   // Check 4: No reserved prefixes
   issues.push(...validateNoReservedPrefix(name));

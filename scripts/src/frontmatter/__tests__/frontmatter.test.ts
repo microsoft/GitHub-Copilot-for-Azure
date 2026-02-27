@@ -6,14 +6,13 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
-  extractFrontmatter,
-  extractField,
   validateName,
   validateDescriptionFormat,
   validateNoXmlTags,
   validateNoReservedPrefix,
   validateSkillFile,
 } from "../cli.js";
+import { parseSkillContent } from "../../shared/parse-skill.js";
 
 const TEST_DIR = resolve(__dirname, "__test_frontmatter__");
 
@@ -30,49 +29,53 @@ describe("Frontmatter Spec Validator", () => {
     }
   });
 
-  // ── extractFrontmatter ───────────────────────────────────────────────────
+  // ── parseSkillContent (shared parser) ─────────────────────────────────────
 
-  describe("extractFrontmatter", () => {
-    it("extracts frontmatter between --- delimiters", () => {
+  describe("parseSkillContent", () => {
+    it("parses valid frontmatter into data, content, and raw", () => {
       const content = "---\nname: test\ndescription: \"Hello\"\n---\n\n# Body";
-      expect(extractFrontmatter(content)).toBe("name: test\ndescription: \"Hello\"");
+      const result = parseSkillContent(content);
+      expect(result).not.toBeNull();
+      expect(result!.data.name).toBe("test");
+      expect(result!.data.description).toBe("Hello");
+      expect(result!.content).toContain("# Body");
+      expect(result!.raw).toContain("name: test");
     });
 
     it("returns null when no opening ---", () => {
-      expect(extractFrontmatter("# Just a markdown file")).toBeNull();
+      expect(parseSkillContent("# Just a markdown file")).toBeNull();
     });
 
     it("returns null when no closing ---", () => {
-      expect(extractFrontmatter("---\nname: test\n")).toBeNull();
-    });
-  });
-
-  // ── extractField ─────────────────────────────────────────────────────────
-
-  describe("extractField", () => {
-    it("extracts a double-quoted string value", () => {
-      const fm = "name: test\ndescription: \"Hello world\"";
-      expect(extractField(fm, "description")).toBe("Hello world");
+      expect(parseSkillContent("---\nname: test\n")).toBeNull();
     });
 
-    it("extracts an unquoted value", () => {
-      const fm = "name: my-skill\ndescription: Hello";
-      expect(extractField(fm, "name")).toBe("my-skill");
+    it("normalises Windows line-endings", () => {
+      const content = "---\r\nname: test\r\ndescription: \"Hello\"\r\n---\r\n\r\n# Body";
+      const result = parseSkillContent(content);
+      expect(result).not.toBeNull();
+      expect(result!.data.name).toBe("test");
     });
 
-    it("extracts a single-quoted value", () => {
-      const fm = "name: 'my-skill'";
-      expect(extractField(fm, "name")).toBe("my-skill");
+    it("extracts raw YAML for format checks", () => {
+      const content = "---\nname: test\ndescription: >-\n  Some text.\n---\n\n# Body";
+      const result = parseSkillContent(content);
+      expect(result).not.toBeNull();
+      expect(result!.raw).toContain("description: >-");
     });
 
-    it("returns null for missing field", () => {
-      const fm = "name: test\ndescription: \"Hello\"";
-      expect(extractField(fm, "compatibility")).toBeNull();
+    it("handles single-quoted YAML values", () => {
+      const content = "---\nname: 'my-skill'\ndescription: 'Hello world'\n---\n\n# Body";
+      const result = parseSkillContent(content);
+      expect(result).not.toBeNull();
+      expect(result!.data.name).toBe("my-skill");
     });
 
     it("handles escaped quotes in double-quoted strings", () => {
-      const fm = "description: \"Say \\\"hello\\\"\"";
-      expect(extractField(fm, "description")).toBe("Say \"hello\"");
+      const content = "---\nname: test\ndescription: \"Say \\\"hello\\\"\"\n---\n\n# Body";
+      const result = parseSkillContent(content);
+      expect(result).not.toBeNull();
+      expect(result!.data.description).toBe("Say \"hello\"");
     });
   });
 
