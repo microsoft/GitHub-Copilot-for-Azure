@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Invoke for ANY app work related to Azure: creating, building, updating, migrating, or modernizing apps. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with Terraform, Azure with azd, generate azure.yaml, generate Bicep or Terraform, prepare Azure Functions, create Azure Functions app, create serverless HTTP API, create function app, create event-driven function. DO NOT USE FOR: only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy), pure Terraform without azd (prefer azd+Terraform)."
+description: "Default entry point for Azure application development EXCEPT migration — if the user says 'migrate' or mentions AWS/GCP/Lambda, use azure-migrate instead. Generates infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, develop a project, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with Terraform, Azure with azd, generate azure.yaml, generate Bicep or Terraform, prepare Azure Functions, create Azure Functions app, create serverless HTTP API, create function app, create event-driven function. DO NOT USE FOR: migrate Lambda, migrate AWS, migrate GCP, migrate to Azure, any cross-cloud migration (use azure-migrate), only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy), pure Terraform without azd (prefer azd+Terraform)."
 ---
 
 # Azure Prepare
@@ -17,7 +17,7 @@ Activate this skill when user wants to:
 - Create a new application
 - Add services or components to an existing app
 - Make updates or changes to existing application
-- Modernize or migrate an application
+- Modernize an application
 - Set up Azure infrastructure
 - Deploy to Azure or host on Azure
 
