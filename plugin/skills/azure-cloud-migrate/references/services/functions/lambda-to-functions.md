@@ -76,7 +76,7 @@ src/
 
 ```
 ✅ Use managed identity connections:
-   AzureWebJobsStorage__accountName
+   AzureWebJobsStorage__blobServiceUri
 
 ✅ Use specific endpoint variables:
    COMPUTER_VISION_ENDPOINT
