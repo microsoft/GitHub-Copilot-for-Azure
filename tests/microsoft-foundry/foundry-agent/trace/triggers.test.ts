@@ -21,14 +21,14 @@ describe("trace - Trigger Tests", () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Analyze my agent traces in App Insights",
+      "Analyze my Foundry agent traces in App Insights",
       "Search agent conversations in Foundry",
       "Find failing traces for my Foundry agent",
       "My Foundry agent is slow, show me the latency",
       "Show me the trace for this Foundry agent conversation",
       "Why is my Foundry agent returning errors in production",
-      "Search traces by conversation ID in Foundry",
-      "Find slow agent traces in App Insights",
+      "Search Foundry agent traces by conversation ID",
+      "Find slow Foundry agent traces in App Insights",
       "Show me GenAI telemetry for my Foundry agent",
       "Analyze production errors for my Foundry agent",
     ];
