@@ -51,6 +51,32 @@ Select hosting stack and map components to Azure services.
 
 > **AKS Planning:** For AKS SKU selection (Automatic vs Standard), networking, identity, scaling, and security configuration, invoke the **azure-kubernetes** skill.
 
+### Container Hosting: Container Apps vs AKS
+
+| Factor | Container Apps | AKS |
+|--------|:--------------:|:---:|
+| **Scale to zero** | ✓✓ | |
+| **Kubernetes API access** | | ✓✓ |
+| **Custom operators/CRDs** | | ✓✓ |
+| **Service mesh** | Dapr (built-in) | Istio, Cilium |
+| **GPU workloads** | | ✓✓ |
+| **Best for** | Microservices, event-driven | Full K8s control, complex workloads |
+
+#### When to Use Container Apps
+- Microservices without Kubernetes complexity
+- Event-driven workloads (KEDA built-in)
+- Need scale-to-zero for cost optimization
+- Teams without Kubernetes expertise
+
+#### When to Use AKS
+- Need Kubernetes API/kubectl access
+- Require custom operators or CRDs
+- Service mesh requirements (Istio, Linkerd)
+- GPU/ML workloads
+- Complex networking or multi-tenant architectures
+
+> **AKS Planning:** For AKS SKU selection (Automatic vs Standard), networking, identity, scaling, and security configuration, invoke the **azure-kubernetes** skill.
+
 ## Service Mapping
 
 ### Hosting
