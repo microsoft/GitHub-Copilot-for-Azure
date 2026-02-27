@@ -118,7 +118,8 @@ Using APIM backend pool (preview) or policy-based load balancing:
             "https://aoai-eastus.openai.azure.com",
             "https://aoai-westus.openai.azure.com"
         };
-        var index = new Random().Next(backends.Length);
+        var hash = Math.Abs(context.RequestId.GetHashCode());
+        var index = hash % backends.Length;
         return backends[index];
     }" />
     <set-backend-service base-url="@((string)context.Variables["backendUrl"] + "/openai")" />
