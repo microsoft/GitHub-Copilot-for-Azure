@@ -71,7 +71,7 @@ When migrating S3 event triggers to Azure blob triggers with `source: 'EventGrid
 | **Event Grid subscription via Bicep/ARM** | CLI-based webhook validation handshake times out on Flex Consumption | Use `listKeys()` in Bicep to obtain the `blobs_extension` system key at deployment time |
 | **Storage Queue Data Contributor** RBAC | Identity-based queue access for poison messages | 403 errors during blob trigger indexing |
 
-See [lambda-to-functions.md](services/functions/lambda-to-functions.md#flex-consumption--blob-trigger-with-eventgrid-source) for Bicep patterns.
+See [lambda-to-functions.md](lambda-to-functions.md#flex-consumption--blob-trigger-with-eventgrid-source) for Bicep patterns.
 
 ### UAMI Credential Pattern
 
@@ -123,7 +123,7 @@ Load the appropriate runtime reference for the target language:
 
 ## Scenario-Specific Guidance
 
-See [lambda-to-functions.md](services/functions/lambda-to-functions.md) for detailed trigger mapping, code patterns, and examples.
+See [lambda-to-functions.md](lambda-to-functions.md) for detailed trigger mapping, code patterns, and examples.
 
 ## Handoff to azure-prepare
 
