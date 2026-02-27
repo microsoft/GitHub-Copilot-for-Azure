@@ -30,6 +30,7 @@ Activate this skill when user wants to:
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
 7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
+8. ⛔ **NEVER delete user project directories** — When adding features to an existing project, MODIFY existing files. Templates and `azd init` are for NEW projects only. NEVER run `rm -rf` on user workspace directories.
 
 ---
 
