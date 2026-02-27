@@ -75,10 +75,12 @@ src/
 ## Environment Variables
 
 ```
-✅ Use managed identity connections:
+✅ Use managed identity connections for Azure Functions storage:
    AzureWebJobsStorage__blobServiceUri
+   AzureWebJobsStorage__queueServiceUri
+   AzureWebJobsStorage__tableServiceUri
 
-✅ Use specific endpoint variables:
+✅ Use specific endpoint variables for other services:
    COMPUTER_VISION_ENDPOINT
    STORAGE_ACCOUNT_URL
    SOURCE_CONTAINER_NAME
