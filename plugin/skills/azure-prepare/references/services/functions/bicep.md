@@ -85,7 +85,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
       runtime: {
         name: 'python'  // or 'node', 'dotnet-isolated'
-        version: '3.11'
+        version: '<version>'  // Query latest GA: https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages
       }
     }
     siteConfig: {
