@@ -25,9 +25,9 @@ Build reliable, fault-tolerant workflows using durable execution with Azure Dura
 ## Quick Start - Local Emulator
 
 ```bash
-# Start the emulator (update the tag as needed; see https://mcr.microsoft.com/v2/dts/dts-emulator/tags/list for newer versions)
-docker pull mcr.microsoft.com/dts/dts-emulator:v0.0.10
-docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dts/dts-emulator:v0.0.10
+# Start the emulator (see https://mcr.microsoft.com/v2/dts/dts-emulator/tags/list for available versions)
+docker pull mcr.microsoft.com/dts/dts-emulator:latest
+docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dts/dts-emulator:latest
 
 # Dashboard available at http://localhost:8082
 ```
@@ -62,8 +62,9 @@ For provisioning, Bicep templates, managed identity configuration, and deploymen
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| **403 PermissionDenied** on gRPC call (e.g., `client.start_new()`) | Function App managed identity lacks RBAC on the Durable Task Scheduler resource | Assign `Durable Task Data Contributor` role (`5f6a3c3e-0da3-4079-b4f3-4db62a1d3c09`) to the identity (SAMI or UAMI) scoped to the Durable Task Scheduler resource. For UAMI, also ensure the connection string includes `ClientID=<uami-client-id>` |
+| **403 PermissionDenied** on gRPC call (e.g., `client.start_new()`) | Function App managed identity lacks RBAC on the Durable Task Scheduler resource, or IP allowlist blocks traffic | 1. Assign `Durable Task Data Contributor` role (`0ad04412-c4d5-4796-b79c-f76d14c8d402`) to the identity (SAMI or UAMI) scoped to the Durable Task Scheduler resource. For UAMI, also ensure the connection string includes `ClientID=<uami-client-id>`. 2. Ensure the scheduler's `ipAllowlist` includes `0.0.0.0/0` (an empty list denies all traffic). 3. RBAC propagation can take up to 10 minutes — restart the Function App after assigning roles. |
 | **Connection refused** to emulator | Emulator container not running or wrong port | Verify container is running: `docker ps` and confirm port 8080 is mapped |
+| **403 despite correct RBAC** | Scheduler IP allowlist is empty (denies all) | Set `ipAllowlist: ['0.0.0.0/0']` in Bicep or update via CLI: `az durabletask scheduler update --ip-allowlist '0.0.0.0/0'` |
 | **TaskHub not found** | Task hub not provisioned or name mismatch | Ensure the `TaskHub` parameter in the `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` matches the provisioned task hub name |
 
 ## References
