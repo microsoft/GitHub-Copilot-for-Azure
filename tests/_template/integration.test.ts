@@ -15,11 +15,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import {
   useAgentRunner,
-  isSkillInvoked,
   areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
+import { isSkillInvoked } from "../utils/evaluate";
 
 // Replace with your skill name
 const SKILL_NAME = "your-skill-name";

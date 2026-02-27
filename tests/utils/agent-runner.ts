@@ -464,19 +464,6 @@ export function useAgentRunner() {
 }
 
 /**
- * Check if a skill was invoked during the session
- */
-export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string): boolean {
-  return agentMetadata.events
-    .filter(event => event.type === "tool.execution_start")
-    .filter(event => event.data.toolName === "skill")
-    .some(event => {
-      const args = event.data.arguments;
-      return JSON.stringify(args).includes(skillName);
-    });
-}
-
-/**
  * Check if all tool calls for a given tool were successful
  */
 export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName?: string): boolean {
@@ -529,19 +516,6 @@ export function doesAssistantMessageIncludeKeyword(
     }
     return message.toLowerCase().includes(keyword.toLowerCase());
   });
-}
-
-/**
- * Get all tool calls made during the session
- */
-export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): SessionEvent[] {
-  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
-
-  if (toolName) {
-    calls = calls.filter(event => event.data.toolName === toolName);
-  }
-
-  return calls;
 }
 
 // Track skip reason for reporting
