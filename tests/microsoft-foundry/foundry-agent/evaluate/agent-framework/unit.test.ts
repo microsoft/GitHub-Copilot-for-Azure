@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { loadSkill, LoadedSkill } from "../../../../utils/skill-loader";
 
-const SKILL_NAME = "microsoft-foundry/agent/evaluate/agent-framework";
+const SKILL_NAME = "microsoft-foundry/foundry-agent/evaluate/agent-framework";
 
 describe("agent-framework (evaluate) - Unit Tests", () => {
   let skill: LoadedSkill;

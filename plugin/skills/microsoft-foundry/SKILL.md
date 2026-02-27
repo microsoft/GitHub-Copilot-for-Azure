@@ -19,6 +19,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
 | **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
 | **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
+| **evaluate** | Evaluate AI agents built with Microsoft Agent Framework using pytest-agent-evals plugin. Supports built-in and custom evaluators with VS Code Test Explorer integration. | [evaluate](foundry-agent/evaluate/agent-framework/SKILL.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
@@ -40,6 +41,7 @@ Match user intent to the correct workflow. Read each sub-skill in order before e
 | Update/redeploy an agent after code changes | deploy → invoke |
 | Invoke/test/chat with an agent | invoke |
 | Troubleshoot an agent issue | invoke → troubleshoot |
+| Evaluate agent performance / add evaluators | evaluate |
 | Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
 | Start/stop agent container | deploy |
 
