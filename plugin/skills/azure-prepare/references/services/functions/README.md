@@ -60,8 +60,9 @@ services:
 > **Primary Source:** [Azure Functions Supported Languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages)
 >
 > Use the azure-documentation MCP tool to fetch current supported versions:
-> ```text
-> azure-documentation query: "Azure Functions supported language versions"
+> ```yaml
+> intent: "Azure Functions supported language runtime versions"
+> learn: true
 > ```
 
 ### Version Selection Priority
