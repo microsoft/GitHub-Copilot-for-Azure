@@ -217,6 +217,25 @@ azd deploy --no-prompt        # Deploy code (RBAC now active)
 > **CRITICAL: Never enable `allowSharedKeyAccess: true`** as a workaround for 403 errors.
 > The correct solution is waiting for RBAC propagation, not disabling security.
 
+### Step 8: Test the Deployment
+
+> ⚠️ **MANDATORY: Read [common/testing.md](common/testing.md) before testing**
+>
+> Common pitfalls that cause false "broken" reports:
+> - **Route prefix**: Functions use `/api/` prefix by default. Test `https://host/api/shorten`, not `https://host/shorten`
+> - **Cold start**: First request may take 5-30 seconds on Consumption plans
+> - **RBAC delay**: Wait 60 seconds after provision before testing RBAC-dependent operations
+
+**Quick test example:**
+```bash
+# Note: /api/ prefix is required unless routePrefix is set to "" in host.json
+FUNC_URL="https://func-app.azurewebsites.net"
+
+# Test with correct /api/ prefix
+curl "$FUNC_URL/api/health"
+curl -X POST "$FUNC_URL/api/shorten" -H "Content-Type: application/json" -d '{"url":"https://example.com"}'
+```
+
 ## Base Template Lookup
 
 | Language | Bicep Template | Terraform Template |
