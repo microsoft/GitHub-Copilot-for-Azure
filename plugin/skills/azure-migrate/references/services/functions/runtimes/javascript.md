@@ -3,6 +3,47 @@
 > **Model**: JavaScript v4 programming model. **NO** `function.json` files.
 > Import: `const { app, input, output } = require('@azure/functions');`
 
+## Lambda Migration Rules
+
+> Shared rules (bindings over SDKs, latest runtime, identity-first auth) → [global-rules.md](../global-rules.md)
+
+JS-specific:
+- Use `extraInputs` / `extraOutputs` with binding path expressions (e.g., `{queueTrigger}`) for dynamic blob I/O
+- Access metadata via `context.triggerMetadata`
+- `package.json`: `"@azure/functions": "^4.0.0"`
+
+### Correct Migration Pattern
+
+```javascript
+const { app, input, output } = require('@azure/functions');
+
+// Use bindings for blob I/O instead of BlobServiceClient SDK
+const blobInput = input.storageBlob({
+  path: 'source-container/{queueTrigger}',
+  connection: 'AzureWebJobsStorage'
+});
+
+const blobOutput = output.storageBlob({
+  path: 'destination-container/{queueTrigger}',
+  connection: 'AzureWebJobsStorage'
+});
+
+app.storageQueue('processImage', {
+  queueName: 'image-processing',
+  connection: 'AzureWebJobsStorage',
+  extraInputs: [blobInput],
+  extraOutputs: [blobOutput],
+  handler: async (queueItem, context) => {
+    const sourceBlob = context.extraInputs.get(blobInput);
+    context.log(`Processing blob: ${queueItem}`);
+    // Process the blob...
+    context.extraOutputs.set(blobOutput, processedBuffer);
+  }
+});
+```
+
+> ❌ Do NOT use legacy v1-v3 `module.exports` — always use `app.*()` registration.
+
 ## HTTP Trigger
 
 ```javascript
@@ -49,7 +90,7 @@ const blobOutput = output.storageBlob({
 > 2. **Queue endpoint**: Set `AzureWebJobsStorage__queueServiceUri` in app settings. The blob extension uses queues internally for poison-message tracking with EventGrid source, even though you're not using a queue trigger.
 > 3. **Event Grid subscription via Bicep/ARM**: Do NOT create event subscriptions via CLI — webhook validation times out on Flex Consumption. Deploy as a Bicep resource using `listKeys()` to obtain the `blobs_extension` system key.
 >
-> See [lambda-to-functions.md](../services/lambda-to-functions.md#flex-consumption--blob-trigger-with-eventgrid-source) for full Bicep patterns.
+> See [lambda-to-functions.md](../lambda-to-functions.md#flex-consumption--blob-trigger-with-eventgrid-source) for full Bicep patterns.
 
 ### Using Azure AI Services with UAMI
 

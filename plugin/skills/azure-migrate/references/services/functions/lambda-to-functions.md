@@ -41,93 +41,18 @@ Detailed guidance for migrating AWS Lambda functions to Azure Functions.
 | CloudWatch Events (Scheduled) | `app.timer()` | NCRONTAB expressions |
 | DynamoDB Streams | Cosmos DB Change Feed trigger | Via `app.cosmosDB()` |
 
-## JavaScript v4 Programming Model
+## Runtime-Specific Migration Patterns
 
-### Rules
+For language-specific migration rules, correct/incorrect patterns, and code examples, see the runtime reference for the target language:
 
-- Import SDK: `const { app, input, output } = require('@azure/functions')`
-- Define functions via `app.*()` methods
-- Bindings configured inline — **NO** `function.json` files
-- **Always use bindings (`input.storageBlob`, `output.storageBlob`, `app.storageQueue`, etc.) instead of SDK clients** (`BlobServiceClient`, `QueueClient`). Only use SDK for services that have no binding equivalent (e.g., Azure AI Face API)
-- When a function needs to read or write blobs dynamically, use `extraInputs` / `extraOutputs` with binding path expressions like `{queueTrigger}` instead of creating `BlobServiceClient` manually
-- Use `context.triggerMetadata` for metadata access
-- Package.json must include `"@azure/functions": "^4.0.0"`
-- Host.json must use extension bundle `[4.*, 5.0.0)`
-- **Always use the latest supported Node.js version** (currently Node.js 22). Check [supported languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) for the latest
-
-### Correct Pattern
-
-```javascript
-const { app, input, output } = require('@azure/functions');
-
-// Use bindings for blob I/O instead of BlobServiceClient SDK
-const blobInput = input.storageBlob({
-  path: 'source-container/{queueTrigger}',
-  connection: 'AzureWebJobsStorage'
-});
-
-const blobOutput = output.storageBlob({
-  path: 'destination-container/{queueTrigger}',
-  connection: 'AzureWebJobsStorage'
-});
-
-app.storageQueue('processImage', {
-  queueName: 'image-processing',
-  connection: 'AzureWebJobsStorage',
-  extraInputs: [blobInput],
-  extraOutputs: [blobOutput],
-  handler: async (queueItem, context) => {
-    const sourceBlob = context.extraInputs.get(blobInput);
-    context.log(`Processing blob: ${queueItem}`);
-    // Process the blob...
-    context.extraOutputs.set(blobOutput, processedBuffer);
-  }
-});
-```
-
-> 💡 Blob trigger alternative (use `source: 'EventGrid'` for reliability):
-```javascript
-app.storageBlob('processImage', {
-  path: 'source-container/{name}',
-  connection: 'AzureWebJobsStorage',
-  source: 'EventGrid',
-  handler: async (blob, context) => {
-    context.log(`Processing blob: ${context.triggerMetadata.name}`);
-    // Function logic here
-  }
-});
-```
-
-### Incorrect Pattern (Do NOT Use)
-
-```javascript
-// ❌ Legacy v1-v3 model
-module.exports = async function (context, myBlob) {
-  context.log("Processing blob");
-};
-```
-
-## Python v2 Programming Model
-
-### Rules
-
-- Use decorators: `@app.blob_trigger()`, `@app.route()`, etc.
-- **NO** `function.json` files
-- Use `function_app.py` as the entry point
-
-### Correct Pattern
-
-```python
-import azure.functions as func
-
-app = func.FunctionApp()
-
-@app.blob_trigger(arg_name="myblob", path="source/{name}",
-                  connection="AzureWebJobsStorage",
-                  source="EventGrid")
-def process_image(myblob: func.InputStream):
-    logging.info(f"Processing blob: {myblob.name}")
-```
+| Runtime | Migration Patterns |
+|---------|-------------------|
+| JavaScript (Node.js v4) | [runtimes/javascript.md — Lambda Migration Rules](runtimes/javascript.md#lambda-migration-rules) |
+| Python (v2) | [runtimes/python.md — Lambda Migration Rules](runtimes/python.md#lambda-migration-rules) |
+| TypeScript (v4) | [runtimes/typescript.md](runtimes/typescript.md) |
+| C# (Isolated Worker) | [runtimes/csharp.md](runtimes/csharp.md) |
+| Java | [runtimes/java.md](runtimes/java.md) |
+| PowerShell | [runtimes/powershell.md](runtimes/powershell.md) |
 
 ## Project Structure
 
@@ -162,19 +87,6 @@ src/
    CONNECTION_STRING (use managed identity)
    API_KEY (use managed identity)
 ```
-
-## Runtime-Specific Trigger & Binding References
-
-Each file below contains all supported trigger and binding code patterns for the target language:
-
-| Runtime | Reference |
-|---------|----------|
-| JavaScript (Node.js v4) | [runtimes/javascript.md](../runtimes/javascript.md) |
-| TypeScript (v4) | [runtimes/typescript.md](../runtimes/typescript.md) |
-| Python (v2) | [runtimes/python.md](../runtimes/python.md) |
-| C# (Isolated Worker) | [runtimes/csharp.md](../runtimes/csharp.md) |
-| Java | [runtimes/java.md](../runtimes/java.md) |
-| PowerShell | [runtimes/powershell.md](../runtimes/powershell.md) |
 
 ## Reference Links
 

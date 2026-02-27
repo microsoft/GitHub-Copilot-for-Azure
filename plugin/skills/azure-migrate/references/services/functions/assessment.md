@@ -10,7 +10,7 @@ Generate a migration assessment report before any code changes.
 ## Assessment Steps
 
 1. **Identify Functions** — List all Lambda functions with runtimes, triggers, and dependencies
-2. **Map AWS Services** — Map AWS services to Azure equivalents (see [lambda-to-functions.md](services/lambda-to-functions.md))
+2. **Map AWS Services** — Map AWS services to Azure equivalents (see [lambda-to-functions.md](services/functions/lambda-to-functions.md))
 3. **Map Properties** — Map Lambda properties to Azure Functions properties
 4. **Check Dependencies** — List 3rd-party libraries and verify Azure compatibility
 5. **Analyze Code** — Check language support and runtime differences

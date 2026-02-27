@@ -4,12 +4,11 @@
 > Entry point: `function_app.py`
 > Import: `import azure.functions as func`
 
-```python
-import azure.functions as func
-import logging
+## Lambda Migration Rules
 
-app = func.FunctionApp()
-```
+> Shared rules (bindings over SDKs, latest runtime, identity-first auth) → [global-rules.md](../global-rules.md)
+
+Python-specific: all functions use the v2 decorator model shown throughout this file. No additional migration rules beyond global.
 
 ## HTTP Trigger
 
