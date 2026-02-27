@@ -34,8 +34,8 @@ describe("Frontmatter Spec Validator", () => {
 
   describe("extractFrontmatter", () => {
     it("extracts frontmatter between --- delimiters", () => {
-      const content = '---\nname: test\ndescription: "Hello"\n---\n\n# Body';
-      expect(extractFrontmatter(content)).toBe('name: test\ndescription: "Hello"');
+      const content = "---\nname: test\ndescription: \"Hello\"\n---\n\n# Body";
+      expect(extractFrontmatter(content)).toBe("name: test\ndescription: \"Hello\"");
     });
 
     it("returns null when no opening ---", () => {
@@ -51,7 +51,7 @@ describe("Frontmatter Spec Validator", () => {
 
   describe("extractField", () => {
     it("extracts a double-quoted string value", () => {
-      const fm = 'name: test\ndescription: "Hello world"';
+      const fm = "name: test\ndescription: \"Hello world\"";
       expect(extractField(fm, "description")).toBe("Hello world");
     });
 
@@ -66,13 +66,13 @@ describe("Frontmatter Spec Validator", () => {
     });
 
     it("returns null for missing field", () => {
-      const fm = 'name: test\ndescription: "Hello"';
+      const fm = "name: test\ndescription: \"Hello\"";
       expect(extractField(fm, "compatibility")).toBeNull();
     });
 
     it("handles escaped quotes in double-quoted strings", () => {
-      const fm = 'description: "Say \\"hello\\""';
-      expect(extractField(fm, "description")).toBe('Say "hello"');
+      const fm = "description: \"Say \\\"hello\\\"\"";
+      expect(extractField(fm, "description")).toBe("Say \"hello\"");
     });
   });
 
@@ -145,7 +145,7 @@ describe("Frontmatter Spec Validator", () => {
 
   describe("validateDescriptionFormat", () => {
     it("passes for inline double-quoted description", () => {
-      const fm = 'name: test\ndescription: "Deploy apps to Azure."';
+      const fm = "name: test\ndescription: \"Deploy apps to Azure.\"";
       expect(validateDescriptionFormat(fm)).toEqual([]);
     });
 
@@ -188,31 +188,31 @@ describe("Frontmatter Spec Validator", () => {
 
   describe("validateNoXmlTags", () => {
     it("passes for clean frontmatter", () => {
-      const fm = 'name: test\ndescription: "Deploy apps to Azure."';
+      const fm = "name: test\ndescription: \"Deploy apps to Azure.\"";
       expect(validateNoXmlTags(fm)).toEqual([]);
     });
 
     it("passes for descriptions with comparison text", () => {
       // The word "greater" or math comparisons shouldn't trigger
-      const fm = 'name: test\ndescription: "Description must be 150 chars"';
+      const fm = "name: test\ndescription: \"Description must be 150 chars\"";
       expect(validateNoXmlTags(fm)).toEqual([]);
     });
 
     it("fails for opening HTML tag", () => {
-      const fm = 'name: test\ndescription: "<script>alert(1)</script>"';
+      const fm = "name: test\ndescription: \"<script>alert(1)</script>\"";
       const issues = validateNoXmlTags(fm);
       expect(issues.length).toBeGreaterThan(0);
       expect(issues[0].check).toBe("no-xml-tags");
     });
 
     it("fails for self-closing XML tag", () => {
-      const fm = 'name: test\ndescription: "<br/>"';
+      const fm = "name: test\ndescription: \"<br/>\"";
       const issues = validateNoXmlTags(fm);
       expect(issues.length).toBeGreaterThan(0);
     });
 
     it("fails for XML-style instruction", () => {
-      const fm = 'name: test\ndescription: "<!DOCTYPE html>"';
+      const fm = "name: test\ndescription: \"<!DOCTYPE html>\"";
       const issues = validateNoXmlTags(fm);
       expect(issues.length).toBeGreaterThan(0);
     });
@@ -256,7 +256,7 @@ describe("Frontmatter Spec Validator", () => {
 
       writeFileSync(
         resolve(skillDir, "SKILL.md"),
-        '---\nname: valid-skill\ndescription: "Deploy apps to Azure. WHEN: deploy, host, publish."\n---\n\n# Valid Skill\n',
+        "---\nname: valid-skill\ndescription: \"Deploy apps to Azure. WHEN: deploy, host, publish.\"\n---\n\n# Valid Skill\n",
       );
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
@@ -281,7 +281,7 @@ describe("Frontmatter Spec Validator", () => {
 
       writeFileSync(
         resolve(skillDir, "SKILL.md"),
-        '---\nname: claude-bad\ndescription: "<script>inject</script>"\n---\n\n# Bad\n',
+        "---\nname: claude-bad\ndescription: \"<script>inject</script>\"\n---\n\n# Bad\n",
       );
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
@@ -297,7 +297,7 @@ describe("Frontmatter Spec Validator", () => {
 
       writeFileSync(
         resolve(skillDir, "SKILL.md"),
-        '---\nname: correct-name\ndescription: "Some description."\n---\n\n# Skill\n',
+        "---\nname: correct-name\ndescription: \"Some description.\"\n---\n\n# Skill\n",
       );
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
@@ -323,7 +323,7 @@ describe("Frontmatter Spec Validator", () => {
 
       writeFileSync(
         resolve(skillDir, "SKILL.md"),
-        '---\nname: no-desc\n---\n\n# No Description\n',
+        "---\nname: no-desc\n---\n\n# No Description\n",
       );
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
