@@ -10,7 +10,7 @@ Deploy Azure API Management (APIM) as part of your Azure infrastructure.
 
 | Scenario | APIM Tier | Notes |
 |----------|-----------|-------|
-| AI Gateway for model governance | Standard v2 or Premium v2 | GenAI policies require v2 SKUs |
+| AI Gateway for model governance | Standard v2 or Premium v2 | Semantic caching requires v2 SKUs |
 | API consolidation | Standard v2 | Single entry point for microservices |
 | MCP tool hosting | Standard v2 | Rate limiting and auth for AI tools |
 | Development / Testing | Developer | Not for production |
@@ -170,7 +170,7 @@ After APIM is deployed:
 
 1. **Configure AI backends** → Use **azure-aigateway** skill
 2. **Import APIs** → `az apim api import` or portal
-3. **Apply policies** → See [azure-aigateway policies](../../azure-aigateway/references/policies.md)
+3. **Apply policies** → Invoke **azure-aigateway** skill for AI governance policies
 4. **Enable monitoring** → Connect Application Insights
 5. **Secure endpoints** → Configure subscriptions and RBAC
 

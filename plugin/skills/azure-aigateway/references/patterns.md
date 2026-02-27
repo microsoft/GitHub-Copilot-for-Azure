@@ -10,7 +10,7 @@ Connect Azure OpenAI or AI Foundry models to your APIM instance.
 
 ### Prerequisites
 
-- APIM instance deployed (see [azure-prepare APIM guide](../../azure-prepare/references/apim.md))
+- APIM instance deployed (use **azure-prepare** skill to deploy APIM — see [APIM deployment guide](https://learn.microsoft.com/azure/api-management/get-started-create-service-instance))
 - Azure OpenAI or AI Foundry resource provisioned
 - System-assigned or user-assigned managed identity enabled on APIM
 
