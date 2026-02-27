@@ -16,7 +16,7 @@ Deployment workflows for Durable Task Scheduler on Azure, including provisioning
 | **Consumption** | quickstarts, variable or bursty workloads, pay-per-use |
 | **Dedicated** | High-demand workloads, predictable throughput requirements |
 
-> **💡 TIP**: Start with `consumption` for development and variable workloads. Switch to `dedicated` when you need consistent, high-throughput performance.
+> **💡 TIP**: Start with `Consumption` for development and variable workloads. Switch to `Dedicated` when you need consistent, high-throughput performance.
 
 ## Provision Durable Task Scheduler
 
@@ -39,9 +39,9 @@ az durabletask scheduler create \
 param schedulerName string
 param location string = resourceGroup().location
 
-@allowed(['consumption', 'dedicated'])
-@description('Use consumption for quickstarts/variable workloads, dedicated for high-demand/predictable throughput')
-param skuName string = 'consumption'
+@allowed(['Consumption', 'Dedicated'])
+@description('Use Consumption for quickstarts/variable workloads, Dedicated for high-demand/predictable throughput')
+param skuName string = 'Consumption'
 
 // Assumes functionApp is defined elsewhere in the same Bicep file, e.g.:
 // resource functionApp 'Microsoft.Web/sites@2023-12-01' = { ... }
@@ -51,6 +51,7 @@ resource scheduler 'Microsoft.DurableTask/schedulers@2025-11-01' = {
   location: location
   properties: {
     sku: { name: skuName }
+    ipAllowlist: ['0.0.0.0/0'] // Required: empty list denies all traffic
   }
 }
 
@@ -60,7 +61,7 @@ resource taskHub 'Microsoft.DurableTask/schedulers/taskHubs@2025-11-01' = {
 }
 
 // REQUIRED: Assign Durable Task Data Contributor to the Function App's managed identity
-var durableTaskDataContributorRoleId = '5f6a3c3e-0da3-4079-b4f3-4db62a1d3c09'
+var durableTaskDataContributorRoleId = '0ad04412-c4d5-4796-b79c-f76d14c8d402'
 
 resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(scheduler.id, functionApp.id, durableTaskDataContributorRoleId)
@@ -130,8 +131,9 @@ az durabletask taskhub show \
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| **403 PermissionDenied** on gRPC call (e.g., `client.start_new()`) | Function App managed identity lacks RBAC on the Durable Task Scheduler resource | Assign `Durable Task Data Contributor` role (`5f6a3c3e-0da3-4079-b4f3-4db62a1d3c09`) to the identity (SAMI or UAMI) scoped to the Durable Task Scheduler resource. For UAMI, also ensure the connection string includes `ClientID=<uami-client-id>` |
+| **403 PermissionDenied** on gRPC call (e.g., `client.start_new()`) | Function App managed identity lacks RBAC on the Durable Task Scheduler resource, or IP allowlist blocks traffic | 1. Assign `Durable Task Data Contributor` role (`0ad04412-c4d5-4796-b79c-f76d14c8d402`) to the identity (SAMI or UAMI) scoped to the Durable Task Scheduler resource. For UAMI, also ensure the connection string includes `ClientID=<uami-client-id>`. 2. Ensure the scheduler's `ipAllowlist` includes `0.0.0.0/0` (an empty list denies all traffic). 3. RBAC propagation can take up to 10 minutes — restart the Function App after assigning roles. |
 | **Connection refused** to emulator | Emulator container not running or wrong port | Verify container is running: `docker ps` and confirm port 8080 is mapped |
+| **403 despite correct RBAC** | Scheduler IP allowlist is empty (denies all) | Set `ipAllowlist: ['0.0.0.0/0']` in Bicep or update via CLI: `az durabletask scheduler update --ip-allowlist '0.0.0.0/0'` |
 | **TaskHub not found** | Task hub not provisioned or name mismatch | Ensure the `TaskHub` parameter in the `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` matches the provisioned task hub name |
 
 ## Data Loss Warning
