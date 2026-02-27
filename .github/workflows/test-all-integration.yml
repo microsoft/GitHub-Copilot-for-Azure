@@ -23,6 +23,13 @@ on:
         description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-rbac")'
         required: true
         type: string
+      model-override:
+        description: 'Model to use for testing'
+        required: false
+        type: choice
+        options:
+          - claude-sonnet-4.5
+          - claude-opus-4.5
       deploy-test-pattern:
         description: 'Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests.'
         required: false
@@ -142,6 +149,7 @@ jobs:
     if: needs.setup.outputs.has_azure_deploy == 'true'
     uses: ./.github/workflows/test-azure-deploy.yml
     with:
+      model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
     secrets:
@@ -249,7 +257,9 @@ jobs:
         env:
           DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
           TEST_RUN_ID: all-integration
+          MODEL_OVERRIDE: ${{ inputs.model-override }}
         run: |
+          echo test with $MODEL_OVERRIDE
           # Handle azure-ai vs azure-aigateway prefix collision
           if [ "${{ matrix.skill }}" = "azure-ai" ]; then
             npm run test:integration azure-ai/
