@@ -66,19 +66,19 @@ function main(): void {
   }
 
   switch (command) {
-    case "setup":
-      setup(rootDir, commandArgs);
-      break;
-    case "verify":
-      verify(rootDir, commandArgs);
-      break;
-    case "smoke":
-    case "test":
-      test(rootDir, commandArgs);
-      break;
-    case "help":
-      printHelp();
-      break;
+  case "setup":
+    setup(rootDir, commandArgs);
+    break;
+  case "verify":
+    verify(rootDir, commandArgs);
+    break;
+  case "smoke":
+  case "test":
+    test(rootDir, commandArgs);
+    break;
+  case "help":
+    printHelp();
+    break;
   }
 }
 

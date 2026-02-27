@@ -6,11 +6,11 @@ import { type AgentMetadata } from "./agent-runner";
  * Extract all powershell command strings from agent metadata.
  */
 function getPowershellCommands(metadata: AgentMetadata): string[] {
-    return getToolCalls(metadata, "powershell").map(event => {
-        const data = event.data as Record<string, unknown>;
-        const args = data.arguments as { command?: string } | undefined;
-        return args?.command ?? "";
-    });
+  return getToolCalls(metadata, "powershell").map(event => {
+    const data = event.data as Record<string, unknown>;
+    const args = data.arguments as { command?: string } | undefined;
+    return args?.command ?? "";
+  });
 }
 
 /**
@@ -18,7 +18,7 @@ function getPowershellCommands(metadata: AgentMetadata): string[] {
  * the given pattern.
  */
 export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
-    return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+  return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
 }
 
 /**
@@ -30,31 +30,31 @@ export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolea
  * @returns True if any file contains content matching the value pattern
  */
 export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern: RegExp, filePattern?: RegExp): boolean {
-    const scanDirectory = (dir: string): boolean => {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            if (entry.isDirectory() && entry.name !== "node_modules") {
-                if (scanDirectory(fullPath)) return true;
-            } else if (entry.isFile()) {
-                // Skip if filePattern is provided and doesn't match
-                if (filePattern && !entry.name.match(filePattern)) {
-                    continue;
-                }
-                try {
-                    const content = fs.readFileSync(fullPath, "utf-8");
-                    if (content.match(valuePattern)) {
-                        return true;
-                    }
-                } catch {
-                    // Skip files that can't be read as text
-                }
-            }
+  const scanDirectory = (dir: string): boolean => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        if (scanDirectory(fullPath)) return true;
+      } else if (entry.isFile()) {
+        // Skip if filePattern is provided and doesn't match
+        if (filePattern && !entry.name.match(filePattern)) {
+          continue;
         }
-        return false;
-    };
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (content.match(valuePattern)) {
+            return true;
+          }
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+    return false;
+  };
 
-    return scanDirectory(workspace);
+  return scanDirectory(workspace);
 }
 
 /**
@@ -62,34 +62,34 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
  * Paths are normalized to use forward slashes for cross-platform regex matching.
  */
 export function listFilesRecursive(dir: string): string[] {
-    return fs
-        .readdirSync(dir, { recursive: true })
-        .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
+  return fs
+    .readdirSync(dir, { recursive: true })
+    .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
 }
 
 /**
  * Check if any file in the list matches the given regex pattern.
  */
 export function hasFile(files: string[], pattern: RegExp): boolean {
-    return files.some(f => pattern.test(f));
+  return files.some(f => pattern.test(f));
 }
 
 /**
  * List files in a workspace, log them, and assert expected/unexpected file patterns.
  */
 export function expectFiles(
-    workspacePath: string,
-    expected: RegExp[],
-    unexpected: RegExp[],
+  workspacePath: string,
+  expected: RegExp[],
+  unexpected: RegExp[],
 ): void {
-    const files = listFilesRecursive(workspacePath);
+  const files = listFilesRecursive(workspacePath);
 
-    for (const pattern of expected) {
-        expect(hasFile(files, pattern)).toBe(true);
-    }
-    for (const pattern of unexpected) {
-        expect(hasFile(files, pattern)).toBe(false);
-    }
+  for (const pattern of expected) {
+    expect(hasFile(files, pattern)).toBe(true);
+  }
+  for (const pattern of unexpected) {
+    expect(hasFile(files, pattern)).toBe(false);
+  }
 }
 
 // ─── Agent metadata helpers ──────────────────────────────────────────────────
@@ -98,52 +98,52 @@ export function expectFiles(
  * Check if a skill was invoked during the session
  */
 export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
-    return metadata.events
-        .filter(event => event.type === "tool.execution_start")
-        .filter(event => event.data.toolName === "skill")
-        .some(event => {
-            const args = event.data.arguments;
-            return JSON.stringify(args).includes(skillName);
-        });
+  return metadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .filter(event => event.data.toolName === "skill")
+    .some(event => {
+      const args = event.data.arguments;
+      return JSON.stringify(args).includes(skillName);
+    });
 }
 
 export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
-    const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
+  const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
 
-    if (!isSkillUsed) {
-        agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
-    }
+  if (!isSkillUsed) {
+    agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
+  }
 }
 
 /**
  * Get all assistant messages from agent metadata
  */
 export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
-    const allMessages: Record<string, string> = {};
+  const allMessages: Record<string, string> = {};
 
-    agentMetadata.events.forEach(event => {
-        if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
-            allMessages[event.data.messageId] = event.data.content;
-        }
-        if (event.type === "assistant.message_delta" && event.data.messageId) {
-            if (allMessages[event.data.messageId]) {
-                allMessages[event.data.messageId] += event.data.deltaContent ?? "";
-            } else {
-                allMessages[event.data.messageId] = event.data.deltaContent ?? "";
-            }
-        }
-    });
+  agentMetadata.events.forEach(event => {
+    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
+      allMessages[event.data.messageId] = event.data.content;
+    }
+    if (event.type === "assistant.message_delta" && event.data.messageId) {
+      if (allMessages[event.data.messageId]) {
+        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
+      } else {
+        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
+      }
+    }
+  });
 
-    return Object.values(allMessages).join("\n");
+  return Object.values(allMessages).join("\n");
 }
 
 /** Stringify tool call arguments safely */
 export function argsString(event: { data: Record<string, unknown> }): string {
-    try {
-        return JSON.stringify(event.data.arguments ?? {});
-    } catch {
-        return String(event.data.arguments);
-    }
+  try {
+    return JSON.stringify(event.data.arguments ?? {});
+  } catch {
+    return String(event.data.arguments);
+  }
 }
 
 /**
@@ -164,13 +164,13 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): A
         parentToolCallId?: string;
     };
 }> {
-    let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
+  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
 
-    if (toolName) {
-        calls = calls.filter(event => event.data.toolName === toolName);
-    }
+  if (toolName) {
+    calls = calls.filter(event => event.data.toolName === toolName);
+  }
 
-    return calls;
+  return calls;
 }
 
 /** Get all tool execution results (complete events) */
@@ -180,29 +180,29 @@ export function getToolResults(metadata: AgentMetadata): Array<{
     content: string;
     error: string;
 }> {
-    return metadata.events
-        .filter(e => e.type === "tool.execution_complete")
-        .map(e => ({
-            toolCallId: e.data.toolCallId as string,
-            success: e.data.success as boolean,
-            content: (e.data.result as { content?: string })?.content ?? "",
-            error: (e.data.error as { message?: string })?.message ?? ""
-        }));
+  return metadata.events
+    .filter(e => e.type === "tool.execution_complete")
+    .map(e => ({
+      toolCallId: e.data.toolCallId as string,
+      success: e.data.success as boolean,
+      content: (e.data.result as { content?: string })?.content ?? "",
+      error: (e.data.error as { message?: string })?.message ?? ""
+    }));
 }
 
 /** Get combined text of all tool args and results for scanning */
 export function getAllToolText(metadata: AgentMetadata): string {
-    const parts: string[] = [];
-    for (const event of metadata.events) {
-        if (event.type === "tool.execution_start") {
-            parts.push(argsString(event));
-        }
-        if (event.type === "tool.execution_complete") {
-            const result = event.data.result as { content?: string } | undefined;
-            if (result?.content) parts.push(result.content);
-            const error = event.data.error as { message?: string } | undefined;
-            if (error?.message) parts.push(error.message);
-        }
+  const parts: string[] = [];
+  for (const event of metadata.events) {
+    if (event.type === "tool.execution_start") {
+      parts.push(argsString(event));
     }
-    return parts.join("\n");
+    if (event.type === "tool.execution_complete") {
+      const result = event.data.result as { content?: string } | undefined;
+      if (result?.content) parts.push(result.content);
+      const error = event.data.error as { message?: string } | undefined;
+      if (error?.message) parts.push(error.message);
+    }
+  }
+  return parts.join("\n");
 }
