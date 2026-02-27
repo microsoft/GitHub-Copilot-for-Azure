@@ -54,7 +54,8 @@ Select hosting stack and map components to Azure services.
 ### Workflow & Orchestration
 
 | Need | Service |
-|------|---------||| Workflow | Logic Apps, Durable Functions, Durable Task Scheduler |
+|------|---------|
+| Workflow | Logic Apps, Durable Functions, Durable Task Scheduler |
 
 ### Supporting (Always Include)
 
