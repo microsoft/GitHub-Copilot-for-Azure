@@ -1,6 +1,6 @@
 ---
 name: azure-deploy
-description: "Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands. Applies to projects whose infrastructure as code are either in Bicep or Terraform. WHEN: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, push to cloud, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, deploy function app, deploy serverless function, deploy Azure Functions to cloud, bicep deploy, terraform apply."
+description: "Deploy already-prepared applications to Azure by running azd up, azd deploy, or infrastructure provisioning commands. Supports Bicep and Terraform projects. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"provision infrastructure\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\"."
 ---
 
 # Azure Deploy

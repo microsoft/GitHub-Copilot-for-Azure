@@ -128,6 +128,410 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
       }
     });
+
+    test("invokes azure-prepare skill for create serverless HTTP API and deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure"
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for create event-driven function app and deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions"
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for create Azure Functions app with timer trigger prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create an Azure Functions app with a timer trigger"
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (SWA) ---
+    test("invokes azure-prepare skill for static whiteboard web app deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for static portfolio website deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (App Service) ---
+    test("invokes azure-prepare skill for discussion board App Service deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for todo list App Service deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (Azure Functions) ---
+    test("invokes azure-prepare skill for serverless HTTP API Functions deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for event-driven function app deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for Python function app Service Bus trigger deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (Container Apps) ---
+    test("invokes azure-prepare skill for containerized web app Container Apps deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for Node.js Container Apps deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (Terraform SWA) ---
+    test("invokes azure-prepare skill for static whiteboard Terraform deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for static portfolio Terraform deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (Terraform App Service) ---
+    test("invokes azure-prepare skill for discussion board Terraform App Service deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for todo list Terraform App Service deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (Terraform Azure Functions) ---
+    test("invokes azure-prepare skill for serverless HTTP API Terraform Functions deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for event-driven function app Terraform deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for URL shortener Terraform Functions deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    // --- Deploy integration test prompts (Terraform Container Apps) ---
+    test("invokes azure-prepare skill for containerized web app Terraform Container Apps deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for Node.js Terraform Container Apps deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes azure-prepare skill for social media app Terraform deploy prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
   });
 
   describe("prepare-deployment", () => {
