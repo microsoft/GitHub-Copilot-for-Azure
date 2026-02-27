@@ -36,6 +36,7 @@ const sharedRules = {
     "no-var": "error",
     "eqeqeq": ["error", "always", { null: "ignore" }],
     "quotes": ["error", "double", { "avoidEscape": true }],
+    "no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 0, "maxBOF": 0 }],
 };
 
 export default defineConfig(
