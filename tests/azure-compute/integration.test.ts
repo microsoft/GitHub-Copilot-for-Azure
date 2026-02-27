@@ -38,15 +38,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt:
-                            "Which Azure VM size should I use for a web server handling 500 concurrent users?",
+            prompt: "Which Azure VM size should I use for a web server handling 500 concurrent users?",
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (
             e instanceof Error &&
-                        e.message?.includes("Failed to load @github/copilot-sdk")
+            e.message?.includes("Failed to load @github/copilot-sdk")
           ) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
@@ -60,15 +59,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt:
-                            "I need a GPU VM on Azure for training a deep learning model. What do you recommend?",
+            prompt: "I need a GPU VM on Azure for training a deep learning model. What do you recommend?",
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (
             e instanceof Error &&
-                        e.message?.includes("Failed to load @github/copilot-sdk")
+            e.message?.includes("Failed to load @github/copilot-sdk")
           ) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
@@ -82,15 +80,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt:
-                            "Should I use a VM Scale Set with autoscaling for my API backend on Azure?",
+            prompt: "Should I use a VM Scale Set with autoscaling for my API backend on Azure?",
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (
             e instanceof Error &&
-                        e.message?.includes("Failed to load @github/copilot-sdk")
+            e.message?.includes("Failed to load @github/copilot-sdk")
           ) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
@@ -104,15 +101,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt:
-                            "How much does a Standard_D4s_v5 Azure VM cost per hour in East US?",
+            prompt: "How much does a Standard_D4s_v5 Azure VM cost per hour in East US?",
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (
             e instanceof Error &&
-                        e.message?.includes("Failed to load @github/copilot-sdk")
+            e.message?.includes("Failed to load @github/copilot-sdk")
           ) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
@@ -126,15 +122,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt:
-                            "Compare Azure VM families for a memory-optimized database workload",
+            prompt: "Compare Azure VM families for a memory-optimized database workload",
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (
             e instanceof Error &&
-                        e.message?.includes("Failed to load @github/copilot-sdk")
+            e.message?.includes("Failed to load @github/copilot-sdk")
           ) {
             console.log("⏭️  SDK not loadable, skipping test");
             return;
