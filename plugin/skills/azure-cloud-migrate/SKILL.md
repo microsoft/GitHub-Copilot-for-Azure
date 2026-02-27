@@ -14,7 +14,7 @@ description: "Assess and migrate cross-cloud workloads to Azure. Generates asses
 3. Load the scenario reference and follow its rules
 4. Use `get_bestpractices` and `documentation` MCP tools
 5. Use the latest supported runtime for the target service
-6. ⛔ Destructive actions require `ask_user` — [global-rules](references/services/functions/global-rules.md)
+6. Destructive actions require `ask_user` — [global-rules](references/services/functions/global-rules.md)
 
 ## Migration Scenarios
 
@@ -26,7 +26,7 @@ description: "Assess and migrate cross-cloud workloads to Azure. Generates asses
 
 ## Output Directory
 
-All output goes to `<source-folder>-azure/` at workspace root. ⛔ Never modify the source directory.
+All output goes to `<source-folder>-azure/` at workspace root. Never modify the source directory.
 
 ## Steps
 
