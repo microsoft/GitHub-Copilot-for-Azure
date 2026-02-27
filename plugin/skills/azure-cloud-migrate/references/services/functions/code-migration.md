@@ -15,7 +15,7 @@ Migrate AWS Lambda function code to Azure Functions.
 - Use extension bundle version `[4.*, 5.0.0)` in host.json
 - Use latest programming model (v4 for JavaScript, v2 for Python)
 - **Always use bindings and triggers instead of SDKs** — For blob read/write, use `input.storageBlob()` / `output.storageBlob()` with `extraInputs`/`extraOutputs`. For queues, use `app.storageQueue()` or `app.serviceBusQueue()`. Only use SDK when there is no equivalent binding (e.g., Azure AI, custom HTTP calls)
-- **Always use the latest supported language runtime** — Consult [supported languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) and select the newest GA version. Do NOT default to an older LTS version when a newer version is available on Azure Functions (e.g., use Node.js 22, not Node.js 20)
+- **Always use the latest supported language runtime** — Consult [supported languages](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) and select the newest GA version. Do NOT default to an older LTS version when a newer version is available on Azure Functions.
 
 ## Steps
 
