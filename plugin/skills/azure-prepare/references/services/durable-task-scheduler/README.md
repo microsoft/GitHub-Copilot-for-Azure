@@ -66,6 +66,7 @@ For provisioning, Bicep templates, managed identity configuration, and deploymen
 | **Connection refused** to emulator | Emulator container not running or wrong port | Verify container is running: `docker ps` and confirm port 8080 is mapped |
 | **403 despite correct RBAC** | Scheduler IP allowlist is empty (denies all) | Set `ipAllowlist: ['0.0.0.0/0']` in Bicep or update via CLI: `az durabletask scheduler update --ip-allowlist '0.0.0.0/0'` |
 | **TaskHub not found** | Task hub not provisioned or name mismatch | Ensure the `TaskHub` parameter in the `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` matches the provisioned task hub name |
+| **403 Forbidden** on DTS dashboard | Deploying user lacks RBAC on the scheduler | Assign `Durable Task Data Contributor` role to your own user identity (not just the Function App MI) scoped to the scheduler resource — see [Bicep Patterns](bicep.md) for the dashboard role assignment snippet |
 
 ## References
 
