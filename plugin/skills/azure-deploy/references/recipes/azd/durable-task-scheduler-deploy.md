@@ -76,6 +76,27 @@ resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
 
 > **⚠️ WARNING**: Without the `Durable Task Data Contributor` role assignment, the Function App will receive a **403 PermissionDenied** error when attempting to start orchestrations via gRPC. Always include this role assignment in your infrastructure-as-code.
 
+## Dashboard Access for Developers
+
+To allow developers to view orchestration status and history in the DTS dashboard, also assign the `Durable Task Data Contributor` role to the deploying user's identity:
+
+```bicep
+// Accept the deploying user's principal ID (azd auto-populates this from AZURE_PRINCIPAL_ID)
+param principalId string = ''
+
+resource dashboardRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(scheduler.id, principalId, durableTaskDataContributorRoleId)
+  scope: scheduler
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', durableTaskDataContributorRoleId)
+    principalId: principalId
+    principalType: 'User'
+  }
+}
+```
+
+> **💡 TIP**: Without this role assignment, the DTS dashboard in the Azure portal returns **403 Forbidden**. The `principalId` parameter is automatically populated by `azd` from the `AZURE_PRINCIPAL_ID` environment variable.
+
 ## Configure Managed Identity Access
 
 ```bash

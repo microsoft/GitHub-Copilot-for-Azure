@@ -60,6 +60,27 @@ resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022
 }
 ```
 
+## RBAC — Dashboard Access for Developers
+
+To allow developers to view orchestration status and history in the [DTS dashboard](https://portal.azure.com), assign the same `Durable Task Data Contributor` role to the deploying user's identity. Without this, the dashboard returns **403 Forbidden**.
+
+```bicep
+// Accept the deploying user's principal ID (azd auto-populates this from AZURE_PRINCIPAL_ID)
+param principalId string = ''
+
+resource dashboardRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(scheduler.id, principalId, durableTaskDataContributorRoleId)
+  scope: scheduler
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', durableTaskDataContributorRoleId)
+    principalId: principalId
+    principalType: 'User'
+  }
+}
+```
+
+> **💡 TIP**: This is the same role used for the Function App's managed identity, but assigned with `principalType: 'User'` to the developer. See the [sample repo](https://github.com/Azure-Samples/Durable-Task-Scheduler/blob/main/samples/infra/main.bicep) for a full example.
+
 ## Connection String App Setting
 
 Include these entries in the Function App resource's `siteConfig.appSettings` array:
