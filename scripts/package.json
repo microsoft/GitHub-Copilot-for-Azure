@@ -8,6 +8,7 @@
     "tokens": "node --import tsx src/tokens/cli.ts",
     "local": "node --import tsx src/local/cli.ts",
     "references": "node --import tsx src/references/cli.ts",
+    "frontmatter": "node --import tsx src/frontmatter/cli.ts",
     "verify-local": "node --import tsx src/verify-local.ts",
     "test": "vitest run",
     "test:watch": "vitest",
