@@ -21,7 +21,7 @@ Migrate AWS Lambda function code to Azure Functions.
 
 1. **Install Azure Functions Extension** — Ensure VS Code extension is installed
 2. **Load Best Practices** — Use `get_bestpractices` tool for code generation guidance
-3. **Create Project Structure** — Set up standard Azure Functions project layout
+3. **Create Project Structure** — Set up the Azure Functions project inside the output directory (`<aws-folder>-azure/`). Do NOT create files inside the original AWS directory
 4. **Migrate Functions** — Convert each Lambda function to Azure Functions equivalent
 5. **Update Dependencies** — Replace AWS SDKs with Azure SDKs in package.json / requirements.txt
 6. **Configure Bindings** — Set up triggers and bindings inline (v4 JS / v2 Python)

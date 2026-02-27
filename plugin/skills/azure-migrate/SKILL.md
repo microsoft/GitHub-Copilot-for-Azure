@@ -47,16 +47,29 @@ Match the user's source workload to a scenario below, then load the correspondin
 
 > 💡 **No matching scenario?** Use the generic Steps below with `documentation` and `get_bestpractices` tools to research the target Azure service.
 
+## Output Directory
+
+All migration output (assessment report, migrated code, config files) goes into a **new folder at the workspace root**:
+
+```
+<aws-project-folder>-azure/     ← workspace root, NOT inside the AWS directory
+```
+
+Example: if the source project is `serverless-face-blur-service/`, the output folder is `serverless-face-blur-service-azure/`.
+
+> ⛔ **NEVER modify the original AWS project directory.** The source code must remain untouched for reference.
+
 ## Steps
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Assess** — Analyze source project, map services to Azure equivalents, generate assessment report | Scenario reference (see table above) |
-| 2 | **Migrate Code** — Convert code using the target Azure programming model and scenario-specific patterns | Scenario reference (see table above) |
-| 3 | **Ask User** — Use `ask_user` to ask: "Migration complete. Would you like to **test locally** or **deploy to Azure**?" | — |
-| 4 | **Hand off to azure-prepare** — Invoke azure-prepare with the user's choice (local test or deploy). azure-prepare handles infrastructure generation, local testing setup, and deployment for both paths. | — |
+| 1 | **Create output directory** — Create `<aws-folder>-azure/` at the workspace root | — |
+| 2 | **Assess** — Analyze source project, map services to Azure equivalents, generate assessment report into the output directory | Scenario reference (see table above) + [assessment.md](references/services/functions/assessment.md) |
+| 3 | **Migrate Code** — Convert code into the output directory using the target Azure programming model and scenario-specific patterns | Scenario reference (see table above) + [code-migration.md](references/services/functions/code-migration.md) |
+| 4 | **Ask User** — Use `ask_user` to ask: "Migration complete. Would you like to **test locally** or **deploy to Azure**?" | — |
+| 5 | **Hand off to azure-prepare** — Invoke azure-prepare with the user's choice (local test or deploy). azure-prepare handles infrastructure generation, local testing setup, and deployment for both paths. | — |
 
-> 💡 **After step 3:** Regardless of the user's choice, invoke **azure-prepare** next. azure-prepare is the single pipeline for infrastructure (Bicep/Terraform), `azure.yaml`, local testing configuration, and deployment.
+> 💡 **After step 4:** Regardless of the user's choice, invoke **azure-prepare** next. azure-prepare is the single pipeline for infrastructure (Bicep/Terraform), `azure.yaml`, local testing configuration, and deployment.
 
 ## MCP Tools
 
@@ -67,7 +80,7 @@ Match the user's source workload to a scenario below, then load the correspondin
 
 ## Status Tracking
 
-Maintain a `migration-status.md` file in the workspace root:
+Maintain a `migration-status.md` file in the output directory (`<aws-folder>-azure/`):
 
 ```markdown
 # Migration Status

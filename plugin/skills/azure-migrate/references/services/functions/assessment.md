@@ -35,7 +35,7 @@ Generate two diagrams:
 
 > ⚠️ **MANDATORY**: Use these exact section headings in every assessment report. Do NOT rename, reorder, or omit sections.
 
-The report MUST be saved as `migration-assessment-report.md` in the workspace root.
+The report MUST be saved as `migration-assessment-report.md` inside the output directory (`<aws-folder>-azure/`).
 
 ```markdown
 # Migration Assessment Report
