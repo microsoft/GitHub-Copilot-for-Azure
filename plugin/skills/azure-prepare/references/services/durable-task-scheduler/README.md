@@ -48,7 +48,7 @@ docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dt
 
 | Environment | Connection String |
 |-------------|-------------------|
-| Local Development (Emulator) | `Endpoint=http://localhost:8080;Authentication=None` |
+| Local Development (Emulator) | `Endpoint=http://localhost:8080;Authentication=None;TaskHub=default` |
 | Azure (System-Assigned MI) | `Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity` |
 | Azure (User-Assigned MI) | `Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity;ClientID=<uami-client-id>` |
 
