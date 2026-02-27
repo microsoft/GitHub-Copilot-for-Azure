@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for azure-migrate
+ * Trigger Tests for azure-cloud-migrate
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -10,7 +10,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-migrate";
+const SKILL_NAME = "azure-cloud-migrate";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;

@@ -147,7 +147,7 @@ The report MUST be saved as `migration-assessment-report.md` inside the output d
 ## 13. Next Steps
 
 - [ ] Review and approve this assessment report
-- [ ] Proceed to code migration (azure-migrate Phase 2)
+- [ ] Proceed to code migration (azure-cloud-migrate Phase 2)
 - [ ] Hand off to azure-prepare for IaC generation
 ```
 

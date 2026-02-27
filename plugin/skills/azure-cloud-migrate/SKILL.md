@@ -1,5 +1,5 @@
 ---
-name: azure-migrate
+name: azure-cloud-migrate
 description: "Assess and migrate existing cloud workloads to Azure. Handles cross-cloud migration from AWS, GCP, or other providers to Azure services. USE FOR: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert serverless to Azure, migration readiness report, migrate code to Azure Functions, AWS to Azure migration, migrate from AWS, migrate from GCP, cross-cloud migration, migrate workloads to Azure, Lambda to Functions, migrate existing app to Azure."
 ---
 
