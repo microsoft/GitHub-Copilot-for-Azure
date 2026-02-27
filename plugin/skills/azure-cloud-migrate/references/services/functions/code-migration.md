@@ -11,7 +11,8 @@ Migrate AWS Lambda function code to Azure Functions.
 ## Rules
 
 - If runtime is Python or Node.js: **do NOT create function.json files**
-- If runtime is .NET, PowerShell, or Java: create function.json with bindings
+- If runtime is .NET (in-process or isolated) or Java: **do NOT hand-author function.json** — bindings metadata is generated from attributes/annotations at build time
+- If runtime is PowerShell: create `function.json` with bindings manually for each function
 - Use extension bundle version `[4.*, 5.0.0)` in host.json
 - Use latest programming model (v4 for JavaScript, v2 for Python)
 - **Always use bindings and triggers instead of SDKs** — For blob read/write, use `input.storageBlob()` / `output.storageBlob()` with `extraInputs`/`extraOutputs`. For queues, use `app.storageQueue()` or `app.serviceBusQueue()`. Only use SDK when there is no equivalent binding (e.g., Azure AI, custom HTTP calls)
