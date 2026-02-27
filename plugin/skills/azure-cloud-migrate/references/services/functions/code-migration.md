@@ -100,11 +100,11 @@ Add `AZURE_CLIENT_ID` as an app setting in Bicep pointing to the UAMI client ID.
 {
   "dependencies": {
     "@azure/functions": "^4.0.0",
-    "@azure/identity": "^latest"
+    "@azure/identity": "<latest>"
   },
   "devDependencies": {
     "@azure/functions-core-tools": "^4",
-    "jest": "^latest"
+    "jest": "<latest>"
   }
 }
 ```
