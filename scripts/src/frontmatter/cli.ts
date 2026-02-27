@@ -176,6 +176,65 @@ export function validateNoReservedPrefix(name: string | null): ValidationIssue[]
   return issues;
 }
 
+const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+/**
+ * Check 5: Validate that `license` field is present and is a string.
+ */
+export function validateLicense(license: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (license === undefined || license === null || license === "") {
+    issues.push({
+      check: "license",
+      message: "Missing 'license' field in frontmatter",
+    });
+  } else if (typeof license !== "string") {
+    issues.push({
+      check: "license",
+      message: `'license' field must be a string, got ${typeof license}`,
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Check 6: Validate `metadata.version` is present and follows semver (X.Y.Z).
+ */
+export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (metadata === undefined || metadata === null || typeof metadata !== "object") {
+    issues.push({
+      check: "metadata-version",
+      message: "Missing 'metadata' block with 'version' field in frontmatter",
+    });
+    return issues;
+  }
+
+  const meta = metadata as Record<string, unknown>;
+  const version = meta.version;
+
+  if (version === undefined || version === null || version === "") {
+    issues.push({
+      check: "metadata-version",
+      message: "Missing 'version' in metadata block",
+    });
+    return issues;
+  }
+
+  const versionStr = String(version);
+  if (!SEMVER_RE.test(versionStr)) {
+    issues.push({
+      check: "metadata-version",
+      message: `metadata.version "${versionStr}" is not valid semver (expected X.Y.Z)`,
+    });
+  }
+
+  return issues;
+}
+
 // ── Validate a single SKILL.md ──────────────────────────────────────────────
 
 export function validateSkillFile(filePath: string): ValidationResult {
@@ -208,6 +267,12 @@ export function validateSkillFile(filePath: string): ValidationResult {
 
   // Check 4: No reserved prefixes
   issues.push(...validateNoReservedPrefix(name));
+
+  // Check 5: License field
+  issues.push(...validateLicense(parsed.data.license));
+
+  // Check 6: metadata.version (semver)
+  issues.push(...validateMetadataVersion(parsed.data.metadata));
 
   return { skill: parentDir, file: filePath, issues };
 }

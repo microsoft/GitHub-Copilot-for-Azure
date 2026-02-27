@@ -1,0 +1,177 @@
+name: Skill Versioning
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-skill-versions:
+    name: Bump Skill Versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get previous release tag
+        id: prev-tag
+        run: |
+          # Get the tag for the current release
+          CURRENT_TAG="${{ github.event.release.tag_name }}"
+          echo "Current release tag: $CURRENT_TAG"
+
+          # Find the previous tag (exclude current)
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -1)
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found — this is the first release. Using initial commit."
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "Previous tag: $PREV_TAG"
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changed skills and bump versions
+        id: bump
+        run: |
+          PREV_TAG="${{ steps.prev-tag.outputs.prev_tag }}"
+          echo "Comparing $PREV_TAG..HEAD"
+
+          # Find all non-bump commits since last release
+          # Exclude commits from the version-bump workflow to avoid cascading bumps
+          FILTERED_COMMITS=$(git log --format=%H --no-merges --grep='^chore: bump skill versions' --invert-grep "$PREV_TAG"..HEAD)
+
+          if [ -z "$FILTERED_COMMITS" ]; then
+            echo "No relevant commits (excluding version-bump chores) since last release."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Find all files changed under plugin/skills/ in the filtered commits
+          CHANGED_FILES=$(echo "$FILTERED_COMMITS" | git diff-tree --no-commit-id --name-only -r --stdin -- plugin/skills/ | sort -u)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No skill files changed since last release."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Find all SKILL.md files that are in or above the changed paths
+          # This handles nested skills (e.g. microsoft-foundry/models/deploy-model/preset/)
+          SKILL_FILES=""
+          for FILE in $CHANGED_FILES; do
+            # Walk up from the changed file's directory to find the nearest SKILL.md
+            DIR=$(dirname "$FILE")
+            while [ "$DIR" != "plugin/skills" ] && [ "$DIR" != "plugin" ] && [ "$DIR" != "." ]; do
+              if [ -f "$DIR/SKILL.md" ]; then
+                SKILL_FILES="$SKILL_FILES $DIR/SKILL.md"
+                break
+              fi
+              DIR=$(dirname "$DIR")
+            done
+          done
+
+          # Deduplicate
+          SKILL_FILES=$(echo "$SKILL_FILES" | tr ' ' '\n' | sort -u | grep -v '^$')
+
+          if [ -z "$SKILL_FILES" ]; then
+            echo "No SKILL.md files found for changed paths."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo ""
+          echo "SKILL.md files to bump:"
+          echo "$SKILL_FILES"
+
+          BUMPED_SKILLS=""
+
+          for SKILL_FILE in $SKILL_FILES; do
+            # Extract skill directory for commit filtering
+            SKILL_DIR=$(dirname "$SKILL_FILE")
+
+            # Read current version from metadata.version in frontmatter
+            CURRENT_VERSION=$(sed -n '/^---$/,/^---$/p' "$SKILL_FILE" | grep -E '^\s+version:' | head -1 | sed 's/.*version:\s*"\?\([^"]*\)"\?/\1/')
+
+            if [ -z "$CURRENT_VERSION" ]; then
+              echo "⚠️  No metadata.version found in $SKILL_FILE — skipping"
+              continue
+            fi
+
+            echo ""
+            echo "Skill: $SKILL_FILE (current version: $CURRENT_VERSION)"
+
+            # Determine bump type from full commit messages (subject + body) touching this skill
+            COMMITS=$(git log "$PREV_TAG"..HEAD --pretty=format:"%B" -- "$SKILL_DIR/")
+
+            BUMP_TYPE="patch"
+            while IFS= read -r msg; do
+              if echo "$msg" | grep -qiE 'BREAKING CHANGE|^[a-z]+!(\(.*\))?:'; then
+                BUMP_TYPE="major"
+                break
+              elif echo "$msg" | grep -qiE '^feat(\(.*\))?:'; then
+                BUMP_TYPE="minor"
+              fi
+            done <<< "$COMMITS"
+
+            echo "  Bump type: $BUMP_TYPE"
+
+            # Parse semver components
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            MAJOR=${MAJOR:-0}
+            MINOR=${MINOR:-0}
+            PATCH=${PATCH:-0}
+
+            case "$BUMP_TYPE" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            echo "  New version: $NEW_VERSION"
+
+            # Update the version in the SKILL.md frontmatter
+            # Handles both block-style (version: "X.Y.Z") and unquoted (version: X.Y.Z)
+            sed -i -E "s/(version:\s*\"?)${CURRENT_VERSION}(\"?)/\1${NEW_VERSION}\2/" "$SKILL_FILE"
+
+            BUMPED_SKILLS="${BUMPED_SKILLS}${SKILL_FILE} ${CURRENT_VERSION} → ${NEW_VERSION}\n"
+          done
+
+          if [ -z "$BUMPED_SKILLS" ]; then
+            echo "No skills were bumped."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo ""
+            echo "## Summary"
+            echo -e "$BUMPED_SKILLS"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo -e "$BUMPED_SKILLS" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Commit version bumps
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plugin/skills/
+          git commit -m "chore: bump skill versions for ${{ github.event.release.tag_name }}
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
