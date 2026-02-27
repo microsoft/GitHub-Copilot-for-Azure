@@ -75,21 +75,21 @@ function main(): void {
   }
 
   switch (command) {
-    case "count":
-      count(rootDir, commandArgs);
-      break;
-    case "check":
-      check(rootDir, commandArgs);
-      break;
-    case "compare":
-      compare(rootDir, commandArgs);
-      break;
-    case "suggest":
-      suggest(rootDir, commandArgs);
-      break;
-    case "help":
-      printHelp();
-      break;
+  case "count":
+    count(rootDir, commandArgs);
+    break;
+  case "check":
+    check(rootDir, commandArgs);
+    break;
+  case "compare":
+    compare(rootDir, commandArgs);
+    break;
+  case "suggest":
+    suggest(rootDir, commandArgs);
+    break;
+  case "help":
+    printHelp();
+    break;
   }
 }
 
