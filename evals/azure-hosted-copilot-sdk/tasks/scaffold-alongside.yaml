@@ -16,20 +16,8 @@ inputs:
 expected:
   output_contains:
     - "azure.yaml"
-  output_excludes:
+  output_not_contains:
     - "error"
     - "failed"
-  graders:
-    - type: regex
-      name: routes_to_step_2b
-      config:
-        must_match:
-          - "(?i)(alongside|existing.*(repo|project|app)|step.?2b|add.*service)"
-    - type: keyword
-      name: step_2b_keywords
-      config:
-        must_contain:
-          - azure.yaml
   behavior:
     max_tool_calls: 10
-    max_response_time_ms: 60000

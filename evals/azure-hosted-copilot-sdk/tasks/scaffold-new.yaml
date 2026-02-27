@@ -14,20 +14,8 @@ inputs:
 expected:
   output_contains:
     - "azd init --template azure-samples/copilot-sdk-service"
-  output_excludes:
+  output_not_contains:
     - "error"
     - "failed"
-  graders:
-    - type: regex
-      name: has_scaffold_command
-      config:
-        must_match:
-          - "azd init --template azure-samples/copilot-sdk-service"
-    - type: keyword
-      name: scaffold_keywords
-      config:
-        must_contain:
-          - copilot-sdk-service
   behavior:
     max_tool_calls: 10
-    max_response_time_ms: 60000

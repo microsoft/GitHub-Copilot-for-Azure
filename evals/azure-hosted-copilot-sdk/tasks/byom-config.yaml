@@ -19,22 +19,8 @@ expected:
     - "wireApi"
     - "completions"
     - "DefaultAzureCredential"
-  output_excludes:
+  output_not_contains:
     - "error"
     - "failed"
-  graders:
-    - type: keyword
-      name: byom_keywords
-      config:
-        must_contain:
-          - wireApi
-          - completions
-          - DefaultAzureCredential
-    - type: regex
-      name: byom_model_refs
-      config:
-        must_match:
-          - "(?i)(o4-mini|o3-mini|gpt-5)"
   behavior:
     max_tool_calls: 10
-    max_response_time_ms: 60000

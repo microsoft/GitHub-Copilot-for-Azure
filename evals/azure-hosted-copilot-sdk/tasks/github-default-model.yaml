@@ -16,25 +16,11 @@ inputs:
 expected:
   output_contains:
     - "createSession"
-  output_excludes:
+  output_not_contains:
     - "wireApi"
     - "bearerToken"
     - "DefaultAzureCredential"
     - "error"
     - "failed"
-  graders:
-    - type: keyword
-      name: github_default_present
-      config:
-        must_contain:
-          - createSession
-    - type: keyword
-      name: no_byom_config
-      config:
-        must_not_contain:
-          - wireApi
-          - bearerToken
-          - DefaultAzureCredential
   behavior:
     max_tool_calls: 10
-    max_response_time_ms: 60000

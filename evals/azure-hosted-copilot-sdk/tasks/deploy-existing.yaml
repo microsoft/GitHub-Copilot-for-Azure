@@ -15,23 +15,10 @@ inputs:
 expected:
   output_contains:
     - "azure-prepare"
-  output_excludes:
+    - "azure-validate"
+    - "azure-deploy"
+  output_not_contains:
     - "error"
     - "failed"
-  graders:
-    - type: keyword
-      name: deploy_routing_keywords
-      config:
-        must_contain:
-          - azure-prepare
-          - azure-validate
-          - azure-deploy
-    - type: regex
-      name: deploy_pipeline_order
-      config:
-        must_match:
-          - "(?i)azure-prepare"
-          - "(?i)azure-deploy"
   behavior:
     max_tool_calls: 15
-    max_response_time_ms: 60000

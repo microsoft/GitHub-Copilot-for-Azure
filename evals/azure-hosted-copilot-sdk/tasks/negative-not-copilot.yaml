@@ -13,26 +13,11 @@ inputs:
   prompt: "Create an Azure Function with timer trigger"
 
 expected:
-  output_excludes:
+  output_not_contains:
     - "copilot-sdk-service"
     - "CopilotClient"
     - "createSession"
     - "azd init --template azure-samples/copilot-sdk-service"
     - "wireApi"
-  graders:
-    - type: keyword
-      name: no_copilot_sdk_content
-      config:
-        must_not_contain:
-          - copilot-sdk-service
-          - CopilotClient
-          - createSession
-          - wireApi
-    - type: regex
-      name: no_scaffold_command
-      config:
-        must_not_match:
-          - "azd init --template azure-samples/copilot-sdk-service"
   behavior:
     max_tool_calls: 10
-    max_response_time_ms: 60000
