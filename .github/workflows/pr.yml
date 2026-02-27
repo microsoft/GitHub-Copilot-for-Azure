@@ -223,6 +223,7 @@ jobs:
             SKILL_NAME=$(basename "$(dirname "$file")")
             SKILLS="$SKILLS $SKILL_NAME"
           done
+          unset IFS
           
           # Run frontmatter spec validation
           if OUTPUT=$(npm run frontmatter -- $SKILLS 2>&1); then
