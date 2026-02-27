@@ -2,20 +2,20 @@
  * Check command - Token limit validation
  */
 
-import { parseArgs } from 'node:util';
-import { readFileSync, existsSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { parseArgs } from "node:util";
+import { readFileSync, existsSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import type { 
   ValidationResult, 
   ValidationReport
-} from './types.js';
+} from "./types.js";
 import { 
   estimateTokens,
   normalizePath,
   DEFAULT_SCAN_DIRS,
   getErrorMessage
-} from './types.js';
-import { loadConfig, getLimitForFile, findMarkdownFiles } from './utils.js';
+} from "./types.js";
+import { loadConfig, getLimitForFile, findMarkdownFiles } from "./utils.js";
 
 function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationReport {
   const config = loadConfig(rootDir);
@@ -31,7 +31,7 @@ function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationRepo
     
     try {
       const relativePath = normalizePath(relative(rootDir, file));
-      const content = readFileSync(file, 'utf-8');
+      const content = readFileSync(file, "utf-8");
       const tokens = estimateTokens(content);
       const { limit, pattern } = getLimitForFile(relativePath, config, rootDir);
       
@@ -49,7 +49,7 @@ function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationRepo
   }
   
   if (skipped.length > 0 && process.env.DEBUG) {
-    console.error(`⚠️  Skipped ${skipped.length} file(s): ${skipped.join(', ')}`);
+    console.error(`⚠️  Skipped ${skipped.length} file(s): ${skipped.join(", ")}`);
   } else if (skipped.length > 0) {
     console.error(`⚠️  Skipped ${skipped.length} file(s)`);
   }
@@ -64,16 +64,16 @@ function validateFiles(rootDir: string, filesToCheck?: string[]): ValidationRepo
 
 function formatMarkdownReport(report: ValidationReport): string {
   const lines: string[] = [
-    '## 📊 Token Limit Check Report\n',
+    "## 📊 Token Limit Check Report\n",
     `**Checked:** ${report.totalFiles} files`,
     `**Exceeded:** ${report.exceededCount} files\n`
   ];
   
   if (report.exceededCount > 0) {
     lines.push(
-      '### ⚠️ Files Exceeding Token Limits\n',
-      '| File | Tokens | Limit | Over By |',
-      '|------|--------|-------|---------|'
+      "### ⚠️ Files Exceeding Token Limits\n",
+      "| File | Tokens | Limit | Over By |",
+      "|------|--------|-------|---------|"
     );
     
     for (const result of report.results.filter(r => r.exceeded)) {
@@ -81,24 +81,24 @@ function formatMarkdownReport(report: ValidationReport): string {
       lines.push(`| \`${result.file}\` | ${result.tokens} | ${result.limit} | +${overBy} |`);
     }
     
-    lines.push('\n> Consider moving content to `references/` subdirectories.');
+    lines.push("\n> Consider moving content to `references/` subdirectories.");
   } else {
-    lines.push('### ✅ All files within token limits');
+    lines.push("### ✅ All files within token limits");
   }
   
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function printConsoleReport(report: ValidationReport): void {
-  console.log('\n📊 Token Limit Check');
-  console.log('═'.repeat(60));
+  console.log("\n📊 Token Limit Check");
+  console.log("═".repeat(60));
   console.log(`Files Checked: ${report.totalFiles}`);
   console.log(`Files Exceeded: ${report.exceededCount}`);
-  console.log('');
+  console.log("");
   
   if (report.exceededCount > 0) {
-    console.log('⚠️  Files exceeding limits:');
-    console.log('─'.repeat(60));
+    console.log("⚠️  Files exceeding limits:");
+    console.log("─".repeat(60));
     
     for (const result of report.results.filter(r => r.exceeded)) {
       const overBy = result.tokens - result.limit;
@@ -106,20 +106,20 @@ function printConsoleReport(report: ValidationReport): void {
       console.log(`     ${result.tokens} tokens (limit: ${result.limit}, over by ${overBy})`);
     }
     
-    console.log('\n💡 Tip: Move detailed content to references/ subdirectories');
+    console.log("\n💡 Tip: Move detailed content to references/ subdirectories");
   } else {
-    console.log('✅ All files within token limits!');
+    console.log("✅ All files within token limits!");
   }
   
-  console.log('');
+  console.log("");
 }
 
 export function check(rootDir: string, args: string[]): void {
   const { values, positionals } = parseArgs({
     args,
     options: {
-      markdown: { type: 'boolean', default: false },
-      json: { type: 'boolean', default: false }
+      markdown: { type: "boolean", default: false },
+      json: { type: "boolean", default: false }
     },
     strict: false,
     allowPositionals: true

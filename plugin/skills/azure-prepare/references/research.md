@@ -5,9 +5,13 @@ After architecture planning, research each selected component to gather best pra
 ## Process
 
 1. **Identify Components** — List all Azure services from architecture plan
-2. **Load Service References** — For each service, load the `services/<service>/README.md` first, then specific references as needed
-3. **Invoke Related Skills** — For deeper guidance, invoke mapped skills from the table below
-4. **Document Findings** — Record key insights in `.azure/plan.md`
+2. **Load Service References** — For each service, load `services/<service>/README.md` first, then specific references as needed
+3. **Check Resource Naming Rules** — For each resource type, check [resource naming rules](https://learn.microsoft.com/azure/azure-resource-manager/management/resource-name-rules) for valid characters, length limits, and uniqueness scopes
+4. **Load Recipe References** — Load the selected recipe's guide (e.g., [AZD](recipes/azd/README.md)) and its IAC rules, MCP best practices, and schema tools listed in its "Before Generation" table
+5. **Check Region Availability** — Verify all selected services are available in the target region per [region-availability.md](region-availability.md)
+6. **Load Runtime References** — For containerized apps, load language-specific production settings (e.g., [Node.js](runtimes/nodejs.md))
+7. **Invoke Related Skills** — For deeper guidance, invoke mapped skills from the table below
+8. **Document Findings** — Record key insights in `.azure/plan.md`
 
 ## Service-to-Reference Mapping
 
@@ -16,13 +20,13 @@ After architecture planning, research each selected component to gather best pra
 | **Hosting** | | |
 | Container Apps | [Container Apps](services/container-apps/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
 | App Service | [App Service](services/app-service/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
-| Azure Functions | [Functions](services/functions/README.md) | `azure-functions` (invoke for detailed guidance) |
+| Azure Functions | [Functions](services/functions/README.md) | — |
 | Static Web Apps | [Static Web Apps](services/static-web-apps/README.md) | — |
 | AKS | [AKS](services/aks/README.md) | `azure-networking`, `azure-security-hardening` |
 | **Data** | | |
 | Azure SQL | [SQL Database](services/sql-database/README.md) | `azure-security` |
 | Cosmos DB | [Cosmos DB](services/cosmos-db/README.md) | `azure-security` |
-| PostgreSQL | — | `azure-postgres` (invoke for passwordless auth) |
+| PostgreSQL | — | — |
 | Storage (Blob/Files) | [Storage](services/storage/README.md) | `azure-storage`, `azure-security-hardening` |
 | **Messaging** | | |
 | Service Bus | [Service Bus](services/service-bus/README.md) | — |
@@ -66,68 +70,58 @@ Selected: Container Apps, Cosmos DB, Key Vault
 
 Invoke related skills for specialized scenarios:
 
-| Scenario | Invoke Skill |
-|----------|--------------|
-| Using Azure Functions | `azure-functions` |
-| PostgreSQL with passwordless auth | `azure-postgres` |
+| Scenario | Action |
+|----------|--------|
+| **Using GitHub Copilot SDK** | **Invoke `azure-hosted-copilot-sdk`** (scaffold + config, then resume azure-prepare) |
+| Using Azure Functions | Stay in **azure-prepare** — load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
+| PostgreSQL with passwordless auth | Handle directly without a separate skill |
 | Need detailed security hardening | `azure-security-hardening` |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
 | Building AI applications | `microsoft-foundry` |
 | Cost-sensitive deployment | `azure-cost-optimization` |
 
-**Skill Invocation Pattern:**
-```
-For Component: Azure Functions
-→ Invoke: azure-functions skill
-→ Extract: trigger patterns, bindings, hosting options
-→ Apply: to artifact generation
-```
+**Skill/Reference Invocation Pattern:**
+
+For **Azure Functions**:
+1. Load: [selection.md](services/functions/templates/selection.md) (decision tree)
+2. Follow: [composition.md](services/functions/templates/recipes/composition.md) (algorithm)
+3. Result: Base template + recipe composition (never synthesize IaC)
+
+For **PostgreSQL**:
+1. Handle passwordless auth patterns directly without a separate skill
 
 ### Step 3: Document in Plan
 
-Add research findings to `.azure/plan.md`:
-
-```markdown
-## Research Summary
-
-### Container Apps
-- **Source**: services/container-apps/README.md, scaling.md, health-probes.md
-- **Key Insights**: 
-  - Use min replicas: 1 for APIs to avoid cold starts
-  - Configure health probes for liveness and readiness
-  - Use queue-based scaling for workers
-
-### Security
-- **Source**: azure-security-hardening skill
-- **Key Insights**:
-  - Use Managed Identity for all service-to-service auth
-  - Store secrets in Key Vault, not env vars
-```
+Add research findings to `.azure/plan.md` under a `## Research Summary` section with source references and key insights per component.
 
 ## Common Research Patterns
 
 ### Web Application + API + Database
 
-1. Load: `services/container-apps/README.md` → `bicep.md`, `scaling.md`
-2. Load: `services/cosmos-db/README.md` → `partitioning.md`
-3. Load: `services/key-vault/README.md`
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
 5. Invoke: `azure-security-hardening` (security baseline)
 
 ### Serverless Event-Driven
 
-1. Invoke: `azure-functions` (detailed function guidance)
-2. Load: `services/functions/README.md` → `triggers.md`
-3. Load: `services/event-grid/README.md` or `services/service-bus/README.md`
-4. Load: `services/storage/README.md` (if using queues/blobs)
-5. Invoke: `azure-observability` (distributed tracing)
+1. Load: [services/functions/README.md](services/functions/README.md) (contains mandatory composition workflow)
+2. Load: [services/event-grid/README.md](services/event-grid/README.md) or [services/service-bus/README.md](services/service-bus/README.md) (if using messaging)
+3. Load: [services/storage/README.md](services/storage/README.md) (if using queues/blobs)
+4. Invoke: `azure-observability` (distributed tracing)
 
 ### AI Application
 
 1. Invoke: `microsoft-foundry` (AI patterns and best practices)
-2. Load: `services/container-apps/README.md` → `bicep.md`
-3. Load: `services/cosmos-db/README.md` → `partitioning.md` (vector storage)
+2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md)
+3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
 4. Invoke: `azure-security` (API key management)
+
+### GitHub Copilot SDK Application
+
+1. Invoke: `azure-hosted-copilot-sdk` skill (scaffold, infra, model config)
+2. After it completes, resume azure-prepare workflow (validate → deploy)
 
 ## After Research
 

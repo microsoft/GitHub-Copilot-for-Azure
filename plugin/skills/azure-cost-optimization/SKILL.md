@@ -1,13 +1,6 @@
 ---
 name: azure-cost-optimization
-description: |
-  Identify and quantify cost savings across Azure subscriptions by analyzing actual costs,
-  utilization metrics, and generating actionable optimization recommendations. USE FOR:
-  optimize Azure costs, reduce Azure spending, reduce Azure expenses, analyze Azure costs,
-  find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs,
-  cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis
-  costs. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics
-  (use azure-diagnostics), security issues (use azure-security)
+description: "Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, reduce Azure expenses, analyze Azure costs, find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs, cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis costs. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)"
 ---
 
 # Azure Cost Optimization Skill
@@ -121,6 +114,8 @@ extension_azqr({
 > **Note**: The Azure Quick Review reference document includes instructions for creating filter configurations, saving output to the `output/` folder, and interpreting results for cost optimization.
 
 ### Step 3: Discover Resources
+
+For efficient cross-subscription resource discovery, use Azure Resource Graph. See [Azure Resource Graph Queries](references/azure-resource-graph.md) for orphaned resource detection and cost optimization patterns.
 
 List all resources in the subscription using Azure MCP tools or CLI:
 

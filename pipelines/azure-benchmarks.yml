@@ -1,0 +1,26 @@
+trigger: none
+pr: none
+
+stages:
+- stage: RunBenchmark
+  pool:
+    name: $(LINUXPOOL)
+    image: $(LINUXVMIMAGE)
+    os: linux
+  variables:
+  - template: /pipelines/templates/variables/image.yml
+  - template: /pipelines/templates/variables/globals.yml
+  jobs:
+  - job: RunBenchmark
+    displayName: 'Run Copilot Benchmarks'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Run Copilot Benchmarks script'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval'
+        addSpnToEnvironment: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+        arguments: >
+          -BuildId $(OfficialBuildId)

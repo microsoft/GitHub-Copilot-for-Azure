@@ -1,6 +1,6 @@
 # Skills Test Suite
 
-Automated testing framework for Azure Copilot Skills using **Jest**. This system validates that skills have correct metadata, trigger on appropriate prompts, and interact properly with Azure MCP tools.
+Automated testing framework for Azure Copilot Skills using **Jest**. This system validates that skills have correct metadata, trigger on appropriate prompts, and interact with an Agent properly using Copilot SDK.
 
 ---
 
@@ -10,6 +10,7 @@ Automated testing framework for Azure Copilot Skills using **Jest**. This system
 - [When Tests Run](#when-tests-run)
 - [What Tests Validate](#what-tests-validate)
 - [Running Tests Locally](#running-tests-locally)
+- [Running Tests on CI](#running-tests-on-ci)
 - [Adding Tests for a New Skill](#adding-tests-for-a-new-skill)
 - [Directory Structure](#directory-structure)
 - [Skills Coverage Grid](#skills-coverage-grid)
@@ -38,17 +39,15 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 1. **Jest discovers tests** matching `**/*.test.ts` (excluding `_template/`)
 2. **`jest.setup.ts` runs first** - sets up global paths and custom matchers
 3. **Each test file loads its skill** via `utils/skill-loader.ts`
-4. **Tests execute** - validating metadata, triggers, and MCP interactions
-5. **Results output** to console (human-readable) and `reports/junit.xml` (CI)
+4. **Tests execute** - execute test code and generate output
 
-### Key Utilities
+There are 3 types of tests.
 
-| Utility | Purpose |
-|---------|---------|
-| `utils/skill-loader.ts` | Parses `SKILL.md` frontmatter and content |
-| `utils/trigger-matcher.ts` | Tests if prompts should activate a skill |
-| `utils/fixtures.ts` | Loads test data from `fixtures/` folders |
-| `utils/agent-runner.ts` | Copilot SDK agent runner for integration tests |
+- unit test: tests that validate the file structure of a skill and the content.
+- trigger test: tests that validate if the description of a skill can trigger or not trigger a given prompt using a heuristic.
+- integration test: tests that validate if the skill can lead to successful completion of a task by running a given prompt against a Copilot SDK agent.
+
+See [What Tests Validate](#what-tests-validate) for more details.
 
 ---
 
@@ -58,17 +57,11 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 
 | Trigger | What Runs | Workflow File |
 |---------|-----------|---------------|
-| **Push to `main`** affecting `tests/**` or `plugin/skills/**` | Full test suite | `test-all-skills.yml` |
-| **Pull Request** affecting `tests/**` or `plugin/skills/**` | Full test suite | `test-all-skills.yml` |
-| **Manual dispatch** | Full suite or single skill | `test-all-skills.yml` |
-
-### Running a Single Skill in CI
-
-Use the **workflow_dispatch** trigger with the `skill-name` input:
-
-1. Go to **Actions** → **Test All Skills**
-2. Click **Run workflow**
-3. Enter a skill name (e.g., `azure-validation`) or leave empty for all skills
+| **Push to `main`** affecting `tests/**` or `plugin/skills/**` | non-integration test suite | `test-all-skills.yml` |
+| **Pull Request** affecting `tests/**` or `plugin/skills/**` | non-integration test suite | `test-all-skills.yml` |
+| **Manual dispatch** | non-integration test suite for all skills or single skill | `test-all-skills.yml` |
+| **Manual dispatch** | integration test suite for azure-deploy tests | `test-azure-deploy.yml` |
+| **Manual dispatch** | integration test for selected skills | `test-all-integration.yml` |
 
 ### Local Development
 
@@ -83,85 +76,39 @@ Run tests manually anytime during development (see [Running Tests Locally](#runn
 **Purpose:** Validate skill metadata and any embedded logic.
 
 **What it checks:**
-- ✅ `SKILL.md` exists and has valid frontmatter (`name`, `description`)
-- ✅ Description is meaningful (not empty, appropriate length)
-- ✅ Content contains expected sections
-- ✅ Any validation rules documented in the skill work correctly
-
-**Example from `azure-validation`:**
-```javascript
-test('has valid SKILL.md with required fields', () => {
-  expect(skill.metadata.name).toBe('azure-validation');
-  expect(skill.metadata.description).toBeDefined();
-  expect(skill.metadata.description.length).toBeGreaterThan(10);
-});
-
-test('documents storage account limits', () => {
-  expect(skill.content).toContain('Storage Account');
-  expect(skill.content).toMatch(/24/); // 24 char limit
-});
-```
+- `SKILL.md` exists and has valid frontmatter (`name`, `description`)
+- Description is meaningful (not empty, appropriate length)
+- Content contains expected sections
+- Any validation rules documented in the skill work correctly
 
 ### 2. Trigger Tests (`triggers.test.ts`)
 
 **Purpose:** Verify the skill activates on correct prompts and ignores unrelated ones.
 
 **What it checks:**
-- ✅ Prompts mentioning skill-relevant keywords trigger the skill
-- ✅ Unrelated prompts do NOT trigger the skill
-- ✅ Edge cases (empty input, very long input) are handled
-- ✅ Snapshot of extracted keywords (catches unintended changes)
-
-**Example:**
-```javascript
-const shouldTriggerPrompts = [
-  'Validate my Azure storage account name',
-  'What are the naming constraints for Azure Key Vault?',
-];
-
-test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {
-  const result = triggerMatcher.shouldTrigger(prompt);
-  expect(result.triggered).toBe(true);
-});
-```
+- Prompts mentioning skill-relevant keywords trigger the skill
+- Unrelated prompts do NOT trigger the skill
+- Edge cases (empty input, very long input) are handled
+- Snapshot of extracted keywords (catches unintended changes)
 
 **Snapshots:** Trigger tests use Jest snapshots to detect keyword changes. If you intentionally change a skill's trigger behavior, update snapshots with:
 ```bash
 npm run update:snapshots -- --testPathPattern={skill-name}
 ```
 
-### 3. Integration Tests (`integration.test.js`)
+### 3. Integration Tests (`integration.test.ts`)
 
 **Purpose:** Test skill behavior with a real Copilot agent session.
 
 **What it checks:**
-- ✅ Skill is invoked by the agent for relevant prompts
-- ✅ Agent response contains expected content
-- ✅ Azure MCP tool calls succeed
+- Skill is invoked by the agent for relevant prompts
+- Agent response contains expected content
+- Azure MCP tool calls succeed
+- Any change to the environment that you expect the agent to make, such as edits to files in the workspace, CLI commands executed in the terminal, etc.
 
 **Prerequisites:**
 1. Install Copilot CLI: `npm install -g @github/copilot-cli`
 2. Authenticate: Run `copilot` and follow prompts
-
-**Example:**
-```typescript
-import { run, isSkillInvoked, doesAssistantMessageIncludeKeyword, shouldSkipIntegrationTests } from '../utils/agent-runner';
-
-const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
-
-describeIntegration('azure-role-selector - Integration Tests', () => {
-  test('invokes skill for relevant prompt', async () => {
-    const agentMetadata = await run({
-      prompt: 'What role should I assign for Azure Container Registry access?'
-    });
-
-    expect(isSkillInvoked(agentMetadata, 'azure-role-selector')).toBe(true);
-    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'AcrPull')).toBe(true);
-  });
-});
-```
-
-**Note:** Integration tests are skipped in CI (no auth) and when `SKIP_INTEGRATION_TESTS=true`.
 
 ---
 
@@ -191,35 +138,53 @@ npm install
 | `npm run test:verbose` | Show individual test names |
 | `npm run update:snapshots` | Update Jest snapshots after intentional changes |
 
+### Waza Eval Mode (Alternative)
+
+Skills can also be evaluated using [waza](https://github.com/spboyer/waza), a Go CLI for skill benchmarking.
+
+```bash
+# Install waza via azd extension
+azd ext source add -n waza -t url -l https://raw.githubusercontent.com/spboyer/waza/main/registry.json
+azd ext install microsoft.azd.waza
+
+# Or via Go
+go install github.com/spboyer/waza/cmd/waza@latest
+```
+
+**Hybrid model**: Key skills have committed (hand-tuned) eval suites. All other skills auto-generate evals from their SKILL.md at runtime.
+
+| Command | Use Case |
+|---------|----------|
+| `npm run waza -- azure-prepare` | Run committed eval for a key skill |
+| `npm run waza -- azure-storage` | Auto-generate + run eval from SKILL.md |
+| `npm run waza -- --all` | Run all skills (committed + generated) |
+| `npm run waza:live -- azure-prepare` | Run with real Copilot SDK |
+| `waza run tests/azure-prepare/eval/eval.yaml -v` | Run directly with waza CLI |
+| `waza run eval.yaml --cache` | Cached re-runs (skip unchanged tasks) |
+| `waza compare results-a.json results-b.json` | Compare results across models |
+| `waza check plugin/skills/azure-prepare` | Check skill readiness for submission |
+
+**Committed eval suites** (⬢ customized graders, fixtures, and assertions):
+- `azure-prepare` — template selection, recipe composition, plan-first workflow
+
+**Auto-generated** (⬡ from SKILL.md frontmatter): all other skills
+
+See [tests/azure-prepare/eval/README.md](azure-prepare/eval/README.md) for the committed eval suite documentation.
+
 ### Integration Tests
-
-Integration tests run **automatically when possible** but skip gracefully when:
-- Running in CI (`CI=true`)
-- `@github/copilot-sdk` is not installed
-- Copilot CLI is not authenticated
-
-When skipped, a message explains why:
-```
-⏭️  Skipping integration tests: Running in CI environment
-```
 
 To run integration tests locally:
 
 ```bash
-# 1. Ensure you're authenticated
-copilot --help  # Should show help, not login prompt
+# 1. (Optional) Authenticate with tools if the test depends on them
 az login
 az account list --output table
 az account set --subscription "x"   # Select a default subscription from the table. 
 azd auth login
 
 # 2. Run tests (integration will run automatically if SDK is available)
-npm test
+npm run test:integration skill-name [group-name]
 ```
-
-Environment variables:
-- `SKIP_INTEGRATION_TESTS=true` - Force skip integration tests
-- `CI=true` - Automatically set in CI; always skips integration tests
 
 ### Example: Test a Specific Skill
 
@@ -227,11 +192,6 @@ Environment variables:
 cd tests
 env:DEBUG="1"
 npm run test:skill -- azure-validation
-
-# Output:
-# PASS azure-validation/unit.test.ts
-# PASS azure-validation/triggers.test.ts
-# Test Suites: 2 passed, 2 total
 ```
 
 ### Example: Test a Specific Subset of a Test
@@ -240,35 +200,59 @@ To run only the SWA tests from the deploy integration test suite:
 ```bash
 cd tests
 npm run test:integration -- azure-deploy static-web-apps-deploy
-
-# Output:
-# PASS azure-deploy/integration.test.ts
-# Test Suites: 1 passed, 1 total
 ```
+
+Test cases are grouped under the `describe` groups. It's commonly useful to use the title of the `describe` group as the 2nd argument to run test cases of that group.
+
+To learn more about how the CLI options work, check out `tests/scripts/run-tests.js`.
 
 ### Reading Test Output
 
 **Console output:**
-```
-PASS SKILLS azure-validation/unit.test.ts
-  azure-validation - Unit Tests
-    Skill Metadata
-      ✓ has valid SKILL.md with required fields (2 ms)
-      ✓ description mentions validation or pre-deployment
-```
 
 **CI output:** JUnit XML at `tests/reports/junit.xml` - parsed by GitHub Actions for PR annotations.
 
-**Debug Mode:** When enviorment variable `DEBUG=1` is set logs will be recorded at `test/reports/test-run-{time}`
+**Debug Mode:** When environment variable `DEBUG=1` is set, logs will be recorded under `tests/reports/test-run-{timestamp or TEST_RUN_ID}/...` (typically with per-test subdirectories).
 
+**AgentMetadata:** Integration tests will write an AgentMetadata markdown file to `tests/reports/test-run-{timestamp or TEST_RUN_ID}/...` capturing events during the test execution.
 
 ### Generating Report
 You can generate a report on the **Debug** logs using:
 
 | Command | Use Case |
 |---------|----------|
-| `npm run report` | Generates a report of the most recent debug logs. |
-| `npm run report path/to/directory` | Generates a report on the logs in the directory passed in. |
+| `npm run report -- --skill skill-name` | Generates a report for a skill of the most recent run. |
+
+---
+
+## Running Tests on CI
+
+All workflows are defined in `.github/workflows/`. Trigger them from the **Actions** tab in GitHub.
+
+| Pipeline | Workflow File | Trigger | What It Runs |
+|----------|---------------|---------|--------------|
+| Test All Skills - non-integration | `test-all-skills.yml` | Push to `main`, PRs, or manual | Unit + trigger tests (no Azure auth) |
+| Integration Tests - all | `test-all-integration.yml` | Manual only | Integration tests for selected skills |
+| Integration Tests - azure-deploy | `test-azure-deploy.yml` | Manual only | Deployment tests for `azure-deploy` |
+
+### How to Manually Trigger Each Workflow
+
+**Test All Skills - non-integration:** Go to **Actions → Test All Skills - non-integration → Run workflow**. Optionally enter a skill name to scope the run, or leave empty for all skills.
+
+**Integration Tests - all:** Go to **Actions → Integration Tests - all → Run workflow**. Enter a comma-separated list of skills (e.g. `azure-validate,azure-storage,azure-ai`). Skill names must match test folder names under `tests/`. If `azure-deploy` is included in the input, you can optionally enter a comma delimited list of test patterns to filter its tests to run. Optionally enable `debug` for detailed logs.
+
+**Integration Tests - azure-deploy:** Go to **Actions → Integration Tests - azure-deploy → Run workflow**. Optionally enter a comma delimited list of test patterns to filter by test name or `describe` block (e.g. `static-web-apps-deploy`, `Terraform`, `"creates todo list"`). Leave empty to run all deploy tests.
+
+> **⏱ Deploy test timing:** Each deploy test can take up to **30 minutes**, and brownfield tests up to **45 minutes**. Each pipeline job has a **6-hour maximum** execution time limit. The workflows by default breaks down the tests and run them in separate jobs. If you added more tests and made any of the default group of tests exceeding the time limit, consider further breaking down them.
+
+### CI Notes
+
+- Integration workflows require Azure OIDC credentials (`cideploytest` environment) and a `COPILOT_CLI_TOKEN` secret.
+- OIDC tokens are auto-refreshed every 5 minutes to avoid auth expiry during long runs.
+- Each skill step uses `continue-on-error: true`, so one failure won't block others.
+- Enable the `debug` input to write per-test agent logs under `tests/reports/test-run-{id}/`.
+- Skill reports are appended to the **Job Summary** tab and uploaded as artifacts (retained 30 days).
+
 ---
 
 ## Adding Tests for a New Skill
@@ -284,6 +268,10 @@ Scaffold tests for the skill "azure-redis"
 That's it. Copilot will read `tests/AGENTS.md` and create a complete test suite following all the patterns.
 
 > **Tip:** Replace `azure-redis` with any skill name from `/plugin/skills/`
+
+### Review and fix the AI-generated tests
+
+AI-generated tests commonly miss required setup for the agent to make sense. For example, asking an agent to deploy an app without giving an app to the agent won't make much sense. They also often don't have the fine-grained evaluation checks that would be useful. The test author needs to review the AI generated tests to make sure they are testing valid scenarios and the evaluation checks are sufficient.
 
 ---
 
@@ -303,7 +291,7 @@ cp -r _template {skill-name}
 
 Edit each test file and change the `SKILL_NAME` constant:
 
-```javascript
+```typescript
 // In unit.test.ts, triggers.test.ts, integration.test.ts
 const SKILL_NAME = 'azure-redis';  // ← Change this to match your skill folder
 ```
@@ -312,7 +300,7 @@ const SKILL_NAME = 'azure-redis';  // ← Change this to match your skill folder
 
 In `triggers.test.ts`, add prompts that should and should NOT trigger your skill:
 
-```javascript
+```typescript
 const shouldTriggerPrompts = [
   'How do I configure Azure Redis cache?',
   'Set up Redis caching for my Azure app',
@@ -332,7 +320,7 @@ const shouldNotTriggerPrompts = [
 
 In `unit.test.ts`, add tests specific to your skill's content:
 
-```javascript
+```typescript
 test('documents cache tiers', () => {
   expect(skill.content).toContain('Basic');
   expect(skill.content).toContain('Standard');
@@ -343,7 +331,7 @@ test('documents cache tiers', () => {
 #### Step 5: Run and Verify
 
 ```bash
-npm test -- --testPathPattern={skill-name}
+npm run test:skill -- {skill-name}
 ```
 
 #### Step 6: Update Coverage Grid
@@ -353,56 +341,6 @@ npm run coverage:grid
 ```
 
 This updates the Skills Coverage Grid in this README.
-
-### Checklist for New Skill Tests
-
-- [ ] Copied `_template/` to `tests/{skill-name}/`
-- [ ] Updated `SKILL_NAME` in all test files
-- [ ] Added 5+ prompts that SHOULD trigger
-- [ ] Added 5+ prompts that should NOT trigger
-- [ ] Added unit tests for skill-specific content
-- [ ] All tests pass locally
-- [ ] Ran `npm run coverage:grid` to update README
-
----
-
-## Directory Structure
-
-```
-tests/
-├── README.md                 # This file - developer guide
-├── AGENTS.md                 # AI agent testing patterns
-├── package.json              # Dependencies (jest, jest-junit, @github/copilot-sdk)
-├── jest.config.ts            # Jest configuration
-├── jest.setup.ts             # Global setup, custom matchers
-│
-├── _template/                # 📋 Copy this for new skills
-│   ├── unit.test.ts          #    Metadata & logic tests
-│   ├── triggers.test.ts      #    Prompt activation tests
-│   ├── integration.test.ts   #    Real agent tests (optional)
-│   ├── fixtures/             #    Test data
-│   └── README.md             #    Template usage guide
-│
-├── utils/                    # 🔧 Shared test utilities
-│   ├── skill-loader.ts       #    Load & parse SKILL.md
-│   ├── trigger-matcher.ts    #    Test prompt → skill matching
-│   ├── fixtures.ts           #    Load test fixtures
-│   └── agent-runner.ts       #    Copilot SDK agent runner
-│
-├── scripts/                  # 📜 Helper scripts
-│   └── generate-coverage-grid.js    # Update README coverage table
-│
-├── azure-validation/         # ✅ Example: fully tested skill
-│   ├── unit.test.ts
-│   ├── triggers.test.ts
-│   └── __snapshots__/        # Jest snapshot files
-│
-├── reports/                  # 📊 Generated test reports
-│   └── junit.xml             #    CI-compatible test results
-│
-└── coverage/                 # 📈 Generated coverage reports
-    └── index.html            #    HTML coverage viewer
-```
 
 ---
 
@@ -414,19 +352,18 @@ tests/
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
+| azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
-| azure-diagnostics | ✅ | - | - | ✅ | - |
-| azure-functions | ✅ | - | - | ✅ | - |
+| azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
+| azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
-| azure-nodejs-production | ✅ | - | - | ✅ | - |
 | azure-observability | ✅ | - | - | ✅ | - |
-| azure-postgres | ✅ | - | - | ✅ | - |
 | azure-prepare | ✅ | - | - | ✅ | - |
 | azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
 | azure-resource-visualizer | ✅ | - | - | ✅ | - |
-| azure-role-selector | ✅ | ✅ | ✅ | ✅ | - |
+| azure-rbac | ✅ | ✅ | ✅ | ✅ | - |
 | azure-security | ✅ | - | - | ✅ | - |
 | azure-security-hardening | ✅ | - | - | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
@@ -468,7 +405,7 @@ const SKILL_NAME = 'azure-validation';  // Must match folder exactly
 
 ### Tests Pass Locally but Fail in CI
 
-1. Check Node.js version (CI uses Node 20)
+1. Check Node.js version
 2. Ensure `package-lock.json` is committed
 3. Look for environment-dependent code
 

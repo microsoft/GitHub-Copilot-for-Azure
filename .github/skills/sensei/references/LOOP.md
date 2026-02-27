@@ -120,15 +120,25 @@ tests/{skill-name}/integration.test.ts # If exists
 
 ### Step 2: SCORE
 
-**Action:** Evaluate frontmatter compliance
+**Action:** Evaluate frontmatter compliance per the [agentskills.io specification](https://agentskills.io/specification)
 
 **Checks:**
-1. Description length >= 150 chars
-2. Contains trigger phrases ("USE FOR:" etc.)
-3. Contains anti-triggers ("DO NOT USE FOR:" etc.)
-4. Has compatibility field (optional for Medium-High)
+1. **Name validation** (spec-required):
+   - Lowercase alphanumeric + hyphens only
+   - No consecutive hyphens (`--`)
+   - Must not start or end with `-`
+   - Must match parent directory name
+   - Length 1-64 characters
+2. Description length >= 150 chars
+3. Description ≤ 1024 chars (spec hard limit)
+4. Contains trigger phrases ("USE FOR:" etc.)
+5. Contains anti-triggers ("DO NOT USE FOR:" etc.)
+6. Has compatibility field (optional for Medium-High)
+7. Optional fields preserved if present (`license`, `metadata`, `allowed-tools`)
 
-**Output:** Low | Medium | Medium-High | High
+**Output:** Invalid | Low | Medium | Medium-High | High
+
+> ⚠️ **Warning:** If name validation fails, report as **Invalid** and fix before proceeding. A name like `azure--deploy` or `-azure-deploy` violates the spec.
 
 ### Step 3: SCAFFOLD (Conditional)
 
@@ -151,25 +161,24 @@ const SKILL_NAME = '{skill-name}';  // Replace placeholder
 **Action:** Enhance the SKILL.md frontmatter
 
 **Goals:**
-1. Add "USE FOR:" section with trigger phrases
-2. Add "DO NOT USE FOR:" section with anti-triggers
-3. Keep description under 1024 characters
-4. Maintain clarity and usefulness
+1. Add "WHEN:" section with distinctive quoted trigger phrases (preferred over "USE FOR:")
+2. Remove any "DO NOT USE FOR:" clauses (keyword contamination risk)
+3. Keep description under 60 words and 1024 characters
+4. Lead with unique action verb + domain
+
+> ⚠️ **Do NOT add "DO NOT USE FOR:" clauses.** They cause keyword contamination on Claude Sonnet — anti-triggers introduce the very keywords that trigger wrong-skill activation. Use positive routing with distinctive `WHEN:` phrases instead.
 
 **Strategy:**
 - Read skill content to understand purpose
-- Identify related skills for anti-triggers
-- Extract keywords that should trigger this skill
-- Identify scenarios that should NOT trigger this skill
+- Identify distinctive action verbs and domain for lead sentence
+- Extract 3-5 quoted phrases unique to this skill for WHEN: triggers
+- Keep total description ≤60 words for cross-model reliability
 
 **Template:**
 ```yaml
 ---
 name: {skill-name}
-description: |
-  [What the skill does - 1-2 sentences]
-  USE FOR: [phrase1], [phrase2], [phrase3], [phrase4], [phrase5]
-  DO NOT USE FOR: [scenario1] (use other-skill), [scenario2] (use another-skill)
+description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"[phrase1]\", \"[phrase2]\", \"[phrase3]\", \"[phrase4]\", \"[phrase5]\"."
 ---
 ```
 
@@ -183,12 +192,11 @@ description: |
 **Updates needed:**
 
 1. **shouldTriggerPrompts** (minimum 5):
-   - Match the "USE FOR:" phrases
+   - Match the "WHEN:" or "USE FOR:" phrases
    - Include variations and natural language
    - Cover the skill's primary use cases
 
 2. **shouldNotTriggerPrompts** (minimum 5):
-   - Match the "DO NOT USE FOR:" scenarios
    - Include unrelated topics (weather, poetry)
    - Include other cloud providers (AWS, GCP)
    - Include related but different Azure services
@@ -255,13 +263,19 @@ cd scripts && npm run references {skill-name}
 
 ### Step 6: CHECK TOKENS
 
-**Action:** Analyze token usage and gather optimization suggestions
+**Action:** Analyze token usage, line count, and gather optimization suggestions
 
 **Commands:**
 ```bash
 cd scripts && npm run tokens -- check plugin/skills/{skill-name}/SKILL.md
 cd scripts && npm run tokens -- suggest plugin/skills/{skill-name}/SKILL.md
 ```
+
+**Line count check (per spec):**
+```bash
+wc -l plugin/skills/{skill-name}/SKILL.md
+```
+Report a warning if SKILL.md exceeds 500 lines (spec recommendation).
 
 **Token Budgets** (from [skill-authoring](/.github/skills/skill-authoring)):
 - SKILL.md: < 500 tokens (soft limit), < 5000 (hard limit)
@@ -292,6 +306,10 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 ║  Triggers: 0                     Triggers: 5                     ║
 ║  Anti-triggers: 0                Anti-triggers: 3                ║
 ║                                                                  ║
+║  SPEC RECOMMENDATIONS:                                           ║
+║  • Add license field (e.g., license: MIT)                        ║
+║  • Add metadata.version (e.g., metadata: { version: "1.0" })    ║
+║                                                                  ║
 ║  SUGGESTIONS NOT IMPLEMENTED:                                    ║
 ║  • Remove emoji decorations (-12 tokens)                         ║
 ║  • Consolidate duplicate headings (-8 tokens)                    ║
@@ -304,6 +322,7 @@ See [TOKEN-INTEGRATION.md](TOKEN-INTEGRATION.md) for details on token optimizati
 - Token delta (+/- tokens)
 - Trigger count change
 - Anti-trigger count change
+- Spec recommendations (missing `license`, `metadata.version`)
 - Unimplemented token suggestions
 
 ### Step 8: PROMPT USER
@@ -418,3 +437,37 @@ git log --oneline -- plugin/skills/{skill-name}/SKILL.md
 # See diff for a commit
 git show {commit-hash}
 ```
+
+
+## Success Criteria
+
+Beyond frontmatter scoring, Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends defining runtime success criteria.
+
+### Quantitative Metrics
+
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| Trigger accuracy | 90%+ of relevant queries | Run 10-20 test queries that should trigger the skill |
+| Tool call efficiency | Fewer calls with skill than without | Compare same task with/without skill |
+| Error rate | 0 failed API calls per workflow | Monitor MCP logs during test runs |
+
+### Qualitative Metrics
+
+| Metric | How to Assess |
+|--------|---------------|
+| No next-step prompting needed | Note how often you redirect or clarify during testing |
+| Workflows complete without correction | Run same request 3-5 times, compare consistency |
+
+## Runtime Iteration Signals
+
+### Undertriggering
+**Symptoms:** Skill doesn't load when it should, users manually enabling it.
+**Fixes:** Add more trigger phrases, include technical term keywords, test with paraphrased requests.
+
+### Overtriggering
+**Symptoms:** Skill loads for irrelevant queries, users disabling it.
+**Fixes:** Make description more specific, use distinctive WHEN: phrases. In small skill sets: adding negative triggers may help. In large sets (15+): prefer positive-only routing.
+
+### Execution Issues
+**Symptoms:** Inconsistent results, API failures, user corrections needed.
+**Fixes:** Add error handling to body, add validation steps, consider bundling validation scripts.

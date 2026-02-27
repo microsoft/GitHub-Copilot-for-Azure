@@ -128,3 +128,37 @@ azd env set STORAGE_SKU <user-provided-value>
 During `azd provision`, azd will substitute `${STORAGE_SKU}` with the value from the environment and will pass it to Bicep.
 
 **Reference:** [Use environment variables in infrastructure files](https://learn.microsoft.com/azure/developer/azure-developer-cli/manage-environment-variables?tabs=bash#use-environment-variables-in-infrastructure-files)
+
+## .NET Aspire Limited Mode - Missing Environment Variables
+
+**Symptom:** When deploying .NET Aspire projects with azd, `azd provision` succeeds but `azd deploy` fails with errors about missing container registry or managed identity environment variables.
+
+**Cause:** .NET Aspire projects can use azd in "limited mode" where infrastructure is generated in-memory without creating an explicit `infra/` folder on disk. In this mode, `azd provision` creates Azure resources (Container Registry, Managed Identity, Container Apps Environment, etc.) but doesn't automatically populate certain environment variables that `azd deploy` needs.
+
+**Common missing variables:**
+- `AZURE_CONTAINER_REGISTRY_ENDPOINT` — ACR login server URL
+- `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID` — Managed identity resource ID
+- `MANAGED_IDENTITY_CLIENT_ID` — Managed identity client ID
+
+**Solution:**
+
+After `azd provision` completes, manually populate the missing environment variables:
+
+```bash
+# Get your resource group name first
+azd env get-values
+
+# Set the container registry endpoint
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr list --resource-group <resource-group-name> --query "[0].loginServer" -o tsv)
+
+# Set the managed identity resource ID
+azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID $(az identity list --resource-group <resource-group-name> --query "[0].id" -o tsv)
+
+# Set the managed identity client ID
+azd env set MANAGED_IDENTITY_CLIENT_ID $(az identity list --resource-group <resource-group-name> --query "[0].clientId" -o tsv)
+```
+
+Then retry deployment:
+```bash
+azd deploy --no-prompt
+```

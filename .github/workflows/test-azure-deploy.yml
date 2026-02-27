@@ -12,8 +12,8 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      group-name:
-        description: 'Deploy test group name to run (e.g. static-web-apps-deploy). If empty, all groups will be run.'
+      test-pattern:
+        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
         required: false
         type: string
         default: ''
@@ -22,21 +22,58 @@ on:
         required: false
         type: boolean
         default: false
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      test-pattern:
+        description: 'Optional: Comma delimited tests by name or describe block'
+        required: false
+        type: string
+        default: ''
+      debug:
+        description: 'Whether to set DEBUG=1 for jest tests'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      COPILOT_CLI_TOKEN:
+        required: true
 
 jobs:
+  setup:
+    name: Build test matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Parse test-pattern input into matrix
+        id: set-matrix
+        run: |
+          INPUT="${{ inputs.test-pattern }}"
+          # Default test groups if input is empty
+          DEFAULT='["skill-invocation","static-web-apps-deploy","app-service-deploy","azure-functions-deploy","azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
+          
+          if [ -z "$INPUT" ]; then
+            echo "matrix=$DEFAULT" >> "$GITHUB_OUTPUT"
+          else
+            # Convert comma-delimited input to JSON array
+            JSON=$(echo "$INPUT" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | jq -R . | jq -sc .)
+            echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
-    name: Run azure-deploy deployment tests
+    name: azure-deploy – ${{ matrix.test-group }}
+    needs: setup
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        test-group: ${{ fromJson(needs.setup.outputs.matrix) }}
     defaults:
       run:
         working-directory: tests
@@ -62,13 +99,39 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      
+      # azure/login only fetches the OIDC access token once.
+      # If a test starts after the token expires, it will fail with authentication errors.
+      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
+      # Learn more at https://github.com/Azure/login/issues/372
+      - name: Fetch OIDC token every 300 seconds
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          while true; do
+            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
+            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
+            sleep 300
+          done &
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: tests/package-lock.json
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       - name: Install dependencies
         run: npm ci
@@ -85,23 +148,21 @@ jobs:
         with:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
-      - name: Integration tests
-        id: integration-tests
+      - name: Run tests – ${{ matrix.test-group }}
         env:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}
         run: |
-          if [ -n "${{ inputs.group-name }}" ]; then
-            TEST_ARGS="--testNamePattern=${{ inputs.group-name }}"
-          fi
-          npm run test:integration -- --testPathPattern="azure-deploy" $TEST_ARGS
+          npm run test:integration -- azure-deploy "${{ matrix.test-group }}"
         continue-on-error: true
 
       - name: Generate report
+        if: always()
         id: generate-report
         run: npm run report -- --skill azure-deploy
 
       - name: Show skill report
+        if: always()
         id: show-skill-report
         run: |
           SKILL_REPORT=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
@@ -113,9 +174,9 @@ jobs:
           fi
 
       - name: Export report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: azure-deploy-test-reports
+          name: azure-deploy-${{ matrix.test-group }}-reports
           path: tests/reports/
           retention-days: 30
-

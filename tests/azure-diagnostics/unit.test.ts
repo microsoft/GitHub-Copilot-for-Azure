@@ -78,8 +78,20 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("containerapp logs");
     });
 
+    test("provides diagnostic commands for Function Apps", () => {
+      expect(skill.content).toContain("app-insights query");
+    });
+
+    test("links to Function Apps troubleshooting reference", () => {
+      expect(skill.content).toContain("references/functions/README.md");
+    });
+
     test("references KQL query documentation", () => {
       expect(skill.content).toContain("kql-queries.md");
+    });
+
+    test("links to Azure Resource Graph reference", () => {
+      expect(skill.content).toContain("references/azure-resource-graph.md");
     });
   });
 

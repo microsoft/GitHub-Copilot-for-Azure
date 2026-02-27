@@ -2,6 +2,42 @@
 
 Generate infrastructure and configuration files based on selected recipe.
 
+## ⛔ CRITICAL: Check for .NET Aspire Projects FIRST
+
+**MANDATORY: Before generating any files, detect .NET Aspire projects:**
+
+```bash
+# Method 1: Find AppHost project files
+find . -name "*.AppHost.csproj" -o -name "*AppHost.csproj"
+
+# Method 2: Search for Aspire packages
+grep -r "Aspire\.Hosting\|Aspire\.AppHost\.Sdk" . --include="*.csproj"
+```
+
+**If Aspire is detected:**
+1. ⛔ **STOP** - Do NOT manually create `azure.yaml`
+2. ⛔ **STOP** - Do NOT manually create `infra/` files
+3. ✅ **USE** - `azd init --from-code -e <env-name>` instead
+4. 📖 **READ** - [aspire.md](aspire.md) and [recipes/azd/aspire.md](recipes/azd/aspire.md) for complete guidance
+
+**Why this is critical:**
+- Aspire AppHost auto-generates infrastructure from code
+- Manual `azure.yaml` without `services` section causes "infra\main.bicep not found" error
+- `azd init --from-code` correctly detects AppHost and generates proper configuration
+
+> ⚠️ **Manually creating azure.yaml for Aspire projects is the most common deployment failure.** Always use `azd init --from-code`.
+
+## Check for Other Special Patterns
+
+After verifying the project is NOT Aspire, check for these patterns:
+
+| Pattern | Detection | Action |
+|---------|-----------|--------|
+| **Complex existing codebase** | Multiple services, existing structure | Consider `azd init --from-code` |
+| **Existing azure.yaml** | File already present | MODIFY mode - update existing config |
+
+> **CRITICAL:** After running `azd init --from-code`, you **MUST** immediately set the user-confirmed subscription with `azd env set AZURE_SUBSCRIPTION_ID <id>`. Do NOT skip this step. See [aspire.md](aspire.md) Step 3 for the complete sequence.
+
 ## CRITICAL: Research Must Be Complete
 
 **DO NOT generate any files without first completing the [Research Components](research.md) step.**

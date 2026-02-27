@@ -2,21 +2,31 @@
 
 Choose the deployment recipe based on project needs and existing tooling.
 
+## ⛔ Special Cases: Detect First
+
+**Before selecting a recipe, check for these special project types:**
+
+| Project Type | Detection | Recipe Selection |
+|--------------|-----------|------------------|
+| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | **AZD (auto via `azd init --from-code`)** → [aspire.md](aspire.md) |
+
+> 💡 **Tip:** .NET Aspire projects always use AZD recipe with auto-generated configuration. Do not manually select recipe or create artifacts.
+
 ## Quick Decision
 
 **Default: AZD** unless specific requirements indicate otherwise.
 
-> 💡 **Tip:** azd supports both Bicep and Terraform as IaC providers. Prefer azd+Terraform over pure Terraform when working with Azure.
+> 💡 **Tip:** azd supports both Bicep and Terraform as IaC providers. When Terraform is mentioned for Azure deployment, **default to azd+Terraform** for the best developer experience.
 
 ## Decision Criteria
 
 | Choose | When |
 |--------|------|
 | **AZD (Bicep)** | New projects, multi-service apps, want simplest deployment (`azd up`) |
-| **AZD (Terraform)** | Want Terraform IaC + azd simplicity, multi-cloud IaC with Azure-first deployment |
+| **AZD (Terraform)** | **DEFAULT for Terraform** - Want Terraform IaC + azd simplicity, Azure deployment with Terraform |
 | **AZCLI** | Existing az scripts, need imperative control, custom pipelines, AKS |
 | **Bicep** | IaC-first approach, no CLI wrapper needed, direct ARM deployment |
-| **Terraform** | Multi-cloud deployments (non-Azure-first), complex TF workflows incompatible with azd |
+| **Terraform** | Multi-cloud deployments (non-Azure-first), complex TF workflows incompatible with azd, explicitly requested |
 
 ## Auto-Detection
 
@@ -24,7 +34,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 |--------------------|------------------|
 | `azure.yaml` with `infra.provider: terraform` | AZD (Terraform) |
 | `azure.yaml` (Bicep or no provider specified) | AZD (Bicep) |
-| `*.tf` files (no azure.yaml) | Terraform or AZD (Terraform) - ask user preference |
+| `*.tf` files (no azure.yaml) | **AZD (Terraform) - DEFAULT** (unless multi-cloud) |
 | `infra/*.bicep` (no azure.yaml) | Bicep or AZCLI |
 | Existing `az` scripts | AZCLI |
 | None | AZD (Bicep) - default |

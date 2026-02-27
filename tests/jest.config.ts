@@ -57,9 +57,6 @@ const config: Config = {
   // Verbose output for better readability
   verbose: true,
 
-  // Fail fast in CI
-  bail: process.env.CI ? 1 : 0,
-
   // Test timeout - longer for integration tests (agent sessions can take 60s+)
   testTimeout: 20 * 60 * 1000, // 20 minutes
 
@@ -79,6 +76,9 @@ const config: Config = {
       "ts-jest",
       {
         useESM: true,
+        diagnostics: {
+          ignoreDiagnostics: [1343], // Allow import.meta in ESM preset
+        },
       },
     ],
   },

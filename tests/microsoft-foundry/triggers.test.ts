@@ -29,6 +29,17 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Set up agent monitoring and continuous evaluation in Foundry",
       "Help me with Microsoft Foundry model deployment",
       "How to use knowledge index for RAG in Azure AI Foundry?",
+      "Create a new Azure AI Foundry project",
+      "Set up a Foundry project for my AI agents",
+      "How do I onboard to Microsoft Foundry and create a project?",
+      "Provision Foundry infrastructure with azd",
+      "I need a new Foundry project to host my models",
+      "Help me build a Foundry agent end to end",
+      "I want to create and ship a new Foundry agent",
+      "Walk me through the agent lifecycle in Azure AI Foundry",
+      "Manage my Foundry agent workflow",
+      "I need help with my Foundry agent",
+      "Create a new agent in Foundry",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -42,6 +53,35 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe("Should Trigger - RBAC Sub-Skill", () => {
+    // RBAC-specific prompts that SHOULD trigger this skill
+    const rbacTriggerPrompts: string[] = [
+      "Grant Alice role assignment access to my Microsoft Foundry project",
+      "Assign Azure AI User role to a user in Foundry",
+      "Make Bob a project manager in Azure AI Foundry",
+      "Who has role assignment access to my Microsoft Foundry resource?",
+      "Audit role assignments on my Foundry account",
+      "Can I deploy models to Foundry? Check my permissions",
+      "Validate my permissions on the Foundry project",
+      "Set up managed identity for my Foundry project",
+      "Configure managed identity roles for Storage access",
+      "Create a service principal for Foundry CI/CD pipeline",
+      "Set up service principal for Microsoft Foundry automation",
+      "Assign Azure AI Owner role to developer",
+      "List all RBAC assignments on my Foundry resource",
+      "Setup developer permissions for Foundry",
+    ];
+
+    test.each(rbacTriggerPrompts)(
+      'triggers on RBAC prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
   describe("Should NOT Trigger", () => {
     // Prompts that should NOT trigger - completely unrelated topics
     const shouldNotTriggerPrompts: string[] = [
@@ -49,9 +89,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me write a poem",
       "Explain quantum computing",
       "Help me with AWS SageMaker", // Wrong cloud provider
-      "Configure my PostgreSQL database", // Use azure-postgres
+      "Configure my PostgreSQL database", // Unrelated database task
       "Help me with Kubernetes pods", // Use azure-aks
       "How do I write Python code?", // Generic programming
+      "How do I configure a timer-based cron job in my web app?", // Use azure-functions
+      "Host my static website on a cloud platform", // Use azure-create-app
     ];
 
     test.each(shouldNotTriggerPrompts)(

@@ -11,14 +11,14 @@
  * Run with: npm run test:integration -- --testPathPattern={skill-name}
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { 
-  useAgentRunner, 
-  isSkillInvoked, 
-  areToolCallsSuccess, 
+import * as fs from "node:fs";
+import * as path from "node:path";
+import {
+  useAgentRunner,
+  isSkillInvoked,
+  areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests 
+  shouldSkipIntegrationTests
 } from "../utils/agent-runner";
 
 // Replace with your skill name
@@ -27,7 +27,7 @@ const SKILL_NAME = "your-skill-name";
 // Use centralized skip logic from agent-runner
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   // Example test: Verify the skill is invoked for a relevant prompt
@@ -47,7 +47,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
     });
 
     const hasExpectedContent = doesAssistantMessageIncludeKeyword(
-      agentMetadata, 
+      agentMetadata,
       "expected keyword"
     );
     expect(hasExpectedContent).toBe(true);

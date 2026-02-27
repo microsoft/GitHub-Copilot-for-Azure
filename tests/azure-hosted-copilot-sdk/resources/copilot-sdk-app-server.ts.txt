@@ -1,0 +1,11 @@
+import express from 'express';
+import { CopilotClient } from '@github/copilot-sdk';
+const app = express();
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.post('/review', async (req, res) => {
+  const client = new CopilotClient();
+  const session = await client.createSession();
+  const result = await session.sendAndWait(req.body.prompt);
+  res.json({ review: result });
+});
+app.listen(3000, () => console.log('Running on :3000'));

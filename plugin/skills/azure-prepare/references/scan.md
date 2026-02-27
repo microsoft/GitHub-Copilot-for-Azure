@@ -14,6 +14,16 @@ Analyze workspace to identify components, technologies, and dependencies.
 | `pom.xml`, `build.gradle` | Java |
 | `go.mod` | Go |
 
+### ⛔ Specialized SDK Detection — Check FIRST
+
+Before classifying components, grep dependency files for SDKs that require a specialized skill:
+
+| Dependency in code | Invoke instead |
+|--------------------|----------------|
+| `@github/copilot-sdk` · `github-copilot-sdk` · `copilot-sdk-go` · `GitHub.CopilotSdk` | **azure-hosted-copilot-sdk** |
+
+> ⚠️ If ANY match is found, **STOP and invoke that skill**. Do NOT continue with azure-prepare — the skill has tested templates and patterns.
+
 ### Component Types
 
 | Pattern | Component Type |
@@ -25,6 +35,7 @@ Analyze workspace to identify components, technologies, and dependencies.
 | Next.js/Nuxt | SSR Web App |
 | Celery/Bull/Agenda | Background Worker |
 | azure-functions SDK | Azure Function |
+| .AppHost.csproj or Aspire.Hosting package | .NET Aspire App |
 
 **Pure Static Site Detection:**
 - No package.json, requirements.txt, or build configuration
@@ -42,6 +53,20 @@ Analyze workspace to identify components, technologies, and dependencies.
 | `Dockerfile` | Containerized |
 | `.github/workflows/` | GitHub Actions CI/CD |
 | `azure-pipelines.yml` | Azure DevOps CI/CD |
+
+### .NET Aspire Detection
+
+**.NET Aspire projects** are identified by:
+- A project ending with `.AppHost.csproj` (e.g., `OrleansVoting.AppHost.csproj`)
+- Reference to `Aspire.Hosting` or `Aspire.Hosting.AppHost` package in .csproj files
+- Multiple .NET projects in a solution, typically including an AppHost orchestrator
+
+**When Aspire is detected:**
+- Use `azd init --from-code -e <environment-name>` instead of manual azure.yaml creation
+- The `--from-code` flag automatically detects the AppHost and generates appropriate configuration
+- The `-e` flag is **required** for non-interactive environments (agents, CI/CD)
+- ⚠️ **CRITICAL:** Aspire projects using Container Apps require environment variable setup BEFORE deployment. See [aspire.md](aspire.md) for proactive configuration steps to avoid deployment failures.
+- See [aspire.md](aspire.md) for detailed Aspire-specific guidance
 
 ## Output
 
