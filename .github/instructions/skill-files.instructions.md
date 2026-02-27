@@ -23,8 +23,8 @@ metadata:
 
 - **name**: 1-64 characters, lowercase letters and hyphens only, must match directory name
 - **description**: 1-1024 characters, explain WHAT the skill does and WHEN to use it. Include trigger phrases.
-- **license**: Must be `MIT`. Required for all skills.
-- **metadata.author**: Must be `Microsoft`.
+- **license**: Required for all skills. Use `MIT` unless there is a documented exception.
+- **metadata.author**: Recommended value is `Microsoft`.
 - **metadata.version**: Semver format (`X.Y.Z`). Set to `"1.0.0"` for new skills. Bumped automatically on release by the `skill-versioning` workflow.
 
 ## Size Limits

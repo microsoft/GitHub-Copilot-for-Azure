@@ -176,10 +176,10 @@ export function validateNoReservedPrefix(name: string | null): ValidationIssue[]
   return issues;
 }
 
-const SEMVER_RE = /^\d+\.\d+\.\d+$/;
+const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 /**
- * Check 5: Validate that `license` field is present.
+ * Check 5: Validate that `license` field is present and is a string.
  */
 export function validateLicense(license: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -188,6 +188,11 @@ export function validateLicense(license: unknown): ValidationIssue[] {
     issues.push({
       check: "license",
       message: "Missing 'license' field in frontmatter",
+    });
+  } else if (typeof license !== "string") {
+    issues.push({
+      check: "license",
+      message: `'license' field must be a string, got ${typeof license}`,
     });
   }
 

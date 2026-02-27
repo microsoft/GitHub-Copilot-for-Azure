@@ -107,6 +107,8 @@ metadata:
 
 ---
 
+## Rule-Based Checks
+
 ### 1. Name Validation
 
 Per the [agentskills.io spec](https://agentskills.io/specification), the `name` field:

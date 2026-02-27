@@ -274,6 +274,12 @@ describe("Frontmatter Spec Validator", () => {
       const issues = validateLicense("");
       expect(issues).toHaveLength(1);
     });
+
+    it("fails for non-string license", () => {
+      const issues = validateLicense(42);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("must be a string");
+    });
   });
 
   // ── validateMetadataVersion ─────────────────────────────────────────────
@@ -307,6 +313,12 @@ describe("Frontmatter Spec Validator", () => {
 
     it("fails for non-numeric version", () => {
       const issues = validateMetadataVersion({ version: "latest" });
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("not valid semver");
+    });
+
+    it("fails for leading zeros", () => {
+      const issues = validateMetadataVersion({ version: "01.0.0" });
       expect(issues).toHaveLength(1);
       expect(issues[0].message).toContain("not valid semver");
     });

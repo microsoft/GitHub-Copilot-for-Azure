@@ -52,7 +52,7 @@ jobs:
           fi
 
           # Find all files changed under plugin/skills/ in the filtered commits
-          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $FILTERED_COMMITS -- plugin/skills/ | sort -u)
+          CHANGED_FILES=$(echo "$FILTERED_COMMITS" | git diff-tree --no-commit-id --name-only -r --stdin -- plugin/skills/ | sort -u)
 
           if [ -z "$CHANGED_FILES" ]; then
             echo "No skill files changed since last release."
@@ -72,6 +72,7 @@ jobs:
             while [ "$DIR" != "plugin/skills" ] && [ "$DIR" != "plugin" ] && [ "$DIR" != "." ]; do
               if [ -f "$DIR/SKILL.md" ]; then
                 SKILL_FILES="$SKILL_FILES $DIR/SKILL.md"
+                break
               fi
               DIR=$(dirname "$DIR")
             done
@@ -147,7 +148,8 @@ jobs:
             echo "  New version: $NEW_VERSION"
 
             # Update the version in the SKILL.md frontmatter
-            sed -i "s/version: \"${CURRENT_VERSION}\"/version: \"${NEW_VERSION}\"/" "$SKILL_FILE"
+            # Handles both block-style (version: "X.Y.Z") and unquoted (version: X.Y.Z)
+            sed -i -E "s/(version:\s*\"?)${CURRENT_VERSION}(\"?)/\1${NEW_VERSION}\2/" "$SKILL_FILE"
 
             BUMPED_SKILLS="${BUMPED_SKILLS}${SKILL_FILE} ${CURRENT_VERSION} → ${NEW_VERSION}\n"
           done
