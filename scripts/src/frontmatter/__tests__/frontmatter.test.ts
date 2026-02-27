@@ -10,6 +10,8 @@ import {
   validateDescriptionFormat,
   validateNoXmlTags,
   validateNoReservedPrefix,
+  validateLicense,
+  validateMetadataVersion,
   validateSkillFile,
 } from "../cli.js";
 import { parseSkillContent } from "../../shared/parse-skill.js";
@@ -250,6 +252,66 @@ describe("Frontmatter Spec Validator", () => {
     });
   });
 
+  // ── validateLicense ─────────────────────────────────────────────────────
+
+  describe("validateLicense", () => {
+    it("passes for a valid license", () => {
+      expect(validateLicense("MIT")).toEqual([]);
+    });
+
+    it("fails for missing license", () => {
+      const issues = validateLicense(undefined);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("license");
+    });
+
+    it("fails for null license", () => {
+      const issues = validateLicense(null);
+      expect(issues).toHaveLength(1);
+    });
+
+    it("fails for empty license", () => {
+      const issues = validateLicense("");
+      expect(issues).toHaveLength(1);
+    });
+  });
+
+  // ── validateMetadataVersion ─────────────────────────────────────────────
+
+  describe("validateMetadataVersion", () => {
+    it("passes for valid semver", () => {
+      expect(validateMetadataVersion({ version: "1.0.0" })).toEqual([]);
+    });
+
+    it("passes for higher semver", () => {
+      expect(validateMetadataVersion({ version: "3.2.1" })).toEqual([]);
+    });
+
+    it("fails for missing metadata", () => {
+      const issues = validateMetadataVersion(undefined);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("metadata-version");
+    });
+
+    it("fails for missing version in metadata", () => {
+      const issues = validateMetadataVersion({ author: "Microsoft" });
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("metadata-version");
+    });
+
+    it("fails for non-semver version", () => {
+      const issues = validateMetadataVersion({ version: "1.0" });
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("not valid semver");
+    });
+
+    it("fails for non-numeric version", () => {
+      const issues = validateMetadataVersion({ version: "latest" });
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("not valid semver");
+    });
+  });
+
   // ── validateSkillFile (integration) ──────────────────────────────────────
 
   describe("validateSkillFile", () => {
@@ -259,7 +321,7 @@ describe("Frontmatter Spec Validator", () => {
 
       writeFileSync(
         resolve(skillDir, "SKILL.md"),
-        "---\nname: valid-skill\ndescription: \"Deploy apps to Azure. WHEN: deploy, host, publish.\"\n---\n\n# Valid Skill\n",
+        '---\nname: valid-skill\ndescription: "Deploy apps to Azure. WHEN: deploy, host, publish."\nlicense: MIT\nmetadata:\n  author: Microsoft\n  version: "1.0.0"\n---\n\n# Valid Skill\n',
       );
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));

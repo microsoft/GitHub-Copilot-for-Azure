@@ -1,9 +1,10 @@
 ---
 name: azure-aigateway
 description: "Configure Azure API Management as an AI Gateway for AI models, MCP tools, and agents. USE FOR: semantic caching, token limit, content safety, load balancing, AI model governance, MCP rate limiting, jailbreak detection, add Azure OpenAI backend, add AI Foundry model, test AI gateway, LLM policies, configure AI backend, token metrics, AI cost control, convert API to MCP, import OpenAPI to gateway. DO NOT USE FOR: deploying APIM (use azure-prepare), general API policies (use azure-deploy), creating new APIM instance (use azure-prepare)."
+license: MIT
 metadata:
-  author: microsoft
-  version: "3.0"
+  author: Microsoft
+  version: "3.0.0"
 compatibility: Requires Azure CLI (az) for configuration and testing
 ---
 

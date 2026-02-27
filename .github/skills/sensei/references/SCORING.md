@@ -102,12 +102,10 @@ license: MIT
 compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
 metadata:
   author: example-org
-  version: "1.0"
+  version: "1.0.0"
 ```
 
 ---
-
-## Rule-Based Checks
 
 ### 1. Name Validation
 
@@ -218,7 +216,7 @@ The [agentskills.io spec](https://agentskills.io/specification) defines addition
 ```
 SUGGESTIONS:
 • Add license field (e.g., license: MIT)
-• Add metadata.version field (e.g., metadata: { version: "1.0" })
+• Add metadata.version field (e.g., metadata: { version: "1.0.0" })
 ```
 
 ### 7. SKILL.md Size Limits
@@ -345,7 +343,7 @@ function collectSuggestions(skill):
     if skill.license == null:
         suggestions.add("Add license field (e.g., license: MIT)")
     if skill.metadata == null OR skill.metadata.version == null:
-        suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0\" })")
+        suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0.0\" })")
     if usesBlockScalar(skill.rawDescription):
         suggestions.add("Use inline double-quoted string for description (>- incompatible with skills.sh)")
     if containsAntiTriggers(skill.description):

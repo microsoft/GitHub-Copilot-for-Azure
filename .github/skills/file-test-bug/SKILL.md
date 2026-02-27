@@ -1,6 +1,10 @@
 ---
 name: file-test-bug
 description: "File a GitHub issue for local integration test failures. TRIGGERS: file test bug, report test failure, create bug for test, integration test failed, test failure issue, junit failure"
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.0"
 ---
 
 # File Test Bug
