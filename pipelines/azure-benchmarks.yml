@@ -1,4 +1,8 @@
-trigger: none
+trigger:
+  branches:
+    include:
+    - main
+    
 pr: none
 
 stages:
@@ -14,6 +18,11 @@ stages:
   - job: RunBenchmark
     displayName: 'Run Copilot Benchmarks'
     steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.11'
+      inputs:
+        versionSpec: '3.11'
+
     - task: AzureCLI@2
       displayName: 'Run Copilot Benchmarks script'
       inputs:
@@ -22,5 +31,3 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
-        arguments: >
-          -BuildId $(OfficialBuildId)
