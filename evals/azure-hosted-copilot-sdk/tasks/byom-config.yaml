@@ -1,0 +1,26 @@
+id: byom-config-001
+name: "BYOM Config — Azure OpenAI Bring Your Own Model"
+description: >
+  Verifies that when a user asks to use their own Azure OpenAI model,
+  the skill routes to Step 3 (Azure BYOM) and outputs the required
+  configuration: wireApi set to completions, DefaultAzureCredential,
+  and references to supported model families (o-series, gpt-5).
+tags:
+  - model-config
+  - byom
+  - happy-path
+  - step-3
+
+inputs:
+  prompt: "Use my Azure OpenAI model with the Copilot SDK"
+
+expected:
+  output_contains:
+    - "wireApi"
+    - "completions"
+    - "DefaultAzureCredential"
+  output_not_contains:
+    - "error"
+    - "failed"
+  behavior:
+    max_tool_calls: 10

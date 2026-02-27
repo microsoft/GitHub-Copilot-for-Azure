@@ -29,8 +29,8 @@ describe("create - Unit Tests", () => {
   });
 
   describe("Parent Skill References", () => {
-    test("parent skill references create.md", () => {
-      expect(skill.content).toContain("create.md");
+    test("parent skill references foundry-agent", () => {
+      expect(skill.content).toContain("foundry-agent");
     });
   });
 

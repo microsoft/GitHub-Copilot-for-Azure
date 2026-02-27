@@ -1,0 +1,23 @@
+id: negative-not-copilot-001
+name: "Negative — Should Not Activate for Unrelated Prompt"
+description: >
+  Verifies that the azure-hosted-copilot-sdk skill does NOT activate
+  for an unrelated prompt about Azure Functions. The output should
+  not contain any Copilot SDK commands, templates, or references.
+tags:
+  - negative
+  - routing
+  - edge-case
+
+inputs:
+  prompt: "Create an Azure Function with timer trigger"
+
+expected:
+  output_not_contains:
+    - "copilot-sdk-service"
+    - "CopilotClient"
+    - "createSession"
+    - "azd init --template azure-samples/copilot-sdk-service"
+    - "wireApi"
+  behavior:
+    max_tool_calls: 10
