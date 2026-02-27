@@ -37,10 +37,11 @@ resource stagingSlot 'Microsoft.Web/sites/slots@2022-09-01' = {
 | Dedicated (Standard+) | Windows or Linux | ✅ 5–20 slots |
 
 > 💡 **For Azure Functions requiring deployment slots:**
-> - **Windows Consumption (Y1)** supports 1 staging slot. This is valid for existing apps or specific Windows requirements,
->   but cold starts on Consumption affect slot swap reliability.
-> - **Elastic Premium** is the recommended plan for Functions with slots: no cold starts, full VNet integration.
-> - **Flex Consumption does not support slots** — use Premium or Dedicated if slots are required for new projects.
+> - **Windows Consumption (Y1) supports 1 staging slot** — this is a supported platform capability.
+>   If you need it, use it. See the Bicep example below.
+> - Recommendation for new projects: prefer **Elastic Premium (EP1+)** (no cold starts, VNet integration)
+>   or a **Dedicated plan (Standard+)**. Y1 cold starts can affect slot swap warm-up reliability.
+> - **Linux Consumption and Flex Consumption do not support deployment slots.**
 
 ### Windows Consumption Function App with Staging Slot (Bicep)
 
