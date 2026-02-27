@@ -38,7 +38,7 @@ Activate this skill when user wants to:
 - Deploy Azure Functions to the cloud
 - Deploy an application that already includes API Management (APIM) gateway infrastructure
 
-> **APIM / AI Gateway**: Use this skill to deploy applications whose APIM/AI gateway infrastructure was already created during **azure-prepare**. For creating or changing APIM resources, see [APIM Deployment Guide](../azure-prepare/references/apim.md). For AI governance policies, invoke **azure-aigateway** skill.
+> **APIM / AI Gateway**: Use this skill to deploy applications whose APIM/AI gateway infrastructure was already created during **azure-prepare**. For creating or changing APIM resources, see [APIM deployment guide](https://learn.microsoft.com/azure/api-management/get-started-create-service-instance). For AI governance policies, invoke **azure-aigateway** skill.
 
 ## Rules
 
