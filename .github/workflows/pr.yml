@@ -215,18 +215,15 @@ jobs:
           echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Extract skill names from changed SKILL.md paths
-          SKILLS=""
-          IFS=$'\n'
+          # Pass changed SKILL.md file paths directly to the validator
+          # Prefix with ../ since working-directory is ./scripts
+          SKILL_FILES=""
           for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
-            # Extract the skill directory name (parent of SKILL.md)
-            SKILL_NAME=$(basename "$(dirname "$file")")
-            SKILLS="$SKILLS $SKILL_NAME"
+            SKILL_FILES="$SKILL_FILES ../$file"
           done
-          unset IFS
           
           # Run frontmatter spec validation
-          if OUTPUT=$(npm run frontmatter -- $SKILLS 2>&1); then
+          if OUTPUT=$(npm run frontmatter -- $SKILL_FILES 2>&1); then
             echo "$OUTPUT"
             echo "✅ All skill frontmatter is valid" >> $GITHUB_STEP_SUMMARY
           else
