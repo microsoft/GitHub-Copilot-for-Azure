@@ -21,7 +21,7 @@ Generate a migration assessment report before any code changes.
 
 ## Code Preview
 
-During assessment, show a **sneak peek** of what the migrated Azure Functions code will look like for each function. Use bindings and triggers (not SDKs) in all previews, following Azure Functions best practices. **Always use the latest supported language runtime** in previews (e.g., Node.js 22, Python 3.11). This helps the user understand the migration scope before committing to code migration.
+During assessment, show a **sneak peek** of what the migrated Azure Functions code will look like for each function. Use bindings and triggers (not SDKs) in all previews, following Azure Functions best practices. **Always use the newest generally available (GA) language runtime listed in the Azure Functions supported languages documentation** in previews (for example, the latest Node.js LTS or newest Python GA version). This helps the user understand the migration scope before committing to code migration.
 
 > ⚠️ **Binding-first rule**: Code previews MUST use `input.storageBlob()`, `output.storageBlob()`, `app.storageQueue()`, etc. instead of `BlobServiceClient`, `QueueClient`, or other SDK clients. Only use SDK for services that have no binding equivalent.
 
