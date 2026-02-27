@@ -113,12 +113,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("contains quota management workflows", () => {
       expect(quotaContent).toContain("### 1. Check Regional Quota");
       expect(quotaContent).toContain("### 2. Find Best Region for Deployment");
-      expect(quotaContent).toContain("### 3. Deploy with PTU");
-      expect(quotaContent).toContain("### 4. Delete Deployment (Free Quota)");
+      expect(quotaContent).toContain("### 3. Check Quota Before Deployment");
+      expect(quotaContent).toContain("### 5. Delete Deployment (Free Quota)");
     });
 
     test("contains command patterns for each workflow", () => {
-      expect(quotaContent).toContain("Show my Microsoft Foundry quota usage");
+      expect(quotaContent).toContain("View quota usage");
       expect(quotaContent).toContain("Request quota increase");
     });
 
