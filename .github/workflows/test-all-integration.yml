@@ -30,6 +30,11 @@ on:
         options:
           - claude-sonnet-4.5
           - claude-opus-4.5
+      skill-test-pattern:
+        description: 'Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests'
+        required: false
+        type: string
+        default: ''
       deploy-test-pattern:
         description: 'Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests.'
         required: false
@@ -258,13 +263,14 @@ jobs:
           DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
+          SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
         run: |
           echo test with $MODEL_OVERRIDE
           # Handle azure-ai vs azure-aigateway prefix collision
           if [ "${{ matrix.skill }}" = "azure-ai" ]; then
-            npm run test:integration azure-ai/
+            npm run test:integration azure-ai/ "$SKILL_TEST_PATTERN"
           else
-            npm run test:integration ${{ matrix.skill }}
+            npm run test:integration ${{ matrix.skill }} "$SKILL_TEST_PATTERN"
           fi
         continue-on-error: true
       
