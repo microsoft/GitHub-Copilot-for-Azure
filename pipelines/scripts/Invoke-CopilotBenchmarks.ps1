@@ -3,15 +3,11 @@
     Installs MSBench CLI in a local virtual environment and runs a Copilot Azure benchmark.
 
 .DESCRIPTION
-    This script is executed by the Azure DevOps benchmark pipeline to run a single Azure benchmark
-    instance using the github-copilot-cli agent.
-
-    The script creates a Python virtual environment in the working directory, installs MSBench CLI
-    from the MicrosoftSweBench Azure Artifacts feed, validates required inputs, and invokes:
+    This script is executed by the Azure DevOps benchmark pipeline to run Azure benchmarks using the
+    github-copilot-cli agent.
+    
+    The script installs MSBench CLI from the MicrosoftSweBench Azure Artifacts feed and invokes:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model>
-
-    Required environment variable:
-    - GITHUB_MCP_SERVER_TOKEN
 
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -19,27 +15,19 @@
 .PARAMETER Benchmark
     Benchmark identifier
 
-.PARAMETER Model
-    Model name passed to msbench-cli via --model.
-    Default: claude-sonnet-4.5-autodev-test
-
 .PARAMETER NoWait
     Whether to add --no-wait to the run command.
-    Accepted values: "true" or "false" (case-insensitive).
-    Default: true
+    Default: false
 
 .EXAMPLE
     PS> ./Invoke-CopilotBenchmarks.ps1
 
-    Runs benchmark azure with default model and --no-wait.
+    Runs benchmark azure with default model.
 
 .EXAMPLE
-    PS> ./Invoke-CopilotBenchmarks.ps1 -BenchmarkInstanceId azure.120 -Model "claude-sonnet-4.5-autodev-test" -NoWait "false"
+    PS> ./Invoke-CopilotBenchmarks.ps1 -BenchmarkInstanceId azure.120 -Model "claude-sonnet-4.5-autodev-test" -NoWait
 
-    Runs benchmark azure.120 with explicit model and waits for completion.
-
-.NOTES
-    The pipeline must provide GITHUB_MCP_SERVER_TOKEN and ensure Python is available.
+    Runs benchmark azure.120 with explicit model and does not wait for completion.
 
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -98,7 +86,7 @@ Write-Host "Checking MSBench CLI versions from feed"
 python -m pip index versions msbench-cli --index-url $indexUrl
 
 Write-Host "Installing/upgrading MSBench CLI"
-python -m pip install --upgrade msbench-cli --index-url $indexUrl
+python -m pip install msbench-cli --index-url $indexUrl
 
 Write-Host "MSBench CLI version"
 & 'msbench-cli' version
@@ -116,7 +104,7 @@ if ($NoWait) {
 }
 
 Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-#msbench-cli @runArgs
+& 'msbench-cli' @runArgs
 
 if ($LASTEXITCODE -ne 0) {
     throw "msbench-cli run failed with exit code $LASTEXITCODE"

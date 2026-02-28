@@ -2,11 +2,12 @@ trigger:
   branches:
     include:
     - main
-    
+
 pr: none
 
 stages:
 - stage: RunBenchmark
+  displayName: 'Run Benchmarks'
   pool:
     name: $(LINUXPOOL)
     image: $(LINUXVMIMAGE)
@@ -19,9 +20,9 @@ stages:
     displayName: 'Run Copilot Benchmarks'
     steps:
     - task: UsePythonVersion@0
-      displayName: 'Use Python 3.11'
+      displayName: 'Use Python 3.14'
       inputs:
-        versionSpec: '3.11'
+        versionSpec: '3.14'
 
     - task: AzureCLI@2
       displayName: 'Run Copilot Benchmarks script'
