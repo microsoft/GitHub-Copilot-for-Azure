@@ -1,0 +1,26 @@
+id: github-default-model-001
+name: "GitHub Default Model — No BYOM Configuration"
+description: >
+  Verifies that when a user asks to create a copilot app with the default
+  model, the skill does NOT emit BYOM configuration (no wireApi, no
+  bearerToken, no DefaultAzureCredential). The output should reference
+  createSession with no model parameter or the GitHub default path.
+tags:
+  - model-config
+  - github-default
+  - happy-path
+
+inputs:
+  prompt: "Create a copilot app with the default model"
+
+expected:
+  output_contains:
+    - "createSession"
+  output_not_contains:
+    - "wireApi"
+    - "bearerToken"
+    - "DefaultAzureCredential"
+    - "error"
+    - "failed"
+  behavior:
+    max_tool_calls: 10

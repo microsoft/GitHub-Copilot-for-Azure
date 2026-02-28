@@ -1,6 +1,6 @@
 ---
 name: sensei
-description: "Iteratively improve skill frontmatter compliance using the Ralph loop pattern. USE FOR: run sensei, sensei help, improve skill, fix frontmatter, skill compliance, frontmatter audit, improve triggers, add anti-triggers, batch skill improvement, check skill tokens. DO NOT USE FOR: creating new skills (use skill-authoring), writing skill content, token optimization only (use markdown-token-optimizer), or non-frontmatter changes."
+description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compliance using the Ralph loop pattern. WHEN: \"run sensei\", \"sensei help\", \"improve skill\", \"fix frontmatter\", \"skill compliance\", \"frontmatter audit\", \"score skill\", \"check skill tokens\". INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly for counts/checks."
 ---
 
 # Sensei
@@ -35,7 +35,7 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║    1. READ      - Load skill's SKILL.md, tests, and token count  ║
 ║    2. SCORE     - Check compliance (Low/Medium/Medium-High/High) ║
 ║    3. SCAFFOLD  - Create tests from template if missing          ║
-║    4. IMPROVE   - Add USE FOR triggers + DO NOT USE FOR          ║
+║    4. IMPROVE   - Add WHEN: triggers (cross-model optimized)     ║
 ║    5. TEST      - Run tests, fix if needed                       ║
 ║    6. REFERENCES- Validate markdown links                        ║
 ║    7. TOKENS    - Check token budget, gather suggestions         ║
@@ -44,9 +44,9 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║   10. REPEAT    - Until Medium-High score + tests pass           ║
 ║                                                                  ║
 ║  TARGET SCORE: Medium-High                                       ║
-║    ✓ Description > 150 chars                                     ║
-║    ✓ Has "USE FOR:" trigger phrases                              ║
-║    ✓ Has "DO NOT USE FOR:" anti-triggers                         ║
+║    ✓ Description > 150 chars, ≤ 60 words                         ║
+║    ✓ Has "WHEN:" trigger phrases (preferred)                     ║
+║    ✓ No "DO NOT USE FOR:" (risky in multi-skill envs)             ║
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
 ║  MORE INFO:                                                      ║
@@ -91,11 +91,13 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md`, tests, and token count
 2. **SCORE** - Run spec-based compliance check (see [SCORING.md](references/SCORING.md)):
    - Validate `name` per [agentskills.io spec](https://agentskills.io/specification) (no `--`, no start/end `-`, lowercase alphanumeric)
-   - Check description length, triggers, anti-triggers
+   - Check description length and word count (≤60 words)
+   - Check triggers (WHEN: preferred, USE FOR: accepted)
+   - Warn on "DO NOT USE FOR:" (risky in multi-skill environments)
    - Preserve optional spec fields (`license`, `metadata`, `allowed-tools`) if present
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
-5. **IMPROVE FRONTMATTER** - Add triggers, anti-triggers, compatibility (stay under 1024 chars)
+5. **IMPROVE FRONTMATTER** - Add WHEN: triggers (stay under 60 words and 1024 chars)
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPattern={skill-name}`
 8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
@@ -111,12 +113,14 @@ Sensei validates skills against the [agentskills.io specification](https://agent
 | Score | Requirements |
 |-------|--------------|
 | **Invalid** | Name fails spec validation (consecutive hyphens, start/end hyphen, uppercase, etc.) |
-| **Low** | Basic description, no explicit triggers, no anti-triggers |
-| **Medium** | Has trigger keywords/phrases, description > 150 chars |
-| **Medium-High** | Has "USE FOR:" triggers AND "DO NOT USE FOR:" anti-triggers |
-| **High** | Triggers + anti-triggers + compatibility field |
+| **Low** | Basic description, no explicit triggers |
+| **Medium** | Has trigger keywords/phrases, description > 150 chars, >60 words |
+| **Medium-High** | Has "WHEN:" (preferred) or "USE FOR:" triggers, ≤60 words |
+| **High** | Medium-High + compatibility field |
 
-**Target: Medium-High** (triggers + anti-triggers present)
+**Target: Medium-High** (distinctive triggers, concise description)
+
+> ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (15+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
 
 **Strongly recommended** (reported as suggestions if missing):
 - `license` — identifies the license applied to the skill
@@ -129,10 +133,7 @@ Per the [agentskills.io spec](https://agentskills.io/specification), required an
 ```yaml
 ---
 name: skill-name
-description: >-
-  [1-2 sentence description of what the skill does]
-  USE FOR: [trigger phrase 1], [trigger phrase 2], [trigger phrase 3]
-  DO NOT USE FOR: [scenario] (use other-skill), [scenario] (use another-skill)
+description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"trigger 1\", \"trigger 2\", \"trigger 3\"."
 license: MIT
 metadata:
   version: "1.0"
@@ -142,9 +143,9 @@ metadata:
 ---
 ```
 
-> **IMPORTANT:** Always use folded YAML format (`>-`) for descriptions over 200 characters. Single-line descriptions become difficult to read, review, and maintain. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries.
+> **IMPORTANT:** Use inline double-quoted strings for descriptions. Do NOT use `>-` folded scalars (incompatible with skills.sh). Do NOT use `|` literal blocks (preserves newlines). Keep total description under 1024 characters and ≤60 words.
 
-> Keep total description under 1024 characters.
+> ⚠️ **"DO NOT USE FOR:" carries context-dependent risk.** In multi-skill environments (10+ skills with overlapping domains), anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and fast-pattern-matching models ([evidence](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). For small, isolated skill sets (1-5 skills), the risk is low. When in doubt, use positive routing with `WHEN:` and distinctive quoted phrases.
 
 ## Test Scaffolding
 

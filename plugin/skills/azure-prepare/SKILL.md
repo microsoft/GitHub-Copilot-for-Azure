@@ -1,9 +1,6 @@
 ---
 name: azure-prepare
-description: >-
-  Default entry point for Azure application development. Invoke for ANY app work related to Azure: creating, building, updating, migrating, or modernizing apps. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles.
-  USE FOR: create an app, build a web app, create API, create frontend, create backend, add a feature, build a service, develop a project, migrate my app, modernize my code, update my application, add database, add authentication, add caching, deploy to Azure, host on Azure, Azure with Terraform, Azure with azd, generate azure.yaml, generate Bicep or Terraform, prepare Azure Functions, create Azure Functions app, create serverless HTTP API, create function app, create event-driven function.
-  DO NOT USE FOR: only validating an already-prepared app (use azure-validate), only running azd up/deploy (use azure-deploy), pure Terraform without azd (prefer azd+Terraform).
+description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"migrate my app\", \"modernize my code\", \"update my application\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"Azure with terraform\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create event-driven function\", \"create and deploy to Azure\", \"create Azure Functions and deploy\", \"create function app and deploy\"."
 ---
 
 # Azure Prepare
@@ -57,6 +54,8 @@ Activate this skill when user wants to:
 |----------------|-------------|
 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient | **azure-hosted-copilot-sdk** |
 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
+| APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
+| AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 

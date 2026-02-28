@@ -37,13 +37,21 @@ metadata:
 
 ## Activation Triggers
 
+Use `WHEN:` with distinctive quoted trigger phrases (preferred for cross-model compatibility):
+
 ```yaml
-# Good - specific keywords and scenarios
-description: Performs Azure compliance assessments using azqr. Use when users 
-  ask to check compliance, assess Azure resources, run azqr, or review security posture.
+# Good - WHEN: with quoted phrases (preferred)
+description: "Perform Azure compliance assessments using azqr. WHEN: \"check compliance\", \"assess Azure resources\", \"run azqr\", \"review security posture\"."
+```
+
+```yaml
+# Accepted - USE FOR: still works
+description: "Perform Azure compliance assessments using azqr. USE FOR: \"check compliance\", \"assess Azure resources\", \"run azqr\"."
 ```
 
 ```yaml
 # Bad - too vague
-description: Helps with Azure stuff.
+description: "Helps with Azure stuff."
 ```
+
+> ⚠️ **Do NOT add "DO NOT USE FOR:" clauses.** They cause keyword contamination on Claude Sonnet and similar models. Use positive routing with distinctive `WHEN:` phrases instead.
