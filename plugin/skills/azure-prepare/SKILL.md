@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"migrate my app\", \"modernize my code\", \"update my application\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"Azure with terraform\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create event-driven function\", \"create and deploy to Azure\", \"create Azure Functions and deploy\", \"create function app and deploy\"."
+description: "Default entry point for Azure application development EXCEPT cross-cloud migration — use azure-cloud-migrate instead. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"modernize my code\", \"update my application\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"Azure with terraform\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create event-driven function\", \"create and deploy to Azure\", \"create Azure Functions and deploy\", \"create function app and deploy\"."
 ---
 
 # Azure Prepare
@@ -17,7 +17,7 @@ Activate this skill when user wants to:
 - Create a new application
 - Add services or components to an existing app
 - Make updates or changes to existing application
-- Modernize or migrate an application
+- Modernize an application
 - Set up Azure infrastructure
 - Deploy to Azure or host on Azure
 

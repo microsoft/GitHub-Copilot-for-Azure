@@ -1,6 +1,6 @@
-import { type AgentMetadata } from "../utils/agent-runner";
+import { type AgentMetadata, getToolCalls } from "../utils/agent-runner";
 import * as fs from "fs";
-import { getToolCalls, listFilesRecursive } from "../utils/evaluate";
+import { listFilesRecursive } from "../utils/evaluate";
 
 /**
  * Check if the agent has set the plan status to "Ready for Validation"

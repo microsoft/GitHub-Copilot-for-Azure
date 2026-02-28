@@ -1,0 +1,67 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Assess and migrate cross-cloud workloads to Azure. Generates assessment reports and converts code from AWS, GCP, or other providers to Azure services. WHEN: "migrate Lambda to Azure Functions", "migrate AWS to Azure", "Lambda migration assessment", "convert s AWS erverless to Azure", "migration readiness report", "migrate from AWS", "migrate from GCP", "cross-cloud migration".",
+  "extractedKeywords": [
+    "assess",
+    "assessment",
+    "azure",
+    "cloud",
+    "code",
+    "convert",
+    "converts",
+    "cross-cloud",
+    "deploy",
+    "erverless",
+    "from",
+    "function",
+    "functions",
+    "generates",
+    "lambda",
+    "mcp",
+    "migrate",
+    "migration",
+    "other",
+    "providers",
+    "readiness",
+    "report",
+    "reports",
+    "services",
+    "when",
+    "workloads",
+  ],
+  "name": "azure-cloud-migrate",
+}
+`;
+
+exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "assess",
+  "assessment",
+  "azure",
+  "cloud",
+  "code",
+  "convert",
+  "converts",
+  "cross-cloud",
+  "deploy",
+  "erverless",
+  "from",
+  "function",
+  "functions",
+  "generates",
+  "lambda",
+  "mcp",
+  "migrate",
+  "migration",
+  "other",
+  "providers",
+  "readiness",
+  "report",
+  "reports",
+  "services",
+  "when",
+  "workloads",
+]
+`;
