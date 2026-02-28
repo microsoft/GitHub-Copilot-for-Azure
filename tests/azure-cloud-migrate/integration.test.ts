@@ -32,7 +32,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const migrationTestTimeoutMs = 2700000;
 const FOLLOW_UP_PROMPT = ["Go with recommended options and test it locally."];
  
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
  
   describe("brownfield-lambda", () => {
