@@ -2,7 +2,6 @@
  * Integration Tests for azure-cloud-migrate
  *
  * Tests skill behavior with a real Copilot agent session.
- * Runs prompts multiple times to measure skill invocation rate.
  *
  * Prerequisites:
  * 1. npm install -g @github/copilot-cli
