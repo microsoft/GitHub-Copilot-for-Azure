@@ -109,7 +109,3 @@ az durabletask scheduler create \
     --location eastus \
     --sku consumption
 ```
-
-## Full Deployment Reference
-
-For complete deployment workflows, AZD commands, and managed identity CLI setup, invoke the **azure-deploy** skill which includes a DTS-specific deployment recipe.

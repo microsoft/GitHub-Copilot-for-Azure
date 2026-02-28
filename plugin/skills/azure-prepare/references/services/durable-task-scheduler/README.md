@@ -54,10 +54,6 @@ docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dt
 
 > **⚠️ NOTE**: Durable Task Scheduler uses identity-based authentication only — no connection strings with keys. When using a User-Assigned Managed Identity (UAMI), you must include the `ClientID` in the connection string.
 
-## Azure Deployment
-
-For provisioning, Bicep templates, managed identity configuration, and deployment workflows, invoke the **azure-deploy** skill which includes DTS-specific deployment guidance.
-
 ## Troubleshooting
 
 | Error | Cause | Fix |

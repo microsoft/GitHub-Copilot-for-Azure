@@ -77,4 +77,3 @@ Activate this skill when user wants to:
 ## References
 
 - [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
-- [Durable Task Scheduler Deployment](references/recipes/azd/durable-task-scheduler-deploy.md) - DTS provisioning, Bicep, and managed identity setup
