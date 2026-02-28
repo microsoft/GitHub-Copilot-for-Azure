@@ -93,4 +93,3 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
   });
 });
-
