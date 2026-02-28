@@ -91,7 +91,7 @@
     }
 
     $pythonCommand = Get-Command python
-    Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version)"
+    Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version 2>&1)"
 
     Write-Host "Install/upgrade pip"
     python -m pip install --upgrade pip
