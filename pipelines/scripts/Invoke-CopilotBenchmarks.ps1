@@ -80,14 +80,15 @@
         throw "Failed to acquire Azure DevOps AAD access token. Ensure the AzureCLI@2 task has a valid service connection."
     }
 
-    # Log the token as a secret variable to avoid exposing it in logs
-    if ($pipelineRun) {
-        Write-Host "##vso[task.setsecret]$adoAccessToken"
-    }
-
     $encodedToken = [System.Uri]::EscapeDataString($adoAccessToken)
     $indexUrl = "https://vsts:$encodedToken@pkgs.dev.azure.com/devdiv/_packaging/MicrosoftSweBench/pypi/simple/"
     Write-Host "Authenticated pip index URL constructed."
+
+    # Log the token as a secret variable to avoid exposing it in logs
+    if ($pipelineRun) {
+        Write-Host "##vso[task.setsecret]$adoAccessToken"
+        Write-Host "##vso[task.setsecret]$encodedToken"
+    }
 
     $pythonCommand = Get-Command python
     Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version)"
@@ -112,9 +113,7 @@
 
     Write-Host "MSBench CLI version"
     & 'msbench-cli' version
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli version command failed with exit code $LASTEXITCODE"
-    }
+    if 
 
     $runArgs = @(
         "run",
