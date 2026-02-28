@@ -11,15 +11,14 @@
 
 import {
   useAgentRunner,
-  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  getToolCalls
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill } from "../utils/evaluate";
+import { expectFiles, getToolCalls, softCheckSkill } from "../utils/evaluate";
+import { isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 5;
@@ -40,11 +39,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
+    const maxToolCallBeforeTerminate = 3;
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Prepare my application for Azure deployment and set up the infrastructure"
+            prompt: "Prepare my application for Azure deployment and set up the infrastructure",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -62,7 +63,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
+            prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -80,7 +82,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
+            prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -98,7 +101,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
+            prompt: "Set up my Azure application with managed identity authentication for accessing Azure services",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -115,7 +119,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
+            prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -133,7 +138,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure"
+            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -151,7 +157,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions"
+            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -169,7 +176,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create an Azure Functions app with a timer trigger"
+            prompt: "Create an Azure Functions app with a timer trigger",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -188,7 +196,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
+            prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -206,7 +215,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
+            prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -225,7 +235,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region."
+            prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -243,7 +254,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region."
+            prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -262,7 +274,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
+            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -280,7 +293,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
+            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -298,7 +312,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
+            prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -317,7 +332,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region."
+            prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -335,7 +351,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region."
+            prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -354,7 +371,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -372,7 +390,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -391,7 +410,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -409,7 +429,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -428,7 +449,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -446,7 +468,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -464,7 +487,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -483,7 +507,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -501,7 +526,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -519,7 +545,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+            prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -658,7 +685,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-      
+
       // Verify azure.yaml exists
       expectFiles(workspacePath!, [/azure\.yaml$/], []);
 

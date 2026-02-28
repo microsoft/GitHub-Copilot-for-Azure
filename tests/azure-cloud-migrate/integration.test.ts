@@ -11,11 +11,10 @@
 import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  useAgentRunner,
-  isSkillInvoked
+  useAgentRunner
 } from "../utils/agent-runner";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles } from "../utils/evaluate";
+import { expectFiles, isSkillInvoked } from "../utils/evaluate";
  
 const SKILL_NAME = "azure-cloud-migrate";
 const FACE_BLUR_REPO = "https://github.com/aws-samples/serverless-face-blur-service.git";
