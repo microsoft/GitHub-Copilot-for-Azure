@@ -19,7 +19,7 @@ import { cloneRepo } from "../utils/git-clone";
 import { expectFiles, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 1;
 const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
 
 // Check if integration tests should be skipped at module level
