@@ -14,7 +14,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, isSkillInvoked, getToolCalls } from "../utils/evaluate";
+import { expectFiles, isSkillInvoked } from "../utils/evaluate";
  
 const SKILL_NAME = "azure-cloud-migrate";
 const FACE_BLUR_REPO = "https://github.com/aws-samples/serverless-face-blur-service.git";
@@ -30,7 +30,6 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 const migrationTestTimeoutMs = 2700000;
 const FOLLOW_UP_PROMPT = ["Go with recommended options and test it locally."];
-const maxToolCallBeforeTerminate = 30;
  
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
@@ -53,7 +52,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         "Use my current subscription. ",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
       });
  
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -90,7 +88,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         "Use my current subscription. ",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
       });
  
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
