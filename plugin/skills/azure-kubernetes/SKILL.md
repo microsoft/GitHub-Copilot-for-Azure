@@ -365,4 +365,3 @@ A high-quality answer:
 - Node OS auto-upgrade channels: https://learn.microsoft.com/azure/aks/auto-upgrade-node-os-image
 - Cluster auto-upgrade channels: https://learn.microsoft.com/azure/aks/auto-upgrade-cluster
 - AKS cost analysis (OpenCost-based): https://learn.microsoft.com/azure/aks/cost-analysis
-``
