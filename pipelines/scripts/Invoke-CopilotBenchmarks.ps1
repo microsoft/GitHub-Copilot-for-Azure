@@ -94,15 +94,27 @@
 
     Write-Host "Install/upgrade pip"
     python -m pip install --upgrade pip
+    if ($LASTEXITCODE -ne 0) {
+        throw "pip install/upgrade failed with exit code $LASTEXITCODE"
+    }
 
     Write-Host "Checking MSBench CLI versions from feed"
     python -m pip index versions msbench-cli --no-input --index-url $indexUrl
+    if ($LASTEXITCODE -ne 0) {
+        throw "pip index versions failed with exit code $LASTEXITCODE"
+    }
 
     Write-Host "Installing/upgrading MSBench CLI"
     python -m pip install --upgrade msbench-cli --no-input --index-url $indexUrl
+    if ($LASTEXITCODE -ne 0) {
+        throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
+    }
 
     Write-Host "MSBench CLI version"
     & 'msbench-cli' version
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli version command failed with exit code $LASTEXITCODE"
+    }
 
     $runArgs = @(
         "run",
