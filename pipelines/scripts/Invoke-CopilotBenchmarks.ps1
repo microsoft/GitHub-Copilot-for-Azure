@@ -34,11 +34,11 @@
     Set-StrictMode -Version Latest
     $ErrorActionPreference = "Stop"
 
-    if ([string]::IsNullOrWhiteSpace($Benchmark)) {
+    if (!$Benchmark) {
         throw "Benchmark parameter is required."
     }
 
-    if ([string]::IsNullOrWhiteSpace($Model)) {
+    if (!$Model) {
         throw "Model parameter is required."
     }
 
@@ -49,17 +49,23 @@
     Write-Host "Model: $Model"
     Write-Host "NoWait: $NoWait"
 
+    $pipelineRun = $env:TF_BUILD -eq "True"
+
     # --- Retrieve GitHub PAT from KeyVault ---
     try {
         Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
         $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
-        if ([string]::IsNullOrWhiteSpace($pat)) {
+
+        if (!$pat) {
             throw "Secret $secretName not found in KeyVault $vaultName."
         }
+
         $env:GITHUB_MCP_SERVER_TOKEN = $pat
         
         # Log the PAT as a secret variable to avoid exposing it in logs
-        Write-Host "##vso[task.setsecret]$pat"
+        if ($pipelineRun) {
+            Write-Host "##vso[task.setsecret]$pat"
+        }
     }
     catch {
         throw "Failed to retrieve GitHub PAT from KeyVault: $_"
@@ -70,11 +76,13 @@
     $adoResourceId = "499b84ac-1321-427f-aa17-267ca6975798"
     $adoAccessToken = az account get-access-token --resource $adoResourceId --query accessToken -o tsv
 
-    # Log the token as a secret variable to avoid exposing it in logs
-    Write-Host "##vso[task.setsecret]$adoAccessToken"
-
     if (!$adoAccessToken) {
         throw "Failed to acquire Azure DevOps AAD access token. Ensure the AzureCLI@2 task has a valid service connection."
+    }
+
+    # Log the token as a secret variable to avoid exposing it in logs
+    if ($pipelineRun) {
+        Write-Host "##vso[task.setsecret]$adoAccessToken"
     }
 
     $encodedToken = [System.Uri]::EscapeDataString($adoAccessToken)
