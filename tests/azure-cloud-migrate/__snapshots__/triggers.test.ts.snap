@@ -2,7 +2,7 @@
 
 exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Assess and migrate cross-cloud workloads to Azure. Generates assessment reports and converts code from AWS, GCP, or other providers to Azure services. WHEN: "migrate Lambda to Azure Functions", "migrate AWS to Azure", "Lambda migration assessment", "convert s AWS erverless to Azure", "migration readiness report", "migrate from AWS", "migrate from GCP", "cross-cloud migration".",
+  "description": "Assess and migrate cross-cloud workloads to Azure. Generates assessment reports and converts code from AWS, GCP, or other providers to Azure services. WHEN: "migrate Lambda to Azure Functions", "migrate AWS to Azure", "Lambda migration assessment", "convert AWS serverless to Azure", "migration readiness report", "migrate from AWS", "migrate from GCP", "cross-cloud migration".",
   "extractedKeywords": [
     "assess",
     "assessment",
@@ -13,7 +13,6 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill des
     "converts",
     "cross-cloud",
     "deploy",
-    "serverless",
     "from",
     "function",
     "functions",
@@ -27,6 +26,7 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill des
     "readiness",
     "report",
     "reports",
+    "serverless",
     "services",
     "when",
     "workloads",
@@ -46,7 +46,6 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill key
   "converts",
   "cross-cloud",
   "deploy",
-  "erverless",
   "from",
   "function",
   "functions",
@@ -60,6 +59,7 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill key
   "readiness",
   "report",
   "reports",
+  "serverless",
   "services",
   "when",
   "workloads",
