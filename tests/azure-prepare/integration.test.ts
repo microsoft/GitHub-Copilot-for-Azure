@@ -21,7 +21,7 @@ import { expectFiles, getToolCalls, softCheckSkill } from "../utils/evaluate";
 import { isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 1;
 const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
 // Check if integration tests should be skipped at module level

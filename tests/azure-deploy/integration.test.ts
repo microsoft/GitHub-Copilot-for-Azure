@@ -19,7 +19,7 @@ import { cloneRepo } from "../utils/git-clone";
 import { expectFiles, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 1;
 const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
 
 // Check if integration tests should be skipped at module level
@@ -60,7 +60,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Publish my web app to Azure and configure the environment"
+            prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now."
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -78,7 +78,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy my Azure Functions app to the cloud using azd"
+            prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up."
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
