@@ -34,6 +34,68 @@ Activate this skill when user wants to:
 
 ---
 
+## MCP Tools (Preferred)
+
+When Azure MCP and AKS MCP are enabled, use these tools for AKS operations:
+
+### Cluster Management
+| Tool | Purpose |
+|------|---------|
+| `mcp_azure_mcp_aks` | Subscription-scoped AKS cluster queries and metadata |
+| `mcp_aks_mcp_az_aks_operations` | Cluster operations: show, list, get-versions, nodepool management |
+| `mcp_aks_mcp_get_aks_vmss_info` | VMSS configuration for node pools |
+
+### kubectl Operations
+| Tool | Purpose |
+|------|---------|
+| `mcp_aks_mcp_kubectl_resources` | Get/describe pods, deployments, services |
+| `mcp_aks_mcp_kubectl_diagnostics` | Logs, events, top, exec, cp operations |
+| `mcp_aks_mcp_kubectl_cluster` | Cluster info, API resources, explain |
+| `mcp_aks_mcp_kubectl_config` | Config contexts, auth checks |
+
+### Networking
+| Tool | Purpose |
+|------|---------|
+| `mcp_aks_mcp_az_network_resources` | VNet, NSG, route tables, subnets, load balancers |
+
+---
+
+## CLI Fallback
+
+```bash
+# List AKS clusters
+az aks list --output table
+
+# Show cluster details
+az aks show --name CLUSTER --resource-group RG
+
+# Get available Kubernetes versions
+az aks get-versions --location LOCATION --output table
+
+# Create AKS Automatic cluster
+az aks create --name CLUSTER --resource-group RG --sku automatic \
+  --network-plugin azure --network-plugin-mode overlay \
+  --enable-oidc-issuer --enable-workload-identity
+
+# Create AKS Standard cluster
+az aks create --name CLUSTER --resource-group RG \
+  --node-count 3 --zones 1 2 3 \
+  --network-plugin azure --network-plugin-mode overlay \
+  --enable-cluster-autoscaler --min-count 1 --max-count 10
+
+# Get credentials
+az aks get-credentials --name CLUSTER --resource-group RG
+
+# List node pools
+az aks nodepool list --cluster-name CLUSTER --resource-group RG --output table
+
+# Enable monitoring
+az aks enable-addons --name CLUSTER --resource-group RG \
+  --addons monitoring --workspace-resource-id WORKSPACE_ID
+```
+
+---
+
 ## Overview
 This skill guides a user through planning and creating an Azure Kubernetes Service (AKS) cluster using public best practices for:
 - cluster mode selection (Automatic vs Standard),
@@ -51,7 +113,7 @@ References are public and included at the end.
 
 ## When to Use
 Use this skill when a user asks:
-- “What do I need to decide before creating AKS?”
+- “What do I need to decide before creating an AKS cluster?”
 - “Create an AKS cluster plan/design for production”
 - “AKS networking: overlay vs pod subnet vs node subnet”
 - “How do I set up Workload Identity / Key Vault CSI / Azure Policy?”
@@ -70,12 +132,12 @@ Use this skill when a user asks:
 ## Required Inputs (Ask only what’s needed)
 If the user is unsure, use safe defaults.
 
-### A) Environment & scale
+### 1. Environment & scale
 - Environment: `dev/test` or `production`
 - Region(s) + availability zones needed?
 - Expected scale: node count / cluster count (single vs multi)
 
-### B) Networking requirements (Day-0 critical)
+### 2. Networking requirements (Day-0 critical)
 - API server access:
   - Public API server or Private cluster?
 - Pod IP model:
@@ -83,7 +145,7 @@ If the user is unsure, use safe defaults.
 - Egress control:
   - Default outbound, NAT Gateway, or UDR + firewall/NVA?
 
-### C) Identity & security posture
+### 3. Identity & security posture
 - Microsoft Entra RBAC required?
 - Need pod-to-Azure access with **Workload Identity**?
 - Regulated environment needs (private cluster, policy enforcement, restricted egress)?
@@ -109,40 +171,54 @@ If the user is unsure, use safe defaults.
 
 ## Decision Framework (Defaults when user is unsure)
 
-### 1) Cluster Type
-- Prefer **AKS Automatic** when you want a production-oriented, opinionated setup with many best practices preconfigured.
-- Prefer **AKS Standard** when you need maximum control and customizations.
-Docs: AKS Automatic overview: https://learn.microsoft.com/azure/aks/intro-aks-automatic
+### 1. Cluster Type
 
-### 2) Pod Networking Model (Key Day-0 decision)
+| Cluster SKU | Automatic | Standard |
+|---------|-----------|----------|
+| Best for | Production defaults, faster setup | Maximum control, custom requirements |
+| Node provisioning | Auto (NAP) | Manual node pools |
+| Autoscaling | Pre-configured | Configure manually |
+| Networking | Azure CNI Overlay (fixed) | Choose model |
+| Azure Policy | Enabled by default | Configure separately |
+| Monitoring | Azure Monitor enabled | Configure separately |
+| Deployment Safeguards | Enabled (Warning) | Configure separately |
+| Node OS upgrades | Auto-configured | Configure channel |
+
+**Recommendation**: Default to **AKS Automatic** unless you need:
+- Custom networking (kubenet, Azure CNI with pod subnet)
+- Windows node pools
+- Specific node pool configurations not supported by NAP
+- Full control over autoscaling behavior
+
+### 2. Pod Networking Model (Key Day-0 decision)
 - Prefer **Azure CNI Overlay** for scalability and conserving VNet IP space.
 Docs: https://learn.microsoft.com/azure/aks/azure-cni-overlay
 
 If pods must be directly addressable/routable in your VNet, use VNet-based Azure CNI options:
 - Azure CNI with pod subnet or node subnet models (see Azure CNI overlay + related networking docs)
 
-### 3) Dataplane / Network Policy
+### 3. Dataplane / Network Policy
 - Consider **Azure CNI powered by Cilium** for eBPF-based performance and policy/observability features.
 Docs: https://learn.microsoft.com/azure/aks/azure-cni-powered-by-cilium
 
-### 4) Workload Identity (Preferred for pod-to-Azure auth)
+### 4. Workload Identity (Preferred for pod-to-Azure auth)
 - Prefer **Microsoft Entra Workload ID** for workloads calling Azure services without secrets.
 Docs: https://learn.microsoft.com/azure/aks/workload-identity-overview
 
-### 5) Secrets
+### 5. Secrets
 - Prefer Azure Key Vault via **Secrets Store CSI Driver** provider.
 Docs: https://learn.microsoft.com/azure/aks/csi-secrets-store-driver
 
-### 6) Governance
+### 6. Governance
 - Enable **Azure Policy** (prereq) and **Deployment Safeguards** for workload best-practice enforcement.
 Docs: Deployment Safeguards: https://learn.microsoft.com/azure/aks/deployment-safeguards
 
-### 7) Observability
+### 7. Observability
 - Use Azure Monitor for AKS monitoring enablement (logs + Prometheus + Grafana).
 Docs: https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-monitoring-enable  
 Prometheus overview: https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-metrics-overview
 
-### 8) Upgrades & Patching
+### 8. Upgrades & Patching
 - Establish an upgrade strategy and ensure workloads are upgrade-safe (PDBs, probes, etc.).
 Docs: AKS patch/upgrade guidance: https://learn.microsoft.com/azure/architecture/operator-guides/aks/aks-upgrade-practices
 
@@ -233,6 +309,46 @@ A high-quality answer:
 - includes observability baseline,
 - includes upgrade/patch plan,
 - includes cost visibility.
+
+---
+
+## Quick Reference
+
+### Common AKS Commands
+
+| Task | Command |
+|------|---------|
+| List clusters | `az aks list -o table` |
+| Show cluster | `az aks show -n CLUSTER -g RG` |
+| Get credentials | `az aks get-credentials -n CLUSTER -g RG` |
+| List node pools | `az aks nodepool list --cluster-name CLUSTER -g RG` |
+| Scale node pool | `az aks nodepool scale --cluster-name CLUSTER -g RG -n POOL --node-count 5` |
+| Upgrade cluster | `az aks upgrade -n CLUSTER -g RG --kubernetes-version VERSION` |
+
+### kubectl Quick Commands
+
+| Task | Command |
+|------|---------|
+| Get pods | `kubectl get pods -A` |
+| Get nodes | `kubectl get nodes -o wide` |
+| Describe pod | `kubectl describe pod POD -n NAMESPACE` |
+| View pod logs | `kubectl logs POD -n NAMESPACE --tail=100` |
+| Check events | `kubectl get events --sort-by='.lastTimestamp'` |
+| Top nodes | `kubectl top nodes` |
+
+---
+
+## Error Handling
+
+### Common AKS Issues
+
+| Issue | Symptom | Resolution |
+|-------|---------|------------|
+| **Cluster creation fails** | Quota exceeded | Request quota increase or use different VM SKU |
+| **Node not ready** | NotReady status | Check kubelet logs, node conditions |
+| **Pod pending** | Insufficient resources | Scale node pool or check resource requests |
+| **Image pull failed** | ImagePullBackOff | Check ACR access, image name, network |
+| **API server unreachable** | Connection refused | Check authorized IPs, private cluster config |
 
 ---
 
