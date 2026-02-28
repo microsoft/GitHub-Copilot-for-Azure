@@ -1,9 +1,6 @@
 ---
 name: azure-kubernetes
-description: >-
-  Plan and create production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 decisions (networking, API server access, pod IP model), Day-1 configuration (identity, secrets, governance, observability), cluster SKUs (Automatic vs Standard), workload identity, Key Vault CSI, Azure Policy, deployment safeguards, monitoring with Prometheus/Grafana, upgrade strategies, and cost analysis.
-  USE FOR: create AKS cluster, AKS cluster planning, AKS networking design, security design, upgrade settings, autoscaling, AKS monitoring, AKS cost analysis, AKS production best practices, AKS Automatic vs Standard, AKS add-ons
-  DO NOT USE FOR: debugging AKS issues (use azure-diagnostics), deploying applications to AKS (use azure-deploy), creating other Azure resources (use azure-prepare), setting up general monitoring (use azure-observability), general cost optimization strategies (use azure-cost-optimization)
+description: "Plan and create production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 decisions (networking, API server access, pod IP model), Day-1 configuration (identity, secrets, governance, observability), cluster SKUs (Automatic vs Standard), workload identity, Key Vault CSI, Azure Policy, deployment safeguards, monitoring with Prometheus/Grafana, upgrade strategies, and cost analysis. USE FOR: create AKS cluster, AKS cluster planning, AKS networking design, security design, upgrade settings, autoscaling, AKS monitoring, AKS cost analysis, AKS production best practices, AKS Automatic vs Standard, AKS add-ons. DO NOT USE FOR: debugging AKS issues (use azure-diagnostics), deploying applications to AKS (use azure-deploy), creating other Azure resources (use azure-prepare), setting up general monitoring (use azure-observability), general cost optimization strategies (use azure-cost-optimization)."
 ---
 
 # Azure Kubernetes Service
