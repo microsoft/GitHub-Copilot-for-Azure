@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"migrate my app\", \"modernize my code\", \"update my application\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"Azure with terraform\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create event-driven function\", \"create and deploy to Azure\", \"create Azure Functions and deploy\", \"create function app and deploy\"."
+description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. Preparation ONLY — does not execute deployments. After preparation, hand off to azure-validate then azure-deploy for execution. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"migrate my app\", \"modernize my code\", \"update my application\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"Azure with terraform\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create event-driven function\", \"create and deploy to Azure\", \"create Azure Functions and deploy\", \"create function app and deploy\"."
 ---
 
 # Azure Prepare
@@ -30,6 +30,7 @@ Activate this skill when user wants to:
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
 7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
+8. **Scope: preparation only** — This skill generates infrastructure code and configuration files. Deployment execution (`azd up`, `azd deploy`, `terraform apply`) is handled by the **azure-deploy** skill, which provides built-in error recovery and deployment verification.
 
 ---
 
@@ -96,7 +97,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 6 | **Validate** — Invoke **azure-validate** skill | — |
+| 6 | **⛔ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
 
 ---
 
