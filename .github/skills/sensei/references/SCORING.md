@@ -20,6 +20,8 @@ From [skill-authoring](/.github/skills/skill-authoring):
 
 **Check with:** `cd scripts && npm run tokens -- check plugin/skills/{skill}/SKILL.md`
 
+> **Units note:** Sensei measures in **tokens** (cl100k_base tokenizer), not words. Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends "under 5,000 words" for SKILL.md, while the [Agent Skills spec](https://agentskills.io/specification) recommends "< 5000 tokens" and "under 500 lines." Sensei uses the spec's token-based limits. As a rough conversion: 5000 tokens ≈ 3,750 words.
+
 ### Reference Loading Impact
 
 References load **only when explicitly linked** in SKILL.md, not on activation:
@@ -68,17 +70,17 @@ description: >-
 ### Medium-High Adherence (Target)
 
 A skill is **Medium-High** if:
-- Description > 150 characters
-- Has explicit trigger phrases ("USE FOR:" or equivalent)
-- Has anti-triggers ("DO NOT USE FOR:" or equivalent)
-- May or may not have compatibility field
+- Description > 150 characters and ≤ 60 words
+- Has explicit trigger phrases via `WHEN:` (preferred) or `USE FOR:`
+- Leads with unique action verb + domain in first sentence
 
-**Example of Medium-High adherence:**
+> **Note:** `WHEN:` scores higher than `USE FOR:` because quoted trigger phrases are more distinctive for cross-model pattern matching.
+
+> ⚠️ **"DO NOT USE FOR:" is risky in multi-skill environments.** Anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and other models that use fast pattern matching rather than deep negation reasoning. Use positive routing instead. See Check 4 for context-dependent guidance.
+
+**Example of Medium-High adherence (cross-model optimized):**
 ```yaml
-description: >-
-  Instrument web apps to send telemetry to Azure Application Insights.
-  USE FOR: "add App Insights", "instrument my app", "set up monitoring".
-  DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
+description: "Instrument web apps to send telemetry to Azure Application Insights for monitoring and diagnostics. WHEN: \"add App Insights\", \"instrument my app\", \"set up monitoring\", \"add telemetry\"."
 ```
 
 ### High Adherence
@@ -95,10 +97,7 @@ A skill is **High** if:
 **Example of High adherence:**
 ```yaml
 name: appinsights-instrumentation
-description: >-
-  Instrument web apps to send telemetry to Azure Application Insights.
-  USE FOR: "add App Insights", "instrument my app", "set up monitoring".
-  DO NOT USE FOR: querying logs (use azure-observability), creating alerts.
+description: "Instrument web apps to send telemetry to Azure Application Insights for monitoring and diagnostics. WHEN: \"add App Insights\", \"instrument my app\", \"set up monitoring\", \"add telemetry\", \"track requests\"."
 license: MIT
 compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
 metadata:
@@ -138,11 +137,12 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 | Ideal | 300-600 chars |
 | Max | 1024 chars |
 
-**Format Rule:** Descriptions over 200 characters MUST use folded YAML format (`>-`) for maintainability. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries. Do NOT use `|` (literal block) as it preserves newlines.
+**Format Rule:** Descriptions MUST use inline double-quoted strings (`"..."`). Do NOT use `>-` folded scalars (incompatible with skills.sh). Do NOT use `|` literal blocks (preserves newlines). Keep descriptions ≤60 words for cross-model reliability.
 
 ### 3. Trigger Phrase Detection
 
 **Positive indicators** (case-insensitive):
+- `WHEN:` (preferred — scores higher)
 - `USE FOR:`
 - `USE THIS SKILL`
 - `TRIGGERS:`
@@ -152,11 +152,26 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 **Scoring:**
 - None found → Low
 - Implicit (keywords in description) → Medium
-- Explicit (USE FOR: list) → Medium-High
+- Explicit (WHEN: list) → Medium-High (preferred)
+- Explicit (USE FOR: list) → Medium-High (accepted)
 
 ### 4. Anti-Trigger Detection
 
-**Positive indicators** (case-insensitive):
+> ⚠️ **Context-dependent risk.** Anti-trigger clauses like "DO NOT USE FOR:" carry different risk levels depending on the skill set size and deployment context.
+
+**Risk assessment by context:**
+
+| Context | Risk Level | Guidance |
+|---------|------------|----------|
+| Single skill or small set (1-5 skills) with clear domain boundaries | Low | Anti-triggers are low-risk — domain boundaries are obvious |
+| Medium skill set (5-15 skills) with some overlap | Moderate | Anti-trigger keywords start competing with other skills' triggers |
+| Large skill set (15+ skills) with overlapping domains | **High** | Keyword contamination is measurable — negative keywords become activation keywords on fast-pattern-matching models |
+
+**Why large skill sets are risky:** On Claude Sonnet and similar models that use fast pattern matching (first ~20 words), `DO NOT USE FOR: Function apps` causes Sonnet to key on "Function apps" and **activate** the skill for Functions queries. This was empirically demonstrated across 24 Azure skills ([analysis](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). Anthropic's own published skills confirm this pattern — 4 of 5 skills in `anthropics/skills` use positive-only routing.
+
+> **Note:** Anthropic's [Complete Guide to Building Skills](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) recommends negative triggers for overtriggering (p25). This is reasonable for small, isolated skill sets. For multi-skill production environments like this repo, Sensei recommends positive routing with `WHEN:` and distinctive quoted phrases as the cross-model-safe alternative.
+
+**Legacy indicators** (still detected, trigger context-dependent warning):
 - `DO NOT USE FOR:`
 - `NOT FOR:`
 - `Don't use this skill`
@@ -164,8 +179,9 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 - `Defer to`
 
 **Scoring:**
-- None found → caps at Medium
-- Present → enables Medium-High/High
+- Present in large skill sets → emits cross-model compatibility warning
+- Present in small skill sets → informational note only
+- Absent → no penalty (preferred for cross-model compatibility)
 
 ### 5. Compatibility Field
 
@@ -221,24 +237,51 @@ Per the spec, SKILL.md should follow progressive disclosure:
 
 ### 8. YAML Description Safety
 
-Descriptions containing YAML special characters (especially `: ` colon-space) **must** use either:
-- Folded scalar (`>-`) — **preferred** for descriptions > 200 chars
-- Double-quoted string (`"..."`) — acceptable alternative
+Descriptions containing YAML special characters (especially `: ` colon-space) **must** use:
+- Double-quoted string (`"..."`) — **required format**
 
-Plain unquoted descriptions with `: ` patterns (e.g., `USE FOR:`, `Azure AI:`) cause YAML parse errors in many skill loaders:
-```
-Nested mappings are not allowed in compact mappings
-```
+Do NOT use `>-` folded scalars (incompatible with skills.sh per [microsoft/GitHub-Copilot-for-Azure#1038](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/1038)).
 
 | Check | Pass | Fail |
 |-------|------|------|
-| Uses `>-` or `"..."` | `description: >-` | `description: Use for Azure AI: Search...` |
-| No `: ` in plain value | `description: Simple text here` | `description: USE FOR: something` |
-| Over 200 chars uses `>-` | `description: >-` (multi-line) | `description: Very long plain text...` |
+| Uses `"..."` | `description: "Deploy apps..."` | `description: >-` |
+| No `: ` in plain value | `description: "Simple text"` | `description: USE FOR: something` |
 
 **Scoring impact:**
 - Plain description with `: ` → **Invalid** (will fail to parse)
 - Description > 200 chars without `>-` → **Warning** (maintainability concern)
+
+### 9. Security Restrictions
+
+Per Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf):
+
+| Check | What it validates |
+|-------|-------------------|
+| No XML tags | Frontmatter must not contain `<` or `>` (security — frontmatter appears in system prompt) |
+| No reserved prefixes | Name must not start with `claude-` or `anthropic-` (reserved by Anthropic) |
+
+---
+
+## Advisory Checks
+
+**Advisory only** — informational, does not change scoring levels.
+
+### 10. Body Structure Quality
+
+Checks whether the SKILL.md body follows Anthropic's recommended structure for effective instructions.
+
+**Sub-checks:**
+- **Actionable instructions** — Body uses specific commands, code examples, or step-by-step guidance
+- **Examples section** — Has at least one example scenario
+- **Error handling** — Documents common failure modes and recovery steps
+
+### 11. Body Progressive Disclosure
+
+Checks whether SKILL.md properly uses progressive disclosure — keeping core instructions in SKILL.md and detailed reference material in `references/`.
+
+**Flag when:**
+- SKILL.md body exceeds 500 lines (spec recommends under 500)
+- Large code blocks (> 50 lines) that could be in `references/` or `scripts/`
 
 ---
 
@@ -253,7 +296,7 @@ function scoreSkill(skill):
     
     # Check YAML description safety
     if isPlainUnquoted(skill.rawDescription) AND contains(skill.description, ": "):
-        report "INVALID: plain description contains ': ' — use >- or quotes"
+        report "INVALID: plain description contains ': ' — use double-quoted string"
         return "Invalid"
     
     score = "Low"
@@ -265,19 +308,23 @@ function scoreSkill(skill):
     if skill.description.length < 150:
         return "Low"
     
-    # Check for trigger phrases
+    # Check for trigger phrases (WHEN: preferred, USE FOR: accepted)
     hasTriggers = containsTriggerPhrases(skill.description)
     if hasTriggers:
         score = "Medium"
     
-    # Check for anti-triggers
-    hasAntiTriggers = containsAntiTriggers(skill.description)
-    if hasTriggers AND hasAntiTriggers:
-        score = "Medium-High"
+    # Check word count for cross-model density
+    if wordCount(skill.description) <= 60:
+        if hasTriggers:
+            score = "Medium-High"
+    
+    # Warn on anti-triggers (keyword contamination risk)
+    if containsAntiTriggers(skill.description):
+        warn "DO NOT USE FOR: causes keyword contamination on Sonnet — remove"
     
     # Check for compatibility
     hasCompatibility = skill.compatibility != null
-    if hasTriggers AND hasAntiTriggers AND hasCompatibility:
+    if score == "Medium-High" AND hasCompatibility:
         score = "High"
     
     return score
@@ -299,8 +346,12 @@ function collectSuggestions(skill):
         suggestions.add("Add license field (e.g., license: MIT)")
     if skill.metadata == null OR skill.metadata.version == null:
         suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0\" })")
-    if isPlainUnquoted(skill.rawDescription) AND skill.description.length > 200:
-        suggestions.add("Use >- folded scalar for description (over 200 chars)")
+    if usesBlockScalar(skill.rawDescription):
+        suggestions.add("Use inline double-quoted string for description (>- incompatible with skills.sh)")
+    if containsAntiTriggers(skill.description):
+        suggestions.add("Remove DO NOT USE FOR: — causes keyword contamination on Claude Sonnet")
+    if wordCount(skill.description) > 60:
+        suggestions.add("Trim description to ≤60 words for cross-model reliability")
     return suggestions
 ```
 

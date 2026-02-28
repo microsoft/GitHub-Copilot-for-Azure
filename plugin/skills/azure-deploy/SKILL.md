@@ -1,9 +1,6 @@
 ---
 name: azure-deploy
-description: >-
-  Execute deployment to Azure. Final step after preparation and validation. Runs azd up, azd deploy, or infrastructure provisioning commands.
-  USE FOR: run azd up, run azd deploy, execute deployment, provision infrastructure, push to production, go live, ship it, deploy web app, deploy container app, deploy static site, deploy Azure Functions, deploy function app, deploy serverless function, deploy Azure Functions to cloud, bicep deploy, terraform apply.
-  DO NOT USE FOR: creating or building apps (use azure-prepare), validating before deploy (use azure-validate).
+description: "Deploy already-prepared applications to Azure by running azd up, azd deploy, or infrastructure provisioning commands. Supports Bicep and Terraform projects. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"provision infrastructure\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\"."
 ---
 
 # Azure Deploy
@@ -39,6 +36,9 @@ Activate this skill when user wants to:
 - Run `azd up` or `az deployment`
 - Ship code to production
 - Deploy Azure Functions to the cloud
+- Deploy an application that already includes API Management (APIM) gateway infrastructure
+
+> **APIM / AI Gateway**: Use this skill to deploy applications whose APIM/AI gateway infrastructure was already created during **azure-prepare**. For creating or changing APIM resources, see [APIM deployment guide](https://learn.microsoft.com/azure/api-management/get-started-create-service-instance). For AI governance policies, invoke **azure-aigateway** skill.
 
 ## Rules
 

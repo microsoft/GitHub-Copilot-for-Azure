@@ -156,16 +156,16 @@ function formatDuration(seconds) {
  */
 function getStatusDisplay(status) {
   switch (status) {
-    case "passed":
-      return { icon: "✓", color: colors.green };
-    case "failed":
-      return { icon: "✗", color: colors.red };
-    case "error":
-      return { icon: "!", color: colors.red };
-    case "skipped":
-      return { icon: "○", color: colors.yellow };
-    default:
-      return { icon: "?", color: colors.dim };
+  case "passed":
+    return { icon: "✓", color: colors.green };
+  case "failed":
+    return { icon: "✗", color: colors.red };
+  case "error":
+    return { icon: "!", color: colors.red };
+  case "skipped":
+    return { icon: "○", color: colors.yellow };
+  default:
+    return { icon: "?", color: colors.dim };
   }
 }
 

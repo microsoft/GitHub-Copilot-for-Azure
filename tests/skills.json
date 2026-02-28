@@ -4,6 +4,7 @@
         "azure-ai",
         "azure-aigateway",
         "azure-compliance",
+        "azure-compute",
         "azure-cost-optimization",
         "azure-deploy",
         "azure-diagnostics",
@@ -24,6 +25,6 @@
     "integrationTestSchedule": {
         "0 5 * * *": "microsoft-foundry",
         "0 8 * * *": "azure-deploy",
-        "0 12 * * *": "appinsights-instrumentation,azure-ai,azure-aigateway,azure-compliance,azure-cost-optimization,azure-diagnostics,azure-hosted-copilot-sdk,azure-kubernetes,azure-kusto,azure-messaging,azure-observability,azure-prepare,azure-rbac,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-validate,entra-app-registration"
+        "0 12 * * *": "appinsights-instrumentation,azure-ai,azure-aigateway,azure-compliance,azure-compute,azure-cost-optimization,azure-diagnostics,azure-hosted-copilot-sdk,azure-kusto,azure-messaging,azure-observability,azure-prepare,azure-rbac,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-validate,entra-app-registration"
     }
 }

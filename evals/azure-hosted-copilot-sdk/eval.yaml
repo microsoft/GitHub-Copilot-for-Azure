@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/spboyer/waza/main/schemas/eval.schema.json
+name: azure-hosted-copilot-sdk-eval
+description: >
+  Evaluation suite for the azure-hosted-copilot-sdk skill.
+  Validates routing logic (scaffold, add-alongside, deploy-existing),
+  model configuration paths (GitHub default, Azure BYOM),
+  and negative-match behavior (skill should not activate for unrelated prompts).
+skill: azure-hosted-copilot-sdk
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 600
+  parallel: false
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+metrics:
+  - name: task_completion
+    weight: 0.4
+    threshold: 0.8
+    description: Did the skill produce the expected output for the task?
+  - name: trigger_accuracy
+    weight: 0.3
+    threshold: 0.9
+    description: Does the skill trigger on appropriate prompts and not on unrelated ones?
+  - name: behavior_quality
+    weight: 0.3
+    threshold: 0.7
+    description: Tool call limits, no fatal errors, clean execution
+
+graders:
+  # Global grader: ensure no fatal errors appear in any task output
+  - type: regex
+    name: no_fatal_errors
+    config:
+      must_not_match:
+        - "(?i)fatal error|unhandled exception|stack trace"
+
+# Task files use expected.output_contains, expected.output_not_contains,
+# and expected.behavior for mock-mode validation. Task-level graders
+# should be added when switching executor to copilot-sdk.
+
+tasks:
+  - "tasks/*.yaml"
