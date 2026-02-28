@@ -1,111 +1,116 @@
 <#
 .SYNOPSIS
-    Installs MSBench CLI in a local virtual environment and runs a Copilot Azure benchmark.
+    Installs MSBench CLI and runs a Copilot Azure benchmark.
 
 .DESCRIPTION
-    This script is executed by the Azure DevOps benchmark pipeline to run Azure benchmarks using the
-    github-copilot-cli agent.
-    
-    The script installs MSBench CLI from the MicrosoftSweBench Azure Artifacts feed and invokes:
+    This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
+    It acquires an Azure DevOps AAD token from the already-authenticated az CLI session,
+    constructs an authenticated pip index URL, installs MSBench CLI from the
+    MicrosoftSweBench Azure Artifacts feed, and invokes:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model>
 
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 
 .PARAMETER Benchmark
-    Benchmark identifier
+    Benchmark identifier. Default: azure
+
+.PARAMETER Model
+    Model identifier. Default: claude-sonnet-4.5-autodev-test
 
 .PARAMETER NoWait
     Whether to add --no-wait to the run command.
-    Default: false
-
-.EXAMPLE
-    PS> ./Invoke-CopilotBenchmarks.ps1
-
-    Runs benchmark azure with default model.
-
-.EXAMPLE
-    PS> ./Invoke-CopilotBenchmarks.ps1 -BenchmarkInstanceId azure.120 -Model "claude-sonnet-4.5-autodev-test" -NoWait
-
-    Runs benchmark azure.120 with explicit model and does not wait for completion.
 
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
 
-param(
-    [string]$Benchmark = "azure",
-    [string]$Model = "claude-sonnet-4.5-autodev-test",
-    [switch]$NoWait
-)
+    param(
+        [string]$Benchmark = "azure",
+        [string]$Model = "claude-sonnet-4.5-autodev-test",
+        [switch]$NoWait
+    )
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = "Stop"
 
-
-if (!$Benchmark) {
-    throw "Benchmark parameter is required."
-}
-
-if (!$Model) {
-    throw "Model parameter is required."
-}
-
-$indexUrl = "https://pkgs.dev.azure.com/devdiv/_packaging/MicrosoftSweBench/pypi/simple/"
-$vaultName = "kv-msbench-eval-azuremcp"
-$secretName = "azure-eval-gh-pat"
-
-# pull the azure-eval-gh-pat secret from KeyVault using Azure CLI
-try {
-    Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
-    $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
-    if (!$pat) {
-        throw "Secret $secretName not found in KeyVault $vaultName."
+    if ([string]::IsNullOrWhiteSpace($Benchmark)) {
+        throw "Benchmark parameter is required."
     }
 
-    $env:GITHUB_MCP_SERVER_TOKEN = $pat
-}
-catch {
-    throw "Failed to retrieve GitHub PAT from KeyVault: $_"
-}
+    if ([string]::IsNullOrWhiteSpace($Model)) {
+        throw "Model parameter is required."
+    }
 
-Write-Host "Benchmark: $Benchmark"
-Write-Host "Model: $Model"
-Write-Host "NoWait: $NoWait"
+    $vaultName = "kv-msbench-eval-azuremcp"
+    $secretName = "azure-eval-gh-pat"
 
-$pythonCommand = Get-Command python
-Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version)"
+    Write-Host "Benchmark: $Benchmark"
+    Write-Host "Model: $Model"
+    Write-Host "NoWait: $NoWait"
 
-Write-Host "Install/upgrade pip"
-python -m pip install --upgrade pip
+    # --- Retrieve GitHub PAT from KeyVault ---
+    try {
+        Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
+        $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
+        if ([string]::IsNullOrWhiteSpace($pat)) {
+            throw "Secret $secretName not found in KeyVault $vaultName."
+        }
+        $env:GITHUB_MCP_SERVER_TOKEN = $pat
+        
+        # Log the PAT as a secret variable to avoid exposing it in logs
+        Write-Host "##vso[task.setsecret]$pat"
+    }
+    catch {
+        throw "Failed to retrieve GitHub PAT from KeyVault: $_"
+    }
 
-Write-Host "Installing artifact authentication dependencies"
-python -m pip install keyring artifacts-keyring
+    # --- Authenticate to Azure DevOps Artifacts feed via AAD token ---
+    Write-Host "Acquiring Azure DevOps AAD token for feed authentication"
+    $adoResourceId = "499b84ac-1321-427f-aa17-267ca6975798"
+    $adoAccessToken = az account get-access-token --resource $adoResourceId --query accessToken -o tsv
 
-Write-Host "Checking MSBench CLI versions from feed"
-python -m pip index versions msbench-cli --index-url $indexUrl
+    # Log the token as a secret variable to avoid exposing it in logs
+    Write-Host "##vso[task.setsecret]$adoAccessToken"
 
-Write-Host "Installing/upgrading MSBench CLI"
-python -m pip install msbench-cli --index-url $indexUrl
+    if (!$adoAccessToken) {
+        throw "Failed to acquire Azure DevOps AAD access token. Ensure the AzureCLI@2 task has a valid service connection."
+    }
 
-Write-Host "MSBench CLI version"
-& 'msbench-cli' version
+    $encodedToken = [System.Uri]::EscapeDataString($adoAccessToken)
+    $indexUrl = "https://vsts:$encodedToken@pkgs.dev.azure.com/devdiv/_packaging/MicrosoftSweBench/pypi/simple/"
+    Write-Host "Authenticated pip index URL constructed."
 
-$runArgs = @(
-    "run",
-    "--agent", "github-copilot-cli",
-    "--benchmark", $Benchmark,
-    "--model", $Model,
-    "--env", "GITHUB_MCP_SERVER_TOKEN"
-)
+    $pythonCommand = Get-Command python
+    Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version)"
 
-if ($NoWait) {
-    $runArgs += "--no-wait"
-}
+    Write-Host "Install/upgrade pip"
+    python -m pip install --upgrade pip
 
-Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-& 'msbench-cli' @runArgs
+    Write-Host "Checking MSBench CLI versions from feed"
+    python -m pip index versions msbench-cli --no-input --index-url $indexUrl
 
-if ($LASTEXITCODE -ne 0) {
-    throw "msbench-cli run failed with exit code $LASTEXITCODE"
-}
+    Write-Host "Installing/upgrading MSBench CLI"
+    python -m pip install --upgrade msbench-cli --no-input --index-url $indexUrl
+
+    Write-Host "MSBench CLI version"
+    & 'msbench-cli' version
+
+    $runArgs = @(
+        "run",
+        "--agent", "github-copilot-cli",
+        "--benchmark", $Benchmark,
+        "--model", $Model,
+        "--env", "GITHUB_MCP_SERVER_TOKEN"
+    )
+
+    if ($NoWait) {
+        $runArgs += "--no-wait"
+    }
+
+    Write-Host "Running: msbench-cli $($runArgs -join ' ')"
+    & 'msbench-cli' @runArgs
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli run failed with exit code $LASTEXITCODE"
+    }
