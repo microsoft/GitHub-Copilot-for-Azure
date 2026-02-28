@@ -216,16 +216,16 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Extract skill names from changed SKILL.md paths
-          SKILLS=""
+          SKILLS=()
           IFS=$'\n'
           for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
             # Extract the skill directory name (parent of SKILL.md)
             SKILL_NAME=$(basename "$(dirname "$file")")
-            SKILLS="$SKILLS $SKILL_NAME"
+            SKILLS+=("$SKILL_NAME")
           done
           
           # Run frontmatter spec validation
-          if OUTPUT=$(npm run frontmatter -- $SKILLS 2>&1); then
+          if OUTPUT=$(npm run frontmatter -- "${SKILLS[@]}" 2>&1); then
             echo "$OUTPUT"
             echo "✅ All skill frontmatter is valid" >> $GITHUB_STEP_SUMMARY
           else
