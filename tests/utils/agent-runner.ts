@@ -406,7 +406,7 @@ export function useAgentRunner() {
             tools: ["*"]
           }
         },
-        systemMessage: config.systemPrompt
+        systemMessage: config.systemPrompt ?? { mode: "append" }
       });
       entry.session = session;
 
@@ -725,7 +725,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
           tools: ["*"]
         }
       },
-      systemMessage: config.systemPrompt
+      systemMessage: config.systemPrompt ?? { mode: "append" }
     });
 
     let aborted = false;
