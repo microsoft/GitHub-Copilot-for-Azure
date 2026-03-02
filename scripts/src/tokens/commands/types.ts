@@ -167,6 +167,7 @@ export function matchesPattern(filePath: string, pattern: string): boolean {
     return normalizedPath.endsWith("/" + pattern) || normalizedPath === pattern;
   }
 
+  // @ts-ignore Using named import satisfies Typescript's static analysis but the code won't work at runtime. Using default import works at runtime but fails the static analysis.
   return isMatch(normalizedPath, pattern);
 }
 
