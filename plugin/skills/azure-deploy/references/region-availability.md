@@ -39,6 +39,7 @@
 ### Azure Kubernetes Service (AKS)
 
 It has limited quota in some regions, to get available regions with enough quota, use mcp_azure_mcp_quota tool.
+
 ---
 
 ### Azure Database for PostgreSQL
