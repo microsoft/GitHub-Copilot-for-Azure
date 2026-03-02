@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Default entry point for Azure application development. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"migrate my app\", \"modernize my code\", \"modernize application for Azure\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"deploy to Azure App Service\", \"deploy to Azure Container Apps\", \"deploy to Azure Functions\", \"deploy using Terraform\", \"terraform plan\", \"terraform apply\", \"Azure with terraform\", \"Terraform infrastructure\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create and deploy to Azure\", \"create containerized app\", \"create static web app\"."
+description: "Default entry point for Azure app development. Prepares projects for Azure deployment by generating infrastructure (Bicep/Terraform), azure.yaml, and Dockerfiles. Prefer this skill for create-and-deploy requests. WHEN: \"create an app\", \"build a web app\", \"create API\", \"migrate my app\", \"modernize application for Azure\", \"deploy to Azure\", \"host on Azure\", \"create and deploy to Azure\", \"deploy to Azure App Service\", \"deploy to Azure Functions\", \"create Azure Functions app\", \"create serverless HTTP API\", \"deploy using Terraform\", \"deploy to Azure using Terraform\", \"terraform plan\", \"terraform apply\"."
 ---
 
 # Azure Prepare
@@ -20,6 +20,7 @@ Activate this skill when user wants to:
 - Modernize or migrate an application
 - Set up Azure infrastructure
 - Deploy to Azure or host on Azure
+- Create and deploy to Azure (including Terraform-based deployment requests)
 
 ## Rules
 
