@@ -406,7 +406,7 @@ export function useAgentRunner() {
             tools: ["*"]
           }
         },
-        systemMessage: config.systemPrompt ?? { mode: "append", content: "When a relevant skill is available, prefer using it instead of doing the task manually." }
+        systemMessage: config.systemPrompt
       });
       entry.session = session;
 
@@ -725,7 +725,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
           tools: ["*"]
         }
       },
-      systemMessage: config.systemPrompt ?? { mode: "append", content: "When a relevant skill is available, prefer using it instead of doing the task manually." }
+      systemMessage: config.systemPrompt
     });
 
     let aborted = false;
