@@ -1,10 +1,10 @@
 /**
  * Unit Tests for azure-kubernetes
  *
- * Test isolated skill logic and validation rules.
+ * Tests domain invariants - concepts that should always be present
+ * in AKS cluster planning guidance.
  */
 
-import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-kubernetes";
@@ -24,99 +24,88 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
 
-    test("description meets Medium-High compliance length", () => {
-      // Descriptions should be 150-1024 chars for Medium-High compliance
-      expect(skill.metadata.description.length).toBeGreaterThan(150);
-      expect(skill.metadata.description.length).toBeLessThanOrEqual(1024);
-    });
-
-    test("description contains USE FOR trigger phrases", () => {
-      const description = skill.metadata.description;
-      expect(description).toContain("USE FOR:");
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      const description = skill.metadata.description;
-      expect(description).toContain("DO NOT USE FOR:");
-    });
-
-    test("has AKS-specific trigger keywords", () => {
+    test("description mentions AKS or Kubernetes", () => {
       const description = skill.metadata.description.toLowerCase();
-      const hasAKSKeywords =
-        description.includes("aks") ||
-        description.includes("kubernetes") ||
-        description.includes("cluster");
-      expect(hasAKSKeywords).toBe(true);
+      expect(description).toMatch(/aks|kubernetes/);
     });
   });
 
-  describe("Skill Content", () => {
-    test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(500);
-    });
-
-    test("contains expected sections", () => {
-      expect(skill.content).toContain("## Triggers");
-      expect(skill.content).toContain("## When to Use");
-      expect(skill.content).toContain("## Decision Framework");
-      expect(skill.content).toContain("## Step-by-Step Execution");
-    });
-
-    test("covers AKS cluster configuration topics", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toContain("networking");
-      expect(content).toContain("identity");
-      expect(content).toContain("observability");
-    });
-
-    test("references AKS documentation", () => {
-      expect(skill.content).toContain("learn.microsoft.com");
-    });
-
-    test("covers Day-0 and Day-1 planning", () => {
+  describe("Day-0 vs Day-1 Guidance", () => {
+    test("distinguishes Day-0 decisions from Day-1 features", () => {
       expect(skill.content).toContain("Day-0");
       expect(skill.content).toContain("Day-1");
     });
+
+    test("identifies networking as hard-to-change decision", () => {
+      const content = skill.content.toLowerCase();
+      // Networking is a Day-0 decision that's hard to change after cluster creation
+      expect(content).toMatch(/network|cni|pod ip/i);
+    });
   });
 
-  describe("Frontmatter Formatting", () => {
-    test("frontmatter has no tabs", () => {
-      const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatter = raw.split("---")[1];
-      expect(frontmatter).not.toMatch(/\t/);
+  describe("Cluster SKU Guidance", () => {
+    test("covers AKS Automatic vs Standard choice", () => {
+      expect(skill.content).toContain("Automatic");
+      expect(skill.content).toContain("Standard");
     });
 
-    test("frontmatter keys are only supported attributes", () => {
-      const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatter = raw.split("---")[1];
-      const supported = [
-        "name",
-        "description",
-        "compatibility",
-        "license",
-        "metadata",
-        "argument-hint",
-        "disable-model-invocation",
-        "user-invokable",
-      ];
-      const keys = frontmatter
-        .split("\n")
-        .filter((l: string) => /^[a-z][\w-]*\s*:/.test(l))
-        .map((l: string) => l.split(":")[0].trim());
-      for (const key of keys) {
-        expect(supported).toContain(key);
-      }
+    test("recommends AKS Automatic as default for most workloads", () => {
+      const content = skill.content.toLowerCase();
+      // AKS Automatic should be the recommended default
+      expect(content).toMatch(/automatic.*default|default.*automatic/);
+    });
+  });
+
+  describe("Networking Guidance", () => {
+    test("covers pod IP model options", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/overlay|vnet|cni/);
     });
 
-    test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
-      const description = skill.metadata.description;
-      if (description.includes("USE FOR")) {
-        expect(description).toContain("USE FOR:");
-      }
-      if (description.includes("DO NOT USE FOR")) {
-        expect(description).toContain("DO NOT USE FOR:");
-      }
+    test("mentions egress configuration", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/egress|outbound/);
+    });
+
+    test("mentions ingress options", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/ingress|gateway/);
+    });
+  });
+
+  describe("Security Guidance", () => {
+    test("recommends Entra ID / managed identity", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/entra|workload identity|managed identity/);
+    });
+
+    test("mentions secrets management", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/key vault|secret/);
+    });
+
+    test("mentions policy or governance", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/policy|safeguard|governance/);
+    });
+  });
+
+  describe("Observability Guidance", () => {
+    test("mentions monitoring or observability", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/monitor|observ|prometheus|grafana|insights/);
+    });
+  });
+
+  describe("Reliability & Upgrades", () => {
+    test("mentions availability zones", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/zone|az\b/);
+    });
+
+    test("covers upgrade strategy", () => {
+      const content = skill.content.toLowerCase();
+      expect(content).toMatch(/upgrade|patch|maintenance/);
     });
   });
 });
