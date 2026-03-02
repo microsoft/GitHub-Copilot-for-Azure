@@ -38,6 +38,7 @@ const META_SKILLS_DIR = resolve(REPO_ROOT, ".github", "skills");
 export interface ValidationIssue {
   check: string;     // Check identifier (e.g., "name-format", "description-format")
   message: string;   // Human-readable explanation
+  severity?: "error" | "warning";  // Defaults to "error" if omitted
 }
 
 export interface ValidationResult {
@@ -176,6 +177,68 @@ export function validateNoReservedPrefix(name: string | null): ValidationIssue[]
   return issues;
 }
 
+const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+/**
+ * Check 5: Validate that `license` field is present and is a string.
+ */
+export function validateLicense(license: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (license === undefined || license === null || license === "") {
+    issues.push({
+      check: "license",
+      message: "Missing 'license' field in frontmatter",
+      severity: "warning",
+    });
+  } else if (typeof license !== "string") {
+    issues.push({
+      check: "license",
+      message: `'license' field must be a string, got ${typeof license}`,
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Check 6: Validate `metadata.version` is present and follows semver (X.Y.Z).
+ */
+export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (metadata === undefined || metadata === null || typeof metadata !== "object") {
+    issues.push({
+      check: "metadata-version",
+      message: "Missing 'metadata' block with 'version' field in frontmatter",
+      severity: "warning",
+    });
+    return issues;
+  }
+
+  const meta = metadata as Record<string, unknown>;
+  const version = meta.version;
+
+  if (version === undefined || version === null || version === "") {
+    issues.push({
+      check: "metadata-version",
+      message: "Missing 'version' in metadata block",
+      severity: "warning",
+    });
+    return issues;
+  }
+
+  const versionStr = String(version);
+  if (!SEMVER_RE.test(versionStr)) {
+    issues.push({
+      check: "metadata-version",
+      message: `metadata.version "${versionStr}" is not valid semver (expected X.Y.Z)`,
+    });
+  }
+
+  return issues;
+}
+
 // ── Validate a single SKILL.md ──────────────────────────────────────────────
 
 export function validateSkillFile(filePath: string): ValidationResult {
@@ -208,6 +271,12 @@ export function validateSkillFile(filePath: string): ValidationResult {
 
   // Check 4: No reserved prefixes
   issues.push(...validateNoReservedPrefix(name));
+
+  // Check 5: License field
+  issues.push(...validateLicense(parsed.data.license));
+
+  // Check 6: metadata.version (semver)
+  issues.push(...validateMetadataVersion(parsed.data.metadata));
 
   return { skill: parentDir, file: filePath, issues };
 }
@@ -267,31 +336,41 @@ function main(): void {
   console.log("\n📋 Frontmatter Spec Validator\n");
   console.log("────────────────────────────────────────────────────────────");
 
-  let totalIssues = 0;
+  let totalErrors = 0;
+  let totalWarnings = 0;
   let skillsWithIssues = 0;
 
   for (const file of skillFiles) {
     const result = validateSkillFile(file);
+    const errors = result.issues.filter(i => i.severity !== "warning");
+    const warnings = result.issues.filter(i => i.severity === "warning");
 
     if (result.issues.length === 0) {
       console.log(`  ✅ ${result.skill}`);
     } else {
-      skillsWithIssues++;
-      totalIssues += result.issues.length;
+      if (errors.length > 0) skillsWithIssues++;
+      totalErrors += errors.length;
+      totalWarnings += warnings.length;
 
-      console.log(`  ❌ ${result.skill} — ${result.issues.length} issue(s)`);
-      for (const issue of result.issues) {
-        console.log(`     [${issue.check}] ${issue.message}`);
+      const icon = errors.length > 0 ? "❌" : "⚠️";
+      console.log(`  ${icon} ${result.skill} — ${errors.length} error(s), ${warnings.length} warning(s)`);
+      for (const issue of errors) {
+        console.log(`     ❌ [${issue.check}] ${issue.message}`);
+      }
+      for (const issue of warnings) {
+        console.log(`     ⚠️  [${issue.check}] ${issue.message}`);
       }
     }
   }
 
   console.log("\n────────────────────────────────────────────────────────────");
 
-  if (totalIssues === 0) {
+  if (totalErrors === 0 && totalWarnings === 0) {
     console.log(`\n✅ All ${skillFiles.length} skill(s) passed frontmatter validation.\n`);
+  } else if (totalErrors === 0) {
+    console.log(`\n✅ All ${skillFiles.length} skill(s) passed with ${totalWarnings} warning(s).\n`);
   } else {
-    console.log(`\n❌ ${totalIssues} issue(s) found in ${skillsWithIssues} skill(s).\n`);
+    console.log(`\n❌ ${totalErrors} error(s) and ${totalWarnings} warning(s) found in ${skillsWithIssues} skill(s).\n`);
     process.exitCode = 1;
   }
 }
