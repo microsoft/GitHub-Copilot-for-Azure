@@ -331,7 +331,7 @@ jobs:
           fi
 
           for skill_file in $SKILL_FILES; do
-            SKILL_NAME=$(basename $(dirname "$skill_file"))
+            SKILL_NAME=$(basename "$(dirname "$skill_file")")
 
             # Get version in base branch (use [[:space:]] for portable whitespace matching)
             BASE_VERSION=$(git show origin/${{ github.base_ref }}:"$skill_file" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
