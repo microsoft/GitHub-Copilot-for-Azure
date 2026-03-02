@@ -83,11 +83,11 @@ if (!wazaBin) {
   console.error("");
   console.error("Install waza:");
   console.error("  # Via azd extension");
-  console.error("  azd ext source add -n waza -t url -l https://raw.githubusercontent.com/spboyer/waza/main/registry.json");
+  console.error("  azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json");
   console.error("  azd ext install microsoft.azd.waza");
   console.error("");
   console.error("  # Or via Go");
-  console.error("  go install github.com/spboyer/waza/cmd/waza@latest");
+  console.error("  go install github.com/microsoft/waza/cmd/waza@latest");
   process.exit(2);
 }
 
