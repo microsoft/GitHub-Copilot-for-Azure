@@ -102,7 +102,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 6 | **⛔ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
+| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
 
 ---
 
