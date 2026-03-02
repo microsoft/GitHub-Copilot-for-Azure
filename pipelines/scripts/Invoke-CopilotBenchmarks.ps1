@@ -4,9 +4,9 @@
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
-    It acquires an Azure DevOps AAD token from the already-authenticated az CLI session,
-    constructs an authenticated pip index URL, installs MSBench CLI from the
-    MicrosoftSweBench Azure Artifacts feed, and invokes:
+    Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
+    PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
+    The script retrieves a GitHub PAT from KeyVault, installs MSBench CLI, and invokes:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model>
 
     MSBench CLI reference:
@@ -42,7 +42,6 @@
         throw "Model parameter is required."
     }
 
-    $feedUrl = "https://pkgs.dev.azure.com/devdiv/_packaging/MicrosoftSweBench/pypi/simple/"
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretName = "azure-eval-gh-pat"
 
@@ -72,26 +71,13 @@
         throw "Failed to retrieve GitHub PAT from KeyVault: $_"
     }
 
-    # --- Authenticate to Azure DevOps Artifacts feed via AAD token + artifacts-keyring ---
-    Write-Host "Acquiring Azure DevOps AAD token for feed authentication"
-    $adoResourceId = "499b84ac-1321-427f-aa17-267ca6975798"
-    $adoAccessToken = az account get-access-token --resource $adoResourceId --query accessToken -o tsv
-
-    if (!$adoAccessToken) {
-        throw "Failed to acquire Azure DevOps AAD access token. Ensure the AzureCLI@2 task has a valid service connection."
+    # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
+    # PipAuthenticate sets PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
+    if ($env:PIP_EXTRA_INDEX_URL) {
+        Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task)"
+    } else {
+        Write-Warning "PIP_EXTRA_INDEX_URL is not set. Feed authentication may fail. Ensure PipAuthenticate@1 runs before this script."
     }
-
-    # Construct an authenticated pip index URL using the AAD token directly.
-    # This avoids needing artifacts-keyring and the credential provider binary.
-    $encodedToken = [System.Uri]::EscapeDataString($adoAccessToken)
-
-    if ($pipelineRun) {
-        # Log the token as a secret variable to avoid exposing it in logs
-        Write-Host "##vso[task.setsecret]$adoAccessToken"
-        Write-Host "##vso[task.setsecret]$encodedToken"
-    }
-
-    $authedFeedUrl = $feedUrl -replace "https://", "https://vsts:$encodedToken@"
 
     $pythonCommand = Get-Command python
     Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version 2>&1)"
@@ -102,14 +88,8 @@
         throw "pip install/upgrade failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "Checking MSBench CLI versions from feed"
-    python -m pip index versions msbench-cli --no-input --index-url $authedFeedUrl
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip index versions failed with exit code $LASTEXITCODE"
-    }
-
     Write-Host "Installing/upgrading MSBench CLI"
-    python -m pip install msbench-cli --no-input --index-url $authedFeedUrl
+    python -m pip install msbench-cli --no-input
     if ($LASTEXITCODE -ne 0) {
         throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
     }

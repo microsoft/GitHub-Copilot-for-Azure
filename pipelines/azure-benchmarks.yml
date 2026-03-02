@@ -24,6 +24,11 @@ stages:
       inputs:
         versionSpec: '3.12'
 
+    - task: PipAuthenticate@1
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
+      inputs:
+        artifactFeeds: 'internal/MicrosoftSweBench'
+
     - task: AzureCLI@2
       displayName: 'Run Copilot Benchmarks script'
       inputs:
