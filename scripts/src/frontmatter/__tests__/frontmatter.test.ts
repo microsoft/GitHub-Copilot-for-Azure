@@ -259,20 +259,23 @@ describe("Frontmatter Spec Validator", () => {
       expect(validateLicense("MIT")).toEqual([]);
     });
 
-    it("fails for missing license", () => {
+    it("warns for missing license", () => {
       const issues = validateLicense(undefined);
       expect(issues).toHaveLength(1);
       expect(issues[0].check).toBe("license");
+      expect(issues[0].severity).toBe("warning");
     });
 
-    it("fails for null license", () => {
+    it("warns for null license", () => {
       const issues = validateLicense(null);
       expect(issues).toHaveLength(1);
+      expect(issues[0].severity).toBe("warning");
     });
 
-    it("fails for empty license", () => {
+    it("warns for empty license", () => {
       const issues = validateLicense("");
       expect(issues).toHaveLength(1);
+      expect(issues[0].severity).toBe("warning");
     });
 
     it("fails for non-string license", () => {
@@ -293,16 +296,18 @@ describe("Frontmatter Spec Validator", () => {
       expect(validateMetadataVersion({ version: "3.2.1" })).toEqual([]);
     });
 
-    it("fails for missing metadata", () => {
+    it("warns for missing metadata", () => {
       const issues = validateMetadataVersion(undefined);
       expect(issues).toHaveLength(1);
       expect(issues[0].check).toBe("metadata-version");
+      expect(issues[0].severity).toBe("warning");
     });
 
-    it("fails for missing version in metadata", () => {
+    it("warns for missing version in metadata", () => {
       const issues = validateMetadataVersion({ author: "Microsoft" });
       expect(issues).toHaveLength(1);
       expect(issues[0].check).toBe("metadata-version");
+      expect(issues[0].severity).toBe("warning");
     });
 
     it("fails for non-semver version", () => {

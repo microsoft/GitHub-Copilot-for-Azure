@@ -203,6 +203,7 @@ jobs:
         with:
           files: |
             plugin/skills/**
+            .github/skills/**
 
       - name: Setup Node.js
         if: steps.changed-skills.outputs.any_changed == 'true'
@@ -307,7 +308,7 @@ jobs:
           SKILL_FILES=""
           for file in ${{ steps.changed-plugin-skills.outputs.all_changed_files }}; do
             dir=$(dirname "$file")
-            while [ "$dir" != "plugin/skills" ] && [ "$dir" != "plugin" ] && [ "$dir" != "." ]; do
+            while [ "$dir" != "plugin/skills" ] && [ "$dir" != ".github/skills" ] && [ "$dir" != "plugin" ] && [ "$dir" != ".github" ] && [ "$dir" != "." ]; do
               if [ -f "$dir/SKILL.md" ]; then
                 SKILL_FILES="$SKILL_FILES $dir/SKILL.md"
                 break
@@ -326,11 +327,11 @@ jobs:
           fi
 
           for skill_file in $SKILL_FILES; do
-            # Get version in base branch
-            BASE_VERSION=$(git show origin/${{ github.base_ref }}:"$skill_file" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^\s+version:' | head -1 | sed 's/.*version:\s*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
+            # Get version in base branch (use [[:space:]] for portable whitespace matching)
+            BASE_VERSION=$(git show origin/${{ github.base_ref }}:"$skill_file" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
 
             # Get version in PR branch
-            HEAD_VERSION=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep -E '^\s+version:' | head -1 | sed 's/.*version:\s*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+            HEAD_VERSION=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
 
             # New skill (no base version) — skip, it starts at 1.0.0
             if [ -z "$BASE_VERSION" ]; then
