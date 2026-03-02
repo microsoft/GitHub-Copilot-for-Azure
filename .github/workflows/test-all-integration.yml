@@ -11,12 +11,13 @@ permissions:
 
 on:
   schedule:
-    # 9:00 PM PST every day (5:00 AM UTC)
-    - cron: '0 5 * * *'
-    # 12:00 AM PST every day (8:00 AM UTC)
-    - cron: '0 8 * * *'
-    # 4:00 AM PST every day (12:00 PM UTC)
-    - cron: '0 12 * * *'
+    # Nightly job to run all the integration tests, except weekends in PST.
+    # 9:00 PM PST Mon-Fri (5:00 AM UTC Tue-Sat)
+    - cron: '0 5 * * 2-6'
+    # 12:00 AM PST Tue-Sat (8:00 AM UTC Tue-Sat)
+    - cron: '0 8 * * 2-6'
+    # 4:00 AM PST Tue-Sat (12:00 PM UTC Tue-Sat)
+    - cron: '0 12 * * 2-6'
   workflow_dispatch:
     inputs:
       skills:
@@ -97,13 +98,13 @@ jobs:
             
             # Set deploy-test-pattern and debug based on the schedule slot
             case "$CRON" in
-              "0 5 * * *")
+              "0 5 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_21 }}" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 8 * * *")
+              "0 8 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_00 }}" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 12 * * *")
+              "0 12 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_04 }}" >> "$GITHUB_OUTPUT"
                 ;;
               *)
