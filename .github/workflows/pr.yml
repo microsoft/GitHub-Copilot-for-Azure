@@ -186,6 +186,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check changed skill files
         id: changed-skills
@@ -194,6 +196,14 @@ jobs:
           files: |
             plugin/skills/**/SKILL.md
             .github/skills/**/SKILL.md
+
+      - name: Check all changed plugin skill files
+        id: changed-plugin-skills
+        uses: tj-actions/changed-files@v46
+        with:
+          files: |
+            plugin/skills/**
+            .github/skills/**
 
       - name: Setup Node.js
         if: steps.changed-skills.outputs.any_changed == 'true'
@@ -215,17 +225,15 @@ jobs:
           echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Extract skill names from changed SKILL.md paths
-          SKILLS=()
-          IFS=$'\n'
+          # Pass changed SKILL.md file paths directly to the validator
+          # Prefix with ../ since working-directory is ./scripts
+          SKILL_FILES=""
           for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
-            # Extract the skill directory name (parent of SKILL.md)
-            SKILL_NAME=$(basename "$(dirname "$file")")
-            SKILLS+=("$SKILL_NAME")
+            SKILL_FILES="$SKILL_FILES ../$file"
           done
           
           # Run frontmatter spec validation
-          if OUTPUT=$(npm run frontmatter -- "${SKILLS[@]}" 2>&1); then
+          if OUTPUT=$(npm run frontmatter -- $SKILL_FILES 2>&1); then
             echo "$OUTPUT"
             echo "✅ All skill frontmatter is valid" >> $GITHUB_STEP_SUMMARY
           else
@@ -287,6 +295,65 @@ jobs:
             if (hasError) {
                 core.setFailed('tests/skills.json validation failed');
             }
+
+      - name: Check skill version bumps
+        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
+        run: |
+          echo "## Skill Version Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=false
+
+          # For each changed file, walk up to find the nearest SKILL.md
+          SKILL_FILES=""
+          for file in ${{ steps.changed-plugin-skills.outputs.all_changed_files }}; do
+            dir=$(dirname "$file")
+            while [ "$dir" != "plugin/skills" ] && [ "$dir" != ".github/skills" ] && [ "$dir" != "plugin" ] && [ "$dir" != ".github" ] && [ "$dir" != "." ]; do
+              if [ -f "$dir/SKILL.md" ]; then
+                SKILL_FILES="$SKILL_FILES $dir/SKILL.md"
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+
+          # Deduplicate
+          SKILL_FILES=$(echo "$SKILL_FILES" | tr ' ' '\n' | sort -u | grep -v '^$')
+
+          if [ -z "$SKILL_FILES" ]; then
+            echo "No SKILL.md files affected by changes."
+            echo "✅ No version bump needed" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          for skill_file in $SKILL_FILES; do
+            # Get version in base branch (use [[:space:]] for portable whitespace matching)
+            BASE_VERSION=$(git show origin/${{ github.base_ref }}:"$skill_file" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
+
+            # Get version in PR branch
+            HEAD_VERSION=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+
+            # New skill (no base version) — skip, it starts at 1.0.0
+            if [ -z "$BASE_VERSION" ]; then
+              echo "✅ $skill_file — new skill (version: $HEAD_VERSION)"
+              continue
+            fi
+
+            if [ "$BASE_VERSION" = "$HEAD_VERSION" ]; then
+              echo "::error file=$skill_file::Skill was modified but metadata.version was not bumped ($BASE_VERSION). Bump the version in your PR."
+              echo "❌ \`$skill_file\` — version not bumped ($BASE_VERSION)" >> $GITHUB_STEP_SUMMARY
+              FAILED=true
+            else
+              echo "✅ $skill_file — version bumped: $BASE_VERSION → $HEAD_VERSION"
+              echo "✅ \`$skill_file\` — $BASE_VERSION → $HEAD_VERSION" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          if [ "$FAILED" = true ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> Every PR that modifies a skill must bump its \`metadata.version\` in the same PR." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Skip message
         if: steps.changed-skills.outputs.any_changed != 'true'
