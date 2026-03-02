@@ -9,7 +9,15 @@ description: "Plan and create production-ready Azure Kubernetes Service (AKS) cl
 >
 > This skill produces a **recommended AKS cluster configuration** based on user requirements, distinguishing **Day-0 decisions** (networking, API server — hard to change later) from **Day-1 features** (can enable post-creation). See [CLI reference](./references/cli-reference.md) for commands.
 
-## Triggers
+## Quick Reference
+| Property | Value |
+|----------|-------|
+| Best for | AKS cluster planning and Day-0 decisions |
+| MCP Tools | `mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations` |
+| CLI | `az aks create`, `az aks show` |
+| Related skills | azure-diagnostics (troubleshooting), azure-deploy (app deployment) |
+
+## When to Use This Skill
 Activate this skill when user wants to:
 - Create a new AKS cluster
 - Plan AKS cluster configuration for production workloads
@@ -39,7 +47,7 @@ If the user is unsure, use safe defaults.
 - Upgrade and observability preferences
 - Cost constraints
 
-## Key Decisions (Defaults when user is unsure)
+## Workflow
 
 ### 1. Cluster Type
 - **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by NAP.
