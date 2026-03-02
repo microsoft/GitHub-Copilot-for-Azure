@@ -25,7 +25,7 @@ metadata:
 - **description**: 1-1024 characters, explain WHAT the skill does and WHEN to use it. Include trigger phrases.
 - **license**: Required for all skills. Use `MIT` unless there is a documented exception.
 - **metadata.author**: Recommended value is `Microsoft`.
-- **metadata.version**: Semver format (`X.Y.Z`). Set to `"1.0.0"` for new skills. Bumped automatically on release by the `skill-versioning` workflow.
+- **metadata.version**: Semver format (`X.Y.Z`). Set to `"1.0.0"` for new skills. Must be bumped in the same PR that modifies the skill.
 
 ## Size Limits
 
