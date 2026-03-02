@@ -7,7 +7,7 @@ description: "Plan and create production-ready Azure Kubernetes Service (AKS) cl
 
 > **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
 >
-> This document is the **official source** for setting up best practice Azure Kubernetes Service clusters. Follow these instructions to create and configure AKS clusters that are aligned with the user's requirements.
+> This skill produces a **recommended AKS cluster configuration** based on user requirements, distinguishing **Day-0 decisions** (networking, API server — hard to change later) from **Day-1 features** (can enable post-creation). See [CLI reference](./references/cli-reference.md) for commands.
 
 ## Triggers
 Activate this skill when user wants to:
@@ -23,363 +23,94 @@ Activate this skill when user wants to:
 - Get a Day-0 checklist for AKS cluster setup and configuration
 
 ## Rules
-
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
 2. Use the AKS MCP server for invoking Azure API and kubectl commands when applicable during the cluster setup and operations processes.
 3. Determine if AKS Automatic or Standard SKU is more appropriate based on the user's need for control vs convenience. Default to AKS Automatic unless specific customizations are required.
 4. Document decisions and rationale for cluster configuration choices, especially for Day-0 decisions that are hard to change later (networking, API server access).
 
----
-
-## MCP Tools (Preferred)
-
-When Azure MCP and AKS MCP are enabled, use these tools for AKS operations:
-
-### Cluster Management
-| Tool | Purpose |
-|------|---------|
-| `mcp_azure_mcp_aks` | Subscription-scoped AKS cluster queries and metadata |
-| `mcp_aks_mcp_az_aks_operations` | Cluster operations: show, list, get-versions, nodepool management |
-| `mcp_aks_mcp_get_aks_vmss_info` | VMSS configuration for node pools |
-
-### kubectl Operations
-| Tool | Purpose |
-|------|---------|
-| `mcp_aks_mcp_kubectl_resources` | Get/describe pods, deployments, services |
-| `mcp_aks_mcp_kubectl_diagnostics` | Logs, events, top, exec, cp operations |
-| `mcp_aks_mcp_kubectl_cluster` | Cluster info, API resources, explain |
-| `mcp_aks_mcp_kubectl_config` | Config contexts, auth checks |
-
-### Networking
-| Tool | Purpose |
-|------|---------|
-| `mcp_aks_mcp_az_network_resources` | VNet, NSG, route tables, subnets, load balancers |
-
----
-
-## CLI Fallback
-
-```bash
-# List AKS clusters
-az aks list --output table
-
-# Show cluster details
-az aks show --name CLUSTER --resource-group RG
-
-# Get available Kubernetes versions
-az aks get-versions --location LOCATION --output table
-
-# Create AKS Automatic cluster
-az aks create --name CLUSTER --resource-group RG --sku automatic \
-  --network-plugin azure --network-plugin-mode overlay \
-  --enable-oidc-issuer --enable-workload-identity
-
-# Create AKS Standard cluster
-az aks create --name CLUSTER --resource-group RG \
-  --node-count 3 --zones 1 2 3 \
-  --network-plugin azure --network-plugin-mode overlay \
-  --enable-cluster-autoscaler --min-count 1 --max-count 10
-
-# Get credentials
-az aks get-credentials --name CLUSTER --resource-group RG
-
-# List node pools
-az aks nodepool list --cluster-name CLUSTER --resource-group RG --output table
-
-# Enable monitoring
-az aks enable-addons --name CLUSTER --resource-group RG \
-  --addons monitoring --workspace-resource-id WORKSPACE_ID
-```
-
----
-
-## Overview
-This skill guides a user through planning and creating an Azure Kubernetes Service (AKS) cluster using public best practices for:
-- cluster mode selection (Automatic vs Standard),
-- networking (API server access, egress, pod IP model),
-- identity (Microsoft Entra + Workload Identity),
-- secrets management (Key Vault CSI),
-- governance (Azure Policy + Deployment Safeguards),
-- observability (Azure Monitor, Managed Prometheus, Managed Grafana),
-- upgrades/patching (auto-upgrade channels, maintenance windows),
-- cost visibility (AKS Cost Analysis).
-
-References are public and included at the end.
-
----
-
-## When to Use
-Use this skill when a user asks:
-- “What do I need to decide before creating an AKS cluster?”
-- “Create an AKS cluster plan/design for production”
-- “AKS networking: overlay vs pod subnet vs node subnet”
-- “How do I set up Workload Identity / Key Vault CSI / Azure Policy?”
-- “How do I configure upgrades, patching, and observability on AKS?”
-
----
-
-## Goals / Outcomes
-1. Produce a **recommended AKS cluster configuration** based on user requirements (security, scale, connectivity, compliance).
-2. Provide a **Day-0 checklist** (decisions that are hard to change later, like networking and API server exposure).
-3. Provide a **Day-1 checklist** (baseline add-ons and settings for production readiness).
-4. Optionally output a **command/IaC skeleton** (placeholders only unless user provides values).
-
----
 
 ## Required Inputs (Ask only what’s needed)
 If the user is unsure, use safe defaults.
+- Cluster environment: dev/test or production
+- Region(s), availability zones, preferred node VM sizes
+- Expected scale (node/cluster count, workload size)
+- Networking requirements (API server access, pod IP model, ingress/egress control)
+- Security and identity requirements, including image registry
+- Upgrade and observability preferences
+- Cost constraints
 
-### 1. Environment & scale
-- Environment: `dev/test` or `production`
-- Region(s) + availability zones needed?
-- Expected scale: node count / cluster count (single vs multi)
-
-### 2. Networking requirements (Day-0 critical)
-- API server access:
-  - Public API server or Private cluster?
-- Pod IP model:
-  - Do pods need **direct routable IPs in the VNet**?
-- Egress control:
-  - Default outbound, NAT Gateway, or UDR + firewall/NVA?
-
-### 3. Identity & security posture
-- Microsoft Entra RBAC required?
-- Need pod-to-Azure access with **Workload Identity**?
-- Regulated environment needs (private cluster, policy enforcement, restricted egress)?
-
----
-
-## Outputs (What the Skill Produces)
-### Primary Output: “AKS Setup Plan”
-1. Cluster type recommendation (Automatic vs Standard)
-2. Networking plan (control plane access, egress choice, pod IP model)
-3. Node pools + scaling plan
-4. Security baseline (identity, secrets, policy)
-5. Observability baseline (metrics/logs/dashboards/alerts)
-6. Upgrade & patching plan
-7. Cost controls baseline
-8. Day-0 checklist + Day-1 checklist
-
-### Optional Outputs
-- CLI skeleton (placeholders)
-- IaC outline (Bicep/Terraform module list)
-
----
-
-## Decision Framework (Defaults when user is unsure)
+## Key Decisions (Defaults when user is unsure)
 
 ### 1. Cluster Type
+- **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by NAP.
+- **AKS Standard**: Use if you need full control over cluster configuration, will require additional overhead to setup and manage.
 
-| Cluster SKU | Automatic | Standard |
-|---------|-----------|----------|
-| Best for | Production defaults, faster setup | Maximum control, custom requirements |
-| Node provisioning | Auto (NAP) | Manual node pools |
-| Autoscaling | Pre-configured | Configure manually |
-| Networking | Azure CNI Overlay (fixed) | Choose model |
-| Azure Policy | Enabled by default | Configure separately |
-| Monitoring | Azure Monitor enabled | Configure separately |
-| Deployment Safeguards | Enabled (Warning) | Configure separately |
-| Node OS upgrades | Auto-configured | Configure channel |
+### 2. Networking (Pod IP, Egress, Ingress, Dataplane)
 
-**Recommendation**: Default to **AKS Automatic** unless you need:
-- Custom networking (kubenet, Azure CNI with pod subnet)
-- Windows node pools
-- Specific node pool configurations not supported by NAP
-- Full control over autoscaling behavior
+**Pod IP Model** (Key Day-0 decision):
+- **Azure CNI Overlay** (recommended): pod IPs from private overlay range, not VNet-routable, scales to large clusters and good for most workloads
+- **Azure CNI (VNet-routable)**: pod IPs directly from VNet (pod subnet or node subnet), use when pods must be directly addressable from VNet or on-prem
+  - Docs: https://learn.microsoft.com/azure/aks/azure-cni-overlay
 
-### 2. Pod Networking Model (Key Day-0 decision)
-- Prefer **Azure CNI Overlay** for scalability and conserving VNet IP space.
-Docs: https://learn.microsoft.com/azure/aks/azure-cni-overlay
+**Dataplane & Network Policy**:
+- **Azure CNI powered by Cilium** (recommended): eBPF-based for high-performance packet processing, network policies, and observability
 
-If pods must be directly addressable/routable in your VNet, use VNet-based Azure CNI options:
-- Azure CNI with pod subnet or node subnet models (see Azure CNI overlay + related networking docs)
+**Egress**:
+- **Static Egress Gateway** for stable, predictable outbound IPs
+- For restricted egress: UDR + Azure Firewall or NVA
 
-### 3. Dataplane / Network Policy
-- Consider **Azure CNI powered by Cilium** for eBPF-based performance and policy/observability features.
-Docs: https://learn.microsoft.com/azure/aks/azure-cni-powered-by-cilium
+**Ingress**:
+- **App Routing addon with Gateway API** — recommended default for HTTP/HTTPS workloads
+- **Istio service mesh with Gateway API** — for advanced traffic management, mTLS, canary deployments
+- **Application Gateway for Containers** — for L7 load balancing with WAF integration
 
-### 4. Workload Identity (Preferred for pod-to-Azure auth)
-- Prefer **Microsoft Entra Workload ID** for workloads calling Azure services without secrets.
-Docs: https://learn.microsoft.com/azure/aks/workload-identity-overview
+**DNS**:
+- Enable **LocalDNS** on all node pools for reliable, performant DNS resolution
 
-### 5. Secrets
-- Prefer Azure Key Vault via **Secrets Store CSI Driver** provider.
-Docs: https://learn.microsoft.com/azure/aks/csi-secrets-store-driver
+### 3. Security
+- Use **Microsoft Entra ID** everywhere (control plane, Workload Identity for pods, node access). Avoid static credentials.
+- Azure Key Vault via **Secrets Store CSI Driver** for secrets
+- Enable **Azure Policy** + **Deployment Safeguards**
+- Enable **Encryption at rest** for etcd/API server; **in-transit** for node-to-node
+- Allow only signed, policy-approved images (Azure Policy + Ratify), prefer **Azure Container Registry**
+- **Isolation**: Use namespaces, network policies, scoped logging
 
-### 6. Governance
-- Enable **Azure Policy** (prereq) and **Deployment Safeguards** for workload best-practice enforcement.
-Docs: Deployment Safeguards: https://learn.microsoft.com/azure/aks/deployment-safeguards
+### 4. Observability
+- Use Azure Monitor and Container Insights for AKS monitoring enablement (logs + Prometheus + Grafana).
 
-### 7. Observability
-- Use Azure Monitor for AKS monitoring enablement (logs + Prometheus + Grafana).
-Docs: https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-monitoring-enable  
-Prometheus overview: https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-metrics-overview
-
-### 8. Upgrades & Patching
-- Configure **Maintenance Windows** for controlled upgrade timing: https://learn.microsoft.com/en-us/azure/aks/planned-maintenance
+### 5. Upgrades & Patching
+- Configure **Maintenance Windows** for controlled upgrade timing
 - Enable **auto-upgrades** for cluster and node OS to stay up-to-date with security patches and Kubernetes versions
-- Consider **LTS versions** for enterprise stability (2-year support) by upgrading your cluster to the AKS Premium tier: https://learn.microsoft.com/en-us/azure/aks/long-term-support
+- Consider **LTS versions** for enterprise stability (2-year support) by upgrading your cluster to the AKS Premium tier
+- **Multi-cluster upgrades**: Use **AKS Fleet Manager** for staged rollout across test → production clusters
 
-### 9. Performance
+### 6. Performance
 - Use **Ephemeral OS disks** (`--node-osdisk-type Ephemeral`) for faster node startup
 - Select **Azure Linux** as node OS (smaller footprint, faster boot)
 - Enable **KEDA** for event-driven autoscaling beyond HPA
 
-### 10. Reliability
+### 7. Node Pools & Compute
+- **Dedicated system node pool**: At least 2 nodes, tainted for system workloads only (`CriticalAddonsOnly`)
+- Enable **Node Auto Provisioning (NAP)** on all pools for cost savings and responsive scaling
+- Use **latest generation SKUs (v5/v6)** for host-level optimizations
+- **Avoid B-series VMs** — burstable SKUs cause performance/reliability issues
+- Use SKUs with **at least 4 vCPUs** for production workloads
+- Set **topology spread constraints** to distribute pods across hosts/zones per SLO
+
+### 8. Reliability
 - Deploy across **3 Availability Zones** (`--zones 1 2 3`)
 - Use **Standard tier** for zone-redundant control plane + 99.95% SLA for API server availability
 - Enable **Microsoft Defender for Containers** for runtime protection
 - Configure **PodDisruptionBudgets** for all production workloads
+- Use **topology spread constraints** to ensure pod distribution across failure domains
 
-### 11. Cost Controls
+### 9. Cost Controls
 - Use **Spot node pools** for batch/interruptible workloads (up to 90% savings)
 - **Stop/Start** dev/test clusters: `az aks stop/start`
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
-### 12. Security
-- **Start secure by default**: Deploy supported AKS versions with Microsoft-recommended defaults; keep clusters up to date
-- **Use identity everywhere**: Secure access with Microsoft Entra ID for control plane, workloads (Workload Identity), and node access—avoid static credentials
-- **Encrypt by default**: Enable encryption at rest for etcd/API server data; use in-transit encryption for node-to-node traffic
-- **Lock down supply chain**: Allow only signed, policy-approved container images (use Azure Policy + ImagePolicyWebhook or Ratify)
-- **Isolate tenants**: Use namespaces, network policies, and scoped logging to reduce blast radius
-
----
-
-## Step-by-Step Execution (Agent Behavior)
-
-### Step 1 — Classify scenario
-Identify environment, compliance posture, region/AZ needs, scale, and workload types.
-
-### Step 2 — Recommend cluster type
-Recommend AKS Automatic or Standard with short rationale.
-- AKS Automatic intro: https://learn.microsoft.com/azure/aks/intro-aks-automatic
-
-### Step 3 — Lock networking (Day-0)
-Ask:
-- Public vs Private API server?
-- Pod IP model: overlay vs VNet-routable requirement?
-- Egress: LB vs NAT Gateway vs UDR+Firewall?
-
-Reference: Azure CNI Overlay setup: https://learn.microsoft.com/azure/aks/azure-cni-overlay
-
-### Step 4 — Node pools and compute
-Recommend:
-- system node pool + user node pools
-- separate pools for GPU/batch/stateful if applicable
-- capacity planning considerations (max pods per node affects IP planning, upgrades)
-
-### Step 5 — Configure autoscaling
-Recommend:
-- HPA for pods
-- Cluster Autoscaler / node scaling strategy
-- If user wants higher automation, discuss Node Auto Provisioning where available (if asked)
-
-### Step 6 — Identity and secrets
-- Enable Workload Identity:
-  https://learn.microsoft.com/azure/aks/workload-identity-overview
-- Use Key Vault CSI Driver:
-  https://learn.microsoft.com/azure/aks/csi-secrets-store-driver
-
-### Step 7 — Policy & safeguards
-- Turn on Azure Policy and Deployment Safeguards (warn/enforce).
-Docs: https://learn.microsoft.com/azure/aks/deployment-safeguards
-
-### Step 8 — Observability baseline
-- Enable monitoring using Azure Monitor guidance:
-  https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-monitoring-enable
-- Managed Prometheus overview:
-  https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-metrics-overview
-
-### Step 9 — Upgrades & patching
-- Define upgrade approach:
-  https://learn.microsoft.com/azure/architecture/operator-guides/aks/aks-upgrade-practices
-- Configure node OS upgrade channels:
-  https://learn.microsoft.com/azure/aks/auto-upgrade-node-os-image
-- Configure cluster autoupgrade channels:
-  https://learn.microsoft.com/azure/aks/auto-upgrade-cluster
-
-### Step 10 — Cost visibility
-- Enable AKS cost analysis add-on (OpenCost-based):
-  https://learn.microsoft.com/azure/aks/cost-analysis
-
-Return a final output with:
-- recommended config
-- Day-0 checklist
-- Day-1 checklist
-- optional command/IaC skeleton
-
----
-
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys, subscription IDs).
-- If requirements are ambiguous, propose 2–3 safe options with tradeoffs and choose a conservative default.
-- Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades.
+- If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
+- Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades along with best practices for reliability and performance.
 - If user asks for actions that require privileged access, provide a plan and commands with placeholders.
-
----
-
-## Quality Bar
-A high-quality answer:
-- flags Day-0 irreversible choices (networking, API server access),
-- includes identity/secrets/policy defaults (Workload ID + Key Vault CSI + safeguards),
-- includes security defaults (Entra ID everywhere, encryption, image signing, network policies),
-- recommends availability zones + Standard tier for production,
-- includes performance defaults (ephemeral disks, Azure Linux),
-- includes observability + upgrade/patching plan,
-- addresses cost (spot pools, stop/start for dev).
-
----
-
-## Quick Reference
-
-### Common AKS Commands
-
-| Task | Command |
-|------|---------|
-| List clusters | `az aks list -o table` |
-| Show cluster | `az aks show -n CLUSTER -g RG` |
-| Get credentials | `az aks get-credentials -n CLUSTER -g RG` |
-| List node pools | `az aks nodepool list --cluster-name CLUSTER -g RG` |
-| Scale node pool | `az aks nodepool scale --cluster-name CLUSTER -g RG -n POOL --node-count 5` |
-| Upgrade cluster | `az aks upgrade -n CLUSTER -g RG --kubernetes-version VERSION` |
-
-### kubectl Quick Commands
-
-| Task | Command |
-|------|---------|
-| Get pods | `kubectl get pods -A` |
-| Get nodes | `kubectl get nodes -o wide` |
-| Describe pod | `kubectl describe pod POD -n NAMESPACE` |
-| View pod logs | `kubectl logs POD -n NAMESPACE --tail=100` |
-| Check events | `kubectl get events --sort-by='.lastTimestamp'` |
-| Top nodes | `kubectl top nodes` |
-
----
-
-## Error Handling
-
-### Common AKS Issues
-
-| Issue | Symptom | Resolution |
-|-------|---------|------------|
-| **Cluster creation fails** | Quota exceeded | Request quota increase or use different VM SKU |
-| **Node not ready** | NotReady status | Check kubelet logs, node conditions |
-| **Pod pending** | Insufficient resources | Scale node pool or check resource requests |
-| **Image pull failed** | ImagePullBackOff | Check ACR access, image name, network |
-| **API server unreachable** | Connection refused | Check authorized IPs, private cluster config |
-
----
-
-## References (Public)
-- AKS Automatic overview: https://learn.microsoft.com/azure/aks/intro-aks-automatic
-- Azure CNI Overlay (setup and parameters): https://learn.microsoft.com/azure/aks/azure-cni-overlay
-- Azure CNI powered by Cilium: https://learn.microsoft.com/azure/aks/azure-cni-powered-by-cilium
-- Microsoft Entra Workload ID on AKS: https://learn.microsoft.com/azure/aks/workload-identity-overview
-- Key Vault provider for Secrets Store CSI Driver: https://learn.microsoft.com/azure/aks/csi-secrets-store-driver
-- Deployment Safeguards: https://learn.microsoft.com/azure/aks/deployment-safeguards
-- Enable AKS monitoring (Prometheus + Grafana + logs): https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-monitoring-enable
-- Azure Monitor managed Prometheus overview: https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-metrics-overview
-- AKS patch & upgrade practices (Day-2 guidance): https://learn.microsoft.com/azure/architecture/operator-guides/aks/aks-upgrade-practices
-- Node OS auto-upgrade channels: https://learn.microsoft.com/azure/aks/auto-upgrade-node-os-image
-- Cluster auto-upgrade channels: https://learn.microsoft.com/azure/aks/auto-upgrade-cluster
-- AKS cost analysis (OpenCost-based): https://learn.microsoft.com/azure/aks/cost-analysis
