@@ -17,8 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, softCheckSkill } from "../utils/evaluate";
-import { isSkillInvoked } from "../utils/evaluate";
+import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
