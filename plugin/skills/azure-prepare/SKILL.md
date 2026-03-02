@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize apps or create-and-deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: \"create app\", \"build web app\", \"create API\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"Terraform\", \"Bicep\", \"Azure Functions\", \"Azure App Service\", \"Azure Container Apps\"."
+description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize apps or create-and-deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: \"create app\", \"build web app\", \"create API\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"Terraform\", \"Bicep\", \"Azure Functions\", \"function app\", \"HTTP trigger\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"Azure App Service\", \"Azure Container Apps\", \"Azure Static Web Apps\", \"set up my Azure application\", \"prepare my Azure application to use Key Vault\", \"managed identity\"."
 ---
 
 # Azure Prepare
