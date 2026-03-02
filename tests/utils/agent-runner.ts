@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, type PermissionHandler } from "@github/copilot-sdk";
 import { getAllAssistantMessages } from "./evaluate";
 import { redactSecrets } from "./redact";
 
@@ -25,6 +25,8 @@ export { getAllAssistantMessages } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const approveAll: PermissionHandler = () => ({ kind: "approved" });
 
 /**
  * Resolve the bundled Copilot CLI entry point.
