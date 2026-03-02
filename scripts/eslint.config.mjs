@@ -33,7 +33,7 @@ export default defineConfig(
       "eqeqeq": ["error", "always", { null: "ignore" }],
       "quotes": ["error", "double", { "avoidEscape": true }],
       "no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 0, "maxBOF": 0 }],
-      "indent": ["error", 2],
+      "indent": ["error", 2, { "SwitchCase": 1 }],
 
       // TypeScript rules
       "@typescript-eslint/no-unused-vars": ["error", {
