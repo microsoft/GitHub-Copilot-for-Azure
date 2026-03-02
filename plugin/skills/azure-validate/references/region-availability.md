@@ -7,7 +7,7 @@
 ## How to Use
 
 1. Check if your architecture includes any **limited availability** services below
-2. If yes → get the list of supported regions with enough quota with MCP tool for the service and only offer regions that support ALL services
+2. If yes → refer to the table or use the MCP tool to list supported regions with sufficient quota for that service, and only offer regions that support ALL services
 3. If all services are "available everywhere" → offer common regions
 
 ## MCP Tools Used
@@ -56,13 +56,13 @@
 
 ### Azure Kubernetes Service (AKS)
 
-It has limited quota in some regions, to get available regions with enough quota, use mcp_azure_mcp_quota tool.
+It has limited quota in some regions, to get available regions with enough quota, use `mcp_azure_mcp_quota` tool.
 
 ---
 
 ### Azure Database for PostgreSQL
 
-It has limited quota in some regions, to get available regions with enough quota, use mcp_azure_mcp_quota tool.
+It has limited quota in some regions, to get available regions with enough quota, use `mcp_azure_mcp_quota` tool.
 
 ---
 
