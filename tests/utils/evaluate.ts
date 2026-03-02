@@ -1,16 +1,16 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner";
 
 /**
  * Extract all powershell command strings from agent metadata.
  */
 function getPowershellCommands(metadata: AgentMetadata): string[] {
-    return getToolCalls(metadata, "powershell").map(event => {
-        const data = event.data as Record<string, unknown>;
-        const args = data.arguments as { command?: string } | undefined;
-        return args?.command ?? "";
-    });
+  return getToolCalls(metadata, "powershell").map(event => {
+    const data = event.data as Record<string, unknown>;
+    const args = data.arguments as { command?: string } | undefined;
+    return args?.command ?? "";
+  });
 }
 
 /**
@@ -18,7 +18,7 @@ function getPowershellCommands(metadata: AgentMetadata): string[] {
  * the given pattern.
  */
 export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
-    return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+  return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
 }
 
 /**
@@ -30,31 +30,31 @@ export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolea
  * @returns True if any file contains content matching the value pattern
  */
 export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern: RegExp, filePattern?: RegExp): boolean {
-    const scanDirectory = (dir: string): boolean => {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            if (entry.isDirectory() && entry.name !== "node_modules") {
-                if (scanDirectory(fullPath)) return true;
-            } else if (entry.isFile()) {
-                // Skip if filePattern is provided and doesn't match
-                if (filePattern && !entry.name.match(filePattern)) {
-                    continue;
-                }
-                try {
-                    const content = fs.readFileSync(fullPath, "utf-8");
-                    if (content.match(valuePattern)) {
-                        return true;
-                    }
-                } catch {
-                    // Skip files that can't be read as text
-                }
-            }
+  const scanDirectory = (dir: string): boolean => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        if (scanDirectory(fullPath)) return true;
+      } else if (entry.isFile()) {
+        // Skip if filePattern is provided and doesn't match
+        if (filePattern && !entry.name.match(filePattern)) {
+          continue;
         }
-        return false;
-    };
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (content.match(valuePattern)) {
+            return true;
+          }
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+    return false;
+  };
 
-    return scanDirectory(workspace);
+  return scanDirectory(workspace);
 }
 
 /**
@@ -62,16 +62,16 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
  * Paths are normalized to use forward slashes for cross-platform regex matching.
  */
 export function listFilesRecursive(dir: string): string[] {
-    return fs
-        .readdirSync(dir, { recursive: true })
-        .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
+  return fs
+    .readdirSync(dir, { recursive: true })
+    .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
 }
 
 /**
  * Check if any file in the list matches the given regex pattern.
  */
 export function hasFile(files: string[], pattern: RegExp): boolean {
-    return files.some(f => pattern.test(f));
+  return files.some(f => pattern.test(f));
 }
 
 /**
@@ -82,25 +82,38 @@ export function expectFiles(
   expected: RegExp[],
   unexpected: RegExp[],
 ): void {
-    const files = listFilesRecursive(workspacePath);
+  const files = listFilesRecursive(workspacePath);
 
-    for (const pattern of expected) {
+  for (const pattern of expected) {
     expect(hasFile(files, pattern)).toBe(true);
-    }
-    for (const pattern of unexpected) {
+  }
+  for (const pattern of unexpected) {
     expect(hasFile(files, pattern)).toBe(false);
-    }
-}
-  
-export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
-    const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
-
-    if (!isSkillUsed) {
-        agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
-    }
+  }
 }
 
 // ─── Agent metadata helpers ──────────────────────────────────────────────────
+
+/**
+ * Check if a skill was invoked during the session
+ */
+export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
+  return metadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .filter(event => event.data.toolName === "skill")
+    .some(event => {
+      const args = event.data.arguments;
+      return JSON.stringify(args).includes(skillName);
+    });
+}
+
+export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
+  const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
+
+  if (!isSkillUsed) {
+    agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
+  }
+}
 
 /**
  * Get all assistant messages from agent metadata
@@ -133,12 +146,39 @@ export function argsString(event: { data: Record<string, unknown> }): string {
   }
 }
 
+/**
+ * Get all tool calls made during the session
+ */
+export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): Array<{
+    id: string;
+    timestamp: string;
+    parentId: string | null;
+    ephemeral?: boolean;
+    type: "tool.execution_start";
+    data: {
+        toolCallId: string;
+        toolName: string;
+        arguments?: unknown;
+        mcpServerName?: string;
+        mcpToolName?: string;
+        parentToolCallId?: string;
+    };
+}> {
+  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
+
+  if (toolName) {
+    calls = calls.filter(event => event.data.toolName === toolName);
+  }
+
+  return calls;
+}
+
 /** Get all tool execution results (complete events) */
 export function getToolResults(metadata: AgentMetadata): Array<{
-  toolCallId: string;
-  success: boolean;
-  content: string;
-  error: string;
+    toolCallId: string;
+    success: boolean;
+    content: string;
+    error: string;
 }> {
   return metadata.events
     .filter(e => e.type === "tool.execution_complete")

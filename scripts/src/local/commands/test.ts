@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { execFileSync } from "node:child_process";
+import { parseSkillContent } from "../../shared/parse-skill.js";
 
 const TIMEOUT_MS = 120_000;
 const MARKETPLACE_NAME = "github-copilot-for-azure";
@@ -151,30 +152,26 @@ function checkSkills(pluginPath: string, verbose: boolean): TestResult {
       continue;
     }
 
-    if (!content.startsWith("---")) {
-      invalid.push({ name: skill, error: "missing YAML frontmatter" });
+    const parsed = parseSkillContent(content);
+    if (parsed === null) {
+      invalid.push({ name: skill, error: "missing or invalid YAML frontmatter" });
       continue;
     }
 
-    const fmEnd = content.indexOf("---", 3);
-    if (fmEnd === -1) {
-      invalid.push({ name: skill, error: "unclosed YAML frontmatter" });
+    const name = typeof parsed.data.name === "string" ? parsed.data.name : null;
+    const description = parsed.data.description != null ? String(parsed.data.description) : null;
+
+    if (!name) {
+      invalid.push({ name: skill, error: "frontmatter missing \"name\"" });
+      continue;
+    }
+    if (!description) {
+      invalid.push({ name: skill, error: "frontmatter missing \"description\"" });
       continue;
     }
 
-    const frontmatter = content.slice(3, fmEnd);
-    if (!/^name:\s*.+/m.test(frontmatter)) {
-      invalid.push({ name: skill, error: 'frontmatter missing "name"' });
-      continue;
-    }
-    if (!/^description:\s*.+/m.test(frontmatter) && !/^description:\s*\|/m.test(frontmatter)) {
-      invalid.push({ name: skill, error: 'frontmatter missing "description"' });
-      continue;
-    }
-
-    const nameMatch = frontmatter.match(/^name:\s*(.+)/m);
-    if (nameMatch && nameMatch[1].trim() !== skill) {
-      invalid.push({ name: skill, error: `name "${nameMatch[1].trim()}" doesn't match directory` });
+    if (name !== skill) {
+      invalid.push({ name: skill, error: `name "${name}" doesn't match directory` });
       continue;
     }
   }

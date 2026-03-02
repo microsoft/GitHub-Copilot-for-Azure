@@ -18,6 +18,7 @@ import {
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { setup } from "./setup.js";
+import { parseSkillContent } from "../../shared/parse-skill.js";
 
 const MARKETPLACE_NAME = "github-copilot-for-azure";
 const PLUGIN_NAME = "azure";
@@ -279,9 +280,9 @@ function checkSkills(pluginPath: string): SkillCheckResult {
     }
 
     const content = readFileSync(skillMdPath, "utf-8");
-    const hasFrontmatter = content.startsWith("---") && content.indexOf("---", 3) > 3;
-    if (!hasFrontmatter) {
-      invalid.push({ name: dir, error: "SKILL.md missing YAML frontmatter" });
+    const parsed = parseSkillContent(content);
+    if (parsed === null) {
+      invalid.push({ name: dir, error: "SKILL.md missing or invalid YAML frontmatter" });
       continue;
     }
 

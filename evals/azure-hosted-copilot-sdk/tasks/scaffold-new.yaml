@@ -1,0 +1,21 @@
+id: scaffold-new-001
+name: "Scaffold New — Greenfield Copilot SDK App"
+description: >
+  Verifies that when a user asks to build a new Copilot SDK app from scratch,
+  the skill routes to Step 2A and emits the correct azd init scaffold command.
+tags:
+  - scaffold
+  - happy-path
+  - step-2a
+
+inputs:
+  prompt: "Build a new Copilot SDK app"
+
+expected:
+  output_contains:
+    - "azd init --template azure-samples/copilot-sdk-service"
+  output_not_contains:
+    - "error"
+    - "failed"
+  behavior:
+    max_tool_calls: 10

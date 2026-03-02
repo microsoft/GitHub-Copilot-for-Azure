@@ -11,18 +11,31 @@ permissions:
 
 on:
   schedule:
-    # 9:00 PM PST every day (5:00 AM UTC)
-    - cron: '0 5 * * *'
-    # 12:00 AM PST every day (8:00 AM UTC)
-    - cron: '0 8 * * *'
-    # 4:00 AM PST every day (12:00 PM UTC)
-    - cron: '0 12 * * *'
+    # Nightly job to run all the integration tests, except weekends in PST.
+    # 9:00 PM PST Mon-Fri (5:00 AM UTC Tue-Sat)
+    - cron: '0 5 * * 2-6'
+    # 12:00 AM PST Tue-Sat (8:00 AM UTC Tue-Sat)
+    - cron: '0 8 * * 2-6'
+    # 4:00 AM PST Tue-Sat (12:00 PM UTC Tue-Sat)
+    - cron: '0 12 * * 2-6'
   workflow_dispatch:
     inputs:
       skills:
         description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-rbac")'
         required: true
         type: string
+      model-override:
+        description: 'Model to use for testing'
+        required: false
+        type: choice
+        options:
+          - claude-sonnet-4.5
+          - claude-opus-4.5
+      skill-test-pattern:
+        description: 'Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests'
+        required: false
+        type: string
+        default: ''
       deploy-test-pattern:
         description: 'Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests.'
         required: false
@@ -85,13 +98,13 @@ jobs:
             
             # Set deploy-test-pattern and debug based on the schedule slot
             case "$CRON" in
-              "0 5 * * *")
+              "0 5 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_21 }}" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 8 * * *")
+              "0 8 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_00 }}" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 12 * * *")
+              "0 12 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_04 }}" >> "$GITHUB_OUTPUT"
                 ;;
               *)
@@ -142,6 +155,7 @@ jobs:
     if: needs.setup.outputs.has_azure_deploy == 'true'
     uses: ./.github/workflows/test-azure-deploy.yml
     with:
+      model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
     secrets:
@@ -249,12 +263,15 @@ jobs:
         env:
           DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
           TEST_RUN_ID: all-integration
+          MODEL_OVERRIDE: ${{ inputs.model-override }}
+          SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
         run: |
+          echo test with $MODEL_OVERRIDE
           # Handle azure-ai vs azure-aigateway prefix collision
           if [ "${{ matrix.skill }}" = "azure-ai" ]; then
-            npm run test:integration azure-ai/
+            npm run test:integration azure-ai/ "$SKILL_TEST_PATTERN"
           else
-            npm run test:integration ${{ matrix.skill }}
+            npm run test:integration ${{ matrix.skill }} "$SKILL_TEST_PATTERN"
           fi
         continue-on-error: true
       
