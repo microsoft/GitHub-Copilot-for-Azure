@@ -2,7 +2,7 @@
 
 exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Prepare applications for Azure deployment, except cross-cloud migration (use azure-cloud-migrate). Generates or updates azure.yaml, infrastructure (Bicep/Terraform), and Dockerfiles. WHEN: "prepare app for Azure", "build web app and host on Azure", "migrate application to Azure", "configure Azure hosting", "create Azure app", "add Azure service", "modernize app for Azure", "generate azure.yaml", "generate Bicep", "generate Terraform", "create Azure Functions app".",
+  "description": "Prepare applications for Azure deployment, except cross-cloud scenarios (use azure-cloud-migrate). Generates or updates azure.yaml, infrastructure (Bicep/Terraform), and Dockerfiles. WHEN: "prepare app for Azure", "build web app and host on Azure", "move on-premises application to Azure", "configure Azure hosting", "create Azure app", "add Azure service", "modernize app for Azure", "generate azure.yaml", "generate Bicep", "generate Terraform", "create Azure Functions app".",
   "extractedKeywords": [
     "application",
     "applications",
@@ -26,10 +26,11 @@ exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill descripti
     "hosting",
     "identity",
     "infrastructure",
-    "migrate",
-    "migration",
     "modernize",
+    "move",
+    "on-premises",
     "prepare",
+    "scenarios",
     "security",
     "service",
     "terraform",
@@ -66,10 +67,11 @@ exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "hosting",
   "identity",
   "infrastructure",
-  "migrate",
-  "migration",
   "modernize",
+  "move",
+  "on-premises",
   "prepare",
+  "scenarios",
   "security",
   "service",
   "terraform",

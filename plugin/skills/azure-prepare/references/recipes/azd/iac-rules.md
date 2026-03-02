@@ -16,7 +16,7 @@ For **Terraform**:
 2. AVM Terraform Resource Modules
 3. AVM Terraform Utility Modules
 
-If no AVM+AZD pattern module exists for the scenario, default immediately to AVM modules in the same order (resource, then utility) instead of using non-AVM modules.
+If no pattern module exists for the active provider, default immediately to AVM modules in the same provider order (resource, then utility) instead of using non-AVM modules.
 
 ## Retrieval Strategy (Hybrid: azure-documentation MCP + Context7)
 
