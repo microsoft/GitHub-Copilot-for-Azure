@@ -1,6 +1,10 @@
 ---
 name: azure-deploy
 description: "Deploy already-prepared applications to Azure by running azd up, azd deploy, or infrastructure provisioning commands. Supports Bicep and Terraform projects. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"provision infrastructure\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\"."
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.0"
 ---
 
 # Azure Deploy
