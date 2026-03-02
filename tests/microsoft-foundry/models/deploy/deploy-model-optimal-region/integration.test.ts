@@ -30,7 +30,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tests`, () => {
   describe("skill-invocation", () => {
-  const agent = useAgentRunner();
+    const agent = useAgentRunner();
     test("invokes skill for quick deployment prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {

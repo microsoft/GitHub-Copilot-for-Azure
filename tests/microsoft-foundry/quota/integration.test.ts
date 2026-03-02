@@ -14,10 +14,10 @@
 
 import {
   useAgentRunner,
-  isSkillInvoked,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../../utils/agent-runner";
+import { isSkillInvoked } from "../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 
