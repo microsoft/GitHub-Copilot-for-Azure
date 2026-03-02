@@ -166,6 +166,7 @@ go install github.com/microsoft/waza/cmd/waza@latest
 
 **Committed eval suites** (⬢ customized graders, fixtures, and assertions):
 - `azure-prepare` — template selection, recipe composition, plan-first workflow
+- `azure-deploy` — deploy routing and AVM+AZD module-priority/fallback guidance
 
 **Auto-generated** (⬡ from SKILL.md frontmatter): all other skills
 

@@ -1,0 +1,22 @@
+# Trigger accuracy tests for azure-deploy skill
+skill: azure-deploy
+
+should_trigger_prompts:
+  - prompt: "Run azd up for my already prepared app"
+    reason: "Explicit deploy execution request"
+
+  - prompt: "Deploy my validated Azure app using Bicep templates"
+    reason: "Deploy intent with validated state"
+
+  - prompt: "My app is ready. Push it to Azure and keep AVM+AZD module preference."
+    reason: "Deploy action + AVM deploy guidance preference"
+
+should_not_trigger_prompts:
+  - prompt: "Prepare a new app for Azure from scratch"
+    reason: "Preparation belongs to azure-prepare"
+
+  - prompt: "Validate my infra plan before deploying"
+    reason: "Validation belongs to azure-validate"
+
+  - prompt: "Create a new Azure Functions app and scaffold code"
+    reason: "Creation/preparation request, not deploy-only"

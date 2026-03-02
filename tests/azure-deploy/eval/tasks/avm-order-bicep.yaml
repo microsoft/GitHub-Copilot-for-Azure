@@ -1,0 +1,43 @@
+# Task: Deploy guidance prefers AVM+AZD pattern modules
+id: avm-order-bicep-001
+name: AVM+AZD Priority - Bicep Deploy
+description: |
+  Validate deploy guidance prefers AVM+AZD pattern modules first,
+  followed by AVM resource and utility modules for Bicep paths.
+
+tags:
+  - deploy
+  - bicep
+  - avm
+  - azd
+
+inputs:
+  prompt: |
+    My app is already prepared and validated.
+    Give me deploy guidance and module preference order for Bicep.
+    Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
+  context:
+    phase: deploy
+    iac: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "AVM"
+    - "deploy"
+    - "pattern"
+
+graders:
+  - name: avm_pattern_first
+    type: regex
+    config:
+      must_match:
+        - "(?i)AVM\\+AZD|AZD pattern|pattern modules"
+
+  - name: includes_resource_and_utility_fallback
+    type: regex
+    config:
+      must_match:
+        - "(?i)resource modules"
+        - "(?i)utility modules"
