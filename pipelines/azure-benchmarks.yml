@@ -20,9 +20,9 @@ stages:
     displayName: 'Run Copilot Benchmarks'
     steps:
     - task: UsePythonVersion@0
-      displayName: 'Use Python 3.14'
+      displayName: 'Use Python 3.12'
       inputs:
-        versionSpec: '3.14'
+        versionSpec: '3.12'
 
     - task: AzureCLI@2
       displayName: 'Run Copilot Benchmarks script'
