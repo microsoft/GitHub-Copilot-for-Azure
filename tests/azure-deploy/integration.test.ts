@@ -38,11 +38,14 @@ const brownfieldTestTimeoutMs = 2700000;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
+    const followUp = ["Go with recommended options."];
     test("invokes azure-deploy skill for deployment prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Run azd up to deploy my already-prepared app to Azure"
+            prompt: "Run azd up to deploy my already-prepared app to Azure",
+            nonInteractive: true,
+            followUp,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -60,7 +63,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now."
+            prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
+            nonInteractive: true,
+            followUp,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -78,7 +83,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up."
+            prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
+            nonInteractive: true,
+            followUp,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
