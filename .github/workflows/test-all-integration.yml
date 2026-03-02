@@ -98,13 +98,13 @@ jobs:
             
             # Set deploy-test-pattern and debug based on the schedule slot
             case "$CRON" in
-              "0 5 * * *")
+              "0 5 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_21 }}" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 8 * * *")
+              "0 8 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_00 }}" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 12 * * *")
+              "0 12 * * 2-6")
                 echo "debug=${{ env.SCHEDULED_DEBUG_04 }}" >> "$GITHUB_OUTPUT"
                 ;;
               *)
