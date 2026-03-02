@@ -32,8 +32,12 @@ jobs:
         working-directory: ./scripts
         run: npm ci
 
-      - name: Typecheck
+      - name: Typecheck tests
         working-directory: ./tests
+        run: npm run typecheck
+
+      - name: Typecheck scripts
+        working-directory: ./scripts
         run: npm run typecheck
 
       - name: Lint test
