@@ -43,6 +43,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Workflow");
       expect(skill.content).toContain("## Error Handling");
     });
+
+    test("identifies networking as hard-to-change decision", () => {
+      const content = skill.content.toLowerCase();
+      // Networking is a Day-0 decision that's hard to change after cluster creation
+      expect(content).toMatch(/network|cni|pod ip/i);
+    });
   });
 
   describe("Day-0 vs Day-1 Guidance", () => {
