@@ -2,7 +2,7 @@
 
 exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize apps or create-and-deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: "create app", "build web app", "create API", "create serverless HTTP API", "create frontend", "create back end", "build a service", "modernize application", "update application", "add authentication", "add caching", "host on Azure", "create and deploy", "create and deploy to Azure App Service", "deploy to Azure", "deploy to Azure using Terraform", "deploy to Azure App Service using Terraform", "deploy to Azure Container Apps using Terraform", "Terraform", "use Terraform", "Terraform deployment", "generate Terraform", "Bicep", "generate Bicep", "Azure Functions", "function app", "HTTP trigger", "timer trigger", "service bus trigger", "event-driven function", "Azure App Service", "Azure Container Apps", "Azure Static Web Apps", "set up my Azure application", "prepare my Azure application to use Key Vault", "managed identity".",
+  "description": "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize apps or create-and-deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: "create app", "build web app", "create API", "create serverless HTTP API", "create frontend", "create back end", "build a service", "modernize application", "update application", "add authentication", "add caching", "host on Azure", "create and deploy", "create and deploy to Azure App Service", "deploy to Azure", "deploy to Azure using Terraform", "deploy to Azure App Service using Terraform", "deploy to Azure Container Apps using Terraform", "generate Terraform", "generate Bicep", "function app", "HTTP trigger", "timer trigger", "service bus trigger", "event-driven function", "set up my Azure application", "prepare my Azure application to use Key Vault", "managed identity".",
   "extractedKeywords": [
     "application",
     "apps",
@@ -24,7 +24,6 @@ exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill descripti
     "event-driven",
     "frontend",
     "function",
-    "functions",
     "generate",
     "host",
     "http",
@@ -37,7 +36,6 @@ exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill descripti
     "security",
     "serverless",
     "service",
-    "static",
     "terraform",
     "timer",
     "trigger",
@@ -74,7 +72,6 @@ exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "event-driven",
   "frontend",
   "function",
-  "functions",
   "generate",
   "host",
   "http",
@@ -87,7 +84,6 @@ exports[`azure-prepare - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "security",
   "serverless",
   "service",
-  "static",
   "terraform",
   "timer",
   "trigger",
