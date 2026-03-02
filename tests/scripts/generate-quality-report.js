@@ -140,6 +140,7 @@ function loadTokenSummary(testRunPath) {
   return JSON.parse(fs.readFileSync(summaryPath, "utf-8"));
 }
 
+// eslint-disable-next-line no-unused-vars
 function loadPerTestTokenUsage(testRunPath) {
   const result = {};
   if (!fs.existsSync(testRunPath)) return result;
@@ -167,7 +168,7 @@ function loadPerTestTokenUsage(testRunPath) {
  */
 function extractSkillArea(name) {
   // Try JUnit classname format first: "skill_sub - Integration Tests..."
-  let match = name.match(/^(.+?)\s*-\s*Integration Tests/);
+  const match = name.match(/^(.+?)\s*-\s*Integration Tests/);
   if (match) {
     let skillPart = match[1].trim();
     // "microsoft-foundry_deploy-model" → "microsoft-foundry/deploy-model"
@@ -193,6 +194,7 @@ function extractSkillArea(name) {
  * e.g. "..._Tests_skill-invocation_invokes_skill_for_simple_model_deployment_prompt"
  * → "invokes skill for simple model deployment prompt"
  */
+// eslint-disable-next-line no-unused-vars
 function extractTestCase(dirName) {
   const marker = "_-_Integration_Tests_";
   const idx = dirName.indexOf(marker);
@@ -246,7 +248,7 @@ function extractToolCalls(testRunPath, dirName) {
           if (argsMatch) {
             try {
               const parsed = JSON.parse(argsMatch[1]);
-              args = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === 'string' ? v.substring(0, 80) : v}`).join(", ");
+              args = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
             } catch { args = argsMatch[1].substring(0, 100); }
           }
           const respMatch = inner.match(/(?:response|error):\s*([\s\S]*?)$/);
@@ -276,7 +278,7 @@ function extractToolCalls(testRunPath, dirName) {
 
 // ─── Build Area Summaries ────────────────────────────────────────────────────
 
-function buildAreaSummaries(junit, tokenEntries, testRunPath) {
+function buildAreaSummaries(junit, tokenEntries) {
   const areaMap = new Map();
 
   // Process JUnit test cases
@@ -806,7 +808,7 @@ function main() {
 
   // Build report sections
   console.log("📊 Building area summaries...");
-  const areas = buildAreaSummaries(junit, tokenEntries, testRunPath);
+  const areas = buildAreaSummaries(junit, tokenEntries);
 
   console.log("💬 Building token usage details...");
   const tokenUsage = buildTokenUsage(tokenEntries);
