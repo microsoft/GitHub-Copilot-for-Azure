@@ -87,16 +87,23 @@ description: "Instrument web apps to send telemetry to Azure Application Insight
 
 A skill is **High** if:
 - All Medium-High criteria met
-- Description is distinctive and concise, using quoted `WHEN:` triggers
+- Has `compatibility` field documenting requirements
 - Has examples section (optional but recommended)
+
+**Strongly recommended** (reported as suggestions if missing):
+- `license` field — identifies the license applied to the skill
+- `metadata.version` — tracks the skill version for consumers
 
 **Example of High adherence:**
 ```yaml
 name: appinsights-instrumentation
 description: "Instrument web apps to send telemetry to Azure Application Insights for monitoring and diagnostics. WHEN: \"add App Insights\", \"instrument my app\", \"set up monitoring\", \"add telemetry\", \"track requests\"."
+license: MIT
+compatibility: Supports ASP.NET Core (.NET 6+), Node.js. Requires App Insights resource.
+metadata:
+  author: example-org
+  version: "1.0"
 ```
-
-> See [Check 5](#5-plugin-skill-frontmatter-restrictions) — only `name` and `description` are valid frontmatter fields for plugin skills.
 
 ---
 
@@ -176,11 +183,45 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 - Present in small skill sets → informational note only
 - Absent → no penalty (preferred for cross-model compatibility)
 
-### 5. Plugin Skill Frontmatter Restrictions
+### 5. Compatibility Field
 
-> ⚠️ **Plugin skills (under `plugin/skills/`) only support `name` and `description` in frontmatter.** Fields like `compatibility`, `metadata`, `license`, and `allowed-tools` are not recognized by the GitHub Copilot for Azure plugin and will cause "unknown fields ignored" warnings when skills are loaded. Do not add these fields. If they already exist in a plugin skill's frontmatter, remove them.
+Per the spec, `compatibility` is optional (max 500 characters). Indicates environment requirements.
 
-### 6. SKILL.md Size Limits
+**What to include:**
+- Required tools (azd, az cli, Docker)
+- Supported frameworks (.NET 6+, Node.js 18+)
+- Required Azure resources
+- Optional dependencies
+
+**Example:**
+```yaml
+compatibility: |
+  Requires: Azure CLI, azd CLI
+  Supports: Node.js, Python, .NET, Java
+  Optional: Docker (for containerized apps)
+```
+
+### 6. Optional Spec Fields
+
+The [agentskills.io spec](https://agentskills.io/specification) defines additional optional fields. Sensei **strongly recommends** `license` and `metadata.version` — report a suggestion in the summary if either is missing.
+
+| Field | Spec Status | Sensei Policy |
+|-------|-------------|---------------|
+| `license` | Optional | **Strongly recommended.** Report suggestion if missing. |
+| `metadata.version` | Optional | **Strongly recommended.** Report suggestion if missing. |
+| `metadata.*` (other) | Optional | Preserve if present, do not require. |
+| `allowed-tools` | Experimental | Preserve if present, do not require. |
+
+> ⚠️ **Warning:** When improving frontmatter, never remove these fields if they already exist.
+
+**Example suggestions in summary:**
+```
+SUGGESTIONS:
+• Add license field (e.g., license: MIT)
+• Add metadata.version field (e.g., metadata: { version: "1.0" })
+```
+
+### 7. SKILL.md Size Limits
 
 Per the spec, SKILL.md should follow progressive disclosure:
 
@@ -194,7 +235,7 @@ Per the spec, SKILL.md should follow progressive disclosure:
 
 **Line count check:** The spec recommends keeping SKILL.md under 500 lines. Report a warning if exceeded.
 
-### 7. YAML Description Safety
+### 8. YAML Description Safety
 
 Descriptions containing YAML special characters (especially `: ` colon-space) **must** use:
 - Double-quoted string (`"..."`) — **required format**
@@ -210,7 +251,7 @@ Do NOT use `>-` folded scalars (incompatible with skills.sh per [microsoft/GitHu
 - Plain description with `: ` → **Invalid** (will fail to parse)
 - Description > 200 chars without `>-` → **Warning** (maintainability concern)
 
-### 8. Security Restrictions
+### 9. Security Restrictions
 
 Per Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf):
 
@@ -225,7 +266,7 @@ Per Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Compl
 
 **Advisory only** — informational, does not change scoring levels.
 
-### 9. Body Structure Quality
+### 10. Body Structure Quality
 
 Checks whether the SKILL.md body follows Anthropic's recommended structure for effective instructions.
 
@@ -234,7 +275,7 @@ Checks whether the SKILL.md body follows Anthropic's recommended structure for e
 - **Examples section** — Has at least one example scenario
 - **Error handling** — Documents common failure modes and recovery steps
 
-### 10. Body Progressive Disclosure
+### 11. Body Progressive Disclosure
 
 Checks whether SKILL.md properly uses progressive disclosure — keeping core instructions in SKILL.md and detailed reference material in `references/`.
 
@@ -281,8 +322,9 @@ function scoreSkill(skill):
     if containsAntiTriggers(skill.description):
         warn "DO NOT USE FOR: causes keyword contamination on Sonnet — remove"
     
-    # High score: distinctive WHEN: triggers and concise description
-    if score == "Medium-High":
+    # Check for compatibility
+    hasCompatibility = skill.compatibility != null
+    if score == "Medium-High" AND hasCompatibility:
         score = "High"
     
     return score
@@ -300,14 +342,16 @@ function isValidName(name):
 
 function collectSuggestions(skill):
     suggestions = []
+    if skill.license == null:
+        suggestions.add("Add license field (e.g., license: MIT)")
+    if skill.metadata == null OR skill.metadata.version == null:
+        suggestions.add("Add metadata.version field (e.g., metadata: { version: \"1.0\" })")
     if usesBlockScalar(skill.rawDescription):
         suggestions.add("Use inline double-quoted string for description (>- incompatible with skills.sh)")
     if containsAntiTriggers(skill.description):
         suggestions.add("Remove DO NOT USE FOR: — causes keyword contamination on Claude Sonnet")
     if wordCount(skill.description) > 60:
         suggestions.add("Trim description to ≤60 words for cross-model reliability")
-    if hasUnknownFrontmatterFields(skill):
-        suggestions.add("Remove unknown frontmatter fields (metadata, compatibility, license) — not supported by plugin and cause warnings")
     return suggestions
 ```
 
