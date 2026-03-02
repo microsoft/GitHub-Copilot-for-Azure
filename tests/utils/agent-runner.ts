@@ -38,6 +38,34 @@ function getBundledCliPath(): string {
   return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
 }
 
+export interface TokenUsage {
+  /** Total input tokens across all LLM calls */
+  inputTokens: number;
+  /** Total output tokens across all LLM calls */
+  outputTokens: number;
+  /** Total cache read tokens */
+  cacheReadTokens: number;
+  /** Total cache write tokens */
+  cacheWriteTokens: number;
+  /** Total estimated cost in dollars */
+  totalCost: number;
+  /** Total API duration in milliseconds */
+  totalApiDurationMs: number;
+  /** Number of LLM API calls made */
+  apiCallCount: number;
+  /** Model used */
+  model: string;
+  /** Per-call breakdown */
+  perCallUsage: Array<{
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    cost: number;
+    durationMs: number;
+    initiator?: string;
+  }>;
+}
+
 export interface AgentMetadata {
   /**
    * Events emitted by the Copilot SDK agent during the agent run.
@@ -49,6 +77,11 @@ export interface AgentMetadata {
    * These comments will be added to the agentMetadata markdown for an LLM or human reviewer to read.
    */
   testComments: string[];
+
+  /**
+   * Token usage and cost data extracted from assistant.usage and session.shutdown events.
+   */
+  tokenUsage?: TokenUsage;
 }
 
 /**
@@ -112,6 +145,24 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   lines.push("");
   lines.push(config.prompt);
   lines.push("");
+
+  // Token usage summary
+  if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
+    const t = agentMetadata.tokenUsage;
+    lines.push("# Token Usage");
+    lines.push("");
+    lines.push(`| Metric | Value |`);
+    lines.push(`|--------|-------|`);
+    lines.push(`| Model | ${t.model} |`);
+    lines.push(`| Input Tokens | ${t.inputTokens.toLocaleString()} |`);
+    lines.push(`| Output Tokens | ${t.outputTokens.toLocaleString()} |`);
+    lines.push(`| Cache Read | ${t.cacheReadTokens.toLocaleString()} |`);
+    lines.push(`| Cache Write | ${t.cacheWriteTokens.toLocaleString()} |`);
+    lines.push(`| API Calls | ${t.apiCallCount} |`);
+    lines.push(`| Total Cost | $${t.totalCost.toFixed(4)} |`);
+    lines.push(`| API Duration | ${(t.totalApiDurationMs / 1000).toFixed(1)}s |`);
+    lines.push("");
+  }
 
   // Process events in chronological order
   lines.push("# Assistant");
@@ -296,10 +347,64 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${filePath}`);
     }
+
+    // Write token usage JSON alongside the markdown report
+    if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
+      writeTokenUsageJson(config, agentMetadata, dir);
+    }
   } catch (error) {
     // Don't fail the test if report generation fails
     if (process.env.DEBUG) {
       console.error("Failed to write markdown report:", error);
+    }
+  }
+}
+
+/**
+ * Write token usage data to a JSON file for dashboard consumption.
+ * Also appends to a consolidated token-summary.json in the reports root.
+ */
+function writeTokenUsageJson(config: AgentRunConfig, agentMetadata: AgentMetadata, reportDir: string): void {
+  try {
+    const usage = agentMetadata.tokenUsage!;
+    const testName = getTestName();
+    const record = {
+      testName,
+      prompt: config.prompt,
+      timestamp: new Date().toISOString(),
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      totalCost: usage.totalCost,
+      totalApiDurationMs: usage.totalApiDurationMs,
+      apiCallCount: usage.apiCallCount,
+      perCallUsage: usage.perCallUsage,
+    };
+
+    // Write per-test token JSON
+    const tokenFile = path.join(reportDir, "token-usage.json");
+    fs.writeFileSync(tokenFile, JSON.stringify(record, null, 2), "utf-8");
+
+    // Append to consolidated summary at reports root
+    const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+    const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.json");
+    let summary: typeof record[] = [];
+    if (fs.existsSync(summaryFile)) {
+      try {
+        summary = JSON.parse(fs.readFileSync(summaryFile, "utf-8"));
+      } catch { /* start fresh */ }
+    }
+    summary.push(record);
+    fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 2), "utf-8");
+
+    if (process.env.DEBUG) {
+      console.log(`Token usage written to: ${tokenFile}`);
+    }
+  } catch (error) {
+    if (process.env.DEBUG) {
+      console.error("Failed to write token usage JSON:", error);
     }
   }
 }
@@ -441,6 +546,66 @@ export function useAgentRunner() {
       await session.send({ prompt: config.prompt });
       await done;
 
+      // Extract token usage from assistant.usage events
+      const tokenUsage: TokenUsage = {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalCost: 0,
+        totalApiDurationMs: 0,
+        apiCallCount: 0,
+        model: "claude-sonnet-4.5",
+        perCallUsage: [],
+      };
+
+      for (const event of agentMetadata.events) {
+        if (event.type === "assistant.usage") {
+          tokenUsage.inputTokens += event.data.inputTokens ?? 0;
+          tokenUsage.outputTokens += event.data.outputTokens ?? 0;
+          tokenUsage.cacheReadTokens += event.data.cacheReadTokens ?? 0;
+          tokenUsage.cacheWriteTokens += event.data.cacheWriteTokens ?? 0;
+          tokenUsage.totalCost += event.data.cost ?? 0;
+          tokenUsage.totalApiDurationMs += event.data.duration ?? 0;
+          tokenUsage.apiCallCount++;
+          tokenUsage.model = event.data.model || tokenUsage.model;
+          tokenUsage.perCallUsage.push({
+            model: event.data.model,
+            inputTokens: event.data.inputTokens ?? 0,
+            outputTokens: event.data.outputTokens ?? 0,
+            cost: event.data.cost ?? 0,
+            durationMs: event.data.duration ?? 0,
+            initiator: event.data.initiator,
+          });
+        }
+        // Also capture aggregate from session.shutdown if available
+        if (event.type === "session.shutdown" && event.data.modelMetrics) {
+          for (const [model, metrics] of Object.entries(event.data.modelMetrics)) {
+            tokenUsage.model = model;
+            // Prefer shutdown totals if usage events were missed
+            if (tokenUsage.apiCallCount === 0) {
+              tokenUsage.inputTokens = metrics.usage.inputTokens;
+              tokenUsage.outputTokens = metrics.usage.outputTokens;
+              tokenUsage.cacheReadTokens = metrics.usage.cacheReadTokens;
+              tokenUsage.cacheWriteTokens = metrics.usage.cacheWriteTokens;
+              tokenUsage.totalCost = metrics.requests.cost;
+              tokenUsage.apiCallCount = metrics.requests.count;
+            }
+          }
+        }
+      }
+
+      agentMetadata.tokenUsage = tokenUsage;
+
+      // Log token usage summary
+      if (tokenUsage.apiCallCount > 0) {
+        console.log(
+          `\n📊 Token Usage: ${tokenUsage.inputTokens.toLocaleString()} in / ${tokenUsage.outputTokens.toLocaleString()} out | ` +
+          `${tokenUsage.apiCallCount} API calls | Cost: $${tokenUsage.totalCost.toFixed(4)} | ` +
+          `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
+        );
+      }
+
       // Send follow-up prompts
       for (const followUpPrompt of config.followUp ?? []) {
         isComplete = false;
@@ -461,6 +626,19 @@ export function useAgentRunner() {
   }
 
   return { run };
+}
+
+/**
+ * Check if a skill was invoked during the session
+ */
+export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string): boolean {
+  return agentMetadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .filter(event => event.data.toolName === "skill")
+    .some(event => {
+      const args = event.data.arguments;
+      return JSON.stringify(args).includes(skillName);
+    });
 }
 
 /**
@@ -516,6 +694,19 @@ export function doesAssistantMessageIncludeKeyword(
     }
     return message.toLowerCase().includes(keyword.toLowerCase());
   });
+}
+
+/**
+ * Get all tool calls made during the session
+ */
+export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): SessionEvent[] {
+  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
+
+  if (toolName) {
+    calls = calls.filter(event => event.data.toolName === toolName);
+  }
+
+  return calls;
 }
 
 // Track skip reason for reporting

@@ -292,6 +292,10 @@ jobs:
             echo "No skill report found"
           fi
 
+      - name: Generate quality report
+        if: always()
+        run: npm run quality-report || true
+
       - name: Export report
         if: always()
         id: export-report
