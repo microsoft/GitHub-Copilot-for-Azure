@@ -4,7 +4,7 @@ description: "Deploy already-prepared applications to Azure by running azd up, a
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Azure Deploy
