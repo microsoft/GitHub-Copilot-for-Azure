@@ -216,13 +216,25 @@ Docs: https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-moni
 Prometheus overview: https://learn.microsoft.com/azure/azure-monitor/metrics/prometheus-metrics-overview
 
 ### 8. Upgrades & Patching
-- Establish an upgrade strategy and ensure workloads are upgrade-safe (PDBs, probes, etc.).
-Docs: AKS patch/upgrade guidance: https://learn.microsoft.com/azure/architecture/operator-guides/aks/aks-upgrade-practices
+- Configure **Maintenance Windows** for controlled upgrade timing: https://learn.microsoft.com/en-us/azure/aks/planned-maintenance
+- Enable **auto-upgrades** for cluster and node OS to stay up-to-date with security patches and Kubernetes versions
+- Consider **LTS versions** for enterprise stability (2-year support) by upgrading your cluster to the AKS Premium tier: https://learn.microsoft.com/en-us/azure/aks/long-term-support
 
-For node OS patching:
-- Node OS auto-upgrade channels: https://learn.microsoft.com/azure/aks/auto-upgrade-node-os-image  
-For cluster version auto-upgrades:
-- Cluster auto-upgrade channels: https://learn.microsoft.com/azure/aks/auto-upgrade-cluster
+### 9. Performance
+- Use **Ephemeral OS disks** (`--node-osdisk-type Ephemeral`) for faster node startup
+- Select **Azure Linux** as node OS (smaller footprint, faster boot)
+- Enable **KEDA** for event-driven autoscaling beyond HPA
+
+### 10. Reliability
+- Deploy across **3 Availability Zones** (`--zones 1 2 3`)
+- Use **Standard tier** for zone-redundant control plane + 99.95% SLA for API server availability
+- Enable **Microsoft Defender for Containers** for runtime protection
+- Configure **PodDisruptionBudgets** for all production workloads
+
+### 11. Cost Controls
+- Use **Spot node pools** for batch/interruptible workloads (up to 90% savings)
+- **Stop/Start** dev/test clusters: `az aks stop/start`
+- Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
 ---
 
@@ -303,9 +315,10 @@ Return a final output with:
 A high-quality answer:
 - flags Day-0 irreversible choices (networking, API server access),
 - includes identity/secrets/policy defaults (Workload ID + Key Vault CSI + safeguards),
-- includes observability baseline,
-- includes upgrade/patch plan,
-- includes cost visibility.
+- recommends availability zones + Standard tier for production,
+- includes performance defaults (ephemeral disks, Azure Linux),
+- includes observability + upgrade/patching plan,
+- addresses cost (spot pools, stop/start for dev).
 
 ---
 
