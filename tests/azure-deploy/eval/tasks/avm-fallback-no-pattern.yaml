@@ -33,9 +33,7 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)no .*pattern module|if no .*pattern"
-        - "(?i)AVM.*resource"
-        - "(?i)AVM.*utility"
+        - "(?is)(no .*pattern module|if no .*pattern).*AVM.*resource.*AVM.*utility"
 
   - name: avoids_non_avm_fallback
     type: regex

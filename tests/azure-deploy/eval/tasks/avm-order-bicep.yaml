@@ -39,5 +39,4 @@ graders:
     type: regex
     config:
       must_match:
-        - "(?i)resource modules"
-        - "(?i)utility modules"
+        - "(?is)(AVM\\+AZD|AZD pattern|pattern modules).*resource modules.*utility modules"

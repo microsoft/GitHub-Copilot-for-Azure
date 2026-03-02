@@ -282,7 +282,7 @@ For Terraform module selection, enforce this order:
 2. AVM Terraform Resource Modules
 3. AVM Terraform Utility Modules
 
-Use Microsoft Learn MCP for current guidance and AVM context first, then use Context7 only as supplemental examples if required.
+Use `mcp_azure_mcp_documentation` (`azure-documentation`) for current guidance and AVM context first, then use Context7 only as supplemental examples if required.
 
 ## Migration from Pure Terraform
 
