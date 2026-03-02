@@ -94,7 +94,7 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
    - Check description length and word count (≤60 words)
    - Check triggers (WHEN: preferred, USE FOR: accepted)
    - Warn on "DO NOT USE FOR:" (risky in multi-skill environments)
-   - Preserve optional spec fields (`license`, `metadata`, `allowed-tools`) if present
+   - Only `name` and `description` are valid frontmatter fields for plugin skills; do not add `metadata`, `compatibility`, `license`, or other fields
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add WHEN: triggers (stay under 60 words and 1024 chars)
@@ -116,30 +116,20 @@ Sensei validates skills against the [agentskills.io specification](https://agent
 | **Low** | Basic description, no explicit triggers |
 | **Medium** | Has trigger keywords/phrases, description > 150 chars, >60 words |
 | **Medium-High** | Has "WHEN:" (preferred) or "USE FOR:" triggers, ≤60 words |
-| **High** | Medium-High + compatibility field |
+| **High** | Medium-High + description is distinctive and concise |
 
 **Target: Medium-High** (distinctive triggers, concise description)
 
 > ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (15+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
 
-**Strongly recommended** (reported as suggestions if missing):
-- `license` — identifies the license applied to the skill
-- `metadata.version` — tracks the skill version for consumers
-
 ## Frontmatter Template
 
-Per the [agentskills.io spec](https://agentskills.io/specification), required and optional fields:
+Plugin skills only support `name` and `description` in frontmatter. Do not add other fields (`metadata`, `compatibility`, `license`, etc.) — they will cause "unknown fields ignored" warnings.
 
 ```yaml
 ---
 name: skill-name
 description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"trigger 1\", \"trigger 2\", \"trigger 3\"."
-license: MIT
-metadata:
-  version: "1.0"
-# Other optional spec fields — preserve if already present:
-# metadata.author: example-org
-# allowed-tools: Bash(git:*) Read
 ---
 ```
 
