@@ -236,6 +236,13 @@ Prometheus overview: https://learn.microsoft.com/azure/azure-monitor/metrics/pro
 - **Stop/Start** dev/test clusters: `az aks stop/start`
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
+### 12. Security
+- **Start secure by default**: Deploy supported AKS versions with Microsoft-recommended defaults; keep clusters up to date
+- **Use identity everywhere**: Secure access with Microsoft Entra ID for control plane, workloads (Workload Identity), and node access—avoid static credentials
+- **Encrypt by default**: Enable encryption at rest for etcd/API server data; use in-transit encryption for node-to-node traffic
+- **Lock down supply chain**: Allow only signed, policy-approved container images (use Azure Policy + ImagePolicyWebhook or Ratify)
+- **Isolate tenants**: Use namespaces, network policies, and scoped logging to reduce blast radius
+
 ---
 
 ## Step-by-Step Execution (Agent Behavior)
@@ -315,6 +322,7 @@ Return a final output with:
 A high-quality answer:
 - flags Day-0 irreversible choices (networking, API server access),
 - includes identity/secrets/policy defaults (Workload ID + Key Vault CSI + safeguards),
+- includes security defaults (Entra ID everywhere, encryption, image signing, network policies),
 - recommends availability zones + Standard tier for production,
 - includes performance defaults (ephemeral disks, Azure Linux),
 - includes observability + upgrade/patching plan,
