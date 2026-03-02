@@ -3,8 +3,8 @@ name: azure-prepare
 description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize apps or create-and-deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: \"create app\", \"build web app\", \"create API\", \"create serverless HTTP API\", \"create frontend\", \"create back end\", \"build a service\", \"modernize application\", \"update application\", \"add authentication\", \"add caching\", \"host on Azure\", \"create and deploy\", \"create and deploy to Azure App Service\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps using Terraform\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"HTTP trigger\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"set up my Azure application\", \"prepare my Azure application to use Key Vault\", \"managed identity\"."
 license: MIT
 metadata:
-	author: Microsoft
-	version: "1.0.0"
+  author: Microsoft
+  version: "1.0.1"
 ---
 
 # Azure Prepare
