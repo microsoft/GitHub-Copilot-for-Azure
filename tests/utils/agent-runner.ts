@@ -391,11 +391,9 @@ function writeTokenUsageJson(config: AgentRunConfig, agentMetadata: AgentMetadat
     const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
     const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.json");
     let summary: typeof record[] = [];
-    if (fs.existsSync(summaryFile)) {
-      try {
-        summary = JSON.parse(fs.readFileSync(summaryFile, "utf-8"));
-      } catch { /* start fresh */ }
-    }
+    try {
+      summary = JSON.parse(fs.readFileSync(summaryFile, "utf-8"));
+    } catch { /* file doesn't exist or is invalid — start fresh */ }
     summary.push(record);
     fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 2), "utf-8");
 
