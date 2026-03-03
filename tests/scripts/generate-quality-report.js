@@ -140,23 +140,6 @@ function loadTokenSummary(testRunPath) {
   return JSON.parse(fs.readFileSync(summaryPath, "utf-8"));
 }
 
-// eslint-disable-next-line no-unused-vars
-function loadPerTestTokenUsage(testRunPath) {
-  const result = {};
-  if (!fs.existsSync(testRunPath)) return result;
-
-  const subdirs = fs.readdirSync(testRunPath, { withFileTypes: true })
-    .filter(e => e.isDirectory());
-
-  for (const dir of subdirs) {
-    const tokenFile = path.join(testRunPath, dir.name, "token-usage.json");
-    if (fs.existsSync(tokenFile)) {
-      result[dir.name] = JSON.parse(fs.readFileSync(tokenFile, "utf-8"));
-    }
-  }
-  return result;
-}
-
 // ─── Skill Area Extraction ───────────────────────────────────────────────────
 
 /**
@@ -187,22 +170,6 @@ function extractSkillArea(name) {
   // Fallback
   const parts = name.split("_");
   return parts[0];
-}
-
-/**
- * Extract test case name from directory name.
- * e.g. "..._Tests_skill-invocation_invokes_skill_for_simple_model_deployment_prompt"
- * → "invokes skill for simple model deployment prompt"
- */
-// eslint-disable-next-line no-unused-vars
-function extractTestCase(dirName) {
-  const marker = "_-_Integration_Tests_";
-  const idx = dirName.indexOf(marker);
-  if (idx === -1) return dirName;
-
-  const afterMarker = dirName.substring(idx + marker.length);
-  // Replace underscores with spaces and clean up
-  return afterMarker.replace(/_/g, " ");
 }
 
 // ─── Tool Call Extraction from Markdown ──────────────────────────────────────

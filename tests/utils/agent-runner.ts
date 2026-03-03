@@ -47,8 +47,6 @@ export interface TokenUsage {
   cacheReadTokens: number;
   /** Total cache write tokens */
   cacheWriteTokens: number;
-  /** Total estimated cost in dollars */
-  totalCost: number;
   /** Total API duration in milliseconds */
   totalApiDurationMs: number;
   /** Number of LLM API calls made */
@@ -60,7 +58,6 @@ export interface TokenUsage {
     model: string;
     inputTokens: number;
     outputTokens: number;
-    cost: number;
     durationMs: number;
     initiator?: string;
   }>;
@@ -159,7 +156,6 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
     lines.push(`| Cache Read | ${t.cacheReadTokens.toLocaleString()} |`);
     lines.push(`| Cache Write | ${t.cacheWriteTokens.toLocaleString()} |`);
     lines.push(`| API Calls | ${t.apiCallCount} |`);
-    lines.push(`| Total Cost | $${t.totalCost.toFixed(4)} |`);
     lines.push(`| API Duration | ${(t.totalApiDurationMs / 1000).toFixed(1)}s |`);
     lines.push("");
   }
@@ -377,7 +373,6 @@ function writeTokenUsageJson(config: AgentRunConfig, agentMetadata: AgentMetadat
       outputTokens: usage.outputTokens,
       cacheReadTokens: usage.cacheReadTokens,
       cacheWriteTokens: usage.cacheWriteTokens,
-      totalCost: usage.totalCost,
       totalApiDurationMs: usage.totalApiDurationMs,
       apiCallCount: usage.apiCallCount,
       perCallUsage: usage.perCallUsage,
@@ -550,7 +545,6 @@ export function useAgentRunner() {
         outputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
-        totalCost: 0,
         totalApiDurationMs: 0,
         apiCallCount: 0,
         model: "claude-sonnet-4.5",
@@ -563,7 +557,6 @@ export function useAgentRunner() {
           tokenUsage.outputTokens += event.data.outputTokens ?? 0;
           tokenUsage.cacheReadTokens += event.data.cacheReadTokens ?? 0;
           tokenUsage.cacheWriteTokens += event.data.cacheWriteTokens ?? 0;
-          tokenUsage.totalCost += event.data.cost ?? 0;
           tokenUsage.totalApiDurationMs += event.data.duration ?? 0;
           tokenUsage.apiCallCount++;
           tokenUsage.model = event.data.model || tokenUsage.model;
@@ -571,7 +564,6 @@ export function useAgentRunner() {
             model: event.data.model,
             inputTokens: event.data.inputTokens ?? 0,
             outputTokens: event.data.outputTokens ?? 0,
-            cost: event.data.cost ?? 0,
             durationMs: event.data.duration ?? 0,
             initiator: event.data.initiator,
           });
@@ -586,7 +578,6 @@ export function useAgentRunner() {
               tokenUsage.outputTokens = metrics.usage.outputTokens;
               tokenUsage.cacheReadTokens = metrics.usage.cacheReadTokens;
               tokenUsage.cacheWriteTokens = metrics.usage.cacheWriteTokens;
-              tokenUsage.totalCost = metrics.requests.cost;
               tokenUsage.apiCallCount = metrics.requests.count;
             }
           }
@@ -599,7 +590,7 @@ export function useAgentRunner() {
       if (tokenUsage.apiCallCount > 0) {
         console.log(
           `\n📊 Token Usage: ${tokenUsage.inputTokens.toLocaleString()} in / ${tokenUsage.outputTokens.toLocaleString()} out | ` +
-          `${tokenUsage.apiCallCount} API calls | Cost: $${tokenUsage.totalCost.toFixed(4)} | ` +
+          `${tokenUsage.apiCallCount} API calls | ` +
           `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
         );
       }
