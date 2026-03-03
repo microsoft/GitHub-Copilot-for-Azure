@@ -16,6 +16,7 @@
     "coverage:grid": "node scripts/generate-coverage-grid.js",
     "report": "npx tsx scripts/generate-test-reports.ts",
     "results": "node scripts/show-test-results.js",
+    "quality-report": "node scripts/generate-quality-report.js",
     "update:snapshots": "node scripts/update-snapshots.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
