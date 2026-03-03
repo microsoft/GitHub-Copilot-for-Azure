@@ -1,10 +1,10 @@
 ---
 name: azure-prepare
-description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: \"create app\", \"build web app\", \"create API\", \"create serverless HTTP API\", \"create frontend\", \"create back end\", \"build a service\", \"modernize application\", \"update application\", \"add authentication\", \"add caching\", \"host on Azure\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps\", \"deploy to Azure Container Apps using Terraform\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"containerized Node.js app\", \"social media app\", \"static portfolio website\", \"todo list with frontend and API\", \"prepare my Azure application to use Key Vault\", \"managed identity\"."
+description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: \"create app\", \"build web app\", \"create API\", \"create serverless HTTP API\", \"build a service\", \"modernize application\", \"update application\", \"add authentication\", \"add caching\", \"host on Azure\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure Container Apps\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"static portfolio website\", \"todo list with frontend and API\", \"Key Vault\", \"managed identity\", \"set up Azure infrastructure\", \"provision Azure resources\", \"scaffold Azure project\", \"azure.yaml\", \"infra/main.bicep\", \"Terraform infrastructure\", \"Bicep template\"."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.4"
 ---
 
 # Azure Prepare
@@ -36,6 +36,8 @@ Activate this skill when user wants to:
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
 7. ❌ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
 8. **Scope: preparation only** — This skill generates infrastructure code and configuration files. Deployment execution (`azd up`, `azd deploy`, `terraform apply`) is handled by the **azure-deploy** skill, which provides built-in error recovery and deployment verification.
+9. **Handoff is mandatory** — After plan approval and preparation, you MUST invoke **azure-validate** via skill call. If the user asked to deploy in the same request and validation succeeds, immediately hand off to **azure-deploy**. Do not just mention the next step—invoke it.
+10. **Do not deploy in azure-prepare** — Never run deployment or provisioning commands here (e.g., `azd up`, `azd deploy`, `azd provision`, `terraform apply`, `az deployment group create`). Those are exclusively handled by **azure-deploy** after **azure-validate** succeeds.
 
 ---
 
@@ -103,7 +105,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
+| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill now (skill call). If validation succeeds and the user requested deployment, immediately invoke **azure-deploy**. Do not run azd/terraform deployment commands here. | — |
 
 ---
 
@@ -135,5 +137,9 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 > `azure-prepare` → `azure-validate` → `azure-deploy`
 >
 > Skipping validation leads to deployment failures. Be patient and follow the complete workflow for the highest success outcome.
+
+> **⚠️ REQUIRED ACTION**
+>
+> Invoke **azure-validate** now. If it succeeds and the user asked to deploy, immediately invoke **azure-deploy**.
 
 **→ Invoke azure-validate now**

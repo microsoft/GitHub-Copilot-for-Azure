@@ -394,6 +394,11 @@ export function useAgentRunner() {
 
       const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
+      const systemPrompt = config.systemPrompt ?? {
+        mode: "append",
+        content: "When a relevant skill is available, prefer using it instead of doing the task manually. This is an automated integration test: if you create a plan, continue execution without asking for user approval."
+      };
+
       const session = await client.createSession({
         model: modelOverride || "claude-sonnet-4.5",
         onPermissionRequest: approveAll,
@@ -406,10 +411,7 @@ export function useAgentRunner() {
             tools: ["*"]
           }
         },
-        systemMessage: config.systemPrompt ?? {
-          mode: "append",
-          content: "Respond appropriately to the request."
-        }
+        systemMessage: systemPrompt
       });
       entry.session = session;
 
@@ -730,7 +732,7 @@ export async function runConversation(config: ConversationConfig): Promise<Conve
       },
       systemMessage: config.systemPrompt ?? {
         mode: "append",
-        content: "When a relevant skill is available, prefer using it instead of doing the task manually."
+        content: "When a relevant skill is available, prefer using it instead of doing the task manually. This is an automated integration test: if you create a plan, continue execution without asking for user approval."
       }
     });
 
