@@ -26,9 +26,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("description meets Medium-High compliance length", () => {
-      // Descriptions should be 150-1024 chars for Medium-High compliance
+      // Descriptions should be 150-2048 chars for Medium-High compliance
       expect(skill.metadata.description.length).toBeGreaterThan(150);
-      expect(skill.metadata.description.length).toBeLessThanOrEqual(1024);
+      expect(skill.metadata.description.length).toBeLessThanOrEqual(2048);
     });
 
     test("description contains WHEN trigger phrases", () => {

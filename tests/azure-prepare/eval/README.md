@@ -1,16 +1,16 @@
 # azure-prepare Waza Eval Suite
 
-Evaluation suite for the `azure-prepare` skill using [waza](https://github.com/spboyer/waza).
+Evaluation suite for the `azure-prepare` skill using [waza](https://github.com/microsoft/waza).
 
 ## Quick Start
 
 ```bash
 # Install waza (pick one)
-azd ext source add -n waza -t url -l https://raw.githubusercontent.com/spboyer/waza/main/registry.json
+azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
 azd ext install microsoft.azd.waza
 
 # Or via Go
-go install github.com/spboyer/waza/cmd/waza@latest
+go install github.com/microsoft/waza/cmd/waza@latest
 
 # Run with mock executor (fast, no auth)
 waza run tests/azure-prepare/eval/eval.yaml \
