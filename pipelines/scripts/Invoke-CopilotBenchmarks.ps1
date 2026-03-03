@@ -96,6 +96,9 @@
 
     Write-Host "MSBench CLI version"
     & 'msbench-cli' version
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli version failed with exit code $LASTEXITCODE"
+    }
 
     $runArgs = @(
         "run",
