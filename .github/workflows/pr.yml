@@ -32,8 +32,12 @@ jobs:
         working-directory: ./scripts
         run: npm ci
 
-      - name: Typecheck
+      - name: Typecheck tests
         working-directory: ./tests
+        run: npm run typecheck
+
+      - name: Typecheck scripts
+        working-directory: ./scripts
         run: npm run typecheck
 
       - name: Lint test
@@ -327,6 +331,8 @@ jobs:
           fi
 
           for skill_file in $SKILL_FILES; do
+            SKILL_NAME=$(basename "$(dirname "$skill_file")")
+
             # Get version in base branch (use [[:space:]] for portable whitespace matching)
             BASE_VERSION=$(git show origin/${{ github.base_ref }}:"$skill_file" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
 
@@ -340,12 +346,12 @@ jobs:
             fi
 
             if [ "$BASE_VERSION" = "$HEAD_VERSION" ]; then
-              echo "::error file=$skill_file::Skill was modified but metadata.version was not bumped ($BASE_VERSION). Bump the version in your PR."
-              echo "❌ \`$skill_file\` — version not bumped ($BASE_VERSION)" >> $GITHUB_STEP_SUMMARY
+              echo "::error file=$skill_file::Skill '$SKILL_NAME' was modified but metadata.version was not bumped ($BASE_VERSION). Bump the version in your PR."
+              echo "❌ \`$SKILL_NAME\` (\`$skill_file\`) — version not bumped ($BASE_VERSION)" >> $GITHUB_STEP_SUMMARY
               FAILED=true
             else
-              echo "✅ $skill_file — version bumped: $BASE_VERSION → $HEAD_VERSION"
-              echo "✅ \`$skill_file\` — $BASE_VERSION → $HEAD_VERSION" >> $GITHUB_STEP_SUMMARY
+              echo "✅ $skill_file — $SKILL_NAME version bumped: $BASE_VERSION → $HEAD_VERSION"
+              echo "✅ \`$SKILL_NAME\` (\`$skill_file\`) — $BASE_VERSION → $HEAD_VERSION" >> $GITHUB_STEP_SUMMARY
             fi
           done
 
