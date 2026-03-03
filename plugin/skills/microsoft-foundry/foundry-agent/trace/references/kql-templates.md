@@ -2,6 +2,8 @@
 
 Ready-to-use KQL templates for querying GenAI OpenTelemetry traces in Application Insights.
 
+**Table of Contents:** [App Insights Table Mapping](#app-insights-table-mapping) · [Key GenAI OTel Attributes](#key-genai-otel-attributes) · [Span Correlation](#span-correlation) · [Hosted Agent Attributes](#hosted-agent-attributes) · [Response ID Formats](#response-id-formats) · [Common Query Templates](#common-query-templates) · [OTel Reference Links](#otel-reference-links)
+
 ## App Insights Table Mapping
 
 | App Insights Table | GenAI Data |
