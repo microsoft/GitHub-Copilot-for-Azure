@@ -365,6 +365,7 @@ export function useAgentRunner() {
     const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
 
     let isComplete = false;
+    let earlyTerminated = false;
 
     const entry: RunnerCleanup = { config };
     currentCleanups.push(entry);
@@ -434,6 +435,7 @@ export function useAgentRunner() {
 
           if (config.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
+            earlyTerminated = true;
             resolve();
             void session.abort();
             return;
@@ -444,10 +446,12 @@ export function useAgentRunner() {
       await session.send({ prompt: config.prompt });
       await done;
 
-      // Send follow-up prompts
-      for (const followUpPrompt of config.followUp ?? []) {
-        isComplete = false;
-        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+      // Send follow-up prompts only if the session was not early-terminated
+      if (!earlyTerminated) {
+        for (const followUpPrompt of config.followUp ?? []) {
+          isComplete = false;
+          await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+        }
       }
 
       return agentMetadata;
