@@ -191,7 +191,7 @@ async function generateSkillReport(reportPaths: string[], runPath: string, runNa
   const aggregatedTemplate = fs.readFileSync(AGGREGATED_TEMPLATE_PATH, "utf-8");
 
   const config: AgentRunConfig = {
-    prompt: `You are a per-skill test report generator. You will receive multiple individual test reports that all belong to the skill "${skill}", and you must combine them into one comprehensive per-skill summary.
+    prompt: `You are a per-skill test report generator. You will receive multiple individual test reports that all belong to the skill "${skill}", and you must combine them into one comprehensive per-skill summary. There are two kinds of test reports, skill-invocation tests and others. Skill invocations tests are simplified test cases that only measures whether a skill is invoked. Many such tests are optimized to terminate the execution if the expected skill is invoked or if the expected skill isn't invoked early enough. Other tests are full end to end tests which will have complete agent execution and will result in updates to the surrounding environment, such as the test workspace or Azure resources. Evaluate each test report based on the category of it.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
 

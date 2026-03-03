@@ -140,15 +140,15 @@ npm install
 
 ### Waza Eval Mode (Alternative)
 
-Skills can also be evaluated using [waza](https://github.com/spboyer/waza), a Go CLI for skill benchmarking.
+Skills can also be evaluated using [waza](https://github.com/microsoft/waza), a Go CLI for skill benchmarking.
 
 ```bash
 # Install waza via azd extension
-azd ext source add -n waza -t url -l https://raw.githubusercontent.com/spboyer/waza/main/registry.json
+azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
 azd ext install microsoft.azd.waza
 
 # Or via Go
-go install github.com/spboyer/waza/cmd/waza@latest
+go install github.com/microsoft/waza/cmd/waza@latest
 ```
 
 **Hybrid model**: Key skills have committed (hand-tuned) eval suites. All other skills auto-generate evals from their SKILL.md at runtime.
@@ -166,6 +166,7 @@ go install github.com/spboyer/waza/cmd/waza@latest
 
 **Committed eval suites** (⬢ customized graders, fixtures, and assertions):
 - `azure-prepare` — template selection, recipe composition, plan-first workflow
+- `azure-deploy` — deploy routing and AVM+AZD module-priority/fallback guidance
 
 **Auto-generated** (⬡ from SKILL.md frontmatter): all other skills
 
@@ -354,8 +355,11 @@ This updates the Skills Coverage Grid in this README.
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
+| azure-create-app | ❌ | - | - | - | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
+| azure-deployment-preflight | ❌ | - | - | - | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
+| azure-functions | ✅ | - | - | ✅ | - |
 | azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
 | azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |

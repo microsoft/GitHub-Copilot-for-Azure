@@ -11,7 +11,6 @@
 
 import {
   useAgentRunner,
-  isSkillInvoked,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
@@ -21,7 +20,7 @@ import {
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import { matchesCommand, softCheckSkill } from "../utils/evaluate";
-
+import { isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-validate";
 const RUNS_PER_PROMPT = 5;

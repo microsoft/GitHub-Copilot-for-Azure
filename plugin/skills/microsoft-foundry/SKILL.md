@@ -1,6 +1,10 @@
 ---
 name: microsoft-foundry
 description: "MANDATORY: Read this skill BEFORE calling any Foundry MCP tool. Use when working with Microsoft Foundry (Azure AI Foundry): deploy AI models, manage agents (create, deploy, invoke, troubleshoot), quotas, capacity, Foundry resources. USE FOR: Microsoft Foundry, AI Foundry, hosted agent, prompt agent, create agent, deploy agent, monitor agent, invoke agent, run agent, agent chat, evaluate agent, deploy model, model catalog, create Foundry project, set up Foundry, create Foundry resource, create AI Services, AIServices kind, register resource provider, role assignment, quota, capacity, TPM, deployment failure, standard agent setup, capability host. DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app)."
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.1"
 ---
 
 # Microsoft Foundry Skill
