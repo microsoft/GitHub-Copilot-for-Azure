@@ -5,29 +5,29 @@
 az aks list --output table
 
 # Show cluster details
-az aks show --name CLUSTER --resource-group RG
+az aks show --name <cluster-name> --resource-group <resource-group>
 
 # Get available Kubernetes versions
-az aks get-versions --location LOCATION --output table
+az aks get-versions --location <location> --output table
 
 # Create AKS Automatic cluster
-az aks create --name CLUSTER --resource-group RG --sku automatic \
+az aks create --name <cluster-name> --resource-group <resource-group> --sku automatic \
   --network-plugin azure --network-plugin-mode overlay \
   --enable-oidc-issuer --enable-workload-identity
 
 # Create AKS Standard cluster
-az aks create --name CLUSTER --resource-group RG \
+az aks create --name <cluster-name> --resource-group <resource-group> \
   --node-count 3 --zones 1 2 3 \
   --network-plugin azure --network-plugin-mode overlay \
   --enable-cluster-autoscaler --min-count 1 --max-count 10
 
 # Get credentials
-az aks get-credentials --name CLUSTER --resource-group RG
+az aks get-credentials --name <cluster-name> --resource-group <resource-group>
 
 # List node pools
-az aks nodepool list --cluster-name CLUSTER --resource-group RG --output table
+az aks nodepool list --cluster-name <cluster-name> --resource-group <resource-group> --output table
 
 # Enable monitoring
-az aks enable-addons --name CLUSTER --resource-group RG \
-  --addons monitoring --workspace-resource-id WORKSPACE_ID
+az aks enable-addons --name <cluster-name> --resource-group <resource-group> \
+  --addons monitoring --workspace-resource-id <workspace-resource-id>
 ```
