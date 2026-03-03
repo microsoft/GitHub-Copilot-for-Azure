@@ -22,6 +22,7 @@ import { redactSecrets } from "./redact";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate";
+export { isSkillInvoked, getToolCalls } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -340,6 +341,16 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     fs.writeFileSync(filePath, markdown, "utf-8");
 
+    // Write structured agent-metadata.json for machine consumption
+    const jsonPath = path.join(dir, "agent-metadata.json");
+    const jsonData = {
+      prompt: config.prompt ? redactSecrets(config.prompt) : "",
+      events: agentMetadata.events,
+      testComments: agentMetadata.testComments,
+      tokenUsage: agentMetadata.tokenUsage,
+    };
+    fs.writeFileSync(jsonPath, JSON.stringify(jsonData, null, 2), "utf-8");
+
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${filePath}`);
     }
@@ -613,19 +624,6 @@ export function useAgentRunner() {
 }
 
 /**
- * Check if a skill was invoked during the session
- */
-export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string): boolean {
-  return agentMetadata.events
-    .filter(event => event.type === "tool.execution_start")
-    .filter(event => event.data.toolName === "skill")
-    .some(event => {
-      const args = event.data.arguments;
-      return JSON.stringify(args).includes(skillName);
-    });
-}
-
-/**
  * Check if all tool calls for a given tool were successful
  */
 export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName?: string): boolean {
@@ -678,19 +676,6 @@ export function doesAssistantMessageIncludeKeyword(
     }
     return message.toLowerCase().includes(keyword.toLowerCase());
   });
-}
-
-/**
- * Get all tool calls made during the session
- */
-export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): SessionEvent[] {
-  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
-
-  if (toolName) {
-    calls = calls.filter(event => event.data.toolName === toolName);
-  }
-
-  return calls;
 }
 
 // Track skip reason for reporting

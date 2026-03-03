@@ -196,13 +196,71 @@ function extractSkillArea(name) {
 // ─── Tool Call Extraction from Markdown ──────────────────────────────────────
 
 /**
- * Parse agent-metadata markdown files to extract tool calls sequence.
- * Returns array of { tool, args, reasoning } objects.
+ * Extract tool calls from structured agent-metadata.json (preferred)
+ * or fall back to parsing markdown if JSON is unavailable.
  */
 function extractToolCalls(testRunPath, dirName) {
   const dirPath = path.join(testRunPath, dirName);
   if (!fs.existsSync(dirPath)) return [];
 
+  // Prefer structured JSON if available
+  const jsonPath = path.join(dirPath, "agent-metadata.json");
+  if (fs.existsSync(jsonPath)) {
+    return extractToolCallsFromJson(jsonPath);
+  }
+
+  // Fall back to markdown parsing for older reports
+  return extractToolCallsFromMarkdown(dirPath);
+}
+
+/**
+ * Extract tool calls from structured agent-metadata.json.
+ * Reads events directly — no regex parsing needed.
+ */
+function extractToolCallsFromJson(jsonPath) {
+  try {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const toolCalls = [];
+
+    for (const event of (data.events || [])) {
+      if (event.type === "assistant.tool_call" || event.event === "assistant.tool_call") {
+        const name = event.tool || event.name || event.data?.tool || "";
+        const args = event.arguments || event.data?.arguments || "";
+        let argsStr = "";
+        if (typeof args === "string") {
+          try {
+            const parsed = JSON.parse(args);
+            argsStr = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+          } catch { argsStr = args.substring(0, 100); }
+        } else if (typeof args === "object") {
+          argsStr = Object.entries(args).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+        }
+        toolCalls.push({ tool: name, args: argsStr, source: "agent-metadata.json" });
+      } else if (event.type === "assistant.skill" || event.event === "assistant.skill") {
+        const skillName = event.skill || event.data?.skill || event.name || "";
+        toolCalls.push({ tool: "skill", args: skillName, source: "agent-metadata.json" });
+      } else if (event.type === "assistant.reasoning" || event.event === "assistant.reasoning") {
+        const reasoning = event.text || event.data?.text || "";
+        const lastCall = toolCalls[toolCalls.length - 1];
+        if (lastCall && reasoning) {
+          lastCall.reasoning = reasoning.substring(0, 500);
+        }
+      }
+    }
+
+    return toolCalls;
+  } catch (err) {
+    console.warn(`Warning: Failed to parse ${jsonPath}: ${err.message}`);
+    // Fall back to markdown in same directory
+    return extractToolCallsFromMarkdown(path.dirname(jsonPath));
+  }
+}
+
+/**
+ * Legacy: Parse agent-metadata markdown files to extract tool calls sequence.
+ * Returns array of { tool, args, reasoning } objects.
+ */
+function extractToolCallsFromMarkdown(dirPath) {
   const mdFiles = fs.readdirSync(dirPath)
     .filter(f => f.startsWith("agent-metadata-") && f.endsWith(".md"))
     .sort();
@@ -338,7 +396,7 @@ function buildAreaSummaries(junit, tokenEntries) {
       passed: entry.passed,
       failed: entry.failed,
       skipped: entry.skipped,
-      passRate: Math.round((entry.passed / totalTests) * 100 * 10) / 10,
+      passRate: totalTests > 0 ? Math.round((entry.passed / totalTests) * 1000) / 10 : null,
       avgInputTokens: Math.round(entry.totalInputTokens / totalTests),
       avgOutputTokens: Math.round(entry.totalOutputTokens / totalTests),
       totalInputTokens: entry.totalInputTokens,
@@ -552,9 +610,20 @@ function buildExpectedPath(skillArea) {
 // ─── Build Execution Traces ──────────────────────────────────────────────────
 
 /**
- * Build execution trace data for each test subdirectory.
- * Extracts tool call sequence from agent-metadata markdown files
- * and pairs with token data for each LLM call.
+ * Build execution trace graphs for the dashboard trace viewer.
+ *
+ * For each test that has agent-metadata output (from agent-runner), this function:
+ * 1. Extracts the ordered sequence of tool/skill calls (prefers agent-metadata.json,
+ *    falls back to parsing agent-metadata markdown for older reports).
+ * 2. Pairs each call with token usage data from the per-call breakdown.
+ * 3. Builds a Cytoscape-compatible node/edge graph: Start → LLM Call → Tool → ... → End.
+ * 4. Overlays the expected execution path (if defined) and computes path adherence
+ *    metrics (matched/deviated/extra/skipped steps and adherence percentage).
+ *
+ * @param {string} testRunPath - Path to the test-run reports directory.
+ * @param {Array} tokenEntries - Token usage entries from token-summary.jsonl.
+ * @returns {Object} Map of testName → { prompt, model, summary, nodes, edges,
+ *   expectedNodes?, expectedEdges?, pathAdherence? }
  */
 function buildTraces(testRunPath, tokenEntries) {
   const traces = {};
@@ -651,7 +720,7 @@ function buildTraces(testRunPath, tokenEntries) {
         totalTokens: {
           in: latestEntry.inputTokens,
           out: latestEntry.outputTokens,
-          apiCalls: latestEntry.apiCallCount,
+          llmCalls: latestEntry.apiCallCount,
         },
       },
     });
@@ -663,7 +732,7 @@ function buildTraces(testRunPath, tokenEntries) {
       summary: {
         inputTokens: latestEntry.inputTokens,
         outputTokens: latestEntry.outputTokens,
-        apiCalls: latestEntry.apiCallCount,
+        llmCalls: latestEntry.apiCallCount,
         durationMs: latestEntry.totalApiDurationMs,
       },
       nodes,
@@ -768,6 +837,163 @@ function buildTraces(testRunPath, tokenEntries) {
   return traces;
 }
 
+// ─── Skill Coverage Analysis ─────────────────────────────────────────────────
+
+const SKILLS_PATH = path.resolve(__dirname, "../../plugin/skills");
+const TESTS_PATH = path.resolve(__dirname, "..");
+
+/**
+ * Recursively find sub-skills within a skill directory.
+ * A sub-skill is a directory containing a SKILL.md or a primary .md file
+ * (excluding references/ directories).
+ */
+function findSubSkills(skillDir, prefix = "") {
+  const subSkills = [];
+  if (!fs.existsSync(skillDir)) return subSkills;
+
+  const entries = fs.readdirSync(skillDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (["references", "templates", "assets", "scripts", "examples"].includes(entry.name)) continue;
+
+    const subPath = path.join(skillDir, entry.name);
+    const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+
+    // Check if this directory is a sub-skill (has SKILL.md or a primary .md)
+    const hasSkillMd = fs.existsSync(path.join(subPath, "SKILL.md"));
+    const mdFiles = fs.readdirSync(subPath).filter(f =>
+      f.endsWith(".md") && f !== "SKILL.md" && !f.startsWith("TEST_") && !f.startsWith("EXAMPLES")
+    );
+    const hasPrimaryMd = mdFiles.length > 0;
+
+    if (hasSkillMd || hasPrimaryMd) {
+      subSkills.push({
+        name: entry.name,
+        path: relPath,
+        hasSkillMd,
+        primaryMd: hasSkillMd ? "SKILL.md" : mdFiles[0] || null,
+      });
+    }
+
+    // Recurse into subdirectories
+    const nested = findSubSkills(subPath, relPath);
+    subSkills.push(...nested);
+  }
+  return subSkills;
+}
+
+/**
+ * Check if a test directory exists for a given skill/sub-skill path.
+ */
+function hasIntegrationTest(skillPath) {
+  // Direct match: tests/<skill-path>/integration.test.ts
+  const testDir = path.join(TESTS_PATH, skillPath);
+  if (fs.existsSync(path.join(testDir, "integration.test.ts"))) return true;
+
+  const parts = skillPath.split("/");
+  const lastPart = parts[parts.length - 1];
+  const parentSkill = parts[0];
+
+  // Check alternative test layout patterns
+  const testPaths = [
+    // Nested under parent: tests/microsoft-foundry/quota/integration.test.ts
+    path.join(TESTS_PATH, parentSkill, lastPart, "integration.test.ts"),
+    // Skill path with models/deploy nesting: tests/microsoft-foundry/models/deploy/deploy-model
+    path.join(TESTS_PATH, skillPath, "integration.test.ts"),
+  ];
+
+  // Also try finding a test dir anywhere under parent that contains lastPart
+  if (fs.existsSync(path.join(TESTS_PATH, parentSkill))) {
+    const findTest = (dir) => {
+      if (!fs.existsSync(dir)) return false;
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const e of entries) {
+        if (!e.isDirectory()) continue;
+        const sub = path.join(dir, e.name);
+        if (e.name === lastPart && fs.existsSync(path.join(sub, "integration.test.ts"))) return true;
+        if (findTest(sub)) return true;
+      }
+      return false;
+    };
+    if (findTest(path.join(TESTS_PATH, parentSkill))) return true;
+  }
+
+  return testPaths.some(p => fs.existsSync(p));
+}
+
+/**
+ * Build coverage analysis for all skills.
+ * Compares skill definitions (SKILL.md) against test coverage.
+ */
+function buildCoverage(areas) {
+  const coverage = {};
+
+  if (!fs.existsSync(SKILLS_PATH)) {
+    console.warn("⚠️  Skills directory not found, skipping coverage analysis");
+    return coverage;
+  }
+
+  const topLevelSkills = fs.readdirSync(SKILLS_PATH, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+
+  // Set of area keys that have test results
+  const testedAreas = new Set(areas.map(a => a.area));
+
+  for (const skillName of topLevelSkills) {
+    const skillDir = path.join(SKILLS_PATH, skillName);
+    const subSkills = findSubSkills(skillDir);
+
+    // Check top-level integration test
+    const hasTopLevelTest = fs.existsSync(
+      path.join(TESTS_PATH, skillName, "integration.test.ts")
+    );
+    const hasUnitTest = fs.existsSync(
+      path.join(TESTS_PATH, skillName, "unit.test.ts")
+    );
+    const hasTriggersTest = fs.existsSync(
+      path.join(TESTS_PATH, skillName, "triggers.test.ts")
+    );
+
+    // Check sub-skill test coverage
+    const subSkillCoverage = subSkills.map(ss => {
+      const fullPath = `${skillName}/${ss.path}`;
+      const hasTest = hasIntegrationTest(fullPath);
+      // Also check if area appears in test results
+      const hasResults = testedAreas.has(fullPath) ||
+        testedAreas.has(`${skillName}/${ss.name}`);
+      return {
+        name: ss.name,
+        path: ss.path,
+        hasTest,
+        hasResults,
+      };
+    });
+
+    const coveredSubSkills = subSkillCoverage.filter(s => s.hasTest || s.hasResults).length;
+    const totalSubSkills = subSkillCoverage.length;
+
+    coverage[skillName] = {
+      hasIntegrationTest: hasTopLevelTest,
+      hasUnitTest,
+      hasTriggersTest,
+      subSkills: {
+        total: totalSubSkills,
+        covered: coveredSubSkills,
+        percentage: totalSubSkills > 0
+          ? Math.round((coveredSubSkills / totalSubSkills) * 100)
+          : (hasTopLevelTest ? 100 : 0),
+        missing: subSkillCoverage
+          .filter(s => !s.hasTest && !s.hasResults)
+          .map(s => s.path),
+        details: subSkillCoverage,
+      },
+    };
+  }
+
+  return coverage;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
@@ -805,6 +1031,9 @@ function main() {
   console.log("🔀 Building execution traces...");
   const traces = buildTraces(testRunPath, tokenEntries);
 
+  console.log("📋 Building skill coverage analysis...");
+  const coverage = buildCoverage(areas);
+
   // Compute global summary
   const totalTests = junit ? junit.totalTests : areas.reduce((s, a) => s + a.tests, 0);
   const totalPassed = areas.reduce((s, a) => s + a.passed, 0);
@@ -824,7 +1053,7 @@ function main() {
       totalTests,
       passed: totalPassed,
       failed: totalFailed,
-      passRate: totalTests > 0 ? Math.round((totalPassed / totalTests) * 100 * 10) / 10 : 0,
+      passRate: totalTests > 0 ? Math.round((totalPassed / totalTests) * 1000) / 10 : null,
       totalInputTokens,
       totalOutputTokens,
       totalLLMCalls,
@@ -837,6 +1066,7 @@ function main() {
     areas,
     tokenUsage,
     traces,
+    coverage,
   };
 
   // Write output
@@ -849,6 +1079,12 @@ function main() {
   console.log(`   Traces: ${Object.keys(traces).length}`);
   console.log(`   Total tokens: ${(totalInputTokens + totalOutputTokens).toLocaleString()}`);
   console.log(`   Total LLM calls: ${totalLLMCalls}`);
+
+  // Coverage summary
+  const covKeys = Object.keys(coverage);
+  const withTests = covKeys.filter(k => coverage[k].hasIntegrationTest).length;
+  const totalMissingSubs = covKeys.reduce((s, k) => s + coverage[k].subSkills.missing.length, 0);
+  console.log(`   Coverage: ${withTests}/${covKeys.length} skills have integration tests, ${totalMissingSubs} sub-skills missing tests`);
 }
 
 main();
