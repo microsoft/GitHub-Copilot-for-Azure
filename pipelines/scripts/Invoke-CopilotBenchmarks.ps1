@@ -28,7 +28,7 @@
     param(
         [string]$Benchmark = "azure",
         [string]$Model = "claude-sonnet-4.5-autodev-test",
-        [string]$PipInstallCmd = "uv pip install msbench-cli",
+        [string[]]$PipInstallArgs,
         [switch]$NoWait
     )
 
@@ -94,8 +94,8 @@
     }
 
 
-    Write-Host "`n> uv pip install msbench-cli"
-    & $PipInstallCmd
+    Write-Host "`n> uv pip install msbench-cli $($PipInstallArgs -join ' ')"
+    & uv pip install msbench-cli @PipInstallArgs
     if ($LASTEXITCODE -ne 0) {
         throw "uv pip install msbench-cli failed with exit code $LASTEXITCODE"
     }
