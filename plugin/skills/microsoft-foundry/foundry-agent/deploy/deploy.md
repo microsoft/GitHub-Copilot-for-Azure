@@ -89,7 +89,7 @@ Collect ACR details from project context. Let the user choose the build method:
 
 **Cloud Build (ACR Tasks) (Recommended)** — no local Docker required:
 ```bash
-az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --file Dockerfile .
+az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --source-acr-auth-id "[caller]" --file Dockerfile .
 ```
 
 **Local Docker Build:**
