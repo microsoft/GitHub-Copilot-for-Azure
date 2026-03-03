@@ -85,7 +85,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
       runtime: {
         name: 'python'  // or 'node', 'dotnet-isolated'
-        version: '3.11'
+        version: '<version>'  // Query latest GA: https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages
       }
     }
     siteConfig: {
@@ -161,7 +161,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
     serverFarmId: functionAppPlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'Node|18'
+      linuxFxVersion: 'Node|<version>'  // Query latest GA: https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages
       appSettings: [
         { name: 'AzureWebJobsStorage', value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value}' }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }

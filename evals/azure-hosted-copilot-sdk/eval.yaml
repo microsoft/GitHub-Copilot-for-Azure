@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/spboyer/waza/main/schemas/eval.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
 name: azure-hosted-copilot-sdk-eval
 description: >
   Evaluation suite for the azure-hosted-copilot-sdk skill.
