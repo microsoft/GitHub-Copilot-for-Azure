@@ -135,9 +135,30 @@ function parseJunitXml(xmlPath) {
 // ─── Token Data Loader ───────────────────────────────────────────────────────
 
 function loadTokenSummary(testRunPath) {
+  // Try JSONL format first (one JSON object per line, safe for concurrent writes)
+  const jsonlPath = path.join(testRunPath, "token-summary.jsonl");
+  try {
+    const raw = fs.readFileSync(jsonlPath, "utf-8");
+    if (!raw.trim()) return [];
+    return raw.trim().split("\n").map(line => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+  } catch {
+    // Fall back to legacy JSON format
+  }
   const summaryPath = path.join(testRunPath, "token-summary.json");
-  if (!fs.existsSync(summaryPath)) return [];
-  return JSON.parse(fs.readFileSync(summaryPath, "utf-8"));
+  try {
+    const raw = fs.readFileSync(summaryPath, "utf-8");
+    if (!raw.trim()) return [];
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn(
+      `Warning: Failed to load token summary at ${testRunPath}: ${
+        err && err.message ? err.message : err
+      }`
+    );
+    return [];
+  }
 }
 
 // ─── Skill Area Extraction ───────────────────────────────────────────────────
@@ -681,7 +702,8 @@ function buildTraces(testRunPath, tokenEntries) {
             matchedExpectedIdx.add(ei);
             found = true;
             // Update node type to 'matched'
-            nodes[nodes.findIndex(n => n.id === `t${ai + 1}`)].type = "matched";
+            const matchIdx = nodes.findIndex(n => n.id === `t${ai + 1}`);
+            if (matchIdx >= 0) nodes[matchIdx].type = "matched";
             break;
           }
         }
