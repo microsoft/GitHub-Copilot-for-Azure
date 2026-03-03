@@ -40,8 +40,9 @@ Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com
 
 7. Is it for orchestration or workflows?
    Indicators: DurableOrchestrationTrigger, orchestrator, durable_functions
-   └─► YES → HTTP base + durable source snippet (toggle enableQueue + enableTable in base)
+   └─► YES → HTTP base + durable recipe (IaC: Durable Task Scheduler + task hub + RBAC + source)
    Recipe: recipes/durable/ ✅ Available
+   Reference: [Durable Task Scheduler](../../durable-task-scheduler/README.md) for Bicep patterns and connection string
 
 8. Does it use Event Hubs?
    Indicators: EventHubTrigger, @app.event_hub, event_hub_output
@@ -70,6 +71,6 @@ Cross-reference with [top Azure Functions scenarios](https://learn.microsoft.com
 
 | Type | IaC Delta? | Examples |
 |------|-----------|----------|
-| **Full recipe** | Yes — Bicep module + Terraform module + RBAC + networking | cosmosdb, servicebus, eventhubs |
+| **Full recipe** | Yes — Bicep module + Terraform module + RBAC + networking | cosmosdb, servicebus, eventhubs, durable |
 | **AZD template** | Use dedicated AZD template from Awesome AZD | sql, blob-eventgrid |
-| **Source-only** | No — only replace function source code (may toggle storage params) | timer, durable, mcp |
+| **Source-only** | No — only replace function source code (may toggle storage params) | timer, mcp |
