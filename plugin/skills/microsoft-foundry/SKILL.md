@@ -4,7 +4,7 @@ description: "Use this skill to work with Microsoft Foundry (Azure AI Foundry) a
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Microsoft Foundry Skill
