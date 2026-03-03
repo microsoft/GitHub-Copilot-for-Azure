@@ -71,34 +71,35 @@
         throw "Failed to retrieve GitHub PAT from KeyVault: $_"
     }
 
-    # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
-    # PipAuthenticate sets PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
+    # --- Feed authentication ---
+    # In CI, PipAuthenticate@1 sets PIP_EXTRA_INDEX_URL automatically.
+    # For local runs, fall back to az CLI token acquisition.
     if ($env:PIP_EXTRA_INDEX_URL) {
-        Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task)"
+        Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task). Forwarding to UV_EXTRA_INDEX_URL for MSBench CLI."
+        $env:UV_EXTRA_INDEX_URL = $env:PIP_EXTRA_INDEX_URL
     } else {
-        Write-Warning "PIP_EXTRA_INDEX_URL is not set. Feed authentication may fail. Ensure PipAuthenticate@1 runs before this script."
-    }
+        Write-Host "PIP_EXTRA_INDEX_URL not set — acquiring Azure DevOps AAD token for local feed auth"
+        $feedUrl = "https://pkgs.dev.azure.com/azure-sdk/internal/_packaging/MicrosoftSweBench/pypi/simple/"
+        $adoResourceId = "499b84ac-1321-427f-aa17-267ca6975798"
+        $adoAccessToken = az account get-access-token --resource $adoResourceId --query accessToken -o tsv
 
-    $pythonCommand = Get-Command python
-    Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version 2>&1)"
+        if (!$adoAccessToken) {
+            throw "Failed to acquire Azure DevOps AAD token. Run 'az login' first."
+        }
 
-    Write-Host "Install/upgrade pip"
-    python -m pip install --upgrade pip
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip install/upgrade failed with exit code $LASTEXITCODE"
+        $encodedToken = [System.Uri]::EscapeDataString($adoAccessToken)
+        $env:UV_EXTRA_INDEX_URL = $feedUrl -replace "https://", "https://vsts:$encodedToken@"
+        Write-Host "UV_EXTRA_INDEX_URL set via az CLI token"
     }
 
     Write-Host "Installing/upgrading MSBench CLI"
-    python -m pip install msbench-cli --no-input
+    uv pip install msbench-cli --no-input
     if ($LASTEXITCODE -ne 0) {
         throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
     }
 
     Write-Host "MSBench CLI version"
-    & 'msbench-cli' version
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli version failed with exit code $LASTEXITCODE"
-    }
+    uv run 'msbench-cli' version
 
     $runArgs = @(
         "run",
@@ -113,7 +114,7 @@
     }
 
     Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-    & 'msbench-cli' @runArgs
+    uv run 'msbench-cli' @runArgs
 
     if ($LASTEXITCODE -ne 0) {
         throw "msbench-cli run failed with exit code $LASTEXITCODE"
