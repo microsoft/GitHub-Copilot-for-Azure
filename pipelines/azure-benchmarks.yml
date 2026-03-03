@@ -37,3 +37,5 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+        arguments: |
+          -PipInstallCmd "uv pip install msbench-cli --system"
