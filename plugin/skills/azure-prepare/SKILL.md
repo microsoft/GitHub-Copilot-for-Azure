@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Prepare applications for Azure deployment, except cross-cloud scenarios (use azure-cloud-migrate). Generates or updates azure.yaml, infrastructure (Bicep/Terraform), and Dockerfiles. WHEN: \"prepare app for Azure\", \"build web app and host on Azure\", \"move on-premises application to Azure\", \"configure Azure hosting\", \"create Azure app\", \"add Azure service\", \"modernize app for Azure\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\"."
+description: "Default entry point for Azure application development EXCEPT cross-cloud migration — use azure-cloud-migrate instead. Analyzes your project and prepares it for Azure deployment by generating infrastructure code (Bicep/Terraform), azure.yaml, and Dockerfiles. WHEN: \"create an app\", \"build a web app\", \"create API\", \"create frontend\", \"create backend\", \"add a feature\", \"build a service\", \"develop a project\", \"modernize my code\", \"update my application\", \"add database\", \"add authentication\", \"add caching\", \"deploy to Azure\", \"host on Azure\", \"Azure with terraform\", \"Azure with azd\", \"generate azure.yaml\", \"generate Bicep\", \"generate Terraform\", \"create Azure Functions app\", \"create serverless HTTP API\", \"create function app\", \"create event-driven function\", \"create and deploy to Azure\", \"create Azure Functions and deploy\", \"create function app and deploy\"."
 ---
 
 # Azure Prepare
@@ -29,11 +29,11 @@ Activate this skill when user wants to:
 4. **Update plan progressively** — Mark steps complete as you go
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
-7. ⚠️ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
+7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
 
 ---
 
-## ⚠️ PLAN-FIRST WORKFLOW — MANDATORY
+## ⛔ PLAN-FIRST WORKFLOW — MANDATORY
 
 > **YOU MUST CREATE A PLAN BEFORE DOING ANY WORK**
 >
@@ -46,7 +46,7 @@ Activate this skill when user wants to:
 
 ---
 
-## ⚠️ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
+## ⛔ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
 
 **BEFORE starting Phase 1**, check if the user's prompt mentions a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
 
@@ -69,7 +69,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 0 | **⚠️ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
+| 0 | **⛔ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
@@ -81,7 +81,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 
 ---
 
-> **⚠️ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
+> **⛔ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
 
 ---
 
