@@ -29,11 +29,11 @@ Activate this skill when user wants to:
 4. **Update plan progressively** — Mark steps complete as you go
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
-7. ⛔ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
+7. ⚠️ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
 
 ---
 
-## ⛔ PLAN-FIRST WORKFLOW — MANDATORY
+## ⚠️ PLAN-FIRST WORKFLOW — MANDATORY
 
 > **YOU MUST CREATE A PLAN BEFORE DOING ANY WORK**
 >
@@ -46,7 +46,7 @@ Activate this skill when user wants to:
 
 ---
 
-## ⛔ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
+## ⚠️ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
 
 **BEFORE starting Phase 1**, check if the user's prompt mentions a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
 
@@ -69,7 +69,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 0 | **⛔ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
+| 0 | **⚠️ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
@@ -81,7 +81,7 @@ Create `.azure/plan.md` by completing these steps. Do NOT generate any artifacts
 
 ---
 
-> **⛔ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
+> **⚠️ STOP HERE** — Do NOT proceed to Phase 2 until the user approves the plan.
 
 ---
 
