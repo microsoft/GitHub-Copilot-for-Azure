@@ -1,5 +1,8 @@
 ---
 name: azure-kubernetes
+metadata:
+  author: Microsoft
+  version: "1.0.0"
 description: "Plan and create production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 decisions and Day-1 configuration, cluster SKUs (Automatic vs Standard), security, monitoring, reliability/performance best practices, upgrades, and networking. WHEN: create AKS cluster, plan AKS configuration, design AKS networking, AKS Automatic vs Standard, AKS security, AKS upgrade strategy, AKS autoscaling, AKS monitoring setup, AKS cost analysis, Day-0 checklist."
 ---
 
