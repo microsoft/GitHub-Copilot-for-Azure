@@ -408,7 +408,7 @@ export function useAgentRunner() {
         },
         systemMessage: config.systemPrompt ?? {
           mode: "append",
-          content: "When a relevant skill is available, prefer using it instead of doing the task manually."
+          content: "Respond appropriately to the request."
         }
       });
       entry.session = session;
