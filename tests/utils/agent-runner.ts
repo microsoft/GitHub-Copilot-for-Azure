@@ -344,12 +344,12 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     // Write structured agent-metadata.json for machine consumption
     const jsonPath = path.join(dir, "agent-metadata.json");
     const jsonData = {
-      prompt: config.prompt ? redactSecrets(config.prompt) : "",
+      prompt: config.prompt || "",
       events: agentMetadata.events,
       testComments: agentMetadata.testComments,
       tokenUsage: agentMetadata.tokenUsage,
     };
-    fs.writeFileSync(jsonPath, JSON.stringify(jsonData, null, 2), "utf-8");
+    fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
 
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${filePath}`);

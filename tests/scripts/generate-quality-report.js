@@ -193,54 +193,45 @@ function extractSkillArea(name) {
   return parts[0];
 }
 
-// ─── Tool Call Extraction from Markdown ──────────────────────────────────────
+// ─── Tool Call Extraction ─────────────────────────────────────────────────────
 
 /**
- * Extract tool calls from structured agent-metadata.json (preferred)
- * or fall back to parsing markdown if JSON is unavailable.
+ * Extract tool calls from structured agent-metadata.json.
  */
 function extractToolCalls(testRunPath, dirName) {
   const dirPath = path.join(testRunPath, dirName);
   if (!fs.existsSync(dirPath)) return [];
 
-  // Prefer structured JSON if available
   const jsonPath = path.join(dirPath, "agent-metadata.json");
-  if (fs.existsSync(jsonPath)) {
-    return extractToolCallsFromJson(jsonPath);
-  }
+  if (!fs.existsSync(jsonPath)) return [];
 
-  // Fall back to markdown parsing for older reports
-  return extractToolCallsFromMarkdown(dirPath);
-}
-
-/**
- * Extract tool calls from structured agent-metadata.json.
- * Reads events directly — no regex parsing needed.
- */
-function extractToolCallsFromJson(jsonPath) {
   try {
     const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
     const toolCalls = [];
 
     for (const event of (data.events || [])) {
-      if (event.type === "assistant.tool_call" || event.event === "assistant.tool_call") {
-        const name = event.tool || event.name || event.data?.tool || "";
-        const args = event.arguments || event.data?.arguments || "";
-        let argsStr = "";
-        if (typeof args === "string") {
-          try {
-            const parsed = JSON.parse(args);
-            argsStr = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
-          } catch { argsStr = args.substring(0, 100); }
-        } else if (typeof args === "object") {
-          argsStr = Object.entries(args).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+      // SDK events use tool.execution_start with data.toolName
+      if (event.type === "tool.execution_start") {
+        const toolName = event.data?.toolName || "";
+        if (toolName === "skill") {
+          const args = event.data?.arguments;
+          const skillName = typeof args === "string" ? args : JSON.stringify(args || "");
+          toolCalls.push({ tool: "skill", args: skillName, source: "agent-metadata.json" });
+        } else {
+          const args = event.data?.arguments || "";
+          let argsStr = "";
+          if (typeof args === "string") {
+            try {
+              const parsed = JSON.parse(args);
+              argsStr = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+            } catch { argsStr = args.substring(0, 100); }
+          } else if (typeof args === "object") {
+            argsStr = Object.entries(args).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+          }
+          toolCalls.push({ tool: toolName, args: argsStr, source: "agent-metadata.json" });
         }
-        toolCalls.push({ tool: name, args: argsStr, source: "agent-metadata.json" });
-      } else if (event.type === "assistant.skill" || event.event === "assistant.skill") {
-        const skillName = event.skill || event.data?.skill || event.name || "";
-        toolCalls.push({ tool: "skill", args: skillName, source: "agent-metadata.json" });
-      } else if (event.type === "assistant.reasoning" || event.event === "assistant.reasoning") {
-        const reasoning = event.text || event.data?.text || "";
+      } else if (event.type === "assistant.reasoning") {
+        const reasoning = event.data?.content || event.data?.text || "";
         const lastCall = toolCalls[toolCalls.length - 1];
         if (lastCall && reasoning) {
           lastCall.reasoning = reasoning.substring(0, 500);
@@ -251,75 +242,8 @@ function extractToolCallsFromJson(jsonPath) {
     return toolCalls;
   } catch (err) {
     console.warn(`Warning: Failed to parse ${jsonPath}: ${err.message}`);
-    // Fall back to markdown in same directory
-    return extractToolCallsFromMarkdown(path.dirname(jsonPath));
+    return [];
   }
-}
-
-/**
- * Legacy: Parse agent-metadata markdown files to extract tool calls sequence.
- * Returns array of { tool, args, reasoning } objects.
- */
-function extractToolCallsFromMarkdown(dirPath) {
-  const mdFiles = fs.readdirSync(dirPath)
-    .filter(f => f.startsWith("agent-metadata-") && f.endsWith(".md"))
-    .sort();
-
-  const toolCalls = [];
-
-  for (const mdFile of mdFiles) {
-    const content = fs.readFileSync(path.join(dirPath, mdFile), "utf-8");
-
-    // Extract tool invocations from code blocks
-    // Two formats in agent-metadata:
-    //   1. skill invocation: ```\nskill: microsoft-foundry\n```
-    //   2. tool invocation:  ```\ntool: view\narguments: {...}\nresponse: ...\n```
-    const codeBlocks = content.match(/```[\s\S]*?```/g) || [];
-    for (const block of codeBlocks) {
-      const inner = block.replace(/```/g, "").trim();
-      if (inner.startsWith("skill:")) {
-        toolCalls.push({
-          tool: "skill",
-          args: inner.replace("skill:", "").trim(),
-          source: mdFile,
-        });
-      } else if (inner.startsWith("tool:")) {
-        // Parse tool: name\narguments: {...}\nresponse/error: ...
-        const toolMatch = inner.match(/^tool:\s*(.+)/);
-        if (toolMatch) {
-          const toolName = toolMatch[1].trim();
-          let args = "";
-          let response = "";
-          const argsMatch = inner.match(/arguments:\s*(\{[\s\S]*?\})/);
-          if (argsMatch) {
-            try {
-              const parsed = JSON.parse(argsMatch[1]);
-              args = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
-            } catch { args = argsMatch[1].substring(0, 100); }
-          }
-          const respMatch = inner.match(/(?:response|error):\s*([\s\S]*?)$/);
-          if (respMatch) response = respMatch[1].trim().substring(0, 200);
-          toolCalls.push({
-            tool: toolName,
-            args,
-            response,
-            source: mdFile,
-          });
-        }
-      }
-    }
-
-    // Extract reasoning blocks
-    const reasoningMatch = content.match(/> \*\*Reasoning:\*\*\n([\s\S]*?)(?=\n[^>]|\n$)/);
-    if (reasoningMatch) {
-      const lastCall = toolCalls[toolCalls.length - 1];
-      if (lastCall) {
-        lastCall.reasoning = reasoningMatch[1].replace(/^> /gm, "").trim();
-      }
-    }
-  }
-
-  return toolCalls;
 }
 
 // ─── Build Area Summaries ────────────────────────────────────────────────────
@@ -613,8 +537,7 @@ function buildExpectedPath(skillArea) {
  * Build execution trace graphs for the dashboard trace viewer.
  *
  * For each test that has agent-metadata output (from agent-runner), this function:
- * 1. Extracts the ordered sequence of tool/skill calls (prefers agent-metadata.json,
- *    falls back to parsing agent-metadata markdown for older reports).
+ * 1. Extracts the ordered sequence of tool/skill calls from agent-metadata.json.
  * 2. Pairs each call with token usage data from the per-call breakdown.
  * 3. Builds a Cytoscape-compatible node/edge graph: Start → LLM Call → Tool → ... → End.
  * 4. Overlays the expected execution path (if defined) and computes path adherence
@@ -938,7 +861,7 @@ function buildCoverage(areas) {
     .map(e => e.name);
 
   // Set of area keys that have test results
-  const testedAreas = new Set(areas.map(a => a.area));
+  const testedAreas = new Set(areas.map(a => a.name));
 
   for (const skillName of topLevelSkills) {
     const skillDir = path.join(SKILLS_PATH, skillName);
