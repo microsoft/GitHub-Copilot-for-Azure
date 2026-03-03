@@ -59,7 +59,7 @@ Activate this skill when user wants to:
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
 | 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
 | 6 | **Handle Errors** — See recipe's `errors.md` | — |
-| 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | — |
+| 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verify](references/recipes/azd/verify.md) |
 
 > **⛔ VALIDATION PROOF CHECK**
 >
