@@ -92,15 +92,19 @@
         Write-Host "UV_EXTRA_INDEX_URL set via az CLI token"
     }
 
-    Write-Host "Installing/upgrading MSBench CLI"
-    uv pip install msbench-cli --no-input
+
+    Write-Host "`n> uv pip install msbench-cli"
+    uv pip install msbench-cli
     if ($LASTEXITCODE -ne 0) {
-        throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
+        throw "uv pip install msbench-cli failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "MSBench CLI version"
+    Write-Host "`n> uv run 'msbench-cli' version"
     uv run 'msbench-cli' version
-
+    if ($LASTEXITCODE -ne 0) {
+        throw "uv run msbench-cli failed with exit code $LASTEXITCODE"
+    }
+    
     $runArgs = @(
         "run",
         "--agent", "github-copilot-cli",
@@ -113,9 +117,8 @@
         $runArgs += "--no-wait"
     }
 
-    Write-Host "Running: msbench-cli $($runArgs -join ' ')"
+    Write-Host "`n> msbench-cli $($runArgs -join ' ')"
     uv run 'msbench-cli' @runArgs
-
     if ($LASTEXITCODE -ne 0) {
         throw "msbench-cli run failed with exit code $LASTEXITCODE"
     }
