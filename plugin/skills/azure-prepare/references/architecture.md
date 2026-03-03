@@ -58,7 +58,7 @@ Select hosting stack and map components to Azure services.
 | SSR Web App | Container Apps | App Service, AKS |
 | REST/GraphQL API | Container Apps | App Service, Functions, AKS |
 | Background Worker | Container Apps | Functions, AKS |
-| Scheduled Task | Functions (Timer) | Container Apps Jobs, AKS CronJob |
+| Scheduled Task | Functions (Timer) | Container Apps Jobs, Kubernetes CronJob (on AKS) |
 | Event Processor | Functions | Container Apps, AKS + KEDA |
 | Microservices (full K8s) | AKS | Container Apps |
 | GPU/ML Workloads | AKS | Azure ML |
