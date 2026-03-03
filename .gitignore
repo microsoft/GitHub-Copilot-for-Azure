@@ -1,4 +1,6 @@
 
+venv/
+.venv/
 __integration_*__/
 __pycache__/
 __test_fixtures__/
