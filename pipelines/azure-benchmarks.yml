@@ -21,7 +21,7 @@ stages:
     steps:
     - template: /pipelines/templates/steps/install-uv.yml
 
-    - pwsh: uv python install 3.12
+    - pwsh: uv python install 3.12 && uv python pin 3.12
       displayName: 'Install Python 3.12 with uv'
 
     - task: PipAuthenticate@1
