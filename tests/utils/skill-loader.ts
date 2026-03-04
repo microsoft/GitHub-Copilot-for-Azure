@@ -64,7 +64,7 @@ export function listSkills(): string[] {
   return items
     .filter((item) => item.isDirectory())
     .filter((item) => {
-      const skillMdPath = path.join(item.parentPath, item.name, "SKILL.md");
+      const skillMdPath = path.join(skillsDir, item.name, "SKILL.md");
       return fs.existsSync(skillMdPath);
     })
     .map((item) => item.name);

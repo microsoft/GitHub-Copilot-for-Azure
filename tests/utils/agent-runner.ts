@@ -510,6 +510,10 @@ export function useAgentRunner() {
       let disabledSkills: string[] | undefined;
       if (config.includeSkills) {
         const skills = listSkills();
+        if (config.includeSkills.some((skillName) => !skills.includes(skillName))) {
+          const invalidSkills = config.includeSkills.filter((skillName) => !skills.includes(skillName));
+          throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
+        }
         disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
       }
 
