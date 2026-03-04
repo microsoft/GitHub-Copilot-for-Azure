@@ -45,7 +45,7 @@ Pass the contents via `inputData` parameter in **`evaluation_agent_batch_eval_cr
 
 ### ~~Server-Side Pinning~~ (Not Available)
 
-> ⚠️ **Dataset upload MCP tools are not yet ready.** Skip `evaluation_dataset_create` and `evaluation_dataset_get` for now. Use local JSONL files and pass data via `inputData` when running evaluations.
+> ⚠️ **Dataset upload MCP tools are not yet ready.** Skip `evaluation_dataset_create` (uploads) for now. You may use `evaluation_dataset_get` for read-only inspection of any existing server-side datasets, but do **not** rely on them for version pinning—use local JSONL files and pass data via `inputData` when running evaluations.
 
 ## Manifest File
 
