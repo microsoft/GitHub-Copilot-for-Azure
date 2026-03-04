@@ -85,10 +85,5 @@ Activate this skill when user wants to:
 
 ## References
 
-<<<<<<< HEAD
 - [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
 - [Post-Deployment Steps](references/recipes/azd/post-deployment.md) - SQL + EF Core setup
-- [Durable Task Scheduler Deployment](references/recipes/azd/durable-task-scheduler-deploy.md) - DTS provisioning, Bicep, and managed identity setup
-=======
-- [Troubleshooting](references/troubleshooting.md) - Common issues and solutions
->>>>>>> 0e0ef37 (revert: remove DTS deploy recipe from azure-deploy skill)
