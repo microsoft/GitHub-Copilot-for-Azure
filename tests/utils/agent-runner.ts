@@ -513,6 +513,7 @@ export function useAgentRunner() {
             tools: ["*"]
           }
         },
+        systemMessage: config.systemPrompt
       });
       entry.session = session;
 
