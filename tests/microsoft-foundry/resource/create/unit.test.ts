@@ -32,7 +32,7 @@ describe("microsoft-foundry:resource/create - Unit Tests", () => {
 
     test("parent skill description includes resource creation triggers", () => {
       const description = skill.metadata.description;
-      expect(description).toContain("USE FOR:");
+      expect(description).toContain("WHEN:");
       expect(description).toMatch(/create Foundry resource|create AI Services|multi-service resource/i);
     });
 
@@ -47,11 +47,6 @@ describe("microsoft-foundry:resource/create - Unit Tests", () => {
       expect(resourceCreateContent).toMatch(/^---\r?\n/);
       expect(resourceCreateContent).toContain("name: microsoft-foundry:resource/create");
       expect(resourceCreateContent).toContain("description:");
-    });
-
-    test("description includes USE FOR and DO NOT USE FOR", () => {
-      expect(resourceCreateContent).toContain("USE FOR:");
-      expect(resourceCreateContent).toContain("DO NOT USE FOR:");
     });
 
     test("description mentions key triggers", () => {

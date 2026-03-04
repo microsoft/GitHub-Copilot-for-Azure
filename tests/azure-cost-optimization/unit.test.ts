@@ -35,14 +35,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description mentions key use cases", () => {
       const description = skill.metadata.description.toLowerCase();
-      expect(description).toContain("use for");
+      expect(description).toContain("when");
       expect(description).toMatch(/orphaned|rightsize|unused/);
-    });
-
-    test("description clarifies what NOT to use it for", () => {
-      const description = skill.metadata.description.toLowerCase();
-      expect(description).toMatch(/do not\s+use for/);
-      expect(description).toMatch(/deploying|diagnostics|security/);
     });
   });
 

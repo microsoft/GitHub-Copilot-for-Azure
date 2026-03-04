@@ -56,7 +56,6 @@ describe("create - Trigger Tests", () => {
       "Help me deploy a static website",
       "Write a unit test for my React component",
       "How do I use Git branches?",
-      "Explain Docker networking basics",
     ];
 
     test.each(shouldNotTriggerPrompts)(

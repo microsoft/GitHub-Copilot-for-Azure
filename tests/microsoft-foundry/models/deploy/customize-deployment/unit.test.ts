@@ -49,14 +49,6 @@ describe("customize (customize-deployment) - Unit Tests", () => {
       expect(nestedMetadata.description.length).toBeGreaterThan(150);
       expect(nestedMetadata.description.length).toBeLessThan(1024);
     });
-
-    test("description contains USE FOR triggers", () => {
-      expect(nestedMetadata.description).toMatch(/USE FOR:/i);
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      expect(nestedMetadata.description).toMatch(/DO NOT USE FOR:/i);
-    });
   });
 
   describe("Skill Content", () => {

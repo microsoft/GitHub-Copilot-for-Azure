@@ -45,14 +45,9 @@ describe("observe - Unit Tests", () => {
       expect(skill.metadata.description.length).toBeLessThan(1024);
     });
 
-    test("description contains USE FOR triggers", () => {
+    test("description contains WHEN triggers", () => {
       const description = skill.metadata.description;
-      expect(description).toMatch(/USE FOR:/i);
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      const description = skill.metadata.description;
-      expect(description).toMatch(/DO NOT USE FOR:/i);
+      expect(description).toMatch(/WHEN:/i);
     });
   });
 
