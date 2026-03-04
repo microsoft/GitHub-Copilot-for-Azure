@@ -4,7 +4,7 @@ description: "MANDATORY: Read this skill BEFORE calling any Foundry MCP tool. Us
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Microsoft Foundry Skill
