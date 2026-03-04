@@ -4,7 +4,7 @@ description: "MANDATORY: Read this skill BEFORE calling any Foundry MCP tool. Us
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Microsoft Foundry Skill
@@ -72,9 +72,12 @@ After each workflow step, validate before proceeding:
 | Setup | Capability Host | Description |
 |-------|----------------|-------------|
 | **Basic** | None | Default. All resources Microsoft-managed. |
-| **Standard** | Azure AI Services | Bring-your-own storage and search. See [standard-agent-setup](references/standard-agent-setup.md). |
+| **Standard** | Azure AI Services | Bring-your-own storage and search (public network). See [standard-agent-setup](references/standard-agent-setup.md). |
+| **Standard + Private Network** | Azure AI Services | Standard setup with VNet isolation and private endpoints. See [private-network-standard-agent-setup](references/private-network-standard-agent-setup.md). |
 
-> **MANDATORY:** For standard setup, read [references/standard-agent-setup.md](references/standard-agent-setup.md) before proceeding. It contains required connections, Bicep template reference, and async provisioning instructions.
+> **MANDATORY:** For standard setup, read the appropriate reference before proceeding:
+> - **Public network:** [references/standard-agent-setup.md](references/standard-agent-setup.md)
+> - **Private network (VNet isolation):** [references/private-network-standard-agent-setup.md](references/private-network-standard-agent-setup.md)
 
 ## Tool Usage Conventions
 
