@@ -5,25 +5,25 @@
  * Extracts frontmatter metadata and content.
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import matter from "gray-matter";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 interface SkillMetadata {
-    name: string;
-    description: string;
-    [key: string]: unknown;
+  name: string;
+  description: string;
+  [key: string]: unknown;
 }
 
 export interface LoadedSkill {
-    metadata: SkillMetadata;
-    content: string;
-    path: string;
-    filePath: string;
+  metadata: SkillMetadata;
+  content: string;
+  path: string;
+  filePath: string;
 }
 
 /**
