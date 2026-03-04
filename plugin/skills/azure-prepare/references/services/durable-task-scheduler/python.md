@@ -176,7 +176,7 @@ def workflow_with_retry(context: df.DurableOrchestrationContext):
 
 ## Durable Task SDK (Non-Functions)
 
-For applications running outside Azure Functions (containers, VMs, ACA, AKS):
+For applications running outside Azure Functions (containers, VMs, Azure Container Apps, Azure Kubernetes Service):
 
 ```python
 import asyncio

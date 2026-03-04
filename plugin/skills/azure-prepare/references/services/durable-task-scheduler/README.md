@@ -18,7 +18,7 @@ Build reliable, fault-tolerant workflows using durable execution with Azure Dura
 | Framework | Best For | Hosting |
 |-----------|----------|---------|
 | **Durable Functions** | Serverless event-driven apps | Azure Functions |
-| **Durable Task SDKs** | Any compute (containers, VMs) | ACA, AKS, App Service, VMs |
+| **Durable Task SDKs** | Any compute (containers, VMs) | Azure Container Apps, Azure Kubernetes Service, App Service, VMs |
 
 > **💡 TIP**: Use Durable Functions for serverless with built-in triggers. Use Durable Task SDKs for hosting flexibility.
 

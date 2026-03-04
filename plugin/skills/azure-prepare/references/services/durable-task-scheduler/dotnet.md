@@ -173,7 +173,7 @@ catch (TaskFailedException ex)
 
 ## Durable Task SDK (Non-Functions)
 
-For applications running outside Azure Functions (containers, VMs, ACA, AKS):
+For applications running outside Azure Functions (containers, VMs, Azure Container Apps, Azure Kubernetes Service):
 
 ```csharp
 var connectionString = "Endpoint=http://localhost:8080;TaskHub=default;Authentication=None";
