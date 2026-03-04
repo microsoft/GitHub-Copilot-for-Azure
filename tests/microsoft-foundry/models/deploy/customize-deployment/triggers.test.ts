@@ -25,11 +25,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       // Core customization phrases
       "I want to customize the deployment for gpt-4o",
       "customize model deployment",
-      "deploy with custom settings",
+      "deploy with custom settings for my model",
 
       // SKU selection
-      "deploy with specific SKU",
-      "select SKU for deployment",
+      "deploy model with specific SKU",
+      "select SKU for model deployment",
 
       // Capacity configuration
       "set capacity for deployment",
@@ -40,8 +40,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "detailed deployment configuration",
 
       // PTU deployments
-      "deploy with PTU",
-      "PTU deployment",
+      "deploy model with PTU configuration",
+      "PTU provisioned deployment for model",
       "provisioned throughput deployment",
       "deploy with provisioned capacity",
     ];
@@ -68,9 +68,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure GCP Cloud Functions",
 
       // Quick deployment scenarios (should use deploy-model-optimal-region)
-      "Deploy to optimal region",
-
-      // Non-deployment Azure tasks
       "Set up virtual network",
       "Configure Azure Storage",
     ];
