@@ -1,36 +1,12 @@
 # Private Network Standard Agent Setup
 
-> **MANDATORY:** Read [Standard Agent Setup with Network Isolation docs](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/configure-private-link?tabs=azure-portal&pivots=fdp-project) before proceeding.
+> **MANDATORY:** Read [Standard Agent Setup with Network Isolation docs](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/configure-private-link?tabs=azure-portal&pivots=fdp-project) before proceeding. It covers RBAC requirements, resource provider registration, and role assignments.
 
 ## Overview
 
 Extends [standard agent setup](standard-agent-setup.md) with full VNet isolation using private endpoints and subnet delegation. All resources communicate over private network only.
 
-## Prerequisites
-
-### RBAC Requirements
-
-| Role | Scope | Purpose |
-|------|-------|---------|
-| **Owner** or **Role Based Access Administrator** | Resource Group | Assign RBAC to managed identity (Storage, Cosmos DB, AI Search) |
-| **Azure AI Account Owner** | Subscription/RG | Create Cognitive Services account and project |
-| **Azure AI User** | Project | Create and edit agents |
-
-Network Administrator permissions required in enterprise/restricted environments.
-
-### Resource Provider Registration
-
-```bash
-az provider register --namespace 'Microsoft.KeyVault'
-az provider register --namespace 'Microsoft.CognitiveServices'
-az provider register --namespace 'Microsoft.Storage'
-az provider register --namespace 'Microsoft.Search'
-az provider register --namespace 'Microsoft.Network'
-az provider register --namespace 'Microsoft.App'
-az provider register --namespace 'Microsoft.ContainerService'
-```
-
-### Networking
+## Networking Constraints
 
 Two subnets required:
 
@@ -51,16 +27,6 @@ Two subnets required:
 [Private Network Standard Agent Setup Bicep](https://github.com/microsoft-foundry/foundry-samples/tree/main/infrastructure/infrastructure-setup-bicep/15-private-network-standard-agent-setup)
 
 > ⚠️ **Warning:** Capability host provisioning is **asynchronous** (10–20 minutes). Poll deployment status until success before proceeding.
-
-## RBAC Roles Assigned by Template
-
-| Role | Target Resource |
-|------|----------------|
-| Storage Blob Data Contributor | Storage Account |
-| Cosmos DB Operator | Cosmos DB Account |
-| Cosmos Built-In Data Contributor | Cosmos DB containers |
-| Search Index Data Contributor | AI Search Service |
-| Search Service Contributor | AI Search Service |
 
 ## Post-Deployment
 
