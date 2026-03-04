@@ -26,12 +26,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(desc).toMatch(/azure ai|ai search|speech|openai|document intelligence/);
     });
 
-    test("description includes USE FOR guidance", () => {
-      expect(skill.metadata.description).toContain("USE FOR");
-    });
-
-    test("description includes DO NOT USE FOR guidance", () => {
-      expect(skill.metadata.description).toContain("DO NOT USE FOR");
+    test("description includes WHEN guidance", () => {
+      expect(skill.metadata.description).toContain("WHEN:");
     });
   });
 
