@@ -30,42 +30,42 @@ export interface LoadedSkill {
  * Load a skill by name
  */
 export function loadSkill(skillName: string): LoadedSkill {
-    const skillPath = path.join(
-        path.resolve(__dirname, "../../../plugin/skills"),
-        skillName
-    );
-    const skillFile = path.join(skillPath, "SKILL.md");
+  const skillPath = path.join(
+    path.resolve(__dirname, "../../../plugin/skills"),
+    skillName
+  );
+  const skillFile = path.join(skillPath, "SKILL.md");
 
-    if (!fs.existsSync(skillFile)) {
-        throw new Error(`SKILL.md not found for skill: ${skillName} at ${skillFile}`);
-    }
+  if (!fs.existsSync(skillFile)) {
+    throw new Error(`SKILL.md not found for skill: ${skillName} at ${skillFile}`);
+  }
 
-    const fileContent = fs.readFileSync(skillFile, "utf-8");
-    const { data: metadata, content } = matter(fileContent);
+  const fileContent = fs.readFileSync(skillFile, "utf-8");
+  const { data: metadata, content } = matter(fileContent);
 
-    return {
-        metadata: {
-            name: (metadata.name as string) || skillName,
-            description: (metadata.description as string) || "",
-            ...metadata
-        },
-        content: content.trim(),
-        path: skillPath,
-        filePath: skillFile
-    };
+  return {
+    metadata: {
+      name: (metadata.name as string) || skillName,
+      description: (metadata.description as string) || "",
+      ...metadata
+    },
+    content: content.trim(),
+    path: skillPath,
+    filePath: skillFile
+  };
 }
 
 /**
  * @returns Names of skills in azure plugin.
  */
 export function listSkills(): string[] {
-    const skillsDir = path.resolve(__dirname, "../../../plugin/skills");
-    const items = fs.readdirSync(skillsDir, { withFileTypes: true });
-    return items
-        .filter((item) => item.isDirectory())
-        .filter((item) => {
-            const skillMdPath = path.join(item.parentPath, item.name, "SKILL.md");
-            return fs.existsSync(skillMdPath);
-        })
-        .map((item) => item.name);
+  const skillsDir = path.resolve(__dirname, "../../../plugin/skills");
+  const items = fs.readdirSync(skillsDir, { withFileTypes: true });
+  return items
+    .filter((item) => item.isDirectory())
+    .filter((item) => {
+      const skillMdPath = path.join(item.parentPath, item.name, "SKILL.md");
+      return fs.existsSync(skillMdPath);
+    })
+    .map((item) => item.name);
 }

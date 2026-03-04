@@ -10,22 +10,22 @@ const SKILL_CHAR_BUDGET_ENV = "SKILL_CHAR_BUDGET";
 const DEFAULT_SKILL_CHAR_BUDGET = 15000;
 
 function getSkillCharBudget() {
-    const envBudget = process.env[SKILL_CHAR_BUDGET_ENV];
-    if (envBudget) {
-        const parsed = parseInt(envBudget, 10);
-        if (!isNaN(parsed) && parsed > 0) {
-            return parsed;
-        }
+  const envBudget = process.env[SKILL_CHAR_BUDGET_ENV];
+  if (envBudget) {
+    const parsed = parseInt(envBudget, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
     }
-    return DEFAULT_SKILL_CHAR_BUDGET;
+  }
+  return DEFAULT_SKILL_CHAR_BUDGET;
 }
 
 function formatSkillForToolDescription(skillName: string): string {
-    const skill = loadSkill(skillName);
+  const skill = loadSkill(skillName);
 
-    // azure plugin skills are loaded from "Custom" locations when they are installed via marketplace.
-    // The formatted text may be different but the char count would be similar.
-    return `<skill>
+  // azure plugin skills are loaded from "Custom" locations when they are installed via marketplace.
+  // The formatted text may be different but the char count would be similar.
+  return `<skill>
   <name>${escapeXml(skill.metadata.name)}</name>
   <description>${escapeXml(skill.metadata.description)}</description>
   <location>Custom</location>
@@ -42,41 +42,41 @@ function checkCopilotCliSkillsCharBudget(): {
     canFitInBudget: boolean,
     budget: number,
     actualCharCount: number
-} {
-    const skills = listSkills();
-    const budget = getSkillCharBudget();
-    if (skills.length === 0) {
-        return {
-            canFitInBudget: true,
-            budget: budget,
-            actualCharCount: 0
-        }
-    }
-
-    let charCount = 0;
-
-    for (const skill of skills) {
-        const skillXml = formatSkillForToolDescription(skill);
-        // +1 for newline between skills
-        charCount += skillXml.length + 1;
-    }
-
+    } {
+  const skills = listSkills();
+  const budget = getSkillCharBudget();
+  if (skills.length === 0) {
     return {
-        canFitInBudget: charCount <= budget,
-        budget: budget,
-        actualCharCount: charCount
+      canFitInBudget: true,
+      budget: budget,
+      actualCharCount: 0
     }
+  }
+
+  let charCount = 0;
+
+  for (const skill of skills) {
+    const skillXml = formatSkillForToolDescription(skill);
+    // +1 for newline between skills
+    charCount += skillXml.length + 1;
+  }
+
+  return {
+    canFitInBudget: charCount <= budget,
+    budget: budget,
+    actualCharCount: charCount
+  }
 }
 
 function main() {
-    const result = checkCopilotCliSkillsCharBudget();
-    if (!result.canFitInBudget) {
-        console.error(`Formatted skill description char count exceeds the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
-        process.exit(1);
-    } else {
-        console.log(`Formatted skill description char count fits within the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
-    }
-    return;
+  const result = checkCopilotCliSkillsCharBudget();
+  if (!result.canFitInBudget) {
+    console.error(`Formatted skill description char count exceeds the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
+    process.exit(1);
+  } else {
+    console.log(`Formatted skill description char count fits within the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
+  }
+  return;
 }
 
 main();
