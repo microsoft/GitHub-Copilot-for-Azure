@@ -196,7 +196,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
       }
 
       case "assistant.message_delta": {
-      // Accumulate deltas for streaming - we'll use the final message instead
+        // Accumulate deltas for streaming - we'll use the final message instead
         const messageId = event.data.messageId as string;
         const deltaContent = event.data.deltaContent as string;
         if (messageId && deltaContent) {
@@ -216,7 +216,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
       }
 
       case "assistant.reasoning_delta": {
-      // Accumulate reasoning deltas
+        // Accumulate reasoning deltas
         const reasoningId = event.data.reasoningId as string;
         const deltaContent = event.data.deltaContent as string;
         if (reasoningId && deltaContent) {
@@ -240,7 +240,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
           lines.push(`skill: ${skillName}`);
           lines.push("```");
         } else {
-        // Regular tool call
+          // Regular tool call
           let argsJson: string;
           try {
             argsJson = JSON.stringify(args, null, 2);
@@ -492,6 +492,10 @@ export function useAgentRunner() {
         cwd: testWorkspace,
         cliArgs: cliArgs,
         cliPath: getBundledCliPath(),
+        env: {
+          ...process.env,
+          SKILLS_INSTRUCTIONS: "true"
+        }
       }) as CopilotClient;
       entry.client = client;
 
@@ -509,10 +513,6 @@ export function useAgentRunner() {
             tools: ["*"]
           }
         },
-        systemMessage: config.systemPrompt ?? {
-          mode: "append",
-          content: "When a relevant skill is available, prefer using it instead of doing the task manually."
-        }
       });
       entry.session = session;
 
