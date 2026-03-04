@@ -12,6 +12,7 @@
 //       tags: tags
 //       functionAppPrincipalId: app.outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID
 //       principalId: principalId
+//       uamiClientId: apiUserAssignedIdentity.outputs.clientId
 //     }
 //   }
 //
@@ -31,11 +32,14 @@ param location string = resourceGroup().location
 @description('Resource tags')
 param tags object = {}
 
-@description('Principal ID of the Function App managed identity (UAMI or SAMI)')
+@description('Principal ID of the Function App managed identity (UAMI)')
 param functionAppPrincipalId string
 
 @description('Principal ID of the deploying user (for dashboard access). Set via AZURE_PRINCIPAL_ID.')
 param principalId string = ''
+
+@description('UAMI client ID from base template identity module - REQUIRED for UAMI auth')
+param uamiClientId string
 
 @allowed(['Consumption', 'Dedicated'])
 @description('Use Consumption for quickstarts/variable workloads, Dedicated for high-demand/predictable throughput')
@@ -102,4 +106,11 @@ resource dashboardRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-0
 output schedulerName string = scheduler.name
 output schedulerEndpoint string = scheduler.properties.endpoint
 output taskHubName string = taskHub.name
-output connectionString string = 'Endpoint=${scheduler.properties.endpoint};Authentication=ManagedIdentity;TaskHub=${taskHub.name}'
+output connectionString string = 'Endpoint=${scheduler.properties.endpoint};Authentication=ManagedIdentity;ClientID=${uamiClientId};TaskHub=${taskHub.name}'
+
+// ============================================================================
+// APP SETTINGS OUTPUT - Use this to ensure correct UAMI configuration
+// ============================================================================
+output appSettings object = {
+  DURABLE_TASK_SCHEDULER_CONNECTION_STRING: 'Endpoint=${scheduler.properties.endpoint};Authentication=ManagedIdentity;ClientID=${uamiClientId};TaskHub=${taskHub.name}'
+}

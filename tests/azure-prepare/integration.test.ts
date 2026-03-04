@@ -852,7 +852,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           workspacePath = workspace;
         },
         prompt:
-          "Prepare the Azure deployment infrastructure for a new Durable Functions app " +
+          "Prepare the Azure deployment infrastructure for a new workflow app " +
           "that will orchestrate a multi-step order processing pipeline. " +
           "Generate the Bicep templates, RBAC assignments, and azure.yaml. " +
           "Use the eastus2 region and my current subscription.",

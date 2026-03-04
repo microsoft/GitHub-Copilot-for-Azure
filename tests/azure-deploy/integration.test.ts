@@ -13,11 +13,10 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
   useAgentRunner,
-  getToolCalls
 } from "../utils/agent-runner";
 import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -271,40 +270,24 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Prepare the Azure deployment infrastructure for a new Durable Functions app that will orchestrate a multi-step order processing pipeline. Generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription.",
+        prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
       });
 
       softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
       expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
       expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
 
-      // Verify DTS-specific Bicep content was generated
-      const createCalls = getToolCalls(agentMetadata, "create");
-      const bicepContent = createCalls
-        .filter(event => {
-          const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
-          return args?.path?.endsWith(".bicep");
-        })
-        .map(event => {
-          const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-          return args?.file_text ?? "";
-        })
-        .join("\n");
+      // Verify DTS-specific Bicep content on disk
+      const bicepPattern = /\.bicep$/;
+      expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers/i, bicepPattern)).toBe(true);
+      expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers\/taskHubs/i, bicepPattern)).toBe(true);
+      expect(doesWorkspaceFileIncludePattern(workspacePath!, /0ad04412-c4d5-4796-b79c-f76d14c8d402/i, bicepPattern)).toBe(true);
 
-      // Must provision a Durable Task Scheduler resource
-      expect(/Microsoft\.DurableTask\/schedulers/i.test(bicepContent)).toBe(true);
-
-      // Must provision a task hub child resource
-      expect(/Microsoft\.DurableTask\/schedulers\/taskHubs/i.test(bicepContent)).toBe(true);
-
-      // Must assign the Durable Task Data Contributor RBAC role
-      expect(/0ad04412-c4d5-4796-b79c-f76d14c8d402/i.test(bicepContent)).toBe(true);
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
 

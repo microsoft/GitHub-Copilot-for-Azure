@@ -49,8 +49,8 @@ docker run -d -p 8080:8080 -p 8082:8082 --name dts-emulator mcr.microsoft.com/dt
 | Environment | Connection String |
 |-------------|-------------------|
 | Local Development (Emulator) | `Endpoint=http://localhost:8080;Authentication=None;TaskHub=default` |
-| Azure (System-Assigned MI) | `Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity` |
-| Azure (User-Assigned MI) | `Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity;ClientID=<uami-client-id>` |
+| Azure (System-Assigned MI) | `Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity;TaskHub=default` |
+| Azure (User-Assigned MI) | `Endpoint=https://<scheduler>.durabletask.io;Authentication=ManagedIdentity;ClientID=<uami-client-id>;TaskHub=default` |
 
 > **⚠️ NOTE**: Durable Task Scheduler uses identity-based authentication only — no connection strings with keys. When using a User-Assigned Managed Identity (UAMI), you must include the `ClientID` in the connection string.
 

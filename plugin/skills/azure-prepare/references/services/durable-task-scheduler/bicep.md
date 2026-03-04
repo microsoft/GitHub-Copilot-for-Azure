@@ -44,17 +44,17 @@ resource taskHub 'Microsoft.DurableTask/schedulers/taskHubs@2025-11-01' = {
 The Function App's managed identity **must** have the `Durable Task Data Contributor` role on the scheduler resource. Without it, the app receives **403 PermissionDenied** on gRPC calls.
 
 ```bicep
-// Assumes functionApp is defined elsewhere in the same Bicep file, e.g.:
-// resource functionApp 'Microsoft.Web/sites@2023-12-01' = { ... }
+// Assumes the UAMI principal ID is passed from the base template's identity module
+param functionAppPrincipalId string
 
 var durableTaskDataContributorRoleId = '0ad04412-c4d5-4796-b79c-f76d14c8d402'
 
 resource durableTaskRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(scheduler.id, functionApp.id, durableTaskDataContributorRoleId)
+  name: guid(scheduler.id, functionAppPrincipalId, durableTaskDataContributorRoleId)
   scope: scheduler
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', durableTaskDataContributorRoleId)
-    principalId: functionApp.identity.principalId
+    principalId: functionAppPrincipalId
     principalType: 'ServicePrincipal'
   }
 }
@@ -86,11 +86,16 @@ resource dashboardRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-0
 Include these entries in the Function App resource's `siteConfig.appSettings` array:
 
 ```bicep
+// UAMI client ID from base template identity module - REQUIRED for UAMI auth
+param uamiClientId string
+
 {
   name: 'DURABLE_TASK_SCHEDULER_CONNECTION_STRING'
-  value: 'Endpoint=${scheduler.properties.endpoint};TaskHub=${taskHub.name};Authentication=ManagedIdentity'
+  value: 'Endpoint=${scheduler.properties.endpoint};TaskHub=${taskHub.name};Authentication=ManagedIdentity;ClientID=${uamiClientId}'
 }
 ```
+
+> **⚠️ IMPORTANT**: The base templates use User Assigned Managed Identity (UAMI). You **must** include `ClientID=<uami-client-id>` in the connection string. Without it, the Durable Task SDK cannot resolve the correct identity.
 
 > **⚠️ WARNING**: Always use `scheduler.properties.endpoint` to get the scheduler URL. Do **not** construct it manually — the endpoint includes a hash suffix and region (e.g., `https://myscheduler-abc123.westus2.durabletask.io`).
 

@@ -36,6 +36,7 @@ After architecture planning, research each selected component to gather best pra
 | API Management | [APIM](apim.md) | `azure-aigateway` (invoke for AI Gateway policies) |
 | Logic Apps | [Logic Apps](services/logic-apps/README.md) | — |
 | **Workflow & Orchestration** | | |
+| Durable Functions | [Durable Functions](services/functions/durable.md), [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
 | Durable Task Scheduler | [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
 | **Security & Identity** | | |
 | Key Vault | [Key Vault](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
