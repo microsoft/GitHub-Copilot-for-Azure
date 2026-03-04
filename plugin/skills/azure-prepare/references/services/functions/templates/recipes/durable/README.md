@@ -10,7 +10,7 @@ This recipe composes with any HTTP base template to create a Durable Functions a
 - **HTTP Client** - Starts and queries orchestrations
 - **Durable Task Scheduler** - Fully managed backend for state persistence, orchestration history, and task hub management
 
-> **⚠️ IMPORTANT**: This recipe uses **Durable Task Scheduler** (DTS) as the storage backend — NOT Azure Storage queues/tables. DTS is the recommended, fully managed option with the best performance and developer experience. See [Durable Task Scheduler reference](../../../../../durable-task-scheduler/README.md) for details.
+> **⚠️ IMPORTANT**: This recipe uses **Durable Task Scheduler** (DTS) as the storage backend — NOT Azure Storage queues/tables. DTS is the recommended, fully managed option with the best performance and developer experience. See [Durable Task Scheduler reference](../../../../durable-task-scheduler/README.md) for details.
 
 ## Integration Type
 
@@ -32,7 +32,7 @@ Apply these steps AFTER `azd init -t functions-quickstart-{lang}-azd`:
 | 3 | **Add app settings** | Add `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` to function app configuration |
 | 4 | **Add extension packages** | Add Durable Functions + DTS extension packages for the runtime |
 | 5 | **Replace source code** | Add Orchestrator + Activity + Client from `source/{lang}.md` |
-| 6 | **Configure host.json** | Set DTS storage provider (see [DTS language references](../../../../../durable-task-scheduler/README.md)) |
+| 6 | **Configure host.json** | Set DTS storage provider (see [DTS language references](../../../../durable-task-scheduler/README.md)) |
 
 ## IaC Module
 
@@ -81,10 +81,10 @@ The `host.json` must configure DTS as the storage provider. The `type` value dif
 
 | Language | `storageProvider.type` | Reference |
 |----------|----------------------|-----------|
-| C# (.NET) | `azureManaged` | [dotnet.md](../../../durable-task-scheduler/dotnet.md) |
-| Python | `durabletask-scheduler` | [python.md](../../../durable-task-scheduler/python.md) |
-| JavaScript/TypeScript | `durabletask-scheduler` | [javascript.md](../../../durable-task-scheduler/javascript.md) |
-| Java | `durabletask-scheduler` | [java.md](../../../durable-task-scheduler/java.md) |
+| C# (.NET) | `azureManaged` | [dotnet.md](../../../../durable-task-scheduler/dotnet.md) |
+| Python | `durabletask-scheduler` | [python.md](../../../../durable-task-scheduler/python.md) |
+| JavaScript/TypeScript | `durabletask-scheduler` | [javascript.md](../../../../durable-task-scheduler/javascript.md) |
+| Java | `durabletask-scheduler` | [java.md](../../../../durable-task-scheduler/java.md) |
 
 **Example (Python / JavaScript / Java):**
 ```json

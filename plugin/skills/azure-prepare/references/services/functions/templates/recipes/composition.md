@@ -53,7 +53,7 @@ IF integration IN [mcp]:
 IF integration IN [durable]:
   → Full recipe with Durable Task Scheduler backend:
     - Add DTS IaC module (scheduler + task hub + RBAC). Continue to Step 3.
-    - Reference: [Durable Task Scheduler](../../../../durable-task-scheduler/README.md) and [Bicep patterns](../../../../durable-task-scheduler/bicep.md).
+    - Reference: [Durable Task Scheduler](../../../durable-task-scheduler/README.md) and [Bicep patterns](../../../durable-task-scheduler/bicep.md).
     - Do NOT use Azure Storage queues/tables as the durable backend — always use Durable Task Scheduler.
   → Continue to Step 3.
 
