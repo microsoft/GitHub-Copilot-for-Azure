@@ -32,17 +32,16 @@ function formatSkillForToolDescription(skillName: string): string {
 </skill>`;
 }
 
+type CheckSkillCharBudgetResult = {
+  canFitInBudget: boolean;
+  budget: number;
+  actualCharCount: number;
+};
+
 /**
- * Formats all available skills for the tool description, with truncation.
- * Skills are added in priority order until the character budget is exceeded.
- * @param skills - Array of skills in priority order
- * @returns Formatted XML string with available skills
+ * Checks if the formatted skill description of azure plugin skills can fit in Copilot CLI's skill char budget.
  */
-function checkCopilotCliSkillsCharBudget(): {
-    canFitInBudget: boolean,
-    budget: number,
-    actualCharCount: number
-    } {
+function checkCopilotCliSkillsCharBudget(): CheckSkillCharBudgetResult {
   const skills = listSkills();
   const budget = getSkillCharBudget();
   if (skills.length === 0) {
