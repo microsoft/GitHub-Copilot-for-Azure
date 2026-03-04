@@ -30,12 +30,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeLessThanOrEqual(1024);
     });
 
-    test("description contains USE FOR triggers", () => {
-      expect(skill.metadata.description).toMatch(/USE FOR:/i);
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      expect(skill.metadata.description).toMatch(/DO NOT USE FOR:/i);
+    test("description contains WHEN triggers", () => {
+      expect(skill.metadata.description).toMatch(/WHEN:/i);
     });
 
     test("description mentions VM and VMSS keywords", () => {
