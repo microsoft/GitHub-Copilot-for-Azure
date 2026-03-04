@@ -1,6 +1,6 @@
 ---
 name: azure-rbac
-description: "Helps users find the right Azure RBAC role for an identity with least privilege access, then generate CLI commands and Bicep code to assign it. Also provides guidance on permissions required to grant roles. USE FOR: \"what role should I assign\", \"least privilege role\", \"RBAC role for\", \"role to read blobs\", \"role for managed identity\", \"custom role definition\", \"assign role to identity\", \"what role do I need to grant access\", \"permissions to assign roles\". DO NOT USE FOR: creating or configuring managed identities, or general Azure security hardening; those are out of scope for this role-selection skill."
+description: "Helps users find the right Azure RBAC role for an identity with least privilege access, then generate CLI commands and Bicep code to assign it. Also provides guidance on permissions required to grant roles. WHEN: what role should I assign, least privilege role, RBAC role for, role to read blobs, role for managed identity, custom role definition, assign role to identity, what role do I need to grant access, permissions to assign roles."
 license: MIT
 metadata:
   author: Microsoft
