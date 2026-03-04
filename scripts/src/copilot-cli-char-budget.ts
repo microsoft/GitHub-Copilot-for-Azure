@@ -71,11 +71,11 @@ function main() {
   const result = checkCopilotCliSkillsCharBudget();
   if (!result.canFitInBudget) {
     console.error(`Formatted skill description char count exceeds the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   } else {
     console.log(`Formatted skill description char count fits within the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
   }
-  return;
 }
 
 main();
