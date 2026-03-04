@@ -13,7 +13,7 @@ import matter from "gray-matter";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export interface SkillMetadata {
+interface SkillMetadata {
   name: string;
   description: string;
   [key: string]: unknown;
@@ -53,46 +53,4 @@ export async function loadSkill(skillName: string): Promise<LoadedSkill> {
     path: skillPath,
     filePath: skillFile
   };
-}
-
-/**
- * Load all skills from the skills directory
- */
-export async function loadAllSkills(): Promise<LoadedSkill[]> {
-  const skillsPath = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
-  const skillDirs = fs.readdirSync(skillsPath, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name);
-
-  const skills: LoadedSkill[] = [];
-  for (const skillName of skillDirs) {
-    try {
-      const skill = await loadSkill(skillName);
-      skills.push(skill);
-    } catch (error) {
-      // Skip skills without SKILL.md
-      console.warn(`Skipping ${skillName}: ${(error as Error).message}`);
-    }
-  }
-
-  return skills;
-}
-
-/**
- * Get list of all skill names
- */
-export function getSkillNames(): string[] {
-  const skillsPath = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
-  return fs.readdirSync(skillsPath, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name);
-}
-
-/**
- * Check if a skill has a SKILL.md file
- */
-export function hasSkillDefinition(skillName: string): boolean {
-  const skillsPath = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
-  const skillFile = path.join(skillsPath, skillName, "SKILL.md");
-  return fs.existsSync(skillFile);
 }

@@ -14,7 +14,7 @@ export interface TriggerResult {
   matchedKeywords: string[];
 }
 
-export interface PromptTestResult extends TriggerResult {
+interface PromptTestResult extends TriggerResult {
   prompt: string;
 }
 
@@ -35,7 +35,7 @@ export class TriggerMatcher {
    */
   private _extractKeywords(): string[] {
     const keywords = new Set<string>();
-    
+
     // Extract from name (split on hyphens)
     if (this.skill.metadata.name) {
       this.skill.metadata.name.split("-").forEach(word => {
@@ -104,15 +104,15 @@ export class TriggerMatcher {
 
     // Calculate confidence based on matches
     const confidence = matchedKeywords.length / Math.max(this.keywords.length, 1);
-    
+
     // Threshold for triggering (at least 2 keywords or 20% match)
     const triggered = matchedKeywords.length >= 2 || confidence >= 0.2;
 
     return {
       triggered,
       confidence: Math.min(confidence, 1),
-      reason: triggered 
-        ? `Matched ${matchedKeywords.length} keywords` 
+      reason: triggered
+        ? `Matched ${matchedKeywords.length} keywords`
         : `Only matched ${matchedKeywords.length} keywords (need >= 2 or 20% confidence)`,
       matchedKeywords
     };
@@ -127,11 +127,4 @@ export class TriggerMatcher {
       ...this.shouldTrigger(prompt)
     }));
   }
-}
-
-/**
- * Create a trigger matcher for a skill
- */
-export function createTriggerMatcher(skill: LoadedSkill): TriggerMatcher {
-  return new TriggerMatcher(skill);
 }

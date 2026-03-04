@@ -16,8 +16,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
-import { isSkillInvoked } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-rbac";
 const RUNS_PER_PROMPT = 5;

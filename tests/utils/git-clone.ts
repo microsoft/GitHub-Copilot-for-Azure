@@ -8,7 +8,7 @@
 import { mkdirSync } from "node:fs";
 import { simpleGit, type SimpleGitOptions } from "simple-git";
 
-export interface CloneOptions {
+interface CloneOptions {
   /** Full repository URL (HTTPS or SSH). */
   repoUrl: string;
   /** Target directory to clone into. */

@@ -3,6 +3,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
 import integrationTestNameRule from "./eslint-rules/integration-test-name.mjs";
+import importPlugin from "eslint-plugin-import";
 
 const tsFiles = ["**/*.ts"];
 const jsFiles = ["**/*.js", "**/*.mjs"];
@@ -59,6 +60,8 @@ export default defineConfig(
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.recommended,
+      importPlugin.flatConfigs.recommended,
+      importPlugin.flatConfigs.typescript
     ],
     plugins: {
       jest,
@@ -81,7 +84,8 @@ export default defineConfig(
       "@typescript-eslint/no-require-imports": "error",
       // A significant number of integration tests generate reports for human review.
       // We don't have deterministic metrics for them yet.
-      "jest/expect-expect": "off"
+      "jest/expect-expect": "off",
+      "import/no-unused-modules": [1, { "unusedExports": true }]
     },
   },
   // JavaScript files - no TypeScript project needed
