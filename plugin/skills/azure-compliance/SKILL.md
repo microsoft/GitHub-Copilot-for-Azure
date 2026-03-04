@@ -4,7 +4,7 @@ description: "Comprehensive Azure compliance and security auditing capabilities 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Azure Compliance & Security Auditing

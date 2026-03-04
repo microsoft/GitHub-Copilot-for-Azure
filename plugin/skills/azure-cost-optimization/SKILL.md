@@ -4,7 +4,7 @@ description: "Identify and quantify cost savings across Azure subscriptions by a
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Azure Cost Optimization Skill

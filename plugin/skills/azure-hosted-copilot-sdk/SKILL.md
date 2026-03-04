@@ -4,7 +4,7 @@ description: "Build and deploy GitHub Copilot SDK apps to Azure. WHEN: build cop
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # GitHub Copilot SDK on Azure
