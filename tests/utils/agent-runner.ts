@@ -18,10 +18,10 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact";
+import { listSkills } from "./skill-loader";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate";
-export { isSkillInvoked, getToolCalls } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +38,7 @@ function getBundledCliPath(): string {
   return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
 }
 
-export interface TokenUsage {
+interface TokenUsage {
   /** Total input tokens across all LLM calls */
   inputTokens: number;
   /** Total output tokens across all LLM calls */
@@ -107,6 +107,12 @@ export interface AgentRunConfig {
     content: string
   };
   preserveWorkspace?: boolean;
+
+  /**
+   * Skills to include for the agent run.
+   * If undefined, all the skills in azure plugin will be included.
+   */
+  includeSkills?: string[];
 }
 
 interface KeywordOptions {
@@ -501,10 +507,21 @@ export function useAgentRunner() {
 
       const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
+      let disabledSkills: string[] | undefined;
+      if (config.includeSkills) {
+        const skills = listSkills();
+        if (config.includeSkills.some((skillName) => !skills.includes(skillName))) {
+          const invalidSkills = config.includeSkills.filter((skillName) => !skills.includes(skillName));
+          throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
+        }
+        disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
+      }
+
       const session = await client.createSession({
         model: modelOverride || "claude-sonnet-4.5",
         onPermissionRequest: approveAll,
         skillDirectories: [skillDirectory],
+        disabledSkills: disabledSkills,
         mcpServers: {
           azure: {
             type: "stdio",
