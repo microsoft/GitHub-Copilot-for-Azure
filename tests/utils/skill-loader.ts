@@ -54,3 +54,18 @@ export async function loadSkill(skillName: string): Promise<LoadedSkill> {
     filePath: skillFile
   };
 }
+
+/**
+ * @returns Names of skills in azure plugin.
+ */
+export function listSkills(): string[] {
+  const skillsDir = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
+  const items = fs.readdirSync(skillsDir, { withFileTypes: true });
+  return items
+    .filter((item) => item.isDirectory())
+    .filter((item) => {
+      const skillMdPath = path.join(skillsDir, item.name, "SKILL.md");
+      return fs.existsSync(skillMdPath);
+    })
+    .map((item) => item.name);
+}
