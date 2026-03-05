@@ -6,7 +6,7 @@ metadata:
   author: Microsoft
   version: "1.0.1"
 ---
-
+TODO: revert after testing
 # Azure Diagnostics
 
 > **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
