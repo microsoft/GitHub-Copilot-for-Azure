@@ -1,6 +1,8 @@
 name: Publish to microsoft/azure-skills
 
 on:
+  schedule:
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 permissions:
