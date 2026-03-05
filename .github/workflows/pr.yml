@@ -208,7 +208,6 @@ jobs:
           for file in $CHANGED_FILES; do
             SKILL_FILES="$SKILL_FILES ../$file"
           done
-          SKILLS="${SKILLS# }"
           
           # Run frontmatter spec validation
           if OUTPUT=$(npm run frontmatter -- $SKILL_FILES 2>&1); then
