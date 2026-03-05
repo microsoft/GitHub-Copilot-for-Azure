@@ -15,7 +15,7 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: source-repo
 

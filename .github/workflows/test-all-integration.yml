@@ -67,7 +67,7 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve inputs based on trigger type
         id: resolve
@@ -115,7 +115,8 @@ jobs:
           fi
           
           echo "Resolved inputs:"
-          cat "$GITHUB_OUTPUT"
+          echo "skills=$(grep '^skills=' "$GITHUB_OUTPUT" | tail -1)"
+          echo "debug=$(grep '^debug=' "$GITHUB_OUTPUT" | tail -1)"
 
   setup:
     name: Build skill matrix
@@ -183,7 +184,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install azd
         uses: Azure/setup-azd@v2
