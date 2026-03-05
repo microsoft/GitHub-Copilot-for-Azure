@@ -1,0 +1,106 @@
+name: Publish to agency-microsoft/playground
+
+on:
+  schedule:
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EXCLUDE_SKILLS: 'entra-app-registration'
+
+jobs:
+  sync-and-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the current repo
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          path: source-repo
+
+      # 2. Clone the main branch of agency-microsoft/playground and create a feature branch
+      - name: Clone agency-microsoft/playground and create feature branch
+        env:
+          GH_TOKEN: ${{ secrets.AGENCY_PLAYGROUND_PAT }}
+        run: |
+          gh repo clone agency-microsoft/playground target-repo -- --branch main --single-branch
+
+          cd target-repo
+          BRANCH_NAME="sync/copilot-for-azure-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+
+      # 3. Sync files from source to target (two-step to preserve target-only top-level files like agency.json)
+      - name: Sync files
+        run: |
+          SOURCE_DIR="source-repo/plugin/"
+          TARGET_DIR="target-repo/plugins/azure/"
+
+          # Ensure target directories exist
+          mkdir -p "$TARGET_DIR/skills"
+
+          # Step 1: Sync top-level files without --delete (preserves target-only files like agency.json)
+          rsync --archive --verbose --exclude='skills/' --exclude='.claude-plugin/' "$SOURCE_DIR" "$TARGET_DIR"
+
+          # Step 2: Mirror the skills directory with --delete (full sync of skills)
+          rsync --archive --delete --verbose "$SOURCE_DIR/skills/" "$TARGET_DIR/skills/"
+
+      # 4. Remove excluded skills
+      - name: Remove excluded skills
+        run: |
+          EXCLUDE="${{ env.EXCLUDE_SKILLS }}"
+          if [ -z "$EXCLUDE" ]; then
+            echo "No skills to exclude."
+            exit 0
+          fi
+
+          TARGET_SKILLS="target-repo/plugins/azure/skills"
+
+          IFS=',' read -ra SKILLS <<< "$EXCLUDE"
+          for skill in "${SKILLS[@]}"; do
+            skill=$(echo "$skill" | xargs)  # trim whitespace
+            if [ -d "$TARGET_SKILLS/$skill" ]; then
+              rm -rf "$TARGET_SKILLS/$skill"
+              echo "Excluded skill: $skill"
+            else
+              echo "Warning: skill directory '$skill' not found, skipping"
+            fi
+          done
+
+      # 5. Commit changes and create a PR
+      - name: Commit and push changes
+        id: commit
+        working-directory: target-repo
+        env:
+          GH_TOKEN: ${{ secrets.AGENCY_PLAYGROUND_PAT }}
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --all
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Sync plugin files from GitHub-Copilot-for-Azure"
+            git push origin "$BRANCH_NAME"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AGENCY_PLAYGROUND_PAT }}
+        run: |
+          cd target-repo
+          gh pr create \
+            --repo "agency-microsoft/playground" \
+            --base "main" \
+            --head "$BRANCH_NAME" \
+            --title "Sync plugin files from GitHub-Copilot-for-Azure (run ${{ github.run_id }})" \
+            --body "Automated sync of \`plugin/\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
