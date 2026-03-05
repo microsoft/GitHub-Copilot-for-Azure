@@ -158,7 +158,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
+        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -179,7 +179,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -300,7 +300,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region.",
+        prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -321,7 +321,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region.",
+        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -391,7 +391,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -412,7 +412,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -502,7 +502,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -523,7 +523,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
@@ -544,7 +544,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+        prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true
