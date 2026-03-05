@@ -235,7 +235,6 @@ jobs:
           for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
             SKILL_FILES="$SKILL_FILES ../$file"
           done
-          SKILLS="${SKILLS# }"
           
           # Run frontmatter spec validation
           if OUTPUT=$(npm run frontmatter -- $SKILL_FILES 2>&1); then
