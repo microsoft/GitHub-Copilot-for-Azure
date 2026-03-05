@@ -6,7 +6,8 @@
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The script retrieves a GitHub PAT from KeyVault, installs MSBench CLI, and invokes:
+    The script retrieves a GitHub PAT from KeyVault, installs MSBench CLI via
+    uv tool install, and invokes:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model>
 
     MSBench CLI reference:
@@ -41,7 +42,6 @@ if (!$Model) {
     throw "Model parameter is required."
 }
 
-$repoRoot = Join-Path $PSScriptRoot ".." ".." -Resolve
 $vaultName = "kv-msbench-eval-azuremcp"
 $secretName = "azure-eval-gh-pat"
 
@@ -50,9 +50,6 @@ Write-Host "Model: $Model"
 Write-Host "NoWait: $NoWait"
 
 $pipelineRun = $env:TF_BUILD -eq "True"
-
-. "$PSScriptRoot/Create-Venv.ps1" -VenvName "venv" -RepoRoot $repoRoot
-. "$PSScriptRoot/Activate-Venv.ps1" -VenvName "venv" -RepoRoot $repoRoot
 
 # --- Retrieve GitHub PAT from KeyVault ---
 try {
@@ -96,16 +93,16 @@ if ($env:PIP_EXTRA_INDEX_URL) {
 }
 
 
-Write-Host "`n> uv pip install msbench-cli"
-& uv pip install msbench-cli
+Write-Host "`n> uv tool install msbench-cli"
+uv tool install msbench-cli
 if ($LASTEXITCODE -ne 0) {
-    throw "uv pip install msbench-cli failed with exit code $LASTEXITCODE"
+    throw "uv tool install msbench-cli failed with exit code $LASTEXITCODE"
 }
 
-Write-Host "`n> uv run 'msbench-cli' version"
-uv run 'msbench-cli' version
+Write-Host "`n> msbench-cli version"
+msbench-cli version
 if ($LASTEXITCODE -ne 0) {
-    throw "uv run msbench-cli failed with exit code $LASTEXITCODE"
+    throw "msbench-cli version failed with exit code $LASTEXITCODE"
 }
 
 $runArgs = @(
@@ -121,7 +118,7 @@ if ($NoWait) {
 }
 
 Write-Host "`n> msbench-cli $($runArgs -join ' ')"
-uv run 'msbench-cli' @runArgs
+msbench-cli @runArgs
 if ($LASTEXITCODE -ne 0) {
     throw "msbench-cli run failed with exit code $LASTEXITCODE"
 }

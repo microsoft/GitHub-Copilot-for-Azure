@@ -12,8 +12,8 @@ steps:
       targetType: inline
       script: |
         echo "##vso[task.prependpath]$HOME/.local/bin"
-    displayName: 'Prepend path for MacOS'
-    condition: eq(variables['Agent.OS'], 'Darwin')
+    displayName: 'Prepend $HOME/.local/bin to PATH (Linux/macOS)'
+    condition: or(eq(variables['Agent.OS'], 'Linux'), eq(variables['Agent.OS'], 'Darwin'))
 
   - task: PowerShell@2
     displayName: 'Install uv (Windows)'
