@@ -6,6 +6,7 @@ exports[`troubleshoot - Trigger Tests Trigger Keywords Snapshot skill descriptio
   "extractedKeywords": [
     "agent",
     "agents",
+    "ai",
     "assignment",
     "availability",
     "azure",
@@ -79,6 +80,7 @@ exports[`troubleshoot - Trigger Tests Trigger Keywords Snapshot skill keywords m
 [
   "agent",
   "agents",
+  "ai",
   "assignment",
   "availability",
   "azure",
