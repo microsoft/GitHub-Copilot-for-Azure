@@ -1,5 +1,6 @@
 ---
 name: azure-kubernetes
+license: MIT
 metadata:
   author: Microsoft
   version: "1.0.0"
