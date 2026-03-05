@@ -79,7 +79,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
       // Non-deployment tasks
       "Set up virtual network",
-      "Configure Azure Storage",
     ];
 
     test.each(shouldNotTriggerPrompts)(
