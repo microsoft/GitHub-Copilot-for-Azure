@@ -18,7 +18,7 @@ import {
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { setup } from "./setup.js";
-import { parseSkillContent } from "../../shared/parse-skill.js";
+import { parseSkillContent } from "../../shared/skill-helper.js";
 
 const MARKETPLACE_NAME = "github-copilot-for-azure";
 const PLUGIN_NAME = "azure";
