@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry
-description: "MANDATORY: Read this skill BEFORE calling any Foundry MCP tool. Use when working with Microsoft Foundry (Azure AI Foundry): deploy AI models, manage agents (create, deploy, invoke, troubleshoot), quotas, capacity, Foundry resources. USE FOR: Microsoft Foundry, AI Foundry, hosted agent, prompt agent, create agent, deploy agent, monitor agent, invoke agent, run agent, agent chat, evaluate agent, deploy model, model catalog, create Foundry project, set up Foundry, create Foundry resource, create AI Services, AIServices kind, register resource provider, role assignment, quota, capacity, TPM, deployment failure, standard agent setup, capability host. DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app)."
+description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, prompt optimization, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, optimize prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability, standard agent setup, capability host. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
 license: MIT
 metadata:
   author: Microsoft
@@ -15,15 +15,18 @@ metadata:
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **deploy** | Build, push to ACR, manage agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
-| **invoke** | Send messages to an agent | [invoke](foundry-agent/invoke/invoke.md) |
-| **troubleshoot** | View logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create** | Create new hosted agent apps (Agent Framework, LangGraph, custom) | [create](foundry-agent/create/create.md) |
-| **project/create** | Create a new AI Foundry project | [project/create](project/create/create-foundry-project.md) |
-| **resource/create** | Create AI Services resource via CLI | [resource/create](resource/create/create-foundry-resource.md) |
-| **models/deploy-model** | Deploy models (preset, customized, or capacity discovery) | [models/deploy-model](models/deploy-model/SKILL.md) |
-| **quota** | Check quota, troubleshoot insufficient quota, request increases | [quota](quota/quota.md) |
-| **rbac** | RBAC, role assignments, managed identities, service principals | [rbac](rbac/rbac.md) |
+| **deploy** | Containerize, build, push to ACR, create/update/start/stop/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
+| **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
+| **observe** | Eval-driven optimization loop: evaluate → analyze → optimize → compare → iterate | [observe](foundry-agent/observe/observe.md) |
+| **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
+| **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
+| **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
+| **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
+| **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
+| **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
+| **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
+| **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
+| **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
 Onboarding flow: `project/create` → `deploy` → `invoke`
 

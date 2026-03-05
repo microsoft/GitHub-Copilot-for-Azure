@@ -17,8 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, softCheckSkill } from "../utils/evaluate";
-import { isSkillInvoked } from "../utils/evaluate";
+import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -840,6 +839,75 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         })
         .join("\n");
       expect(/Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i.test(allFileContents)).toBe(true);
+    });
+  });
+
+  describe("durable-task-scheduler", () => {
+    test("generates Durable Task Scheduler infrastructure and workflow code for a workflow app", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt:
+          "Prepare the Azure deployment infrastructure for a new workflow app " +
+          "that will orchestrate a multi-step order processing pipeline. " +
+          "Generate the Bicep templates, RBAC assignments, and azure.yaml. " +
+          "Use the eastus2 region and my current subscription.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true,
+        shouldEarlyTerminate: (metadata) =>
+          hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+      });
+
+      // Preconditions
+      expect(workspacePath).toBeDefined();
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      // Collect all file contents the agent wrote via create tool calls
+      const createCalls = getToolCalls(agentMetadata, "create");
+
+      // Gather all Bicep file contents
+      const bicepContents = createCalls
+        .filter(event => {
+          const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
+          return args?.path?.endsWith(".bicep");
+        })
+        .map(event => {
+          const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
+          return args?.file_text ?? "";
+        });
+      const bicepContent = bicepContents.join("\n");
+      expect(bicepContent.length).toBeGreaterThan(0);
+
+      // Must provision a Durable Task Scheduler resource
+      expect(/Microsoft\.DurableTask\/schedulers/i.test(bicepContent)).toBe(true);
+
+      // Must provision a task hub child resource
+      expect(/Microsoft\.DurableTask\/schedulers\/taskHubs/i.test(bicepContent)).toBe(true);
+
+      // Must assign the Durable Task Data Contributor RBAC role (role ID: 0ad04412-c4d5-4796-b79c-f76d14c8d402)
+      expect(/0ad04412-c4d5-4796-b79c-f76d14c8d402/i.test(bicepContent)).toBe(true);
+
+      // Must include the scheduler connection string app setting
+      const allFileContents = createCalls
+        .map(event => {
+          const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
+          return args?.file_text ?? "";
+        })
+        .join("\n");
+      expect(/DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i.test(allFileContents)).toBe(true);
+
+      // Must include ipAllowlist to avoid 403 errors (empty list denies all traffic)
+      expect(/ipAllowlist/i.test(bicepContent)).toBe(true);
+
+      // Workspace should contain orchestration/workflow code files
+      expectFiles(workspacePath!,
+        [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+        [/\.tf$/],
+      );
     });
   });
 });

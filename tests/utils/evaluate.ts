@@ -70,7 +70,7 @@ export function listFilesRecursive(dir: string): string[] {
 /**
  * Check if any file in the list matches the given regex pattern.
  */
-export function hasFile(files: string[], pattern: RegExp): boolean {
+function hasFile(files: string[], pattern: RegExp): boolean {
   return files.some(f => pattern.test(f));
 }
 
@@ -150,19 +150,19 @@ export function argsString(event: { data: Record<string, unknown> }): string {
  * Get all tool calls made during the session
  */
 export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): Array<{
-    id: string;
-    timestamp: string;
-    parentId: string | null;
-    ephemeral?: boolean;
-    type: "tool.execution_start";
-    data: {
-        toolCallId: string;
-        toolName: string;
-        arguments?: unknown;
-        mcpServerName?: string;
-        mcpToolName?: string;
-        parentToolCallId?: string;
-    };
+  id: string;
+  timestamp: string;
+  parentId: string | null;
+  ephemeral?: boolean;
+  type: "tool.execution_start";
+  data: {
+    toolCallId: string;
+    toolName: string;
+    arguments?: unknown;
+    mcpServerName?: string;
+    mcpToolName?: string;
+    parentToolCallId?: string;
+  };
 }> {
   let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
 
@@ -171,23 +171,6 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): A
   }
 
   return calls;
-}
-
-/** Get all tool execution results (complete events) */
-export function getToolResults(metadata: AgentMetadata): Array<{
-    toolCallId: string;
-    success: boolean;
-    content: string;
-    error: string;
-}> {
-  return metadata.events
-    .filter(e => e.type === "tool.execution_complete")
-    .map(e => ({
-      toolCallId: e.data.toolCallId as string,
-      success: e.data.success as boolean,
-      content: (e.data.result as { content?: string })?.content ?? "",
-      error: (e.data.error as { message?: string })?.message ?? ""
-    }));
 }
 
 /** Get combined text of all tool args and results for scanning */
