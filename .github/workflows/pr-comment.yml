@@ -67,20 +67,22 @@ jobs:
               head: `${context.payload.workflow_run.head_repository.owner.login}:${context.payload.workflow_run.head_branch}`,
             });
 
-            if (prs.length === 0) {
+            const matchingPr = prs.find(pr => pr.head.sha === headSha) || prs[0];
+
+            if (!matchingPr) {
               core.info('No matching open PR found — skipping comment.');
               core.setOutput('number', '');
               return;
             }
 
             // Skip fork PRs
-            if (prs[0].head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+            if (matchingPr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
               core.info('PR is from a fork — skipping comment.');
               core.setOutput('number', '');
               return;
             }
 
-            core.setOutput('number', prs[0].number.toString());
+            core.setOutput('number', matchingPr.number.toString());
 
       - name: Comment on PR
         if: steps.download.outputs.found == 'true' && steps.pr.outputs.number != ''

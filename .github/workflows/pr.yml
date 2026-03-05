@@ -281,6 +281,12 @@ jobs:
 
           FAILED=false
 
+          # Validate BASE_REF to avoid unsafe characters in shell command
+          if ! echo "$BASE_REF" | grep -Eq '^[A-Za-z0-9._/-]+$'; then
+            echo "Error: Invalid base ref: '$BASE_REF'. Aborting skill version check."
+            exit 1
+          fi
+
           # For each changed file, map to the top-level SKILL.md (one level under plugin/skills or .github/skills).
           # This ensures that deeply nested files (e.g. plugin/skills/foo/references/bar/SKILL.md)
           # always resolve to the skill root (e.g. plugin/skills/foo/SKILL.md) rather than
