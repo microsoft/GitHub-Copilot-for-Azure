@@ -51,7 +51,7 @@ Activate this skill when user wants to:
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
-| **Azure Kubernetes** | Pod failures, node issues, networking problems, Helm deployment errors | [azure-kubernetes/](references/azure-kubernetes/README.md) |
+| **Azure Kubernetes** | Pod failures, node issues, networking problems | [azure-kubernetes/](references/azure-kubernetes/README.md) |
 
 ---
 
