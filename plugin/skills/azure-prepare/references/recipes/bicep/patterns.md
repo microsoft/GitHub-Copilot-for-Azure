@@ -69,6 +69,9 @@ var resourceToken = uniqueString(subscription().id, resourceGroup().id, location
 // Total ≤32 chars, alphanumeric only
 var kvName = 'kv${environmentName}${resourceToken}'
 var storName = 'stor${resourceToken}'
+
+// Container Registry: alphanumeric only (5-50 chars)
+var acrName = replace('cr${environmentName}${resourceToken}', '-', '')
 ```
 
 ## Security Requirements
@@ -123,3 +126,4 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 ```
+

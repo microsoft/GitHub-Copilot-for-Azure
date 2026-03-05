@@ -1,4 +1,15 @@
-# Functions Bicep Patterns
+# Functions Bicep Patterns — REFERENCE ONLY
+
+> ⛔ **DO NOT COPY THIS CODE DIRECTLY**
+>
+> This file contains **reference patterns** for understanding Azure Functions Bicep structure.
+> **You MUST use the composition algorithm** to generate infrastructure:
+>
+> 1. Load `templates/selection.md` to choose the correct base template
+> 2. Follow `templates/recipes/composition.md` for the exact algorithm
+> 3. Run `azd init -t <template>` to get proven, tested IaC
+>
+> Hand-writing Bicep from these patterns will result in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
 ## Flex Consumption (Recommended)
 
@@ -74,14 +85,14 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
       runtime: {
         name: 'python'  // or 'node', 'dotnet-isolated'
-        version: '3.11'
+        version: '<version>'  // Query latest GA: https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages
       }
     }
     siteConfig: {
       appSettings: [
         {
-          name: 'AzureWebJobsStorage__accountName'
-          value: storageAccount.name
+          name: 'AzureWebJobsStorage__blobServiceUri'
+          value: storageAccount.properties.primaryEndpoints.blob
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -113,7 +124,7 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 ```
 
 > 💡 **Key Points:**
-> - Use `AzureWebJobsStorage__accountName` instead of connection string
+> - Use `AzureWebJobsStorage__blobServiceUri` instead of connection string
 > - Set `allowSharedKeyAccess: false` for enhanced security
 > - Use `SystemAssignedIdentity` for deployment authentication
 > - Grant `Storage Blob Data Owner` role for full access to blobs, queues, and tables
@@ -150,7 +161,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
     serverFarmId: functionAppPlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'Node|18'
+      linuxFxVersion: 'Node|<version>'  // Query latest GA: https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages
       appSettings: [
         { name: 'AzureWebJobsStorage', value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value}' }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
@@ -177,8 +188,8 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       appSettings: [
         // Storage with managed identity
         {
-          name: 'AzureWebJobsStorage__accountName'
-          value: storageAccount.name
+          name: 'AzureWebJobsStorage__blobServiceUri'
+          value: storageAccount.properties.primaryEndpoints.blob
         }
         // Service Bus with managed identity
         {

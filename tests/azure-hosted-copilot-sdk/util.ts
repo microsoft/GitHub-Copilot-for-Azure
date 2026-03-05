@@ -9,12 +9,12 @@
 
 import {
   useAgentRunner,
-  isSkillInvoked,
   type AgentMetadata,
 } from "../utils/agent-runner";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { isSkillInvoked } from "../utils/evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,7 +39,7 @@ export async function setupCopilotSdkApp(workspace: string): Promise<void> {
 
 // --- Invocation rate helpers ---
 
-export function logRate(skillName: string, label: string, successCount: number, runsPerPrompt: number): number {
+function logRate(skillName: string, label: string, successCount: number, runsPerPrompt: number): number {
   const rate = successCount / runsPerPrompt;
   const msg = `${skillName} invocation rate for ${label}: ${(rate * 100).toFixed(1)}% (${successCount}/${runsPerPrompt})`;
   console.log(msg);
@@ -92,7 +92,7 @@ const TOKEN_PATTERNS = [
  * Redact token-like values from a string.
  * Returns the string with tokens replaced by `[REDACTED]`.
  */
-export function redactTokens(text: string): string {
+function redactTokens(text: string): string {
   let result = text;
   for (const pattern of TOKEN_PATTERNS) {
     // Reset lastIndex for global regexes

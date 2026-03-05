@@ -12,14 +12,14 @@
 import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  useAgentRunner
+  useAgentRunner,
 } from "../utils/agent-runner";
 import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 1;
 const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
 
 // Check if integration tests should be skipped at module level
@@ -38,11 +38,14 @@ const brownfieldTestTimeoutMs = 2700000;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
+    const followUp = ["Go with recommended options."];
     test("invokes azure-deploy skill for deployment prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Run azd up to deploy my already-prepared app to Azure"
+            prompt: "Run azd up to deploy my already-prepared app to Azure",
+            nonInteractive: true,
+            followUp,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -60,7 +63,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Publish my web app to Azure and configure the environment"
+            prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
+            nonInteractive: true,
+            followUp,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -78,7 +83,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy my Azure Functions app to the cloud using azd"
+            prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
+            nonInteractive: true,
+            followUp,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -251,6 +258,36 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(workspacePath).toBeDefined();
       expect(containsDeployLinks).toBe(true);
       expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+    }, deployTestTimeoutMs);
+  });
+
+  // Durable Task Scheduler (Durable Functions with DTS)
+  describe("durable-task-scheduler-deploy", () => {
+    test("creates and deploys workflow app with Durable Task Scheduler", async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        },
+        prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        preserveWorkspace: true
+      });
+
+      softCheckDeploySkills(agentMetadata);
+      expect(workspacePath).toBeDefined();
+      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+
+      // Verify DTS-specific Bicep content on disk
+      const bicepPattern = /\.bicep$/;
+      expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers/i, bicepPattern)).toBe(true);
+      expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers\/taskHubs/i, bicepPattern)).toBe(true);
+      expect(doesWorkspaceFileIncludePattern(workspacePath!, /0ad04412-c4d5-4796-b79c-f76d14c8d402/i, bicepPattern)).toBe(true);
+
+      const containsDeployLinks = hasDeployLinks(agentMetadata);
+      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
 

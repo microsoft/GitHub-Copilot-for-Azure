@@ -34,6 +34,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Check my deployment permissions before running azd up",
       "Verify my Bicep files are valid before provisioning",
       "Run pre-deployment validation checks on my Azure infrastructure",
+      // Azure Functions validation
+      "Validate my Azure Functions app before deploying",
+      "Check if my function app is ready for Azure deployment",
+      "Validate my serverless function deployment configuration",
     ];
 
     test.each(shouldTriggerPrompts)(

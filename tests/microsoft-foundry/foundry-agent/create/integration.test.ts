@@ -12,11 +12,10 @@
 import {
   useAgentRunner,
   AgentMetadata,
-  getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../../utils/agent-runner";
-import { softCheckSkill } from "../../../utils/evaluate";
+import { softCheckSkill, getToolCalls } from "../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;

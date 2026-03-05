@@ -30,9 +30,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Set up Azure infrastructure for my project",
       "Prepare my app for Azure deployment",
       "Create an API and run it on Azure",
-      "Add Azure services to my existing app",
       "Migrate my application to Azure",
       "Configure Azure hosting for my app",
+      "Create a serverless HTTP API using Azure Functions and deploy to Azure",
+      "Create an event-driven function app to process messages and deploy to Azure Functions",
+      "Create an Azure Functions app with a timer trigger",
     ];
 
     test.each(shouldTriggerPrompts)(

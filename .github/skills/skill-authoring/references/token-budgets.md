@@ -36,6 +36,8 @@ npm run tokens -- check plugin/skills/my-skill/SKILL.md
 
 ## Why Token Limits Matter
 
+> **Units note:** Limits are measured in **tokens** (cl100k_base tokenizer), not words. Anthropic's [Complete Guide](https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf) says "under 5,000 words" while the [Agent Skills spec](https://agentskills.io/specification) says "< 5000 tokens." As a rough conversion: 5000 tokens ≈ 3,750 words. Token-based limits are stricter.
+
 - **Metadata (~100 tokens)**: Loads at startup for ALL skills
 - **SKILL.md (<5000 tokens)**: Loads entirely on activation
 - **References**: Load only when explicitly linked

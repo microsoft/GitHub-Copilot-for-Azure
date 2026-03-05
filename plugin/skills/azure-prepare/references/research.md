@@ -27,14 +27,18 @@ After architecture planning, research each selected component to gather best pra
 | **Data** | | |
 | Azure SQL | [SQL Database](services/sql-database/README.md) | `azure-security` |
 | Cosmos DB | [Cosmos DB](services/cosmos-db/README.md) | `azure-security` |
-| PostgreSQL | — | `azure-postgres` (invoke for passwordless auth) |
+| PostgreSQL | — | — |
 | Storage (Blob/Files) | [Storage](services/storage/README.md) | `azure-storage`, `azure-security-hardening` |
 | **Messaging** | | |
 | Service Bus | [Service Bus](services/service-bus/README.md) | — |
 | Event Grid | [Event Grid](services/event-grid/README.md) | — |
 | Event Hubs | — | — |
 | **Integration** | | |
+| API Management | [APIM](apim.md) | `azure-aigateway` (invoke for AI Gateway policies) |
 | Logic Apps | [Logic Apps](services/logic-apps/README.md) | — |
+| **Workflow & Orchestration** | | |
+| Durable Functions | [Durable Functions](services/functions/durable.md), [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
+| Durable Task Scheduler | [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
 | **Security & Identity** | | |
 | Key Vault | [Key Vault](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
 | Managed Identity | — | `azure-security`, `entra-app-registration` |
@@ -75,7 +79,7 @@ Invoke related skills for specialized scenarios:
 |----------|--------|
 | **Using GitHub Copilot SDK** | **Invoke `azure-hosted-copilot-sdk`** (scaffold + config, then resume azure-prepare) |
 | Using Azure Functions | Stay in **azure-prepare** — load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
-| PostgreSQL with passwordless auth | Invoke `azure-postgres` skill |
+| PostgreSQL with passwordless auth | Handle directly without a separate skill |
 | Need detailed security hardening | `azure-security-hardening` |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
 | Building AI applications | `microsoft-foundry` |
@@ -89,9 +93,7 @@ For **Azure Functions**:
 3. Result: Base template + recipe composition (never synthesize IaC)
 
 For **PostgreSQL**:
-1. Invoke: `azure-postgres` skill
-2. Extract: passwordless auth patterns
-3. Apply: to artifact generation
+1. Handle passwordless auth patterns directly without a separate skill
 
 ### Step 3: Document in Plan
 

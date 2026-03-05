@@ -13,13 +13,11 @@
 
 import {
   useAgentRunner,
-  isSkillInvoked,
-  getToolCalls,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 import type { AgentMetadata } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, getToolCalls } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-resource-visualizer";
 const RUNS_PER_PROMPT = 5;

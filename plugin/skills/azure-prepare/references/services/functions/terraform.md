@@ -1,4 +1,15 @@
-# Functions Terraform Patterns
+# Functions Terraform Patterns — REFERENCE ONLY
+
+> ⛔ **DO NOT COPY THIS CODE DIRECTLY**
+>
+> This file contains **reference patterns** for understanding Azure Functions Terraform structure.
+> **You MUST use the composition algorithm** to generate infrastructure:
+>
+> 1. Load `templates/selection.md` to choose the correct base template
+> 2. Follow `templates/recipes/composition.md` for the exact algorithm
+> 3. Run `azd init -t functions-quickstart-dotnet-azd-tf` to get the proven Terraform base, then adjust runtime/language per the composition recipes
+>
+> Hand-writing Terraform from these patterns will result in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
 ## Flex Consumption (Recommended)
 
@@ -97,9 +108,9 @@ resource "azurerm_linux_function_app" "function_app" {
   }
 
   app_settings = {
-    "AzureWebJobsStorage__accountName"  = azurerm_storage_account.function_storage.name
-    "FUNCTIONS_EXTENSION_VERSION"       = "~4"
-    "FUNCTIONS_WORKER_RUNTIME"          = "python"
+    "AzureWebJobsStorage__blobServiceUri"  = azurerm_storage_account.function_storage.primary_blob_endpoint
+    "FUNCTIONS_EXTENSION_VERSION"          = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"             = "python"
   }
 }
 
@@ -112,7 +123,7 @@ resource "azurerm_role_assignment" "function_storage_access" {
 ```
 
 > 💡 **Key Points:**
-> - Use `AzureWebJobsStorage__accountName` instead of connection string
+> - Use `AzureWebJobsStorage__blobServiceUri` instead of connection string
 > - Set `shared_access_key_enabled = false` for enhanced security
 > - Use `storage_uses_managed_identity = true` for deployment authentication
 > - Grant `Storage Blob Data Owner` role for full access to blobs, queues, and tables
@@ -148,9 +159,9 @@ module "function_app" {
   }
 
   app_settings = {
-    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_storage.name
-    "FUNCTIONS_EXTENSION_VERSION"      = "~4"
-    "FUNCTIONS_WORKER_RUNTIME"         = "python"
+    "AzureWebJobsStorage__blobServiceUri" = azurerm_storage_account.function_storage.primary_blob_endpoint
+    "FUNCTIONS_EXTENSION_VERSION"         = "~4"
+    "FUNCTIONS_WORKER_RUNTIME"            = "python"
   }
 
   identity = {
@@ -228,7 +239,7 @@ resource "azurerm_linux_function_app" "function_app" {
   
   app_settings = {
     # Storage with managed identity
-    "AzureWebJobsStorage__accountName" = azurerm_storage_account.function_storage.name
+    "AzureWebJobsStorage__blobServiceUri" = azurerm_storage_account.function_storage.primary_blob_endpoint
     
     # Service Bus with managed identity
     "SERVICEBUS__fullyQualifiedNamespace" = "${data.azurerm_servicebus_namespace.example.name}.servicebus.windows.net"

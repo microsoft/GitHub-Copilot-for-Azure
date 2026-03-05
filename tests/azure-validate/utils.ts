@@ -1,4 +1,5 @@
-import { type AgentMetadata, getToolCalls } from "../utils/agent-runner";
+import { type AgentMetadata } from "../utils/agent-runner";
+import { getToolCalls } from "../utils/evaluate";
 
 /**
  * Validation command patterns that indicate the agent is performing
@@ -29,29 +30,9 @@ export function hasValidationCommand(metadata: AgentMetadata): boolean {
 }
 
 /**
- * Check whether any tool call's serialized arguments match the given
- * pattern. Searches across all tool types (powershell, create, edit, etc.)
- * unless a specific toolName is provided.
- */
-export function matchesToolCallArgs(
-  metadata: AgentMetadata,
-  pattern: RegExp,
-  toolName?: string,
-): boolean {
-  return getToolCalls(metadata, toolName).some(event => {
-    const argsStr = JSON.stringify(event.data);
-    return pattern.test(argsStr);
-  });
-}
-
-/**
  * Check whether any file-mutating tool call (create or edit) targets a file
  * whose path matches {@link pathPattern} AND whose serialized arguments
  * match {@link contentPattern}.
- *
- * This is stricter than {@link matchesToolCallArgs} because it ensures the
- * content appeared in a write to a specific file, not just in any tool call
- * (e.g. a plan document).
  */
 export function matchesFileEdit(
   metadata: AgentMetadata,

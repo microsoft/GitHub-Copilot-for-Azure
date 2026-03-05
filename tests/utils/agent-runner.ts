@@ -16,29 +16,51 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent } from "@github/copilot-sdk";
-import { getAllAssistantMessages } from "./evaluate";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
+import { redactSecrets } from "./redact";
+import { listSkills } from "./skill-loader";
+
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** Redact token-like values from report text to prevent secret leakage */
-const SECRET_PATTERNS = [
-  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWT
-  /Bearer\s+[A-Za-z0-9_\-.~+/]{20,}/gi, // Bearer tokens
-  /gh[pousr]_[A-Za-z0-9_]{36,}/g, // GitHub tokens
-  /(?:password|passwd|secret|token|api[_-]?key|connection[_-]?string)\s*[:=]\s*["']?[^\s"',]{8,}/gi, // key=value secrets
-];
+/**
+ * Resolve the bundled Copilot CLI entry point.
+ *
+ * The SDK's default `getBundledCliPath()` uses `import.meta.resolve()`, which
+ * is not available inside Jest's ESM VM context (even with
+ * `--experimental-vm-modules`). We replicate the same path arithmetic here
+ * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ */
+function getBundledCliPath(): string {
+  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+}
 
-function redactSecrets(text: string): string {
-  let result = text;
-  for (const pattern of SECRET_PATTERNS) {
-    pattern.lastIndex = 0;
-    result = result.replace(pattern, "[REDACTED]");
-  }
-  return result;
+interface TokenUsage {
+  /** Total input tokens across all LLM calls */
+  inputTokens: number;
+  /** Total output tokens across all LLM calls */
+  outputTokens: number;
+  /** Total cache read tokens */
+  cacheReadTokens: number;
+  /** Total cache write tokens */
+  cacheWriteTokens: number;
+  /** Total API duration in milliseconds */
+  totalApiDurationMs: number;
+  /** Number of LLM API calls made */
+  apiCallCount: number;
+  /** Model used */
+  model: string;
+  /** Per-call breakdown */
+  perCallUsage: Array<{
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    durationMs: number;
+    initiator?: string;
+  }>;
 }
 
 export interface AgentMetadata {
@@ -52,6 +74,11 @@ export interface AgentMetadata {
    * These comments will be added to the agentMetadata markdown for an LLM or human reviewer to read.
    */
   testComments: string[];
+
+  /**
+   * Token usage and cost data extracted from assistant.usage and session.shutdown events.
+   */
+  tokenUsage?: TokenUsage;
 }
 
 /**
@@ -64,6 +91,11 @@ export interface AgentMetadata {
  */
 const testRunId = process.env.TEST_RUN_ID;
 
+/**
+ * The model to use for the agent run.
+ */
+const modelOverride = process.env.MODEL_OVERRIDE?.trim();
+
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
   prompt: string;
@@ -75,9 +107,15 @@ export interface AgentRunConfig {
     content: string
   };
   preserveWorkspace?: boolean;
+
+  /**
+   * Skills to include for the agent run.
+   * If undefined, all the skills in azure plugin will be included.
+   */
+  includeSkills?: string[];
 }
 
-export interface KeywordOptions {
+interface KeywordOptions {
   caseSensitive?: boolean;
 }
 
@@ -110,6 +148,23 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   lines.push("");
   lines.push(config.prompt);
   lines.push("");
+
+  // Token usage summary
+  if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
+    const t = agentMetadata.tokenUsage;
+    lines.push("# Token Usage");
+    lines.push("");
+    lines.push("| Metric | Value |");
+    lines.push("|--------|-------|");
+    lines.push(`| Model | ${t.model} |`);
+    lines.push(`| Input Tokens | ${t.inputTokens.toLocaleString()} |`);
+    lines.push(`| Output Tokens | ${t.outputTokens.toLocaleString()} |`);
+    lines.push(`| Cache Read | ${t.cacheReadTokens.toLocaleString()} |`);
+    lines.push(`| Cache Write | ${t.cacheWriteTokens.toLocaleString()} |`);
+    lines.push(`| API Calls | ${t.apiCallCount} |`);
+    lines.push(`| API Duration | ${(t.totalApiDurationMs / 1000).toFixed(1)}s |`);
+    lines.push("");
+  }
 
   // Process events in chronological order
   lines.push("# Assistant");
@@ -291,13 +346,69 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     fs.writeFileSync(filePath, markdown, "utf-8");
 
+    // Write structured agent-metadata.json for machine consumption
+    const jsonPath = path.join(dir, "agent-metadata.json");
+    const jsonData = {
+      prompt: config.prompt || "",
+      events: agentMetadata.events,
+      testComments: agentMetadata.testComments,
+      tokenUsage: agentMetadata.tokenUsage,
+    };
+    fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
+
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${filePath}`);
+    }
+
+    // Write token usage JSON alongside the markdown report
+    if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
+      writeTokenUsageJson(config, agentMetadata, dir);
     }
   } catch (error) {
     // Don't fail the test if report generation fails
     if (process.env.DEBUG) {
       console.error("Failed to write markdown report:", error);
+    }
+  }
+}
+
+/**
+ * Write token usage data to a JSON file for dashboard consumption.
+ * Also appends to a consolidated token-summary.json in the reports root.
+ */
+function writeTokenUsageJson(config: AgentRunConfig, agentMetadata: AgentMetadata, reportDir: string): void {
+  try {
+    const usage = agentMetadata.tokenUsage!;
+    const testName = getTestName();
+    const record = {
+      testName,
+      prompt: config.prompt ? redactSecrets(config.prompt) : config.prompt,
+      timestamp: new Date().toISOString(),
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      totalApiDurationMs: usage.totalApiDurationMs,
+      apiCallCount: usage.apiCallCount,
+      perCallUsage: usage.perCallUsage,
+    };
+
+    // Write per-test token JSON
+    const tokenFile = path.join(reportDir, "token-usage.json");
+    fs.writeFileSync(tokenFile, JSON.stringify(record, null, 2), "utf-8");
+
+    // Append to consolidated summary at reports root (JSONL for safe concurrent writes)
+    const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+    const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.jsonl");
+    fs.appendFileSync(summaryFile, JSON.stringify(record) + "\n", "utf-8");
+
+    if (process.env.DEBUG) {
+      console.log(`Token usage written to: ${tokenFile}`);
+    }
+  } catch (error) {
+    if (process.env.DEBUG) {
+      console.error("Failed to write token usage JSON:", error);
     }
   }
 }
@@ -386,14 +497,31 @@ export function useAgentRunner() {
         logLevel: process.env.DEBUG ? "all" : "error",
         cwd: testWorkspace,
         cliArgs: cliArgs,
+        cliPath: getBundledCliPath(),
+        env: {
+          ...process.env,
+          SKILLS_INSTRUCTIONS: "true"
+        }
       }) as CopilotClient;
       entry.client = client;
 
       const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
 
+      let disabledSkills: string[] | undefined;
+      if (config.includeSkills) {
+        const skills = listSkills();
+        if (config.includeSkills.some((skillName) => !skills.includes(skillName))) {
+          const invalidSkills = config.includeSkills.filter((skillName) => !skills.includes(skillName));
+          throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
+        }
+        disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
+      }
+
       const session = await client.createSession({
-        model: "claude-sonnet-4.5",
+        model: modelOverride || "claude-sonnet-4.5",
+        onPermissionRequest: approveAll,
         skillDirectories: [skillDirectory],
+        disabledSkills: disabledSkills,
         mcpServers: {
           azure: {
             type: "stdio",
@@ -437,6 +565,62 @@ export function useAgentRunner() {
       await session.send({ prompt: config.prompt });
       await done;
 
+      // Extract token usage from assistant.usage events
+      const tokenUsage: TokenUsage = {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        totalApiDurationMs: 0,
+        apiCallCount: 0,
+        model: modelOverride || "claude-sonnet-4.5",
+        perCallUsage: [],
+      };
+
+      for (const event of agentMetadata.events) {
+        if (event.type === "assistant.usage") {
+          tokenUsage.inputTokens += event.data.inputTokens ?? 0;
+          tokenUsage.outputTokens += event.data.outputTokens ?? 0;
+          tokenUsage.cacheReadTokens += event.data.cacheReadTokens ?? 0;
+          tokenUsage.cacheWriteTokens += event.data.cacheWriteTokens ?? 0;
+          tokenUsage.totalApiDurationMs += event.data.duration ?? 0;
+          tokenUsage.apiCallCount++;
+          tokenUsage.model = event.data.model || tokenUsage.model;
+          tokenUsage.perCallUsage.push({
+            model: event.data.model,
+            inputTokens: event.data.inputTokens ?? 0,
+            outputTokens: event.data.outputTokens ?? 0,
+            durationMs: event.data.duration ?? 0,
+            initiator: event.data.initiator,
+          });
+        }
+        // Also capture aggregate from session.shutdown if available
+        if (event.type === "session.shutdown" && event.data.modelMetrics) {
+          for (const [model, metrics] of Object.entries(event.data.modelMetrics)) {
+            tokenUsage.model = model;
+            // Prefer shutdown totals if usage events were missed
+            if (tokenUsage.apiCallCount === 0) {
+              tokenUsage.inputTokens = metrics.usage.inputTokens;
+              tokenUsage.outputTokens = metrics.usage.outputTokens;
+              tokenUsage.cacheReadTokens = metrics.usage.cacheReadTokens;
+              tokenUsage.cacheWriteTokens = metrics.usage.cacheWriteTokens;
+              tokenUsage.apiCallCount = metrics.requests.count;
+            }
+          }
+        }
+      }
+
+      agentMetadata.tokenUsage = tokenUsage;
+
+      // Log token usage summary
+      if (tokenUsage.apiCallCount > 0) {
+        console.log(
+          `\n📊 Token Usage: ${tokenUsage.inputTokens.toLocaleString()} in / ${tokenUsage.outputTokens.toLocaleString()} out | ` +
+          `${tokenUsage.apiCallCount} API calls | ` +
+          `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
+        );
+      }
+
       // Send follow-up prompts
       for (const followUpPrompt of config.followUp ?? []) {
         isComplete = false;
@@ -457,19 +641,6 @@ export function useAgentRunner() {
   }
 
   return { run };
-}
-
-/**
- * Check if a skill was invoked during the session
- */
-export function isSkillInvoked(agentMetadata: AgentMetadata, skillName: string): boolean {
-  return agentMetadata.events
-    .filter(event => event.type === "tool.execution_start")
-    .filter(event => event.data.toolName === "skill")
-    .some(event => {
-      const args = event.data.arguments;
-      return JSON.stringify(args).includes(skillName);
-    });
 }
 
 /**
@@ -527,19 +698,6 @@ export function doesAssistantMessageIncludeKeyword(
   });
 }
 
-/**
- * Get all tool calls made during the session
- */
-export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): SessionEvent[] {
-  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
-
-  if (toolName) {
-    calls = calls.filter(event => event.data.toolName === toolName);
-  }
-
-  return calls;
-}
-
 // Track skip reason for reporting
 let integrationSkipReason: string | undefined;
 
@@ -577,28 +735,6 @@ export function shouldSkipIntegrationTests(): boolean {
  */
 export function getIntegrationSkipReason(): string | undefined {
   return integrationSkipReason;
-}
-
-/**
- * Common Azure deployment link patterns
- * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
- */
-const DEPLOY_LINK_PATTERNS = [
-  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
-  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\].,;:]|$)/i,
-  // Azure Static Web Apps URLs
-  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\].,;:]|$)/i,
-  // Azure Container Apps URLs
-  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\].,;:]|$)/i
-];
-
-/**
- * Check if the agent response contains any Azure deployment links
- */
-export function hasDeployLinks(agentMetadata: AgentMetadata): boolean {
-  const content = getAllAssistantMessages(agentMetadata);
-
-  return DEPLOY_LINK_PATTERNS.some(pattern => pattern.test(content));
 }
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
@@ -647,213 +783,4 @@ function sanitizeFileName(name: string): string {
     .replace(/-+/g, "-")            // Collapse multiple dashes
     .replace(/_+/g, "_")            // Collapse multiple underscores
     .substring(0, 200);             // Limit length
-}
-
-// ─── Multi-turn conversation support ─────────────────────────────────────────
-
-export interface ConversationPrompt {
-  prompt: string;
-  label?: string;
-}
-
-export interface ConversationConfig {
-  setup?: (workspace: string) => Promise<void>;
-  prompts: ConversationPrompt[];
-  nonInteractive?: boolean;
-  preserveWorkspace?: boolean;
-  systemPrompt?: {
-    mode: "append" | "replace";
-    content: string;
-  };
-  /** Maximum total LLM turns across all prompts. Session aborts if exceeded. */
-  maxTurns?: number;
-  /** Maximum `azd up` invocations across all prompts. Session aborts if exceeded. */
-  maxDeployAttempts?: number;
-  /** Per-turn timeout in ms. Defaults to 30 minutes. */
-  turnTimeout?: number;
-}
-
-export interface ConversationResult {
-  /** Per-prompt metadata (events collected between session.idle boundaries) */
-  turns: AgentMetadata[];
-  /** All events merged across all turns */
-  aggregate: AgentMetadata;
-  /** Workspace path — preserved when config.preserveWorkspace is true */
-  workspace: string;
-}
-
-/**
- * Count LLM turns (assistant messages) across events
- */
-function countLlmTurns(events: SessionEvent[]): number {
-  return events.filter(
-    e => e.type === "assistant.message" || e.type === "assistant.message_delta"
-  ).reduce((ids, e) => {
-    const id = e.data.messageId as string | undefined;
-    if (id) ids.add(id);
-    return ids;
-  }, new Set<string>()).size;
-}
-
-/**
- * Run a multi-turn conversation within a single agent session.
- *
- * Sends each prompt sequentially, waits for session.idle between turns,
- * and collects per-turn + aggregate AgentMetadata. Supports limits on
- * total LLM turns and azd deploy attempts.
- */
-export async function runConversation(config: ConversationConfig): Promise<ConversationResult> {
-  if (config.prompts.length === 0) {
-    throw new Error("runConversation requires at least one prompt");
-  }
-
-  const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
-
-  let client: CopilotClient | undefined;
-  let session: CopilotSession | undefined;
-
-  const turns: AgentMetadata[] = [];
-  const aggregate: AgentMetadata = { events: [], testComments: [] };
-
-  try {
-    if (config.setup) {
-      await config.setup(testWorkspace);
-    }
-
-    const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
-    if (process.env.DEBUG) {
-      cliArgs.push("--log-dir");
-      cliArgs.push(buildLogFilePath());
-    }
-
-    client = new CopilotClient({
-      logLevel: process.env.DEBUG ? "all" : "error",
-      cwd: testWorkspace,
-      cliArgs: cliArgs,
-    }) as CopilotClient;
-
-    const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
-
-    session = await client.createSession({
-      model: "claude-sonnet-4.5",
-      skillDirectories: [skillDirectory],
-      mcpServers: {
-        azure: {
-          type: "stdio",
-          command: "npx",
-          args: ["-y", "@azure/mcp", "server", "start"],
-          tools: ["*"]
-        }
-      },
-      systemMessage: config.systemPrompt
-    });
-
-    let aborted = false;
-    let currentTurnMetadata: AgentMetadata = { events: [], testComments: [] };
-    let currentLabel = "Turn 1";
-    let resolveIdle: (() => void) | undefined;
-
-    session.on(async (event: SessionEvent) => {
-      if (process.env.DEBUG) {
-        console.log(`=== [${currentLabel}] session event ${event.type}`);
-      }
-
-      if (event.type === "session.idle") {
-        resolveIdle?.();
-        return;
-      }
-
-      currentTurnMetadata.events.push(event);
-      aggregate.events.push(event);
-
-      // Check turn limits
-      if (config.maxTurns && countLlmTurns(aggregate.events) > config.maxTurns) {
-        console.warn(`⚠️  Max LLM turns (${config.maxTurns}) exceeded — aborting`);
-        aborted = true;
-        resolveIdle?.();
-        void session!.abort();
-        return;
-      }
-
-      // Check deploy attempt limits (azd up / azd deploy / azd provision)
-      if (config.maxDeployAttempts) {
-        const azdCalls = aggregate.events.filter(
-          e => e.type === "tool.execution_start" &&
-            JSON.stringify(e.data.arguments ?? {}).match(/azd\s+(up|deploy|provision)/i)
-        ).length;
-        if (azdCalls > config.maxDeployAttempts) {
-          console.warn(`⚠️  Max deploy attempts (${config.maxDeployAttempts}) exceeded — aborting`);
-          aborted = true;
-          resolveIdle?.();
-          void session!.abort();
-          return;
-        }
-      }
-    });
-
-    const TURN_TIMEOUT = config.turnTimeout ?? 1800000; // 30 minutes default
-
-    for (let i = 0; i < config.prompts.length; i++) {
-      if (aborted) break;
-
-      const promptEntry = config.prompts[i];
-      currentLabel = promptEntry.label ?? `Turn ${i + 1}`;
-      currentTurnMetadata = { events: [], testComments: [] };
-
-      if (process.env.DEBUG) {
-        console.log(`\n=== ${currentLabel}: "${promptEntry.prompt.substring(0, 80)}..."`);
-      }
-
-      const done = new Promise<void>((resolve) => {
-        resolveIdle = resolve;
-      });
-
-      let timeoutHandle: ReturnType<typeof setTimeout>;
-      const timeout = new Promise<"timeout">((resolve) => {
-        timeoutHandle = setTimeout(() => resolve("timeout"), TURN_TIMEOUT);
-      });
-
-      await session.send({ prompt: promptEntry.prompt });
-
-      const result = await Promise.race([done.then(() => "done" as const), timeout]);
-      clearTimeout(timeoutHandle!);
-      if (result === "timeout") {
-        console.warn(`⚠️  ${currentLabel} timed out after ${TURN_TIMEOUT / 1000}s — aborting`);
-        aborted = true;
-        void session!.abort();
-      }
-
-      turns.push(currentTurnMetadata);
-
-      if (process.env.DEBUG) {
-        console.log(`=== [${currentLabel}] completed with ${currentTurnMetadata.events.length} events`);
-      }
-    }
-
-    return { turns, aggregate, workspace: testWorkspace };
-  } catch (error) {
-    console.error("Conversation runner error:", error);
-    throw error;
-  } finally {
-    // Write report even on timeout/failure so test results are captured
-    try {
-      if (aggregate.events.length > 0 && isTest()) {
-        const reportConfig: AgentRunConfig = {
-          prompt: config.prompts.map(p => p.prompt).join("\n---\n"),
-        };
-        writeMarkdownReport(reportConfig, aggregate);
-      }
-    } catch { /* ignore */ }
-    try {
-      if (session) await session.destroy();
-    } catch { /* ignore */ }
-    try {
-      if (client) await client.stop();
-    } catch { /* ignore */ }
-    try {
-      if (!config.preserveWorkspace) {
-        fs.rmSync(testWorkspace, { recursive: true, force: true });
-      }
-    } catch { /* ignore */ }
-  }
 }
