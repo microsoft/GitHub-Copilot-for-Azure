@@ -58,31 +58,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // workflow_run doesn't directly expose the PR number — look it up from the head SHA
-            const headSha = context.payload.workflow_run.head_sha;
-            const { data: prs } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              head: `${context.payload.workflow_run.head_repository.owner.login}:${context.payload.workflow_run.head_branch}`,
-            });
-
-            const matchingPr = prs.find(pr => pr.head.sha === headSha) || prs[0];
-
-            if (!matchingPr) {
-              core.info('No matching open PR found — skipping comment.');
+            // pull_requests is populated server-side by GitHub — cannot be spoofed by PR branch code.
+            // It is empty for fork PRs, which naturally skips commenting on forks.
+            const prs = context.payload.workflow_run.pull_requests;
+            if (!prs || prs.length === 0) {
+              core.info('No PR associated (fork or direct push) — skipping comment.');
               core.setOutput('number', '');
               return;
             }
-
-            // Skip fork PRs
-            if (matchingPr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
-              core.info('PR is from a fork — skipping comment.');
-              core.setOutput('number', '');
-              return;
-            }
-
-            core.setOutput('number', matchingPr.number.toString());
+            core.setOutput('number', prs[0].number.toString());
 
       - name: Comment on PR
         if: steps.download.outputs.found == 'true' && steps.pr.outputs.number != ''
