@@ -26,7 +26,7 @@
 #>
 
     param(
-        [string]$Benchmark = "azure",
+        [string]$Benchmark = "azure.list_subscription",
         [string]$Model = "claude-sonnet-4.5-autodev-test",
         [switch]$NoWait
     )
@@ -99,6 +99,35 @@
     if ($LASTEXITCODE -ne 0) {
         throw "msbench-cli version failed with exit code $LASTEXITCODE"
     }
+
+    # --- Clone repo and cd to working directory ---
+    # $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
+    # $repoName = "msbench-benchmarks"
+    $msbenchRepo = "https://github.com/microsoft/mcp-pr.git"
+    $repoName = "mcp-pr"
+
+    $cloneDir = Join-Path $PWD $repoName
+
+    Write-Host "Cloning $msbenchRepo into $cloneDir"
+    git clone --depth 1 $msbenchRepo $cloneDir
+    if ($LASTEXITCODE -ne 0) {
+        throw "git clone failed with exit code $LASTEXITCODE"
+    }
+    
+    Write-Host "Checking out branch add_msbench_model_mapping in $cloneDir" 
+    Set-Location $cloneDir
+    git checkout add_msbench_model_mapping
+    if ($LASTEXITCODE -ne 0) {
+        throw "git checkout failed with exit code $LASTEXITCODE"
+    }
+
+    $targetDir = Join-Path $cloneDir "model_mapping"
+    if (!(Test-Path $targetDir)) {
+        throw "Working directory '$targetDir' does not exist after clone."
+    }
+
+    Write-Host "Changing directory to $targetDir"
+    Set-Location $targetDir
 
     $runArgs = @(
         "run",
