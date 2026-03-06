@@ -110,9 +110,15 @@
 
     Write-Host "Cloning $msbenchRepo into $cloneDir"
     git clone --depth 1 $msbenchRepo $cloneDir
-    git checkout add_msbench_model_mapping
     if ($LASTEXITCODE -ne 0) {
         throw "git clone failed with exit code $LASTEXITCODE"
+    }
+    
+    Write-Host "Checking out branch add_msbench_model_mapping in $cloneDir" 
+    Set-Location $cloneDir
+    git checkout add_msbench_model_mapping
+    if ($LASTEXITCODE -ne 0) {
+        throw "git checkout failed with exit code $LASTEXITCODE"
     }
 
     $targetDir = Join-Path $cloneDir "model_mapping"
