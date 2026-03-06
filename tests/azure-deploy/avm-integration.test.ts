@@ -89,6 +89,16 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
             2,
             "avm-module-priority (hierarchy/bicep)",
           );
+          // Enforce AVM selection hierarchy ordering: patterns before resource/utility
+          const patternIdx = output.indexOf("pattern");
+          const resourceIdx = output.indexOf("resource");
+          const utilityIdx = output.indexOf("utility");
+          if (patternIdx !== -1) {
+            const fallbackIndices = [resourceIdx, utilityIdx].filter((i) => i !== -1);
+            if (fallbackIndices.length > 0) {
+              expect(patternIdx).toBeLessThan(Math.min(...fallbackIndices));
+            }
+          }
         } catch (e: unknown) {
           if (
             e instanceof Error &&
@@ -131,16 +141,30 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           expect(utilityIndex).toBeGreaterThanOrEqual(0);
           expect(resourceIndex).toBeLessThan(utilityIndex);
           // Verify no suggestion to use non-AVM modules (expanded patterns)
+          // Context-aware: skip matches preceded by negation words (e.g., "never fall back to non-AVM")
           const nonAvmPatterns = [
-            /non[- ]?avm/i,
-            /without avm/i,
-            /skip avm/i,
-            /ignore avm/i,
-            /not avm/i,
-            /outside.*avm/i,
-            /bypass.*avm/i,
+            /non[- ]?avm/gi,
+            /without avm/gi,
+            /skip avm/gi,
+            /ignore avm/gi,
+            /outside.*?avm/gi,
+            /bypass.*?avm/gi,
           ];
-          const suggestsNonAvm = nonAvmPatterns.some((p) => p.test(output));
+          const negationPrefixes = ["never", "don't", "do not", "avoid", "must not", "should not", "shouldn't"];
+          let suggestsNonAvm = false;
+          for (const pattern of nonAvmPatterns) {
+            let match: RegExpExecArray | null;
+            while ((match = pattern.exec(output)) !== null) {
+              const start = Math.max(0, match.index - 40);
+              const preceding = output.substring(start, match.index);
+              const isNegated = negationPrefixes.some((neg) => preceding.includes(neg));
+              if (!isNegated) {
+                suggestsNonAvm = true;
+                break;
+              }
+            }
+            if (suggestsNonAvm) break;
+          }
           if (suggestsNonAvm) {
             console.warn("⚠️  Agent may have suggested non-AVM fallback");
           }
@@ -187,6 +211,13 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
             3,
             "avm-azd-pattern-preference-context",
           );
+          // Verify AZD pattern modules are discussed before resource modules
+          const normalizedOutput = output.toLowerCase();
+          const patModIdx = normalizedOutput.indexOf("pattern module");
+          const resModIdx = normalizedOutput.indexOf("resource module");
+          if (patModIdx !== -1 && resModIdx !== -1) {
+            expect(patModIdx).toBeLessThan(resModIdx);
+          }
         } catch (e: unknown) {
           if (
             e instanceof Error &&
