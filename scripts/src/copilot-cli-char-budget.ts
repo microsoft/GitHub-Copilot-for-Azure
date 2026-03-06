@@ -3,8 +3,8 @@
  * See https://github.com/github/copilot-agent-runtime/blob/0e43d66f7570421ba4b27a36a86ea908de188e59/src/skills/skillToolDescription.ts#L30
  */
 
-import { listSkills, loadSkill } from "./helpers/skill-helper.js";
-import { escapeXml } from "./helpers/string-helpers.js";
+import { listSkills, loadSkill } from "./shared/skill-helper.js";
+import { escapeXml } from "./shared/string-helpers.js";
 
 const SKILL_CHAR_BUDGET_ENV = "SKILL_CHAR_BUDGET";
 const DEFAULT_SKILL_CHAR_BUDGET = 15000;
