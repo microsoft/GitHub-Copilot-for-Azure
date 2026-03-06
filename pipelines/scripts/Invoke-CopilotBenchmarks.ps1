@@ -28,8 +28,6 @@
     param(
         [string]$Benchmark = "azure.list_subscription",
         [string]$Model = "claude-sonnet-4.5-autodev-test",
-        [string]$RepoUrl,
-        [string]$WorkDir,
         [switch]$NoWait
     )
 
