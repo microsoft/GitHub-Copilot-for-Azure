@@ -17,7 +17,11 @@ import {
   getIntegrationSkipReason,
   useAgentRunner
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import {
+  softCheckSkill,
+  getAllAssistantMessages,
+  getAllToolText,
+} from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -30,6 +34,28 @@ if (skipTests && skipReason) {
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;
+
+/** Combine all agent output text (assistant messages + tool calls) for keyword checks */
+function getAgentOutputText(agentMetadata: Parameters<typeof getAllAssistantMessages>[0]): string {
+  return `${getAllAssistantMessages(agentMetadata)} ${getAllToolText(agentMetadata)}`.toLowerCase();
+}
+
+/** Check that agent output mentions at least N of the expected keywords (case-insensitive) */
+function expectKeywordsPresent(
+  output: string,
+  keywords: string[],
+  minRequired: number,
+  context: string,
+): void {
+  const found = keywords.filter((kw) => output.includes(kw.toLowerCase()));
+  if (found.length < minRequired) {
+    console.warn(
+      `⚠️  [${context}] Expected at least ${minRequired} of [${keywords.join(", ")}] ` +
+      `in output, found ${found.length}: [${found.join(", ")}]`,
+    );
+  }
+  expect(found.length).toBeGreaterThanOrEqual(minRequired);
+}
 
 describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
   const agent = useAgentRunner();
@@ -47,6 +73,15 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+
+          const output = getAgentOutputText(agentMetadata);
+          // Verify the response discusses AVM module hierarchy
+          expectKeywordsPresent(
+            output,
+            ["avm", "pattern", "resource", "module", "bicep"],
+            3,
+            "avm-module-priority",
+          );
         } catch (e: unknown) {
           if (
             e instanceof Error &&
@@ -73,6 +108,22 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+
+          const output = getAgentOutputText(agentMetadata);
+          // Verify the response discusses AVM fallback within AVM ecosystem
+          expectKeywordsPresent(
+            output,
+            ["avm", "resource", "utility", "fallback", "module"],
+            3,
+            "avm-fallback-behavior",
+          );
+          // Verify no suggestion to use non-AVM modules
+          const nonAvmPatterns = ["non-avm", "without avm", "skip avm", "ignore avm"];
+          const suggestsNonAvm = nonAvmPatterns.some((p) => output.includes(p));
+          if (suggestsNonAvm) {
+            console.warn("⚠️  Agent may have suggested non-AVM fallback");
+          }
+          expect(suggestsNonAvm).toBe(false);
         } catch (e: unknown) {
           if (
             e instanceof Error &&
@@ -99,6 +150,15 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+
+          const output = getAgentOutputText(agentMetadata);
+          // Verify the response discusses AZD pattern modules
+          expectKeywordsPresent(
+            output,
+            ["azd", "avm", "pattern", "container", "bicep", "module"],
+            3,
+            "avm-azd-pattern-preference",
+          );
         } catch (e: unknown) {
           if (
             e instanceof Error &&
