@@ -138,7 +138,7 @@ For each resource type:
    - Document source as "Fetched from: Azure Resource Graph + Official docs" or "Fetched from: az resource list + Official docs"
    - Skip to step 4 to get limit now as the current usage is got
 3. **Get current usage** - Use `az quota usage show` to find current deployment count
-4. **Get quota limit** - **MUST use `az quota show` first** to find the maximum allowed. **ONLY** if quota API returns `BadRequest` (resource type not supported), then refer to [resources-limits-quotas.md](references/resources-limits-quotas.md) for official documentation limits
+4. **Get quota limit** - **MUST use `az quota show` first** to find the maximum allowed. **ONLY** if quota API returns `BadRequest` (resource type not supported), then refer to [resources-limits-quotas.md](./resources-limits-quotas.md) for official documentation limits
 5. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
 6. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
 7. **Document source** - Note whether data came from "azure-quotas (resource-name)", "Azure Resource Graph + Official docs", or "az resource list + Official docs"

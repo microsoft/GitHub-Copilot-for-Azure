@@ -113,7 +113,7 @@ Choices: [
 1. **List resource types and quantities** that will be deployed from the planned architecture (e.g., 2x Standard D4s v3 VMs, 1x VNet, 3x Storage Accounts)
 
 2. **Determine limits for each resource type** using the user-selected subscription and region:
-   - Reference [./references/resources-limits-quotas.md](./references/resources-limits-quotas.md) for documented limits
+   - Reference [./resources-limits-quotas.md](./resources-limits-quotas.md) for documented limits
    - Use **azure-quotas** skill to check current quotas and usage for the selected subscription and region
    - If `az quota list` returns `BadRequest` error, the resource provider doesn't support quota API
 

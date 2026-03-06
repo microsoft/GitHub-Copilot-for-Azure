@@ -689,7 +689,7 @@ az quota update \
 
 ## Quick Reference Limits
 
-For complete quota checking workflow and commands, see: [azure-quotas SKILL.md](../../azure-quotas/SKILL.md)
+For complete quota checking workflow and commands, invoke the **azure-quotas** skill.
 
 > **Note:** These are typical default limits. Always verify actual quotas using `az quota show` for your specific subscription and region.
 
@@ -714,8 +714,7 @@ Common quotas to check:
 
 ## Related Documentation
 
-- **[azure-quotas skill](../../azure-quotas/SKILL.md)** - Complete quota checking workflow and CLI commands
-- **[azure-quotas commands.md](../../azure-quotas/references/commands.md)** - Detailed CLI command reference with examples
+- **azure-quotas skill** - Complete quota checking workflow and CLI commands (invoke the **azure-quotas** skill)
 - [Azure subscription limits](https://learn.microsoft.com/azure/azure-resource-manager/management/azure-subscription-service-limits) - Official Microsoft documentation
 - [Azure Quotas Overview](https://learn.microsoft.com/en-us/azure/quotas/quotas-overview) - Understanding quotas and limits
 - [azure-context.md](azure-context.md) - How to confirm subscription and region
