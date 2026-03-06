@@ -101,17 +101,21 @@
     }
 
     # --- Clone repo and cd to working directory ---
-    $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
-    $repoName = "msbench-benchmarks"
+    # $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
+    # $repoName = "msbench-benchmarks"
+    $msbenchRepo = "https://github.com/microsoft/mcp-pr.git"
+    $repoName = "mcp-pr"
+
     $cloneDir = Join-Path $PWD $repoName
 
     Write-Host "Cloning $msbenchRepo into $cloneDir"
     git clone --depth 1 $msbenchRepo $cloneDir
+    git checkout add_msbench_model_mapping
     if ($LASTEXITCODE -ne 0) {
         throw "git clone failed with exit code $LASTEXITCODE"
     }
 
-    $targetDir = Join-Path $cloneDir "curation/benchmarks/azure"
+    $targetDir = Join-Path $cloneDir "model_mapping"
     if (!(Test-Path $targetDir)) {
         throw "Working directory '$targetDir' does not exist after clone."
     }
