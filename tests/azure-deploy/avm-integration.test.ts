@@ -75,12 +75,19 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           softCheckSkill(agentMetadata, SKILL_NAME);
 
           const output = getAgentOutputText(agentMetadata);
-          // Verify the response discusses AVM module hierarchy
+          // Verify the response explicitly mentions AVM and patterns (critical requirement)
           expectKeywordsPresent(
             output,
-            ["avm", "pattern", "resource", "module", "bicep"],
-            3,
-            "avm-module-priority",
+            ["avm", "pattern"],
+            2,
+            "avm-module-priority (critical terms)",
+          );
+          // Verify the response discusses AVM module hierarchy and Bicep deploy guidance
+          expectKeywordsPresent(
+            output,
+            ["resource", "module", "bicep"],
+            2,
+            "avm-module-priority (hierarchy/bicep)",
           );
         } catch (e: unknown) {
           if (
@@ -114,12 +121,26 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           expectKeywordsPresent(
             output,
             ["avm", "resource", "utility", "fallback", "module"],
-            3,
+            5,
             "avm-fallback-behavior",
           );
-          // Verify no suggestion to use non-AVM modules
-          const nonAvmPatterns = ["non-avm", "without avm", "skip avm", "ignore avm"];
-          const suggestsNonAvm = nonAvmPatterns.some((p) => output.includes(p));
+          // Verify that AVM resource modules are recommended before AVM utility modules
+          const resourceIndex = output.indexOf("resource");
+          const utilityIndex = output.indexOf("utility");
+          expect(resourceIndex).toBeGreaterThanOrEqual(0);
+          expect(utilityIndex).toBeGreaterThanOrEqual(0);
+          expect(resourceIndex).toBeLessThan(utilityIndex);
+          // Verify no suggestion to use non-AVM modules (expanded patterns)
+          const nonAvmPatterns = [
+            /non[- ]?avm/i,
+            /without avm/i,
+            /skip avm/i,
+            /ignore avm/i,
+            /not avm/i,
+            /outside.*avm/i,
+            /bypass.*avm/i,
+          ];
+          const suggestsNonAvm = nonAvmPatterns.some((p) => p.test(output));
           if (suggestsNonAvm) {
             console.warn("⚠️  Agent may have suggested non-AVM fallback");
           }
@@ -152,12 +173,19 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           softCheckSkill(agentMetadata, SKILL_NAME);
 
           const output = getAgentOutputText(agentMetadata);
-          // Verify the response discusses AZD pattern modules
+          // Verify the response explicitly discusses AZD pattern modules
           expectKeywordsPresent(
             output,
-            ["azd", "avm", "pattern", "container", "bicep", "module"],
+            ["azd", "pattern"],
+            2,
+            "avm-azd-pattern-preference-core",
+          );
+          // Verify broader AVM/Bicep/container/module deployment context is present
+          expectKeywordsPresent(
+            output,
+            ["avm", "container", "bicep", "module"],
             3,
-            "avm-azd-pattern-preference",
+            "avm-azd-pattern-preference-context",
           );
         } catch (e: unknown) {
           if (
