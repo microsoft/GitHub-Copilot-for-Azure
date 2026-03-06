@@ -160,12 +160,14 @@ az quota list \
 
 **Fallback for unsupported providers:**
 
+> **⚠️ IMPORTANT:** Use these fallback methods **ONLY** when quota API returns `BadRequest` error. Always try quota API first.
+
 1. **Test if quota API is supported:**
    ```bash
    az quota list --scope /subscriptions/{sub-id}/providers/{Provider}/locations/{region}
    ```
 
-2. **If BadRequest error, get current usage using:**
+2. **ONLY if BadRequest error, get current usage using:**
    
    **Option A - Azure Resource Graph (Recommended for counting):**
    ```bash
@@ -619,26 +621,26 @@ az quota update \
    - Get customer's region preference
 
 6. Provisioning Limit Checklist - Phase 2
-   → INVOKE AZURE-QUOTAS SKILL HERE
+   → **MUST INVOKE AZURE-QUOTAS SKILL FIRST** - Use quota API as the primary method
    
    ⚠️ **IMPORTANT:** Process **ONE resource type at a time**. Complete steps a-g for the first resource, then move to the next resource. Do NOT try to batch process all resources at once.
    
    For each resource type:
-   a. Try quota API first:
+   a. **Try quota API first** (REQUIRED):
       az quota list --scope /subscriptions/{id}/providers/{provider}/locations/{region}
    
    b. If quota API is supported:
       - Check current usage:
         az quota usage show --resource-name {quota-name} --scope ...
-      - Check quota limit:
+      - **Check quota limit** (MUST use quota API):
         az quota show --resource-name {quota-name} --scope ...
    
-   c. If quota API is NOT supported (BadRequest error):
+   c. **ONLY if quota API is NOT supported** (BadRequest error):
       - Get current usage with Azure Resource Graph:
         az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"
       - Or use Azure CLI resource list:
         az resource list --subscription "{id}" --resource-type "{Type}" --location "{region}"
-      - Get limit from official documentation
+      - Get limit from official documentation (fallback method only)
    
    d. Calculate available capacity:
       Available = Limit - (Current Usage + Planned Deployment)
@@ -672,12 +674,12 @@ az quota update \
 
 ## Best Practices
 
-1. **Always use Azure CLI first**: Prefer `az quota` commands over REST API or Portal for quota checks - CLI provides clearer error handling
+1. **MUST use Azure CLI quota API first**: `az quota` commands are MANDATORY as the primary method for checking quotas - only use fallback methods (REST API, Portal, docs) when quota API returns `BadRequest`
 2. **Don't trust "No Limit" values**: If REST API or Portal shows "No Limit" or unlimited, verify with official service documentation - it likely means the quota API doesn't support that resource type, not that capacity is unlimited
 3. **Always check after customer selects region**: Validates availability and allows time for quota requests
 4. **Use the discovery workflow**: Never assume quota resource names - always run `az quota list` first to discover correct names
 5. **Check both usage and limit**: Run `az quota usage show` AND `az quota show` to calculate available capacity
-6. **Handle unsupported providers gracefully**: If you get `BadRequest` error, fall back to official documentation
+6. **Handle unsupported providers gracefully**: If you get `BadRequest` error, fall back to official documentation (Azure Resource Graph + docs)
 7. **Request quota increases proactively**: If selected region lacks capacity, submit request before deployment
 8. **Have alternative regions ready**: If quota increase denied, suggest backup regions
 9. **Document capacity assumptions**: Note quota availability and source in `.azure/plan.md`

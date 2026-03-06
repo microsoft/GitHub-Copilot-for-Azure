@@ -104,7 +104,7 @@ List all resources to be deployed with their types and quantities. Leave quota/l
 
 ### Phase 2: Fetch Quotas and Validate Capacity
 
-**Action:** Invoke **azure-quotas** skill to populate the remaining columns with actual quota data.
+**Action:** **MUST invoke azure-quotas skill first** to populate the remaining columns with actual quota data from the quota API. Only use fallback methods if quota API is not supported.
 
 > **⚠️ IMPORTANT:** Process **ONE resource type at a time**. Do NOT try to apply all steps to all resources at once. Complete steps 1-7 for the first resource, then move to the next resource, and so on.
 
@@ -138,7 +138,7 @@ For each resource type:
    - Document source as "Fetched from: Azure Resource Graph + Official docs" or "Fetched from: az resource list + Official docs"
    - Skip to step 4 to get limit now as the current usage is got
 3. **Get current usage** - Use `az quota usage show` to find current deployment count
-4. **Get quota limit** - Use `az quota show` to find the maximum allowed, if qutoas not supported for the current resource type then refer to [resources-limits-quotas.md](references/resources-limits-quotas.md) for limits guide
+4. **Get quota limit** - **MUST use `az quota show` first** to find the maximum allowed. **ONLY** if quota API returns `BadRequest` (resource type not supported), then refer to [resources-limits-quotas.md](references/resources-limits-quotas.md) for official documentation limits
 5. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
 6. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
 7. **Document source** - Note whether data came from "azure-quotas (resource-name)", "Azure Resource Graph + Official docs", or "az resource list + Official docs"
@@ -158,8 +158,8 @@ For each resource type:
 > **⛔ CRITICAL:** You **CANNOT** present this plan to the customer if ANY cells contain "_TBD_" or "_To be filled in Phase 2_". Phase 2 **MUST** be completed with actual quota data before user presentation.
 
 **Notes:**
-- Use **azure-quotas** skill to check providers that support quota API (Microsoft.Compute, Microsoft.Network, Microsoft.App, etc.)
-- For unsupported providers (e.g., Microsoft.DocumentDB), reference [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
+- **MUST use azure-quotas skill first** to check providers via quota API (Microsoft.Compute, Microsoft.Network, Microsoft.App, etc.)
+- **ONLY for unsupported providers** (e.g., Microsoft.DocumentDB returns `BadRequest`), use fallback methods: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
 - If any resource exceeds limits, return to Step 2 to select a different region or request quota increase
 
 ---
@@ -236,7 +236,7 @@ For each resource type:
 ## Instructions
 
 1. **Create the plan first** — Fill in all sections based on analysis
-2. **Complete quota validation** — Ensure Step 6 Phase 2 is completed with NO "_TBD_" entries. Use **azure-quotas** skill to fetch actual quota/usage data for all resources.
+2. **Complete quota validation** — Ensure Step 6 Phase 2 is completed with NO "_TBD_" entries. **MUST use azure-quotas skill** as the primary method to fetch actual quota/usage data via quota API for all resources. Use fallback methods ONLY when provider returns `BadRequest`.
 3. **Present to user** — Show the completed plan and ask for approval. **DO NOT** present if Step 6 contains any "_TBD_" or "_To be filled in Phase 2_" entries.
 4. **Update as you go** — Check off items in the execution checklist
 5. **Track status** — Update the Status field at the top as you progress
