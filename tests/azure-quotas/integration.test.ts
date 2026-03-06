@@ -11,12 +11,29 @@
 
 import {
   useAgentRunner,
-  areToolCallsSuccess,
+  AgentMetadata,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
 import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+
+/**
+ * Check if any tool call arguments contain a keyword.
+ * Useful when the agent executes commands via powershell
+ * rather than suggesting them in the assistant message.
+ */
+function doToolCallArgsIncludeKeyword(
+  agentMetadata: AgentMetadata,
+  keyword: string
+): boolean {
+  return agentMetadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .some(event => {
+      const args = JSON.stringify(event.data.arguments).toLowerCase();
+      return args.includes(keyword.toLowerCase());
+    });
+}
 
 const SKILL_NAME = "azure-quotas";
 const RUNS_PER_PROMPT = 5;
@@ -89,8 +106,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const mentionsQuotaCmd = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota");
-      const mentionsScope = doesAssistantMessageIncludeKeyword(agentMetadata, "/subscriptions/");
+      // Agent may suggest CLI commands in the response or execute them via powershell tool
+      const mentionsQuotaCmd = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota")
+        || doToolCallArgsIncludeKeyword(agentMetadata, "az quota");
+      const mentionsScope = doesAssistantMessageIncludeKeyword(agentMetadata, "/subscriptions/")
+        || doToolCallArgsIncludeKeyword(agentMetadata, "/subscriptions/");
 
       expect(isSkillUsed).toBe(true);
       expect(mentionsQuotaCmd).toBe(true);
@@ -133,7 +153,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const mentionsQuotaCmd = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota");
+      // Agent may suggest CLI commands in the response or execute them via powershell tool
+      const mentionsQuotaCmd = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota")
+        || doToolCallArgsIncludeKeyword(agentMetadata, "az quota");
 
       expect(isSkillUsed).toBe(true);
       expect(mentionsQuotaCmd).toBe(true);
