@@ -197,7 +197,7 @@ kubectl get nodes -L topology.kubernetes.io/zone
 | Service endpoints unreachable from one zone | Topology-aware routing misconfigured | Check `service.spec.trafficDistribution` or TopologyKeys |
 | Upgrade causing zone imbalance | Surge nodes in one zone | Configure `maxSurge` in node pool upgrade settings |
 
-**ZRS storage for multi-AZ (recommended):** Prevents zone affinity conflicts on disk PVCs. Use `Premium_ZRS` or `StandardSSD_ZRS` as the `skuname` in a custom StorageClass. See `references/storage.md` for the ZRS StorageClass spec.
+**ZRS storage for multi-AZ (recommended):** Prevents zone affinity conflicts on disk PVCs. Use `Premium_ZRS` or `StandardSSD_ZRS` as the `skuname` in a custom StorageClass. See [AKS storage best practices](https://learn.microsoft.com/azure/aks/operator-best-practices-storage) for the ZRS StorageClass spec.
 
 ---
 

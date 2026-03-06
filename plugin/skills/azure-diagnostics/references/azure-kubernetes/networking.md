@@ -1,6 +1,6 @@
 # Networking Troubleshooting
 
-> For CNI-specific issues (IP exhaustion, Azure CNI Overlay, eBPF/Cilium, egress/UDR, private cluster egress), see `references/networking-cni.md`.
+> For CNI-specific issues (IP exhaustion, Azure CNI Overlay, eBPF/Cilium, egress/UDR, private cluster egress), check CNI pod health: `kubectl get pods -n kube-system -l k8s-app=azure-cni` and review [AKS networking concepts](https://learn.microsoft.com/azure/aks/concepts-network).
 
 ## Service Unreachable / Connection Refused
 

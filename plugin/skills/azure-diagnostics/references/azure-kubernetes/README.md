@@ -41,6 +41,30 @@ AKS troubleshooting covers pod failures, node issues, networking problems, and c
 - [Networking Troubleshooting](networking.md)
 - [Node & Cluster Troubleshooting](node-issues.md)
 
+## General Investigation — "What happened in my cluster?"
+
+When a user asks a broad question like "what happened in my AKS cluster?" or "check my AKS status", follow this flow to surface recent activity and issues:
+
+```
+1. Cluster health     → az aks show -g <rg> -n <cluster> --query "provisioningState"
+2. Recent events      → kubectl get events -A --sort-by='.lastTimestamp' | head -40
+3. Node status        → kubectl get nodes -o wide
+4. Unhealthy pods     → kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
+5. Activity log       → az monitor activity-log list -g <rg> --max-events 20 -o table
+```
+
+| Customer Question | Maps To |
+|-------------------|---------|
+| "What happened in my AKS cluster?" | Events + Activity log + Node status |
+| "Is my cluster healthy?" | Cluster provisioning state + Node conditions |
+| "Why are my pods failing?" | Unhealthy pods → `kubectl describe pod` → see Pod Failures section |
+| "My app is unreachable" | See [Networking Troubleshooting](networking.md) |
+| "Nodes are having issues" | See [Node & Cluster Troubleshooting](node-issues.md) |
+
+> 💡 **Tip:** For AI-powered diagnostics, use AppLens MCP with the cluster resource ID — it automatically detects common issues and provides remediation recommendations.
+
+---
+
 ## Common Diagnostic Commands
 
 ```bash
