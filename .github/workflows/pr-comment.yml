@@ -1,0 +1,109 @@
+name: PR Comment
+
+# Runs from main branch (not the PR branch) via workflow_run trigger.
+# This ensures the commenting code cannot be modified by a PR author.
+on:
+  workflow_run:
+    workflows: ["PR Checks"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  token-comment:
+    name: Token Analysis Comment
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      - name: Download report artifact
+        id: download
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+
+            const match = artifacts.data.artifacts.find(a => a.name === 'token-analysis-report');
+            if (!match) {
+              core.info('No token-analysis-report artifact found — skipping comment.');
+              core.setOutput('found', 'false');
+              return;
+            }
+
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: match.id,
+              archive_format: 'zip',
+            });
+
+            const fs = require('fs');
+            fs.writeFileSync('report.zip', Buffer.from(download.data));
+            core.setOutput('found', 'true');
+
+      - name: Extract report
+        if: steps.download.outputs.found == 'true'
+        run: unzip -o report.zip
+
+      - name: Resolve PR number
+        if: steps.download.outputs.found == 'true'
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // pull_requests is populated server-side by GitHub — cannot be spoofed by PR branch code.
+            // It is empty for fork PRs, which naturally skips commenting on forks.
+            const prs = context.payload.workflow_run.pull_requests;
+            if (!prs || prs.length === 0) {
+              core.info('No PR associated (fork or direct push) — skipping comment.');
+              core.setOutput('number', '');
+              return;
+            }
+            core.setOutput('number', prs[0].number.toString());
+
+      - name: Comment on PR
+        if: steps.download.outputs.found == 'true' && steps.pr.outputs.number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('combined-report.md', 'utf8');
+            const prNumber = parseInt('${{ steps.pr.outputs.number }}', 10);
+
+            // Check for existing bot comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('Token Analysis Report')
+            );
+
+            const footer = '\n\n---\n*Automated token analysis. See [skill authoring guidelines](.github/skills/skill-authoring/SKILL.md) for best practices.*';
+            const body = report + footer;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
