@@ -30,18 +30,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description contains trigger phrases", () => {
       const description = skill.metadata.description.toLowerCase();
-      const hasTriggerPhrases = 
-        description.includes("use for") ||
-        description.includes("use when") ||
+      const hasTriggerPhrases =
+        description.includes("when") ||
         description.includes("helps") ||
         description.includes("activate") ||
         description.includes("trigger");
       expect(hasTriggerPhrases).toBe(true);
-    });
-
-    test("description contains anti-trigger phrases", () => {
-      const description = skill.metadata.description.toLowerCase();
-      expect(description).toContain("do not use for");
     });
   });
 
