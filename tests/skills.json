@@ -13,6 +13,7 @@
         "azure-kusto",
         "azure-messaging",
         "azure-prepare",
+        "azure-quotas",
         "azure-rbac",
         "azure-resource-lookup",
         "azure-resource-visualizer",
