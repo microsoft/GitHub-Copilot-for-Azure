@@ -4,7 +4,7 @@ description: "Check/manage Azure quotas and usage across providers. For deployme
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.3"
 ---
 
 ---
@@ -42,17 +42,37 @@ Invoke this skill when:
 
 | **Property** | **Details** |
 |--------------|-------------|
-| **Primary Tool** | Azure CLI (`az quota`) |
+| **Primary Tool** | Azure CLI (`az quota`) - **USE THIS FIRST, ALWAYS** |
 | **Extension Required** | `az extension add --name quota` (MUST install first) |
 | **Key Commands** | `az quota list`, `az quota show`, `az quota usage list`, `az quota usage show` |
 | **Complete CLI Reference** | [commands.md](./references/commands.md) |
-| **Azure Portal** | [My quotas](https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas) |
-| **REST API** | Microsoft.Quota provider |
+| **Azure Portal** | [My quotas](https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas) - Use only as fallback |
+| **REST API** | Microsoft.Quota provider - **Unreliable, do NOT use first** |
 | **Required Permission** | Reader (view) or Quota Request Operator (manage) |
 
-> **⚠️ IMPORTANT: Use CLI, Not REST API**
+> **⚠️ CRITICAL: ALWAYS USE CLI FIRST**
 >
-> If REST API calls are failing or returning errors, **use Azure CLI instead**. The CLI provides better error handling, clearer output, and more reliable results.
+> **Azure CLI (`az quota`) is the ONLY reliable method** for checking quotas. **Use CLI FIRST, always.**
+>
+> **DO NOT use REST API or Portal as your first approach.** They are unreliable and misleading.
+>
+> **Why you must use CLI first:**
+> - REST API is unreliable and shows misleading results
+> - REST API "No Limit" or "Unlimited" values **DO NOT mean unlimited capacity**
+> - "No Limit" typically means the resource doesn't support quota API (not unlimited!)
+> - CLI provides clear `BadRequest` errors when providers aren't supported
+> - CLI has consistent output format and better error messages
+> - Portal may show incomplete or cached data
+>
+> **Mandatory workflow:**
+> 1. **FIRST:** Try `az quota list` / `az quota show` / `az quota usage show`
+> 2. **If CLI returns `BadRequest`:** Then use [Azure service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
+> 3. **Never start with REST API or Portal** - only use as last resort
+>
+> **If you see "No Limit" in REST API/Portal:** This is NOT unlimited capacity. It means:
+> - The quota API doesn't support that resource type, OR
+> - The quota isn't enforced via the API, OR  
+> - Service-specific limits still apply (check documentation)
 >
 > For complete CLI command reference and examples, see [commands.md](./references/commands.md).
 
@@ -216,9 +236,10 @@ az quota list \
 
 | **Error** | **Cause** | **Solution** |
 |-----------|-----------|--------------|
-| REST API failures | REST API less reliable than CLI | **Use Azure CLI instead** - See [commands.md](./references/commands.md) for complete CLI reference |
+| REST API "No Limit" | REST API showing misleading "unlimited" values | **CRITICAL: "No Limit" ≠ unlimited!** Use CLI instead. See warning above. Check [service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
+| REST API failures | REST API unreliable and misleading | **Always use Azure CLI** - See [commands.md](./references/commands.md) for complete CLI reference |
 | `ExtensionNotFound` | Quota extension not installed | `az extension add --name quota` |
-| `BadRequest` | Resource provider not supported by quota API | Use Azure Portal or [service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
+| `BadRequest` | Resource provider not supported by quota API | Use CLI (preferred) or [service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
 | `MissingRegistration` | Microsoft.Quota provider not registered | `az provider register --namespace Microsoft.Quota` |
 | `QuotaExceeded` | Deployment would exceed quota | Request increase or choose different region |
 | `InvalidScope` | Incorrect scope format | Use pattern: `/subscriptions/<id>/providers/<namespace>/locations/<region>` |
