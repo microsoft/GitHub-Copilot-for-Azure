@@ -24,97 +24,104 @@
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
+param(
+    [string]$Benchmark = "azure",
+    [string]$Model = "claude-sonnet-4.5-autodev-test",
+    [switch]$NoWait
+)
 
-    param(
-        [string]$Benchmark = "azure",
-        [string]$Model = "claude-sonnet-4.5-autodev-test",
-        [switch]$NoWait
-    )
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
+if (!$Benchmark) {
+    throw "Benchmark parameter is required."
+}
 
-    if (!$Benchmark) {
-        throw "Benchmark parameter is required."
+if (!$Model) {
+    throw "Model parameter is required."
+}
+
+$repoRoot = Join-Path $PSScriptRoot ".." ".." -Resolve
+$vaultName = "kv-msbench-eval-azuremcp"
+$secretName = "azure-eval-gh-pat"
+
+Write-Host "Benchmark: $Benchmark"
+Write-Host "Model: $Model"
+Write-Host "NoWait: $NoWait"
+
+$pipelineRun = $env:TF_BUILD -eq "True"
+
+. "$PSScriptRoot/Create-Venv.ps1" -VenvName "venv" -RepoRoot $repoRoot
+. "$PSScriptRoot/Activate-Venv.ps1" -VenvName "venv" -RepoRoot $repoRoot
+
+# --- Retrieve GitHub PAT from KeyVault ---
+try {
+    Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
+    $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
+
+    if (!$pat) {
+        throw "Secret $secretName not found in KeyVault $vaultName."
     }
 
-    if (!$Model) {
-        throw "Model parameter is required."
+    $env:GITHUB_MCP_SERVER_TOKEN = $pat
+    
+    # Log the PAT as a secret variable to avoid exposing it in logs
+    if ($pipelineRun) {
+        Write-Host "##vso[task.setsecret]$pat"
+    }
+}
+catch {
+    throw "Failed to retrieve GitHub PAT from KeyVault: $_"
+}
+
+# --- Feed authentication ---
+# In CI, PipAuthenticate@1 sets PIP_EXTRA_INDEX_URL automatically.
+# For local runs, fall back to az CLI token acquisition.
+if ($env:PIP_EXTRA_INDEX_URL) {
+    Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task). Forwarding to UV_EXTRA_INDEX_URL for MSBench CLI."
+    $env:UV_EXTRA_INDEX_URL = $env:PIP_EXTRA_INDEX_URL
+} else {
+    Write-Host "PIP_EXTRA_INDEX_URL not set — acquiring Azure DevOps AAD token for local feed auth"
+    $feedUrl = "https://pkgs.dev.azure.com/azure-sdk/internal/_packaging/MicrosoftSweBench/pypi/simple/"
+    $adoResourceId = "499b84ac-1321-427f-aa17-267ca6975798"
+    $adoAccessToken = az account get-access-token --resource $adoResourceId --query accessToken -o tsv
+
+    if (!$adoAccessToken) {
+        throw "Failed to acquire Azure DevOps AAD token. Run 'az login' first."
     }
 
-    $vaultName = "kv-msbench-eval-azuremcp"
-    $secretName = "azure-eval-gh-pat"
+    $encodedToken = [System.Uri]::EscapeDataString($adoAccessToken)
+    $env:UV_EXTRA_INDEX_URL = $feedUrl -replace "https://", "https://vsts:$encodedToken@"
+    Write-Host "UV_EXTRA_INDEX_URL set via az CLI token"
+}
 
-    Write-Host "Benchmark: $Benchmark"
-    Write-Host "Model: $Model"
-    Write-Host "NoWait: $NoWait"
 
-    $pipelineRun = $env:TF_BUILD -eq "True"
+Write-Host "`n> uv pip install msbench-cli"
+& uv pip install msbench-cli
+if ($LASTEXITCODE -ne 0) {
+    throw "uv pip install msbench-cli failed with exit code $LASTEXITCODE"
+}
 
-    # --- Retrieve GitHub PAT from KeyVault ---
-    try {
-        Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
-        $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
+Write-Host "`n> uv run 'msbench-cli' version"
+uv run 'msbench-cli' version
+if ($LASTEXITCODE -ne 0) {
+    throw "uv run msbench-cli failed with exit code $LASTEXITCODE"
+}
 
-        if (!$pat) {
-            throw "Secret $secretName not found in KeyVault $vaultName."
-        }
+$runArgs = @(
+    "run",
+    "--agent", "github-copilot-cli",
+    "--benchmark", $Benchmark,
+    "--model", $Model,
+    "--env", "GITHUB_MCP_SERVER_TOKEN"
+)
 
-        $env:GITHUB_MCP_SERVER_TOKEN = $pat
-        
-        # Log the PAT as a secret variable to avoid exposing it in logs
-        if ($pipelineRun) {
-            Write-Host "##vso[task.setsecret]$pat"
-        }
-    }
-    catch {
-        throw "Failed to retrieve GitHub PAT from KeyVault: $_"
-    }
+if ($NoWait) {
+    $runArgs += "--no-wait"
+}
 
-    # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
-    # PipAuthenticate sets PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    if ($env:PIP_EXTRA_INDEX_URL) {
-        Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task)"
-    } else {
-        Write-Warning "PIP_EXTRA_INDEX_URL is not set. Feed authentication may fail. Ensure PipAuthenticate@1 runs before this script."
-    }
-
-    $pythonCommand = Get-Command python
-    Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version 2>&1)"
-
-    Write-Host "Install/upgrade pip"
-    python -m pip install --upgrade pip
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip install/upgrade failed with exit code $LASTEXITCODE"
-    }
-
-    Write-Host "Installing/upgrading MSBench CLI"
-    python -m pip install msbench-cli --no-input
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
-    }
-
-    Write-Host "MSBench CLI version"
-    & 'msbench-cli' version
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli version failed with exit code $LASTEXITCODE"
-    }
-
-    $runArgs = @(
-        "run",
-        "--agent", "github-copilot-cli",
-        "--benchmark", $Benchmark,
-        "--model", $Model,
-        "--env", "GITHUB_MCP_SERVER_TOKEN"
-    )
-
-    if ($NoWait) {
-        $runArgs += "--no-wait"
-    }
-
-    Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-    & 'msbench-cli' @runArgs
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli run failed with exit code $LASTEXITCODE"
-    }
+Write-Host "`n> msbench-cli $($runArgs -join ' ')"
+uv run 'msbench-cli' @runArgs
+if ($LASTEXITCODE -ne 0) {
+    throw "msbench-cli run failed with exit code $LASTEXITCODE"
+}

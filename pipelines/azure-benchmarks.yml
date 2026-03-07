@@ -19,10 +19,10 @@ stages:
   - job: RunBenchmark
     displayName: 'Run Copilot Benchmarks'
     steps:
-    - task: UsePythonVersion@0
-      displayName: 'Use Python 3.12'
-      inputs:
-        versionSpec: '3.12'
+    - template: /pipelines/templates/steps/install-uv.yml
+
+    - pwsh: uv python install 3.12 && uv python pin 3.12
+      displayName: 'Install Python 3.12 with uv'
 
     - task: PipAuthenticate@1
       displayName: 'Authenticate pip with MicrosoftSweBench feed'
