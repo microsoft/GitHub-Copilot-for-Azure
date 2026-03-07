@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.0.5"
 ---
 
 # Azure Prepare
@@ -100,7 +100,7 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Research Components** — Load service references + invoke related skills | [research.md](references/research.md) |
-| 2 | **Confirm Azure Context** — Detect and confirm subscription + location | [Azure Context](references/azure-context.md) |
+| 2 | **Confirm Azure Context** — Detect and confirm subscription + location and check the resource provisioning limit | [Azure Context](references/azure-context.md) |
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
