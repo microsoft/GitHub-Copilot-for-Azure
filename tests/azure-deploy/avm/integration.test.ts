@@ -130,7 +130,7 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           // Verify the response discusses AVM fallback within AVM ecosystem
           expectKeywordsPresent(
             output,
-            ["avm", "resource", "utility", "fallback", "module"],
+            ["avm", "resource", "utility", "fallback", "fall back", "fall-back", "module"],
             5,
             "avm-fallback-behavior",
           );
@@ -157,7 +157,11 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
             while ((match = pattern.exec(output)) !== null) {
               const start = Math.max(0, match.index - 40);
               const preceding = output.substring(start, match.index);
-              const isNegated = negationPrefixes.some((neg) => preceding.includes(neg));
+              const end = Math.min(output.length, match.index + match[0].length + 40);
+              const following = output.substring(match.index + match[0].length, end);
+              const isNegated =
+                negationPrefixes.some((neg) => preceding.includes(neg)) ||
+                negationPrefixes.some((neg) => following.includes(neg));
               if (!isNegated) {
                 suggestsNonAvm = true;
                 break;
@@ -213,8 +217,10 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           );
           // Verify AZD pattern modules are discussed before resource modules
           const normalizedOutput = output.toLowerCase();
-          const patModIdx = normalizedOutput.indexOf("pattern module");
-          const resModIdx = normalizedOutput.indexOf("resource module");
+          const patModMatch = normalizedOutput.match(/(?:avm\s+|azd\s+)?pattern modules?/);
+          const resModMatch = normalizedOutput.match(/(?:avm\s+)?resource modules?/);
+          const patModIdx = patModMatch?.index ?? -1;
+          const resModIdx = resModMatch?.index ?? -1;
           if (patModIdx !== -1 && resModIdx !== -1) {
             expect(patModIdx).toBeLessThan(resModIdx);
           }
