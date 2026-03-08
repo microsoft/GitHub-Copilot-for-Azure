@@ -16,12 +16,12 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
   useAgentRunner
-} from "../utils/agent-runner";
+} from "../../utils/agent-runner";
 import {
   softCheckSkill,
   getAllAssistantMessages,
   getAllToolText,
-} from "../utils/evaluate";
+} from "../../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
