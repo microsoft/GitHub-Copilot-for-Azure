@@ -13,10 +13,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history for comparison
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -48,17 +47,18 @@ jobs:
         working-directory: ./scripts
         run: npm run lint
 
-  # Token limit check and comparison for markdown files
-  token-check:
+  # Token limit check and comparison for markdown files.
+  # The comment is posted by a separate workflow (pr-comment.yml) triggered via workflow_run,
+  # so the commenting code always runs from main — not the PR branch.
+  token-analysis:
     name: Token Analysis
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
       contents: read
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history for comparison
 
@@ -72,6 +72,10 @@ jobs:
       - name: Install scripts dependencies
         working-directory: ./scripts
         run: npm ci
+
+      - name: Check Copilot CLI skill char budget
+        working-directory: ./scripts
+        run: npm run checkCopilotCliCharBudget
 
       - name: Check changed markdown files
         id: changed-files
@@ -89,10 +93,10 @@ jobs:
         run: |
           LIMIT_OUTPUT=""
           if LIMIT_OUTPUT=$(npm run tokens -- check --markdown 2>&1); then
-            echo "$LIMIT_OUTPUT" > limit-report.md
+            echo "$LIMIT_OUTPUT" > ../limit-report.md
             echo "exceeded=false" >> $GITHUB_OUTPUT
           else
-            echo "$LIMIT_OUTPUT" > limit-report.md
+            echo "$LIMIT_OUTPUT" > ../limit-report.md
             echo "exceeded=true" >> $GITHUB_OUTPUT
           fi
 
@@ -104,77 +108,45 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           # Validate BASE_REF to avoid unsafe characters in shell command
-          if ! echo "$BASE_REF" | grep -Eq '^[A-Za-z0-9._/-]+$'; then
+          if ! echo "$BASE_REF" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
             echo "Error: Invalid base ref: '$BASE_REF'. Aborting token comparison."
             exit 1
           fi
-          
+
           COMPARE_OUTPUT=$(npm run tokens -- compare --base "origin/${BASE_REF}" --head HEAD --markdown 2>&1)
-          echo "$COMPARE_OUTPUT" > compare-report.md
+          echo "$COMPARE_OUTPUT" > ../compare-report.md
           
           TOTAL_DIFF=$(echo "$COMPARE_OUTPUT" | grep -oP 'Total Change.*?\*\*\K[^*]+' | head -1 || echo "0 tokens")
           echo "diff=$TOTAL_DIFF" >> $GITHUB_OUTPUT
 
       - name: Generate combined report
         if: steps.changed-files.outputs.any_changed == 'true'
-        working-directory: ./scripts
         run: |
           # Combine reports
           echo "# 🔍 Token Analysis Report" > combined-report.md
           echo "" >> combined-report.md
-          
+
           # Add comparison report first
           if [ -f compare-report.md ]; then
             cat compare-report.md >> combined-report.md
             echo "" >> combined-report.md
           fi
-          
+
           # Add limit check report
           if [ -f limit-report.md ]; then
             cat limit-report.md >> combined-report.md
           fi
-          
+
           # Add to step summary
           cat combined-report.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Comment on PR
-        if: steps.changed-files.outputs.any_changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@v7
+      - name: Upload report artifact
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('./scripts/combined-report.md', 'utf8');
-            
-            // Check for existing bot comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const botComment = comments.find(c => 
-              c.user.type === 'Bot' && 
-              c.body.includes('Token Analysis Report')
-            );
-            
-            const footer = '\n\n---\n*Automated token analysis. See [skill authoring guidelines](.github/skills/skill-authoring/SKILL.md) for best practices.*';
-            const body = report + footer;
-            
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body
-              });
-            }
+          name: token-analysis-report
+          path: combined-report.md
+          retention-days: 1
 
       - name: Skip message
         if: steps.changed-files.outputs.any_changed != 'true'
@@ -189,10 +161,9 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
       - name: Check changed skill files
         id: changed-skills
         uses: tj-actions/changed-files@v46
@@ -225,6 +196,8 @@ jobs:
       - name: Validate skill frontmatter
         if: steps.changed-skills.outputs.any_changed == 'true'
         working-directory: ./scripts
+        env:
+          CHANGED_FILES: ${{ steps.changed-skills.outputs.all_changed_files }}
         run: |
           echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -232,7 +205,7 @@ jobs:
           # Pass changed SKILL.md file paths directly to the validator
           # Prefix with ../ since working-directory is ./scripts
           SKILL_FILES=""
-          for file in ${{ steps.changed-skills.outputs.all_changed_files }}; do
+          for file in $CHANGED_FILES; do
             SKILL_FILES="$SKILL_FILES ../$file"
           done
           
@@ -302,18 +275,27 @@ jobs:
 
       - name: Check skill version bumps
         if: steps.changed-plugin-skills.outputs.any_changed == 'true'
+        env:
+          CHANGED_FILES: ${{ steps.changed-plugin-skills.outputs.all_changed_files }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
           echo "## Skill Version Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           FAILED=false
 
+          # Validate BASE_REF to avoid unsafe characters in shell command
+          if ! echo "$BASE_REF" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
+            echo "Error: Invalid base ref: '$BASE_REF'. Aborting skill version check."
+            exit 1
+          fi
+
           # For each changed file, map to the top-level SKILL.md (one level under plugin/skills or .github/skills).
           # This ensures that deeply nested files (e.g. plugin/skills/foo/references/bar/SKILL.md)
           # always resolve to the skill root (e.g. plugin/skills/foo/SKILL.md) rather than
           # an intermediate SKILL.md found by walking up the directory tree.
           SKILL_FILES=""
-          for file in ${{ steps.changed-plugin-skills.outputs.all_changed_files }}; do
+          for file in $CHANGED_FILES; do
             skill_dir=""
             # Extract the first path segment after the skills/ prefix — this is the skill root dir.
             # e.g. "plugin/skills/microsoft-foundry/references/deep/file.md" → "plugin/skills/microsoft-foundry"
@@ -341,7 +323,7 @@ jobs:
             SKILL_NAME=$(basename "$(dirname "$skill_file")")
 
             # Get version in base branch (use [[:space:]] for portable whitespace matching)
-            BASE_VERSION=$(git show origin/${{ github.base_ref }}:"$skill_file" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
+            BASE_VERSION=$(git show "origin/${BASE_REF}:${skill_file}" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
 
             # Get version in PR branch
             HEAD_VERSION=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
@@ -381,7 +363,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check changed skill markdown files
         id: changed-markdown

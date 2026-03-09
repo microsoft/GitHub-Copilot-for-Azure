@@ -47,10 +47,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Agent Development Lifecycle");
+      expect(skill.content).toContain("## Agent Lifecycle");
       expect(skill.content).toContain("## Sub-Skills");
-      expect(skill.content).toContain("## Agent: Project Context Resolution");
-      expect(skill.content).toContain("## Agent: Agent Types");
+      expect(skill.content).toContain("## Project Context Resolution");
+      expect(skill.content).toContain("## Agent Types");
     });
 
     test("contains agent routing references", () => {
@@ -221,6 +221,121 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("contains bash command examples", () => {
       expect(rbacContent).toContain("```bash");
+    });
+  });
+
+  describe("Standard Agent Setup Reference", () => {
+    let setupContent: string;
+
+    beforeAll(async () => {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const setupPath = path.join(
+        SKILLS_PATH,
+        "microsoft-foundry/references/standard-agent-setup.md"
+      );
+      setupContent = await fs.readFile(setupPath, "utf-8");
+    });
+
+    test("has standard agent setup reference file", () => {
+      expect(setupContent).toBeDefined();
+      expect(setupContent.length).toBeGreaterThan(100);
+    });
+
+    test("contains mandatory Learn docs link", () => {
+      expect(setupContent).toContain("MANDATORY");
+      expect(setupContent).toContain("https://learn.microsoft.com");
+    });
+
+    test("documents basic vs standard setup types", () => {
+      expect(setupContent).toContain("Basic");
+      expect(setupContent).toContain("Standard");
+      expect(setupContent).toContain("Capability Host");
+    });
+
+    test("contains standard setup connections table", () => {
+      expect(setupContent).toContain("Azure Cosmos DB");
+      expect(setupContent).toContain("Azure Storage");
+      expect(setupContent).toContain("Azure AI Search");
+    });
+
+    test("documents prerequisites for RBAC and quota", () => {
+      expect(setupContent).toContain("Owner");
+      expect(setupContent).toContain("roleAssignments/write");
+      expect(setupContent).toContain("quota");
+    });
+
+    test("contains Bicep template link", () => {
+      expect(setupContent).toContain("Bicep");
+      expect(setupContent).toContain("github.com");
+    });
+
+    test("warns about async capability host provisioning", () => {
+      expect(setupContent).toContain("asynchronous");
+      expect(setupContent).toContain("poll");
+    });
+
+    test("contains post-deployment steps", () => {
+      expect(setupContent).toContain("Deploy a model");
+      expect(setupContent).toContain("Create the agent");
+    });
+  });
+
+  describe("Private Network Standard Agent Setup Reference", () => {
+    let privateContent: string;
+
+    beforeAll(async () => {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const privatePath = path.join(
+        SKILLS_PATH,
+        "microsoft-foundry/references/private-network-standard-agent-setup.md"
+      );
+      privateContent = await fs.readFile(privatePath, "utf-8");
+    });
+
+    test("has private network setup reference file", () => {
+      expect(privateContent).toBeDefined();
+      expect(privateContent.length).toBeGreaterThan(100);
+    });
+
+    test("contains mandatory Learn docs link", () => {
+      expect(privateContent).toContain("MANDATORY");
+      expect(privateContent).toContain("https://learn.microsoft.com");
+    });
+
+    test("references standard agent setup as base", () => {
+      expect(privateContent).toContain("standard-agent-setup.md");
+    });
+
+    test("documents subnet requirements", () => {
+      expect(privateContent).toContain("Agent Subnet");
+      expect(privateContent).toContain("Private Endpoint Subnet");
+      expect(privateContent).toContain("Microsoft.App/environments");
+    });
+
+    test("contains critical networking constraints", () => {
+      expect(privateContent).toContain("must be in the same region");
+      expect(privateContent).toContain("exclusive to one Foundry account");
+    });
+
+    test("warns about existing VNet subnet pre-creation", () => {
+      expect(privateContent).toContain("ensure both subnets exist before deployment");
+    });
+
+    test("contains Bicep template link", () => {
+      expect(privateContent).toContain("Bicep");
+      expect(privateContent).toContain("github.com");
+    });
+
+    test("warns about async capability host provisioning", () => {
+      expect(privateContent).toContain("asynchronous");
+      expect(privateContent).toContain("Poll deployment status");
+    });
+
+    test("contains post-deployment steps", () => {
+      expect(privateContent).toContain("Deploy a model");
+      expect(privateContent).toContain("Create the agent");
     });
   });
 });

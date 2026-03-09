@@ -49,7 +49,7 @@ export class TriggerMatcher {
         .toLowerCase()
         .replace(/[^\w\s-]/g, " ")
         .split(/\s+/)
-        .filter(word => word.length > 3);
+        .filter(word => word === "ai" || word.length > 3);
       descWords.forEach(word => keywords.add(word));
     }
 
