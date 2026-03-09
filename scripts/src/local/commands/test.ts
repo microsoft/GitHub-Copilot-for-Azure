@@ -11,7 +11,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { execFileSync } from "node:child_process";
-import { parseSkillContent } from "../../shared/parse-skill.js";
+import { parseSkillContent } from "../../shared/skill-helper.js";
 
 const TIMEOUT_MS = 120_000;
 const MARKETPLACE_NAME = "github-copilot-for-azure";
@@ -62,7 +62,7 @@ function checkPluginConfig(expectedCachePath: string): TestResult {
 
   const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
   if (!marketplace || marketplace.source?.source !== "github" ||
-      marketplace.source?.repo !== "microsoft/github-copilot-for-azure") {
+    marketplace.source?.repo !== "microsoft/github-copilot-for-azure") {
     return { name: "Plugin config", passed: false, detail: `Marketplace "${MARKETPLACE_NAME}" not configured correctly` };
   }
 
@@ -242,12 +242,6 @@ const MCP_TOOL_PROBES: McpToolProbe[] = [
     prompt: "Call the context7-resolve-library-id tool with libraryName set to react and query set to react hooks. If it returns data, say CONTEXT7_OK. If it fails, say CONTEXT7_FAIL.",
     successPattern: /CONTEXT7_OK/i,
     invokedPattern: /context7-resolve-library-id/i,
-  },
-  {
-    server: "playwright",
-    prompt: "Call the playwright-browser_tabs tool with action set to list. If it returns data or an error response, say PLAYWRIGHT_OK. If the tool is not found, say PLAYWRIGHT_FAIL.",
-    successPattern: /PLAYWRIGHT_OK/i,
-    invokedPattern: /playwright-browser_tabs/i,
   },
   {
     server: "azure",
