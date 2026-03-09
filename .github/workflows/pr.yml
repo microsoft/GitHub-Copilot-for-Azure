@@ -162,7 +162,7 @@ jobs:
             );
             
             const footer = '\n\n---\n*Automated token analysis. See [skill authoring guidelines](.github/skills/skill-authoring/SKILL.md) for best practices.*';
-            const body = report + footer;
+            const body = '<details>' + report + '</details>' + footer;
             
             if (botComment) {
               await github.rest.issues.updateComment({
