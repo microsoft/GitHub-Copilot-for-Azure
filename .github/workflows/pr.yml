@@ -73,6 +73,10 @@ jobs:
         working-directory: ./scripts
         run: npm ci
 
+      - name: Check Copilot CLI skill char budget
+        working-directory: ./scripts
+        run: npm run checkCopilotCliCharBudget
+
       - name: Check changed markdown files
         id: changed-files
         uses: tj-actions/changed-files@v46
@@ -198,8 +202,8 @@ jobs:
         uses: tj-actions/changed-files@v46
         with:
           files: |
-            plugin/skills/**/SKILL.md
-            .github/skills/**/SKILL.md
+            plugin/skills/*/SKILL.md
+            .github/skills/*/SKILL.md
 
       - name: Check all changed plugin skill files
         id: changed-plugin-skills
@@ -308,17 +312,24 @@ jobs:
 
           FAILED=false
 
-          # For each changed file, walk up to find the nearest SKILL.md
+          # For each changed file, map to the top-level SKILL.md (one level under plugin/skills or .github/skills).
+          # This ensures that deeply nested files (e.g. plugin/skills/foo/references/bar/SKILL.md)
+          # always resolve to the skill root (e.g. plugin/skills/foo/SKILL.md) rather than
+          # an intermediate SKILL.md found by walking up the directory tree.
           SKILL_FILES=""
           for file in ${{ steps.changed-plugin-skills.outputs.all_changed_files }}; do
-            dir=$(dirname "$file")
-            while [ "$dir" != "plugin/skills" ] && [ "$dir" != ".github/skills" ] && [ "$dir" != "plugin" ] && [ "$dir" != ".github" ] && [ "$dir" != "." ]; do
-              if [ -f "$dir/SKILL.md" ]; then
-                SKILL_FILES="$SKILL_FILES $dir/SKILL.md"
-                break
-              fi
-              dir=$(dirname "$dir")
-            done
+            skill_dir=""
+            # Extract the first path segment after the skills/ prefix — this is the skill root dir.
+            # e.g. "plugin/skills/microsoft-foundry/references/deep/file.md" → "plugin/skills/microsoft-foundry"
+            if echo "$file" | grep -qE '^plugin/skills/[^/]+/'; then
+              skill_dir=$(echo "$file" | sed 's|^\(plugin/skills/[^/]*\)/.*|\1|')
+            elif echo "$file" | grep -qE '^\.github/skills/[^/]+/'; then
+              skill_dir=$(echo "$file" | sed 's|^\(\.github/skills/[^/]*\)/.*|\1|')
+            fi
+            # Only include if the skill root actually contains a SKILL.md
+            if [ -n "$skill_dir" ] && [ -f "$skill_dir/SKILL.md" ]; then
+              SKILL_FILES="$SKILL_FILES $skill_dir/SKILL.md"
+            fi
           done
 
           # Deduplicate

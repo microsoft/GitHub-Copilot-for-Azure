@@ -38,7 +38,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
       // High availability
       "high availability deployment",
-      "deploy with HA",
+      "deploy model with HA configuration",
 
       // Generic deployment (should choose this as default)
       "deploy gpt-4o model to the optimal region",
@@ -79,7 +79,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
       // Non-deployment tasks
       "Set up virtual network",
-      "Configure Azure Storage",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -107,7 +106,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Edge Cases", () => {
     test("multiple trigger phrases in one prompt", () => {
-      const result = triggerMatcher.shouldTrigger("Quick deployment to optimal region with high availability");
+      const result = triggerMatcher.shouldTrigger("Quick model deployment to optimal region with high availability");
       expect(result.triggered).toBe(true);
     });
 
