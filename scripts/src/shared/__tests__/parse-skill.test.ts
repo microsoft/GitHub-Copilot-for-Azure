@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { parseSkillContent } from "../parse-skill.js";
+import { parseSkillContent } from "../skill-helper.js";
 
 describe("parseSkillContent", () => {
   it("parses valid frontmatter", () => {

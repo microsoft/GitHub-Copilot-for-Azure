@@ -14,7 +14,7 @@ import {
   validateMetadataVersion,
   validateSkillFile,
 } from "../cli.js";
-import { parseSkillContent } from "../../shared/parse-skill.js";
+import { parseSkillContent } from "../../shared/skill-helper.js";
 
 const TEST_DIR = resolve(__dirname, "__test_frontmatter__");
 

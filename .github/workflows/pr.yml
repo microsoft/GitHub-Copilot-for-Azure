@@ -73,6 +73,10 @@ jobs:
         working-directory: ./scripts
         run: npm ci
 
+      - name: Check Copilot CLI skill char budget
+        working-directory: ./scripts
+        run: npm run checkCopilotCliCharBudget
+
       - name: Check changed markdown files
         id: changed-files
         uses: tj-actions/changed-files@v46

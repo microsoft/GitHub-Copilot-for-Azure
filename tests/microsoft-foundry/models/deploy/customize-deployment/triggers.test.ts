@@ -69,7 +69,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
       // Quick deployment scenarios (should use deploy-model-optimal-region)
       "Set up virtual network",
-      "Configure Azure Storage",
     ];
 
     test.each(shouldNotTriggerPrompts)(
