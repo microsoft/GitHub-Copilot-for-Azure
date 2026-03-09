@@ -190,7 +190,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${CLIENT_APPS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
@@ -229,7 +230,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
