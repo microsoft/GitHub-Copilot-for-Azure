@@ -93,10 +93,10 @@ jobs:
         run: |
           LIMIT_OUTPUT=""
           if LIMIT_OUTPUT=$(npm run tokens -- check --markdown 2>&1); then
-            echo "$LIMIT_OUTPUT" > limit-report.md
+            echo "$LIMIT_OUTPUT" > ../limit-report.md
             echo "exceeded=false" >> $GITHUB_OUTPUT
           else
-            echo "$LIMIT_OUTPUT" > limit-report.md
+            echo "$LIMIT_OUTPUT" > ../limit-report.md
             echo "exceeded=true" >> $GITHUB_OUTPUT
           fi
 
@@ -114,30 +114,29 @@ jobs:
           fi
 
           COMPARE_OUTPUT=$(npm run tokens -- compare --base "origin/${BASE_REF}" --head HEAD --markdown 2>&1)
-          echo "$COMPARE_OUTPUT" > compare-report.md
+          echo "$COMPARE_OUTPUT" > ../compare-report.md
           
           TOTAL_DIFF=$(echo "$COMPARE_OUTPUT" | grep -oP 'Total Change.*?\*\*\K[^*]+' | head -1 || echo "0 tokens")
           echo "diff=$TOTAL_DIFF" >> $GITHUB_OUTPUT
 
       - name: Generate combined report
         if: steps.changed-files.outputs.any_changed == 'true'
-        working-directory: ./scripts
         run: |
           # Combine reports
           echo "# 🔍 Token Analysis Report" > combined-report.md
           echo "" >> combined-report.md
-          
+
           # Add comparison report first
           if [ -f compare-report.md ]; then
             cat compare-report.md >> combined-report.md
             echo "" >> combined-report.md
           fi
-          
+
           # Add limit check report
           if [ -f limit-report.md ]; then
             cat limit-report.md >> combined-report.md
           fi
-          
+
           # Add to step summary
           cat combined-report.md >> $GITHUB_STEP_SUMMARY
 
@@ -146,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: token-analysis-report
-          path: scripts/combined-report.md
+          path: combined-report.md
           retention-days: 1
 
       - name: Skip message
