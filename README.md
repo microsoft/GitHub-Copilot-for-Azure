@@ -1,3 +1,4 @@
+No merge just testing tokens analysis
 # GitHub Copilot for Azure
 
 GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and Claude Code designed to streamline the process of developing for Azure. You can ask it questions about your Azure services or get help with tasks related to Azure management and development, all from within your IDE.
