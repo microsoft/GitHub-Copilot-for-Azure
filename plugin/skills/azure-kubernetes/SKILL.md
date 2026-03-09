@@ -36,7 +36,7 @@ Activate this skill when user wants to:
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
-2. Use the AKS MCP server for invoking Azure API and kubectl commands when applicable during the cluster setup and operations processes.
+2. Use the `azure` MCP server and its AKS-related MCP tools (`mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations`) to invoke Azure APIs and perform AKS and kubectl operations; fall back to Azure CLI (`az aks`) only when required functionality is not available via MCP tools.
 3. Determine if AKS Automatic or Standard SKU is more appropriate based on the user's need for control vs convenience. Default to AKS Automatic unless specific customizations are required.
 4. Document decisions and rationale for cluster configuration choices, especially for Day-0 decisions that are hard to change later (networking, API server access).
 
@@ -126,3 +126,20 @@ If the user is unsure, use safe defaults.
 - If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
 - Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades along with best practices for reliability and performance.
 - If user asks for actions that require privileged access, provide a plan and commands with placeholders.
+
+## MCP Tools
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `mcp_azure_mcp_aks` | Query AKS clusters at subscription scope | `subscription_id`, `resource_group` |
+| `mcp_aks_mcp_az_aks_operations` | Cluster operations: show, list, get-versions, nodepool management | `cluster_name`, `resource_group`, `operation` |
+| `mcp_aks_mcp_kubectl_resources` | Get/describe pods, deployments, services | `resource_type`, `namespace`, `name` |
+| `mcp_aks_mcp_kubectl_diagnostics` | Logs, events, top, exec | `pod_name`, `namespace`, `command` |
+
+## Error Handling
+| Error / Symptom | Likely Cause | Remediation |
+|-----------------|--------------|-------------|
+| MCP tool call fails or times out | Invalid credentials, subscription, or cluster context | Verify `az login`, check subscription ID and resource group |
+| Cluster creation blocked by policy | Azure Policy denying configuration | Review policy assignments, adjust cluster settings to comply |
+| Quota exceeded | Regional vCPU or resource limits | Request quota increase or select different region/VM SKU |
+| Networking conflict (IP exhaustion) | Pod subnet too small for overlay/CNI | Re-plan IP ranges; may require cluster recreation (Day-0) |
+| Workload Identity not working | Missing OIDC issuer or federated credential | Enable `--enable-oidc-issuer --enable-workload-identity`, configure federated identity |

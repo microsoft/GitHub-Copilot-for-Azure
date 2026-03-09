@@ -3,8 +3,6 @@
  *
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
- *
- * Uses snapshot testing + parameterized tests for comprehensive coverage.
  */
 
 import { TriggerMatcher } from "../utils/trigger-matcher";
@@ -22,42 +20,96 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe("Should Trigger", () => {
-    // Prompts that SHOULD trigger this skill - include multiple keywords
+    // Common customer prompts for AKS cluster planning and creation
     const shouldTriggerPrompts: string[] = [
-      "Create an Azure Kubernetes cluster for production",
-      "Set up AKS cluster with Azure networking",
-      "Configure Azure AKS cluster autoscaling",
-      "Plan Azure Kubernetes workload identity setup",
-      "Azure AKS Automatic vs Standard cluster",
-      "Set up Azure Kubernetes monitoring with Prometheus",
-      "Configure Azure AKS deployment safeguards",
-      "Azure Kubernetes cluster upgrade strategy",
+      // Cluster creation
+      "Help me create an AKS cluster",
+      "I need to set up a new Kubernetes cluster on Azure",
+      "Create a production-ready AKS cluster with best practices",
+      "How do I provision an AKS cluster for my team?",
+      
+      // Day-0 decisions
+      "What networking options should I choose for AKS?",
+      "AKS Day-0 checklist",
+      "Plan AKS configuration for production",
+      "Design AKS networking with private API server",
+      
+      // SKU selection
+      "What's the difference between AKS Automatic and Standard?",
+      "Should I use AKS Automatic or Standard SKU?",
+      "Help me choose the right AKS cluster SKU",
+      
+      // Networking
+      "Configure AKS with Azure CNI Overlay",
+      "How do I set up private AKS cluster?",
+      "AKS egress configuration options",
+      
+      // Security
+      "Configure AKS with workload identity",
+      "Set up Azure Policy for AKS",
+      "Set up Key Vault CSI driver for AKS",
+      "Enable Deployment Safeguards for AKS",
+      "How do I secure my AKS cluster?",
+      
+      // Operations
+      "Enable monitoring for my AKS cluster",
+      "Configure AKS upgrade strategy",
+      "How do I set up AKS autoscaling?",
+      "AKS cost analysis",
+      "Configure AKS cluster autoscaling and node pools",
     ];
 
-    test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {
-      const result = triggerMatcher.shouldTrigger(prompt);
-      expect(result.triggered).toBe(true);
-    });
+    test.each(shouldTriggerPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
   });
 
   describe("Should NOT Trigger", () => {
-    // Prompts that should NOT trigger this skill (avoid Azure/kubernetes/AKS keywords)
-    const shouldNotTriggerPrompts: string[] = [
+    // Generic prompts unrelated to Azure/Kubernetes
+    const genericPrompts: string[] = [
       "What is the weather today?",
       "Help me write a poem",
       "Explain quantum computing",
-      "Help me with AWS EKS",
-      "How do I use Google GKE?",
       "Write a Python script to parse JSON",
-      "What is the capital of France?",
-      "Configure my local Docker container",
-      "Set up PostgreSQL database locally",
+      "How do I bake a cake?",
     ];
 
-    test.each(shouldNotTriggerPrompts)('does not trigger on: "%s"', (prompt) => {
-      const result = triggerMatcher.shouldTrigger(prompt);
-      expect(result.triggered).toBe(false);
-    });
+    // Competing cloud providers (without "AKS" or "Azure" keywords)
+    const otherCloudPrompts: string[] = [
+      "How do I use AWS EKS?",
+      "Help me with GCP GKE",
+      "Help me with AWS Lambda",
+      "How do I use Google Cloud Platform?",
+      "Set up EC2 instances",
+      "Configure S3 bucket policies",
+    ];
+
+    // Generic infrastructure prompts (without Azure keywords)
+    const genericInfraPrompts: string[] = [
+      "Set up a PostgreSQL database",
+      "Configure nginx load balancer",
+      "How do I use Docker Compose?",
+      "Set up Redis caching",
+      "Configure SSL certificates",
+    ];
+
+    const shouldNotTriggerPrompts = [
+      ...genericPrompts,
+      ...otherCloudPrompts,
+      ...genericInfraPrompts,
+    ];
+
+    test.each(shouldNotTriggerPrompts)(
+      'does not trigger on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(false);
+      }
+    );
   });
 
   describe("Trigger Keywords Snapshot", () => {
@@ -69,27 +121,25 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       expect({
         name: skill.metadata.name,
         description: skill.metadata.description,
-        extractedKeywords: triggerMatcher.getKeywords(),
+        extractedKeywords: triggerMatcher.getKeywords()
       }).toMatchSnapshot();
     });
   });
 
   describe("Edge Cases", () => {
+    test("handles mixed case input", () => {
+      const result = triggerMatcher.shouldTrigger("CREATE AN AKS CLUSTER");
+      expect(result.triggered).toBe(true);
+    });
+
+    test("handles partial matches", () => {
+      const result = triggerMatcher.shouldTrigger("kubernetes on azure");
+      expect(result.triggered).toBe(true);
+    });
+
     test("handles empty prompt", () => {
       const result = triggerMatcher.shouldTrigger("");
       expect(result.triggered).toBe(false);
-    });
-
-    test("handles very long prompt", () => {
-      const longPrompt = "AKS cluster Azure ".repeat(1000);
-      const result = triggerMatcher.shouldTrigger(longPrompt);
-      expect(typeof result.triggered).toBe("boolean");
-    });
-
-    test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("azure kubernetes cluster");
-      const result2 = triggerMatcher.shouldTrigger("AZURE KUBERNETES CLUSTER");
-      expect(result1.triggered).toBe(result2.triggered);
     });
   });
 });
