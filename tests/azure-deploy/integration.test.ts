@@ -605,7 +605,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -633,7 +634,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -661,7 +663,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${CLIENT_APPS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -689,7 +692,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${CONTAINER_BUILD_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -717,7 +721,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${CUSTOM_RESOURCES_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -745,7 +750,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${DATABASE_CONTAINERS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -773,7 +779,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${HEALTH_CHECKS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -801,7 +808,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ORLEANS_VOTING_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -859,7 +867,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ASPIRE_JAVASCRIPT_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -887,7 +896,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ASPIRE_NODE_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
@@ -944,7 +954,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ASPIRE_PYTHON_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
       });
