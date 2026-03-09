@@ -1,8 +1,8 @@
 /**
  * Unit Tests for azure-kubernetes
  *
- * Tests domain invariants - concepts that should always be present
- * in AKS cluster planning guidance.
+ * Tests skill content and structure without requiring external services.
+ * Focuses on domain invariants rather than exact formatting.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
@@ -17,95 +17,165 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   });
 
   describe("Skill Metadata", () => {
-    test("has valid SKILL.md with required fields", () => {
-      expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe(SKILL_NAME);
+    test("has required frontmatter fields", () => {
+      expect(skill.metadata.name).toBe("azure-kubernetes");
       expect(skill.metadata.description).toBeDefined();
-      expect(skill.metadata.description.length).toBeGreaterThan(10);
+      expect(skill.metadata.description.length).toBeGreaterThan(50);
     });
 
-    test("description mentions AKS or Kubernetes", () => {
-      const description = skill.metadata.description.toLowerCase();
-      expect(description).toMatch(/aks|kubernetes/);
+    test("description contains WHEN triggers", () => {
+      expect(skill.metadata.description).toMatch(/WHEN:/i);
+    });
+
+    test("description mentions key AKS concepts", () => {
+      const desc = skill.metadata.description.toLowerCase();
+      expect(desc).toMatch(/aks|kubernetes/);
+      expect(desc).toMatch(/cluster/);
     });
   });
 
   describe("Day-0 vs Day-1 Guidance", () => {
-    test("distinguishes Day-0 decisions from Day-1 features", () => {
-      expect(skill.content).toContain("Day-0");
-      expect(skill.content).toContain("Day-1");
+    test("distinguishes between Day-0 and Day-1 decisions", () => {
+      expect(skill.content).toMatch(/Day-0/i);
+      expect(skill.content).toMatch(/Day-1/i);
     });
 
-    test("identifies networking as hard-to-change decision", () => {
-      const content = skill.content.toLowerCase();
-      // Networking is a Day-0 decision that's hard to change after cluster creation
-      expect(content).toMatch(/network|cni|pod ip/i);
+    test("identifies networking as Day-0 decision", () => {
+      expect(skill.content).toMatch(/networking.*day-0|day-0.*networking/i);
+    });
+
+    test("identifies API server access as Day-0 consideration", () => {
+      expect(skill.content).toMatch(/api server/i);
     });
   });
 
   describe("Cluster SKU Guidance", () => {
-    test("covers AKS Automatic vs Standard choice", () => {
-      expect(skill.content).toContain("Automatic");
-      expect(skill.content).toContain("Standard");
+    test("covers AKS Automatic SKU", () => {
+      expect(skill.content).toMatch(/AKS Automatic/i);
     });
 
-    test("recommends AKS Automatic as default for most workloads", () => {
-      const content = skill.content.toLowerCase();
-      // AKS Automatic should be the recommended default
-      expect(content).toMatch(/automatic.*default|default.*automatic/);
+    test("covers AKS Standard SKU", () => {
+      expect(skill.content).toMatch(/AKS Standard/i);
+    });
+
+    test("recommends Automatic as default", () => {
+      expect(skill.content).toMatch(/automatic.*default|default.*automatic/i);
     });
   });
 
   describe("Networking Guidance", () => {
-    test("covers pod IP model options", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/overlay|vnet|cni/);
+    test("covers Azure CNI options", () => {
+      expect(skill.content).toMatch(/Azure CNI/i);
     });
 
-    test("mentions egress configuration", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/egress|outbound/);
+    test("covers overlay networking", () => {
+      expect(skill.content).toMatch(/overlay/i);
     });
 
-    test("mentions ingress options", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/ingress|gateway/);
+    test("covers egress patterns", () => {
+      expect(skill.content).toMatch(/egress/i);
+    });
+
+    test("covers ingress options", () => {
+      expect(skill.content).toMatch(/ingress/i);
     });
   });
 
-  describe("Security Guidance", () => {
-    test("recommends Entra ID / managed identity", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/entra|workload identity|managed identity/);
+  describe("Security Best Practices", () => {
+    test("recommends Entra ID / Azure AD", () => {
+      expect(skill.content).toMatch(/entra|azure ad/i);
     });
 
-    test("mentions secrets management", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/key vault|secret/);
+    test("recommends Workload Identity", () => {
+      expect(skill.content).toMatch(/workload identity/i);
     });
 
-    test("mentions policy or governance", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/policy|safeguard|governance/);
+    test("recommends Key Vault integration", () => {
+      expect(skill.content).toMatch(/key vault/i);
+    });
+
+    test("warns against static credentials", () => {
+      expect(skill.content).toMatch(/avoid.*static|static.*credential/i);
+    });
+
+    test("mentions Azure Policy", () => {
+      expect(skill.content).toMatch(/azure policy/i);
     });
   });
 
   describe("Observability Guidance", () => {
-    test("mentions monitoring or observability", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/monitor|observ|prometheus|grafana|insights/);
+    test("mentions monitoring options", () => {
+      expect(skill.content).toMatch(/monitor|observability/i);
+    });
+
+    test("mentions Prometheus", () => {
+      expect(skill.content).toMatch(/prometheus/i);
+    });
+
+    test("mentions Grafana", () => {
+      expect(skill.content).toMatch(/grafana/i);
     });
   });
 
-  describe("Reliability & Upgrades", () => {
-    test("mentions availability zones", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/zone|az\b/);
+  describe("Reliability Patterns", () => {
+    test("recommends availability zones", () => {
+      expect(skill.content).toMatch(/availability zone|--zones/i);
+    });
+
+    test("mentions PodDisruptionBudgets", () => {
+      expect(skill.content).toMatch(/poddisruptionbudget|pdb/i);
     });
 
     test("covers upgrade strategy", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/upgrade|patch|maintenance/);
+      expect(skill.content).toMatch(/upgrade/i);
+    });
+
+    test("mentions maintenance windows", () => {
+      expect(skill.content).toMatch(/maintenance window/i);
+    });
+  });
+
+  describe("Performance Recommendations", () => {
+    test("recommends ephemeral OS disks", () => {
+      expect(skill.content).toMatch(/ephemeral.*disk|--node-osdisk-type ephemeral/i);
+    });
+
+    test("warns against B-series VMs", () => {
+      expect(skill.content).toMatch(/avoid.*b-series|b-series.*avoid/i);
+    });
+
+    test("mentions autoscaling", () => {
+      expect(skill.content).toMatch(/autoscal|cluster.?autoscaler/i);
+    });
+  });
+
+  describe("MCP Tools Section", () => {
+    test("lists MCP tools", () => {
+      expect(skill.content).toMatch(/mcp_azure_mcp_aks|mcp_aks_mcp/i);
+    });
+
+    test("has MCP Tools section", () => {
+      expect(skill.content).toMatch(/## MCP Tools/i);
+    });
+  });
+
+  describe("Error Handling Section", () => {
+    test("has Error Handling section", () => {
+      expect(skill.content).toMatch(/## Error Handling/i);
+    });
+
+    test("includes remediation guidance", () => {
+      expect(skill.content).toMatch(/remediation|quota|policy/i);
+    });
+  });
+
+  describe("Guardrails", () => {
+    test("warns about secrets handling", () => {
+      expect(skill.content).toMatch(/secret|token|key/i);
+    });
+
+    test("does not promise zero downtime", () => {
+      expect(skill.content).toMatch(/do not promise zero downtime/i);
     });
   });
 });
