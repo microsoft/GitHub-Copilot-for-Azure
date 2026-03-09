@@ -1,21 +1,17 @@
 ---
 name: microsoft-foundry
-description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, prompt optimization, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, optimize prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
+description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, prompt optimization, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, optimize prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability, standard agent setup, capability host. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Microsoft Foundry Skill
 
-This skill helps developers work with Microsoft Foundry resources, covering model discovery and deployment, complete dev lifecycle of AI agent, evaluation workflows, and troubleshooting.
+> **MANDATORY:** Read this skill and the relevant sub-skill BEFORE calling any Foundry MCP tool.
 
 ## Sub-Skills
-
-> **MANDATORY: Before executing ANY workflow, you MUST read the corresponding sub-skill document.** Do not call MCP tools for a workflow without reading its skill document. This applies even if you already know the MCP tool parameters — the skill document contains required workflow steps, pre-checks, and validation logic that must be followed. This rule applies on every new user message that triggers a different workflow, even if the skill is already loaded.
-
-This skill includes specialized sub-skills for specific workflows. **Use these instead of the main skill when they match your task:**
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
@@ -32,60 +28,59 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
-> 💡 **Tip:** For a complete onboarding flow: `project/create` → agent workflows (`deploy` → `invoke`).
+Onboarding flow: `project/create` → `deploy` → `invoke`
 
-> 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
+## Agent Lifecycle
 
-## Agent Development Lifecycle
+| Intent | Workflow |
+|--------|----------|
+| New agent from scratch | create → deploy → invoke |
+| Deploy existing code | deploy → invoke |
+| Test/chat with agent | invoke |
+| Troubleshoot | invoke → troubleshoot |
+| Fix + redeploy | troubleshoot → fix → deploy → invoke |
 
-Match user intent to the correct workflow. Read each sub-skill in order before executing.
+## Project Context Resolution
 
-| User Intent | Workflow (read in order) |
-|-------------|------------------------|
-| Create a new agent from scratch | [create](foundry-agent/create/create.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Deploy an agent (code already exists) | deploy → invoke |
-| Update/redeploy an agent after code changes | deploy → invoke |
-| Invoke/test/chat with an agent | invoke |
-| Troubleshoot an agent issue | invoke → troubleshoot |
-| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
-| Start/stop agent container | deploy |
+Resolve only missing values. Extract from user message first, then azd, then ask.
 
-## Agent: Project Context Resolution
+1. Check for `azure.yaml`; if found, run `azd env get-values`
+2. Map azd variables:
 
-Agent skills should run this step **only when they need configuration values they don't already have**. If a value (e.g., project endpoint, agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
+| azd Variable | Resolves To |
+|-------------|-------------|
+| `AZURE_AI_PROJECT_ENDPOINT` / `AZURE_AIPROJECT_ENDPOINT` | Project endpoint |
+| `AZURE_CONTAINER_REGISTRY_NAME` / `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry |
+| `AZURE_SUBSCRIPTION_ID` | Subscription |
 
-### Step 1: Detect azd Project
+3. Ask user only for unresolved values (project endpoint, agent name)
 
-If any required configuration value is missing, check if `azure.yaml` exists in the project root (workspace root or user-specified project path). If found, run `azd env get-values` to load environment variables.
+## Validation
 
-### Step 2: Resolve Common Configuration
+After each workflow step, validate before proceeding:
+1. Run the operation
+2. Check output for errors or unexpected results
+3. If failed → diagnose using troubleshoot sub-skill → fix → retry
+4. Only proceed to next step when validation passes
 
-Match missing values against the azd environment:
-
-| azd Variable | Resolves To | Used By |
-|-------------|-------------|---------|
-| `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | Project endpoint | deploy, invoke, troubleshoot |
-| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix | deploy |
-| `AZURE_SUBSCRIPTION_ID` | Azure subscription | troubleshoot |
-
-### Step 3: Collect Missing Values
-
-Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, or azd environment. Common values skills may need:
-- **Project endpoint** — AI Foundry project endpoint URL
-- **Agent name** — Name of the target agent
-
-> 💡 **Tip:** If the user provides a project endpoint or agent name in their initial message, extract it directly — do not ask again.
-
-## Agent: Agent Types
-
-All agent skills support two agent types:
+## Agent Types
 
 | Type | Kind | Description |
 |------|------|-------------|
-| **Prompt** | `"prompt"` | LLM-based agents backed by a model deployment |
-| **Hosted** | `"hosted"` | Container-based agents running custom code |
+| **Prompt** | `"prompt"` | LLM-based, backed by model deployment |
+| **Hosted** | `"hosted"` | Container-based, running custom code |
 
-Use `agent_get` MCP tool to determine an agent's type when needed.
+## Agent: Setup Types
+
+| Setup | Capability Host | Description |
+|-------|----------------|-------------|
+| **Basic** | None | Default. All resources Microsoft-managed. |
+| **Standard** | Azure AI Services | Bring-your-own storage and search (public network). See [standard-agent-setup](references/standard-agent-setup.md). |
+| **Standard + Private Network** | Azure AI Services | Standard setup with VNet isolation and private endpoints. See [private-network-standard-agent-setup](references/private-network-standard-agent-setup.md). |
+
+> **MANDATORY:** For standard setup, read the appropriate reference before proceeding:
+> - **Public network:** [references/standard-agent-setup.md](references/standard-agent-setup.md)
+> - **Private network (VNet isolation):** [references/private-network-standard-agent-setup.md](references/private-network-standard-agent-setup.md)
 
 ## Tool Usage Conventions
 
@@ -94,12 +89,13 @@ Use `agent_get` MCP tool to determine an agent's type when needed.
 - Prefer Azure MCP tools over direct CLI commands when available
 - Reference official Microsoft documentation URLs instead of embedding CLI command syntax
 
-## Additional Resources
+## References
 
-- [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
-- [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
+- [Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
+- [Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
 - [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
+- [Python SDK](references/sdk/foundry-sdk-py.md)
 
-## SDK Quick Reference
+## Dependencies
 
-- [Python](references/sdk/foundry-sdk-py.md)
+Scripts in sub-skills require: Azure CLI (`az`) ≥2.0, `jq` (for shell scripts). Install via `pip install azure-ai-projects azure-identity` for Python SDK usage.

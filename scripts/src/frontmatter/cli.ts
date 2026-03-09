@@ -20,7 +20,7 @@
 import { dirname, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { parseSkillContent } from "../shared/parse-skill.js";
+import { parseSkillContent } from "../shared/skill-helper.js";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 

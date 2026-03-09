@@ -73,15 +73,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       }
     });
 
-    test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
+    test("WHEN clause is inside description", () => {
       // These must be embedded in the description string, not parsed as YAML keys
       const description = skill.metadata.description;
-      if (description.includes("USE FOR")) {
-        expect(description).toContain("USE FOR:");
-      }
-      if (description.includes("DO NOT USE FOR")) {
-        expect(description).toContain("DO NOT USE FOR:");
-      }
+      expect(description).toContain("WHEN:");
     });
   });
 });
