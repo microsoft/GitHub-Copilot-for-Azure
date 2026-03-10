@@ -18,9 +18,6 @@
 .PARAMETER Model
     One or more model identifiers to benchmark.
 
-.PARAMETER NoWait
-    Whether to add --no-wait to the run command.
-
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
@@ -33,8 +30,7 @@
             "gpt-5.2-codex-autodev-test",
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
-        ),
-        [switch]$NoWait
+        )
     )
 
     Set-StrictMode -Version Latest
@@ -53,8 +49,6 @@
 
     Write-Host "Benchmark: $Benchmark"
     Write-Host "Models: $($Model -join ', ')"
-    Write-Host "NoWait: $NoWait"
-
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     # --- Retrieve GitHub PAT from KeyVault ---
@@ -135,6 +129,7 @@
     Set-Location $targetDir
 
     $failedModels = @()
+    $runIds = @()
 
     foreach ($m in $Model) {
         Write-Host "`n=== Running benchmark for model: $m ==="
@@ -144,24 +139,38 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--env", "GITHUB_MCP_SERVER_TOKEN"
+            "--env", "GITHUB_MCP_SERVER_TOKEN",
+            "--no-wait"
         )
 
-        if ($NoWait) {
-            $runArgs += "--no-wait"
-        }
-
         Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-        & 'msbench-cli' @runArgs
+        $output = & 'msbench-cli' @runArgs 2>&1 | Tee-Object -Variable cmdOutput
 
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "msbench-cli run failed for model '$m' with exit code $LASTEXITCODE"
             $failedModels += $m
+        } else {
+            # Extract run_id from output lines like "run_id=22914845268"
+            foreach ($line in $cmdOutput) {
+                if ($line -match 'run_id=(\d+)') {
+                    $runId = $Matches[1]
+                    Write-Host "Extracted run_id=$runId for model $m"
+                    $runIds += $runId
+                }
+            }
         }
     }
 
     if ($failedModels.Count -gt 0) {
         throw "msbench-cli run failed for models: $($failedModels -join ', ')"
+    }
+
+    # Set pipeline output variable with collected run IDs
+    $runIds = $runIds | Select-Object -Unique
+    $runIdsValue = $runIds -join ','
+    Write-Host "Collected run IDs: $runIdsValue"
+    if ($pipelineRun -and $runIds.Count -gt 0) {
+        Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
     }
 
     Write-Host "`nAll $($Model.Count) model runs completed successfully."

@@ -30,6 +30,7 @@ stages:
         artifactFeeds: 'internal/MicrosoftSweBench'
 
     - task: AzureCLI@2
+      name: RunBenchmarks
       displayName: 'Run Copilot Benchmarks script'
       inputs:
         connectedServiceNameARM: 'azure_msbench_eval'
@@ -37,3 +38,6 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+
+    - script: echo "Run IDs: $(RunBenchmarks.RUN_IDS)"
+      displayName: 'Display Run IDs'
