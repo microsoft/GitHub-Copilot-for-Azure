@@ -346,7 +346,7 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
     let reportTargetPath = filePath;
-    let suffix = 1;
+    let suffix = 0;
     while (true) {
       try {
         fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
