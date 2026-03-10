@@ -1,9 +1,14 @@
-trigger:
+trigger: none
+
+pr: none
+
+schedules:
+- cron: '0 8 * * *'
+  displayName: 'Daily 8am UTC'
   branches:
     include:
     - main
-
-pr: none
+  always: true
 
 stages:
 - stage: RunBenchmark
@@ -30,6 +35,7 @@ stages:
         artifactFeeds: 'internal/MicrosoftSweBench'
 
     - task: AzureCLI@2
+      name: RunBenchmarks
       displayName: 'Run Copilot Benchmarks script'
       inputs:
         connectedServiceNameARM: 'azure_msbench_eval'
@@ -37,3 +43,6 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+
+    - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
+      displayName: 'Display Run IDs'
