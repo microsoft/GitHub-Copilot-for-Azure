@@ -1,9 +1,14 @@
-trigger:
+trigger: none
+
+pr: none
+
+schedules:
+- cron: '0 8 * * *'
+  displayName: 'Daily 8am UTC'
   branches:
     include:
     - main
-
-pr: none
+  always: true
 
 stages:
 - stage: RunBenchmark
