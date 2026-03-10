@@ -344,16 +344,22 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     }
 
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
-    if (fs.existsSync(filePath)) {
-      let suffix = 1;
-      let filePathWithSuffix = filePath.replace(".md", `-${suffix}.md`);
-      while (fs.existsSync(filePathWithSuffix)) {
-        suffix += 1;
-        filePathWithSuffix = filePath.replace(".md", `-${suffix}.md`);
+    // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
+    let target = filePath;
+    let suffix = 1;
+    while (true) {
+      try {
+        fs.writeFileSync(target, markdown, { encoding: "utf-8", flag: "wx" });
+        break;
+      } catch (err: unknown) {
+        console.log("File exists", target);
+        if ((err as { code: string }).code === "EEXIST") {
+          suffix++;
+          target = filePath.replace(".md", `-${suffix}.md`);
+          continue;
+        }
+        throw err;
       }
-      fs.writeFileSync(filePathWithSuffix, markdown, "utf-8");
-    } else {
-      fs.writeFileSync(filePath, markdown, "utf-8");
     }
 
     // Write structured agent-metadata.json for machine consumption
