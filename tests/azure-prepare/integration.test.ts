@@ -23,6 +23,16 @@ const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
 const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
+/**
+ * System prompt override for prepare-deployment tests.
+ * Skips the Provisioning Limit Checklist (quota validation) to save agent turns
+ * for actual infrastructure file generation, which is what these tests verify.
+ */
+const SKIP_QUOTA_CHECK_PROMPT = {
+  mode: "append" as const,
+  content: "Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files.",
+};
+
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -626,6 +636,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a static whiteboard web app and deploy to Azure.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
         preserveWorkspace: true,
         shouldEarlyTerminate: (metadata) =>
           hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
@@ -647,6 +658,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a simple todo web app and deploy to Azure.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
         preserveWorkspace: true,
         shouldEarlyTerminate: (metadata) =>
           hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
@@ -670,6 +682,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a simple todo web app and deploy to Azure with Terraform as the infrastructure provider.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
         preserveWorkspace: true,
         shouldEarlyTerminate: (metadata) =>
           hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
@@ -693,6 +706,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
         preserveWorkspace: true,
         shouldEarlyTerminate: (metadata) =>
           hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
@@ -804,6 +818,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region and my current subscription.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
         shouldEarlyTerminate: (metadata) =>
           hasPlanReadyForValidation(metadata) ||
           hasValidationCommand(metadata) ||

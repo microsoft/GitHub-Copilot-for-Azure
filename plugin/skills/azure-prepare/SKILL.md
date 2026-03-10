@@ -103,8 +103,8 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 2 | **Confirm Azure Context** — Detect and confirm subscription + location and check the resource provisioning limit | [Azure Context](references/azure-context.md) |
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
-| 5 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
+| 5 | **⛔ Update Plan (MANDATORY before hand-off)** — Use the `edit` tool to change the Status in `.azure/plan.md` to `Ready for Validation`. You **MUST** complete this edit **BEFORE** invoking azure-validate. Do NOT skip this step. | `.azure/plan.md` |
+| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. **PREREQUISITE:** Step 5 must be completed first — `.azure/plan.md` status must say `Ready for Validation`. | — |
 
 ---
 
@@ -135,6 +135,8 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 >
 > `azure-prepare` → `azure-validate` → `azure-deploy`
 >
+> **⛔ BEFORE invoking azure-validate**, you MUST use the `edit` tool to update `.azure/plan.md` status to `Ready for Validation`. If the plan status has not been updated, the validation will fail.
+>
 > Skipping validation leads to deployment failures. Be patient and follow the complete workflow for the highest success outcome.
 
-**→ Invoke azure-validate now**
+**→ Update plan status to `Ready for Validation`, then invoke azure-validate**

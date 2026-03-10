@@ -185,9 +185,10 @@ For each resource type:
 - [ ] Apply recipes for integrations (if needed)
 - [ ] Generate application configuration
 - [ ] Generate Dockerfiles (if containerized)
-- [ ] Update plan status to "Ready for Validation"
+- [ ] **⛔ Update plan status to "Ready for Validation"** — Use the `edit` tool to change the Status line in `.azure/plan.md`. This step is MANDATORY before invoking azure-validate.
 
 ### Phase 3: Validation
+- [ ] **PREREQUISITE:** Plan status MUST be "Ready for Validation" (Phase 2 last step)
 - [ ] Invoke azure-validate skill
 - [ ] All validation checks pass
 - [ ] Update plan status to "Validated"
