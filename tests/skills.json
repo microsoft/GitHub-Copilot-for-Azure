@@ -17,6 +17,7 @@
         "azure-resource-lookup",
         "azure-resource-visualizer",
         "azure-storage",
+        "azure-upgrade",
         "azure-validate",
         "entra-app-registration",
         "microsoft-foundry"
