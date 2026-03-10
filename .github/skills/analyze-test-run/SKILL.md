@@ -120,7 +120,15 @@ For every test with a `<failure>` element in `junit.xml`:
    - **Timeout** — test exceeded time limit
    - **Assertion mismatch** — expected files/links not found
    - **Quota exhaustion** — Azure region quota prevented deployment
-6. Create a GitHub issue:
+6. Search for an existing open issue before creating a new one:
+   ```bash
+   gh issue list --repo microsoft/GitHub-Copilot-for-Azure \
+     --state open --label "integration-test" \
+     --search "Integration test failure: {skill} – {keywords} in:title" \
+     --json number,title --jq '.[0].number'
+   ```
+   Match criteria: an open issue whose title contains the same `{skill}` and `{keywords}` tokens. If a match is found, skip issue creation for this failure and note the existing issue number in the summary report.
+7. If no existing issue was found, create a GitHub issue:
 
 ```
 gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
