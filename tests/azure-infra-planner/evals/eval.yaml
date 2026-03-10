@@ -1,0 +1,59 @@
+name: azure-infra-planner-eval
+description: Evaluation suite for the azure-infra-planner skill - validates infrastructure planning from workload descriptions and correct anti-trigger behavior
+skill: azure-infra-planner
+version: "1.0"
+config:
+  trials_per_task: 1
+  timeout_seconds: 600
+  parallel: false
+  executor: copilot-sdk
+  model: claude-opus-4.6
+  skill_directories:
+    - ".."
+graders:
+  - type: text
+    name: no_fatal_errors
+    config:
+      regex_not_match:
+        - "(?i)fatal\\s+error|unhandled\\s+exception|panic:"
+  - type: prompt
+    name: response_quality
+    config:
+      model: claude-opus-4.6
+      continue_session: true
+      prompt: |
+        You are evaluating an AI agent that has the azure-infra-planner skill. Review the original user prompt and the agent's response.
+
+        First, classify the user request:
+        - PLAN REQUEST: The user wants to plan or architect NEW multi-service Azure infrastructure from a workload description
+        - ANTI-TRIGGER: The user wants to prepare an existing codebase for Azure, add features to an existing app, or execute azd up
+
+        Then evaluate:
+
+        For PLAN REQUESTS, check ALL of these:
+        1. The agent follows a plan-first workflow (research requirements before generating IaC)
+        2. The agent proposes creating an infrastructure-plan.json file at .azure/infrastructure-plan.json
+        3. The agent identifies appropriate Azure resources and services for the described workload
+        4. The agent asks the user to approve the plan before generating any IaC (Bicep or Terraform)
+        5. The agent mentions Bicep or Terraform as the IaC format (or asks the user's preference)
+
+        If all 5 criteria are met, call set_waza_grade_pass with description "plan_request_correct" and a reason summarizing what was done well.
+        If any criterion is not met, call set_waza_grade_fail with description "plan_request_incorrect" and explain which criteria failed.
+
+        For ANTI-TRIGGER requests, check:
+        1. The agent does NOT attempt to create a new multi-service infrastructure plan
+        2. The agent redirects to a more appropriate skill or workflow (e.g., azure-prepare for existing apps, azure-deploy for running azd up)
+
+        If both criteria are met, call set_waza_grade_pass with description "anti_trigger_correct" and a reason.
+        If either criterion is not met, call set_waza_grade_fail with description "anti_trigger_incorrect" and explain why.
+  - type: behavior
+    name: efficiency_bounds
+    config:
+      max_tool_calls: 50
+      max_duration_ms: 600000
+metrics:
+  - name: task_completion
+    weight: 1.0
+    threshold: 0.7
+tasks:
+  - "tasks/*.yaml"

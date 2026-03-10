@@ -1,0 +1,10 @@
+id: plan-aks-microservices
+inputs:
+  prompt: "We're migrating our e-commerce platform to Azure. It consists of 5 microservices: product catalog, order management, user authentication, payment processing, and notifications. We want to deploy on AKS with proper networking, monitoring, and a managed database. Plan the Azure infrastructure for this system."
+graders:
+  - type: skill_invocation
+    name: skill_invoked
+    config:
+      required_skills:
+        - azure-infra-planner
+      mode: any_order

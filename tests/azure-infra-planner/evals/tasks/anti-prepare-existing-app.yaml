@@ -1,0 +1,8 @@
+id: anti-prepare-existing-app
+inputs:
+  prompt: "I have an existing Node.js Express application that I want to deploy to Azure App Service. Can you help me prepare my codebase and configure it for Azure deployment?"
+fixtures:
+  - source: fixtures/package.json
+    target: package.json
+  - source: fixtures/index.js
+    target: index.js

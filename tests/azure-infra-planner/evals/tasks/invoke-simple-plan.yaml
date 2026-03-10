@@ -1,0 +1,10 @@
+id: invoke-simple-plan
+inputs:
+  prompt: "Plan Azure infrastructure for a web app with a database and a Redis cache."
+graders:
+  - type: skill_invocation
+    name: skill_invoked
+    config:
+      required_skills:
+        - azure-infra-planner
+      mode: any_order
