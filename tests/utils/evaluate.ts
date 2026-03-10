@@ -189,3 +189,30 @@ export function getAllToolText(metadata: AgentMetadata): string {
   }
   return parts.join("\n");
 }
+
+/**
+ * Maximum number of tool calls allowed before invoking the expected skill.
+ * If more than this number of tool calls are made before invoking the expected skill,
+ * we consider the agent failed to invoke the skill.
+ */
+const maxToolCallBeforeSkillInvocationTerminate = 3;
+
+export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
+  const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
+  if (shouldEarlyTerminateForInvokedSkill) {
+    const earlyTerminateComment = `✅ ${skillName} is invoked as expected. Terminating the agent run early.`;
+    // Due to follow up mechanism, we may run the agent twice and trigger the early terminate condition twice.
+    // Check if a comment has been made to avoid adding redundant comment.
+    if (!agentMetadata.testComments.some((comment) => comment === earlyTerminateComment)) {
+      agentMetadata.testComments.push(earlyTerminateComment);
+    }
+    return true;
+  }
+
+  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > maxToolCallBeforeSkillInvocationTerminate;
+  if (shouldEarlyTerminateForTooLate) {
+    agentMetadata.testComments.push(`⚠️ ${skillName} is not invoked within early tool calls. Terminating the agent run early.`);
+    return true;
+  }
+  return false;
+}

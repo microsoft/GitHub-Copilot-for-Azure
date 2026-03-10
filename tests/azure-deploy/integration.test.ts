@@ -16,7 +16,7 @@ import {
 } from "../utils/agent-runner";
 import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -46,6 +46,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Run azd up to deploy my already-prepared app to Azure",
             nonInteractive: true,
             followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -66,6 +67,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
             nonInteractive: true,
             followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -86,6 +88,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
             nonInteractive: true,
             followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
