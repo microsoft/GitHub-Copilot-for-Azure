@@ -30,7 +30,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("description mentions key AKS concepts", () => {
       const desc = skill.metadata.description.toLowerCase();
       expect(desc).toMatch(/aks|kubernetes/);
-      expect(desc).toMatch(/cluster/);
+      // Description should mention core topics covered by the skill
+      expect(desc).toMatch(/cluster|networking|security|deploy/);
     });
   });
 

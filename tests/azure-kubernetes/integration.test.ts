@@ -14,7 +14,7 @@ import {
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
-import { isSkillInvoked, softCheckSkill } from "../utils/evaluate";
+import { softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-kubernetes";
 const RUNS_PER_PROMPT = 2;
@@ -23,7 +23,7 @@ const skipTests = shouldSkipIntegrationTests();
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("invokes azure-kubernetes skill for AKS cluster creation prompt", async () => {
