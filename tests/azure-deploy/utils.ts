@@ -49,3 +49,14 @@ export function softCheckDeploySkills(agentMetadata: AgentMetadata): void {
   softCheckSkill(agentMetadata, "azure-validate");
   softCheckSkill(agentMetadata, "azure-prepare");
 }
+
+export function shouldEarlyTerminateForCompletedDeployment(agentMetadata: AgentMetadata): boolean {
+  const containsDeployLinks = hasDeployLinks(agentMetadata);
+  if (containsDeployLinks) {
+    const commentToAdd = "✅ Found link of the deployed web app in the response. Deployment completed successfully.";
+    if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
+      agentMetadata.testComments.push(commentToAdd);
+    }
+  }
+  return containsDeployLinks;
+}
