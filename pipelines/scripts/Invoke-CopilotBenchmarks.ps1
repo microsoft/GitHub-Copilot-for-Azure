@@ -6,8 +6,11 @@
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The script retrieves a GitHub PAT from KeyVault, installs MSBench CLI, and invokes:
-    msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model>
+    The script retrieves a GitHub PAT from KeyVault, clones the msbench-benchmarks repo,
+    installs MSBench CLI, and invokes for each model:
+    msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model> --no-wait
+
+    Run IDs are extracted from the output and set as the pipeline output variable RUN_IDS.
 
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -106,7 +109,13 @@
 
     $cloneDir = Join-Path $PWD $repoName
 
+    if (Test-Path $cloneDir) {
+        Write-Host "Removing existing directory $cloneDir"
+        Remove-Item -Recurse -Force $cloneDir
+    }
+
     Write-Host "Cloning $msbenchRepo into $cloneDir"
+    # ADO resource id for Azure Repos is 499b84ac-1321-427f-aa17-267ca6975798
     git -c http.extraheader="AUTHORIZATION: bearer $(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)" `
         clone --depth 1 $msbenchRepo $cloneDir
     if ($LASTEXITCODE -ne 0) {
@@ -153,12 +162,19 @@
             $failedModels += $m
         } else {
             # Extract run_id from output lines like "run_id=22914845268"
+            $foundRunId = $false
             foreach ($line in $cmdOutput) {
                 if ($line -match 'run_id=(\d+)') {
                     $runId = $Matches[1]
                     Write-Host "Extracted run_id=$runId for model $m"
                     $runIds += $runId
+                    $foundRunId = $true
+                    break
                 }
+            }
+            if (-not $foundRunId) {
+                Write-Warning "No run_id found in output for model '$m'"
+                $failedModels += $m
             }
         }
     }
