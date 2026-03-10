@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "1.0.0"
-description: "Plan and create production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 decisions and Day-1 configuration, cluster SKUs (Automatic vs Standard), security, monitoring, reliability/performance best practices, upgrades, and networking. WHEN: create AKS cluster, plan AKS configuration, design AKS networking, AKS Automatic vs Standard, AKS security, AKS upgrade strategy, AKS autoscaling, AKS monitoring setup, AKS cost analysis, Day-0 checklist."
+description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security (workload identity, Azure Policy, Key Vault CSI driver, Deployment Safeguards), and operations (monitoring, upgrade strategy, autoscaling, cost analysis, node pools). WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, secure AKS, set up AKS."
 ---
 
 # Azure Kubernetes Service
@@ -125,21 +125,16 @@ If the user is unsure, use safe defaults.
 - Do not request or output secrets (tokens, keys, subscription IDs).
 - If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
 - Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades along with best practices for reliability and performance.
-- If user asks for actions that require privileged access, provide a plan and commands with placeholders.
 
 ## MCP Tools
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `mcp_azure_mcp_aks` | Query AKS clusters at subscription scope | `subscription_id`, `resource_group` |
-| `mcp_aks_mcp_az_aks_operations` | Cluster operations: show, list, get-versions, nodepool management | `cluster_name`, `resource_group`, `operation` |
-| `mcp_aks_mcp_kubectl_resources` | Get/describe pods, deployments, services | `resource_type`, `namespace`, `name` |
-| `mcp_aks_mcp_kubectl_diagnostics` | Logs, events, top, exec | `pod_name`, `namespace`, `command` |
+| `mcp_azure_mcp_aks` | Create and query AKS clusters at subscription scope | `subscription_id`, `resource_group` |
 
 ## Error Handling
 | Error / Symptom | Likely Cause | Remediation |
 |-----------------|--------------|-------------|
 | MCP tool call fails or times out | Invalid credentials, subscription, or cluster context | Verify `az login`, check subscription ID and resource group |
-| Cluster creation blocked by policy | Azure Policy denying configuration | Review policy assignments, adjust cluster settings to comply |
 | Quota exceeded | Regional vCPU or resource limits | Request quota increase or select different region/VM SKU |
 | Networking conflict (IP exhaustion) | Pod subnet too small for overlay/CNI | Re-plan IP ranges; may require cluster recreation (Day-0) |
 | Workload Identity not working | Missing OIDC issuer or federated credential | Enable `--enable-oidc-issuer --enable-workload-identity`, configure federated identity |
