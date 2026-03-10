@@ -344,7 +344,17 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     }
 
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
-    fs.writeFileSync(filePath, markdown, "utf-8");
+    if (fs.existsSync(filePath)) {
+      let suffix = 1;
+      let filePathWithSuffix = filePath.replace(".md", `-${suffix}.md`);
+      while (fs.existsSync(filePathWithSuffix)) {
+        suffix += 1;
+        filePathWithSuffix = filePath.replace(".md", `-${suffix}.md`);
+      }
+      fs.writeFileSync(filePathWithSuffix, markdown, "utf-8");
+    } else {
+      fs.writeFileSync(filePath, markdown, "utf-8");
+    }
 
     // Write structured agent-metadata.json for machine consumption
     const jsonPath = path.join(dir, "agent-metadata.json");
