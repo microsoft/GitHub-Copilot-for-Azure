@@ -345,17 +345,17 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
 
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
-    let target = filePath;
+    let reportTargetPath = filePath;
     let suffix = 1;
     while (true) {
       try {
-        fs.writeFileSync(target, markdown, { encoding: "utf-8", flag: "wx" });
+        fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
         break;
       } catch (err: unknown) {
-        console.log("File exists", target);
+        console.log("File exists", reportTargetPath);
         if ((err as { code: string }).code === "EEXIST") {
           suffix++;
-          target = filePath.replace(".md", `-${suffix}.md`);
+          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
           continue;
         }
         throw err;
@@ -373,7 +373,7 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
 
     if (process.env.DEBUG) {
-      console.log(`Markdown report written to: ${filePath}`);
+      console.log(`Markdown report written to: ${reportTargetPath}`);
     }
 
     // Write token usage JSON alongside the markdown report
