@@ -4,7 +4,7 @@ description: "Check/manage Azure quotas and usage across providers. For deployme
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "1.0.5"
 ---
 
 ---
@@ -37,6 +37,20 @@ Invoke this skill when:
 - **Requesting quota increases** - Submit increase requests via CLI or Portal
 - **Comparing regional capacity** - Find regions with available quota
 - **Validating provisioning limits** - Ensure deployment won't exceed quotas
+
+## ⛔ When NOT to Use This Skill
+
+> **CRITICAL: DO NOT invoke this skill if invoked from `microsoft-foundry`**
+>
+> **If the current execution was triggered by or is part of the `microsoft-foundry` skill workflow, DO NOT use this skill.**
+>
+> **Why:** The `microsoft-foundry` skill has its own specialized quota and capacity validation logic that is optimized for Foundry deployments. Invoking this skill from `microsoft-foundry` will cause:
+> - Duplicate quota checks
+> - Conflicting recommendations
+> - Workflow interference
+> - Incorrect capacity planning
+>
+> **What to do instead:** Let `microsoft-foundry` handle all quota validation and capacity planning for Foundry-specific deployments using its own built-in logic.
 
 ## Quick Reference
 
