@@ -17,7 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -48,7 +48,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
-    const maxToolCallBeforeTerminate = 3;
     const followUp = ["Go with recommended options."];
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
@@ -57,7 +56,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Prepare my application for Azure deployment and set up the infrastructure",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -78,7 +77,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -99,7 +98,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -120,7 +119,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Set up my Azure application with managed identity authentication for accessing Azure services",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -140,7 +139,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -161,7 +160,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -182,7 +181,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create an event-driven function app to process messages and deploy to Azure Functions",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -203,7 +202,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create an Azure Functions app with a timer trigger",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -225,7 +224,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -246,7 +245,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -268,7 +267,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -289,7 +288,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -311,7 +310,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -332,7 +331,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -353,7 +352,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -375,7 +374,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -396,7 +395,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -418,7 +417,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -439,7 +438,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -461,7 +460,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -482,7 +481,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -504,7 +503,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -525,7 +524,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -546,7 +545,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -568,7 +567,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -589,7 +588,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -610,7 +609,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
             nonInteractive: true,
             followUp,
-            shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

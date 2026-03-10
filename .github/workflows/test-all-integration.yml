@@ -67,20 +67,26 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve inputs based on trigger type
         id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SKILLS: ${{ inputs.skills }}
+          INPUT_DEPLOY_TEST_PATTERN: ${{ inputs.deploy-test-pattern }}
+          INPUT_DEBUG: ${{ inputs.debug }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             # Manual trigger - use provided inputs
-            echo "skills=${{ inputs.skills }}" >> "$GITHUB_OUTPUT"
-            echo "deploy-test-pattern=${{ inputs.deploy-test-pattern }}" >> "$GITHUB_OUTPUT"
-            echo "debug=${{ inputs.debug }}" >> "$GITHUB_OUTPUT"
+            echo "skills=$INPUT_SKILLS" >> "$GITHUB_OUTPUT"
+            echo "deploy-test-pattern=$INPUT_DEPLOY_TEST_PATTERN" >> "$GITHUB_OUTPUT"
+            echo "debug=$INPUT_DEBUG" >> "$GITHUB_OUTPUT"
           else
             cd tests
             # Scheduled trigger - read from tests/skills.json
-            CRON="${{ github.event.schedule }}"
+            CRON="$EVENT_SCHEDULE"
             echo "Schedule: $CRON"
             
             # Read skills from integrationTestSchedule in tests/skills.json
@@ -99,13 +105,13 @@ jobs:
             # Set deploy-test-pattern and debug based on the schedule slot
             case "$CRON" in
               "0 5 * * 2-6")
-                echo "debug=${{ env.SCHEDULED_DEBUG_21 }}" >> "$GITHUB_OUTPUT"
+                echo "debug=$SCHEDULED_DEBUG_21" >> "$GITHUB_OUTPUT"
                 ;;
               "0 8 * * 2-6")
-                echo "debug=${{ env.SCHEDULED_DEBUG_00 }}" >> "$GITHUB_OUTPUT"
+                echo "debug=$SCHEDULED_DEBUG_00" >> "$GITHUB_OUTPUT"
                 ;;
               "0 12 * * 2-6")
-                echo "debug=${{ env.SCHEDULED_DEBUG_04 }}" >> "$GITHUB_OUTPUT"
+                echo "debug=$SCHEDULED_DEBUG_04" >> "$GITHUB_OUTPUT"
                 ;;
               *)
                 echo "Unknown schedule: $CRON"
@@ -115,7 +121,8 @@ jobs:
           fi
           
           echo "Resolved inputs:"
-          cat "$GITHUB_OUTPUT"
+          echo "skills=$(grep '^skills=' "$GITHUB_OUTPUT" | tail -1)"
+          echo "debug=$(grep '^debug=' "$GITHUB_OUTPUT" | tail -1)"
 
   setup:
     name: Build skill matrix
@@ -127,10 +134,12 @@ jobs:
     steps:
       - name: Parse skills input into matrix
         id: set-matrix
+        env:
+          SKILLS_INPUT: ${{ needs.resolve-inputs.outputs.skills }}
         run: |
           # Convert comma separated list of skills to a JSON array
           # Filter out azure-deploy (it runs via a separate reusable workflow)
-          SKILLS="${{ needs.resolve-inputs.outputs.skills }}"
+          SKILLS="$SKILLS_INPUT"
           
           # Check if azure-deploy is in the list
           if echo "$SKILLS" | grep -q 'azure-deploy'; then
@@ -183,7 +192,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install azd
         uses: Azure/setup-azd@v2
@@ -265,20 +274,23 @@ jobs:
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
+          SKILL: ${{ matrix.skill }}
         run: |
           echo test with $MODEL_OVERRIDE
           # Handle azure-ai vs azure-aigateway prefix collision
-          if [ "${{ matrix.skill }}" = "azure-ai" ]; then
+          if [ "$SKILL" = "azure-ai" ]; then
             npm run test:integration azure-ai/ "$SKILL_TEST_PATTERN"
           else
-            npm run test:integration ${{ matrix.skill }} "$SKILL_TEST_PATTERN"
+            npm run test:integration "$SKILL" "$SKILL_TEST_PATTERN"
           fi
         continue-on-error: true
       
       - name: Generate skill report
         if: always()
         id: generate-skill-report
-        run: npm run report -- --skill "${{ matrix.skill }}" || true
+        env:
+          SKILL: ${{ matrix.skill }}
+        run: npm run report -- --skill "$SKILL" || true
 
       - name: Show skill report
         if: always()
