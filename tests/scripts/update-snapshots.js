@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 
 // Parse arguments - optional pattern to filter which tests to update
 const args = process.argv.slice(2);
-const jestArgs = ["--updateSnapshot"];
+const jestArgs = ["--updateSnapshot", "--testPathIgnorePatterns=\"integration|_template\""];
 
 // If a pattern is provided, add it as testPathPattern
 if (args.length > 0 && !args[0].startsWith("-")) {
