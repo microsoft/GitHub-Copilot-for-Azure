@@ -103,7 +103,7 @@
         throw "msbench-cli version failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "Database used by MSBench CLI check 1"
+    Write-Host "Checking database used by MSBench CLI"
     & 'msbench-cli' database
     if ($LASTEXITCODE -ne 0) {
         throw "msbench-cli database failed with exit code $LASTEXITCODE"
@@ -142,12 +142,6 @@
 
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
-
-    Write-Host "Database used by MSBench CLI check 1"
-    & 'msbench-cli' database
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli database failed with exit code $LASTEXITCODE"
-    }
 
     $failedModels = @()
     $runIds = @()
