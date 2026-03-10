@@ -144,10 +144,12 @@
         )
 
         Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-        $output = & 'msbench-cli' @runArgs 2>&1 | Tee-Object -Variable cmdOutput
+        $cmdOutput = & 'msbench-cli' @runArgs 2>&1
+        $msbenchExitCode = $LASTEXITCODE
+        $cmdOutput | ForEach-Object { Write-Host $_ }
 
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "msbench-cli run failed for model '$m' with exit code $LASTEXITCODE"
+        if ($msbenchExitCode -ne 0) {
+            Write-Warning "msbench-cli run failed for model '$m' with exit code $msbenchExitCode"
             $failedModels += $m
         } else {
             # Extract run_id from output lines like "run_id=22914845268"

@@ -39,5 +39,5 @@ stages:
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
 
-    - script: echo "Run IDs: $(RunBenchmarks.RUN_IDS)"
+    - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
       displayName: 'Display Run IDs'
