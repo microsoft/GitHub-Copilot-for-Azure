@@ -103,6 +103,12 @@
         throw "msbench-cli version failed with exit code $LASTEXITCODE"
     }
 
+    Write-Host "Database used by MSBench CLI check 1"
+    & 'msbench-cli' database
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli database failed with exit code $LASTEXITCODE"
+    }
+
     # --- Clone repo and cd to working directory ---
     $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
     $repoName = "msbench-benchmarks"
@@ -136,6 +142,12 @@
 
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
+
+    Write-Host "Database used by MSBench CLI check 1"
+    & 'msbench-cli' database
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli database failed with exit code $LASTEXITCODE"
+    }
 
     $failedModels = @()
     $runIds = @()
