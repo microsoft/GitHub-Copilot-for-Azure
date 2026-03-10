@@ -16,7 +16,7 @@
     Benchmark identifier. Default: azure
 
 .PARAMETER Model
-    Model identifier. Default: claude-sonnet-4.5-autodev-test
+    One or more model identifiers to benchmark.
 
 .PARAMETER NoWait
     Whether to add --no-wait to the run command.
@@ -26,8 +26,14 @@
 #>
 
     param(
-        [string]$Benchmark = "azure.list_subscription",
-        [string]$Model = "claude-sonnet-4.5-autodev-test",
+        [string]$Benchmark = "azure",
+        [string[]]$Model = @(
+            "claude-sonnet-4.5-autodev-test",
+            "claude-opus-4.5-autodev-test",
+            "gpt-5.2-codex-autodev-test",
+            "gpt-5.2-autodev-test",
+            "gemini-2.5-pro-autodev-test"
+        ),
         [switch]$NoWait
     )
 
@@ -38,7 +44,7 @@
         throw "Benchmark parameter is required."
     }
 
-    if (!$Model) {
+    if (!$Model -or $Model.Count -eq 0) {
         throw "Model parameter is required."
     }
 
@@ -46,7 +52,7 @@
     $secretName = "azure-eval-gh-pat"
 
     Write-Host "Benchmark: $Benchmark"
-    Write-Host "Model: $Model"
+    Write-Host "Models: $($Model -join ', ')"
     Write-Host "NoWait: $NoWait"
 
     $pipelineRun = $env:TF_BUILD -eq "True"
@@ -128,21 +134,34 @@
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
 
-    $runArgs = @(
-        "run",
-        "--agent", "github-copilot-cli",
-        "--benchmark", $Benchmark,
-        "--model", $Model,
-        "--env", "GITHUB_MCP_SERVER_TOKEN"
-    )
+    $failedModels = @()
 
-    if ($NoWait) {
-        $runArgs += "--no-wait"
+    foreach ($m in $Model) {
+        Write-Host "`n=== Running benchmark for model: $m ==="
+
+        $runArgs = @(
+            "run",
+            "--agent", "github-copilot-cli",
+            "--benchmark", $Benchmark,
+            "--model", $m,
+            "--env", "GITHUB_MCP_SERVER_TOKEN"
+        )
+
+        if ($NoWait) {
+            $runArgs += "--no-wait"
+        }
+
+        Write-Host "Running: msbench-cli $($runArgs -join ' ')"
+        & 'msbench-cli' @runArgs
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "msbench-cli run failed for model '$m' with exit code $LASTEXITCODE"
+            $failedModels += $m
+        }
     }
 
-    Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-    & 'msbench-cli' @runArgs
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli run failed with exit code $LASTEXITCODE"
+    if ($failedModels.Count -gt 0) {
+        throw "msbench-cli run failed for models: $($failedModels -join ', ')"
     }
+
+    Write-Host "`nAll $($Model.Count) model runs completed successfully."
