@@ -4,7 +4,7 @@ description: "Analyze a GitHub Actions integration test run and produce a skill 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Analyze Test Run
