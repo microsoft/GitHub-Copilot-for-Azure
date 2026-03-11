@@ -58,8 +58,9 @@ jobs:
     steps:
       - name: Parse test-pattern input into matrix
         id: set-matrix
+        env:
+          INPUT: ${{ inputs.test-pattern }}
         run: |
-          INPUT="${{ inputs.test-pattern }}"
           # Default test groups if input is empty
           DEFAULT='["skill-invocation","static-web-apps-deploy","app-service-deploy","azure-functions-deploy","azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
           
@@ -164,9 +165,10 @@ jobs:
           GH_HEAD_SHA: ${{ github.sha }}
           DEBUG: ${{ inputs.debug && '1' || '' }}
           MODEL_OVERRIDE: ${{ inputs.model-override }}
+          TEST_GROUP: ${{ matrix.test-group }}
         run: |
           echo test with $MODEL_OVERRIDE
-          npm run test:integration -- azure-deploy "${{ matrix.test-group }}"
+          npm run test:integration -- azure-deploy "$TEST_GROUP"
         continue-on-error: true
 
       - name: Generate report
