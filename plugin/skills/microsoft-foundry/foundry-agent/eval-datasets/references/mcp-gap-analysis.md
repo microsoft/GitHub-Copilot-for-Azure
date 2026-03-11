@@ -1,35 +1,33 @@
 # MCP Tool Gap Analysis — Foundry Platform Roadmap Recommendations
 
-This document identifies MCP tool capabilities that would significantly enhance the evaluation dataset experience but are **not currently available** in the `foundry-mcp` server. These are recommendations for the platform team to close competitive gaps with LangSmith.
+This document identifies MCP tool capabilities that would enhance the evaluation dataset experience. Some previously missing tools are **now available** in the `foundry-mcp` server.
 
 ## Current MCP Tool Coverage
 
-| Tool | Status | Gap |
-|------|--------|-----|
-| `evaluation_dataset_create` | ⚠️ Not practical | Requires Blob Storage SAS URL upload — no file upload path from agent. Use local JSONL + `inputData` instead |
-| `evaluation_dataset_get` | ✅ Available | Cannot list all versions of a dataset; only gets by name+version |
-| `evaluation_agent_batch_eval_create` | ✅ Available | Full-featured |
-| `evaluation_dataset_batch_eval_create` | ✅ Available | Full-featured |
+| Tool | Status | Notes |
+|------|--------|-------|
+| `evaluation_dataset_create` | ✅ Available | Supports `connectionName` for project-connected storage. Use with `project_connection_list`/`create` to resolve storage. |
+| `evaluation_dataset_get` | ✅ Available | Lists all datasets (no name) or gets by name+version |
+| `evaluation_dataset_versions_get` | ✅ Available | Lists all versions of a named dataset |
+| `evaluation_agent_batch_eval_create` | ✅ Available | Full-featured, accepts `inputData` inline |
+| `evaluation_dataset_batch_eval_create` | ✅ Available | Full-featured, accepts `jsonlContent` inline or `datasetFileId` |
 | `evaluation_get` | ✅ Available | Cannot filter runs by dataset version |
 | `evaluation_comparison_create` | ✅ Available | No trend analysis; only pairwise comparison |
 | `evaluation_comparison_get` | ✅ Available | Full-featured |
 | `evaluator_catalog_*` | ✅ Available | No version history or audit trail |
+| `project_connection_list` | ✅ Available | Discover AzureBlob connections for dataset storage |
+| `project_connection_create` | ✅ Available | Create storage connection to project |
 
-## Requested New MCP Tools
+## Resolved (Previously Requested)
+
+| Requested Tool | Now Available As | Status |
+|---------------|-----------------|--------|
+| `dataset_version_list` | `evaluation_dataset_versions_get` | ✅ Resolved — lists all versions of a named dataset |
+| Dataset upload path | `evaluation_dataset_create` with `connectionName` | ✅ Resolved — use project-connected AzureBlob storage |
+
+## Remaining Requests
 
 ### Priority 1: Critical (Blocks competitive parity with LangSmith)
-
-#### `dataset_version_list`
-**Purpose:** List all versions of a named dataset.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `projectEndpoint` | string (required) | Azure AI Project endpoint |
-| `datasetName` | string (required) | Dataset name |
-
-**Why needed:** Currently, `evaluation_dataset_get` requires both name and version. There is no way to discover what versions exist for a given dataset. Users must track versions externally (our manifest.json workaround).
-
-**LangSmith equivalent:** Automatic version history with read-only historical access.
 
 #### `dataset_from_traces`
 **Purpose:** Server-side extraction of App Insights traces into a dataset, with filtering and schema transformation.
@@ -47,8 +45,6 @@ This document identifies MCP tool capabilities that would significantly enhance 
 **Why needed:** Currently, trace-to-dataset requires client-side KQL execution, result parsing, schema transformation, and upload. A server-side tool would dramatically simplify the workflow and enable automation.
 
 **LangSmith equivalent:** Run rules with automatic trace-to-dataset routing.
-
-### Priority 2: High (Differentiating features)
 
 #### `evaluation_trend_get`
 **Purpose:** Retrieve time-series metrics across all runs in an evaluation group.
@@ -121,12 +117,11 @@ This document identifies MCP tool capabilities that would significantly enhance 
 
 ## Interim Workarounds
 
-Until these MCP tools are available, the [eval-datasets skill](../eval-datasets.md) provides client-side workarounds:
+For tools still not available, the [eval-datasets skill](../eval-datasets.md) provides client-side workarounds:
 
 | Gap | Workaround |
 |-----|-----------|
-| No version listing | `datasets/manifest.json` tracks all versions locally |
-| No trace-to-dataset | KQL harvest templates + local schema transform |
+| No trace-to-dataset | KQL harvest templates + local schema transform + sync to Foundry |
 | No trend analysis | Multiple `evaluation_get` calls + client-side aggregation |
 | No tagging | Tags stored in manifest.json |
 | No annotation queues | Local candidate files with status tracking |

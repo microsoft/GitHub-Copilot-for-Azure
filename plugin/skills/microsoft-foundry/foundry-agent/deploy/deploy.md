@@ -230,20 +230,20 @@ python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRI
 
 ## Document Deployment Context
 
-After a successful deployment, persist the following to a `.env` or config file in the repo so future conversations (e.g., evaluation, monitoring) can pick them up automatically:
+After a successful deployment, persist the deployment context to `<agent-root>/.foundry/agent-metadata.yaml` under the selected environment so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
 
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `AZURE_AI_PROJECT_ENDPOINT` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
-| `AZURE_AI_AGENT_NAME` | Deployed agent name | `my-support-agent` |
-| `AZURE_AI_AGENT_VERSION` | Current agent version | `1` |
-| `AZURE_CONTAINER_REGISTRY` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
+| Metadata Field | Purpose | Example |
+|----------------|---------|---------|
+| `environments.<env>.projectEndpoint` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
+| `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
+| `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
+| `environments.<env>.testCases[]` | Evaluation bundles for datasets, evaluators, and thresholds | `smoke-core`, `trace-regressions` |
 
-If a `.env` file already exists, read it first and merge — do not overwrite existing values without confirmation.
+If `agent-metadata.yaml` already exists, merge the selected environment instead of overwriting other environments or cached test cases without confirmation.
 
 ## After Deployment — Auto-Create Evaluators & Dataset
 
-> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
+> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the selected `.foundry` environment for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
 
 ### 1. Read Agent Instructions
 
@@ -258,30 +258,43 @@ Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose an
 
 ### 3. Identify LLM-Judge Deployment
 
-Use **`model_deployment_get`** to find a suitable model (e.g., `gpt-4o`) for quality evaluators.
+Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
 
-### 4. Generate Local Test Dataset
+### 4. Reuse or Refresh Local Cache
 
-Use the identified LLM deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save to `datasets/<agent-name>-test.jsonl` with each line containing at minimum a `query` field (optionally `context`, `ground_truth`).
+Inspect the selected agent root before generating anything new:
 
-> ⚠️ **Prefer local dataset generation.** Generate test queries locally and save to `datasets/*.jsonl` rather than using `generateSyntheticData=true` on the eval API. Local datasets provide reproducibility, version control, and can be reviewed before running evals.
+- Reuse `.foundry/evaluators/` and `.foundry/datasets/` when they already contain the right assets for the selected environment.
+- Ask before refreshing cached files or replacing thresholds.
+- If cache is missing or stale, regenerate the dataset/evaluators and update metadata for the active environment only.
 
-### 5. Persist Artifacts
+### 5. Generate Local Test Dataset
 
-Save evaluator definitions to `evaluators/<name>.yaml` and any locally generated test datasets to `datasets/*.jsonl`:
+Use the identified chat-capable deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save to `.foundry/datasets/<agent-name>-<environment>-test-v1.jsonl` with each line containing at minimum a `query` field (optionally `context`, `ground_truth`).
 
+> ⚠️ **Prefer local dataset generation.** Generate test queries locally and save to `.foundry/datasets/*.jsonl` rather than using `generateSyntheticData=true` on the eval API. Local datasets provide reproducibility, version control, and can be reviewed before running evals.
+
+### 6. Persist Artifacts and Test Cases
+
+Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update test cases in `agent-metadata.yaml` for the selected environment:
+
+```text
+.foundry/
+  agent-metadata.yaml
+  evaluators/
+    <name>.yaml
+  datasets/
+    <agent-name>-<environment>-test-v1.jsonl
+  results/
 ```
-evaluators/        # custom evaluator definitions
-  <name>.yaml      # prompt text, scoring type, thresholds
-datasets/          # locally generated input datasets
-  *.jsonl          # test queries
-```
 
-### 6. Prompt User
+Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Seed at least one `P0` smoke test case after deployment.
 
-*"Your agent is deployed and running. Evaluators and a test dataset have been auto-configured. Would you like to run an evaluation to identify optimization opportunities?"*
+### 7. Prompt User
 
-- **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — evaluators and dataset are already prepared.
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local test dataset, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+
+- **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.
 - **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
 

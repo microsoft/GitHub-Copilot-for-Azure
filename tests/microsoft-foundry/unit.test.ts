@@ -47,10 +47,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Agent Lifecycle");
+      expect(skill.content).toContain("## Agent Development Lifecycle");
       expect(skill.content).toContain("## Sub-Skills");
-      expect(skill.content).toContain("## Project Context Resolution");
-      expect(skill.content).toContain("## Agent Types");
+      expect(skill.content).toContain("## Agent: Project Context Resolution");
+      expect(skill.content).toContain("## Agent: Agent Types");
     });
 
     test("contains agent routing references", () => {
@@ -68,6 +68,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("AZURE_AI_PROJECT_ENDPOINT");
       expect(skill.content).toContain("AZURE_CONTAINER_REGISTRY_NAME");
     });
+
+    test("documents .foundry workspace standard", () => {
+      expect(skill.content).toContain(".foundry/agent-metadata.yaml");
+      expect(skill.content).toContain("defaultEnvironment");
+      expect(skill.content).toContain("Agent Metadata Contract");
+    });
+
   });
 
   describe("Sub-Skills Reference", () => {
