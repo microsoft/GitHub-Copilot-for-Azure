@@ -105,26 +105,38 @@ Same scope URL patterns as the Query API:
 
 ### Step 6: Construct and Execute
 
+**Create forecast query file:**
+
+Create `temp/cost-forecast.json` with:
+```json
+{
+  "type": "ActualCost",
+  "timeframe": "Custom",
+  "timePeriod": {
+    "from": "<first-of-month>",
+    "to": "<last-of-month>"
+  },
+  "dataset": {
+    "granularity": "Daily",
+    "aggregation": {
+      "totalCost": { "name": "Cost", "function": "Sum" }
+    },
+    "sorting": [{ "direction": "Ascending", "name": "UsageDate" }]
+  },
+  "includeActualCost": true,
+  "includeFreshPartialCost": true
+}
+```
+
+**Execute forecast query:**
 ```powershell
+# Create temp folder
+New-Item -ItemType Directory -Path "temp" -Force
+
+# Query using REST API
 az rest --method post `
   --url "https://management.azure.com/subscriptions/<subscription-id>/providers/Microsoft.CostManagement/forecast?api-version=2023-11-01" `
-  --body '{
-    "type": "ActualCost",
-    "timeframe": "Custom",
-    "timePeriod": {
-      "from": "<first-of-month>",
-      "to": "<last-of-month>"
-    },
-    "dataset": {
-      "granularity": "Daily",
-      "aggregation": {
-        "totalCost": { "name": "Cost", "function": "Sum" }
-      },
-      "sorting": [{ "direction": "Ascending", "name": "UsageDate" }]
-    },
-    "includeActualCost": true,
-    "includeFreshPartialCost": true
-  }'
+  --body '@temp/cost-forecast.json'
 ```
 
 ### Step 7: Interpret Response
@@ -156,13 +168,13 @@ The response includes a `CostStatus` column:
 
 | Status | Error | Remediation |
 |--------|-------|-------------|
-| 400 | Can't forecast on the past | Ensure `to` date is in the future |
-| 400 | Missing dataset | Add required `dataset` field |
-| 400 | Invalid dependency | Set `includeActualCost: true` when using `includeFreshPartialCost` |
-| 403 | Forbidden | Needs **Cost Management Reader** role on scope |
-| 424 | Bad training data | Insufficient history; falls back to actual costs if available |
-| 429 | Rate limited | Retry after `Retry-After` header value |
-| 503 | Service unavailable | Retry after 30 seconds |
+| 400 | Can't forecast on the past | Ensure `to` date is in the future. Do not retry. |
+| 400 | Missing dataset | Add required `dataset` field. Do not retry. |
+| 400 | Invalid dependency | Set `includeActualCost: true` when using `includeFreshPartialCost`. Do not retry. |
+| 403 | Forbidden | Needs **Cost Management Reader** role on scope. Do not retry. |
+| 424 | Bad training data | Insufficient history; falls back to actual costs if available. Do not retry. |
+| 429 | Rate limited | Retry after `Retry-After` header value. **Max 3 retries.** |
+| 503 | Service unavailable | Do not retry. Check [Azure Status](https://status.azure.com). |
 
 > 📋 **Full details:** [Error Handling Reference](./references/error-handling.md)
 

@@ -37,10 +37,12 @@
 
 | Status | Retry? | Strategy |
 |---|---|---|
-| 429 | ✅ Yes | Wait for duration specified in `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header |
-| 503 | ✅ Yes | Retry after 30 seconds |
-| 424 | ❌ No | Training data issue — retrying will not help. Fall back to actual costs or use **azure-cost-query** |
+| 429 | ✅ Yes | Wait for duration specified in `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header. **Maximum 3 retries.** |
 | 400 | ❌ No | Fix the request body based on the validation error code |
 | 401 | ❌ No | Re-authenticate — the token is missing or expired |
 | 403 | ❌ No | Grant **Cost Management Reader** role on the target scope |
 | 404 | ❌ No | Fix the scope URL — verify subscription, resource group, or billing account IDs |
+| 424 | ❌ No | Training data issue — retrying will not help. Fall back to actual costs or use **azure-cost-query** |
+| 503 | ❌ No | Do not retry. Check [Azure Status](https://status.azure.com) for service health. |
+
+> ⚠️ **Warning:** Do not retry any errors except 429. All other errors indicate issues that must be fixed before re-attempting the request.

@@ -31,15 +31,15 @@ Detailed error handling reference for the Cost Management Query API.
 
 | Status | Retry? | Strategy |
 |--------|--------|----------|
-| 429 | ✅ Yes | Wait for the duration specified in the `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` response header, then retry. |
-| 503 | ✅ Yes | Wait 30 seconds, then retry. If the error persists after 3 attempts, escalate. |
-| 5xx (other) | ✅ Yes | Exponential backoff: 1s → 2s → 4s → 8s → 16s. Max 5 retries. |
+| 429 | ✅ Yes | Wait for the duration specified in the `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` response header, then retry. **Maximum 3 retries.** |
 | 400 | ❌ No | Fix the request. Review error message for specific field or validation issue. |
 | 401 | ❌ No | Re-authenticate. Token has expired or is missing. |
 | 403 | ❌ No | Fix permissions. Request appropriate RBAC role assignment on the scope. |
 | 404 | ❌ No | Fix the scope URL. Verify resource exists. |
+| 503 | ❌ No | Do not retry. Check [Azure Status](https://status.azure.com) for service health. |
+| 5xx (other) | ❌ No | Do not retry. Investigate the error and check service health. |
 
-> ⚠️ **Warning:** Do not retry 400-level errors (except 429). These indicate client-side issues that must be fixed before retrying.
+> ⚠️ **Warning:** Do not retry any errors except 429. All other errors indicate issues that must be fixed before re-attempting the request.
 
 ## Error Response Structure
 

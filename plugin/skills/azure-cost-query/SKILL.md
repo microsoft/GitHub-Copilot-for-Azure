@@ -103,30 +103,42 @@ For the full request body schema, see [request-body-schema.md](./references/requ
 
 ### Step 5: Construct and Execute the API Call
 
-Use `az rest` to call the Cost Management Query API:
+Use `az rest` to call the Cost Management Query API.
 
+**Create cost query file:**
+
+Create `temp/cost-query.json` with:
+```json
+{
+  "type": "ActualCost",
+  "timeframe": "MonthToDate",
+  "dataset": {
+    "granularity": "None",
+    "aggregation": {
+      "totalCost": {
+        "name": "Cost",
+        "function": "Sum"
+      }
+    },
+    "grouping": [
+      {
+        "type": "Dimension",
+        "name": "ServiceName"
+      }
+    ]
+  }
+}
+```
+
+**Execute cost query:**
 ```powershell
+# Create temp folder
+New-Item -ItemType Directory -Path "temp" -Force
+
+# Query using REST API (more reliable than az costmanagement query)
 az rest --method post `
   --url "<scope>/providers/Microsoft.CostManagement/query?api-version=2023-11-01" `
-  --body '{
-    "type": "ActualCost",
-    "timeframe": "MonthToDate",
-    "dataset": {
-      "granularity": "None",
-      "aggregation": {
-        "totalCost": {
-          "name": "Cost",
-          "function": "Sum"
-        }
-      },
-      "grouping": [
-        {
-          "type": "Dimension",
-          "name": "ServiceName"
-        }
-      ]
-    }
-  }'
+  --body '@temp/cost-query.json'
 ```
 
 ### Step 6: Handle Pagination and Errors
@@ -145,6 +157,7 @@ See [error-handling.md](./references/error-handling.md) for the full error refer
 | Monthly/None granularity max range | 12 months |
 | Absolute API max range | 37 months |
 | Max GroupBy dimensions | 2 |
+| ResourceId grouping scope | Subscription and resource group only — not supported at billing account, management group, or higher scopes |
 | Max rows per page | 5,000 |
 | Custom timeframe | Requires `timePeriod` with `from`/`to` |
 | Filter AND/OR | Must have at least 2 expressions |
@@ -155,12 +168,12 @@ See [guardrails.md](./references/guardrails.md) for the complete guardrails refe
 
 | HTTP Status | Error | Remediation |
 |-------------|-------|-------------|
-| 400 | Invalid request body | Check schema, date ranges, and dimension compatibility |
-| 401 | Unauthorized | Verify authentication (`az login`) |
-| 403 | Forbidden | Ensure Cost Management Reader role on scope |
-| 404 | Scope not found | Verify scope URL and resource IDs |
-| 429 | Too many requests | Retry after `Retry-After` header value |
-| 503 | Service unavailable | Retry after 30 seconds |
+| 400 | Invalid request body | Check schema, date ranges, and dimension compatibility. Do not retry. |
+| 401 | Unauthorized | Verify authentication (`az login`). Do not retry. |
+| 403 | Forbidden | Ensure Cost Management Reader role on scope. Do not retry. |
+| 404 | Scope not found | Verify scope URL and resource IDs. Do not retry. |
+| 429 | Too many requests | Retry after `Retry-After` header value. **Max 3 retries.** |
+| 503 | Service unavailable | Do not retry. Check [Azure Status](https://status.azure.com). |
 
 See [error-handling.md](./references/error-handling.md) for detailed error handling including rate limit headers and retry strategies.
 

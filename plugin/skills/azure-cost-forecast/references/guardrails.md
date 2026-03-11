@@ -33,6 +33,8 @@ Detailed guardrails derived from CCM-LUX getForecastData and CCM-UX-MIDDLEWARE F
 | API limitation | This is a hard limitation of the Forecast API. The `grouping` field is not accepted in the request body. |
 | Workaround | If the user requests a grouped forecast (e.g., forecast by resource group or service), inform them that grouping is not supported for forecasts. Suggest querying historical data with grouping using **azure-cost-query** instead. |
 
+> ⚠️ **Warning:** Even when using **azure-cost-query** for grouped historical data, `ResourceId` grouping is only supported at subscription scope and below. It is not supported at billing account, management group, or higher scopes. See the [azure-cost-query guardrails](../../azure-cost-query/references/guardrails.md) for the full scope restriction table.
+
 ## Response Row Limit
 
 | Constraint | Detail |

@@ -45,6 +45,24 @@ Detailed validation rules and guardrails for the Cost Management Query API. The 
 
 > 💡 **Tip:** When using GroupBy with Daily granularity over a multi-day range, the system may return data only for the last day. For full daily breakdown with grouping, ensure the range is within the 31-day limit.
 
+## ResourceId Scope Restriction
+
+> ⚠️ **Warning:** Grouping by `ResourceId` is **only supported at subscription scope and below** (subscription, resource group). It is NOT supported at higher scopes.
+
+| Scope | ResourceId GroupBy |
+|-------|--------------------|
+| Subscription | ✅ Supported |
+| Resource Group | ✅ Supported |
+| Billing Account | ❌ Not supported |
+| Management Group | ❌ Not supported |
+| Billing Profile | ❌ Not supported |
+| Department (EA) | ❌ Not supported |
+| Enrollment Account (EA) | ❌ Not supported |
+| Invoice Section (MCA) | ❌ Not supported |
+| Customer (Partner) | ❌ Not supported |
+
+When the user requests a cost breakdown by resource at a billing account or management group scope, use `ServiceName`, `SubscriptionName`, or another supported dimension instead. If per-resource detail is needed, narrow the scope to a specific subscription first.
+
 ## Dataset Validation
 
 ### GroupBy Constraints

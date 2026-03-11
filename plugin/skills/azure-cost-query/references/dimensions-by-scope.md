@@ -20,6 +20,8 @@ Dimension availability matrix for the Cost Management Query API, organized by sc
 
 The following dimensions are available across most scopes:
 
+> ⚠️ **Warning:** `ResourceId` grouping is **only supported at subscription and resource group scopes**. At higher scopes (billing account, management group, billing profile, etc.), use `ServiceName`, `SubscriptionName`, or another supported dimension instead. See [guardrails.md](guardrails.md) for the full scope restriction table.
+
 | Dimension | Description |
 |-----------|-------------|
 | `ResourceGroupName` | Resource group containing the resource. |
