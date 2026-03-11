@@ -29,10 +29,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeLessThan(1025);
     });
 
-    test("description contains USE FOR trigger phrases", () => {
+    test("description contains WHEN trigger phrases", () => {
       const description = skill.metadata.description;
-      expect(description).toContain("USE FOR:");
-      expect(description).toContain("DO NOT USE FOR:");
+      expect(description).toContain("WHEN:");
     });
   });
 

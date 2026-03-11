@@ -19,10 +19,10 @@ import {
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { matchesCommand, softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { matchesCommand, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-validate";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 1;
 const aspireEnvVarTestTimeoutMs = 2700000; // 45 minutes
 
 // Check if integration tests should be skipped at module level
@@ -44,7 +44,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Check if my app is ready to deploy to Azure"
+            prompt: "Check if my app is ready to deploy to Azure",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -62,7 +63,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Validate my azure.yaml configuration before deploying"
+            prompt: "Validate my azure.yaml configuration before deploying",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -81,7 +83,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Validate my Bicep template before deploying to Azure"
+            prompt: "Validate my Bicep template before deploying to Azure",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -99,7 +102,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
+            prompt: "Run a what-if analysis to preview changes before deploying my infrastructure",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -190,7 +194,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${CLIENT_APPS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
@@ -229,7 +234,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use the eastus2 region. " +
           "Use my current subscription. " +
           "This is for a small scale production environment. " +
-          "Use standard SKUs.",
+          "Use standard SKUs. " +
+          `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>

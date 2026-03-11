@@ -2,9 +2,11 @@
 
 Create `.azure/plan.md` using this template. This file is **mandatory** and serves as the source of truth for the entire workflow.
 
-## ⛔ BLOCKING REQUIREMENT
+## ⛔ BLOCKING REQUIREMENTS
 
-You **MUST** create this plan file BEFORE generating any code, infrastructure, or configuration. Present the plan to the user and get approval before proceeding to execution.
+1. You **MUST** create this plan file BEFORE generating any code, infrastructure, or configuration.
+2. You **MUST** complete Step 6 Phase 2 (Provisioning Limit Checklist) with NO "_TBD_" entries remaining before presenting the plan to the user.
+3. Present the plan to the user and get approval before proceeding to execution.
 
 ---
 
@@ -76,12 +78,101 @@ Generated: {timestamp}
 
 ---
 
-## 6. Execution Checklist
+## 6. Provisioning Limit Checklist
+
+**Purpose:** Validate that the selected subscription and region have sufficient quota/capacity for all resources to be deployed.
+
+> **⚠️ REQUIRED:** This is a **TWO-PHASE** process. Complete both phases before proceeding.
+
+### Phase 1: Prepare Resource Inventory
+
+List all resources to be deployed with their types and quantities. Leave quota/limit columns empty.
+
+| Resource Type | Number to Deploy | Total After Deployment | Limit/Quota | Notes |
+|---------------|------------------|------------------------|-------------|-------|
+| {ARM-resource-type} | {count} | _To be filled in Phase 2_ | _To be filled in Phase 2_ | _To be filled in Phase 2_ |
+
+**Example format:**
+
+| Resource Type | Number to Deploy | Total After Deployment | Limit/Quota | Notes |
+|---------------|------------------|------------------------|-------------|-------|
+| Microsoft.App/managedEnvironments | 1 | _TBD_ | _TBD_ | _TBD_ |
+| Microsoft.Compute/virtualMachines (Standard_D4s_v3) | 3 | _TBD_ | _TBD_ | _TBD_ |
+| Microsoft.Network/publicIPAddresses | 2 | _TBD_ | _TBD_ | _TBD_ |
+| Microsoft.DocumentDB/databaseAccounts | 1 | _TBD_ | _TBD_ | _TBD_ |
+| Microsoft.Storage/storageAccounts | 2 | _TBD_ | _TBD_ | _TBD_ |
+
+### Phase 2: Fetch Quotas and Validate Capacity
+
+**Action:** **MUST invoke azure-quotas skill first** to populate the remaining columns with actual quota data using Azure quota CLI. Only use fallback methods if quota CLI is not supported.
+
+> **⚠️ IMPORTANT:** Process **ONE resource type at a time**. Do NOT try to apply all steps to all resources at once. Complete steps 1-7 for the first resource, then move to the next resource, and so on.
+
+For each resource type:
+
+1. **Try quota CLI first** - Run `az quota list` to check if the provider is supported
+2. **If quota CLI is not supported** (e.g., returns `BadRequest` or provider is not listed):
+   - **Get current usage** using one of these methods:
+     - **Option 1 - Azure Resource Graph** (faster for counting):
+       ```bash
+       # Install resource-graph extension first (if not already installed)
+       az extension add --name resource-graph
+       
+       # Query resource count
+       az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"
+       ```
+       Example for Cosmos DB in eastus:
+       ```bash
+       az graph query -q "resources | where type == 'microsoft.documentdb/databaseaccounts' and location == 'eastus' | count"
+       ```
+     - **Option 2 - Azure CLI resource list** (detailed resource info):
+       ```bash
+       az resource list --subscription "{subscription-id}" --resource-type "{Resource.Type}" --location "{location}"
+       ```
+       Example for Cosmos DB:
+       ```bash
+       az resource list --subscription "abc-123" --resource-type "Microsoft.DocumentDB/databaseAccounts" --location "eastus"
+       ```
+     - **Option 3 - Invoke azure-resource-lookup skill** (if available)
+   - **Get limit value** from [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
+   - Document source as "Fetched from: Azure Resource Graph + Official docs" or "Fetched from: az resource list + Official docs"
+   - Skip to step 4 to get limit now as the current usage is got
+3. **Get current usage** - Use `az quota usage show` to find current deployment count
+4. **Get quota limit** - **MUST use `az quota show` first** to find the maximum allowed. **ONLY** if quota CLI returns `BadRequest` (resource type not supported), then refer to [resources-limits-quotas.md](./resources-limits-quotas.md) for official documentation limits
+5. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
+6. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
+7. **Document source** - Note whether data came from "azure-quotas (resource-name)", "Azure Resource Graph + Official docs", or "az resource list + Official docs"
+
+**Completed example:**
+
+| Resource Type | Number to Deploy | Total After Deployment | Limit/Quota | Notes |
+|---------------|------------------|------------------------|-------------|-------|
+| Microsoft.App/managedEnvironments | 1 | 1 | 50 | Fetched from: azure-quotas (ManagedEnvironmentCount) |
+| Microsoft.Compute/virtualMachines (Standard_D4s_v3) | 3 | 15 | 350 vCPUs | Fetched from: azure-quotas (standardDSv3Family) |
+| Microsoft.Network/publicIPAddresses | 2 | 5 | 100 | Fetched from: azure-quotas (PublicIPAddresses) |
+| Microsoft.DocumentDB/databaseAccounts | 1 | 1 | 50 per region | Fetched from: Official docs (quota CLI not supported) |
+| Microsoft.Storage/storageAccounts | 2 | 8 | 250 per region | Fetched from: Official docs |
+
+**Status:** ✅ All resources within limits | ⚠️ Near limit (>80%) | ❌ Insufficient capacity
+
+> **⛔ CRITICAL:** You **CANNOT** present this plan to the customer if ANY cells contain "_TBD_" or "_To be filled in Phase 2_". Phase 2 **MUST** be completed with actual quota data before user presentation.
+
+**Notes:**
+- **MUST use azure-quotas skill first** to check providers via quota CLI (`az quota` commands) - Microsoft.Compute, Microsoft.Network, Microsoft.App, etc.
+- Azure quota CLI is **ALWAYS preferred over REST API** for checking quotas
+- **ONLY for unsupported providers** (e.g., Microsoft.DocumentDB returns `BadRequest`), use fallback methods: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
+- If any resource exceeds limits, return to Step 2 to select a different region or request quota increase
+
+---
+
+## 7. Execution Checklist
 
 ### Phase 1: Planning
 - [ ] Analyze workspace
 - [ ] Gather requirements
 - [ ] Confirm subscription and location with user
+- [ ] Prepare resource inventory (Step 6 Phase 1: list resource types and deployment quantities)
+- [ ] Fetch quotas and validate capacity (Step 6 Phase 2: invoke azure-quotas skill to use quota CLI)
 - [ ] Scan codebase
 - [ ] Select recipe
 - [ ] Plan architecture
@@ -94,9 +185,10 @@ Generated: {timestamp}
 - [ ] Apply recipes for integrations (if needed)
 - [ ] Generate application configuration
 - [ ] Generate Dockerfiles (if containerized)
-- [ ] Update plan status to "Ready for Validation"
+- [ ] **⛔ Update plan status to "Ready for Validation"** — Use the `edit` tool to change the Status line in `.azure/plan.md`. This step is MANDATORY before invoking azure-validate.
 
 ### Phase 3: Validation
+- [ ] **PREREQUISITE:** Plan status MUST be "Ready for Validation" (Phase 2 last step)
 - [ ] Invoke azure-validate skill
 - [ ] All validation checks pass
 - [ ] Update plan status to "Validated"
@@ -146,8 +238,9 @@ Generated: {timestamp}
 ## Instructions
 
 1. **Create the plan first** — Fill in all sections based on analysis
-2. **Present to user** — Show the plan and ask for approval
-3. **Update as you go** — Check off items in the execution checklist
-4. **Track status** — Update the Status field at the top as you progress
+2. **Complete quota validation** — Ensure Step 6 Phase 2 is completed with NO "_TBD_" entries. **MUST use azure-quotas skill** as the primary method to fetch actual quota/usage data via quota CLI (`az quota` commands) for all resources. Use fallback methods ONLY when provider returns `BadRequest`.
+3. **Present to user** — Show the completed plan and ask for approval. **DO NOT** present if Step 6 contains any "_TBD_" or "_To be filled in Phase 2_" entries.
+4. **Update as you go** — Check off items in the execution checklist
+5. **Track status** — Update the Status field at the top as you progress
 
 The plan is the **single source of truth** for azure-validate and azure-deploy skills.

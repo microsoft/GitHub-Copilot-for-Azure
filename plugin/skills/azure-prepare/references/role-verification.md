@@ -13,7 +13,7 @@ Review every resource-to-identity relationship in the generated Bicep/Terraform:
 | Check | How |
 |-------|-----|
 | **Every service identity has roles** | Each app with a managed identity must have at least one role assignment |
-| **Roles match data operations** | Read-only apps get Reader roles; apps that write need Contributor/Owner data roles |
+| **Roles match data operations** | Use service-specific **data-plane** roles for data access (see mapping table below); use generic Reader/Contributor/Owner only for management-plane operations |
 | **Scope is least privilege** | Roles scoped to specific resources, not resource groups or subscriptions |
 | **No missing roles** | Cross-check app code operations against assigned roles (see table below) |
 | **Local dev identity has roles** | If testing locally, the user's identity needs equivalent roles via `az login` |
