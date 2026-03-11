@@ -30,15 +30,18 @@ Review every resource-to-identity relationship in the generated Bicep/Terraform:
 | Send Service Bus messages | Azure Service Bus Data Sender | Using generic Contributor |
 | Read queues | Storage Queue Data Reader | Using Blob role for queues |
 
-## MCP Tools for Verification
+## How to Verify (Static Code Review)
 
-Use Azure MCP tools to check existing role assignments:
+Review the generated Bicep/Terraform files directly — do **not** query live Azure state here. For each role assignment resource in your infrastructure code:
 
-```
-azure__role(command: "role_assignment_list", scope: "<resourceId>")
-```
+1. Identify the **principal** (which managed identity)
+2. Identify the **role** (which role definition)
+3. Identify the **scope** (which target resource)
+4. Cross-check against the app code to confirm the role grants the required data-plane access
 
-Compare the output against what the infrastructure code generates.
+> 💡 **Tip:** Search your Bicep for `Microsoft.Authorization/roleAssignments` or your Terraform for `azurerm_role_assignment` to find all role assignments.
+
+> ⚠️ **Live role verification** (querying Azure for actually provisioned roles) is handled by **azure-validate** step 4. This step is a static code review only.
 
 ## Decision Tree
 
