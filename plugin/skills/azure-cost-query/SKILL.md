@@ -1,14 +1,6 @@
 ---
 name: azure-cost-query
-description: >-
-  Query and analyze historical Azure cost data using the Cost Management Query API.
-  Construct API requests to break down costs by service, resource, location, or tag
-  across subscriptions, resource groups, and billing accounts.
-  WHEN: query Azure costs, cost breakdown by service, Azure spending, cost by resource group,
-  actual cost, amortized cost, cost trends, top cost drivers, cost by subscription,
-  how much did I spend, show my Azure bill, cost by tag, monthly cost summary.
-  DO NOT USE FOR: forecasting future costs (use azure-cost-forecast),
-  reducing costs or optimization recommendations (use azure-cost-optimization).
+description: "Query and analyze historical Azure cost data using the Cost Management Query API. Construct API requests to break down costs by service, resource, location, or tag across subscriptions, resource groups, and billing accounts. WHEN: query Azure costs, cost breakdown by service, Azure spending, cost by resource group, actual cost, amortized cost, cost trends, top cost drivers, cost by subscription, how much did I spend, show my Azure bill, cost by tag, monthly cost summary. DO NOT USE FOR: forecasting future costs (use azure-cost-forecast), reducing costs or optimization recommendations (use azure-cost-optimization)."
 license: MIT
 metadata:
   author: Microsoft
@@ -203,5 +195,5 @@ For more examples including daily trends, tag-based filtering, and multi-dimensi
 
 ## Related Skills
 
-- **[azure-cost-forecast](../azure-cost-forecast/SKILL.md)** — Forecast future Azure costs
-- **[azure-cost-optimization](../azure-cost-optimization/SKILL.md)** — Identify cost savings and optimization recommendations
+- **azure-cost-forecast** — Forecast future Azure costs
+- **azure-cost-optimization** — Identify cost savings and optimization recommendations

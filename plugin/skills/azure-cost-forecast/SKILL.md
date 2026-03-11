@@ -1,13 +1,6 @@
 ---
 name: azure-cost-forecast
-description: >-
-  Forecast future Azure costs using the Cost Management Forecast API. Builds and
-  executes forecast requests with proper time-period guardrails, training-data
-  validation, and response interpretation. WHEN: forecast Azure costs, predict
-  spending, projected costs, estimate bill, future Azure costs, cost projection,
-  budget forecast, end of month costs, how much will I spend. DO NOT USE FOR:
-  querying historical costs (use azure-cost-query), reducing costs (use
-  azure-cost-optimization).
+description: "Forecast future Azure costs using the Cost Management Forecast API. Builds and executes forecast requests with proper time-period guardrails, training-data validation, and response interpretation. WHEN: forecast Azure costs, predict spending, projected costs, estimate bill, future Azure costs, cost projection, budget forecast, end of month costs, how much will I spend. DO NOT USE FOR: querying historical costs (use azure-cost-query), reducing costs (use azure-cost-optimization)."
 license: MIT
 metadata:
   author: Microsoft
@@ -26,7 +19,7 @@ Construct and execute Azure Cost Management Forecast API requests to project fut
 | **MCP Tools** | `azure__documentation`, `azure__extension_cli_generate`, `azure__get_azure_bestpractices` |
 | **CLI** | `az rest` |
 | **Best For** | Future cost projections, budget planning, end-of-month estimates |
-| **Related Skills** | [azure-cost-query](../azure-cost-query/SKILL.md), [azure-cost-optimization](../azure-cost-optimization/SKILL.md) |
+| **Related Skills** | azure-cost-query, azure-cost-optimization |
 
 ## When to Use This Skill
 
@@ -36,7 +29,7 @@ Construct and execute Azure Cost Management Forecast API requests to project fut
 - Include actual costs alongside forecast data for context
 - Estimate future budget impact
 
-> ⚠️ **Warning:** If the user wants **historical** cost data, use [azure-cost-query](../azure-cost-query/SKILL.md). If they want to **reduce** costs, use [azure-cost-optimization](../azure-cost-optimization/SKILL.md).
+> ⚠️ **Warning:** If the user wants **historical** cost data, use azure-cost-query. If they want to **reduce** costs, use azure-cost-optimization.
 
 ## Key Differences from Query API
 

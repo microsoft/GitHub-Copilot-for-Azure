@@ -26,7 +26,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Show me cost breakdown by service for my subscription",
       "Query Azure spending for the last 30 days",
       "How much did I spend on storage last month?",
-      "Break down costs by resource group",
+      "Show me a cost breakdown by resource group",
       "Show me actual vs amortized cost for my subscription",
       "What are my top cost drivers in Azure?",
     ];
