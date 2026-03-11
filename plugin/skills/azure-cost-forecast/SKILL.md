@@ -66,6 +66,8 @@ Same scope URL patterns as the Query API:
 | Management Group | `/providers/Microsoft.Management/managementGroups/<mg-id>` |
 | Billing Account | `/providers/Microsoft.Billing/billingAccounts/<billing-account-id>` |
 
+> 💡 **Tip:** These are scope paths only — not complete URLs. Combine with the API endpoint and version: `{scope}/providers/Microsoft.CostManagement/forecast?api-version=2023-11-01`
+
 ### Step 2: Choose Report Type
 
 `ActualCost` is most common for forecasting. `AmortizedCost` for reservation/savings plan projections.
@@ -79,7 +81,7 @@ Same scope URL patterns as the Query API:
 - Minimum 28 days of historical cost data required for forecast to work
 - Maximum forecast period: 10 years
 
-> 📋 **Full rules:** [Guardrails Reference](./references/guardrails.md)
+> **Full rules:** [Guardrails Reference](./references/guardrails.md)
 
 ### Step 4: Configure Dataset
 
@@ -155,21 +157,21 @@ The response includes a `CostStatus` column:
 | `includeFreshPartialCost` | Requires `includeActualCost: true` |
 | Monthly + includeActualCost | Requires explicit `timePeriod` |
 
-> 📋 **Full details:** [Guardrails Reference](./references/guardrails.md)
+> **Full details:** [Guardrails Reference](./references/guardrails.md)
 
 ## Error Handling
 
 | Status | Error | Remediation |
 |--------|-------|-------------|
-| 400 | Can't forecast on the past | Ensure `to` date is in the future. Do not retry. |
-| 400 | Missing dataset | Add required `dataset` field. Do not retry. |
-| 400 | Invalid dependency | Set `includeActualCost: true` when using `includeFreshPartialCost`. Do not retry. |
-| 403 | Forbidden | Needs **Cost Management Reader** role on scope. Do not retry. |
-| 424 | Bad training data | Insufficient history; falls back to actual costs if available. Do not retry. |
-| 429 | Rate limited | Retry after `Retry-After` header value. **Max 3 retries.** |
-| 503 | Service unavailable | Do not retry. Check [Azure Status](https://status.azure.com). |
+| 400 | Can't forecast on the past | Ensure `to` date is in the future. |
+| 400 | Missing dataset | Add required `dataset` field. |
+| 400 | Invalid dependency | Set `includeActualCost: true` when using `includeFreshPartialCost`. |
+| 403 | Forbidden | Needs **Cost Management Reader** role on scope. |
+| 424 | Bad training data | Insufficient history; falls back to actual costs if available. |
+| 429 | Rate limited | Retry after the `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header value. **Max 3 retries.** |
+| 503 | Service unavailable | Check [Azure Status](https://status.azure.com). |
 
-> 📋 **Full details:** [Error Handling Reference](./references/error-handling.md)
+> **Full details:** [Error Handling Reference](./references/error-handling.md)
 
 ## Examples
 
@@ -197,4 +199,4 @@ The response includes a `CostStatus` column:
 
 > 💡 **Tip:** Set `from` to the first of the month to see actual costs so far alongside the forecast for remaining days.
 
-📋 More examples: [references/examples.md](./references/examples.md)
+More examples: [references/examples.md](./references/examples.md)

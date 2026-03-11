@@ -59,6 +59,8 @@ Identify the Azure scope for the cost query. The scope defines the cost boundary
 | Billing Account | `/providers/Microsoft.Billing/billingAccounts/<billing-account-id>` |
 | Billing Profile | `/providers/Microsoft.Billing/billingAccounts/<billing-account-id>/billingProfiles/<billing-profile-id>` |
 
+> 💡 **Tip:** These are scope paths only — not complete URLs. Combine with the API endpoint and version: `{scope}/providers/Microsoft.CostManagement/query?api-version=2023-11-01`
+
 ### Step 2: Choose Report Type
 
 | Type | Description |
@@ -160,12 +162,12 @@ See [guardrails.md](./references/guardrails.md) for the complete guardrails refe
 
 | HTTP Status | Error | Remediation |
 |-------------|-------|-------------|
-| 400 | Invalid request body | Check schema, date ranges, and dimension compatibility. Do not retry. |
-| 401 | Unauthorized | Verify authentication (`az login`). Do not retry. |
-| 403 | Forbidden | Ensure Cost Management Reader role on scope. Do not retry. |
-| 404 | Scope not found | Verify scope URL and resource IDs. Do not retry. |
-| 429 | Too many requests | Retry after `Retry-After` header value. **Max 3 retries.** |
-| 503 | Service unavailable | Do not retry. Check [Azure Status](https://status.azure.com). |
+| 400 | Invalid request body | Check schema, date ranges, and dimension compatibility. |
+| 401 | Unauthorized | Verify authentication (`az login`). |
+| 403 | Forbidden | Ensure Cost Management Reader role on scope. |
+| 404 | Scope not found | Verify scope URL and resource IDs. |
+| 429 | Too many requests | Retry after the `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header value. **Max 3 retries.** |
+| 503 | Service unavailable | Check [Azure Status](https://status.azure.com). |
 
 See [error-handling.md](./references/error-handling.md) for detailed error handling including rate limit headers and retry strategies.
 

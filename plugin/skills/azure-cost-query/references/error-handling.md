@@ -11,7 +11,7 @@ Detailed error handling reference for the Cost Management Query API.
 | 403 | `Forbidden` | Insufficient permissions on the target scope. User lacks Cost Management Reader or equivalent role. | Assign `Cost Management Reader` or `Cost Management Contributor` role on the scope. |
 | 404 | `NotFound` | Scope does not exist, subscription not found, or resource group does not exist. | Verify the scope URL. Confirm the subscription ID and resource group name are correct. |
 | 429 | `TooManyRequests` | Rate limit exceeded. QPU, entity, or tenant throttling triggered. | Retry after the duration specified in the `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header. |
-| 503 | `ServiceUnavailable` | Cost Management service is temporarily unavailable. | Retry after 30 seconds. If persistent, check [Azure Status](https://status.azure.com). |
+| 503 | `ServiceUnavailable` | Cost Management service is temporarily unavailable. | Check [Azure Status](https://status.azure.com) for service health. |
 
 ## Common Error Scenarios
 
