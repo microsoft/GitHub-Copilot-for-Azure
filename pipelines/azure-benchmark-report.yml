@@ -3,11 +3,11 @@ parameters:
   displayName: 'Build version to download'
   type: string
   default: 'latestFromBranch'
-  options:
+  values:
   - latestFromBranch
   - specific
 - name: buildVersionDetail
-  displayName: 'Build version detail'
+  displayName: 'Build version detail (branch name or build ID)'
   type: string
   default: 'main'
 
@@ -56,6 +56,6 @@ stages:
 
         $runIdsPath = Join-Path $inputPath 'run_ids.json'
         $runIds = Get-Content -Path $runIdsPath | ConvertFrom-Json
-        
+
         Write-Host "Run IDs: $($runIds -join ',')"
       displayName: 'List downloaded artifacts'
