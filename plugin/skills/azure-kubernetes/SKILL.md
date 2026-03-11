@@ -54,8 +54,8 @@ If the user is unsure, use safe defaults.
 ## Workflow
 
 ### 1. Cluster Type
-- **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by NAP.
-- **AKS Standard**: Use if you need full control over cluster configuration, will require additional overhead to setup and manage.
+- **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by Node Auto-Provisioning (NAP).
+- **AKS Standard**: Use if you need full control over cluster configuration, will require additional overhead to set up and manage.
 
 ### 2. Networking (Pod IP, Egress, Ingress, Dataplane)
 
