@@ -17,9 +17,13 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { isSkillInvoked, expectFiles, softCheckSkill, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
+import { isSkillInvoked, expectFiles } from "../utils/evaluate";
 import * as path from "path";
 import * as fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SKILL_NAME = "azure-upgrade";
 
@@ -34,7 +38,6 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 const upgradeTestTimeoutMs = 2700000;
-const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
