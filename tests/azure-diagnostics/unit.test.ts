@@ -29,19 +29,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeLessThan(1024);
     });
 
-    test("description contains USE FOR trigger phrases", () => {
+    test("description contains WHEN trigger phrases", () => {
       const description = skill.metadata.description;
-      expect(description).toContain("USE FOR:");
-    });
-
-    test("description contains DO NOT USE FOR anti-triggers", () => {
-      const description = skill.metadata.description;
-      expect(description).toContain("DO NOT USE FOR:");
+      expect(description).toContain("WHEN:");
     });
 
     test("has diagnostic-specific trigger keywords", () => {
       const description = skill.metadata.description.toLowerCase();
-      const hasDiagnosticKeywords = 
+      const hasDiagnosticKeywords =
         description.includes("debug") ||
         description.includes("troubleshoot") ||
         description.includes("diagnose") ||

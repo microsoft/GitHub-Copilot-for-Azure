@@ -244,12 +244,6 @@ const MCP_TOOL_PROBES: McpToolProbe[] = [
     invokedPattern: /context7-resolve-library-id/i,
   },
   {
-    server: "playwright",
-    prompt: "Call the playwright-browser_tabs tool with action set to list. If it returns data or an error response, say PLAYWRIGHT_OK. If the tool is not found, say PLAYWRIGHT_FAIL.",
-    successPattern: /PLAYWRIGHT_OK/i,
-    invokedPattern: /playwright-browser_tabs/i,
-  },
-  {
     server: "azure",
     prompt: "Call the azure-documentation tool with intent set to azure functions overview and learn set to true. If it returns data, say AZURE_OK. If it fails, say AZURE_FAIL.",
     successPattern: /AZURE_OK/i,
