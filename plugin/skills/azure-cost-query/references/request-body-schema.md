@@ -1,6 +1,6 @@
 # Cost Management Query API — Request Body Schema
 
-Complete JSON schema documentation for the [Cost Management Query API](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage).
+Schema for the [Cost Management Query API](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage).
 
 ## Request Body Structure
 
@@ -8,123 +8,53 @@ Complete JSON schema documentation for the [Cost Management Query API](https://l
 {
   "type": "<report-type>",
   "timeframe": "<timeframe>",
-  "timePeriod": {
-    "from": "2024-01-01T00:00:00Z",
-    "to": "2024-01-31T23:59:59Z"
-  },
+  "timePeriod": { "from": "2024-01-01T00:00:00Z", "to": "2024-01-31T23:59:59Z" },
   "dataset": {
     "granularity": "<granularity>",
-    "aggregation": {
-      "<alias>": {
-        "name": "<column-name>",
-        "function": "<aggregation-function>"
-      }
-    },
-    "grouping": [
-      {
-        "type": "<column-type>",
-        "name": "<column-name>"
-      }
-    ],
-    "filter": {
-      "<filter-expression>"
-    },
-    "sorting": [
-      {
-        "direction": "<sort-direction>",
-        "name": "<column-name>"
-      }
-    ]
+    "aggregation": { "<alias>": { "name": "<column>", "function": "<function>" } },
+    "grouping": [{ "type": "<column-type>", "name": "<column-name>" }],
+    "filter": { "<filter-expression>" },
+    "sorting": [{ "direction": "<direction>", "name": "<column>" }]
   }
 }
 ```
 
-## Field Reference
-
-### Top-Level Fields
+## Top-Level Fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | Report type enum. Determines cost calculation method. |
-| `timeframe` | string | Yes | Predefined or custom time window for the query. |
-| `timePeriod` | object | Conditional | Required when `timeframe` is `Custom`. Contains `from` and `to` ISO 8601 dates. |
-| `dataset` | object | Yes | Defines granularity, aggregation, grouping, filtering, and sorting. |
+| `type` | string | Yes | `ActualCost`, `AmortizedCost`, or `Usage` |
+| `timeframe` | string | Yes | Predefined or `Custom` time window |
+| `timePeriod` | object | Conditional | Required when `timeframe` is `Custom`. Contains `from`/`to` ISO 8601 dates. |
+| `dataset` | object | Yes | Defines granularity, aggregation, grouping, filtering, sorting |
 
-### ReportType Enum
+### Timeframe Values
 
-| Value | Description |
-|-------|-------------|
-| `ActualCost` | Actual billed costs including purchases (reservations, marketplace). Shows costs as they appear on invoices. |
-| `AmortizedCost` | Reservation and savings plan costs spread evenly across usage period. Useful for chargeback and showback. |
-| `Usage` | Usage-based data. Shows consumption records without purchase amortization. |
-
-### Timeframe Enum
-
-| Value | Description |
-|-------|-------------|
-| `WeekToDate` | Start of current week through today. |
-| `MonthToDate` | Start of current month through today. |
-| `BillingMonthToDate` | Start of current billing month through today. |
-| `YearToDate` | Start of current year through today. |
-| `TheLastWeek` | Previous full week (Mon–Sun). |
-| `TheLastMonth` | Previous full calendar month. |
-| `TheLastBillingMonth` | Previous full billing month. |
-| `TheLastYear` | Previous full calendar year. |
-| `TheLast7Days` | Rolling 7-day window ending today. |
-| `TheLast3Months` | Rolling 3-month window ending today. |
-| `Custom` | Custom date range. Requires `timePeriod` with `from` and `to`. |
-
-### timePeriod Object
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `from` | string (ISO 8601) | Yes | Start date (inclusive). |
-| `to` | string (ISO 8601) | Yes | End date (inclusive). |
+`WeekToDate` · `MonthToDate` · `BillingMonthToDate` · `YearToDate` · `TheLastWeek` · `TheLastMonth` · `TheLastBillingMonth` · `TheLastYear` · `TheLast7Days` · `TheLast3Months` · `Custom`
 
 ## Dataset Fields
 
 ### Granularity
 
-| Value | Description | Max Range |
-|-------|-------------|-----------|
-| `None` | Aggregated total for the entire time period. No date breakdown. | 12 months |
-| `Daily` | Day-by-day cost breakdown. Best for trend analysis over short periods. | 31 days |
-| `Monthly` | Month-by-month cost breakdown. Best for longer-term trends. | 12 months |
+| Value | Max Range | Description |
+|-------|-----------|-------------|
+| `None` | 12 months | Aggregated total, no date breakdown |
+| `Daily` | 31 days | Day-by-day breakdown |
+| `Monthly` | 12 months | Month-by-month breakdown |
 
 ### Aggregation
 
-Aggregation defines which numeric columns to aggregate and how.
-
 ```json
-"aggregation": {
-  "totalCost": {
-    "name": "Cost",
-    "function": "Sum"
-  }
-}
+"aggregation": { "totalCost": { "name": "Cost", "function": "Sum" } }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `<alias>` | string (key) | Yes | Output column alias (e.g., `totalCost`). |
-| `name` | string | Yes | Source column name (e.g., `Cost`, `PreTaxCost`, `UsageQuantity`). |
-| `function` | string | Yes | Aggregation function to apply. |
-
-#### AggregationFunction Enum
-
-| Value | Description |
-|-------|-------------|
-| `Sum` | Sum of values. Most common for cost queries. |
-| `Count` | Count of records. |
-| `Min` | Minimum value. |
-| `Max` | Maximum value. |
-| `Avg` | Average value. |
-
-> ⚠️ **Warning:** For standard cost queries, only `Sum` is supported as the aggregation function. Other functions may return errors depending on the scope and API version.
+| Field | Required | Description |
+|-------|----------|-------------|
+| `<alias>` (key) | Yes | Output column alias (e.g., `totalCost`) |
+| `name` | Yes | Source column: `Cost`, `PreTaxCost`, or `UsageQuantity` |
+| `function` | Yes | `Sum` (only supported function for cost queries) |
 
 ### Grouping
-
-Groups results by one or more dimensions or tags.
 
 ```json
 "grouping": [
@@ -133,19 +63,8 @@ Groups results by one or more dimensions or tags.
 ]
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `type` | string | Yes | Column type: `Dimension` or `TagKey`. |
-| `name` | string | Yes | Column name or tag key to group by. |
-
-#### ColumnType Enum
-
-| Value | Description |
-|-------|-------------|
-| `Dimension` | Built-in cost dimension (e.g., `ServiceName`, `ResourceGroupName`). |
-| `TagKey` | Azure resource tag key (e.g., `Environment`, `CostCenter`). |
-
-> ⚠️ **Warning:** Maximum of 2 GroupBy dimensions per query. No duplicate columns allowed.
+- `type`: `Dimension` (built-in) or `TagKey` (resource tag)
+- Maximum **2** GroupBy dimensions per query. No duplicates.
 
 ### Filter
 
