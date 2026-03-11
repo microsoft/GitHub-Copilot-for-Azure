@@ -43,7 +43,7 @@ VMSS supports two orchestration modes. **Flexible** is recommended for all new w
 | Max instances            | 1,000                  | 1,000            |
 | Spot instances           | ✅ Yes                  | ✅ Yes         |
 | Single-instance VMSS     | ✅ Yes                  | ❌ No             |
-| VM model updates         | Automatic, Manual, Rolling |Automatic, Manual, Rolling        |
+| VM model updates         | Automatic, Manual, Rolling | Automatic, Manual, Rolling       |
 
 > **Warning:** Orchestration mode cannot be changed after creation. Always recommend Flexible unless the user has a specific Uniform requirement.
 
