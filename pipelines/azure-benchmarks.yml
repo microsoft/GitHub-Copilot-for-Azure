@@ -43,6 +43,12 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+        scriptArguments: >
+          -OutputPath "$(Build.ArtifactStagingDirectory)"
 
     - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
       displayName: 'Display Run IDs'
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-run-ids
+      displayName: 'Publish benchmark run IDs artifact'

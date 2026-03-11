@@ -1,0 +1,62 @@
+parameters:
+- name: buildVersionToDownload
+  displayName: 'Build version to download'
+  type: string
+  default: 'latestFromBranch'
+  values:
+  - latestFromBranch
+  - specific
+- name: buildVersionDetail
+  displayName: 'Build version detail (branch name or build ID)'
+  type: string
+  default: 'main'
+
+trigger: none
+pr: none
+
+# schedules:
+# - cron: '0 8 * * *'
+#   displayName: 'Daily 8am UTC'
+#   branches:
+#     include:
+#     - main
+#   always: true
+
+stages:
+- stage: ReportBenchmark
+  displayName: 'Report Copilot Benchmarks'
+  pool:
+    name: $(LINUXPOOL)
+    image: $(LINUXVMIMAGE)
+    os: linux
+  variables:
+  - template: /pipelines/templates/variables/image.yml
+  - template: /pipelines/templates/variables/globals.yml
+  jobs:
+  - job: ReportBenchmark
+    displayName: 'Report Copilot Benchmarks'
+    steps:
+
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download benchmark results artifact'
+      inputs:
+        buildType: specific
+        project: 'internal'
+        definition: 8091
+        buildVersionToDownload: ${{ parameters.buildVersionToDownload }}
+        ${{ if eq(parameters.buildVersionToDownload, 'specific') }}:
+          runId: ${{ parameters.buildVersionDetail }}
+        ${{ else }}:
+          branchName: ${{ parameters.buildVersionDetail }}
+        artifactName: 'benchmark-run-ids'
+        targetPath: '$(Pipeline.Workspace)/benchmark-run-ids'
+
+    - pwsh: |
+        $inputPath = '$(Pipeline.Workspace)/benchmark-run-ids'
+        ls $inputPath
+
+        $runIdsPath = Join-Path $inputPath 'run_ids.json'
+        $runIds = Get-Content -Path $runIdsPath | ConvertFrom-Json
+
+        Write-Host "Run IDs: $($runIds -join ',')"
+      displayName: 'List downloaded artifacts'
