@@ -26,7 +26,7 @@
 #>
 
     param(
-        [string]$Benchmark = "azure.list_subscription",
+        [string]$Benchmark = "azure",
         [string[]]$Model = @(
             "claude-sonnet-4.5-autodev-test",
             "claude-opus-4.5-autodev-test",
