@@ -12,9 +12,9 @@
 import {
   useAgentRunner,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason
+  getIntegrationSkipReason,
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { shouldEarlyTerminateForSkillInvocation, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-compliance";
 const RUNS_PER_PROMPT = 5;
@@ -38,7 +38,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Run azqr to check my Azure subscription for compliance against best practices"
+            prompt: "Run azqr to check my Azure subscription for compliance against best practices",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -56,7 +57,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Show me expired certificates and secrets in my Azure Key Vault"
+            prompt: "Show me expired certificates and secrets in my Azure Key Vault",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -74,7 +76,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Run a full compliance audit on my Azure environment including resource best practices and Key Vault expiration checks"
+            prompt: "Run a full compliance audit on my Azure environment including resource best practices and Key Vault expiration checks",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -92,7 +95,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Check my Azure subscription for orphaned resources and compliance issues"
+            prompt: "Check my Azure subscription for orphaned resources and compliance issues",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

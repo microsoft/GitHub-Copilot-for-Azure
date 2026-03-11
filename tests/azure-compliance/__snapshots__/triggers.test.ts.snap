@@ -2,7 +2,7 @@
 
 exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Comprehensive Azure compliance and security auditing capabilities including best practices assessment, Key Vault expiration monitoring, and resource configuration validation. WHEN: compliance scan, security audit, azqr, Azure best practices, Key Vault expiration check, compliance assessment, resource review, configuration validation, expired certificates, expiring secrets, orphaned resources, policy compliance, security posture evaluation.",
+  "description": "Comprehensive Azure compliance and security auditing capabilities including best practices assessment, Key Vault expiration monitoring, and resource configuration validation. WHEN: compliance scan, security audit, BEFORE running azqr (compliance cli tool), Azure best practices, Key Vault expiration check, compliance assessment, resource review, configuration validation, expired certificates, expiring secrets, orphaned resources, policy compliance, security posture evaluation.",
   "extractedKeywords": [
     "assessment",
     "audit",
@@ -10,6 +10,7 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill descri
     "authentication",
     "azqr",
     "azure",
+    "before",
     "best",
     "capabilities",
     "certificates",
@@ -34,9 +35,11 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill descri
     "resource",
     "resources",
     "review",
+    "running",
     "scan",
     "secrets",
     "security",
+    "tool",
     "validation",
     "vault",
     "when",
@@ -53,6 +56,7 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill keywor
   "authentication",
   "azqr",
   "azure",
+  "before",
   "best",
   "capabilities",
   "certificates",
@@ -77,9 +81,11 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill keywor
   "resource",
   "resources",
   "review",
+  "running",
   "scan",
   "secrets",
   "security",
+  "tool",
   "validation",
   "vault",
   "when",
