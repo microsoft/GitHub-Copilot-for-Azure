@@ -17,9 +17,9 @@ description: "Plan, create, and configure production-ready Azure Kubernetes Serv
 | Property | Value |
 |----------|-------|
 | Best for | AKS cluster planning and Day-0 decisions |
-| MCP Tools | `mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations` |
-| CLI | `az aks create`, `az aks show` |
-| Related skills | azure-diagnostics (troubleshooting), azure-deploy (app deployment) |
+| MCP Tools | `mcp_azure_mcp_aks` |
+| CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
+| Related skills | azure-diagnostics (troubleshooting AKS), azure-deploy (app deployment) |
 
 ## When to Use This Skill
 Activate this skill when user wants to:
