@@ -27,10 +27,6 @@ if (skipTests && skipReason) {
   console.log(`⏭️  Skipping integration tests: ${skipReason}`);
 }
 
-if (isFastLocalMode) {
-  console.log(`⚡ Fast local mode enabled: RUNS_PER_PROMPT=${RUNS_PER_PROMPT}`);
-}
-
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
