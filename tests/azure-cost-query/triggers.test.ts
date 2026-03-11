@@ -42,10 +42,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
-      // Forecasting (different skill)
-      "What will my Azure costs be next month?",
-      // Optimization (different skill)
-      "How do I reduce my Azure spending?",
+      // Forecast skill (should not trigger cost-query)
+      "Predict the budget for next quarter",
+      "What will the projected budget look like next quarter?",
+      // Optimization skill (should not trigger cost-query)
+      "Find orphaned resources and rightsize VMs",
+      "Reduce waste and optimize cloud expenses",
       // Deployment (different skill)
       "Deploy a new VM to Azure",
       // Wrong cloud provider

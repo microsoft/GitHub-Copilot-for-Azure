@@ -29,20 +29,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeLessThan(1000);
     });
 
-    test("description contains trigger phrases", () => {
-      const description = skill.metadata.description.toLowerCase();
-      const hasTriggerPhrases =
-        description.includes("use this") ||
-        description.includes("use when") ||
-        description.includes("helps") ||
-        description.includes("activate") ||
-        description.includes("trigger");
-      expect(hasTriggerPhrases).toBe(true);
-    });
-
     test("description contains forecast-related keywords", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toMatch(/forecast|predict|project|estimate|future/);
+    });
+
+    test("description mentions key use cases", () => {
+      const description = skill.metadata.description.toLowerCase();
+      expect(description).toContain("when:");
+      expect(description).toMatch(/forecast|predict|projected|estimate/);
+    });
+
+    test("description clarifies what NOT to use it for", () => {
+      const description = skill.metadata.description.toLowerCase();
+      expect(description).toMatch(/do not\s+use for/);
+      expect(description).toMatch(/historical.*azure-cost-query|optimization.*azure-cost-optimization/);
     });
   });
 
