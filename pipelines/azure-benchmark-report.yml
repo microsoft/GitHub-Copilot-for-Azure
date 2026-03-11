@@ -41,6 +41,7 @@ stages:
       displayName: 'Download benchmark results artifact'
       inputs:
         buildType: specific
+        project: 'internal'
         definition: 8091
         buildVersionToDownload: ${{ parameters.buildVersionToDownload }}
         ${{ if eq(parameters.buildVersionToDownload, 'specific') }}:
