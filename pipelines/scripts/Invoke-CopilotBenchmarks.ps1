@@ -192,8 +192,12 @@
         Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
     }
 
-    New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
-    $jsonPath = Join-Path $OutputPath "run_ids.json"
-    $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
+    if ($OutputPath) {
+        New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
+        $jsonPath = Join-Path $OutputPath "run_ids.json"
 
+        Write-Host "Saving run IDs to $jsonPath"
+        $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
+    }
+    
     Write-Host "`nAll $($Model.Count) model runs completed successfully."
