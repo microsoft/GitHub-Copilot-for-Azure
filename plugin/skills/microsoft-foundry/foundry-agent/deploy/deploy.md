@@ -288,7 +288,7 @@ Save evaluator definitions, local datasets, and evaluation outputs under `.found
   results/
 ```
 
-Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Seed at least one `P0` smoke test case after deployment.
+Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). For simplicity, seed exactly one `P0` smoke test case after deployment.
 
 ### 7. Prompt User
 
