@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.0.6"
 ---
 
 # Azure Prepare
@@ -103,9 +103,10 @@ Execute the approved plan. Update `.azure/plan.md` status after each step.
 | 2 | **Confirm Azure Context** — Detect and confirm subscription + location | [Azure Context](references/azure-context.md) |
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
-| 5 | **Functional Verification** — Verify the app works (UI + backend), locally if possible | [functional-verification.md](references/functional-verification.md) |
-| 6 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
-| 7 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
+| 5 | **Verify Role Assignments** — Confirm RBAC roles are correct and sufficient for all resources | [role-verification.md](references/role-verification.md) |
+| 6 | **Functional Verification** — Verify the app works (UI + backend), locally if possible | [functional-verification.md](references/functional-verification.md) |
+| 7 | **Update Plan** — Mark steps complete, set status to `Ready for Validation` | `.azure/plan.md` |
+| 8 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. | — |
 
 ---
 
