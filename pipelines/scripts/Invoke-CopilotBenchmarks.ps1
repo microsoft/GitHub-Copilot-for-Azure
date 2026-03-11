@@ -33,7 +33,8 @@
             "gpt-5.2-codex-autodev-test",
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
-        )
+        ),
+        [string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
@@ -190,5 +191,9 @@
     if ($pipelineRun -and $runIds.Count -gt 0) {
         Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
     }
+
+    New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
+    $jsonPath = Join-Path $OutputPath "run_ids.json"
+    $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
 
     Write-Host "`nAll $($Model.Count) model runs completed successfully."
