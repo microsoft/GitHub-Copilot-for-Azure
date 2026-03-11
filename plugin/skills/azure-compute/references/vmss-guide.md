@@ -39,9 +39,9 @@ VMSS supports two orchestration modes. **Flexible** is recommended for all new w
 | Mix VM sizes in one set  | ✅ Yes                  | ❌ No             |
 | Add existing VMs to set  | ✅ Yes                  | ❌ No             |
 | Availability Zone spread | ✅ Automatic            | ✅ Automatic      |
-| Fault domain control     | ✅ Yes                  | ✅ Yes         |
-| Max instances            | 1,000                  | 1,000            |
-| Spot instances           | ✅ Yes                  | ✅ Yes         |
+| Fault domain control     | ✅ Yes                  | ✅ Yes            |
+| Max instances            | 1,000                   | 1,000              |
+| Spot instances           | ✅ Yes                  | ✅ Yes            |
 | Single-instance VMSS     | ✅ Yes                  | ❌ No             |
 | VM model updates         | Automatic, Manual, Rolling | Automatic, Manual, Rolling       |
 
