@@ -14,9 +14,9 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -46,6 +46,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Run azd up to deploy my already-prepared app to Azure",
             nonInteractive: true,
             followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -66,6 +67,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
             nonInteractive: true,
             followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -86,6 +88,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
             nonInteractive: true,
             followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -115,7 +118,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -136,7 +140,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -158,10 +163,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus region.",
+        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -179,10 +185,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus region.",
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -207,7 +214,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -228,7 +236,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -249,7 +258,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -273,7 +283,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -303,7 +314,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -324,7 +336,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -349,7 +362,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -370,7 +384,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -391,10 +406,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus region.",
+        prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -412,10 +428,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setup: async (workspace: string) => {
           workspacePath = workspace;
         },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus region.",
+        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -439,7 +456,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -460,7 +478,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -481,7 +500,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -505,7 +525,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -526,7 +547,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -547,7 +569,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true
+        preserveWorkspace: true,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -579,6 +602,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use standard SKUs",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -609,6 +633,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -638,6 +663,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -667,6 +693,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${CLIENT_APPS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -696,6 +723,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${CONTAINER_BUILD_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -725,6 +753,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${CUSTOM_RESOURCES_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -754,6 +783,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${DATABASE_CONTAINERS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -783,6 +813,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${HEALTH_CHECKS_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -812,6 +843,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${ORLEANS_VOTING_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -842,6 +874,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use standard SKUs.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -871,6 +904,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${ASPIRE_JAVASCRIPT_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -900,6 +934,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${ASPIRE_NODE_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -929,6 +964,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Use standard SKUs.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
@@ -958,6 +994,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           `The app can be found under ${ASPIRE_PYTHON_SPARSE_PATH}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
+        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
       });
 
       softCheckDeploySkills(agentMetadata);
