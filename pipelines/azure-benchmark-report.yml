@@ -44,7 +44,7 @@ stages:
         definition: 8091
         buildVersionToDownload: ${{ parameters.buildVersionToDownload }}
         ${{ if eq(parameters.buildVersionToDownload, 'specific') }}:
-          runId : ${{ parameters.buildVersionDetail }}
+          runId: ${{ parameters.buildVersionDetail }}
         ${{ else }}:
           branchName: ${{ parameters.buildVersionDetail }}
         artifactName: 'benchmark-run-ids'
