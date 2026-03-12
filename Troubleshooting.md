@@ -89,7 +89,7 @@ If the issue persists after following these steps, you may want to inspect the i
    - If the executable runs when manually started in the terminal, or you are not running Windows, collect the information in "Collecting Information for troubleshooting" (above).
    - File an issue in this repo with the collected information.
 
-### MCP Server Authorization Failure
+### Foundry MCP server authorization failure
 
 **Issue**: When launching Copilot CLI, you see an authorization failure in the browser with the message:
 
@@ -103,17 +103,10 @@ This can occur when stale or mismatched OAuth metadata files are cached on disk 
 
 **Resolution**:
 1. **Check for stale OAuth metadata files**:
-   - Open a terminal and check whether the directory `~/.copilot/mcp-oauth-config` exists.
+   - Check whether the directory `~/.copilot/mcp-oauth-config` exists.
 
 2. **Delete the cached metadata**:
-   - If the directory exists, delete it:
-     ```bash
-     rm -rf ~/.copilot/mcp-oauth-config
-     ```
-   - On Windows (PowerShell):
-     ```powershell
-     Remove-Item -Recurse -Force "$env:USERPROFILE\.copilot\mcp-oauth-config"
-     ```
+   - If the directory exists, delete it.
 
 3. **Relaunch Copilot CLI**:
    - After deleting the directory, restart Copilot CLI and attempt to authenticate again. The authorization issue should be resolved.
