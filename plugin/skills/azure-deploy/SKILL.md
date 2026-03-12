@@ -4,7 +4,7 @@ description: "Execute Azure deployments for ALREADY-PREPARED applications that h
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.0.7"
 ---
 
 # Azure Deploy
@@ -83,6 +83,7 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
 | `mcp_azure_mcp_azd` | Execute AZD commands |
+| `azure__role` | List role assignments for live RBAC verification (step 8) |
 
 ## References
 
