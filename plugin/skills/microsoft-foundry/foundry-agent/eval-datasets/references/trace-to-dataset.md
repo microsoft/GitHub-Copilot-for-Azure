@@ -368,12 +368,13 @@ az storage blob upload \
 
 ### 5d. Register Dataset in Foundry
 
-Use `evaluation_dataset_create` with the blob URI and connection name:
+Use `evaluation_dataset_create` with the blob URI and the Azure Blob `connectionName` discovered in 5a or created in 5b. While `connectionName` can be optional in other MCP flows, include it in this workflow so the dataset is bound to the project-connected storage account:
 
 ```
 evaluation_dataset_create(
   projectEndpoint: "<project-endpoint>",
   datasetContentUri: "https://<storage-account>.blob.core.windows.net/datasets/<file>.jsonl",
+  connectionName: "datasets-storage",
   datasetName: "<agent-name>-<environment>-<source>",
   datasetVersion: "<N>"
 )

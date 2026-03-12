@@ -36,15 +36,15 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 ## Before Starting — Resolve App Insights Connection
 
 1. Resolve the target agent root and environment from `.foundry/agent-metadata.yaml`.
-2. Check `environments.<env>.observability.applicationInsightsConnectionString` or `applicationInsightsResourceId` in the metadata.
-3. If observability settings are missing, use `project_connection_list` to discover App Insights linked to the Foundry project, then persist the chosen resource back to the selected environment in `agent-metadata.yaml` before querying.
+2. Check `environments.<env>.observability.applicationInsightsConnectionString` or `environments.<env>.observability.applicationInsightsResourceId` in the metadata.
+3. If observability settings are missing, use `project_connection_list` to discover App Insights linked to the Foundry project, then persist the chosen resource back to `environments.<env>.observability` in `agent-metadata.yaml` before querying.
 4. Confirm the selected App Insights resource and environment with the user before querying.
 5. Use **`monitor_resource_log_query`** (Azure MCP tool) to execute KQL queries against the App Insights resource. This is preferred over delegating to the `azure-kusto` skill. Pass the App Insights resource ID and the KQL query directly.
 
-| Field | Purpose | Example |
-|-------|---------|---------|
-| `applicationInsightsConnectionString` | App Insights connection string | `InstrumentationKey=...;IngestionEndpoint=...` |
-| `applicationInsightsResourceId` | ARM resource ID | `/subscriptions/.../Microsoft.Insights/components/...` |
+| Metadata field | Purpose | Example |
+|----------------|---------|---------|
+| `environments.<env>.observability.applicationInsightsConnectionString` | App Insights connection string | `InstrumentationKey=...;IngestionEndpoint=...` |
+| `environments.<env>.observability.applicationInsightsResourceId` | ARM resource ID | `/subscriptions/.../Microsoft.Insights/components/...` |
 
 > ⚠️ **Always pass `subscription` explicitly** to Azure MCP tools like `monitor_resource_log_query` - they do not extract it from resource IDs.
 
