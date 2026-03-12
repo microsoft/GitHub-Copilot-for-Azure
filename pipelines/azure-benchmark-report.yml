@@ -51,12 +51,18 @@ stages:
         artifactName: 'benchmark-run-ids'
         targetPath: '$(Pipeline.Workspace)/benchmark-run-ids'
 
-    - pwsh: |
-        $inputPath = '$(Pipeline.Workspace)/benchmark-run-ids'
-        ls $inputPath
+    - script: npm install -g @github/copilot-cli
+      displayName: 'Install GitHub Copilot CLI'
 
-        $runIdsPath = Join-Path $inputPath 'run_ids.json'
-        $runIds = Get-Content -Path $runIdsPath | ConvertFrom-Json
-
-        Write-Host "Run IDs: $($runIds -join ',')"
-      displayName: 'List downloaded artifacts'
+    - task: AzureCLI@2
+      name: RunBenchmarks
+      displayName: 'Run Copilot Benchmarks script'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval'
+        addSpnToEnvironment: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-GenerateBenchmarkReport.ps1
+        scriptArguments: >
+          -InputPath "$(Pipeline.Workspace)/benchmark-run-ids"
+          -OutputPath "$(Build.ArtifactStagingDirectory)"

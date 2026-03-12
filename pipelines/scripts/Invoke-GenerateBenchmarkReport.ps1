@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs MSBench CLI and runs a Copilot Azure benchmark.
+    Installs MSBench CLI and generates benchmark reports for run IDs specified in run_ids.json.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
@@ -34,6 +34,7 @@
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
         ),
+        [string]$InputPath,
         [string]$OutputPath
     )
 
@@ -46,6 +47,18 @@
 
     if (!$Model -or $Model.Count -eq 0) {
         throw "Model parameter is required."
+    }
+
+    # --- Parse run IDs from input file if provided ---
+    Write-Host "Parsing run IDs from input path: $InputPath"
+    $inputRunIds = @()
+    if ($InputPath) {
+        $runIdsFile = Join-Path $InputPath 'run_ids.json'
+        if (!(Test-Path $runIdsFile)) {
+            throw "run_ids.json not found at $runIdsFile"
+        }
+        $inputRunIds = Get-Content -Path $runIdsFile -Raw | ConvertFrom-Json
+        Write-Host "Loaded run IDs from $runIdsFile: $($inputRunIds -join ',')"
     }
 
     $vaultName = "kv-msbench-eval-azuremcp"
@@ -136,7 +149,7 @@
         throw "git checkout failed with exit code $LASTEXITCODE"
     }
 
-    $targetDir = Join-Path $cloneDir "curation/benchmarks/azure"
+    $targetDir = Join-Path $cloneDir "curation/benchmarks/azure/report"
     if (!(Test-Path $targetDir)) {
         throw "Working directory '$targetDir' does not exist after clone."
     }
@@ -144,64 +157,46 @@
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
 
-    $failedModels = @()
-    $runIds = @()
-
-    foreach ($m in $Model) {
-        Write-Host "`n=== Running benchmark for model: $m ==="
-
-        $runArgs = @(
-            "run",
-            "--agent", "github-copilot-cli",
-            "--benchmark", $Benchmark,
-            "--model", $m,
-            "--env", "GITHUB_MCP_SERVER_TOKEN",
-            "--no-wait"
+    Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
+    $reportGenerationPrompt = "analyze msbench run: $($inputRunIds -join ', ')"
+    $copilotArgs = @(
+            "-p", $reportGenerationPrompt,
+            "--model", "claude-opus-4.6",
+            "--share", $OutputPath,
+            "--yolo"
         )
+    & 'copilot' @copilotArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "copilot report generation failed with exit code $LASTEXITCODE"
+    }
 
-        Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-        $cmdOutput = & 'msbench-cli' @runArgs 2>&1
-        $msbenchExitCode = $LASTEXITCODE
-        $cmdOutput | ForEach-Object { Write-Host $_ }
+    # Move generated reports to output path
+    $reportsDir = Join-Path $targetDir "reports"
+    $reportFiles = @()
+    if ((Test-Path $reportsDir) -and (Get-ChildItem -Path $reportsDir -Filter '*.md' -ErrorAction SilentlyContinue)) {
+        $reportFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
+        Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
+    } else {
+        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' -ErrorAction SilentlyContinue
+        Write-Host "Found $($reportFiles.Count) report(s) in $targetDir"
+    }
 
-        if ($msbenchExitCode -ne 0) {
-            Write-Warning "msbench-cli run failed for model '$m' with exit code $msbenchExitCode"
-            $failedModels += $m
-        } else {
-            # Extract run_id from output lines like "run_id=22914845268"
-            $foundRunId = $false
-            foreach ($line in $cmdOutput) {
-                if ($line -match 'run_id=(\d+)') {
-                    $runId = $Matches[1]
-                    Write-Host "Extracted run_id=$runId for model $m"
-                    $runIds += $runId
-                    $foundRunId = $true
-                    break
-                }
-            }
-            if (-not $foundRunId) {
-                Write-Warning "No run_id found in output for model '$m'"
-                $failedModels += $m
-            }
+    if ($reportFiles.Count -gt 0) {
+        foreach ($report in $reportFiles) {
+            $destination = Join-Path $OutputPath $report.Name
+            Move-Item -Path $report.FullName -Destination $destination -Force
+            Write-Host "Moved report to $destination"
         }
+    } else {
+        Write-Warning "No generated report (.md) files found in $reportsDir or $targetDir"
     }
 
-    if ($failedModels.Count -gt 0) {
-        throw "msbench-cli run failed for models: $($failedModels -join ', ')"
+    if ($OutputPath) {
+        New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
+        $jsonPath = Join-Path $OutputPath "run_ids.json"
+
+        Write-Host "Saving run IDs to $jsonPath"
+        $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
     }
-
-    # Set pipeline output variable with collected run IDs
-    $runIds = $runIds | Select-Object -Unique
-    $runIdsValue = $runIds -join ','
-    Write-Host "Collected run IDs: $runIdsValue"
-    if ($pipelineRun -and $runIds.Count -gt 0) {
-        Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
-    }
-
-    New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
-    $jsonPath = Join-Path $OutputPath "run_ids.json"
-
-    Write-Host "Saving run IDs to $jsonPath"
-    $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
     
     Write-Host "`nAll $($Model.Count) model runs completed successfully."
