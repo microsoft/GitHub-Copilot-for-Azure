@@ -1,6 +1,5 @@
 # This is a CODEOWNERS file for the GitHub-Copilot-for-Azure repository.
 # Each line is a file pattern followed by one or more code owners.
-# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owners for everything in the repo
 * @microsoft/ghcp4a
