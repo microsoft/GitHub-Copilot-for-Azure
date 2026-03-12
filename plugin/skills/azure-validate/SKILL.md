@@ -44,19 +44,11 @@ metadata:
 | 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/deployment-plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/deployment-plan.md` |
 | 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
-<<<<<<< HEAD
-| 5 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
-| 6 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 7 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
-| 8 | **Deploy** — Invoke **azure-deploy** skill | — |
-=======
 | 5 | **Static Role Verification** — Review Bicep/Terraform for correct RBAC role assignments in code | [role-verification.md](references/role-verification.md) |
-| 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
+| 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
 | 7 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
+| 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
 | 9 | **Deploy** — Invoke **azure-deploy** skill | — |
->>>>>>> 0295ebe (refactor: move role verification across prepare/validate/deploy skills)
-
 > **⛔ VALIDATION AUTHORITY**
 >
 > This skill is the **ONLY** authorized way to set plan status to `Validated`. You MUST:
