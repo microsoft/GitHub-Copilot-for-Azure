@@ -1,6 +1,6 @@
-id: plan-aks-microservices
+id: invoke-simple-plan
 inputs:
-  prompt: "We're migrating our e-commerce platform to Azure. It consists of 5 microservices: product catalog, order management, user authentication, payment processing, and notifications. We want to deploy on AKS with proper networking, monitoring, and a managed database. Plan the Azure infrastructure for this system. Assume all defaults, auto-approve the plan, and generate Bicep."
+  prompt: "Plan Azure infrastructure for a web app with a database and a Redis cache. Assume all defaults, auto-approve the plan, and generate Bicep."
 graders:
   - type: skill_invocation
     name: skill_invoked

@@ -1,6 +1,6 @@
-id: plan-aks-microservices
+id: plan-three-tier-bicep
 inputs:
-  prompt: "We're migrating our e-commerce platform to Azure. It consists of 5 microservices: product catalog, order management, user authentication, payment processing, and notifications. We want to deploy on AKS with proper networking, monitoring, and a managed database. Plan the Azure infrastructure for this system. Assume all defaults, auto-approve the plan, and generate Bicep."
+  prompt: "Plan a 3-tier web application architecture on Azure with a React frontend hosted on Static Web Apps, a Node.js API layer on App Service, and Azure Database for PostgreSQL. I want to use Bicep for the infrastructure as code. Include a CDN for static assets and Application Gateway for load balancing across the API tier. Assume all defaults and auto-approve the plan."
 graders:
   - type: skill_invocation
     name: skill_invoked
