@@ -46,7 +46,7 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 3.5. Bump the plugin version (minor +1) based on the target repo's main branch
+      # 3.5. Bump the plugin version (patch +1) based on the target repo's main branch
       - name: Bump plugin version
         run: |
           PLUGIN_PATH="target-repo/.github/plugins/azure-skills/.claude-plugin/plugin.json"
