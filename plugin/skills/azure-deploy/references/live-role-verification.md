@@ -37,16 +37,20 @@ az functionapp identity show --name <app-name> -g <resource-group> --query princ
 
 ### 2. Query Live Role Assignments
 
-Use MCP tools to list role assignments for each resource:
+Use MCP tools to list role assignments for each resource **and identity** (using the `principalId` from step 1):
 
 ```
-azure__role(command: "role_assignment_list", scope: "<resourceId>")
+azure__role(
+  command: "role_assignment_list",
+  scope: "<resourceId>",
+  assignee_object_id: "<principalId>"
+)
 ```
 
 Or via CLI:
 
 ```bash
-az role assignment list --scope <resourceId> --output table
+az role assignment list --scope <resourceId> --assignee-object-id <principalId> --output table
 ```
 
 ### 3. Cross-Check Against Requirements
@@ -90,7 +94,7 @@ Add live role verification results to the deployment log in `.azure/plan.md`:
 
 ```markdown
 ### Live Role Verification
-- Command: `az role assignment list --scope <resourceId>`
+- Command: `az role assignment list --scope <resourceId> --assignee-object-id <principalId>`
 - Results:
   - <identity> → <role> on <resource> ✅
   - <identity> → missing <expected-role> on <resource> ❌
