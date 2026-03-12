@@ -1,0 +1,80 @@
+# Trigger accuracy tests for azure-infra-planner skill
+# Tests prompt routing — which prompts should and shouldn't invoke this skill
+skill: azure-infra-planner
+
+should_trigger_prompts:
+  - prompt: "Plan Azure infrastructure for a multi-service workload"
+    reason: "Multi-service architecture planning from workload description"
+
+  - prompt: "What Azure resources do I need for a real-time chat application?"
+    reason: "Complex resource selection across multiple services"
+
+  - prompt: "Generate Bicep templates for my Azure workload"
+    reason: "IaC generation from multi-service workload description"
+
+  - prompt: "Generate Terraform for a web app with database and cache"
+    reason: "Multi-service system with IaC preference (3+ services)"
+
+  - prompt: "Deploy a GenAI backend with Azure OpenAI and supporting services"
+    reason: "Multi-service GenAI architecture with supporting infrastructure"
+
+  - prompt: "Plan infrastructure for a chatbot service using Azure OpenAI"
+    reason: "Complex AI workload requiring orchestration across services"
+
+  - prompt: "Provision microservices on AKS with proper networking"
+    reason: "Multi-service AKS architecture with networking design"
+
+  - prompt: "Build a SaaS platform on Azure with multi-tenant isolation"
+    reason: "Complex multi-tenant platform spanning many services"
+
+  - prompt: "Plan a data pipeline with Event Hubs and Synapse Analytics"
+    reason: "Multi-service data pipeline architecture (ingestion → processing → analytics)"
+
+  - prompt: "Create an IoT solution for 10,000 edge devices on Azure"
+    reason: "Complex IoT workload spanning edge, ingestion, and analytics services"
+
+  - prompt: "Set up backup and disaster recovery across Azure regions"
+    reason: "Cross-region DR architecture with multiple replicated services"
+
+  - prompt: "Plan a 3-tier architecture with VMs and SQL Server on Azure"
+    reason: "Classic multi-tier system design (web → app → data)"
+
+  - prompt: "Deploy container apps workloads with auto-scaling"
+    reason: "Multi-service container workload with scaling design"
+
+  - prompt: "Provision ML training infrastructure with GPU clusters"
+    reason: "Complex ML workload spanning compute, storage, and orchestration"
+
+  - prompt: "Plan dev staging and production Azure environments for our new system"
+    reason: "Multi-environment architecture planning for a new system"
+
+should_not_trigger_prompts:
+  - prompt: "What is the weather today?"
+    reason: "No Azure or infrastructure intent"
+
+  - prompt: "Help me write a poem about clouds"
+    reason: "Creative writing, not architecture planning"
+
+  - prompt: "Deploy my already-prepared app with azd up"
+    reason: "Deployment execution — azure-deploy, not planning"
+
+  - prompt: "Run azd up to push my app to Azure"
+    reason: "Deployment execution — azure-deploy, not planning"
+
+  - prompt: "I have an existing Express app, help me prepare it for Azure"
+    reason: "Existing codebase preparation — azure-prepare, not planning"
+
+  - prompt: "Add authentication to my existing Azure app"
+    reason: "Adding a feature to existing app — azure-prepare, not planning"
+
+  - prompt: "Check if my Bicep files have errors"
+    reason: "IaC validation — azure-validate, not architecture planning"
+
+  - prompt: "Help me with AWS Lambda functions"
+    reason: "Wrong cloud provider — not Azure"
+
+  - prompt: "Configure my GCP Cloud Functions"
+    reason: "Wrong cloud provider — not Azure"
+
+  - prompt: "Write a Python script to parse CSV files"
+    reason: "Generic coding task, no multi-service architecture intent"

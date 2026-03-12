@@ -291,4 +291,46 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       softCheckSkill(agentMetadata, SKILL_NAME);
     });
   });
+
+  describe("anti-invocation", () => {
+    test("does NOT invoke skill for existing app preparation prompt", async () => {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "I have an existing Node.js Express application. Help me prepare it for Azure App Service deployment.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: (agentMetadata) => getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+        });
+
+        // Existing app preparation should route to azure-prepare, not azure-infra-planner
+        softCheckSkill(agentMetadata, "azure-prepare");
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    });
+
+    test("does NOT invoke skill for azd deploy prompt", async () => {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "I already have my azure.yaml configured. Run azd up to deploy everything to Azure.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: (agentMetadata) => getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
+        });
+
+        // Deployment execution should route to azure-deploy, not azure-infra-planner
+        softCheckSkill(agentMetadata, "azure-deploy");
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    });
+  });
 });

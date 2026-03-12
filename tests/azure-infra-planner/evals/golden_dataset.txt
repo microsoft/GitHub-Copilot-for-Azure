@@ -98,4 +98,4 @@ Set up a device registration workflow with Azure DPS, manage device identities c
 Launch a pipeline that pushes firmware updates to field devices via IoT Hub, track update progress, and rollback automatically on failure.	
 Create an Azure IoT Hub edge deployment with AI module for anomaly detection, output events to Cosmos DB, and send SMS alerts via Logic Apps.	
 Spin up an IoT solution that aggregates temperature sensor data, runs stream analytics at the edge, and provides remote dashboard monitoring.	
-Build a modern IoT platform with role-based access, partitioned data storage in Azure Data Lake, and end-to-end TLS for device communication.	
+Build a modern IoT platform with role-based access, partitioned data storage in Azure Data Lake, and end-to-end TLS for device communication.

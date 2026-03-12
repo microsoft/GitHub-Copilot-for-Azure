@@ -1,0 +1,62 @@
+# Task: IoT telemetry solution infrastructure planning with Terraform
+# Tests IoT workload with edge computing and event streaming
+id: plan-iot-telemetry-001
+name: IoT Telemetry - Edge Devices + Event Hub
+description: |
+  Plan Azure infrastructure for an IoT solution collecting data from 1000+ edge devices.
+  Validates resource selection for IoT Hub, Edge computing, and event streaming.
+
+tags:
+  - iot
+  - terraform
+
+inputs:
+  prompt: |
+    Provision an IoT solution that collects data from 1000+ edge devices, processes data with Azure IoT Edge, and forwards alerts in real time to Azure Event Hub.
+  context:
+    iac_format: terraform
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "iot"
+    - "edge"
+    - "event hub"
+    - "terraform"
+
+graders:
+  - name: identifies_iot_resources
+    type: text
+    config:
+      regex_match:
+        - "(?i)iot.?hub|iot.?edge|iot.?central|device"
+
+  - name: identifies_event_streaming
+    type: text
+    config:
+      regex_match:
+        - "(?i)event.?hub|stream|alert|real.?time"
+
+  - name: includes_edge_computing
+    type: text
+    config:
+      regex_match:
+        - "(?i)edge|device|gateway|process"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+        - "infra/main.tf"
+      content_patterns:
+        - path: "infra/main.tf"
+          must_match:
+            - "(?i)iot|iothub"
