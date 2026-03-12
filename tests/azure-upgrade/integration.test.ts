@@ -75,7 +75,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       // Verify upgrade assessment report was created in the workspace
       expect(workspacePath).toBeDefined();
       expectFiles(workspacePath!, [
-        /upgrade-assessment-report\.md$|upgrade-status\.md$|assessment.*\.md$/i,
+        /upgrade-status\.md$/i,
+        /upgrade-assessment-report\.md$/i,
       ], []);
     }, upgradeTestTimeoutMs);
   });

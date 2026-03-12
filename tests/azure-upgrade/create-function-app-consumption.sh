@@ -8,17 +8,16 @@
 let "randomIdentifier=$RANDOM*$RANDOM"
 location="eastus"
 resourceGroup="rg-upgrade-test-$randomIdentifier"
-tag="azure-upgrade-integration-test"
 storageAccount="stupgradetest$randomIdentifier"
 functionAppName="func-upgrade-source-$randomIdentifier"
 skuStorage="Standard_LRS"
 functionsVersion="4"
-runtime="dotnet-isolated"
-runtimeVersion="8.0"
+runtime="node"
+runtimeVersion="22"
 
 # Create a resource group
 echo "Creating resource group: $resourceGroup in $location..."
-az group create --name $resourceGroup --location "$location" --tags $tag
+az group create --name $resourceGroup --location "$location"
 
 # Create an Azure storage account in the resource group.
 echo "Creating storage account: $storageAccount"
@@ -31,5 +30,3 @@ az functionapp create --name $functionAppName --storage-account $storageAccount 
     --runtime $runtime --runtime-version $runtimeVersion \
     --functions-version $functionsVersion --os-type Linux
 
-# echo "Deleting all resources"
-# az group delete --name $resourceGroup -y
