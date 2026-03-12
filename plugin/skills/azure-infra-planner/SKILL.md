@@ -4,7 +4,7 @@ description: "Architect and plan multi-service Azure infrastructure from workloa
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.2.0"
+  version: "1.0.0"
 ---
 
 # Azure Infra Planner
