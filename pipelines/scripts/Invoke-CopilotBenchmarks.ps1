@@ -33,7 +33,8 @@
             "gpt-5.2-codex-autodev-test",
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
-        )
+        ),
+        [string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
@@ -101,6 +102,12 @@
     & 'msbench-cli' version
     if ($LASTEXITCODE -ne 0) {
         throw "msbench-cli version failed with exit code $LASTEXITCODE"
+    }
+
+    Write-Host "Checking database used by MSBench CLI"
+    & 'msbench-cli' database
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli database failed with exit code $LASTEXITCODE"
     }
 
     # --- Clone repo and cd to working directory ---
@@ -191,4 +198,12 @@
         Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
     }
 
+    if ($OutputPath) {
+        New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
+        $jsonPath = Join-Path $OutputPath "run_ids.json"
+
+        Write-Host "Saving run IDs to $jsonPath"
+        $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
+    }
+    
     Write-Host "`nAll $($Model.Count) model runs completed successfully."
