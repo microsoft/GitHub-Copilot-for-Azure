@@ -1,10 +1,10 @@
 # Role Assignment Verification
 
-Verify that all RBAC role assignments in the generated infrastructure are correct and sufficient before testing functionality. Incorrect or missing roles are a common cause of runtime failures.
+Verify that all RBAC role assignments in the generated infrastructure are correct and sufficient before deployment. Incorrect or missing roles are a common cause of runtime failures.
 
 ## When to Verify
 
-After security hardening (step 4) and **before** functional verification (step 6). Role issues surface as cryptic auth errors during testing — catching them here saves debugging time.
+After build verification (step 3) and **before** recording proof (step 5). Role issues surface as cryptic auth errors during deployment — catching them here saves debugging time.
 
 ## Verification Checklist
 
@@ -41,7 +41,7 @@ Review the generated Bicep/Terraform files directly — do **not** query live Az
 
 > 💡 **Tip:** Search your Bicep for `Microsoft.Authorization/roleAssignments` or your Terraform for `azurerm_role_assignment` to find all role assignments.
 
-> ⚠️ **Live role verification** (querying Azure for actually provisioned roles) is handled by **azure-validate** step 4. This step is a static code review only.
+> ⚠️ **Live role verification** (querying Azure for actually provisioned roles) is handled by **azure-deploy** step 8 as a post-deployment check. This step is a static code review only.
 
 ## Decision Tree
 

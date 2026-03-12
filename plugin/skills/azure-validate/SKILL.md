@@ -4,7 +4,7 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Azure Validate
@@ -43,7 +43,7 @@ metadata:
 | 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/plan.md` |
 | 2 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
 | 3 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
-| 4 | **Live Role Verification** — Query Azure to confirm provisioned RBAC roles are correct and sufficient | [live-role-verification.md](references/live-role-verification.md) |
+| 4 | **Static Role Verification** — Review Bicep/Terraform for correct RBAC role assignments in code | [role-verification.md](references/role-verification.md) |
 | 5 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
 | 6 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
 | 7 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
