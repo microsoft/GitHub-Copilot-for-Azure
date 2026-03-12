@@ -89,8 +89,8 @@ If the issue persists after following these steps, you may want to inspect the i
    - If the executable runs when manually started in the terminal, or you are not running Windows, collect the information in "Collecting Information for troubleshooting" (above).
    - File an issue in this repo with the collected information.
 
-### Foundry MCP server authorization failure
 
+### Foundry MCP Server Authorization Failure
 **Issue**: When launching Copilot CLI, you see an authorization failure in the browser with the message:
 
 > "The resource parameter provided in the request doesn't match with the requested scope"
