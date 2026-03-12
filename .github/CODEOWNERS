@@ -3,7 +3,7 @@
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owners for everything in the repo
-* @microsoft/copilot-for-azure
+* @microsoft/ghcp4a
 
 # Plugin skills owners
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT
