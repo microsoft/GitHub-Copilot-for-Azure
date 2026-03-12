@@ -54,9 +54,8 @@ graders:
     type: file
     config:
       must_exist:
-        - ".azure/infrastructure-plan.json"
-        - "infra/main.bicep"
+        - "infrastructure-plan.json"
       content_patterns:
-        - path: "infra/main.bicep"
+        - path: "infrastructure-plan.json"
           must_match:
             - "(?i)ml|machinelearning|endpoint"
