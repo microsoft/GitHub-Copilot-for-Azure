@@ -44,9 +44,9 @@ App artifacts generated?
 │   │   ├── API-only / no UI? → Test endpoints with curl or similar
 │   │   └── Static site? → Open in browser, verify rendering
 │   │   Then:
-│   │   ├── Works → Proceed to Update Plan (step 7)
+│   │   ├── Works → Proceed to Update Plan (step 6)
 │   │   └── Issues found → Fix issues, re-test
-│   └── User says no / skip → Proceed to Update Plan (step 7)
+│   └── User says no / skip → Proceed to Update Plan (step 6)
 └── No → Go back to Generate Artifacts (step 3)
 ```
 
