@@ -12,7 +12,7 @@
 
 > ⚠️ **Data structure gotcha:** Query/response data lives in `datasource_item.query` and `datasource_item['sample.output_text']`, **not** in `sample.input`/`sample.output` (which are empty arrays). Parse `datasource_item` fields when extracting queries and responses for analysis.
 
-> ⚠️ **Show Data Viewer deeplinks:** Append a Data Viewer deeplink immediately after reference to an evaluation result file in your response. Format: `[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill)`.
+> ⚠️ **Show Data Viewer deeplinks:** Append a Data Viewer deeplink immediately after reference to an evaluation result file in your response. Format: [Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis.
 
 ## Step 4 — Cluster Failures by Root Cause
 

@@ -73,7 +73,7 @@ Save evaluator definitions to `.foundry/evaluators/<name>.yaml`, test data to `.
 - dataset reference
 - evaluator names and thresholds
 
-> ⚠️ **Show Data Viewer deeplinks:** Append a Data Viewer deeplink immediately after reference to a dataset file in your response. Format: `[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill)`.
+> ⚠️ **Show Data Viewer deeplinks:** Append a Data Viewer deeplink immediately after reference to a dataset file in your response. Format: [Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis.
 
 ### 8. Prompt User
 
