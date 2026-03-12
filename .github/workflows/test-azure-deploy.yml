@@ -207,7 +207,7 @@ jobs:
           TEST_GROUP: ${{ matrix.test-group }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/azure-deploy/${JOB_ID}/"
+          PREFIX="${DATE}/${RUN_ID}/azure-deploy/${TEST_GROUP}/"
           echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \

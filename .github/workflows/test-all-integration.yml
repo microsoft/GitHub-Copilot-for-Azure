@@ -328,7 +328,7 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/${SKILL}/${JOB_ID}"
+          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
           echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
