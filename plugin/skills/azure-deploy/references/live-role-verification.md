@@ -1,13 +1,13 @@
 # Live Role Verification
 
-Query Azure to confirm that provisioned RBAC role assignments are correct and sufficient for the application to function. This complements the static role check in azure-prepare by validating **live Azure state**.
+Query Azure to confirm that provisioned RBAC role assignments are correct and sufficient for the application to function. This complements the static role check in azure-validate by validating **live Azure state**.
 
-## How It Differs from azure-prepare's Role Check
+## How It Differs from azure-validate's Role Check
 
 | Check | Skill | What It Verifies |
 |-------|-------|-----------------|
-| **Static** | azure-prepare | Generated Bicep/Terraform has correct role assignments in code |
-| **Live** | azure-validate (this) | Provisioned Azure resources actually have the right roles assigned |
+| **Static** | azure-validate | Generated Bicep/Terraform has correct role assignments in code |
+| **Live** | azure-deploy (this) | Provisioned Azure resources actually have the right roles assigned |
 
 Both checks are needed because:
 - Bicep may be correct but provisioning could fail silently for roles
@@ -16,7 +16,7 @@ Both checks are needed because:
 
 ## When to Run
 
-After infrastructure validation (step 2) and build verification (step 3) — before recording proof (step 5). Only run this step if resources have been provisioned (i.e., after `azd provision` or a prior `azd up`).
+After deployment verification (step 7). Resources are now provisioned, so live role assignments can be queried.
 
 ## Verification Steps
 
@@ -81,12 +81,12 @@ Resources provisioned?
     │   ├── All roles present and correct → ✅ Pass
     │   ├── Missing roles → ❌ Fail — add to Bicep, redeploy
     │   └── Wrong scope or generic roles → ⚠️ Warning — fix and redeploy
-    └── Record results in Validation Proof
+    └── Record results in deployment verification
 ```
 
-## Record in Validation Proof
+## Record in Deployment Verification
 
-Add live role verification results to **Section 7: Validation Proof** in `.azure/plan.md`:
+Add live role verification results to the deployment log in `.azure/plan.md`:
 
 ```markdown
 ### Live Role Verification
