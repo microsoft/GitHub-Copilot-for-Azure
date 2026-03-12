@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, type PermissionHandler } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact";
 import { listSkills } from "./skill-loader";
 
@@ -25,8 +25,6 @@ export { getAllAssistantMessages } from "./evaluate";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const approveAll: PermissionHandler = async () => ({ kind: "approved" });
 
 /**
  * Resolve the bundled Copilot CLI entry point.
@@ -346,23 +344,7 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     }
 
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
-    // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
-    let reportTargetPath = filePath;
-    let suffix = 0;
-    while (true) {
-      try {
-        fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
-        break;
-      } catch (err: unknown) {
-        console.log("File exists", reportTargetPath);
-        if ((err as { code: string }).code === "EEXIST") {
-          suffix++;
-          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
-          continue;
-        }
-        throw err;
-      }
-    }
+    fs.writeFileSync(filePath, markdown, "utf-8");
 
     // Write structured agent-metadata.json for machine consumption
     const jsonPath = path.join(dir, "agent-metadata.json");
@@ -375,7 +357,7 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
 
     if (process.env.DEBUG) {
-      console.log(`Markdown report written to: ${reportTargetPath}`);
+      console.log(`Markdown report written to: ${filePath}`);
     }
 
     // Write token usage JSON alongside the markdown report
@@ -490,7 +472,6 @@ export function useAgentRunner() {
   async function run(config: AgentRunConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
     const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
-    const runStartTime = Date.now();
 
     let isComplete = false;
 
@@ -500,16 +481,9 @@ export function useAgentRunner() {
     entry.preserveWorkspace = config.preserveWorkspace;
 
     try {
-      if (process.env.DEBUG) {
-        console.log(`[agent-runner] starting run in ${testWorkspace}`);
-      }
-
       // Run optional setup
       if (config.setup) {
         await config.setup(testWorkspace);
-        if (process.env.DEBUG) {
-          console.log(`[agent-runner] setup completed in ${Date.now() - runStartTime}ms`);
-        }
       }
 
       // Copilot client with yolo mode
@@ -544,11 +518,6 @@ export function useAgentRunner() {
         disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
       }
 
-      const createSessionStartTime = Date.now();
-      if (process.env.DEBUG) {
-        console.log("[agent-runner] creating Copilot session");
-      }
-
       const session = await client.createSession({
         model: modelOverride || "claude-sonnet-4.5",
         onPermissionRequest: approveAll,
@@ -566,32 +535,19 @@ export function useAgentRunner() {
       });
       entry.session = session;
 
-      if (process.env.DEBUG) {
-        console.log(`[agent-runner] session created in ${Date.now() - createSessionStartTime}ms`);
-      }
-
       const agentMetadata: AgentMetadata = { events: [], testComments: [] };
       entry.agentMetadata = agentMetadata;
-      const sendStartTime = Date.now();
-      let sawFirstSessionEvent = false;
 
       const done = new Promise<void>((resolve) => {
         session.on(async (event: SessionEvent) => {
           if (isComplete) return;
 
           if (process.env.DEBUG) {
-            if (!sawFirstSessionEvent) {
-              sawFirstSessionEvent = true;
-              console.log(`[agent-runner] first session event after ${Date.now() - sendStartTime}ms: ${event.type}`);
-            }
             console.log(`=== session event ${event.type}`);
           }
 
           if (event.type === "session.idle") {
             isComplete = true;
-            if (process.env.DEBUG) {
-              console.log(`[agent-runner] session became idle after ${Date.now() - sendStartTime}ms`);
-            }
             resolve();
             return;
           }
@@ -607,18 +563,8 @@ export function useAgentRunner() {
         });
       });
 
-      if (process.env.DEBUG) {
-        console.log(`[agent-runner] sending prompt (${config.prompt.length} chars)`);
-      }
       await session.send({ prompt: config.prompt });
-      if (process.env.DEBUG) {
-        console.log("[agent-runner] prompt sent; waiting for session.idle");
-      }
       await done;
-
-      if (process.env.DEBUG) {
-        console.log(`[agent-runner] run completed in ${Date.now() - runStartTime}ms`);
-      }
 
       // Extract token usage from assistant.usage events
       const tokenUsage: TokenUsage = {
