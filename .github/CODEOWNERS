@@ -1,0 +1,29 @@
+# This is a CODEOWNERS file for the GitHub-Copilot-for-Azure repository.
+# Each line is a file pattern followed by one or more code owners.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @microsoft/copilot-for-azure
+
+# Plugin skills - owner at folder level
+/plugin/skills/appinsights-instrumentation/ @microsoft/copilot-for-azure
+/plugin/skills/azure-ai/ @microsoft/copilot-for-azure
+/plugin/skills/azure-aigateway/ @microsoft/copilot-for-azure
+/plugin/skills/azure-cloud-migrate/ @microsoft/copilot-for-azure
+/plugin/skills/azure-compliance/ @microsoft/copilot-for-azure
+/plugin/skills/azure-compute/ @microsoft/copilot-for-azure
+/plugin/skills/azure-cost-optimization/ @microsoft/copilot-for-azure
+/plugin/skills/azure-deploy/ @microsoft/copilot-for-azure
+/plugin/skills/azure-diagnostics/ @microsoft/copilot-for-azure
+/plugin/skills/azure-hosted-copilot-sdk/ @microsoft/copilot-for-azure
+/plugin/skills/azure-kusto/ @microsoft/copilot-for-azure
+/plugin/skills/azure-messaging/ @microsoft/copilot-for-azure
+/plugin/skills/azure-prepare/ @microsoft/copilot-for-azure
+/plugin/skills/azure-quotas/ @microsoft/copilot-for-azure
+/plugin/skills/azure-rbac/ @microsoft/copilot-for-azure
+/plugin/skills/azure-resource-lookup/ @microsoft/copilot-for-azure
+/plugin/skills/azure-resource-visualizer/ @microsoft/copilot-for-azure
+/plugin/skills/azure-storage/ @microsoft/copilot-for-azure
+/plugin/skills/azure-validate/ @microsoft/copilot-for-azure
+/plugin/skills/entra-app-registration/ @microsoft/copilot-for-azure
+/plugin/skills/microsoft-foundry/ @microsoft/copilot-for-azure
