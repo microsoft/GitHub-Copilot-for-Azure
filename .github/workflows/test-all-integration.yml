@@ -167,6 +167,7 @@ jobs:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
+      publish-reports: ${{ github.event_name == 'schedule' }}
     secrets:
       COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
 
