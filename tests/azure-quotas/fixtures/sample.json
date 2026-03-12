@@ -1,0 +1,35 @@
+{
+  "samplePrompts": {
+    "shouldTrigger": [
+      "How do I check my Azure quota limits?",
+      "What are the service limits for my subscription?",
+      "I need to request a quota increase for VMs"
+    ],
+    "shouldNotTrigger": [
+      "How do I optimize my Azure costs?",
+      "Deploy my app to Azure App Service",
+      "Help me with AWS Lambda"
+    ]
+  },
+  "sampleInput": {
+    "description": "Sample quota check request for compute resources in East US",
+    "subscriptionId": "00000000-0000-0000-0000-000000000000",
+    "region": "eastus",
+    "provider": "Microsoft.Compute",
+    "resourceName": "standardDSv3Family"
+  },
+  "expectedOutput": {
+    "description": "Expected quota check response with limit, usage, and available capacity",
+    "commands": [
+      "az extension add --name quota",
+      "az quota list --scope /subscriptions/<subscription-id>/providers/Microsoft.Compute/locations/eastus",
+      "az quota show --resource-name standardDSv3Family --scope /subscriptions/<subscription-id>/providers/Microsoft.Compute/locations/eastus",
+      "az quota usage show --resource-name standardDSv3Family --scope /subscriptions/<subscription-id>/providers/Microsoft.Compute/locations/eastus"
+    ]
+  },
+  "mcpResponses": {
+    "azure__quota": {
+      "description": "Mock response for quota tool"
+    }
+  }
+}
