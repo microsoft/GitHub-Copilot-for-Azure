@@ -41,7 +41,7 @@ A project connection between your Foundry project and the Azure AI Search resour
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `project_connection_id` | Yes | Connection ID (resolve via `foundry_connections_get`) |
+| `project_connection_id` | Yes | Connection ID (resolve via `project_connection_get`, typically after discovering the connection with `project_connection_list`) |
 | `index_name` | Yes | Search index name |
 | `top_k` | No | Number of results (default: 5) |
 | `query_type` | No | Search type (default: `vector_semantic_hybrid`) |

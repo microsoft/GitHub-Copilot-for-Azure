@@ -8,12 +8,14 @@ Use the Foundry MCP server for all connection operations. The MCP tools handle a
 
 | Operation | MCP Tool | Description |
 |-----------|----------|-------------|
-| List all connections | `foundry_connections_list` | Lists all connections in the current project |
-| Get connection details | `foundry_connections_get` | Retrieves a specific connection by name, including its ID |
-| Create a connection | `foundry_connections_create` | Creates a new connection to an external resource |
-| Delete a connection | `foundry_connections_delete` | Removes a connection from the project |
+| List all connections | `project_connection_list` | Lists project connections and can filter by category or target |
+| Get connection details | `project_connection_get` | Retrieves a specific connection by `connectionName` |
+| Create a connection | `project_connection_create` | Creates or replaces a project connection to an external resource |
+| Update a connection | `project_connection_update` | Updates auth, category, target, or expiry on an existing connection |
+| Delete a connection | `project_connection_delete` | Removes a connection from the project by name |
+| List supported categories/auth types | `project_connection_list_metadata` | Lists valid connection categories and auth types before create/update |
 
-> 💡 **Tip:** The `connection_id` returned by `foundry_connections_get` is the value you pass as `project_connection_id` when configuring agent tools.
+> 💡 **Tip:** Use `project_connection_get` or `project_connection_list` to resolve the connection name and full connection resource ID before configuring agent tools that require `project_connection_id`.
 
 ## Create Connection via Portal
 
@@ -54,6 +56,6 @@ Python and C# SDKs resolve this automatically from the connection name.
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `Connection not found` | Name mismatch or wrong project | Use `foundry_connections_list` to find correct name |
+| `Connection not found` | Name mismatch or wrong project | Use `project_connection_list` to find the correct `connectionName` |
 | `Unauthorized` creating connection | Missing Azure AI Project Manager role | Assign role on the Foundry project |
-| `Invalid connection ID format` | Using name instead of full resource ID | Use `foundry_connections_get` to resolve the full ID |
+| `Invalid connection ID format` | Using name instead of full resource ID | Use `project_connection_get` to resolve the full ID |
