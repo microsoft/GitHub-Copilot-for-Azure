@@ -1,0 +1,21 @@
+{
+  "name": "dashboard-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/functions/*.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "func start",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.6.0",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "azure-functions-core-tools": "^4.0.0",
+    "typescript": "^5.7.2"
+  }
+}
