@@ -1,0 +1,62 @@
+# Task: Serverless workflow infrastructure planning with Terraform
+# Tests event-driven serverless architecture with Event Grid and Functions
+id: plan-serverless-workflow-001
+name: Serverless Workflow - Order Processing
+description: |
+  Plan Azure infrastructure for a serverless order processing workflow.
+  Validates resource selection for event-driven architectures with Functions and storage.
+
+tags:
+  - serverless
+  - terraform
+
+inputs:
+  prompt: |
+    Deploy a serverless workflow for order processing, trigger via Azure Event Grid from incoming messages, and archive completed order data in Azure Table Storage.
+  context:
+    iac_format: terraform
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "function"
+    - "event grid"
+    - "table storage"
+    - "terraform"
+
+graders:
+  - name: identifies_serverless_compute
+    type: text
+    config:
+      regex_match:
+        - "(?i)function|serverless|logic.?app|workflow"
+
+  - name: identifies_event_trigger
+    type: text
+    config:
+      regex_match:
+        - "(?i)event.?grid|trigger|event.?driven|message"
+
+  - name: identifies_storage
+    type: text
+    config:
+      regex_match:
+        - "(?i)table.?storage|storage|archive|persist"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+        - "infra/main.tf"
+      content_patterns:
+        - path: "infra/main.tf"
+          must_match:
+            - "(?i)function|eventgrid|serverless"

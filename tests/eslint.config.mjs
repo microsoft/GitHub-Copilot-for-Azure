@@ -52,6 +52,7 @@ export default defineConfig(
       "**/__snapshots__/**",
       "swa-deployment-tests/**",
       "**/eval/fixtures/**",  // Test fixtures - not real TS projects
+      "**/evals/fixtures/**", // Test fixtures - not real TS projects
     ],
   },
   // TypeScript files - use TypeScript parser with project

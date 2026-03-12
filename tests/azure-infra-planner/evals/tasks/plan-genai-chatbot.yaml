@@ -1,0 +1,64 @@
+# Task: GenAI chatbot infrastructure planning
+# Tests multi-service AI workload with OpenAI, monitoring, and secrets management
+id: plan-genai-chatbot-001
+name: GenAI Chatbot - OpenAI + Monitor + Key Vault
+description: |
+  Plan Azure infrastructure for a multilingual chatbot using Azure OpenAI Service.
+  Validates resource selection for AI workloads with logging and secrets management.
+
+tags:
+  - genai
+  - bicep
+
+inputs:
+  prompt: |
+    Launch a multilingual chatbot service using Azure OpenAI Service, integrate logging with Azure Monitor, and use Azure Key Vault for API credential management.
+  context:
+    iac_format: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "openai"
+    - "monitor"
+    - "key vault"
+    - "bicep"
+
+graders:
+  - name: identifies_openai_resources
+    type: text
+    config:
+      regex_match:
+        - "(?i)openai|open.?ai|gpt|language.?model"
+      regex_not_match:
+        - "(?i)skip.?planning|no.?plan.?needed"
+
+  - name: includes_monitoring
+    type: text
+    config:
+      regex_match:
+        - "(?i)monitor|log.?analytics|application.?insights|logging"
+
+  - name: includes_secrets_management
+    type: text
+    config:
+      regex_match:
+        - "(?i)key.?vault|secret|credential"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+        - "infra/main.bicep"
+      content_patterns:
+        - path: "infra/main.bicep"
+          must_match:
+            - "(?i)openai|cognitiveservices"
