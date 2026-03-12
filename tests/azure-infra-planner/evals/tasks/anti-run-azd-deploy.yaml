@@ -1,0 +1,3 @@
+id: anti-run-azd-deploy
+inputs:
+  prompt: "I already have my Azure infrastructure planned and my azure.yaml configured. Can you run azd up to deploy everything to my Azure subscription?"

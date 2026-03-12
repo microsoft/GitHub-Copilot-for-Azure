@@ -1,0 +1,101 @@
+prompt	completed
+Deploy a GPT-4 based language model for summarization tasks, exposing a REST API secured via Azure AD and autoscale compute resources as demand grows.	
+Launch a multilingual chatbot service using Azure OpenAI Service, integrate logging with Azure Monitor, and use Azure Key Vault for API credential management.	
+Set up a scalable GenAI document search API using embeddings, index content in Azure Cognitive Search, and cache recent queries with Azure Redis Cache.	
+Provision a text-to-image generation service with DALL-E deployment, use Azure ML endpoints for model hosting, and store generated images in Azure Blob Storage.	
+Spin up a prompt engineering and experimentation environment with custom LLM fine-tuning on GPUs, manage datasets in Azure Machine Learning datastore, and enable tracking of prompt versions.	
+Create a real-time document Q&A API leveraging Azure OpenAI and Azure Cosmos DB, expose endpoints using Azure API Management, and enforce rate limits per user.	
+Deploy a scalable GenAI-powered code completion backend using Azure Container Apps, integrate usage telemetry, and support request batching for cost optimization.	
+Host a sentiment-analysis LLM with Azure Functions for serverless API endpoints, connect to an Azure SQL Database for logging user interactions, and set up alerting for failed requests.	
+Provision an Azure ML workspace with multiple managed endpoints for A/B testing LLM variants, use Application Insights for monitoring, and restrict access with Azure RBAC.	
+Launch a startup MVP for document summarization with LLM APIs, connect outbound email via SendGrid, and persist processed document metadata in Azure Table Storage.	
+Deploy a microservices-based e-commerce backend with independent catalog, order, and payment services, use AKS with Helm for deployments, and implement service mesh for traffic control.	
+Set up a multi-tenant SaaS application on AKS using Kubernetes namespaces for isolation, integrate Azure Active Directory for authentication, and centralize logs in Azure Log Analytics.	
+Build a real-time notification pipeline on AKS with Kafka, deploy .NET and Node.js microservices, and connect the pipeline to Azure Event Hubs for telemetry ingestion.	
+Provision CI/CD-enabled AKS clusters for staging and production, enable pod-level autoscaling, and enforce network policies between services using Azure CNI.	
+Create a reference architecture for a loosely coupled SaaS platform running on AKS, support blue-green deployments, and use Azure Container Registry for image storage.	
+Spin up a cluster for microservices with logging to Azure Monitor, automatic SSL certificate management, and enable managed identities for secure resource access.	
+Deploy a microservices workload on AKS where API Gateway routes traffic, integrate with Azure Key Vault for secrets, and roll out canary deployments for new service versions.	
+Set up backbone platform on AKS for a SaaS using Dapr for cross-service communication, persistent storage in Azure Cosmos DB, and SAML-based SSO.	
+Deploy a microservices-based analytics backend on AKS with GPU-enabled nodes for heavy processing tasks, queue workloads with Azure Service Bus, and manage secrets via Azure Managed Identities.	
+Create replication setup across AKS clusters in two Azure regions, synchronize secrets, and ensure zero-downtime upgrades for all critical microservices.	
+Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps.	
+Launch a serverless web backend with Azure Container Apps, integrate managed Azure PostgreSQL for database, and set up distributed tracing for monitoring transactions.	
+Provision an event-driven data processing pipeline using ACA with Pub/Sub integration, connect to Azure Event Grid, and output results to Cosmos DB.	
+Deploy a multi-container app with front-end and back-end as separate ACA containers, enable HTTPS with built-in certificate management, and configure environment variables securely.	
+Build a nightly batch job as a container deployed on ACA with a custom schedule using Azure Logic Apps, log outputs to Azure Monitor, and leverage managed identity for accessing secrets.	
+Set up a staging and production environment for a Python Flask API on ACA, route traffic via Azure Front Door, and implement rollbacks for failed deployments.	
+Provision a backend for mobile app using Node.js in ACA, enable request throttling, and store session data in Azure Redis Cache.	
+Spin up a React app in a container with ACA, point DNS using Azure DNS Zones, and provide HTTPS out-of-the-box.	
+Run a containerized image processing pipeline in ACA, attach persistent Azure File Share storage, and emit processing results to Service Bus queues.	
+Onboard an ACA-based backend microservice that only scales from zero when requested, integrates with Cosmos DB, and observes metrics in Application Insights.	
+Provision a classic 3-tier application consisting of IIS web servers, .NET business logic tier, and SQL Server backend, distribute across availability zones for high availability.	
+Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier.	
+Configure an autoscaled VMSS-based presentation tier, application servers in separate subnet, and encrypted SQL Managed Instance as the backend database.	
+Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer.	
+Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier.	
+Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.	
+Migrate a 3-tier legacy app with minimal downtime, map on-premises IPs to Azure, and preserve existing AD-integrated authentication flows.	
+Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks.	
+Provision a secured internal load balancer VIP for the app tier, delegate inter-tier communication, and enforce VM antimalware policies.	
+Build a 3-tier test environment on spot VMs, enforce just-in-time VM access, and set up conditional network rules for integration testing.	
+Deploy a serverless workflow for order processing, trigger via Azure Event Grid from incoming messages, and archive completed order data in Azure Table Storage.	
+Set up an event-driven email notification app using Azure Functions with logic based on Storage Blob upload events and SendGrid integration.	
+Build a serverless pipeline where Azure Logic Apps orchestrate approvals, write to Azure SQL, and trigger Power Automate flows for downstream tasks.	
+Launch a cloud-based webhook-driven PDF converter using Azure Functions, persist job metadata in Cosmos DB, and use Azure Key Vault for secrets.	
+Provision a serverless IoT data ingestor triggered by Event Hub, validate incoming messages using serverless code, and store raw data in Blob Storage.	
+Spin up a serverless Slack bot that triggers Workflows upon message events, processes input, and logs results to Azure Table Storage.	
+Configure event-based workflow for order fulfillment, start via Logic Apps HTTP trigger, and archive order history in Blob Storage.	
+Build an automation for handling daily CSV file uploads, ingest using Azure Functions, and output parsed data to Azure SQL.	
+Provision Logic Apps to orchestrate a multi-step approval process, interact with Office 365 API, and keep state in Azure Table Storage.	
+Spin up a serverless HTTP API for incoming survey submissions, route requests by event type, and store survey response data in Cosmos DB.	
+Launch a data ingestion pipeline using Azure Data Factory for importing sales data daily, transform using Azure Databricks, and store results in Azure Synapse Analytics.	
+Set up a streaming data analytics pipeline consuming messages from Azure Event Hubs, process via Azure Stream Analytics, and output to Power BI datasets.	
+Deploy an end-to-end ETL workflow in Azure Data Factory, orchestrate runs via triggers, and land output in an Azure SQL Data Warehouse.	
+Provision a real-time user analytics dashboard drawing from Synapse Analytics, ingest raw log data from Azure Blob Storage, and enable drill-down on key metrics.	
+Create a pipeline to extract, transform, and load IoT telemetry streams into an Azure Data Lake, process with Databricks jobs, and enable ML integration.	
+Spin up a scheduled data pipeline that scrapes web sources, processes text data using Azure Functions, and aggregates output to Synapse Analytics.	
+Build a Power BI reporting stack connected to cleaned data in Azure SQL Database, refresh dashboards hourly, and use row-level security.	
+Set up an Azure Data Lake for big data analytics, enforce fine-grained data access policies, and integrate with Azure Purview for governance.	
+Provision scalable Azure Synapse Analytics for ad-hoc business intelligence, trigger batch loads from Data Factory, and connect to Power BI.	
+Deploy a serverless analytics pipeline where Event Hubs stream click data, functions enrich events, and aggregate to Data Lake for reporting.	
+Provision an Azure ML workspace for distributed deep learning, scale GPU clusters dynamically, and version datasets with Azure ML Data.	
+Deploy a TensorFlow training job using Azure ML pipelines, utilize managed compute with spot pricing, and store models in ML artifact storage.	
+Set up an Azure ML environment for tracking model experiments, schedule retraining on new data, and automate pushes to production endpoints.	
+Spin up an end-to-end MLOps solution that handles training, model registration, and automated deployment to inference endpoints.	
+Build a secure ML training pipeline with data stored in Azure Data Lake, enable audit logging for all training jobs, and encrypt all outputs.	
+Configure validation steps after model training, trigger manual approval before production deployments, and integrate with Slack notifications.	
+Provision an Azure ML endpoint that logs model inputs and outputs, restricts access to specific user roles, and allows rollback of model versions.	
+Set up CI/CD on Azure DevOps for ML pipelines, automate hyperparameter tuning, and deploy only validated models to production.	
+Deploy a managed ML compute cluster for nightly model retraining, validate outputs against control datasets, and publish new versions if performance increases.	
+Spin up a workflow where legal approval is required before ML models can be pushed to live endpoints, with encrypted storage for all artifacts.	
+Launch an ML model scoring endpoint using Azure ML online endpoint, load model from registry, enforce JWT authentication, and log predictions to Azure Monitor.	
+Provision an autoscaling REST API for fraud detection inference, host on AKS with GPU nodes, and integrate with Azure SQL for archival storage.	
+Deploy a real-time recommendation engine as an Azure ML managed online endpoint, scale for high request volumes, and store usage activity in Cosmos DB.	
+Spin up an A/B switchable set of inference endpoints, route traffic between models for live experiments, and use App Insights for monitoring performance.	
+Expose a secure inference HTTP endpoint on AKS, enforce TLS and IP restrictions, and output prediction statistics to Event Hubs.	
+Create a multi-region ML serving setup with active-active endpoints, synchronize model versions via Azure ML registry, and monitor endpoint health.	
+Route inference traffic through Azure API Management, authenticate with managed identities, and throttle requests per tenant.	
+Deploy a scalable image classification endpoint, enable GPU acceleration, and expose a client-friendly REST API with API key support.	
+Provision a production inference pipeline that logs each request, includes user attribution metadata, and aggregates latency per region.	
+Launch batch inference endpoints for scheduled bulk scoring, store outputs in Data Lake Storage, and email completion alerts to service owners.	
+Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly.	
+Deploy a geo-redundant backup solution for on-premises SQL servers using Azure Backup, configure encryption-at-rest, and automate monthly DR tests.	
+Provision backups for Azure Files shares with instant restore enabled, manage backup schedule with Azure Automation, and set access policies.	
+Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.	
+Spin up a policy-driven backup for SAP workloads, ensure encrypted and compressed backups, and provide audit logs for all recovery tests.	
+Create a storage account backup solution that retains deleted blobs for 30 days, enables soft delete, and restricts restore functionality to admins.	
+Establish disaster recovery for AKS clusters across two Azure regions, replicate persistent storage, and simulate failover on a quarterly basis.	
+Enable backup for all Azure SQL Databases with PITR, enforce role-based access for restores, and create alerts for backup failures.	
+Automate weekly Azure resource group backup status reporting, export findings to a secure storage account, and notify compliance stakeholders of issues.	
+Deploy disaster recovery for VMware VMs using Azure Site Recovery, configure runbooks for smooth failover, and maintain compliance audit trails.	
+Provision an IoT solution that collects data from 1000+ edge devices, processes data with Azure IoT Edge, and forwards alerts in real time to Azure Event Hub.	
+Deploy a predictive maintenance model to hundreds of field gateways using Azure IoT Hub, connect edge devices to Azure Blob Storage for bulk data uploads.	
+Spin up an industrial telemetry solution with Azure IoT Central, ingest device data, and integrate with Power BI dashboards for visualization.	
+Build a secure edge compute workload distributed on Azure Stack Edge, process images on-device, and sync results to Azure Data Lake Storage.	
+Provision a multi-site manufacturing IoT solution with device-to-cloud messaging, local data retention, and disconnected operation fallback.	
+Set up a device registration workflow with Azure DPS, manage device identities centrally, and log onboarding attempts to Azure Monitor.	
+Launch a pipeline that pushes firmware updates to field devices via IoT Hub, track update progress, and rollback automatically on failure.	
+Create an Azure IoT Hub edge deployment with AI module for anomaly detection, output events to Cosmos DB, and send SMS alerts via Logic Apps.	
+Spin up an IoT solution that aggregates temperature sensor data, runs stream analytics at the edge, and provides remote dashboard monitoring.	
+Build a modern IoT platform with role-based access, partitioned data storage in Azure Data Lake, and end-to-end TLS for device communication.	
