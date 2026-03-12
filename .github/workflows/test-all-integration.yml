@@ -335,4 +335,5 @@ jobs:
             --destination "$STORAGE_CONTAINER" \
             --destination-path "$PREFIX" \
             --source reports/test-run-all-integration/ \
+            --auth-mode login \
             --overwrite

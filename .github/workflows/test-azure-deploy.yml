@@ -214,4 +214,5 @@ jobs:
             --destination "$STORAGE_CONTAINER" \
             --destination-path "$PREFIX" \
             --source reports/test-run-azure-deploy \
+            --auth-mode login \
             --overwrite
