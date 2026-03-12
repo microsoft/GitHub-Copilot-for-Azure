@@ -1,10 +1,62 @@
-id: plan-aks-microservices
+# Task: AKS microservices platform infrastructure planning
+# Tests complex multi-service Kubernetes workload
+id: plan-aks-microservices-001
+name: AKS Microservices - E-Commerce Backend
+description: |
+  Plan Azure infrastructure for a microservices-based e-commerce platform on AKS.
+  Validates resource selection for Kubernetes with Helm, service mesh, and multi-service architecture.
+
+tags:
+  - microservices
+  - bicep
+
 inputs:
-  prompt: "We're migrating our e-commerce platform to Azure. It consists of 5 microservices: product catalog, order management, user authentication, payment processing, and notifications. We want to deploy on AKS with proper networking, monitoring, and a managed database. Plan the Azure infrastructure for this system."
+  prompt: |
+    Deploy a microservices-based e-commerce backend with independent catalog, order, and payment services, use AKS with Helm for deployments, and implement service mesh for traffic control.
+  context:
+    iac_format: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "aks"
+    - "helm"
+    - "microservice"
+    - "bicep"
+
 graders:
-  - type: skill_invocation
-    name: skill_invoked
+  - name: identifies_aks_resources
+    type: text
     config:
-      required_skills:
-        - azure-infra-planner
-      mode: any_order
+      regex_match:
+        - "(?i)aks|kubernetes|container.?service"
+
+  - name: identifies_microservices_pattern
+    type: text
+    config:
+      regex_match:
+        - "(?i)microservice|service.?mesh|helm|catalog|order|payment"
+
+  - name: includes_networking
+    type: text
+    config:
+      regex_match:
+        - "(?i)network|vnet|ingress|load.?balanc|traffic"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+        - "infra/main.bicep"
+      content_patterns:
+        - path: "infra/main.bicep"
+          must_match:
+            - "(?i)aks|kubernetes"

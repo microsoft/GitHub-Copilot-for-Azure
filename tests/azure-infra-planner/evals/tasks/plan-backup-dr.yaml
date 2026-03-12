@@ -1,0 +1,62 @@
+# Task: Backup and disaster recovery infrastructure planning
+# Tests DR workload with site recovery and cross-region failover
+id: plan-backup-dr-001
+name: Backup/DR - Site Recovery Cross-Region
+description: |
+  Plan Azure infrastructure for disaster recovery with cross-region failover.
+  Validates resource selection for Site Recovery, VM replication, and DNS failback.
+
+tags:
+  - disaster-recovery
+  - bicep
+
+inputs:
+  prompt: |
+    Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.
+  context:
+    iac_format: bicep
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "site recovery"
+    - "failover"
+    - "region"
+    - "bicep"
+
+graders:
+  - name: identifies_site_recovery
+    type: text
+    config:
+      regex_match:
+        - "(?i)site.?recovery|disaster.?recovery|dr|failover|replicate"
+
+  - name: identifies_cross_region
+    type: text
+    config:
+      regex_match:
+        - "(?i)region|east|west|geo|cross.?region|failback"
+
+  - name: identifies_vm_workloads
+    type: text
+    config:
+      regex_match:
+        - "(?i)vm|virtual.?machine|workload|replicate"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+        - "infra/main.bicep"
+      content_patterns:
+        - path: "infra/main.bicep"
+          must_match:
+            - "(?i)recovery|replicate|failover"

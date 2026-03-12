@@ -1,10 +1,62 @@
-id: plan-data-pipeline
+# Task: Data pipeline infrastructure planning with Terraform
+# Tests analytics and ETL workload with Data Factory, Databricks, and Synapse
+id: plan-data-pipeline-001
+name: Data Pipeline - Data Factory + Databricks + Synapse
+description: |
+  Plan Azure infrastructure for a data ingestion and analytics pipeline.
+  Validates resource selection for ETL workloads with transformation and warehousing.
+
+tags:
+  - data-pipeline
+  - terraform
+
 inputs:
-  prompt: "I need to set up a real-time data pipeline on Azure that ingests IoT sensor data from 10,000 devices, processes events in near real-time, stores raw and processed data for analytics, and triggers alerts when thresholds are exceeded. What Azure resources do I need? Please plan the infrastructure."
+  prompt: |
+    Launch a data ingestion pipeline using Azure Data Factory for importing sales data daily, transform using Azure Databricks, and store results in Azure Synapse Analytics.
+  context:
+    iac_format: terraform
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "data factory"
+    - "databricks"
+    - "synapse"
+    - "terraform"
+
 graders:
-  - type: skill_invocation
-    name: skill_invoked
+  - name: identifies_data_factory
+    type: text
     config:
-      required_skills:
-        - azure-infra-planner
-      mode: any_order
+      regex_match:
+        - "(?i)data.?factory|adf|pipeline|ingest"
+
+  - name: identifies_transformation
+    type: text
+    config:
+      regex_match:
+        - "(?i)databricks|spark|transform|process"
+
+  - name: identifies_analytics_storage
+    type: text
+    config:
+      regex_match:
+        - "(?i)synapse|data.?warehouse|analytics"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+        - "infra/main.tf"
+      content_patterns:
+        - path: "infra/main.tf"
+          must_match:
+            - "(?i)data.?factory|databricks|synapse"
