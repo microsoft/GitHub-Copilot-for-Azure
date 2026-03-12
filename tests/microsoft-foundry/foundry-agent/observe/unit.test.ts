@@ -71,7 +71,7 @@ describe("observe - Unit Tests", () => {
 
     test("contains Quick Reference table", () => {
       expect(observeContent).toContain("## Quick Reference");
-      expect(observeContent).toContain("foundry-mcp");
+      expect(observeContent).toContain("azure");
     });
   });
 
