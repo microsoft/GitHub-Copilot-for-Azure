@@ -99,6 +99,7 @@ For non-deploy tests (e.g. azure-prepare, azure-ai, azure-kusto), only track whe
 **Section 3 — Report Confidence & Pass Rate**
 
 Extract from SKILL-REPORT.md:
+- Skill Invocation Success Rate (from the report's statistics section)
 - Overall Test Pass Rate (from the report's statistics section)
 - Average Confidence (from the report's statistics section)
 
@@ -107,6 +108,16 @@ Extract from SKILL-REPORT.md:
 Repeat Phase 1–3 for the second run, then produce a side-by-side delta table. See [report-format.md](references/report-format.md) § Comparison.
 
 ### Phase 3 — File Issues for Failures
+
+For Skill Invocation Success Rate that is available and is less than 80%, create a GitHub issue:
+
+```
+gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
+  --title "Integration test failure: <skill> – skill-invocation" \
+  --label "bug,integration-test,skill-invocation" \
+  --body "<body>"
+```
+Issue body template — see [issue-template.md](references/issue-template.md).
 
 For every test with a `<failure>` element in `junit.xml`:
 
