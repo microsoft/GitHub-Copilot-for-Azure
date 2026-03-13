@@ -4,22 +4,23 @@ Manage dataset versions with naming conventions, tagging, and version pinning fo
 
 ## Naming Convention
 
-Use the pattern `<agent-name>-<source>-v<N>`:
+Use the pattern `<agent-name>-<environment>-<source>-v<N>`:
 
 | Component | Values | Example |
 |-----------|--------|---------|
-| `<agent-name>` | Agent name from `.env` | `support-bot` |
+| `<agent-name>` | Agent name from `agent-metadata.yaml` | `support-bot` |
+| `<environment>` | Selected environment key | `prod` |
 | `<source>` | `traces`, `synthetic`, `manual`, `combined` | `traces` |
 | `v<N>` | Incremental version number | `v3` |
 
 **Full examples:**
-- `support-bot-traces-v1` — first dataset from trace harvesting
-- `support-bot-synthetic-v2` — second synthetic dataset
-- `support-bot-combined-v5` — fifth dataset combining traces + manual examples
+- `support-bot-prod-traces-v1` — first production dataset from trace harvesting
+- `support-bot-dev-synthetic-v2` — second synthetic dataset
+- `support-bot-prod-combined-v5` — fifth production dataset combining traces + manual examples
 
 ## Tagging Conventions
 
-Tags are stored in `datasets/manifest.json` alongside dataset metadata:
+Tags are stored in `.foundry/datasets/manifest.json` alongside dataset metadata:
 
 | Tag | Meaning | When to Apply |
 |-----|---------|---------------|
@@ -38,25 +39,37 @@ Pin evaluations to a specific dataset version to ensure reproducible, comparable
 When using local JSONL files, reference the exact filename in evaluation runs:
 
 ```
-datasets/support-bot-traces-v3.jsonl  ← pinned by filename
+.foundry/datasets/support-bot-prod-traces-v3.jsonl  ← pinned by filename
 ```
 
 Pass the contents via `inputData` parameter in **`evaluation_agent_batch_eval_create`**.
 
-### ~~Server-Side Pinning~~ (Not Available)
+### Server-Side Version Discovery
 
-> ⚠️ **Dataset upload MCP tools are not yet ready.** Skip `evaluation_dataset_create` (uploads) for now. You may use `evaluation_dataset_get` for read-only inspection of any existing server-side datasets, but do **not** rely on them for version pinning—use local JSONL files and pass data via `inputData` when running evaluations.
+Use `evaluation_dataset_versions_get` to list all versions of a dataset registered in Foundry:
+
+```
+evaluation_dataset_versions_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>")
+```
+
+Use `evaluation_dataset_get` without a name to list all datasets in the project:
+
+```
+evaluation_dataset_get(projectEndpoint)
+```
+
+> 💡 **Tip:** Server-side versions are available after syncing via [Trace-to-Dataset → Step 5](trace-to-dataset.md#step-5--sync-local-cache-with-foundry-optional). Local `manifest.json` remains useful for lineage metadata (source, harvestRule, reviewedBy) not stored server-side.
 
 ## Manifest File
 
-Track all dataset versions, tags, and lineage in `datasets/manifest.json`:
+Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.json`:
 
 ```json
 {
   "datasets": [
     {
-      "name": "support-bot-traces-v1",
-      "file": "support-bot-traces-v1.jsonl",
+      "name": "support-bot-prod-traces-v1",
+      "file": "support-bot-prod-traces-v1.jsonl",
       "version": "1",
       "tag": "deprecated",
       "source": "trace-harvest",
@@ -67,8 +80,8 @@ Track all dataset versions, tags, and lineage in `datasets/manifest.json`:
       "evalRunIds": ["run-abc-123"]
     },
     {
-      "name": "support-bot-traces-v2",
-      "file": "support-bot-traces-v2.jsonl",
+      "name": "support-bot-prod-traces-v2",
+      "file": "support-bot-prod-traces-v2.jsonl",
       "version": "2",
       "tag": "baseline",
       "source": "trace-harvest",
@@ -79,8 +92,8 @@ Track all dataset versions, tags, and lineage in `datasets/manifest.json`:
       "evalRunIds": ["run-def-456", "run-ghi-789"]
     },
     {
-      "name": "support-bot-traces-v3",
-      "file": "support-bot-traces-v3.jsonl",
+      "name": "support-bot-prod-traces-v3",
+      "file": "support-bot-prod-traces-v3.jsonl",
       "version": "3",
       "tag": "prod",
       "source": "trace-harvest",
@@ -96,7 +109,7 @@ Track all dataset versions, tags, and lineage in `datasets/manifest.json`:
 
 ## Creating a New Version
 
-1. **Check existing versions**: Read `datasets/manifest.json` to find the latest version number
+1. **Check existing versions**: Read `.foundry/datasets/manifest.json` to find the latest version number
 2. **Increment version**: Use `v<N+1>` as the new version
 3. **Create dataset**: Via [Trace-to-Dataset](trace-to-dataset.md) or manual JSONL creation
 4. **Update manifest**: Add the new entry with metadata
@@ -141,11 +154,11 @@ To understand how a dataset evolved between versions:
 
 ```bash
 # Count examples per version
-wc -l datasets/support-bot-traces-v*.jsonl
+wc -l .foundry/datasets/support-bot-prod-traces-v*.jsonl
 
 # Diff example queries between versions
-jq -r '.query' datasets/support-bot-traces-v2.jsonl | sort > /tmp/v2-queries.txt
-jq -r '.query' datasets/support-bot-traces-v3.jsonl | sort > /tmp/v3-queries.txt
+jq -r '.query' .foundry/datasets/support-bot-prod-traces-v2.jsonl | sort > /tmp/v2-queries.txt
+jq -r '.query' .foundry/datasets/support-bot-prod-traces-v3.jsonl | sort > /tmp/v3-queries.txt
 diff /tmp/v2-queries.txt /tmp/v3-queries.txt
 ```
 

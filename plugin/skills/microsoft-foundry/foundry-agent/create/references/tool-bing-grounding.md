@@ -36,7 +36,7 @@ Access real-time web information via Bing Search. Unlike the [Web Search tool](t
 
 | Issue | Cause | Resolution |
 |-------|-------|------------|
-| Connection not found | Name mismatch or wrong project | Use `foundry_connections_list` to find correct name |
+| Connection not found | Name mismatch or wrong project | Use `project_connection_list` to find the correct `connectionName` |
 | Unauthorized creating connection | Missing Azure AI Project Manager role | Assign role on the Foundry project |
 | Bing resource creation fails | Provider not registered | Run `az provider register --namespace 'Microsoft.Bing'` |
 | No results returned | Connection misconfigured | Verify Bing resource key and connection setup |

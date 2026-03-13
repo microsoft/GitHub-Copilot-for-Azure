@@ -11,7 +11,7 @@ Automatically detect when evaluation metrics degrade between agent versions. Com
 
 ### Automatic Baseline Selection
 
-1. Read `datasets/manifest.json` and find the dataset tagged `baseline`.
+1. Read `.foundry/datasets/manifest.json` and find the dataset tagged `baseline`.
 2. If the baseline dataset entry includes a stored `baselineRunId` (or mapping to one or more `evalRunIds`), use that `baselineRunId` as the baseline run.
 3. If no explicit `baselineRunId` is recorded, select the first (oldest) run in the evaluation group as the baseline.
 
