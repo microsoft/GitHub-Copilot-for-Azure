@@ -1,0 +1,82 @@
+# AKS Cluster Autoscaler (CAS)
+
+Enable and tune the Cluster Autoscaler to automatically scale down idle nodes.
+
+## Check CAS Status
+
+```powershell
+az aks show --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --query "agentPoolProfiles[].{name:name, casEnabled:enableAutoScaling, min:minCount, max:maxCount, count:count}" -o table
+
+az aks show --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --query "autoScalerProfile" -o json
+```
+
+## Check Node Utilization (7 days)
+
+```powershell
+az monitor metrics list \
+  --resource "<AKS_RESOURCE_ID>" \
+  --metric "node_cpu_usage_percentage" \
+  --interval PT1H --aggregation Average \
+  --start-time (Get-Date).AddDays(-7).ToString("yyyy-MM-ddTHH:mm:ssZ") \
+  --end-time (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
+```
+
+## Enable CAS
+
+```powershell
+# Cluster-level
+az aks update \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --enable-cluster-autoscaler \
+  --min-count <MIN_NODES> --max-count <MAX_NODES>
+
+# Specific node pool
+az aks nodepool update \
+  --cluster-name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<NODEPOOL_NAME>" \
+  --enable-cluster-autoscaler \
+  --min-count <MIN_NODES> --max-count <MAX_NODES>
+```
+
+## Recommended min/max Defaults
+
+| Scenario | min-count | max-count |
+|----------|-----------|-----------|
+| Dev/test | 1 | current_count |
+| Production (web/API) | 2 | current_count * 3 |
+| Production (batch) | 0 | current_count * 5 |
+
+> Risk: Low. CAS only scales down when pods can be safely rescheduled. Set min-count >= 2 for production HA.
+
+## Tune CAS Profile
+
+Apply when CAS is already on but idle nodes persist:
+
+```powershell
+az aks update \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --cluster-autoscaler-profile \
+    scale-down-delay-after-add=10m \
+    scale-down-unneeded-time=10m \
+    scale-down-utilization-threshold=0.5 \
+    max-graceful-termination-sec=600 \
+    skip-nodes-with-system-pods=false
+```
+
+## Profile Comparison
+
+| Profile | scale-down-delay | utilization-threshold | Best For |
+|---------|------------------|-----------------------|----------|
+| Default | 10m | 0.5 | General workloads |
+| Cost-Optimized | 10m | 0.5 + shorter delays | Cost-sensitive |
+| Conservative | 30m | 0.7 | Stateful / production |
+| Aggressive | 5m | 0.4 | Dev/test, batch |
+
+> Risk: High for aggressive tuning. Ensure PodDisruptionBudgets (PDBs) are set on critical workloads. Always confirm with user before applying.
+
+## Cost Impact Estimate
+
+- Count idle nodes (utilization < 20% for 7+ days)
+- Multiply: idle nodes x VM hourly price (Azure Retail Prices API) x 720 hrs/month
