@@ -85,8 +85,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("kql-queries.md");
     });
 
-    test("links to Azure Resource Graph reference", () => {
-      expect(skill.content).toContain("references/azure-resource-graph.md");
+    test("links to Azure Kubernetes troubleshooting reference", () => {
+      expect(skill.content).toContain("references/azure-kubernetes/README.md");
+    });
+
+    test("links to AKS troubleshooting subskill", () => {
+      expect(skill.content).toContain("troubleshooting/SKILL.md");
     });
   });
 

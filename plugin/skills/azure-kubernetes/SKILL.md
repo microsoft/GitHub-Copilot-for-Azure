@@ -3,7 +3,7 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 description: "Plan and create production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 decisions and Day-1 configuration, cluster SKUs (Automatic vs Standard), security, monitoring, reliability/performance best practices, upgrades, and networking. WHEN: create AKS cluster, plan AKS configuration, design AKS networking, AKS Automatic vs Standard, AKS security, AKS upgrade strategy, AKS autoscaling, AKS monitoring setup, AKS cost analysis, Day-0 checklist."
 ---
 
@@ -11,7 +11,7 @@ description: "Plan and create production-ready Azure Kubernetes Service (AKS) cl
 
 > **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
 >
-> This parent skill is the **AKS entry point**. Route active AKS issues to [AKS Troubleshooting](./troubleshooting/SKILL.md). Keep this file focused on **planning and production-ready cluster configuration**, distinguishing **Day-0 decisions** (networking, API server — hard to change later) from **Day-1 features** (can enable post-creation). See [CLI reference](./references/cli-reference.md) for commands.
+> This parent skill is the **AKS entry point**. Route active AKS issues to the **azure-diagnostics** skill. Keep this file focused on **planning and production-ready cluster configuration**, distinguishing **Day-0 decisions** (networking, API server — hard to change later) from **Day-1 features** (can enable post-creation). See [CLI reference](./references/cli-reference.md) for commands.
 
 ## Quick Reference
 | Property | Value |
@@ -19,7 +19,8 @@ description: "Plan and create production-ready Azure Kubernetes Service (AKS) cl
 | Best for | AKS entry-point routing plus cluster planning and Day-0 decisions |
 | MCP Tools | `mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations` |
 | CLI | `az aks create`, `az aks show` |
-| Related skills | [AKS Troubleshooting](./troubleshooting/SKILL.md), azure-diagnostics, azure-deploy |
+| Detailed guidance | [references/planning-overview.md](references/planning-overview.md) |
+| Related skills | azure-diagnostics, azure-deploy |
 
 ## When to Use This Skill
 Activate this skill when user wants to:
@@ -42,14 +43,14 @@ Use this parent skill as the AKS entry point and route by user intent:
 - **Planning / Day-0 / Day-1**: cluster creation, networking design, security posture, observability setup, upgrades, and cost or reliability decisions
 - **Troubleshooting / Day-2**: existing cluster issues, pod failures, node health problems, ingress or networking breaks, autoscaling failures, image pull issues, or requests for diagnostic kubectl guidance
 
-If the user is diagnosing an active AKS problem, use [AKS Troubleshooting](./troubleshooting/SKILL.md).
+If the user is diagnosing an active AKS problem, use the **azure-diagnostics** skill.
 If the user is designing or provisioning AKS, stay in this parent skill.
 
 ## Sub-Skills
 
 | Sub-skill | When to route |
 |-----------|---------------|
-| [AKS Troubleshooting](./troubleshooting/SKILL.md) | Day-2 AKS diagnosis and remediation guidance |
+| AKS Troubleshooting (via azure-diagnostics) | Day-2 AKS diagnosis and remediation guidance |
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.

@@ -5,5 +5,13 @@
     "references/**/*.md": 1000,
     "*.md": 2000
   },
-  "overrides": {}
+  "overrides": {
+    "plugin/skills/azure-diagnostics/SKILL.md": 1300,
+    "plugin/skills/azure-diagnostics/references/azure-kubernetes/networking.md": 2500,
+    "plugin/skills/azure-diagnostics/references/azure-kubernetes/node-issues.md": 2300,
+    "plugin/skills/azure-diagnostics/references/azure-kubernetes/pod-failures.md": 1900,
+    "plugin/skills/azure-diagnostics/troubleshooting/SKILL.md": 2400,
+    "plugin/skills/azure-diagnostics/troubleshooting/references/troubleshooting-overview.md": 2500,
+    "plugin/skills/azure-kubernetes/SKILL.md": 2300
+  }
 }

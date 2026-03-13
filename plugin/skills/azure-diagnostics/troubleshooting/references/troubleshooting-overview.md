@@ -1,6 +1,6 @@
 # Troubleshooting Overview
 
-This subskill provides structured AKS troubleshooting using public Azure signals, AKS MCP tools, and safe kubectl guidance. Use AKS MCP as the default path whenever the task needs AKS-aware Azure inspection, kubectl access, built-in AppLens detectors, or advanced diagnostics such as Inspektor Gadget.
+This subskill provides structured AKS troubleshooting using public Azure signals, AKS MCP tools, and safe kubectl guidance. Use Azure/aks-mcp as the default AKS server whenever the task needs AKS-aware Azure inspection, kubectl access, built-in AppLens detectors, or advanced diagnostics such as Inspektor Gadget. See [AKS-MCP server reference](aks-mcp.md) for installation and configuration details.
 
 The attached product handler and prompt-flow scripts show a concrete pattern worth preserving in this skill:
 
@@ -39,6 +39,7 @@ The attached product handler and prompt-flow scripts show a concrete pattern wor
 
 | Source                         | When to use                                                                |
 | ------------------------------ | -------------------------------------------------------------------------- |
+| Azure/aks-mcp server           | Preferred AKS-focused MCP server; may surface as unified or client-mapped tools |
 | `mcp_azure_mcp_aks`            | Default entry point for AKS-aware Azure and kubectl diagnostics            |
 | AKS MCP AppLens detectors      | When the configured AKS MCP server exposes detector-backed troubleshooting |
 | AKS MCP Inspektor Gadget       | When low-level runtime or networking insight is needed and enabled         |
