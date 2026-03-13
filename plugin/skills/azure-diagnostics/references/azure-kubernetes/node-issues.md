@@ -86,28 +86,18 @@ az aks nodepool scale -g <rg> --cluster-name <cluster> -n <nodepool> --node-coun
 
 ```bash
 kubectl describe node <node> | grep -A6 "Allocated resources:"
-# Shows: CPU requests/limits, Memory requests/limits, Ephemeral storage
 ```
 
-**AKS resource reservation table (approximate):**
-
-| VM Size         | Total Memory | AKS Reserved | Allocatable |
-| --------------- | ------------ | ------------ | ----------- |
-| Standard_D2s_v3 | 8 GB         | ~1.7 GB      | ~6.3 GB     |
-| Standard_D4s_v3 | 16 GB        | ~2.3 GB      | ~13.7 GB    |
-| Standard_D8s_v3 | 32 GB        | ~3.5 GB      | ~28.5 GB    |
-
-See [AKS resource reservations](https://learn.microsoft.com/azure/aks/concepts-clusters-workloads#resource-reservations) for the CPU formula.
+See [AKS resource reservations](https://learn.microsoft.com/azure/aks/concepts-clusters-workloads#resource-reservations) for allocatable math.
 
 **Ephemeral storage pressure:**
 
 ```bash
 # Check what's consuming ephemeral storage on a node
 kubectl debug node/<node> -it --image=mcr.microsoft.com/cbl-mariner/base/core:2.0
-# Inside: df -h /host/var/lib/docker  or  /host/var/lib/containerd
 ```
 
-Common culprit: containers writing to stdout at high volume — logs accumulate in `/var/log/containers`. AKS log rotation can still be overwhelmed by aggressive logging.
+Common culprit: high-volume container logs accumulating in `/var/log/containers`.
 
 ---
 
@@ -169,7 +159,7 @@ kubectl get events -A --field-selector reason=SpotEviction
 kubectl get events -A | grep -i "evict\|spot\|preempt"
 ```
 
-**Spot workload requirements:** pods must tolerate the spot taint; use PDBs; avoid stateful PVC workloads on spot (disk detach can lag eviction). Pattern — toleration + preferred affinity:
+**Spot workload pattern:** pods must tolerate the spot taint. Prefer PDBs and avoid stateful PVC workloads on spot.
 
 ```yaml
 tolerations:
@@ -192,13 +182,10 @@ affinity:
 
 ## Multi-AZ Node Pool & Zone-Related Failures
 
-AKS supports zone-redundant node pools that spread nodes across Availability Zones. Zone awareness affects scheduling, storage, and upgrade behavior.
-
 **Check zone distribution:**
 
 ```bash
 kubectl get nodes -L topology.kubernetes.io/zone
-# Nodes should distribute across zones 1, 2, 3
 ```
 
 **Zone-related failure patterns:**
@@ -210,20 +197,19 @@ kubectl get nodes -L topology.kubernetes.io/zone
 | Service endpoints unreachable from one zone      | Topology-aware routing misconfigured                 | Check `service.spec.trafficDistribution` or TopologyKeys     |
 | Upgrade causing zone imbalance                   | Surge nodes in one zone                              | Configure `maxSurge` in node pool upgrade settings           |
 
-**ZRS storage for multi-AZ (recommended):** Prevents zone affinity conflicts on disk PVCs. Use `Premium_ZRS` or `StandardSSD_ZRS` as the `skuname` in a custom StorageClass. See [AKS storage best practices](https://learn.microsoft.com/azure/aks/operator-best-practices-storage) for the ZRS StorageClass spec.
+Use `Premium_ZRS` or `StandardSSD_ZRS` in custom StorageClasses to reduce zonal PVC conflicts. See [AKS storage best practices](https://learn.microsoft.com/azure/aks/operator-best-practices-storage).
 
 ---
 
 ## Zero-Downtime Node Pool Upgrades
 
-The `maxSurge` setting controls how many extra nodes are provisioned during upgrade. Default is 1, which means nodes are upgraded one at a time.
+`maxSurge` controls how many extra nodes are provisioned during upgrade.
 
 ```bash
 # Check current maxSurge
 az aks nodepool show -g <rg> --cluster-name <cluster> -n <nodepool> \
   --query "upgradeSettings.maxSurge"
 
-# Set maxSurge to 33% for faster, safer upgrades (provisions 1/3 extra nodes first)
 az aks nodepool update -g <rg> --cluster-name <cluster> -n <nodepool> \
   --max-surge 33%
 ```
@@ -233,7 +219,6 @@ az aks nodepool update -g <rg> --cluster-name <cluster> -n <nodepool> \
 ```bash
 kubectl get pdb -A
 kubectl describe pdb <pdb-name> -n <ns>
-# "DisruptionsAllowed: 0" → no pods can be evicted → upgrade hangs
 ```
 
-Fix: scale up the deployment so `DisruptionsAllowed` becomes ≥ 1, or temporarily relax `minAvailable`. Restore after upgrade.
+If `DisruptionsAllowed: 0`, scale up the workload or temporarily relax `minAvailable`.
