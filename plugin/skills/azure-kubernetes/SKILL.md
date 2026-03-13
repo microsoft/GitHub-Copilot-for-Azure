@@ -3,7 +3,7 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 description: "Plan and create production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 decisions and Day-1 configuration, cluster SKUs (Automatic vs Standard), security, monitoring, reliability/performance best practices, upgrades, and networking. WHEN: create AKS cluster, plan AKS configuration, design AKS networking, AKS Automatic vs Standard, AKS security, AKS upgrade strategy, AKS autoscaling, AKS monitoring setup, AKS cost analysis, Day-0 checklist."
 ---
 
@@ -11,7 +11,7 @@ description: "Plan and create production-ready Azure Kubernetes Service (AKS) cl
 
 > **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
 >
-> This parent skill is the **AKS entry point**. Route active AKS issues to the **azure-diagnostics** skill. Keep this file focused on **planning and production-ready cluster configuration**, distinguishing **Day-0 decisions** (networking, API server — hard to change later) from **Day-1 features** (can enable post-creation). See [CLI reference](./references/cli-reference.md) for commands.
+> This parent skill is the **AKS entry point**. Route active AKS issues to the **azure-diagnostics** skill. Keep this file focused on **planning and production-ready cluster configuration**, distinguishing **Day-0 decisions** (networking, API server — hard to change later) from **Day-1 features** (can enable post-creation). See [planning overview](./references/planning-overview.md) for the core setup checklist.
 
 ## Quick Reference
 | Property | Value |
@@ -46,11 +46,13 @@ Use this parent skill as the AKS entry point and route by user intent:
 If the user is diagnosing an active AKS problem, use the **azure-diagnostics** skill.
 If the user is designing or provisioning AKS, stay in this parent skill.
 
+For active incidents, route to [AKS Troubleshooting](../azure-diagnostics/troubleshooting/SKILL.md).
+
 ## Sub-Skills
 
 | Sub-skill | When to route |
 |-----------|---------------|
-| AKS Troubleshooting (via azure-diagnostics) | Day-2 AKS diagnosis and remediation guidance |
+| [AKS Troubleshooting](../azure-diagnostics/troubleshooting/SKILL.md) | Day-2 AKS diagnosis and remediation guidance |
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.

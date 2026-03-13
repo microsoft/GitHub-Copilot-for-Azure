@@ -86,11 +86,17 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("links to Azure Kubernetes troubleshooting reference", () => {
-      expect(skill.content).toContain("references/azure-kubernetes/README.md");
+      expect(skill.content).toContain("troubleshooting/SKILL.md");
     });
 
     test("links to AKS troubleshooting subskill", () => {
       expect(skill.content).toContain("troubleshooting/SKILL.md");
+    });
+
+    test("routes AKS incidents to a self-contained subskill", () => {
+      expect(skill.content).toContain("Route active AKS incidents");
+      expect(skill.content).not.toContain("references/troubleshooting-overview.md");
+      expect(skill.content).not.toContain("references/aks-mcp.md");
     });
   });
 

@@ -1,93 +1,196 @@
 ---
 name: troubleshooting
-description: "Troubleshoot Azure Kubernetes Service (AKS) clusters using structured triage for control plane, nodes, workloads, networking, ingress, scaling, upgrades, and observability. WHEN: AKS cluster down, pod pending, crashloop, node not ready, image pull failure, ingress issue, autoscaler issue, upgrade failure, kubectl troubleshooting."
+description: "Diagnose AKS cluster incidents using Azure CLI, kubectl, AppLens, and AKS-aware MCP tools. WHEN: AKS cluster down, kubectl cannot connect, pod pending, crashloop, image pull failure, node not ready, kube-system unhealthy, ingress issue, DNS issue, autoscaler issue, upgrade failure, AKS troubleshooting."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # AKS Troubleshooting
 
 ## Quick Reference
 
-| Property             | Value                                                                                                                                                                              |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Best for             | Day-2 diagnosis of AKS cluster, node, workload, networking, and upgrade issues                                                                                                     |
-| MCP Tools            | Azure/aks-mcp integrations such as `mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations`, plus `mcp_azure_mcp_monitor`, `mcp_azure_mcp_resourcehealth`, and `mcp_azure_mcp_documentation` |
-| AKS MCP capabilities | Azure/aks-mcp exposes AKS-aware Azure APIs, kubectl mediation, detectors, fleet/network/compute views, and advanced troubleshooting such as Inspektor Gadget when enabled        |
-| Detailed guidance    | [references/troubleshooting-overview.md](references/troubleshooting-overview.md), [references/aks-mcp.md](references/aks-mcp.md)                                                 |
+| Property | Value |
+|----------|-------|
+| Best for | Day-2 AKS diagnosis in GHCP CLI |
+| Primary tools | `az`, `kubectl`, `mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations`, `mcp_azure_mcp_monitor`, `mcp_azure_mcp_resourcehealth` |
+| Default posture | Evidence first, read-only first, remediation second |
+| Output | Scope, evidence, failure domain, root cause, confidence, next checks, safe remediation, escalation |
 
 ## When to Use This Skill
 
-- AKS cluster or API server is unavailable
-- Node pool is unhealthy or nodes are `NotReady`
-- Pods are stuck in `Pending`, `CrashLoopBackOff`, `OOMKilled`, or restarting repeatedly
-- Workloads hit `ImagePullBackOff` or registry authentication failures
+- AKS cluster create, update, start, stop, or upgrade failed
+- `kubectl` cannot connect to the AKS API server
+- Nodes are missing or `NotReady`
+- `kube-system` is unhealthy
+- Pods are stuck in `Pending`, `CrashLoopBackOff`, `OOMKilled`, or `ImagePullBackOff`
 - Service, ingress, DNS, CNI, egress, or network policy traffic is failing
-- Workload identity, managed identity, Key Vault CSI, or other auth flows are broken
-- PVC, disk attach, storage class, or mount issues block workloads
-- HPA, KEDA, cluster autoscaler, or node auto provisioning is not scaling as expected
-- AKS upgrade or post-upgrade regressions need diagnosis
-- The user wants kubectl-based troubleshooting guidance or AKS detector-backed investigation
+- Cluster autoscaler, HPA, or KEDA is not scaling as expected
+- The user needs structured AKS triage with `az`, AppLens, and `kubectl`
 
 ## MCP Tools
 
-| Tool                            | Command or Role | Use                                                                                                                   |
-| ------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `Azure/aks-mcp`                 | External server | Preferred AKS-aware MCP server. Depending on the client, this may surface as unified `call_az` / `call_kubectl` tools or mapped legacy AKS tools |
-| `mcp_azure_mcp_aks`             | AKS MCP server  | Primary repo/client-mapped entry point for AKS-aware Azure inspection, kubectl mediation, and advanced diagnostics   |
-| `mcp_aks_mcp_az_aks_operations` | AKS operations  | Cluster and node pool operations exposed through AKS MCP                                                              |
-| `mcp_azure_mcp_monitor`         | `logs_query`    | Query Azure Monitor logs and metrics when cluster telemetry is involved                                               |
-| `mcp_azure_mcp_resourcehealth`  | `get`           | Check health state of the AKS resource and supporting Azure resources                                                 |
-| `mcp_azure_mcp_documentation`   | Doc search      | Pull Microsoft Learn guidance for the exact failure mode                                                              |
+| Tool | Use |
+|------|-----|
+| `mcp_azure_mcp_aks` | Preferred AKS-aware inspection and kubectl mediation when the client exposes it |
+| `mcp_aks_mcp_az_aks_operations` | Cluster and node pool inspection or operations exposed through AKS MCP |
+| `mcp_azure_mcp_monitor` | Logs and metrics correlation when telemetry is relevant |
+| `mcp_azure_mcp_resourcehealth` | Health status of AKS and supporting Azure resources |
+| `mcp_azure_mcp_applens` | AppLens-style diagnostics when surfaced in the client |
 
-When kubectl commands, AppLens detectors, Inspektor Gadget, fleet, or AKS-aware Azure inspection are needed, prefer Azure/aks-mcp rather than direct terminal commands. In this repo's client integrations, those capabilities may appear under mapped names such as `mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations`, kubectl tools, detector tools, or Inspektor Gadget. See [references/aks-mcp.md](references/aks-mcp.md) for installation and configuration guidance.
+When AKS-aware MCP tools are available, prefer them over raw shell commands. If they are unavailable, fall back to safe `az` and `kubectl` reads.
+
+## Goals
+
+- Determine whether the issue is Azure-side, AKS platform-side, Kubernetes-side, or workload-specific.
+- Gather concrete evidence before proposing a root cause.
+- Classify the failure into a small number of repeatable branches.
+- End with safe next steps and explicit escalation criteria.
+
+## Required Inputs
+
+Try to obtain:
+
+- subscription or active Azure context
+- resource group
+- AKS cluster name
+- symptom summary
+- impacted namespace, workload, service, or ingress when known
+- first observed time or recent change window
+- whether the issue is cluster-wide, namespace-wide, app-specific, external-only, or internal-only
+
+If the minimum cluster identifier is missing, ask for it before deeper troubleshooting.
 
 ## Workflow
 
-1. Resolve cluster context first.
-   Infer or confirm the AKS cluster before deeper troubleshooting. If the cluster cannot be determined, ask for the minimum cluster identifier needed to continue.
+1. Establish scope.
+   Determine whether the issue is lifecycle failure, API access, node health, `kube-system`, workload runtime, connectivity, DNS, scaling, or general degradation.
 
-2. Parse whether the prompt is free-form or structured.
-   Treat the request as one of these shapes when possible: general troubleshooting prompt, alert-driven prompt, unhealthy resource state prompt, Kubernetes warning event prompt, or live metric pressure prompt.
+2. Gather Azure-side evidence first.
+   Use `az aks show`, resource health, recent Azure operations, node pool state, and AppLens or AKS-aware detectors when available.
 
-3. Use the detector-first path for generic, alert, and resource-state cases.
-   For a plain troubleshooting ask, start with AKS MCP detector-style diagnostics. For alerts or unhealthy resource states, convert the structured signal into a troubleshooting prompt and run the detector-backed path first.
+3. Gather Kubernetes-side evidence second.
+   Check cluster reachability, nodes, `kube-system`, events, and affected workloads before diving into deep application logs.
 
-4. Use specialized branches for events and metrics.
-   If the input is warning events, analyze the events directly. If the input is live CPU or memory pressure data, analyze the metric trend first, then summarize whether the resource is healthy and what to investigate next.
+4. Follow the matching branch.
+   Use the smallest symptom branch that fits the issue and avoid broad speculation.
 
-5. Normalize inputs before inference.
-   Gather the cluster metadata, detector insights, problem list, warning events, metric time series, and resource symptoms into a consistent structure before summarization. This mirrors the product flow, which formats events and symptoms into compact table-like inputs for downstream analysis.
+5. Synthesize findings.
+   State the observed symptoms, quote the strongest evidence, identify the likely failure domain, estimate confidence, and give safe next steps.
 
-6. Produce structured outputs.
-   Prefer outputs that separate summary, likely cause, solution, monitoring strategy, affected resources, and kubectl commands. For detector-backed results, identify which insight is the likely root problem and preserve the per-insight remediation steps.
+## Branch Rules
 
-7. Run a follow-up general pass when the first pass is incomplete.
-   If the detector, event, or metrics path cannot finish the diagnosis cleanly, fall back to a broader general troubleshooting synthesis using the same prompt plus any structured context already collected.
+### Cluster lifecycle failure
 
-8. End with safe next steps and Learn grounding.
-   Prefer read-only kubectl guidance first, keep disruptive actions explicit, and attach the most relevant Learn links or Azure surfaces to inspect next.
+- Start with `az aks show` and recent Azure operations.
+- Look for provisioning errors, quota issues, subnet exhaustion, outbound connectivity failures, API server DNS or connectivity failures, and upgrade drain problems.
+- If the cluster becomes reachable, inspect `kube-system` add-ons next.
+
+### Cannot connect to AKS API
+
+- Distinguish kubeconfig and auth issues from endpoint reachability or cluster state.
+- Check cluster mode, API server access restrictions, private DNS or network path, and whether the cluster is stopped or degraded.
+
+### Nodes missing or `NotReady`
+
+- Inspect `kubectl get nodes -o wide`, node conditions, node pool state, and recent events.
+- Look for pressure, CNI failures, kubelet or certificate issues, VMSS failures, or autoscaler drift.
+
+### `kube-system` unhealthy
+
+- Check CoreDNS, metrics-server, konnectivity-agent, coredns-autoscaler, CNI pods, ingress controller, and CSI drivers as relevant.
+- Treat widespread `kube-system` issues as platform signals before blaming workloads.
+
+### Workloads `Pending` or unschedulable
+
+- Inspect pod events, node allocatable resources, taints, affinity, PVCs, and quotas.
+- Look for insufficient CPU or memory, selector mismatch, toleration mismatch, unbound PVCs, or init failures.
+
+### Workloads `CrashLoopBackOff` or startup failure
+
+- Inspect current and previous logs, pod events, and deployment or statefulset configuration.
+- Look for bad config, missing secrets, readiness or liveness failures, OOMKilled, permission issues, or dependency DNS failures.
+
+### Connectivity, ingress, or DNS failure
+
+- Use an inside-out path: pod, service, endpoints, ingress or load balancer, DNS, then network controls.
+- Separate external-only failures from cluster-internal failures.
+
+### Scaling or autoscaler issues
+
+- Inspect node pool size, pending pods, autoscaler config, metrics availability, and quota or subnet constraints.
+
+### Unknown or general degradation
+
+- Run the compact triage set: Azure state, AppLens findings, nodes, `kube-system`, cluster events, and impacted namespace summary.
 
 ## Error Handling
 
-| Error or blocker                                | Likely cause                                                         | Remediation                                                                                                      |
-| ----------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| No AKS cluster context                          | Cluster name, resource group, or subscription is missing             | Ask for the minimum cluster identifier needed to continue                                                        |
-| AKS MCP server is unavailable                   | Azure/aks-mcp is not installed, started, or exposed by the client    | Install or start Azure/aks-mcp, then retry with MCP tools before falling back to manual CLI guidance            |
-| AKS MCP cannot access the cluster               | Azure auth, RBAC, namespace restrictions, or MCP configuration issue | Confirm AKS MCP authentication and permissions, then fall back to manual commands only if needed                 |
-| kubectl diagnostics require elevated access     | Server is running readonly or restricted namespaces only             | Tell the user which AKS MCP access level or namespace scope is blocking the step                                 |
-| Logs or metrics are missing                     | Monitoring not enabled or wrong workspace queried                    | Confirm monitoring setup and shift to Kubernetes events and resource state                                       |
-| Structured prompt data is invalid or incomplete | Alert, event, metric, or nudge payload could not be parsed cleanly   | Fall back to a plain detector-backed troubleshooting prompt instead of blocking outright                         |
-| Multiple alerts or issues are present           | More than one alert or problem needs diagnosis                       | Triage the highest-severity or most actionable issue first, then continue through the remaining alerts if needed |
-| Symptom is too generic                          | User asked for broad troubleshooting without a failure signal        | Ask one targeted follow-up question about symptom, scope, or timing                                              |
+| Error or blocker | Likely cause | Remediation |
+|------------------|--------------|-------------|
+| No cluster context | Cluster name, resource group, or subscription is missing | Ask for the minimum identifier needed to continue |
+| MCP tools unavailable | AKS-aware MCP server is not exposed by the client | Fall back to safe `az` and `kubectl` diagnostics |
+| `kubectl` access blocked | RBAC, API access restriction, or private endpoint path issue | Distinguish auth from network reachability and explain the blocker |
+| Logs or metrics missing | Monitoring is disabled or the wrong workspace is being queried | Use events, node state, and workload descriptions instead |
+| Too many simultaneous symptoms | More than one failure domain may be involved | Triage the broadest or highest-severity signal first |
 
 ## Guardrails
 
-- Treat AKS MCP as the preferred execution surface for AKS-aware Azure and kubectl operations.
-- Do not claim private internal backends are available unless exposed through AKS MCP or other public tools.
-- Do not execute disruptive remediation steps without clear user confirmation.
-- Do not request or expose secrets, kubeconfigs, tokens, or subscription IDs in the response.
+- Default to read-only diagnostics.
+- Do not restart, delete, cordon, drain, scale, upgrade, or reconfigure resources unless the user explicitly asks for remediation.
+- Do not assume the app is at fault before checking cluster and `kube-system` health.
+- Do not assume AKS is at fault before checking workload events and configuration.
+- Do not conclude root cause without quoting the evidence that supports it.
+- Do not rely on sidecar reference files for core diagnostic behavior in GHCP CLI. Keep the operating guidance in this file.
 
-See [references/troubleshooting-overview.md](references/troubleshooting-overview.md) for scenario-based guidance.
+## Safe Command Patterns
+
+Start with commands like these:
+
+```bash
+az aks show -g <resource-group> -n <cluster-name>
+az aks nodepool list -g <resource-group> --cluster-name <cluster-name>
+kubectl cluster-info
+kubectl get nodes -o wide
+kubectl get pods -n kube-system
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl describe pod <pod-name> -n <namespace>
+kubectl logs <pod-name> -n <namespace> --previous
+```
+
+Treat these as potentially disruptive and avoid them unless the user explicitly asks for remediation:
+
+- deleting or restarting pods
+- cordon or drain operations
+- scaling node pools or workloads
+- cluster upgrades or addon reconfiguration
+- DNS, NSG, route, or firewall changes
+
+## Output Format
+
+Return this structure:
+
+1. Scope and impact
+2. Key evidence
+3. Likely failure domain
+4. Most likely root cause
+5. Confidence
+6. Recommended next checks
+7. Safe remediation options
+8. Escalation criteria
+
+## Iterative Improvement Notes
+
+If this skill is being reviewed or improved, test it against realistic AKS incident prompts and score:
+
+- invocation quality
+- intake quality
+- branch selection
+- command choice
+- evidence quality
+- root-cause accuracy
+- safety
+- final summary quality
+
+Add new misses as regression cases instead of expanding the instructions with broad prose.

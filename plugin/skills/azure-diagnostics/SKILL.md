@@ -1,10 +1,10 @@
 ---
 name: azure-diagnostics
-description: "Debug and troubleshoot production issues on Azure. Covers Container Apps and Function Apps diagnostics, log analysis with KQL, health checks, and common issue resolution for image pulls, cold starts, health probes, and function invocation failures. WHEN: debug production issues, troubleshoot container apps, troubleshoot function apps, troubleshoot Azure Functions, analyze logs with KQL, fix image pull failures, resolve cold start issues, investigate health probe failures, check resource health, view application logs, find root cause of errors, function app not working, function invocation failures."
+description: "Debug and troubleshoot production issues on Azure. Covers Container Apps, Function Apps, and AKS diagnostics using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot container apps, troubleshoot function apps, troubleshoot Azure Functions, troubleshoot AKS cluster issues, kubectl cannot connect, kube-system or CoreDNS failures, pod pending, crashloop, node not ready, analyze logs with KQL, fix image pull failures, resolve cold start issues, investigate health probe failures, check resource health, find root cause of errors."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Diagnostics
@@ -24,6 +24,7 @@ Activate this skill when user wants to:
 - Find root cause of application errors
 - Troubleshoot Azure Function Apps (invocation failures, timeouts, binding errors)
 - Find the App Insights or Log Analytics workspace linked to a Function App
+- Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 
 ## Rules
 
@@ -32,6 +33,7 @@ Activate this skill when user wants to:
 3. Check resource health before deep-diving into logs
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
+6. Route AKS incidents to the nested AKS troubleshooting skill instead of duplicating Kubernetes-specific guidance here
 
 ---
 
@@ -51,6 +53,16 @@ Activate this skill when user wants to:
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
+| **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/SKILL.md) |
+
+---
+
+## Routing
+
+- Keep Container Apps and Function Apps diagnostics in this parent skill.
+- Route active AKS incidents to [AKS Troubleshooting](troubleshooting/SKILL.md).
+- Ask for subscription, resource group, cluster name, namespace, and symptom summary before deep AKS analysis when those identifiers are missing.
+- Keep AKS remediation cautious: prefer read-only evidence collection first, then propose safe next steps.
 
 ---
 

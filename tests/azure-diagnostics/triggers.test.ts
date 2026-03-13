@@ -54,6 +54,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "My Kubernetes node is NotReady",
       "Troubleshoot my AKS pod stuck in Pending state",
       "AKS networking issue, service is unreachable",
+      "kubectl cannot connect to my AKS cluster",
+      "AKS upgrade failed and nodes are not coming back",
+      "CoreDNS is failing in kube-system on my AKS cluster",
       "Check the health of my Azure resources",
       
       // Root cause analysis
