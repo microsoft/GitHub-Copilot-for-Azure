@@ -4,7 +4,7 @@ description: "Execute Azure deployments for ALREADY-PREPARED applications that h
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.5"
+  version: "1.0.7"
 ---
 
 # Azure Deploy
@@ -65,6 +65,7 @@ Activate this skill when user wants to:
 | 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
 | 6 | **Handle Errors** — See recipe's `errors.md` | — |
 | 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
+| 8 | **Live Role Verification** — Query Azure to confirm provisioned RBAC roles are correct and sufficient | [live-role-verification.md](references/live-role-verification.md) |
 
 > **⛔ VALIDATION PROOF CHECK**
 >
@@ -82,6 +83,7 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
 | `mcp_azure_mcp_azd` | Execute AZD commands |
+| `azure__role` | List role assignments for live RBAC verification (step 8) |
 
 ## References
 
