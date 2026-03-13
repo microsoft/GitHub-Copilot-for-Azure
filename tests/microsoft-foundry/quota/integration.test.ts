@@ -17,7 +17,7 @@ import {
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../../utils/agent-runner";
-import { getToolCalls, isSkillInvoked } from "../../utils/evaluate";
+import { isSkillInvoked } from "../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 
