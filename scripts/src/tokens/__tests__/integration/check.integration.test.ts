@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { join } from "node:path";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { check } from "../../commands/check.js";
 
 const TEST_DIR = join(process.cwd(), "__integration_check__");
@@ -20,6 +21,7 @@ describe("check command integration", () => {
       // Ignore clean up errors in tests
     }
     mkdirSync(join(TEST_DIR, ".github", "skills"), { recursive: true });
+    execFileSync("git", ["init"], { cwd: TEST_DIR, stdio: "ignore" });
     consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
   });
 
@@ -77,6 +79,17 @@ describe("check command integration", () => {
 
     expect(consoleSpy).toHaveBeenCalled();
   });
+
+  it("checks staged markdown files when --staged flag is provided", () => {
+    const stagedFile = join(TEST_DIR, ".github", "skills", "staged.md");
+    writeFileSync(stagedFile, "staged content");
+    execFileSync("git", ["add", ".github/skills/staged.md"], { cwd: TEST_DIR, stdio: "ignore" });
+
+    check(TEST_DIR, ["--staged"]);
+
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    expect(output).toContain("Files Checked: 1");
+   });
 
   it("loads custom config from .token-limits.json", () => {
     const config = {

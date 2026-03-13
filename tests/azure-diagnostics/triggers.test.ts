@@ -49,8 +49,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Find the App Insights for my function app",
       "Troubleshoot Azure Function invocation failures and timeout issues",
       
-      // Resource health
-      "Check resource health of my container app",
+      // AKS diagnostics
+      "Troubleshoot my AKS cluster, pods are in CrashLoopBackOff",
+      "My Kubernetes node is NotReady",
+      "Troubleshoot my AKS pod stuck in Pending state",
+      "AKS networking issue, service is unreachable",
+      "kubectl cannot connect to my AKS cluster",
+      "AKS upgrade failed and nodes are not coming back",
+      "CoreDNS is failing in kube-system on my AKS cluster",
       "Check the health of my Azure resources",
       
       // Root cause analysis
