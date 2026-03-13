@@ -17,7 +17,7 @@ import {
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../../utils/agent-runner";
-import { isSkillInvoked } from "../../utils/evaluate";
+import { getToolCalls, isSkillInvoked } from "../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 
@@ -282,11 +282,8 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
       expect(isSkillUsed).toBe(true);
 
-      // May use foundry_models_deployments_list or az CLI
-      const usesTools = doesAssistantMessageIncludeKeyword(
-        agentMetadata,
-        "foundry_models"
-      ) || doesAssistantMessageIncludeKeyword(
+      // May use azure-foundry or az CLI
+      const usesTools = getToolCalls(agentMetadata, "azure-foundry").length > 0 || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "az cognitiveservices"
       );
