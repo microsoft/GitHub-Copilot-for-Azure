@@ -4,6 +4,8 @@
  * Test isolated skill logic and validation rules.
  */
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-diagnostics";
@@ -86,17 +88,36 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("links to Azure Kubernetes troubleshooting reference", () => {
-      expect(skill.content).toContain("troubleshooting/SKILL.md");
+      expect(skill.content).toContain("troubleshooting/aks-troubleshooting.md");
     });
 
     test("links to AKS troubleshooting subskill", () => {
-      expect(skill.content).toContain("troubleshooting/SKILL.md");
+      expect(skill.content).toContain("troubleshooting/aks-troubleshooting.md");
     });
 
-    test("routes AKS incidents to a self-contained subskill", () => {
+    test("routes AKS incidents to the troubleshooting subskill", () => {
       expect(skill.content).toContain("Route active AKS incidents");
-      expect(skill.content).not.toContain("references/troubleshooting-overview.md");
-      expect(skill.content).not.toContain("references/aks-mcp.md");
+    });
+
+    test("supports sidecar references for AKS command flows and MCP guidance", () => {
+      const troubleshootingSkillPath = path.join(skill.path, "troubleshooting", "aks-troubleshooting.md");
+      const troubleshootingContent = readFileSync(troubleshootingSkillPath, "utf-8");
+
+      expect(troubleshootingContent).toContain("references/command-flows.md");
+      expect(troubleshootingContent).toContain("references/structured-input-modes.md");
+      expect(troubleshootingContent).toContain("references/aks-mcp.md");
+      expect(troubleshootingContent).toContain("references/testing-loop.md");
+    });
+
+    test("documents AKS-MCP preference and lightweight discovery guidance", () => {
+      const aksMcpReferencePath = path.join(skill.path, "troubleshooting", "references", "aks-mcp.md");
+      const aksMcpReference = readFileSync(aksMcpReferencePath, "utf-8");
+
+      expect(aksMcpReference).toContain("mcp_azure_mcp_aks");
+      expect(aksMcpReference).toContain("enumerate the exact AKS-MCP tools");
+      expect(aksMcpReference).toContain("readonly");
+      expect(aksMcpReference).toContain("AZURE_CLIENT_ID");
+      expect(aksMcpReference).toContain("AZURE_SUBSCRIPTION_ID");
     });
   });
 

@@ -33,7 +33,7 @@ Activate this skill when user wants to:
 3. Check resource health before deep-diving into logs
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
-6. Route AKS incidents to the nested AKS troubleshooting skill instead of duplicating Kubernetes-specific guidance here
+6. Route AKS incidents to the dedicated AKS troubleshooting document
 
 ---
 
@@ -53,14 +53,14 @@ Activate this skill when user wants to:
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
-| **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/SKILL.md) |
+| **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks-troubleshooting.md) |
 
 ---
 
 ## Routing
 
 - Keep Container Apps and Function Apps diagnostics in this parent skill.
-- Route active AKS incidents to [AKS Troubleshooting](troubleshooting/SKILL.md).
+- Route active AKS incidents to [AKS Troubleshooting](troubleshooting/aks-troubleshooting.md).
 - Ask for subscription, resource group, cluster name, namespace, and symptom summary before deep AKS analysis when those identifiers are missing.
 - Keep AKS remediation cautious: prefer read-only evidence collection first, then propose safe next steps.
 
