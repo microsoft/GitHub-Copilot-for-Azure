@@ -84,6 +84,28 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe("Should Trigger - VM Troubleshooting", () => {
+    const vmTroubleshootingPrompts: string[] = [
+      "I can't connect to my Azure VM via RDP",
+      "SSH connection to my Azure VM is refused",
+      "My Azure VM is unreachable after updating NSG rules",
+      "How do I reset the password on my Azure VM?",
+      "RDP to my Azure VM shows a black screen",
+      "I can't SSH into my Azure Linux VM anymore",
+      "Azure VM connectivity issue after reboot",
+      "Troubleshoot why I can't reach my VM on port 3389",
+    ];
+
+    test.each(vmTroubleshootingPrompts)(
+      'triggers on troubleshooting prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
