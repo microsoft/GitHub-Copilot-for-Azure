@@ -4,7 +4,7 @@ description: "Analyze a GitHub Actions integration test run and produce a skill 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Analyze Test Run
@@ -120,14 +120,14 @@ For every test with a `<failure>` element in `junit.xml`:
    - **Timeout** — test exceeded time limit
    - **Assertion mismatch** — expected files/links not found
    - **Quota exhaustion** — Azure region quota prevented deployment
-6. Search for an existing open issue before creating a new one:
+6. Search for existing open issue before creating a new one:
    ```bash
    gh issue list --repo microsoft/GitHub-Copilot-for-Azure \
-     --state open --label "integration-test" \
-     --search "Integration test failure: {skill} – {keywords} in:title" \
-     --json number,title --jq '.[0].number'
+     --state open \
+     --search "Integration test failure: {skill} in:title" \
+     --json number,title,body
    ```
-   Match criteria: an open issue whose title contains the same `{skill}` and `{keywords}` tokens. If a match is found, skip issue creation for this failure and note the existing issue number in the summary report.
+   Match criteria: an open issue whose title and body describe a similar problem. If a match is found, skip issue creation for this failure and note the existing issue number(s) in the summary report.
 7. If no existing issue was found, create a GitHub issue:
 
 ```

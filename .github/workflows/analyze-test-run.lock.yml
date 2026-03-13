@@ -24,7 +24,7 @@
 # Analyzes a GitHub Actions workflow run (given its run ID or URL) and creates
 # GitHub issues for each failing test found in the run's artifacts and logs.
 #
-# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"5d64f39d36379a2f0c037dc5902c3d2f20b8e26356ac0e727b46ae82d3f48658","compiler_version":"v0.57.2","strict":true}
+# gh-aw-metadata: {"schema_version":"v2","frontmatter_hash":"f8c6bc66772ecbe06dd5aa1c2ae65e524cb0206df6d67074ba2f1739983a47a1","compiler_version":"v0.57.2","strict":true}
 
 name: "Analyze Test Run"
 "on":
@@ -340,7 +340,7 @@ jobs:
           cat > /opt/gh-aw/safeoutputs/tools.json << 'GH_AW_SAFE_OUTPUTS_TOOLS_EOF'
           [
             {
-              "description": "Create a new GitHub issue for tracking bugs, feature requests, or tasks. Use this for actionable work items that need assignment, labeling, and status tracking. For reports, announcements, or status updates that don't require task tracking, use create_discussion instead. CONSTRAINTS: Maximum 10 issue(s) can be created. Labels [\"bug\" \"test-failure\"] will be automatically added.",
+              "description": "Create a new GitHub issue for tracking bugs, feature requests, or tasks. Use this for actionable work items that need assignment, labeling, and status tracking. For reports, announcements, or status updates that don't require task tracking, use create_discussion instead. CONSTRAINTS: Maximum 10 issue(s) can be created. Labels [\"bug\" \"integration-test\"] will be automatically added.",
               "inputSchema": {
                 "additionalProperties": false,
                 "properties": {
@@ -1155,7 +1155,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,github.com,host.docker.internal,raw.githubusercontent.com,registry.npmjs.org,telemetry.enterprise.githubcopilot.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_issue\":{\"labels\":[\"bug\",\"test-failure\"],\"max\":10},\"missing_data\":{},\"missing_tool\":{}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"create_issue\":{\"labels\":[\"bug\",\"integration-test\"],\"max\":10},\"missing_data\":{},\"missing_tool\":{}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
