@@ -123,6 +123,18 @@ If the user is unsure, use safe defaults.
 - **Stop/Start** dev/test clusters: `az aks stop/start`
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
+### 10. Cost Optimization
+
+Load only the reference file relevant to the user's request:
+
+| Scenario | Trigger Keywords | Reference |
+|----------|-----------------|-----------|
+| Pod Rightsizing | over-provisioned pods, CPU requests, memory requests, rightsize workloads | [azure-aks-rightsizing.md](./references/azure-aks-rightsizing.md) |
+| Cluster Autoscaler | idle nodes, CAS off, enable autoscaler, scale-down profile, node utilization | [azure-aks-autoscaler.md](./references/azure-aks-autoscaler.md) |
+| Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
+| Cost Analysis Add-on | namespace costs, cost visibility, cost monitoring, enable cost add-on | [azure-aks-cost-addon.md](./references/azure-aks-cost-addon.md) |
+| Anomaly Investigation | cost spike, utilization spike, node surge, HPA issue, budget alert | [azure-aks-anomalies.md](./references/azure-aks-anomalies.md) |
+
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
 - If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
