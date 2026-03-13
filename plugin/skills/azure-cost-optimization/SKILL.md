@@ -96,6 +96,38 @@ mcp_azure_mcp_get_azure_bestpractices({
 
 Wait for user response before proceeding to Step 2.
 
+### Step 1.7: AKS-Specific Analysis (Conditional)
+
+**If the user specifically requests AKS cost optimization**, use the specialized AKS skill:
+
+**Reference**: [Azure AKS Cost Optimization](./references/azure-aks.md)
+
+**When to use AKS-specific analysis:**
+- User mentions "AKS", "Kubernetes", "cluster", "node pool", "pod", "kubectl"
+- User asks about container costs, namespace costs, or workload rightsizing
+- User wants to enable or tune the Cluster Autoscaler (CAS)
+- User asks about Spot nodes or Spot VM node pools for AKS
+- User wants to enable the AKS cost analysis add-on
+- User reports a cost spike or unusual cluster utilization
+
+**Reference files (load only what is needed for the request):**
+- [Cost Analysis Add-on](./references/azure-aks-cost-addon.md) — enable namespace-level cost visibility
+- [Anomaly Investigation](./references/azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
+
+> **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the AKS-specific reference document.
+
+### Step 1.8: Choose Analysis Scope (for AKS-specific analysis)
+
+**If performing AKS cost optimization**, ask the user to select their analysis scope:
+
+**Prompt the user with these options:**
+1. **Specific Cluster Name** - Analyze a single AKS cluster
+2. **Resource Group** - Analyze all clusters in a resource group
+3. **Subscription ID** - Analyze all clusters in a subscription
+4. **All My Clusters** - Scan all accessible clusters across subscriptions
+
+Wait for user response before proceeding to Step 2.
+
 ### Step 2: Run Azure Quick Review
 
 Run azqr to find orphaned resources (immediate cost savings):
