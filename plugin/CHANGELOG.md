@@ -4,7 +4,19 @@ All notable changes to the Azure plugin will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] - 2025-03-13
+## [1.0.1] - 2026-03-13
+
+### Added
+
+- `azure-upgrade` — Assess and upgrade Azure workloads between plans, tiers, or SKUs.
+
+### Changed
+
+- Removed `foundry-mcp` HTTP server from `.mcp.json` (non-spec `type`/`url` fields).
+- Updated `azure-diagnostics` description.
+- Updated `microsoft-foundry` description and bumped to version 1.0.5.
+
+## [1.0.0] - 2025-03-12
 
 ### Added
 

@@ -7,5 +7,9 @@
     "url": "https://www.microsoft.com"
   },
   "homepage": "https://github.com/microsoft/github-copilot-for-azure",
-  "keywords": ["azure", "cloud", "infrastructure", "deployment", "microsoft", "devops"]
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": ["azure", "cloud", "infrastructure", "deployment", "microsoft", "devops"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
 }
