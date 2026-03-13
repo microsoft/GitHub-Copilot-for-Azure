@@ -4,8 +4,6 @@ Extract production traces from App Insights using KQL, transform them into evalu
 
 ## ⛔ Do NOT
 
-- Do NOT upload datasets to blob storage or call `evaluation_dataset_create` — this MCP tool is not ready.
-- Do NOT generate SAS URLs. Local JSONL + `inputData` is the only supported path.
 - Do NOT use `parse_json(customDimensions)` — `customDimensions` is already a `dynamic` column in App Insights KQL. Access properties directly: `customDimensions["gen_ai.response.id"]`.
 
 ## Related References
@@ -16,7 +14,7 @@ Extract production traces from App Insights using KQL, transform them into evalu
 ## Prerequisites
 
 - App Insights resource resolved (see [trace skill](../../trace/trace.md) Before Starting)
-- Agent name and project endpoint available in `.env`
+- Agent root, environment, and project endpoint available in `.foundry/agent-metadata.yaml`
 - Time range confirmed with user (default: last 7 days)
 
 > 💡 **Run all KQL queries** using **`monitor_resource_log_query`** (Azure MCP tool) against the App Insights resource. This is preferred over delegating to the `azure-kusto` skill.
@@ -39,6 +37,9 @@ App Insights traces
     │
     ▼
 [4] Persist Dataset (local JSONL files)
+    │
+    ▼
+[5] Sync to Foundry (optional — upload to project-connected storage)
 ```
 
 ## Key Concept: Linking Evaluation Results to Traces
@@ -260,7 +261,7 @@ dependencies
 Extract the `query` from the last user-role entry in `gen_ai.input.messages` and the `response` from `gen_ai.output.messages`. Save extracted data to a local JSONL file:
 
 ```
-datasets/<agent-name>-traces-candidates-<date>.jsonl
+.foundry/datasets/<agent-name>-<environment>-traces-candidates-<date>.jsonl
 ```
 
 ## Step 3 — Human Review (Curation)
@@ -282,7 +283,7 @@ Ask the user:
 
 ## Step 4 — Persist Dataset (Local JSONL)
 
-Save approved candidates to `datasets/<agent-name>-<source>-v<N>.jsonl`:
+Save approved candidates to `.foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl`:
 
 ```json
 {"query": "How do I reset my password?", "context": "User account management", "metadata": {"source": "trace", "conversationId": "conv-abc-123", "harvestRule": "error"}}
@@ -291,14 +292,14 @@ Save approved candidates to `datasets/<agent-name>-<source>-v<N>.jsonl`:
 
 ### Update Manifest
 
-After persisting, update `datasets/manifest.json` with lineage information:
+After persisting, update `.foundry/datasets/manifest.json` with lineage information:
 
 ```json
 {
   "datasets": [
     {
-      "name": "support-bot-traces-v3",
-      "file": "support-bot-traces-v3.jsonl",
+      "name": "support-bot-prod-traces-v3",
+      "file": "support-bot-prod-traces-v3.jsonl",
       "version": "3",
       "source": "trace-harvest",
       "harvestRule": "error+latency",
@@ -314,6 +315,77 @@ After persisting, update `datasets/manifest.json` with lineage information:
 ## Next Steps
 
 After creating a dataset:
+- **Sync to Foundry** → Step 5 below (recommended for shared/CI use)
 - **Run evaluation** → [observe skill Step 2](../../observe/references/evaluate-step.md)
 - **Version and tag** → [Dataset Versioning](dataset-versioning.md)
 - **Organize into splits** → [Dataset Organization](dataset-organization.md)
+
+## Step 5 — Sync Local Cache with Foundry (Optional)
+
+Refresh or register the local cache in Foundry so it is available for server-side evaluations, shared access, and CI/CD pipelines. Reuse the local cache when it is current, and only refresh or push after user confirmation.
+
+### 5a. Discover Storage Connection
+
+Use `project_connection_list` to find an existing `AzureBlob` storage connection on the Foundry project:
+
+```
+project_connection_list(foundryProjectResourceId, category: "AzureBlob")
+```
+
+- **Found** → use its `connectionName` and `target` (storage account URL)
+- **Not found** → proceed to 5b
+
+### 5b. Create Storage Connection (if needed)
+
+Ask the user for a storage account, then create a project connection:
+
+```
+project_connection_create(
+  foundryProjectResourceId,
+  connectionName: "datasets-storage",
+  category: "AzureBlob",
+  target: "https://<storage-account>.blob.core.windows.net",
+  authType: "AAD"
+)
+```
+
+> 💡 **Tip:** The storage account must be in the same subscription or the user must have access. AAD auth is preferred — it uses the caller's identity.
+
+### 5c. Upload JSONL to Blob Storage
+
+Upload the local dataset file to a `datasets` container in the storage account:
+
+```bash
+az storage blob upload \
+  --account-name <storage-account> \
+  --container-name datasets \
+  --name <agent-name>-<environment>-<source>-v<N>.jsonl \
+  --file .foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl \
+  --auth-mode login
+```
+
+> ⚠️ **Always pass `--auth-mode login`** to use AAD credentials. If the container doesn't exist, create it first with `az storage container create`.
+
+### 5d. Register Dataset in Foundry
+
+Use `evaluation_dataset_create` with the blob URI and the Azure Blob `connectionName` discovered in 5a or created in 5b. While `connectionName` can be optional in other MCP flows, include it in this workflow so the dataset is bound to the project-connected storage account:
+
+```
+evaluation_dataset_create(
+  projectEndpoint: "<project-endpoint>",
+  datasetContentUri: "https://<storage-account>.blob.core.windows.net/datasets/<file>.jsonl",
+  connectionName: "datasets-storage",
+  datasetName: "<agent-name>-<environment>-<source>",
+  datasetVersion: "<N>"
+)
+```
+
+### 5e. Verify
+
+Confirm the dataset is registered:
+
+```
+evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>", datasetVersion: "<N>")
+```
+
+Display the registered dataset details to the user. Update `.foundry/datasets/manifest.json` with `"synced": true` and the server-side dataset name/version.
