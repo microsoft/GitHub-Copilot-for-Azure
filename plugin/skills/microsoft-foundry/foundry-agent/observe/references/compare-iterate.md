@@ -2,7 +2,11 @@
 
 ## Step 8 — Re-Evaluate
 
-Use **`evaluation_agent_batch_eval_create`** with the **same `evaluationId`** as the baseline run. This places both runs in the same eval group for comparison. Use the same local test dataset (from `datasets/`) and evaluators. Update `agentVersion` to the new version.
+Use **`evaluation_agent_batch_eval_create`** with the **same `evaluationId`** as the baseline run. This places both runs in the same eval group for comparison. Use the same local test dataset (from `.foundry/datasets/`) and evaluator bundle from the selected environment/test case. Update `agentVersion` to the new version.
+
+> ⚠️ **Parameter switch reminder:** Re-evaluation creation uses `evaluationId`, but follow-up calls to `evaluation_get` and `evaluation_comparison_create` must use `evalId`.
+
+> ⚠️ **Eval-group immutability:** Reuse the same `evaluationId` only when `evaluatorNames` and thresholds are unchanged. If you add/remove evaluators or change thresholds, create a new evaluation group first, then compare runs within that new group.
 
 Auto-poll for completion in a background terminal (same as [Step 2](evaluate-step.md)).
 
@@ -37,7 +41,7 @@ Use **`evaluation_comparison_create`** with a nested `insightRequest`:
 }
 ```
 
-> **Important:** Both runs must be in the **same eval group** (same `evaluationId` in Steps 2 and 8).
+> **Important:** Both runs must be in the **same eval group** (same `evaluationId` in Steps 2 and 8), but comparison requests and lookups use `evalId` for that same group identifier. That shared group assumes the evaluator bundle is fixed for all runs in the group.
 
 Then use **`evaluation_comparison_get`** (with the returned `insightId`) to retrieve comparison results. Present a summary showing which version performed better per evaluator, and recommend which version to keep.
 

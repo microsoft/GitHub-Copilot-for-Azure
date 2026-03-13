@@ -8,11 +8,11 @@ Track the complete chain from production traces through dataset creation, evalua
 Production Trace (App Insights)
     │ conversationId, responseId
     ▼
-Dataset Version (datasets/*.jsonl)
+Dataset Version (.foundry/datasets/*.jsonl, environment-scoped)
     │ metadata.conversationId, metadata.harvestRule
     ▼
 Evaluation Run (evaluation_agent_batch_eval_create)
-    │ evaluationId, evalRunId
+    │ evaluationId when creating, evalId when querying, evalRunId
     ▼
 Comparison (evaluation_comparison_create)
     │ insightId, baselineRunId, treatmentRunIds
@@ -25,14 +25,14 @@ Production Trace (cycle repeats)
 
 ## Lineage Manifest
 
-Track lineage in `datasets/manifest.json`:
+Track lineage in `.foundry/datasets/manifest.json`:
 
 ```json
 {
   "datasets": [
     {
-      "name": "support-bot-traces-v3",
-      "file": "support-bot-traces-v3.jsonl",
+      "name": "support-bot-prod-traces-v3",
+      "file": "support-bot-prod-traces-v3.jsonl",
       "version": "3",
       "tag": "prod",
       "source": "trace-harvest",
@@ -81,7 +81,7 @@ Track lineage in `datasets/manifest.json`:
 
 ### "Why was version X deployed?"
 
-1. Read `datasets/manifest.json`
+1. Read `.foundry/datasets/manifest.json`
 2. Find entries where `deployments[].agentVersion == X`
 3. Show the comparison that justified the deployment
 4. Show the dataset and eval runs that informed the comparison
@@ -108,7 +108,7 @@ Track lineage in `datasets/manifest.json`:
 
 ## Maintaining Lineage
 
-Update `datasets/manifest.json` at each step:
+Update `.foundry/datasets/manifest.json` at each step:
 
 | Event | Fields to Update |
 |-------|-----------------|
@@ -117,6 +117,8 @@ Update `datasets/manifest.json` at each step:
 | Comparison | Append to `comparisons[]` with `insightId`, `result` |
 | Deployment | Append to `deployments[]` with `agentVersion`, `reason` |
 | Tag change | Update `tag` field |
+
+> 💡 **Tip:** Store the evaluation group identifier as `evalId` in lineage/manifest records, even if the create call used the parameter name `evaluationId`.
 
 ## Next Steps
 
