@@ -11,7 +11,7 @@ Primary AKS troubleshooting guide for incidents routed from [../SKILL.md](../SKI
 
 Prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool, then `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only as fallback.
 
-See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md), [references/command-flows.md](references/command-flows.md), and [references/testing-loop.md](references/testing-loop.md).
+See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md) and [references/command-flows.md](references/command-flows.md).
 
 ## Required Inputs
 
