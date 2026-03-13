@@ -177,10 +177,30 @@ export function validateNoReservedPrefix(name: string | null): ValidationIssue[]
   return issues;
 }
 
+/**
+ * Check 5: Validate description length (max 1024 chars per agentskills.io spec).
+ */
+export function validateDescriptionLength(description: string | null): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (description === null || description === "") {
+    return issues; // Missing description is caught by missing-field check
+  }
+
+  if (description.length > 1024) {
+    issues.push({
+      check: "description-length",
+      message: `Description is ${description.length} chars (max 1024)`,
+    });
+  }
+
+  return issues;
+}
+
 const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 /**
- * Check 5: Validate that `license` field is present and is a string.
+ * Check 6: Validate that `license` field is present and is a string.
  */
 export function validateLicense(license: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -202,7 +222,44 @@ export function validateLicense(license: unknown): ValidationIssue[] {
 }
 
 /**
- * Check 6: Validate `metadata.version` is present and follows semver (X.Y.Z).
+ * Check 7: Validate `metadata` field structure (optional, map of string keys to string values per spec).
+ */
+export function validateMetadata(metadata: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (metadata === undefined || metadata === null) {
+    issues.push({
+      check: "metadata",
+      message: "Missing 'metadata' block in frontmatter",
+      severity: "warning",
+    });
+    return issues;
+  }
+
+  if (typeof metadata !== "object" || Array.isArray(metadata)) {
+    issues.push({
+      check: "metadata",
+      message: `'metadata' field must be a key-value mapping, got ${Array.isArray(metadata) ? "array" : typeof metadata}`,
+    });
+    return issues;
+  }
+
+  const meta = metadata as Record<string, unknown>;
+  for (const [key, value] of Object.entries(meta)) {
+    if (typeof value !== "string") {
+      issues.push({
+        check: "metadata",
+        message: `metadata.${key} must be a string, got ${typeof value}`,
+        severity: "warning",
+      });
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Check 8: Validate `metadata.version` is present and follows semver (X.Y.Z).
  */
 export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -233,6 +290,70 @@ export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
     issues.push({
       check: "metadata-version",
       message: `metadata.version "${versionStr}" is not valid semver (expected X.Y.Z)`,
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Check 8: Validate `compatibility` field (optional, max 500 chars per spec).
+ */
+export function validateCompatibility(compatibility: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (compatibility === undefined || compatibility === null) {
+    return issues; // Optional field
+  }
+
+  if (typeof compatibility !== "string") {
+    issues.push({
+      check: "compatibility",
+      message: `'compatibility' field must be a string, got ${typeof compatibility}`,
+    });
+    return issues;
+  }
+
+  if (compatibility === "") {
+    issues.push({
+      check: "compatibility",
+      message: "'compatibility' field must not be empty if provided",
+    });
+    return issues;
+  }
+
+  if (compatibility.length > 500) {
+    issues.push({
+      check: "compatibility",
+      message: `Compatibility is ${compatibility.length} chars (max 500)`,
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Check 9: Validate `allowed-tools` field (optional, space-delimited string per spec).
+ */
+export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (allowedTools === undefined || allowedTools === null) {
+    return issues; // Optional field
+  }
+
+  if (typeof allowedTools !== "string") {
+    issues.push({
+      check: "allowed-tools",
+      message: `'allowed-tools' field must be a string, got ${typeof allowedTools}`,
+    });
+    return issues;
+  }
+
+  if (allowedTools === "") {
+    issues.push({
+      check: "allowed-tools",
+      message: "'allowed-tools' field must not be empty if provided",
     });
   }
 
@@ -272,11 +393,23 @@ export function validateSkillFile(filePath: string): ValidationResult {
   // Check 4: No reserved prefixes
   issues.push(...validateNoReservedPrefix(name));
 
-  // Check 5: License field
+  // Check 5: Description length
+  issues.push(...validateDescriptionLength(description));
+
+  // Check 6: License field
   issues.push(...validateLicense(parsed.data.license));
 
-  // Check 6: metadata.version (semver)
+  // Check 7: Metadata structure
+  issues.push(...validateMetadata(parsed.data.metadata));
+
+  // Check 8: metadata.version (semver)
   issues.push(...validateMetadataVersion(parsed.data.metadata));
+
+  // Check 9: Compatibility field
+  issues.push(...validateCompatibility(parsed.data.compatibility));
+
+  // Check 10: Allowed tools field
+  issues.push(...validateAllowedTools(parsed.data["allowed-tools"]));
 
   return { skill: parentDir, file: filePath, issues };
 }
