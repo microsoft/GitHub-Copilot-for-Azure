@@ -1,11 +1,13 @@
 /**
  * Unit Tests for azure-compute
  *
- * Tests isolated skill logic, metadata, and content validation
- * for the azure-compute skill including VM/VMSS recommendations.
+ * Tests the azure-compute router skill, its sub-skills
+ * (vm-recommender and vm-troubleshooter), and reference files.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 const SKILL_NAME = "azure-compute";
 
@@ -16,7 +18,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     skill = await loadSkill(SKILL_NAME);
   });
 
-  describe("Skill Metadata", () => {
+  describe("Router Skill Metadata", () => {
     test("has valid SKILL.md with required fields", () => {
       expect(skill.metadata).toBeDefined();
       expect(skill.metadata.name).toBe(SKILL_NAME);
@@ -34,21 +36,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description).toMatch(/WHEN:/i);
     });
 
+    test("description covers both recommendation and troubleshooting", () => {
+      const desc = skill.metadata.description.toLowerCase();
+      expect(desc).toMatch(/recommend|vm size|pricing/);
+      expect(desc).toMatch(/troubleshoot|can't connect|rdp|ssh/);
+    });
+
     test("description mentions VM and VMSS keywords", () => {
       const desc = skill.metadata.description.toLowerCase();
       expect(desc).toMatch(/vm/);
       expect(desc).toMatch(/vmss|scale set/);
-    });
-
-    test("description mentions workload types", () => {
-      const desc = skill.metadata.description.toLowerCase();
-      expect(desc).toMatch(/web|database|ml|batch|hpc/);
-    });
-
-    test("description covers VM recommendations", () => {
-      const desc = skill.metadata.description.toLowerCase();
-      expect(desc).toMatch(/recommend/);
-      expect(desc).toMatch(/vm/);
     });
 
     test("description mentions pricing", () => {
@@ -57,114 +54,210 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("Skill Content", () => {
+  describe("Router Skill Content", () => {
     test("has substantive content", () => {
       expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(500);
+      expect(skill.content.length).toBeGreaterThan(100);
     });
 
-    test("contains expected sections", () => {
-      expect(skill.content).toContain("## When to Use This Skill");
-      expect(skill.content).toContain("## Workflow");
-      expect(skill.content).toContain("## Error Handling");
-      expect(skill.content).toContain("## References");
+    test("contains routing section", () => {
+      expect(skill.content).toContain("## Routing");
+    });
+
+    test("contains sub-skills section", () => {
+      expect(skill.content).toContain("## Sub-Skills");
+    });
+
+    test("routes to vm-recommender", () => {
+      expect(skill.content).toContain("vm-recommender.md");
+      expect(skill.content).toContain("VM Recommender");
+    });
+
+    test("routes to vm-troubleshooter", () => {
+      expect(skill.content).toContain("vm-troubleshooter.md");
+      expect(skill.content).toContain("VM Troubleshooter");
     });
 
     test("documents when to use this skill", () => {
-      expect(skill.content).toMatch(/VM size recommendation/i);
-      expect(skill.content).toMatch(/VM famil/i);
-      expect(skill.content).toMatch(/scale set/i);
+      expect(skill.content).toContain("## When to Use This Skill");
+    });
+
+    test("includes decision tree for routing", () => {
+      expect(skill.content).toMatch(/Recommend.*VM Recommender/s);
+      expect(skill.content).toMatch(/connect.*VM Troubleshooter/is);
     });
   });
 
-  describe("Core Workflows", () => {
+  describe("VM Recommender Sub-Skill", () => {
+    let recommenderContent: string;
+
+    beforeAll(async () => {
+      const agentFile = path.join(
+        SKILLS_PATH,
+        "azure-compute/agents/vm-recommender.md"
+      );
+      recommenderContent = await fs.readFile(agentFile, "utf-8");
+    });
+
+    test("file exists and has content", () => {
+      expect(recommenderContent).toBeDefined();
+      expect(recommenderContent.length).toBeGreaterThan(500);
+    });
+
+    test("contains expected sections", () => {
+      expect(recommenderContent).toContain("## When to Use This Skill");
+      expect(recommenderContent).toContain("## Workflow");
+      expect(recommenderContent).toContain("## Error Handling");
+      expect(recommenderContent).toContain("## References");
+    });
+
     test("Step 1: documents requirements gathering", () => {
-      expect(skill.content).toContain("### Step 1: Gather Requirements");
-      expect(skill.content).toContain("Workload type");
-      expect(skill.content).toContain("vCPU / RAM needs");
-      expect(skill.content).toContain("GPU needed?");
-      expect(skill.content).toContain("Storage needs");
-      expect(skill.content).toContain("Budget priority");
-      expect(skill.content).toContain("OS");
-      expect(skill.content).toContain("Region");
+      expect(recommenderContent).toContain("### Step 1: Gather Requirements");
+      expect(recommenderContent).toContain("Workload type");
+      expect(recommenderContent).toContain("vCPU / RAM needs");
+      expect(recommenderContent).toContain("GPU needed?");
+      expect(recommenderContent).toContain("Storage needs");
+      expect(recommenderContent).toContain("Budget priority");
+      expect(recommenderContent).toContain("OS");
+      expect(recommenderContent).toContain("Region");
     });
 
     test("Step 1: documents scaling-related requirements", () => {
-      expect(skill.content).toContain("Instance count");
-      expect(skill.content).toContain("Scaling needs");
-      expect(skill.content).toContain("Availability needs");
-      expect(skill.content).toContain("Load balancing");
+      expect(recommenderContent).toContain("Instance count");
+      expect(recommenderContent).toContain("Scaling needs");
+      expect(recommenderContent).toContain("Availability needs");
+      expect(recommenderContent).toContain("Load balancing");
     });
 
     test("Step 2: documents VM vs VMSS decision", () => {
-      expect(skill.content).toContain("### Step 2: Determine VM vs VMSS");
-      expect(skill.content).toContain("Needs autoscaling?");
+      expect(recommenderContent).toContain("### Step 2: Determine VM vs VMSS");
+      expect(recommenderContent).toContain("Needs autoscaling?");
     });
 
     test("Step 2: has signal-to-recommendation table", () => {
-      expect(skill.content).toContain("Autoscale on CPU, memory, or schedule");
-      expect(skill.content).toContain("**VMSS**");
-      expect(skill.content).toContain("**VM**");
+      expect(recommenderContent).toContain("Autoscale on CPU, memory, or schedule");
+      expect(recommenderContent).toContain("**VMSS**");
+      expect(recommenderContent).toContain("**VM**");
     });
 
     test("Step 3: documents VM family selection", () => {
-      expect(skill.content).toContain("### Step 3: Select VM Family");
-      expect(skill.content).toContain("vm-families.md");
+      expect(recommenderContent).toContain("### Step 3: Select VM Family");
+      expect(recommenderContent).toContain("vm-families.md");
     });
 
     test("Step 3: includes web_fetch verification pattern", () => {
-      expect(skill.content).toContain("web_fetch");
-      expect(skill.content).toContain(
+      expect(recommenderContent).toContain("web_fetch");
+      expect(recommenderContent).toContain(
         "learn.microsoft.com/en-us/azure/virtual-machines/sizes"
       );
     });
 
     test("Step 4: documents pricing lookup", () => {
-      expect(skill.content).toContain("### Step 4: Look Up Pricing");
-      expect(skill.content).toContain("Azure Retail Prices API");
-      expect(skill.content).toContain("retail-prices-api.md");
+      expect(recommenderContent).toContain("### Step 4: Look Up Pricing");
+      expect(recommenderContent).toContain("Azure Retail Prices API");
+      expect(recommenderContent).toContain("retail-prices-api.md");
     });
 
     test("Step 5: documents recommendation presentation format", () => {
-      expect(skill.content).toContain("### Step 5: Present Recommendations");
-      expect(skill.content).toContain("2–3 options");
-      expect(skill.content).toContain("Hosting Model");
-      expect(skill.content).toContain("VM Size");
-      expect(skill.content).toContain("Estimated $/hr");
-      expect(skill.content).toContain("Trade-off");
+      expect(recommenderContent).toContain("### Step 5: Present Recommendations");
+      expect(recommenderContent).toContain("2–3 options");
+      expect(recommenderContent).toContain("Hosting Model");
+      expect(recommenderContent).toContain("VM Size");
+      expect(recommenderContent).toContain("Estimated $/hr");
+      expect(recommenderContent).toContain("Trade-off");
     });
 
     test("Step 6: documents next steps", () => {
-      expect(skill.content).toContain("### Step 6: Offer Next Steps");
-      expect(skill.content).toContain("Azure Pricing Calculator");
+      expect(recommenderContent).toContain("### Step 6: Offer Next Steps");
+      expect(recommenderContent).toContain("Azure Pricing Calculator");
     });
-  });
 
-  describe("Error Handling Coverage", () => {
     test("handles API empty results", () => {
-      expect(skill.content).toContain("API returns empty results");
+      expect(recommenderContent).toContain("API returns empty results");
     });
 
     test("handles unknown workload type", () => {
-      expect(skill.content).toContain("User unsure of workload type");
-      expect(skill.content).toMatch(/D-series/i);
+      expect(recommenderContent).toContain("User unsure of workload type");
+      expect(recommenderContent).toMatch(/D-series/i);
     });
 
     test("handles missing region", () => {
-      expect(skill.content).toContain("Region not specified");
-      expect(skill.content).toContain("eastus");
+      expect(recommenderContent).toContain("Region not specified");
+      expect(recommenderContent).toContain("eastus");
     });
 
     test("handles unclear VM vs VMSS choice", () => {
-      expect(skill.content).toContain(
+      expect(recommenderContent).toContain(
         "Unclear if VM or VMSS needed"
       );
     });
 
     test("handles VMSS pricing questions", () => {
-      expect(skill.content).toContain(
+      expect(recommenderContent).toContain(
         "User asks VMSS pricing directly"
       );
+    });
+
+    test("references use relative paths to parent references dir", () => {
+      expect(recommenderContent).toContain("../references/vm-families.md");
+      expect(recommenderContent).toContain("../references/retail-prices-api.md");
+      expect(recommenderContent).toContain("../references/vmss-guide.md");
+    });
+  });
+
+  describe("VM Troubleshooter Sub-Skill", () => {
+    let troubleshooterContent: string;
+
+    beforeAll(async () => {
+      const agentFile = path.join(
+        SKILLS_PATH,
+        "azure-compute/agents/vm-troubleshooter.md"
+      );
+      troubleshooterContent = await fs.readFile(agentFile, "utf-8");
+    });
+
+    test("file exists and has content", () => {
+      expect(troubleshooterContent).toBeDefined();
+      expect(troubleshooterContent.length).toBeGreaterThan(500);
+    });
+
+    test("contains expected sections", () => {
+      expect(troubleshooterContent).toContain("## Workflow");
+      expect(troubleshooterContent).toContain("## Error Handling");
+      expect(troubleshooterContent).toContain("## References");
+    });
+
+    test("documents connectivity troubleshooting triggers", () => {
+      expect(troubleshooterContent).toContain("## Triggers");
+      expect(troubleshooterContent).toMatch(/RDP/);
+      expect(troubleshooterContent).toMatch(/SSH/);
+      expect(troubleshooterContent).toMatch(/NSG/);
+    });
+
+    test("Phase 1: documents user intent determination", () => {
+      expect(troubleshooterContent).toContain("### Phase 1: Determine User Intent");
+    });
+
+    test("Phase 2: routes to solution via reference file", () => {
+      expect(troubleshooterContent).toContain("### Phase 2: Route to Solution");
+      expect(troubleshooterContent).toContain("cannot-connect-to-vm.md");
+    });
+
+    test("Phase 3: fetches live documentation", () => {
+      expect(troubleshooterContent).toContain("### Phase 3: Fetch Documentation");
+      expect(troubleshooterContent).toContain("fetch_webpage");
+    });
+
+    test("Phase 4: documents diagnose and respond workflow", () => {
+      expect(troubleshooterContent).toContain("### Phase 4: Diagnose and Respond");
+    });
+
+    test("Phase 5: documents escalation path", () => {
+      expect(troubleshooterContent).toContain("### Phase 5: Escalation");
+    });
+
+    test("references use relative paths to parent references dir", () => {
+      expect(troubleshooterContent).toContain("../references/vm-troubleshooting/cannot-connect-to-vm.md");
     });
   });
 
@@ -172,10 +265,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     let vmFamiliesContent: string;
     let retailPricesApiContent: string;
     let vmssGuideContent: string;
+    let cannotConnectContent: string;
 
     beforeAll(async () => {
-      const fs = await import("fs/promises");
-      const path = await import("path");
       const refsDir = path.join(
         SKILLS_PATH,
         "azure-compute/references"
@@ -193,6 +285,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         path.join(refsDir, "vmss-guide.md"),
         "utf-8"
       );
+      cannotConnectContent = await fs.readFile(
+        path.join(refsDir, "vm-troubleshooting/cannot-connect-to-vm.md"),
+        "utf-8"
+      );
     });
 
     test("vm-families reference file exists and has content", () => {
@@ -208,6 +304,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("vmss-guide reference file exists and has content", () => {
       expect(vmssGuideContent).toBeDefined();
       expect(vmssGuideContent.length).toBeGreaterThan(100);
+    });
+
+    test("cannot-connect-to-vm reference file exists and has content", () => {
+      expect(cannotConnectContent).toBeDefined();
+      expect(cannotConnectContent.length).toBeGreaterThan(100);
     });
   });
 });
