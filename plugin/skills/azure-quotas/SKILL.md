@@ -7,7 +7,6 @@ metadata:
   version: "1.0.5"
 ---
 
----
 
 # Azure Quotas - Service Limits & Capacity Management
 
