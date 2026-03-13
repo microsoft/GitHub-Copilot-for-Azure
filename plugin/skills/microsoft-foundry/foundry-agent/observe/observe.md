@@ -66,7 +66,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 7. **Write scripts to files.** Python scripts go in `scripts/` - no inline code blocks.
 8. **Persist eval artifacts.** Save local artifacts to `.foundry/evaluators/`, `.foundry/datasets/`, and `.foundry/results/` for version tracking and comparison.
 9. **Use exact eval parameter names.** Use `evaluationId` only on batch-eval create calls that group runs; use `evalId` on `evaluation_get` and `evaluation_comparison_create`; use `evalRunId` for a specific run lookup.
-10. **Show Data Viewer deeplinks (for VS Code runtime only).** Append a Data Viewer deeplink immediately after reference to a dataset file or evaluation result file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis". This applies to files in `datasets/`, `results/`.
+10. **Show Data Viewer deeplinks (for VS Code runtime only).** Append a Data Viewer deeplink immediately after reference to a dataset file or evaluation result file in your response. Format: `[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis`. This applies to files in `datasets/`, `results/`.
 
 ## Related Skills
 
