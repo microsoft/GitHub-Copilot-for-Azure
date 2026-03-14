@@ -46,6 +46,27 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
+      # 3.5. Bump the plugin version (patch +1) based on the target repo's main branch
+      - name: Bump plugin version
+        run: |
+          PLUGIN_PATH="target-repo/.github/plugins/azure-skills/.claude-plugin/plugin.json"
+
+          # Get the version from the main branch of the target repo
+          MAIN_VERSION=$(git -C target-repo show main:.github/plugins/azure-skills/.claude-plugin/plugin.json 2>/dev/null | jq -r '.version' || echo "0.0.0")
+
+          # Parse major.minor.patch
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$MAIN_VERSION"
+
+          # Bump patch version by 1
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          # Update the plugin.json with the new version
+          jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN_PATH" > "${PLUGIN_PATH}.tmp"
+          mv "${PLUGIN_PATH}.tmp" "$PLUGIN_PATH"
+
+          echo "Bumped version from $MAIN_VERSION to $NEW_VERSION"
+
       # 4. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
