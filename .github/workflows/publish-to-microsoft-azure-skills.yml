@@ -50,8 +50,8 @@ jobs:
       - name: Replace repository URLs
         run: |
           TARGET_DIR="target-repo/.github/plugins/azure-skills/"
-          grep -rl --include='*.md' 'https://github.com/microsoft/github-copilot-for-azure' "$TARGET_DIR" | while IFS= read -r file; do
-            sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
+          grep -rl --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$TARGET_DIR" | while IFS= read -r file; do
+            sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
           done
 
       # 5. Commit changes and create a PR
