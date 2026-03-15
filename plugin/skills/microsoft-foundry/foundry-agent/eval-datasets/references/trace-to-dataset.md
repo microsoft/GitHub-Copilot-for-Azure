@@ -326,10 +326,10 @@ Refresh or register the local cache in Foundry so it is available for server-sid
 
 ### 5a. Discover Storage Connection
 
-Use `project_connection_list` to find an existing `AzureBlob` storage connection on the Foundry project:
+Use `project_connection_list` to find an existing `AzureStorageAccount` connection on the Foundry project:
 
 ```
-project_connection_list(foundryProjectResourceId, category: "AzureBlob")
+project_connection_list(foundryProjectResourceId, category: "AzureStorageAccount")
 ```
 
 - **Found** → use its `connectionName` and `target` (storage account URL)
@@ -343,7 +343,7 @@ Ask the user for a storage account, then create a project connection:
 project_connection_create(
   foundryProjectResourceId,
   connectionName: "datasets-storage",
-  category: "AzureBlob",
+  category: "AzureStorageAccount",
   target: "https://<storage-account>.blob.core.windows.net",
   authType: "AAD"
 )
@@ -364,11 +364,13 @@ az storage blob upload \
   --auth-mode login
 ```
 
+The local dataset filename should start with the selected Foundry agent name before the environment/source/version suffixes so trace-derived datasets stay grouped with the owning agent.
+
 > ⚠️ **Always pass `--auth-mode login`** to use AAD credentials. If the container doesn't exist, create it first with `az storage container create`.
 
 ### 5d. Register Dataset in Foundry
 
-Use `evaluation_dataset_create` with the blob URI and the Azure Blob `connectionName` discovered in 5a or created in 5b. While `connectionName` can be optional in other MCP flows, include it in this workflow so the dataset is bound to the project-connected storage account:
+Use `evaluation_dataset_create` with the blob URI and the `AzureStorageAccount` `connectionName` discovered in 5a or created in 5b. While `connectionName` can be optional in other MCP flows, include it in this workflow so the dataset is bound to the project-connected storage account:
 
 ```
 evaluation_dataset_create(

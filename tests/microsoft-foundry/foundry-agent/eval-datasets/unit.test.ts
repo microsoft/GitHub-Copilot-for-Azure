@@ -59,9 +59,33 @@ describe("eval-datasets - Unit Tests", () => {
     });
 
     test("documents environment-aware versioning and cache reuse", () => {
-      expect(datasetsContent).toContain("<agent-name>-<environment>-<source>-v<N>");
+      expect(datasetsContent).toContain("<agent-name>-eval-seed");
+      expect(datasetsContent).toContain("<agent-name>-<environment>-traces-v<N>");
+      expect(datasetsContent).toContain("<agent-name>-<environment>-curated-v<N>");
+      expect(datasetsContent).toMatch(/filenames? must start with the selected Foundry agent name/i);
       expect(datasetsContent).toMatch(/cache|refresh/i);
       expect(datasetsContent).toContain("testCases[]");
+    });
+
+    test("documents dataset metadata conventions and remote dataset tracking", () => {
+      expect(datasetsContent).toContain("agent");
+      expect(datasetsContent).toContain("stage");
+      expect(datasetsContent).toContain("version");
+      expect(datasetsContent).toContain("datasetUri");
+      expect(datasetsContent).toContain("AzureStorageAccount");
+      expect(datasetsContent).toMatch(/evaluation_dataset_create.*does not expose a first-class `tags` parameter/i);
+    });
+
+    test("uses AzureStorageAccount connections and always includes connectionName when registering datasets", () => {
+      const traceToDatasetContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "trace-to-dataset.md"),
+        "utf-8"
+      );
+
+      expect(traceToDatasetContent).toContain('category: "AzureStorageAccount"');
+      expect(traceToDatasetContent).toContain("connectionName");
+      expect(traceToDatasetContent).toContain("evaluation_dataset_create");
+      expect(traceToDatasetContent).toMatch(/include it in this workflow so the dataset is bound/i);
     });
 
     test("documents evalId versus evaluationId guidance", () => {

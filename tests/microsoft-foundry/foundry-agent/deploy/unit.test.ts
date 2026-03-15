@@ -100,11 +100,24 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("specifies default evaluator categories", () => {
+      expect(deployContent).toContain("evaluator_catalog_get");
+      expect(deployContent).toMatch(/custom.*built-in|built-in.*custom/i);
+      expect(deployContent).toMatch(/name, category, and version/i);
+      expect(deployContent).toMatch(/<=5/i);
       expect(deployContent).toContain("Quality");
       expect(deployContent).toContain("Safety");
+      expect(deployContent).toContain("relevance");
       expect(deployContent).toContain("intent_resolution");
       expect(deployContent).toContain("task_adherence");
-      expect(deployContent).toContain("coherence");
+      expect(deployContent).toContain("indirect_attack");
+      expect(deployContent).toContain("tool_call_accuracy");
+    });
+
+    test("uses the observe skill's two-phase evaluator strategy", () => {
+      expect(deployContent).toContain("Two-Phase Evaluator Strategy");
+      expect(deployContent).toMatch(/Phase 1 is built-in only/i);
+      expect(deployContent).toContain("expected_behavior");
+      expect(deployContent).toMatch(/behavioral scoring/i);
     });
 
     test("instructs identifying judge deployment from actual project deployments", () => {
@@ -117,6 +130,18 @@ describe("deploy - Unit Tests", () => {
     test("instructs persisting artifacts to .foundry/evaluators/ and .foundry/datasets/", () => {
       expect(deployContent).toContain(".foundry/evaluators/");
       expect(deployContent).toContain(".foundry/datasets/");
+      expect(deployContent).toContain("datasetUri");
+      expect(deployContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
+    });
+
+    test("registers the seed dataset in Foundry after generation", () => {
+      expect(deployContent).toContain("Register Dataset in Foundry");
+      expect(deployContent).toContain("project_connection_list");
+      expect(deployContent).toContain("AzureStorageAccount");
+      expect(deployContent).toContain("evaluation_dataset_create");
+      expect(deployContent).toContain('connectionName: "<storage-connection-name>"');
+      expect(deployContent).toContain("<agent-name>-eval-seed");
+      expect(deployContent).toContain("--account-key <storage-account-key>");
     });
 
     test("asks to RUN evaluation (not just set up)", () => {
@@ -137,6 +162,7 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain("agentName");
       expect(deployContent).toContain("azureContainerRegistry");
       expect(deployContent).toContain("testCases[]");
+      expect(deployContent).toContain("datasetUri");
     });
   });
 });
