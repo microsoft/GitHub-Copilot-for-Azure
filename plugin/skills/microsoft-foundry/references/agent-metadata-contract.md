@@ -57,7 +57,8 @@ environments:
             definitionFile: .foundry/evaluators/citation-quality.yaml
       - id: trace-regressions
         priority: P1
-        dataset: support-agent-dev-traces-v3
+        dataset: support-agent-dev-traces
+        datasetVersion: v3
         datasetFile: .foundry/datasets/support-agent-dev-traces-v3.jsonl
         datasetUri: <foundry-dataset-uri>
         evaluators:
@@ -72,7 +73,8 @@ environments:
     testCases:
       - id: production-guardrails
         priority: P0
-        dataset: support-agent-prod-curated-v2
+        dataset: support-agent-prod-curated
+        datasetVersion: v2
         datasetFile: .foundry/datasets/support-agent-prod-curated-v2.jsonl
         datasetUri: <foundry-dataset-uri>
         evaluators:
@@ -99,7 +101,7 @@ environments:
 | `P1` | High-value regression coverage | Production trace regressions, key business flows |
 | `P2` | Broader quality coverage | Long-tail scenarios, exploratory quality checks |
 
-Each test case should point to one dataset and one or more evaluators with explicit thresholds. Persist the local `datasetFile` and remote `datasetUri` together so every test case can resolve both the cache artifact and the Foundry-registered dataset. Local dataset filenames should start with the selected environment's Foundry `agentName`, followed by stage/environment/version suffixes, so related cache files stay grouped by agent. Use test-case IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
+Each test case should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep the local cache filename versioned (for example, `...-v3.jsonl`). Persist the local `datasetFile` and remote `datasetUri` together so every test case can resolve both the cache artifact and the Foundry-registered dataset. Local dataset filenames should start with the selected environment's Foundry `agentName`, followed by stage/environment/version suffixes, so related cache files stay grouped by agent. Use test-case IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
 
 ## Sync Guidance
 

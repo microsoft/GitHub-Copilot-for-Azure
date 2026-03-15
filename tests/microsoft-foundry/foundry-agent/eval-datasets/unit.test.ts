@@ -61,8 +61,14 @@ describe("eval-datasets - Unit Tests", () => {
 
     test("documents environment-aware versioning and cache reuse", () => {
       expect(datasetsContent).toContain("<agent-name>-eval-seed");
-      expect(datasetsContent).toContain("<agent-name>-<environment>-traces-v<N>");
-      expect(datasetsContent).toContain("<agent-name>-<environment>-curated-v<N>");
+      expect(datasetsContent).toContain("<agent-name>-<environment>-traces");
+      expect(datasetsContent).toContain("<agent-name>-<environment>-curated");
+      expect(datasetsContent).toContain("<agent-name>-<environment>-prod");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-<environment>-traces-v<N>.jsonl");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-<environment>-curated-v<N>.jsonl");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-<environment>-prod-v<N>.jsonl");
+      expect(datasetsContent).toContain("Foundry dataset version");
+      expect(datasetsContent).toContain("v<N>");
       expect(datasetsContent).toMatch(/filenames? must start with the selected Foundry agent name/i);
       expect(datasetsContent).toMatch(/cache|refresh/i);
       expect(datasetsContent).toContain("testCases[]");
@@ -93,6 +99,40 @@ describe("eval-datasets - Unit Tests", () => {
       expect(traceToDatasetContent).toMatch(/include it in this workflow so the dataset is bound/i);
       expect(seedGuideContent).toContain("--account-key <storage-account-key>");
       expect(seedGuideContent).toContain("--auth-mode login");
+    });
+
+    test("keeps dataset names versionless and stores versions separately in metadata examples", () => {
+      const metadataContractContent = fs.readFileSync(
+        path.resolve(
+          __dirname,
+          "../../../../plugin/skills/microsoft-foundry/references/agent-metadata-contract.md"
+        ),
+        "utf-8"
+      );
+      const traceToDatasetContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "trace-to-dataset.md"),
+        "utf-8"
+      );
+      const versioningContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "dataset-versioning.md"),
+        "utf-8"
+      );
+      const lineageContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "eval-lineage.md"),
+        "utf-8"
+      );
+
+      expect(metadataContractContent).toContain("dataset: support-agent-dev-traces");
+      expect(metadataContractContent).toContain("datasetVersion: v3");
+      expect(metadataContractContent).toContain("dataset: support-agent-prod-curated");
+      expect(metadataContractContent).toContain("datasetVersion: v2");
+      expect(traceToDatasetContent).toContain('datasetVersion: "v<N>"');
+      expect(traceToDatasetContent).toContain('"name": "support-bot-prod-traces"');
+      expect(traceToDatasetContent).toContain('"version": "v3"');
+      expect(versioningContent).toContain('"name": "support-bot-prod-traces"');
+      expect(versioningContent).toContain('"version": "v3"');
+      expect(lineageContent).toContain('"name": "support-bot-prod-traces"');
+      expect(lineageContent).toContain('"version": "v3"');
     });
 
     test("documents evalId versus evaluationId guidance", () => {

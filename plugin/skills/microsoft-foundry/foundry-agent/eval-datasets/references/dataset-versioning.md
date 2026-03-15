@@ -92,9 +92,9 @@ Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.jso
       "evalRunIds": ["run-def-456", "run-ghi-789"]
     },
     {
-      "name": "support-bot-prod-traces-v3",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v3.jsonl",
-      "version": "3",
+      "version": "v3",
       "tag": "prod",
       "source": "trace-harvest",
       "harvestRule": "error+latency+low-eval",

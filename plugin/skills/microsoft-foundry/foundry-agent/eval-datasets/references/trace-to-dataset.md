@@ -298,9 +298,9 @@ After persisting, update `.foundry/datasets/manifest.json` with lineage informat
 {
   "datasets": [
     {
-      "name": "support-bot-prod-traces-v3",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v3.jsonl",
-      "version": "3",
+      "version": "v3",
       "source": "trace-harvest",
       "harvestRule": "error+latency",
       "timeRange": "2025-02-01 to 2025-02-07",
@@ -378,7 +378,7 @@ evaluation_dataset_create(
   datasetContentUri: "https://<storage-account>.blob.core.windows.net/datasets/<file>.jsonl",
   connectionName: "datasets-storage",
   datasetName: "<agent-name>-<environment>-<source>",
-  datasetVersion: "<N>"
+  datasetVersion: "v<N>"
 )
 ```
 
@@ -387,7 +387,7 @@ evaluation_dataset_create(
 Confirm the dataset is registered:
 
 ```
-evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>", datasetVersion: "<N>")
+evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>", datasetVersion: "v<N>")
 ```
 
 Display the registered dataset details to the user. Update `.foundry/datasets/manifest.json` with `"synced": true` and the server-side dataset name/version.
