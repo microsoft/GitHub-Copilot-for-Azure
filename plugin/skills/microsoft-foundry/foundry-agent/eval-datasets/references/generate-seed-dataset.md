@@ -89,6 +89,29 @@ Register the generated dataset in Foundry. Follow these sub-steps:
 1. Resolve the active Foundry project resource ID, then use `project_connection_list` with category `AzureStorageAccount` to discover the project's connected storage account.
 2. Upload the JSONL file to `https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-eval-seed-v1.jsonl`.
 3. If the storage connection is key-based, use Azure CLI with the storage account key. If AAD-based, prefer `--auth-mode login`.
+
+**Key-based upload example:**
+
+```bash
+az storage blob upload \
+  --account-name <storage-account> \
+  --container-name eval-datasets \
+  --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
+  --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
+  --account-key <storage-account-key>
+```
+
+**AAD-based upload example:**
+
+```bash
+az storage blob upload \
+  --account-name <storage-account> \
+  --container-name eval-datasets \
+  --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
+  --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
+  --auth-mode login
+```
+
 4. Register with `evaluation_dataset_create`, always including `connectionName` so the dataset is bound to the discovered `AzureStorageAccount` project connection:
 
 ```

@@ -64,7 +64,7 @@ Use **`model_deployment_get`** to list the selected project's actual model deplo
 
 ### 6. Generate Local Test Dataset
 
-Use the identified chat-capable deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save the initial seed file to `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl` with each line containing at minimum `query` and `expected_behavior` fields (optionally `context`, `ground_truth`).
+Generate the seed rows directly from the agent's instructions and tool capabilities you already resolved during setup. Do **not** call the identified chat-capable deployment for dataset generation; reserve that deployment for quality evaluators. Save the initial seed file to `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl` with each line containing at minimum `query` and `expected_behavior` fields (optionally `context`, `ground_truth`).
 
 The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
 
@@ -78,6 +78,8 @@ After saving the seed dataset locally, register it in Foundry so shared evaluati
 2. Upload the JSONL file to `https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-eval-seed-v1.jsonl`.
 3. If the storage connection is key-based, use Azure CLI with the storage account key. If it is AAD-based, prefer `--auth-mode login`.
 
+**Key-based upload example:**
+
 ```bash
 az storage blob upload \
   --account-name <storage-account> \
@@ -85,6 +87,17 @@ az storage blob upload \
   --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
   --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
   --account-key <storage-account-key>
+```
+
+**AAD-based upload example:**
+
+```bash
+az storage blob upload \
+  --account-name <storage-account> \
+  --container-name eval-datasets \
+  --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
+  --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
+  --auth-mode login
 ```
 
 4. Register the uploaded file with `evaluation_dataset_create`, always including `connectionName` so the dataset is bound to the discovered project connection:

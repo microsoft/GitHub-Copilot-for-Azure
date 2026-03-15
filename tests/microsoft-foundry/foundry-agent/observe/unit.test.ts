@@ -168,6 +168,11 @@ describe("observe - Unit Tests", () => {
       expect(setupContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
     });
 
+    test("generates seed datasets directly instead of invoking the judge deployment", () => {
+      expect(setupContent).toMatch(/Generate the seed rows directly/i);
+      expect(setupContent).toMatch(/Do \*\*not\*\* call the identified chat-capable deployment/i);
+    });
+
     test("includes artifact persistence structure", () => {
       expect(setupContent).toContain(".foundry/agent-metadata.yaml");
       expect(setupContent).toContain(".foundry/evaluators/");
@@ -186,6 +191,7 @@ describe("observe - Unit Tests", () => {
       expect(setupContent).toContain('connectionName: "<storage-connection-name>"');
       expect(setupContent).toContain("<agent-name>-eval-seed");
       expect(setupContent).toContain("--account-key <storage-account-key>");
+      expect(setupContent).toContain("--auth-mode login");
       expect(setupContent).toContain("datasetUri");
     });
 

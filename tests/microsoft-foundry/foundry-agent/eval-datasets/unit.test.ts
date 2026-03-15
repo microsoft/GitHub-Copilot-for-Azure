@@ -47,6 +47,7 @@ describe("eval-datasets - Unit Tests", () => {
 
     test("contains expected sections", () => {
       expect(datasetsContent).toContain("## Quick Reference");
+      expect(datasetsContent).toContain("| MCP server | `azure` |");
       expect(datasetsContent).toContain("## Before Starting");
       expect(datasetsContent).toContain("## The Foundry Flywheel");
       expect(datasetsContent).toContain("## Behavioral Rules");
@@ -81,11 +82,17 @@ describe("eval-datasets - Unit Tests", () => {
         path.join(REFERENCES_PATH, "trace-to-dataset.md"),
         "utf-8"
       );
+      const seedGuideContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "generate-seed-dataset.md"),
+        "utf-8"
+      );
 
       expect(traceToDatasetContent).toContain('category: "AzureStorageAccount"');
       expect(traceToDatasetContent).toContain("connectionName");
       expect(traceToDatasetContent).toContain("evaluation_dataset_create");
       expect(traceToDatasetContent).toMatch(/include it in this workflow so the dataset is bound/i);
+      expect(seedGuideContent).toContain("--account-key <storage-account-key>");
+      expect(seedGuideContent).toContain("--auth-mode login");
     });
 
     test("documents evalId versus evaluationId guidance", () => {

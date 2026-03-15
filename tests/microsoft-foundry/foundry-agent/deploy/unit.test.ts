@@ -60,6 +60,7 @@ describe("deploy - Unit Tests", () => {
 
     test("contains Quick Reference section", () => {
       expect(deployContent).toContain("## Quick Reference");
+      expect(deployContent).toContain("| MCP server | `azure` |");
     });
 
     test("contains When to Use section", () => {
@@ -142,6 +143,14 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain('connectionName: "<storage-connection-name>"');
       expect(deployContent).toContain("<agent-name>-eval-seed");
       expect(deployContent).toContain("--account-key <storage-account-key>");
+      expect(deployContent).toContain("--auth-mode login");
+    });
+
+    test("describes seed generation rules without a separate validation pass", () => {
+      expect(deployContent).toMatch(/keep rows valid by construction/i);
+      expect(deployContent).not.toContain(
+        "Validation gates (JSON parsing, required fields, category coverage, minimum row count)"
+      );
     });
 
     test("asks to RUN evaluation (not just set up)", () => {

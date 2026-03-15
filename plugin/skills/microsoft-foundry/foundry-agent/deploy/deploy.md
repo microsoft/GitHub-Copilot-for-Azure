@@ -7,11 +7,13 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | Property | Value |
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
-| MCP server | `foundry-mcp` |
+| MCP server | `azure` |
 | Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
 | Container protocols | `a2a`, `responses`, `mcp` |
 | Supported languages | .NET, Node.js, Python, Go, Java |
+
+> 💡 **Tip:** In this repository, Foundry MCP commands are exposed through the `azure` MCP server configured in `plugin/.mcp.json`.
 
 ## When to Use This Skill
 
@@ -289,7 +291,7 @@ Use **`model_deployment_get`** to list the selected project's actual model deplo
 Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md). That reference contains:
 - The required JSONL row schema (`query` + `expected_behavior` are both mandatory)
 - Coverage distribution targets and generation rules
-- Validation gates (JSON parsing, required fields, category coverage, minimum row count)
+- Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
 - Foundry registration steps (blob upload + `evaluation_dataset_create`)
 - Metadata updates for `agent-metadata.yaml` and `manifest.json`
 
@@ -305,6 +307,8 @@ After saving the seed dataset locally, register it in Foundry so shared evaluati
 2. Upload the JSONL file to `https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-eval-seed-v1.jsonl`.
 3. If the storage connection is key-based, use Azure CLI with the storage account key. If it is AAD-based, prefer `--auth-mode login`.
 
+**Key-based upload example:**
+
 ```bash
 az storage blob upload \
   --account-name <storage-account> \
@@ -312,6 +316,17 @@ az storage blob upload \
   --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
   --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
   --account-key <storage-account-key>
+```
+
+**AAD-based upload example:**
+
+```bash
+az storage blob upload \
+  --account-name <storage-account> \
+  --container-name eval-datasets \
+  --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
+  --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
+  --auth-mode login
 ```
 
 4. Register Dataset in Foundry with `evaluation_dataset_create`, always including `connectionName` so the dataset is bound to the discovered project connection:
