@@ -28,13 +28,13 @@ export function softCheckContainerDeployEnvVars(agentMetadata: AgentMetadata): v
  */
 const DEPLOY_LINK_PATTERNS = [
   // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
-  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s.`'"?#)\]]|$)/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s.`'"?#)\]]|$)/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i,
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s.`'"?#)\]]|$)/i,
   // static website from a storage account
-  /https:\/\/[\w.-]+\.web\.core\.windows\.net(?=[/\s?#)\]]|$)/i
+  /https:\/\/[\w.-]+\.web\.core\.windows\.net(?=[/\s.`'"?#)\]]|$)/i
 ];
 
 /**
