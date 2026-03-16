@@ -51,6 +51,9 @@
             throw "run_ids.json not found at $runIdsFile"
         }
         $inputRunIds = Get-Content -Path $runIdsFile -Raw | ConvertFrom-Json
+        if (-not $inputRunIds -or $inputRunIds.Count -eq 0) {
+            throw "No run IDs found in $runIdsFile. Ensure run_ids.json contains at least one run ID."
+        }
         Write-Host "Loaded run IDs from $runIdsFile: $($inputRunIds -join ',')"
     }
 
