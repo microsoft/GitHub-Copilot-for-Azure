@@ -46,7 +46,15 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 4. Commit changes and create a PR
+      # 4. Replace repository URLs in synced files
+      - name: Replace repository URLs
+        run: |
+          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+          grep -rl --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$TARGET_DIR" | while IFS= read -r file; do
+            sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
+          done
+
+      # 5. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
