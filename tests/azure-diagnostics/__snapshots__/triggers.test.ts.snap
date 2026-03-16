@@ -2,10 +2,11 @@
 
 exports[`azure-diagnostics - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Debug Azure production issues in Container Apps, Function Apps, and AKS using KQL and Azure Monitor. WHEN: debug production issues, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors.",
+  "description": "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors.",
   "extractedKeywords": [
     "aks",
     "analyze",
+    "applens",
     "apps",
     "azure",
     "cannot",
@@ -42,7 +43,9 @@ exports[`azure-diagnostics - Trigger Tests Trigger Keywords Snapshot skill descr
     "ready",
     "resource",
     "root",
+    "safe",
     "start",
+    "triage",
     "troubleshoot",
     "upgrade",
     "using",
@@ -56,6 +59,7 @@ exports[`azure-diagnostics - Trigger Tests Trigger Keywords Snapshot skill keywo
 [
   "aks",
   "analyze",
+  "applens",
   "apps",
   "azure",
   "cannot",
@@ -92,7 +96,9 @@ exports[`azure-diagnostics - Trigger Tests Trigger Keywords Snapshot skill keywo
   "ready",
   "resource",
   "root",
+  "safe",
   "start",
+  "triage",
   "troubleshoot",
   "upgrade",
   "using",
