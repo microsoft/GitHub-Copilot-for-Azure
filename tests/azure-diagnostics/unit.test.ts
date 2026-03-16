@@ -102,7 +102,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(troubleshootingContent).toContain("references/command-flows.md");
       expect(troubleshootingContent).toContain("references/structured-input-modes.md");
       expect(troubleshootingContent).toContain("references/aks-mcp.md");
-      expect(troubleshootingContent).toContain("references/testing-loop.md");
     });
 
     test("documents AKS-MCP preference and lightweight discovery guidance", () => {
