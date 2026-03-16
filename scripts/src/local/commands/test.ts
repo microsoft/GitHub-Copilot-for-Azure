@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import { parseSkillContent } from "../../shared/skill-helper.js";
 
 const TIMEOUT_MS = 120_000;
-const MARKETPLACE_NAME = "github-copilot-for-azure";
+const MARKETPLACE_NAME = "azure-skills";
 const PLUGIN_NAME = "azure";
 
 interface TestOptions {
@@ -62,7 +62,7 @@ function checkPluginConfig(expectedCachePath: string): TestResult {
 
   const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
   if (!marketplace || marketplace.source?.source !== "github" ||
-    marketplace.source?.repo !== "microsoft/github-copilot-for-azure") {
+    marketplace.source?.repo !== "microsoft/azure-skills") {
     return { name: "Plugin config", passed: false, detail: `Marketplace "${MARKETPLACE_NAME}" not configured correctly` };
   }
 
