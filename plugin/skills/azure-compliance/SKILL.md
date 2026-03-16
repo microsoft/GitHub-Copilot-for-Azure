@@ -4,7 +4,7 @@ description: "Run Azure compliance and security audits with azqr plus Key Vault 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Compliance & Security Auditing
