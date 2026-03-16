@@ -18,10 +18,10 @@ From the user's description, list the **core Azure services** (compute, data, ne
 
 ## Step 2 — WAF Tool Calls (MANDATORY FIRST)
 
-> ⛔ **HARD GATE**: Call WAF MCP tools BEFORE reading local resource files. Do NOT skip this.
+> ⚠️ **HARD GATE**: Call WAF MCP tools BEFORE reading local resource files. Do NOT skip this.
 
-1. Call `get_azure_bestpractices` with `resource: "general"`, `action: "all"` for baseline guidance.
-2. Call `wellarchitectedframework_serviceguide_get` with `service: "<name>"` for **each** core service (in parallel). Examples: `"Container Apps"`, `"Cosmos DB"`, `"App Service"`, `"Event Grid"`, `"Key Vault"`.
+1. Call `mcp_azure_mcp_get_azure_bestpractices` with `resource: "general"`, `action: "all"` for baseline guidance.
+2. Call `mcp_azure_mcp_wellarchitectedframework` with `service: "<name>"` for **each** core service (in parallel). Examples: `"Container Apps"`, `"Cosmos DB"`, `"App Service"`, `"Event Grid"`, `"Key Vault"`.
 3. The tool returns a markdown URL. Use a sub-agent to fetch and summarize in ≤500 tokens, focusing on: additional resources needed, required properties for security/reliability, key design decisions.
 4. Collect all WAF findings: missing resources, property hardening, architecture patterns.
 

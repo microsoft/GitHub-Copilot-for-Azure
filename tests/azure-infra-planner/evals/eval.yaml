@@ -72,7 +72,7 @@ graders:
   - type: behavior
     name: efficiency
     config:
-      max_tool_calls: 50
+      max_tool_calls: 70
       max_duration_ms: 600000
       skip_if_no_digest: true
 

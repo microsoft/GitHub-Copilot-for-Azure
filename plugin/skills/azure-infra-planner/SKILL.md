@@ -29,15 +29,15 @@ Activate this skill when user wants to:
 
 ## Rules
 
-1. **Research before planning** — You **MUST** call `get_azure_bestpractices` and `wellarchitectedframework_serviceguide_get` MCP tools BEFORE reading local resource files or generating a plan. See [research.md](references/research.md) Step 2.
+1. **Research before planning** — You **MUST** call `mcp_azure_mcp_get_azure_bestpractices` and `mcp_azure_mcp_wellarchitectedframework_serviceguide_get` MCP tools BEFORE reading local resource files or generating a plan. See [research.md](references/research.md) Step 2.
 2. **Plan before IaC** — Generate `<project-root>/.azure/infrastructure-plan.json` before any IaC so we can map the plan to generated code and ensure alignment.
 3. **Get approval** — Plan status must be `approved` before deployment.
 4. **User chooses IaC format** — Bicep or Terraform; ask if not specified.
-5. ⛔ **Destructive actions require explicit confirmation.**
+5. ⚠️ **Destructive actions require explicit confirmation.**
 
 ---
 
-## ⛔ PLAN-FIRST WORKFLOW — MANDATORY
+## ⚠️ PLAN-FIRST WORKFLOW — MANDATORY
 
 > **YOU MUST CREATE A PLAN BEFORE GENERATING ANY IAC**
 >
@@ -64,7 +64,7 @@ Activate this skill when user wants to:
 
 `draft` → `approved` → `deployed`
 
-> **⛔ STOP HERE** — Do NOT proceed past Phase 2 until the user approves the plan.
+> **⚠️ STOP HERE** — Do NOT proceed past Phase 2 until the user approves the plan.
 
 ---
 
@@ -85,11 +85,11 @@ Activate this skill when user wants to:
 
 ## MCP Tools
 
-> ⛔ **You MUST call these tools during research (Phase 1) BEFORE reading local resource files.** See [research.md](references/research.md) Step 2.
+> ⚠️ **You MUST call these tools during research (Phase 1) BEFORE reading local resource files.** See [research.md](references/research.md) Step 2.
 
-| Tool | Purpose | When to Call |
-|------|---------|-------------|
-| `get_azure_bestpractices` | Get baseline WAF and deployment best practices. Call with `resource: "general"`, `action: "all"`. | Once at start of research |
-| `wellarchitectedframework_serviceguide_get` | Get WAF service guide for a specific Azure service. Call with `service: "<service-name>"` (e.g., `"Container Apps"`, `"Cosmos DB"`). Returns a raw markdown URL — **REQUIRED** use a sub-agent to fetch and summarize. | Once per core service — call in parallel |
-| `microsoft_docs_search` | Search Microsoft Learn for architecture patterns, SKU details, naming rules, and best practices. | Once per core service if needed — call in parallel |
-| `microsoft_docs_fetch` | Fetch full content of a specific Learn doc page by URL. | Once per core service if needed — call in parallel |
+| Tool | Command | Purpose | When to Call |
+|------|---------|-------------|------------|
+| `mcp_azure_mcp_get_azure_bestpractices` | `get_azure_bestpractices_get` | Get baseline WAF and deployment best practices. Call with `resource: "general"`, `action: "all"`. | Once at start of research |
+| `mcp_azure_mcp_wellarchitectedframework` | `wellarchitectedframework_serviceguide_get` | Get WAF service guide for a specific Azure service. Call with `service: "<service-name>"` (e.g., `"Container Apps"`, `"Cosmos DB"`). Returns a raw markdown URL — **REQUIRED** use a sub-agent to fetch and summarize. | Once per core service — call in parallel |
+| `mcp_azure_mcp_azure-documentation` | `microsoft_docs_search` | Search Microsoft Learn for architecture patterns, SKU details, naming rules, and best practices. | Once per core service if needed — call in parallel |
+| `mcp_azure_mcp_azure-documentation` | `microsoft_docs_fetch` | Fetch specific Microsoft Learn documents (e.g., WAF service guide URLs returned by the previous tool) | As needed for WAF guidance and verification |
