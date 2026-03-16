@@ -4,7 +4,7 @@ description: "Analyze a GitHub Actions integration test run and produce a skill 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.0.4"
 ---
 
 # Analyze Test Run
@@ -109,13 +109,14 @@ Repeat Phase 1–3 for the second run, then produce a side-by-side delta table. 
 
 ### Phase 3 — File Issues for Failures
 
-For Skill Invocation Success Rate that is available and is less than 80%, create a GitHub issue:
+For Skill Invocation Success Rate that is available and is less than 80%, create a GitHub issue, assign the label with the same name as the skill, and assign it to the code owners listed in .github/CODEOWNERS file based on which skill it is for:
 
 ```
 gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
   --title "Integration test failure: <skill> – skill-invocation" \
-  --label "bug,integration-test,skill-invocation" \
+  --label "bug,integration-test,skill-invocation,<skill>" \
   --body "<body>"
+  --assignee "<codeowners-in-codeowners-file>"
 ```
 Issue body template — see [issue-template.md](references/issue-template.md).
 
@@ -139,13 +140,14 @@ For every test with a `<failure>` element in `junit.xml`:
      --json number,title,body
    ```
    Match criteria: an open issue whose title and body describe a similar problem. If a match is found, skip issue creation for this failure and note the existing issue number(s) in the summary report.
-7. If no existing issue was found, create a GitHub issue:
+7. If no existing issue was found, create a GitHub issue, assign the label with the name of the skill, and assign it to the code owners listed in .github/CODEOWNERS file based on which skill it is for:
 
 ```
 gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
   --title "Integration test failure: <skill> – <keywords> [<root-cause-category>]" \
-  --label "bug,integration-test" \
+  --label "bug,integration-test,<skill>" \
   --body "<body>"
+  --assignee "<codeowners-in-codeowners-file>"
 ```
 
    **Title format:** `Integration test failure: {skill} – {keywords} [{root-cause-category}]`
