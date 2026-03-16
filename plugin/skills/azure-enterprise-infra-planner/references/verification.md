@@ -25,13 +25,3 @@ Run these checks **immediately after writing each resource** to `plan.resources[
 ## 3. Property & Pairing Checks
 
 Cross-check against every already-written connected resource. Consult the resource file's **Pairing Constraints** section and [pairing-checks.md](pairing-checks.md) for full rules covering: SKU compatibility, subnet/network conflicts, storage pairing, Cosmos DB, Key Vault/CMK, SQL Database, and AKS networking.
-
-## Verification Tracking
-
-After each resource, append to `meta.verification.resources[]`:
-
-```json
-{ "name": "snet-app-prod-eastus", "checksRun": 8, "issuesFound": 1, "issuesFixed": 1, "notes": "Expanded CIDR from /28 to /26" }
-```
-
-After the last resource, set `meta.verification.completedAt` and add `totalChecksRun`, `totalIssuesFound`, `totalIssuesFixed`, and `summary` to `meta.verification`. If any issue cannot be auto-fixed, set `issuesFixed` < `issuesFound` and describe in `notes`.

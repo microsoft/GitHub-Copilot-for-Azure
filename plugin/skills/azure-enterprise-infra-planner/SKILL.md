@@ -37,36 +37,62 @@ Activate this skill when user wants to:
 
 ---
 
-## ⚠️ PLAN-FIRST WORKFLOW — MANDATORY
+## ⚠️ MANDATORY WORKFLOW — EXECUTE PHASES IN ORDER
 
-> **YOU MUST CREATE A PLAN BEFORE GENERATING ANY IAC**
->
-> 1. **RESEARCH** — Gather requirements, identify core resources, check SKUs, regions, naming rules
-> 2. **WAF RESEARCH** — Call WAF tools for every planned service; collect recommendations
-> 3. **REFINE RESOURCES** — Review WAF findings and add missing cross-cutting resources (Key Vault, managed identity, monitoring, diagnostics, network isolation). See [research.md](references/research.md) Step 3.
-> 4. **PLAN** — Generate `<project-root>/.azure/infrastructure-plan.json` with status `draft`
-> 5. **VERIFY** — Run full verification pass: goal coverage, dependency completeness, pairing constraints ([pairing-checks.md](references/pairing-checks.md)), and property compatibility. Fix issues in-place before presenting. See [verification.md](references/verification.md).
-> 6. **CONFIRM** — Present the plan to the user; user sets status to `approved`
-> 7. **GENERATE** — First, create the `<project-root>/infra/` directory. Fetch Bicep schemas via `mcp_bicep_get_az_resource_type_schema` using ARM types and API versions from [resources.md](references/resources.md). Then generate all Bicep or Terraform files inside `infra/`. Never write IaC files outside `infra/`.
-> 8. **DEPLOY** — Execute deployment commands only when status is `approved`
+> **Complete each phase fully before starting the next. Phases are sequential, not parallel.**
 
----
+### Phase 1: Research — WAF Tools
+Call MCP tools to gather best practices and WAF guidance. See [research.md](references/research.md) Steps 1-2.
+- Call `get_azure_bestpractices` once (direct call — small response)
+- Call `wellarchitectedframework_serviceguide_get` for each core service (direct parallel calls — small responses, returns URLs only)
+- Use **sub-agents** to fetch and summarize each WAF guide URL (large responses — 20-60KB each)
 
-## Phase Summary
+**Gate**: All WAF tool calls complete and summarized before proceeding.
 
-| Phase | Action | References |
-|-------|--------|------------|
-| 1. Research | Gather requirements, identify core resources, research WAF for **every** planned service, then **refine** the resource list by adding missing cross-cutting resources (Key Vault, managed identity, monitoring, network isolation, diagnostics). See the mandatory refinement loop in research.md. | [research.md](references/research.md), [resources.md](references/resources.md) |
-| 2. Plan Generation | Build `<project-root>/.azure/infrastructure-plan.json` one resource at a time. Verify each resource immediately. | [plan-schema.md](references/plan-schema.md) |
-| 3. Verification | After all resources are written, run a full verification pass: check goal coverage, dependency completeness, pairing constraints via [pairing-checks.md](references/pairing-checks.md), and WAF conformance. Fix issues in-place. Present plan and **STOP HERE until user approves**. | [verification.md](references/verification.md), [pairing-checks.md](references/pairing-checks.md) |
-| 4. IaC Generation | Generate Bicep or Terraform from approved plan. Fetch Bicep schemas via `mcp_bicep_get_az_resource_type_schema` using ARM types and API versions from [resources.md](references/resources.md). **Create `<project-root>/infra/` directory first**, then write all `.bicep` or `.tf` files there. Never write IaC files to `.azure/` or project root. | [bicep-generation.md](references/bicep-generation.md), [terraform-generation.md](references/terraform-generation.md) |
-| 5. Deployment | Confirm subscription and resource group, then execute `az deployment group create` or `terraform apply` only when `meta.status === "approved"` | [deployment.md](references/deployment.md) |
+### Phase 2: Research — Refine & Lookup
+
+> ⚠️ **You MUST read [resources.md](references/resources.md) in full before generating the plan.** It contains ARM types, API versions, CAF prefixes, naming rule URLs, and region categories that MCP tools do not provide.
+
+Apply WAF findings, then look up every resource in local reference files. See [research.md](references/research.md) Steps 3-4.
+- Walk through [waf-checklist.md](references/waf-checklist.md) — add missing resources, document omissions
+- Read [resources.md](references/resources.md) **in full** — all resource tables and documentation tables
+- For each resource: use **sub-agents** to fetch naming rules via `microsoft_docs_fetch` using URLs from [resources.md](references/resources.md)
+- For each resource: extract pairing constraints from [constraints.md](references/constraints.md) via grep or line-range read (direct — small responses)
+
+**Gate**: Every resource has an ARM type, naming rules, and pairing constraints checked before proceeding.
+
+### Phase 3: Plan Generation
+Build `<project-root>/.azure/infrastructure-plan.json` using the schema in [plan-schema.md](references/plan-schema.md). Set `meta.status` to `draft`.
+
+**Gate**: Plan JSON written to disk before proceeding.
+
+### Phase 4: Verification
+Run a full verification pass on the generated plan. See [verification.md](references/verification.md) and [pairing-checks.md](references/pairing-checks.md).
+- Check goal coverage — does every user requirement map to a resource?
+- Check dependency completeness — every `dependencies[]` entry resolves
+- Check pairing constraints — SKU compatibility, subnet conflicts, storage pairing
+- Fix issues in-place in the plan JSON
+
+**Gate**: All verification checks pass. Present plan to user and **STOP — wait for approval**.
+
+### Phase 5: IaC Generation
+Generate Bicep or Terraform from the approved plan. See [bicep-generation.md](references/bicep-generation.md) or [terraform-generation.md](references/terraform-generation.md).
+- Create `<project-root>/infra/` and `infra/modules/` directories
+- For each resource: use **sub-agents** to call `bicepschema_get` with the ARM type from [resources.md](references/resources.md) (large responses — 25-95KB each)
+- Generate modules, main file, and parameter files inside `infra/`
+
+**Gate**: `meta.status` must be `approved` before generating any IaC files.
+
+### Phase 6: Deployment
+Execute deployment commands. See [deployment.md](references/deployment.md).
+- Confirm subscription and resource group with user
+- Run `az bicep build` to validate, then `az deployment group create` or `terraform apply`
+
+**Gate**: `meta.status` must be `approved`. Destructive actions require explicit user confirmation.
 
 ### Status Lifecycle
 
 `draft` → `approved` → `deployed`
-
-> **⚠️ STOP HERE** — Do NOT proceed past Phase 3 until the user approves the plan.
 
 ---
 
@@ -87,7 +113,7 @@ Activate this skill when user wants to:
 
 ## MCP Tools
 
-> ⚠️ **You MUST call these tools during research (Phase 1) BEFORE reading local resource files.** See [research.md](references/research.md) Step 2.
+> ⚠️ **You MUST call these tools during research (Phase 1)** See [research.md](references/research.md) Step 2.
 
 | Tool | Command | Purpose | When to Call |
 |------|---------|-------------|------------|
@@ -95,4 +121,4 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_wellarchitectedframework` | `wellarchitectedframework_serviceguide_get` | Get WAF service guide for a specific Azure service. Call with `service: "<service-name>"` (e.g., `"Container Apps"`, `"Cosmos DB"`). Returns a raw markdown URL — **REQUIRED** use a sub-agent to fetch and summarize. | Once per core service — call in parallel |
 | `mcp_azure_mcp_azure-documentation` | `microsoft_docs_fetch` | Fetch specific Microsoft Learn documents (e.g., WAF service guide URLs, naming rules URLs from [resources.md](references/resources.md)). | Primary doc lookup — use URLs from resources.md |
 | `mcp_azure_mcp_azure-documentation` | `microsoft_docs_search` | Search Microsoft Learn for architecture patterns, SKU details, and best practices. | Fallback when no direct URL is available |
-| `mcp_azure_mcp_bicepschema` | `mcp_bicep_get_az_resource_type_schema` | Get Bicep resource schema for an ARM type and API version. Use ARM types and API versions from [resources.md](references/resources.md). | Phase 4 (IaC Generation) — once per resource via sub-agent |
+| `mcp_azure_mcp_bicepschema` | `bicepschema_get` | Get Bicep resource schema. Call with `resource-type: "{ARM type}"` (e.g., `Microsoft.KeyVault/vaults`). Returns latest API version schema — no version parameter needed. | Phase 4 (IaC generation) — once per resource via sub-agent |

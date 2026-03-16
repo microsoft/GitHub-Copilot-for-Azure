@@ -1,22 +1,20 @@
 # Resource Catalog
 
-Lookup table for all 48 supported Azure resource types. Use this catalog with MCP tools to get resource details at runtime instead of static files.
+Lookup table for all 48 supported Azure resource types. Use this catalog with MCP tools to get resource details with most recent documentation at runtime.
 
 ## How to Use This Catalog
 
+> ⚠️ **During Phase 2 (Research — Refine & Lookup), you MUST act on this data — not just read it.**
+
 For each resource in the plan:
 
-1. **Look up** the resource in the category tables below to get its ARM type, API version, and CAF prefix.
-2. **Use a sub-agent** to call `mcp_bicep_get_az_resource_type_schema` with the ARM type and API version. Instruct the sub-agent: "Summarize the Bicep schema for {ARM type} @ {API version}: required properties, SKU options and constraints, child resource types. ≤500 tokens." This replaces static bicep.md, SKU, and properties files.
-3. **Use a sub-agent** to call `microsoft_docs_fetch` with the naming rules URL from the documentation tables below. Instruct the sub-agent: "Extract naming rules for {service}: min/max length, allowed characters, uniqueness scope. ≤200 tokens." Fall back to `microsoft_docs_search` with `"<resource-name> naming rules"` only if the URL is missing or returns an error.
-4. **Use a sub-agent** to call `microsoft_docs_fetch` with a URL from the documentation tables below for service-specific details. Instruct the sub-agent: "Summarize key configuration guidance, limits, and best practices. ≤300 tokens."
-5. **Extract pairing constraints** for the resource from [constraints.md](constraints.md). Do NOT read the entire file — extract only the relevant `### {Resource Name}` section (~100-400 tokens instead of ~10K):
-   ```
-   grep -A 50 "^### {Resource Name}$" references/constraints.md
-   ```
-   Stop reading at the next `### ` heading. Replace `{Resource Name}` with the exact heading from the [Section Index](constraints.md#section-index) (e.g., `Service Bus`, `AKS Cluster`, `Virtual Network`). If grep returns no results, the resource has no pairing constraints — proceed without them.
+1. **Look up** the resource in the category tables below to get its ARM type, API version, CAF prefix, and Region category.
+2. **Call `microsoft_docs_fetch`** with the **Naming Rules** URL from the documentation table for this resource's category. Use a sub-agent: "Extract naming rules for {service}: min/max length, allowed characters, uniqueness scope. ≤200 tokens."
+3. **Call `microsoft_docs_fetch`** with the **Service Overview** or **Additional** URL for service-specific limits and configuration. Use a sub-agent: "Summarize key configuration guidance, limits, and best practices. ≤300 tokens."
+4. **Extract pairing constraints** from [constraints.md](constraints.md) — grep or line-range read for the `### {Resource Name}` section only. See the [Section Index](constraints.md#section-index) for valid headings. If no results, proceed without constraints.
+5. **Check Region category** — if Mainstream or Strategic, verify availability in the target region (see [Region Categories](#region-categories) below).
 
-> ⚠️ **Context window management**: Tool responses (especially Bicep schemas) return 20-60KB of data, and constraints.md is ~10K tokens. Always delegate tool calls to sub-agents with specific extraction instructions and token budgets, and grep for specific sections from large reference files, to keep the main planning context focused.
+> ⚠️ **Context window management**: Always delegate `microsoft_docs_fetch` calls to sub-agents with token budgets, and extract specific sections from large reference files (via grep or line-range reads), to keep the main planning context focused.
 
 ## AI & Machine Learning
 

@@ -23,7 +23,12 @@ infra/
 
 1. **Create `infra/` directory** — Create `<project-root>/infra/` and `<project-root>/infra/modules/` directories. All files in subsequent steps go here.
 2. **Read plan** — Load `<project-root>/.azure/infrastructure-plan.json`, verify `meta.status === "approved"`
-3. **Fetch Bicep schemas** — For each resource in the plan, use a sub-agent to call `mcp_bicep_get_az_resource_type_schema` with the ARM type and API version from [resources.md](resources.md). Instruct the sub-agent: "Return the full property structure for {ARM type} @ {API version}: required properties, allowed values, child resources. ≤500 tokens." Use this output — not training data — to generate correct resource definitions.
+3. **Fetch Bicep schemas** — For each resource in the plan, use a sub-agent to call `bicepschema_get` with `resource-type` set to the ARM type from [resources.md](resources.md) (e.g., `Microsoft.ContainerService/managedClusters`). Instruct the sub-agent: "Return the full property structure for {ARM type}: required properties, allowed values, child resources. ≤500 tokens." Use this output — not training data — to generate correct resource definitions.
+
+   > ⚠️ **Sub-resource vs parent schemas**: The schema tool returns only the schema for the exact type requested. Sub-resource types (e.g., `Microsoft.Network/virtualNetworks/subnets`) return a smaller, focused schema but **miss parent-level properties** (e.g., VNet `encryption` lives on the parent, not the subnet sub-resource). Strategy:
+   > - **Start with sub-resource types** when validating child resources — smaller responses (~25KB vs ~95KB), easier to summarize
+   > - **Fetch the parent type separately** when you need parent-level properties (encryption, tags, SKU) — delegate to a sub-agent with specific property extraction instructions to manage the large response
+
 4. **Generate modules** — Group resources by category; one `.bicep` file per group under `infra/modules/`. Use the schema from step 3 for property names, allowed values, and required fields.
 5. **Generate main.bicep** — Write `infra/main.bicep` that imports all modules and passes parameters
 6. **Generate parameters** — Create `infra/main.bicepparam` with environment-specific values
