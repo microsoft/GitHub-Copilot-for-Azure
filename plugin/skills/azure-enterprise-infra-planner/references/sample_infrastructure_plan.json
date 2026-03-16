@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "planId": "plan-42",
+    "generatedAt": "2025-07-09T15:06:00Z",
+    "version": "0.1-draft",
+    "status": "draft"
+  },
+
+  "inputs": {
+    "userGoal": "Deploy an event-driven serverless data pipeline in Azure",
+    "subGoals": [
+      "Cost-optimized: user chose defaults, prefer consumption/serverless tiers",
+      "Serverless-first: minimize operational overhead",
+      "Single-region: eastus, no multi-region complexity for initial deployment"
+    ]
+  },
+
+  "plan": {
+    "resources": [
+      {
+        "name": "storageAccountRaw",
+        "type": "Microsoft.Storage/storageAccounts",
+        "subtype": "Blob Storage",
+        "location": "eastus",
+        "sku": "Standard_LRS",
+        "properties": { "kind": "StorageV2" },
+
+        "reasoning": {
+          "whyChosen": "Cheapest durable blob storage for raw data; satisfies WAF-Cost and WAF-Reliability.",
+          "alternativesConsidered": ["Azure Data Lake Gen2"],
+          "tradeoffs": "Data Lake gives hierarchical namespace but costs ~15-20 % more."
+        },
+
+        "dependencies": [],
+        "dependencyReasoning": null,
+
+        "references": [
+          {
+            "title": "Azure Blob Storage overview",
+            "url": "https://learn.microsoft.com/azure/storage/blobs/storage-blob-overview"
+          }
+        ]
+      },
+
+      {
+        "name": "functionIngest",
+        "type": "Microsoft.Web/sites",
+        "subtype": "Azure Function",
+        "location": "eastus",
+        "sku": "Consumption",
+        "properties": { "runtime": "nodejs20", "memory": "512MB" },
+
+        "reasoning": {
+          "whyChosen": "Event-driven, auto-scaling compute; hits WAF-Flexibility and WAF-Ops-Simplicity.",
+          "alternativesConsidered": ["Container Apps", "AKS"],
+          "tradeoffs": "Functions have cold-start latency; mitigated with premium plan."
+        },
+
+        "dependencies": ["storageAccountRaw"],
+        "dependencyReasoning": "Ingest function writes raw payloads into Storage.",
+
+        "references": [
+          {
+            "title": "Azure Functions overview",
+            "url": "https://learn.microsoft.com/azure/azure-functions/functions-overview"
+          }
+        ]
+      }
+    ],
+
+    "overallReasoning": {
+      "summary": "This combo minimises cost while preserving elasticity and modularity. Missing: monitoring layer (e.g., App Insights) and RBAC-scoped Key Vault for secrets.",
+      "tradeoffs": "Prioritised cost and simplicity over advanced features. Could add VNET integration for security, but not required for this use case."
+    },
+
+    "validation": "Storage Account and Function App both deployed to eastus for low-latency blob triggers. Function uses system-assigned identity for secure storage access.",
+
+    "architecturePrinciples": [
+      "Highly available",
+      "Secure",
+      "Scalable"
+    ],
+
+    "references": [
+      {
+        "title": "Azure PaaS best practices",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/design-principles/managed-services"
+      },
+      {
+        "title": "Event-driven architecture pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      }
+    ]
+  }
+} 
