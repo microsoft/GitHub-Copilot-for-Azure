@@ -165,11 +165,12 @@
     Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
     $reportGenerationPrompt = "analyze msbench run: $($inputRunIds -join ', ')"
     $copilotLogDir = Join-Path $OutputPath "copilot_log"
+    $copilotLogFile = Join-Path $copilotLogDir "copilot_log.md"
     New-Item -Path $copilotLogDir -ItemType Directory -Force | Out-Null
     $copilotArgs = @(
             "-p", $reportGenerationPrompt,
             "--model", "claude-opus-4.6",
-            "--share", $copilotLogDir,
+            "--share", $copilotLogFile,
             "--yolo"
         )
     & 'copilot' @copilotArgs
