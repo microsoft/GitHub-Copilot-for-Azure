@@ -1,6 +1,6 @@
 ---
 name: azure-diagnostics
-description: "Debug and troubleshoot production issues on Azure. Covers Container Apps, Function Apps, and AKS diagnostics using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot container apps, troubleshoot function apps, troubleshoot Azure Functions, troubleshoot AKS cluster issues, kubectl cannot connect, kube-system or CoreDNS failures, pod pending, crashloop, node not ready, analyze logs with KQL, fix image pull failures, resolve cold start issues, investigate health probe failures, check resource health, find root cause of errors."
+description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors."
 license: MIT
 metadata:
   author: Microsoft
@@ -144,8 +144,3 @@ az monitor activity-log list -g RG --max-events 20
 - [KQL Query Library](references/kql-queries.md)
 - [Azure Resource Graph Queries](references/azure-resource-graph.md)
 - [Function Apps Troubleshooting](references/functions/README.md)
-- [AKS Reference Index](references/azure-kubernetes/README.md)
-- [AKS General Diagnostics](references/azure-kubernetes/general-diagnostics.md)
-- [AKS Pod Failures](references/azure-kubernetes/pod-failures.md)
-- [AKS Node Issues](references/azure-kubernetes/node-issues.md)
-- [AKS Networking](references/azure-kubernetes/networking.md)

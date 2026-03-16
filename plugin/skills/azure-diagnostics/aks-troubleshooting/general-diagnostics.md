@@ -43,7 +43,7 @@ az aks nodepool list -g <rg> --cluster-name <cluster> -o table
 
 For AI-powered diagnostics:
 
-```
+```text
 mcp_azure_mcp_applens
   intent: "diagnose AKS cluster issues"
   command: "diagnose"
@@ -57,8 +57,8 @@ mcp_azure_mcp_applens
 
 ## Best Practices
 
-1. **Start with kubectl get/describe** — Always check basic status first
-2. **Check events** — `kubectl get events -A` reveals recent issues
-3. **Use systematic isolation** — Pod → Node → Cluster → Network
-4. **Document changes** — Note what you tried and what worked
-5. **Escalate when needed** — For control plane issues, contact Azure support
+1. **Start with kubectl get/describe** - Always check basic status first
+2. **Check events** - `kubectl get events -A` reveals recent issues
+3. **Use systematic isolation** - Pod -> Node -> Cluster -> Network
+4. **Document changes** - Note what you tried and what worked
+5. **Escalate when needed** - For control plane issues, contact Azure support

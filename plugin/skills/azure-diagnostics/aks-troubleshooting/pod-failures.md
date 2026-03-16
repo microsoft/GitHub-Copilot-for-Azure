@@ -9,7 +9,7 @@ kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeed
 # All pods wide view
 kubectl get pods -A -o wide
 
-# Detailed pod status — events section is critical
+# Detailed pod status - events section is critical
 kubectl describe pod <pod-name> -n <namespace>
 
 # Pod logs (current and previous crash)
@@ -21,7 +21,7 @@ kubectl logs <pod-name> -n <namespace> --previous
 
 ## CrashLoopBackOff
 
-Pod starts, crashes, restarts with exponential backoff (10s, 20s, 40s… up to 5m).
+Pod starts, crashes, restarts with exponential backoff (10s, 20s, 40s... up to 5m).
 
 **Diagnostics:**
 
@@ -38,16 +38,16 @@ kubectl logs <pod-name> -n <namespace> --previous
 | Exit Code | Meaning                                               | Fix Path                                                      |
 | --------- | ----------------------------------------------------- | ------------------------------------------------------------- |
 | `0`       | App exited successfully (unexpected for long-running) | Check if entrypoint/command is correct; app may be a one-shot |
-| `1`       | Application error                                     | Read logs — unhandled exception, missing config, bad startup  |
+| `1`       | Application error                                     | Read logs - unhandled exception, missing config, bad startup  |
 | `137`     | OOMKilled (SIGKILL)                                   | Increase `resources.limits.memory`; check for memory leaks    |
 | `139`     | Segfault (SIGSEGV)                                    | Binary compatibility issue or native code bug                 |
-| `143`     | SIGTERM — graceful shutdown                           | Pod was terminated; check if liveness probe killed it         |
+| `143`     | SIGTERM - graceful shutdown                           | Pod was terminated; check if liveness probe killed it         |
 
 **OOMKilled specifically:**
 
 ```bash
 kubectl describe pod <pod-name> -n <namespace> | grep -A2 "Last State"
-# Reason: OOMKilled → container exceeded memory limit
+# Reason: OOMKilled -> container exceeded memory limit
 ```
 
 Fix: increase `resources.limits.memory` or optimize application memory usage. Check `kubectl top pod <pod-name> -n <namespace>` for actual usage.
@@ -70,7 +70,7 @@ kubectl describe pod <pod-name> -n <namespace>
 | `ErrImagePull` / `ImagePullBackOff`     | Image name or tag is wrong   | Verify image name and tag exist in the registry                |
 | `unauthorized: authentication required` | Missing or wrong pull secret | Create/update `imagePullSecrets` on the pod or service account |
 | `manifest unknown`                      | Tag doesn't exist            | Check available tags in the registry                           |
-| `context deadline exceeded`             | Registry unreachable         | Check network/firewall; for ACR, verify AKS → ACR integration  |
+| `context deadline exceeded`             | Registry unreachable         | Check network/firewall; for ACR, verify AKS -> ACR integration |
 
 **ACR integration check:**
 
@@ -83,7 +83,7 @@ az aks check-acr -g <rg> -n <cluster> --acr <acr-name>.azurecr.io
 
 ## Pending Pods
 
-Pod stays in `Pending` — scheduler can't place it.
+Pod stays in `Pending` - scheduler can't place it.
 
 **Diagnostics:**
 
@@ -104,7 +104,7 @@ kubectl describe pod <pod-name> -n <namespace>
 
 ## Readiness & Liveness Probe Failures
 
-**Readiness probe failure** → pod removed from Service endpoints (no traffic). **Liveness probe failure** → pod killed and restarted.
+**Readiness probe failure** -> pod removed from Service endpoints (no traffic). **Liveness probe failure** -> pod killed and restarted.
 
 **Diagnostics:**
 
@@ -112,7 +112,7 @@ kubectl describe pod <pod-name> -n <namespace>
 kubectl describe pod <pod-name> -n <namespace>
 # Look for: "Readiness probe failed" or "Liveness probe failed" in Events
 
-# Check the pod's READY column — must show n/n
+# Check the pod's READY column - must show n/n
 kubectl get pod <pod-name> -n <namespace>
 ```
 
@@ -142,6 +142,6 @@ kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.containers[*].reso
 | -------------------------------- | --------------------------------------- | --------------------------------------------------- |
 | OOMKilled (exit code 137)        | Container exceeded memory limit         | Increase `limits.memory` or fix memory leak         |
 | CPU throttling (slow responses)  | Container hitting CPU limit             | Increase `limits.cpu` or remove CPU limits          |
-| Pending — insufficient resources | Requests exceed available node capacity | Lower requests, scale nodes, or use larger VM sizes |
+| Pending - insufficient resources | Requests exceed available node capacity | Lower requests, scale nodes, or use larger VM sizes |
 
 > ⚠️ **Warning:** Setting CPU limits can cause unnecessary throttling even when the node has spare capacity. Many teams set CPU requests but not limits. Memory limits should always be set.

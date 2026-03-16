@@ -4,7 +4,7 @@ For CNI-specific issues, check CNI pod health and review [AKS networking concept
 
 ## Service Unreachable / Connection Refused
 
-**Diagnostics — always start here:**
+**Diagnostics - always start here:**
 
 ```bash
 # 1. Verify service exists and has endpoints
@@ -43,7 +43,7 @@ kubectl top pod -n kube-system -l k8s-app=kube-dns
 kubectl run dnstest --image=busybox:1.28 -it --rm -n <ns> -- \
   nslookup <service-name>.<ns>.svc.cluster.local
 
-# CoreDNS logs — errors show here first
+# CoreDNS logs - errors show here first
 kubectl logs -n kube-system -l k8s-app=kube-dns --tail=100
 ```
 
@@ -54,7 +54,7 @@ kubectl logs -n kube-system -l k8s-app=kube-dns --tail=100
 | `NXDOMAIN` for `svc.cluster.local`    | CoreDNS down or pod network broken           | Restart CoreDNS pods; check CNI                  |
 | Internal resolves, external NXDOMAIN  | Custom DNS not forwarding to `168.63.129.16` | Fix upstream forwarder                           |
 | Intermittent SERVFAIL under load      | CoreDNS CPU throttled                        | Remove CPU limits or add replicas                |
-| Private cluster — external names fail | Custom DNS missing privatelink forwarder     | Add conditional forwarder to Azure DNS           |
+| Private cluster - external names fail | Custom DNS missing privatelink forwarder     | Add conditional forwarder to Azure DNS           |
 | `i/o timeout` not `NXDOMAIN`          | Port 53 blocked by NetworkPolicy or NSG      | Allow UDP/TCP 53 from pods to kube-dns ClusterIP |
 
 ```bash
@@ -112,7 +112,7 @@ kubectl get endpoints <backend-svc> -n <ns>
 | -------------------------------- | ---------------------------------------------- | ------------------------------------------------------------ |
 | ADDRESS empty                    | LB not provisioned or wrong `ingressClassName` | Check controller service; set correct `ingressClassName`     |
 | 404 for all paths                | No matching host rule                          | Check `host` field; `pathType: Prefix` vs `Exact`            |
-| 404 for some paths               | Trailing slash mismatch                        | `Prefix /api` matches `/api/foo` not `/api` — add both       |
+| 404 for some paths               | Trailing slash mismatch                        | `Prefix /api` matches `/api/foo` not `/api` - add both       |
 | 502 Bad Gateway                  | Backend pods unhealthy or wrong port           | Verify Endpoints has IPs; confirm `targetPort` and readiness |
 | 503 Service Unavailable          | All backend pods down                          | Check pod restarts and readiness probe                       |
 | TLS handshake fail               | cert-manager not issuing                       | Check certificate status and ACME challenge                  |
@@ -123,7 +123,7 @@ kubectl get endpoints <backend-svc> -n <ns>
 ## Network Policy Blocking Traffic
 
 ```bash
-# List all policies in the namespace — check both ingress and egress
+# List all policies in the namespace - check both ingress and egress
 kubectl get networkpolicy -n <ns> -o yaml
 
 # Check for a default-deny policy (blocks everything unless explicitly allowed)

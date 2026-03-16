@@ -7,11 +7,20 @@ Primary AKS troubleshooting guide for incidents routed from [../SKILL.md](../SKI
 - lifecycle, access, node, `kube-system`, workload, ingress, DNS, or scaling issues
 - `kubectl` cannot connect, nodes are `NotReady`, or pods are unhealthy
 
+## Scenario Playbooks
+
+| Scenario                                                      | Reference                                        |
+| ------------------------------------------------------------- | ------------------------------------------------ |
+| broad cluster investigation                                   | [general-diagnostics.md](general-diagnostics.md) |
+| workload, crash, image pull, readiness, or pending pod issues | [pod-failures.md](pod-failures.md)               |
+| node health, scaling, pressure, upgrade, or zone issues       | [node-issues.md](node-issues.md)                 |
+| service, ingress, DNS, or network policy issues               | [networking.md](networking.md)                   |
+
 ## Tool Selection For Diagnostics
 
 When gathering AKS diagnostic evidence, prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool that fits the read, then supporting Azure tools such as `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only when the AKS-MCP surface cannot perform the needed check.
 
-See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md) and [references/command-flows.md](references/command-flows.md).
+See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md), [references/command-flows.md](references/command-flows.md), and [references/testing-loop.md](references/testing-loop.md).
 
 ## Required Inputs
 

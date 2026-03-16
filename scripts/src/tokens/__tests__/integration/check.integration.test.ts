@@ -10,6 +10,10 @@ import { check } from "../../commands/check.js";
 
 const TEST_DIR = join(process.cwd(), "__integration_check__");
 
+function getConsoleOutput(calls: unknown[][]): string {
+  return calls.map(([message]) => String(message ?? "")).join("");
+}
+
 describe("check command integration", () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -50,7 +54,7 @@ describe("check command integration", () => {
 
     check(TEST_DIR, []);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("exceeding");
   });
 
@@ -67,7 +71,7 @@ describe("check command integration", () => {
 
     check(TEST_DIR, ["--json"]);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(() => JSON.parse(output)).not.toThrow();
   });
 
@@ -87,9 +91,9 @@ describe("check command integration", () => {
 
     check(TEST_DIR, ["--staged"]);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("Files Checked: 1");
-   });
+  });
 
   it("loads custom config from .token-limits.json", () => {
     const config = {
@@ -101,7 +105,7 @@ describe("check command integration", () => {
 
     check(TEST_DIR, []);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("exceeding");
   });
 });

@@ -20,7 +20,7 @@ kubectl describe node <node-name>
 | `PIDPressure`        | `True`  | Too many processes                | App spawning excessive threads/processes           |
 | `NetworkUnavailable` | `True`  | CNI plugin issue                  | Check CNI pods in kube-system; node network config |
 
-**AKS-specific — SSH to a node:**
+**AKS-specific - SSH to a node:**
 
 ```bash
 # Create a privileged debug pod on the node
@@ -31,7 +31,7 @@ chroot /host systemctl status kubelet
 chroot /host journalctl -u kubelet -n 50
 ```
 
-**If kubelet can't recover:** cordon → drain → delete. AKS auto-replaces via node pool VMSS.
+**If kubelet can't recover:** cordon -> drain -> delete. AKS auto-replaces via node pool VMSS.
 
 ```bash
 kubectl cordon <node-name>
@@ -59,14 +59,14 @@ az aks nodepool show -g <rg> --cluster-name <cluster> -n <nodepool> \
   --query "{autoscaleEnabled:enableAutoScaling, min:minCount, max:maxCount}"
 ```
 
-**Autoscaler won't scale up — common reasons:**
+**Autoscaler won't scale up - common reasons:**
 
 - Node pool already at `maxCount`
 - VM quota exhausted: `az vm list-usage -l <region> -o table | grep -i "DSv3\|quota"`
 - Pod `nodeAffinity` is unsatisfiable on any new node template
 - 10-minute cooldown period still active after last scale event
 
-**Autoscaler won't scale down — common reasons:**
+**Autoscaler won't scale down - common reasons:**
 
 - Pods with `emptyDir` local storage (configure `--skip-nodes-with-local-storage=false` if safe)
 - Standalone pods with no controller (not in a ReplicaSet)
@@ -136,7 +136,7 @@ az aks get-upgrades -g <rg> -n <cluster> -o table
 az aks show -g <rg> -n <cluster> --query "provisioningState"
 
 # If stuck: check AKS diagnostics blade in portal
-# Azure Portal → AKS cluster → Diagnose and solve problems → Upgrade
+# Azure Portal -> AKS cluster -> Diagnose and solve problems -> Upgrade
 ```
 
 Common causes: PDB blocking drain (`kubectl get pdb -A`), deprecated APIs in use, custom admission webhooks failing (`kubectl get validatingwebhookconfiguration`).
@@ -145,7 +145,7 @@ Common causes: PDB blocking drain (`kubectl get pdb -A`), deprecated APIs in use
 
 ## Spot Node Pool Evictions
 
-AKS spot nodes use Azure Spot VMs — they can be evicted with 30 seconds notice when Azure needs capacity.
+AKS spot nodes use Azure Spot VMs - they can be evicted with 30 seconds notice when Azure needs capacity.
 
 **Diagnose spot eviction:**
 

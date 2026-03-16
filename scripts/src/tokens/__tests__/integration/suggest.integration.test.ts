@@ -9,6 +9,10 @@ import { suggest } from "../../commands/suggest.js";
 
 const TEST_DIR = join(process.cwd(), "__integration_suggest__");
 
+function getConsoleOutput(calls: unknown[][]): string {
+  return calls.map(([message]) => String(message ?? "")).join("");
+}
+
 describe("suggest command integration", () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -48,7 +52,7 @@ describe("suggest command integration", () => {
 
     suggest(TEST_DIR, [join(TEST_DIR, ".github", "skills", "verbose.md")]);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("Verbose");
   });
 
@@ -58,7 +62,7 @@ describe("suggest command integration", () => {
 
     suggest(TEST_DIR, [join(TEST_DIR, ".github", "skills", "emoji.md")]);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("emoji");
   });
 
@@ -68,7 +72,7 @@ describe("suggest command integration", () => {
 
     suggest(TEST_DIR, [join(TEST_DIR, ".github", "skills", "code.md")]);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("code block");
   });
 
@@ -80,7 +84,7 @@ describe("suggest command integration", () => {
 
     suggest(TEST_DIR, []);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("exceeding");
   });
 
@@ -90,7 +94,7 @@ describe("suggest command integration", () => {
 
     suggest(TEST_DIR, []);
 
-    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
+    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
     expect(output).toContain("SUMMARY");
     expect(output).toContain("Files analyzed");
   });
