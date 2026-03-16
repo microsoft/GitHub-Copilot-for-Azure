@@ -1,0 +1,58 @@
+name: Update Plugin Versions
+
+on:
+  push:
+    branches: [ main ]
+    # This triggers when PRs are merged into main
+
+jobs:
+  update-version-on-merge:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for semantic versioning
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check for plugin changes
+      id: plugin_changes
+      run: |
+        # Get the list of changed files from the merge commit
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+        echo "Changed files:"
+        echo "$CHANGED_FILES"
+        
+        # Check if any files under plugin/ were changed
+        PLUGIN_CHANGES=$(echo "$CHANGED_FILES" | grep '^plugin/' || true)
+        
+        if [ -n "$PLUGIN_CHANGES" ]; then
+          echo "Plugin changes detected:"
+          echo "$PLUGIN_CHANGES"
+          echo "should_update=true" >> $GITHUB_OUTPUT
+        else
+          echo "No plugin changes detected - skipping version update"
+          echo "should_update=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run semantic release
+      if: steps.plugin_changes.outputs.should_update == 'true'
+      run: npm run release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Skip version update
+      if: steps.plugin_changes.outputs.should_update == 'false'
+      run: |
+        echo "ℹ️  Version update skipped - no changes to plugin files detected"
+        echo "Only changes outside the plugin/ folder don't require version updates"
