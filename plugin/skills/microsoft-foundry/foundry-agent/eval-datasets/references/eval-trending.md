@@ -4,8 +4,10 @@ Track evaluation metrics across multiple runs and versions to visualize improvem
 
 ## Prerequisites
 
-- At least 2 evaluation runs in the same evaluation group (same `evaluationId`)
-- Project endpoint available in `.env`
+- At least 2 evaluation runs in the same evaluation group (same `evaluationId` when created)
+- Project endpoint and selected environment available in `.foundry/agent-metadata.yaml`
+
+> ⚠️ **Eval-group immutability:** Trend a group only when its evaluator set and thresholds stayed fixed across runs. If either changed, start a new evaluation group and track that history separately.
 
 ## Step 1 — Retrieve Evaluation History
 
@@ -23,6 +25,8 @@ Then retrieve all runs within the target evaluation group:
 | `projectEndpoint` | ✅ | Azure AI Project endpoint |
 | `evalId` | ✅ | Evaluation group ID |
 | `isRequestForRuns` | ✅ | `true` to list runs |
+
+> ⚠️ **Parameter guardrail:** evaluation_get expects `evalId`, not `evaluationId`, even if the runs were grouped earlier with `evaluationId`.
 
 ## Step 2 — Build Metrics Timeline
 

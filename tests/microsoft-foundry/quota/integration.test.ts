@@ -282,10 +282,10 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
       expect(isSkillUsed).toBe(true);
 
-      // May use foundry_models_deployments_list or az CLI
+      // May use azure-foundry or az CLI
       const usesTools = doesAssistantMessageIncludeKeyword(
         agentMetadata,
-        "foundry_models"
+        "azure-foundry"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "az cognitiveservices"

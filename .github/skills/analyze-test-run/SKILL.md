@@ -4,7 +4,7 @@ description: "Analyze a GitHub Actions integration test run and produce a skill 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.3"
 ---
 
 # Analyze Test Run
@@ -99,6 +99,7 @@ For non-deploy tests (e.g. azure-prepare, azure-ai, azure-kusto), only track whe
 **Section 3 — Report Confidence & Pass Rate**
 
 Extract from SKILL-REPORT.md:
+- Skill Invocation Success Rate (from the report's statistics section)
 - Overall Test Pass Rate (from the report's statistics section)
 - Average Confidence (from the report's statistics section)
 
@@ -107,6 +108,16 @@ Extract from SKILL-REPORT.md:
 Repeat Phase 1–3 for the second run, then produce a side-by-side delta table. See [report-format.md](references/report-format.md) § Comparison.
 
 ### Phase 3 — File Issues for Failures
+
+For Skill Invocation Success Rate that is available and is less than 80%, create a GitHub issue:
+
+```
+gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
+  --title "Integration test failure: <skill> – skill-invocation" \
+  --label "bug,integration-test,skill-invocation" \
+  --body "<body>"
+```
+Issue body template — see [issue-template.md](references/issue-template.md).
 
 For every test with a `<failure>` element in `junit.xml`:
 
@@ -120,14 +131,14 @@ For every test with a `<failure>` element in `junit.xml`:
    - **Timeout** — test exceeded time limit
    - **Assertion mismatch** — expected files/links not found
    - **Quota exhaustion** — Azure region quota prevented deployment
-6. Search for an existing open issue before creating a new one:
+6. Search for existing open issue before creating a new one:
    ```bash
    gh issue list --repo microsoft/GitHub-Copilot-for-Azure \
-     --state open --label "integration-test" \
-     --search "Integration test failure: {skill} – {keywords} in:title" \
-     --json number,title --jq '.[0].number'
+     --state open \
+     --search "Integration test failure: {skill} in:title" \
+     --json number,title,body
    ```
-   Match criteria: an open issue whose title contains the same `{skill}` and `{keywords}` tokens. If a match is found, skip issue creation for this failure and note the existing issue number in the summary report.
+   Match criteria: an open issue whose title and body describe a similar problem. If a match is found, skip issue creation for this failure and note the existing issue number(s) in the summary report.
 7. If no existing issue was found, create a GitHub issue:
 
 ```

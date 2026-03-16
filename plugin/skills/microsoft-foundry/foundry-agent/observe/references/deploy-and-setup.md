@@ -1,67 +1,80 @@
 # Step 1 — Auto-Setup Evaluators & Dataset
 
-> **This step runs automatically after deployment.** If the agent was deployed via the [deploy skill](../../deploy/deploy.md), evaluators and a test dataset may already be configured. Check `evaluators/` and `datasets/` for existing artifacts before re-creating.
+> **This step runs automatically after deployment.** If the agent was deployed via the [deploy skill](../../deploy/deploy.md), `.foundry` cache and metadata may already be configured. Check `.foundry/evaluators/`, `.foundry/datasets/`, and `.foundry/agent-metadata.yaml` for existing artifacts before re-creating them.
 >
-> If the agent is **not yet deployed**, follow the [deploy skill](../../deploy/deploy.md) first. It handles project detection, Dockerfile generation, ACR build, agent creation, container startup, **and** auto-creates evaluators & dataset after a successful deployment.
+> If the agent is **not yet deployed**, follow the [deploy skill](../../deploy/deploy.md) first. It handles project detection, Dockerfile generation, ACR build, agent creation, container startup, and auto-creates `.foundry` cache after a successful deployment.
 
 ## Auto-Create Evaluators & Dataset
 
-> **This step is fully automatic.** After deployment, immediately prepare evaluators and a local test dataset without waiting for the user to request it.
+> **This step is fully automatic.** After deployment, immediately prepare evaluators and a local test dataset for the selected environment without waiting for the user to request it.
 
 ### 1. Read Agent Instructions
 
 Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
 
-### 2. Select Evaluators
+### 2. Reuse or Refresh Cache
 
-Combine **built-in, custom, and safety evaluators**:
+Inspect `.foundry/evaluators/`, `.foundry/datasets/`, and the selected environment's `testCases[]`.
+
+- **Cache is current** -> reuse it and summarize what is already available.
+- **Cache is missing or stale** -> refresh it after confirming with the user.
+- **User explicitly asks for refresh** -> rebuild and rewrite only the selected environment's cache.
+
+### 3. Select Evaluators
+
+Combine built-in, custom, and safety evaluators:
 
 | Category | Evaluators |
 |----------|-----------|
 | **Quality (built-in)** | intent_resolution, task_adherence, coherence, fluency, relevance |
-| **Safety (include ≥2)** | violence, self_harm, hate_unfairness, sexual, indirect_attack |
-| **Custom (create 1–2)** | Domain-specific via `evaluator_catalog_create` (see below) |
+| **Safety (include >=2)** | violence, self_harm, hate_unfairness, sexual, indirect_attack |
+| **Custom (create 1-2)** | Domain-specific via `evaluator_catalog_create` |
 
-### 3. Create Custom Evaluators
+### 4. Create Custom Evaluators
 
-Use **`evaluator_catalog_create`** with:
+Use **`evaluator_catalog_create`** with the selected environment's project endpoint.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `projectEndpoint` | ✅ | Azure AI Project endpoint |
-| `name` | ✅ | e.g., `domain_accuracy`, `citation_quality` |
+| `name` | ✅ | For example, `domain_accuracy`, `citation_quality` |
 | `category` | ✅ | `quality`, `safety`, or `agents` |
 | `scoringType` | ✅ | `ordinal`, `continuous`, or `boolean` |
 | `promptText` | ✅* | Template with `{{query}}`, `{{response}}` placeholders |
 | `minScore` / `maxScore` | | Default: 1 / 5 |
-| `passThreshold` | | Scores ≥ this value pass |
+| `passThreshold` | | Scores >= this value pass |
 
-> **LLM-judge tip:** Include in the evaluator prompt: *"Do NOT penalize the response for mentioning dates or events beyond your training cutoff. The agent has real-time access."*
+### 5. Identify LLM-Judge Deployment
 
-### 4. Identify LLM-Judge Deployment
+Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the setup flow and explain that quality evaluators need a compatible judge deployment.
 
-Use **`model_deployment_get`** to find a suitable model (e.g., `gpt-4o`) for quality evaluators.
+### 6. Generate Local Test Dataset
 
-### 5. Generate Local Test Dataset
+Use the identified chat-capable deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save to `.foundry/datasets/<agent-name>-<environment>-test-v1.jsonl` with each line containing at minimum a `query` field (optionally `context`, `ground_truth`).
 
-Use the identified LLM deployment to generate realistic test queries based on the agent's instructions and tool capabilities. Save to `datasets/<agent-name>-test.jsonl` with each line containing at minimum a `query` field (optionally `context`, `ground_truth`).
+### 7. Persist Artifacts and Test Cases
 
-### 6. Persist Artifacts
-
+```text
+.foundry/
+  agent-metadata.yaml
+  evaluators/
+    <name>.yaml
+  datasets/
+    *.jsonl
+  results/
+    <environment>/
+      <eval-id>/
+        <run-id>.json
 ```
-evaluators/        # custom evaluator definitions
-  <name>.yaml      # prompt text, scoring type, thresholds
-datasets/          # locally generated input datasets
-  *.jsonl          # test queries
-results/           # evaluation run outputs (populated later)
-  <eval-id>/
-    <run-id>.json
-```
 
-Save evaluator definitions to `evaluators/<name>.yaml` and test data to `datasets/*.jsonl`.
+Save evaluator definitions to `.foundry/evaluators/<name>.yaml`, test data to `.foundry/datasets/*.jsonl`, and create or update test cases in `agent-metadata.yaml` with:
+- `id`
+- `priority` (`P0`, `P1`, `P2`)
+- dataset reference
+- evaluator names and thresholds
 
-### 7. Prompt User
+### 8. Prompt User
 
-*"Your agent is deployed and running. Evaluators and a local test dataset have been auto-configured. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local test dataset, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
 
-If yes → proceed to [Step 2: Evaluate](evaluate-step.md). If no → stop.
+If yes -> proceed to [Step 2: Evaluate](evaluate-step.md). If no -> stop.
