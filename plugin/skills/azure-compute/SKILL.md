@@ -1,6 +1,6 @@
 ---
 name: azure-compute
-description: "Azure VM and VMSS skill router for recommendation, pricing, sizing, and connectivity troubleshooting. WHEN: recommend VM size, which VM should I use, choose Azure VM, machine learning VM, memory-intensive workload, burstable VM, lightweight web app, cheapest Azure VM for website, VM pricing, cost estimate, VM families, VMSS, scale set, flexible orchestration, uniform orchestration, can't connect to VM, unreachable VM, RDP not working, SSH refused, SSH into Azure Linux VM, VM black screen, NSG rules blocking traffic, reset VM password, VM connectivity, troubleshoot my VM, can't reach my VM."
+description: "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, and connectivity troubleshooting. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot."
 license: MIT
 metadata:
   author: Microsoft
@@ -13,7 +13,13 @@ Routes Azure VM requests to the appropriate sub-skill based on user intent.
 
 ## When to Use This Skill
 
-- User asks about Azure VMs, VM sizing, VMSS, or VM connectivity
+Activate this skill when the user:
+- Asks about Azure Virtual Machines (VMs) or VM Scale Sets (VMSS)
+- Asks about choosing a VM, VM sizing, pricing, or cost estimates
+- Needs a workload-based recommendation for scenarios like database, GPU, deep learning, HPC, web tier, or dev/test
+- Mentions VM families, autoscale, load balancing, or Flexible versus Uniform orchestration
+- Wants to troubleshoot Azure VM connectivity issues such as unreachable VMs, RDP/SSH failures, black screens, NSG/firewall issues, or credential resets
+- Uses prompts like "Help me choose a VM"
 
 ## Routing
 
