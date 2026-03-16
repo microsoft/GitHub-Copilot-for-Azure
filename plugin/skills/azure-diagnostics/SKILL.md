@@ -1,10 +1,10 @@
 ---
 name: azure-diagnostics
-description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors."
+description: "Debug production issues on Azure Container Apps and Azure Functions using logs, KQL, and health checks. Focuses on image pull failures, cold starts, health probe issues, and function invocation failures. WHEN: debug production issues, troubleshoot container apps, troubleshoot function apps, troubleshoot Azure Functions, analyze logs with KQL, fix image pull failures, resolve cold start issues, investigate health probe failures, check resource health, view application logs, find root cause of errors, function app not working."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "1.0.2"
 ---
 
 # Azure Diagnostics
@@ -24,7 +24,6 @@ Activate this skill when user wants to:
 - Find root cause of application errors
 - Troubleshoot Azure Function Apps (invocation failures, timeouts, binding errors)
 - Find the App Insights or Log Analytics workspace linked to a Function App
-- Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 
 ## Rules
 
@@ -33,7 +32,6 @@ Activate this skill when user wants to:
 3. Check resource health before deep-diving into logs
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
-6. Route AKS incidents to the dedicated AKS troubleshooting document
 
 ---
 
@@ -53,14 +51,6 @@ Activate this skill when user wants to:
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
-| **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](aks-troubleshooting/aks-troubleshooting.md) |
-
----
-
-## Routing
-
-- Keep Container Apps and Function Apps diagnostics in this parent skill.
-- Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](aks-troubleshooting/aks-troubleshooting.md).
 
 ---
 
