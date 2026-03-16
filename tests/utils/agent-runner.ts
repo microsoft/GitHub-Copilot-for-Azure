@@ -516,7 +516,8 @@ export function useAgentRunner() {
         cliPath: getBundledCliPath(),
         env: {
           ...process.env,
-          SKILLS_INSTRUCTIONS: "true"
+          SKILLS_INSTRUCTIONS: "true",
+          DYNAMIC_INSTRUCTIONS_RETRIEVAL: "true"
         }
       }) as CopilotClient;
       entry.client = client;
