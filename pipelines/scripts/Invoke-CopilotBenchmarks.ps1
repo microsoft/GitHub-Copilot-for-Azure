@@ -34,7 +34,7 @@
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
         ),
-        [string]$OutputPath
+        [Parameter(Mandatory=$true)][string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
@@ -53,6 +53,7 @@
 
     Write-Host "Benchmark: $Benchmark"
     Write-Host "Models: $($Model -join ', ')"
+    Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     # --- Retrieve GitHub PAT from KeyVault ---
