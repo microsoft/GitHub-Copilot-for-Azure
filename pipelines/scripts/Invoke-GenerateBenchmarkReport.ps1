@@ -180,11 +180,12 @@
     # Move generated markdown reports from the working directory to the specified output path
     $reportsDir = Join-Path $targetDir "reports"
     $reportFiles = @()
-    if ((Test-Path $reportsDir) -and (Get-ChildItem -Path $reportsDir -Filter '*.md' -ErrorAction SilentlyContinue)) {
-        $reportFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
+    $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md' -ErrorAction SilentlyContinue
+    if ((Test-Path $reportsDir) -and $reportsDirMdFiles) {
+        $reportFiles = $reportsDirMdFiles
         Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
     } else {
-        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\.github\*" }
+        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\.github\*" -and $_.FullName -notlike "*/.github/*" }
         Write-Host "Found $($reportFiles.Count) report(s) in $targetDir (excluding .github folders)"
     }
 
