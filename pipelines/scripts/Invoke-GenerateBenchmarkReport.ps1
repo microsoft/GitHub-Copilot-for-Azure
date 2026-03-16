@@ -123,7 +123,7 @@
     Write-Host "Checking status of run ID: $($inputRunIds -join ',')"
     $statusResult = & 'msbench-cli' resume --run-id $($inputRunIds -join ',')
     if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli run-status failed for run ID $($inputRunIds -join ',') with exit code $LASTEXITCODE"
+        throw "msbench-cli resume failed for run ID $($inputRunIds -join ',') with exit code $LASTEXITCODE"
     }
 
     # --- Clone repo and cd to working directory ---
