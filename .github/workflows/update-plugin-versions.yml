@@ -30,8 +30,8 @@ jobs:
     - name: Check for plugin changes
       id: plugin_changes
       run: |
-        # Get the list of changed files from the merge commit
-        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+        # Get the list of changed files from the push event range
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
         echo "Changed files:"
         echo "$CHANGED_FILES"
         
