@@ -7,9 +7,9 @@ Primary AKS troubleshooting guide for incidents routed from [../SKILL.md](../SKI
 - lifecycle, access, node, `kube-system`, workload, ingress, DNS, or scaling issues
 - `kubectl` cannot connect, nodes are `NotReady`, or pods are unhealthy
 
-## MCP Preference
+## Tool Selection For Diagnostics
 
-Prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool, then `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only as fallback.
+When gathering AKS diagnostic evidence, prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool that fits the read, then supporting Azure tools such as `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only when the AKS-MCP surface cannot perform the needed check.
 
 See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md) and [references/command-flows.md](references/command-flows.md).
 
@@ -44,7 +44,7 @@ If cluster identity is missing, stop and ask for it.
 1. Get cluster context.
 2. Classify the problem by scope bucket.
 3. Prefer Azure-side evidence before Kubernetes-side evidence.
-4. Use the matching AKS-MCP or safe fallback flow.
+4. Use the matching AKS-MCP path first, then the documented CLI fallback if MCP cannot perform that read.
 5. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
 
 ## Error Patterns

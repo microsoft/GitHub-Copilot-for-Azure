@@ -4,7 +4,7 @@ description: "Debug and troubleshoot production issues on Azure. Covers Containe
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.0.4"
 ---
 
 # Azure Diagnostics
@@ -60,9 +60,7 @@ Activate this skill when user wants to:
 ## Routing
 
 - Keep Container Apps and Function Apps diagnostics in this parent skill.
-- Route active AKS incidents to [AKS Troubleshooting](aks-troubleshooting/aks-troubleshooting.md).
-- Ask for subscription, resource group, cluster name, namespace, and symptom summary before deep AKS analysis when those identifiers are missing.
-- Keep AKS remediation cautious: prefer read-only evidence collection first, then propose safe next steps.
+- Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](aks-troubleshooting/aks-troubleshooting.md).
 
 ---
 
@@ -146,3 +144,8 @@ az monitor activity-log list -g RG --max-events 20
 - [KQL Query Library](references/kql-queries.md)
 - [Azure Resource Graph Queries](references/azure-resource-graph.md)
 - [Function Apps Troubleshooting](references/functions/README.md)
+- [AKS Reference Index](references/azure-kubernetes/README.md)
+- [AKS General Diagnostics](references/azure-kubernetes/general-diagnostics.md)
+- [AKS Pod Failures](references/azure-kubernetes/pod-failures.md)
+- [AKS Node Issues](references/azure-kubernetes/node-issues.md)
+- [AKS Networking](references/azure-kubernetes/networking.md)

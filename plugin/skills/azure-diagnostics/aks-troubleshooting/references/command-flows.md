@@ -6,7 +6,7 @@
 Resolve subscription -> resolve resource group -> resolve cluster -> inspect cluster state -> inspect node pools -> inspect resource health -> inspect recent operations
 ```
 
-Generic fallback commands:
+CLI fallback when AKS-MCP cannot perform the cluster baseline read:
 
 ```bash
 az aks show -g <resource-group> -n <cluster-name>
@@ -20,7 +20,7 @@ az monitor activity-log list -g <resource-group> --max-events 20
 Check API reachability -> inspect nodes -> inspect kube-system -> inspect events -> inspect affected namespace -> inspect pod details and logs
 ```
 
-Generic fallback commands:
+CLI fallback when AKS-MCP cannot perform the Kubernetes baseline read:
 
 ```bash
 kubectl cluster-info
@@ -38,7 +38,7 @@ kubectl logs <pod-name> -n <namespace> --previous
 pod -> service -> endpoints -> ingress or load balancer -> DNS -> network controls
 ```
 
-Generic fallback commands:
+CLI fallback when AKS-MCP cannot perform the connectivity read:
 
 ```bash
 kubectl get pods -n <namespace> -o wide
@@ -66,7 +66,7 @@ check resource health -> inspect metrics -> verify diagnostics settings -> inspe
 pod events -> node capacity -> taints and tolerations -> affinity rules -> PVC state -> quotas
 ```
 
-Generic fallback commands:
+CLI fallback when AKS-MCP cannot perform the scheduling read:
 
 ```bash
 kubectl describe pod <pod-name> -n <namespace>

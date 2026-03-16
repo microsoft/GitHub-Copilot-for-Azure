@@ -20,8 +20,6 @@ Favor the obvious read paths first:
 - monitoring, metrics, or control-plane-log checks
 - kubectl-style read operations
 
-Do not hardcode a large tool map in the skill.
-
 ## Authentication And Access
 
 AKS-MCP is Azure CLI-backed. Expect service principal, workload identity, managed identity, or existing `az login` auth, usually keyed by `AZURE_CLIENT_ID`. If `AZURE_SUBSCRIPTION_ID` is set, expect the server to select that subscription after login.
