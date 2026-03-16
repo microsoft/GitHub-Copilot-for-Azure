@@ -123,6 +123,13 @@
         throw "msbench-cli database failed with exit code $LASTEXITCODE"
     }
 
+    # Check if all the runs have been completed before generating the report
+    Write-Host "Checking status of run ID: $($inputRunIds -join ',')"
+    $statusResult = & 'msbench-cli' resume --run-id $($inputRunIds -join ',')
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli run-status failed for run ID $($inputRunIds -join ',') with exit code $LASTEXITCODE"
+    }
+
     # --- Clone repo and cd to working directory ---
     $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
     $repoName = "msbench-benchmarks"
