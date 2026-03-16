@@ -1,52 +1,45 @@
 <#
 .SYNOPSIS
-    Installs MSBench CLI and generates benchmark reports for run IDs specified in run_ids.json.
+    Generates benchmark analysis reports for completed MSBench runs using GitHub Copilot.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
     The script retrieves a GitHub PAT from KeyVault, clones the msbench-benchmarks repo,
-    installs MSBench CLI, and invokes for each model:
-    msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model> --no-wait
+    installs MSBench CLI, checks the status of existing benchmark runs, and uses GitHub Copilot
+    to generate detailed analysis reports for the specified run IDs.
 
-    Run IDs are extracted from the output and set as the pipeline output variable RUN_IDS.
+    The script reads run IDs from run_ids.json in the InputPath, generates reports using
+    GitHub Copilot CLI, and saves the generated markdown reports to the OutputPath.
+
+.PARAMETER InputPath
+    Directory path containing the run_ids.json file with benchmark run IDs to analyze.
+
+.PARAMETER OutputPath
+    Directory path where generated benchmark reports will be saved.
 
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
-
-.PARAMETER Benchmark
-    Benchmark identifier. Default: azure
-
-.PARAMETER Model
-    One or more model identifiers to benchmark.
 
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
 
     param(
-        [string]$Benchmark = "azure",
-        [string[]]$Model = @(
-            "claude-sonnet-4.5-autodev-test",
-            "claude-opus-4.5-autodev-test",
-            "gpt-5.2-codex-autodev-test",
-            "gpt-5.2-autodev-test",
-            "gemini-2.5-pro-autodev-test"
-        ),
-        [string]$InputPath,
-        [string]$OutputPath
+        [Parameter(Mandatory=$true)][string]$InputPath,
+        [Parameter(Mandatory=$true)][string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
     $ErrorActionPreference = "Stop"
 
-    if (!$Benchmark) {
-        throw "Benchmark parameter is required."
+    if (!$InputPath) {
+        throw "InputPath parameter is required."
     }
 
-    if (!$Model -or $Model.Count -eq 0) {
-        throw "Model parameter is required."
+    if (!$OutputPath) {
+        throw "OutputPath parameter is required."
     }
 
     # --- Parse run IDs from input file if provided ---
@@ -64,8 +57,8 @@
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretName = "azure-eval-gh-pat"
 
-    Write-Host "Benchmark: $Benchmark"
-    Write-Host "Models: $($Model -join ', ')"
+    Write-Host "Input Path: $InputPath"
+    Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     # --- Retrieve GitHub PAT from KeyVault ---
@@ -123,7 +116,7 @@
         throw "msbench-cli database failed with exit code $LASTEXITCODE"
     }
 
-    # Check if all the runs have been completed before generating the report
+    # Check if all the runs have completed
     Write-Host "Checking status of run ID: $($inputRunIds -join ',')"
     $statusResult = & 'msbench-cli' resume --run-id $($inputRunIds -join ',')
     if ($LASTEXITCODE -ne 0) {
@@ -164,6 +157,8 @@
     Write-Host "Changing directory to $targetDir"
     Set-Location $targetDir
 
+    # Generate benchmark analysis report using GitHub Copilot CLI
+    # Copilot will analyze the specified run IDs and generate detailed markdown reports
     Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
     $reportGenerationPrompt = "analyze msbench run: $($inputRunIds -join ', ')"
     $copilotLogDir = Join-Path $OutputPath "copilot_log"
@@ -179,7 +174,7 @@
         throw "copilot report generation failed with exit code $LASTEXITCODE"
     }
 
-    # Move generated reports to output path
+    # Move generated markdown reports from the working directory to the specified output path
     $reportsDir = Join-Path $targetDir "reports"
     $reportFiles = @()
     if ((Test-Path $reportsDir) -and (Get-ChildItem -Path $reportsDir -Filter '*.md' -ErrorAction SilentlyContinue)) {

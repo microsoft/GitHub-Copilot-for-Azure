@@ -54,9 +54,19 @@ stages:
     - script: npm install -g @github/copilot-cli
       displayName: 'Install GitHub Copilot CLI'
 
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.12'
+      inputs:
+        versionSpec: '3.12'
+
+    - task: PipAuthenticate@1
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
+      inputs:
+        artifactFeeds: 'internal/MicrosoftSweBench'
+
     - task: AzureCLI@2
-      name: RunBenchmarks
-      displayName: 'Run Copilot Benchmarks script'
+      name: GenerateBenchmarkReports
+      displayName: 'Generate benchmark reports for MSBench runs'
       inputs:
         connectedServiceNameARM: 'azure_msbench_eval'
         addSpnToEnvironment: true
