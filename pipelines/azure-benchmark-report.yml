@@ -66,3 +66,7 @@ stages:
         scriptArguments: >
           -InputPath "$(Pipeline.Workspace)/benchmark-run-ids"
           -OutputPath "$(Build.ArtifactStagingDirectory)"
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-reports
+      displayName: 'Publish benchmark reports artifact'

@@ -159,10 +159,12 @@
 
     Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
     $reportGenerationPrompt = "analyze msbench run: $($inputRunIds -join ', ')"
+    $copilotLogDir = Join-Path $OutputPath "copilot_log"
+    New-Item -Path $copilotLogDir -ItemType Directory -Force | Out-Null
     $copilotArgs = @(
             "-p", $reportGenerationPrompt,
             "--model", "claude-opus-4.6",
-            "--share", $OutputPath,
+            "--share", $copilotLogDir,
             "--yolo"
         )
     & 'copilot' @copilotArgs
@@ -177,8 +179,8 @@
         $reportFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
         Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
     } else {
-        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' -ErrorAction SilentlyContinue
-        Write-Host "Found $($reportFiles.Count) report(s) in $targetDir"
+        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\.github\*" }
+        Write-Host "Found $($reportFiles.Count) report(s) in $targetDir (excluding .github folders)"
     }
 
     if ($reportFiles.Count -gt 0) {
@@ -190,13 +192,5 @@
     } else {
         Write-Warning "No generated report (.md) files found in $reportsDir or $targetDir"
     }
-
-    if ($OutputPath) {
-        New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
-        $jsonPath = Join-Path $OutputPath "run_ids.json"
-
-        Write-Host "Saving run IDs to $jsonPath"
-        $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
-    }
     
-    Write-Host "`nAll $($Model.Count) model runs completed successfully."
+    Write-Host "`nMSBench benchmark report generation completed successfully."
