@@ -23,9 +23,10 @@ infra/
 
 1. **Create `infra/` directory** — Create `<project-root>/infra/` and `<project-root>/infra/modules/` directories. All files in subsequent steps go here.
 2. **Read plan** — Load `<project-root>/.azure/infrastructure-plan.json`, verify `meta.status === "approved"`
-3. **Generate modules** — Group resources by category; one `.bicep` file per group under `infra/modules/`
-4. **Generate main.bicep** — Write `infra/main.bicep` that imports all modules and passes parameters
-5. **Generate parameters** — Create `infra/main.bicepparam` with environment-specific values
+3. **Fetch Bicep schemas** — For each resource in the plan, use a sub-agent to call `mcp_bicep_get_az_resource_type_schema` with the ARM type and API version from [resources.md](resources.md). Instruct the sub-agent: "Return the full property structure for {ARM type} @ {API version}: required properties, allowed values, child resources. ≤500 tokens." Use this output — not training data — to generate correct resource definitions.
+4. **Generate modules** — Group resources by category; one `.bicep` file per group under `infra/modules/`. Use the schema from step 3 for property names, allowed values, and required fields.
+5. **Generate main.bicep** — Write `infra/main.bicep` that imports all modules and passes parameters
+6. **Generate parameters** — Create `infra/main.bicepparam` with environment-specific values
 
 ## Bicep Conventions
 

@@ -19,7 +19,7 @@ The infrastructure plan is written to `<project-root>/.azure/infrastructure-plan
 | `planId` | string | Yes | Unique identifier (e.g., `plan-1`) |
 | `generatedAt` | string | Yes | ISO 8601 timestamp |
 | `version` | string | Yes | Schema version (e.g., `0.1-draft`) |
-| `status` | string | Yes | Lifecycle state: `draft`, `reviewed`, `approved`, `deployed` |
+| `status` | string | Yes | Lifecycle state: `draft`, `approved`, `deployed` |
 
 ## `inputs` (required)
 

@@ -9,6 +9,7 @@
         "azure-cost-optimization",
         "azure-deploy",
         "azure-diagnostics",
+        "azure-enterprise-infra-planner",
         "azure-hosted-copilot-sdk",
         "azure-kusto",
         "azure-messaging",
