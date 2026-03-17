@@ -1,6 +1,6 @@
 ---
 name: azure-enterprise-infra-planner
-description: "Architect and provision enterprise Azure infrastructure from workload descriptions. For platform engineers needing networking, security, compliance, and WAF alignment. Generates Bicep or Terraform directly (no azd). WHEN: 'plan Azure infrastructure', 'set up networking and VMs', 'architect Azure landing zone', 'design hub-spoke network', 'provision enterprise workload', 'plan DR infrastructure'. PREFER azure-prepare FOR app-centric workflows."
+description: "Architect and provision enterprise Azure infrastructure from workload descriptions. For cloud architects and platform engineers planning networking, identity, security, compliance, and multi-resource topologies with WAF alignment. Generates Bicep or Terraform directly (no azd). WHEN: 'plan Azure infrastructure', 'architect Azure landing zone', 'design hub-spoke network', 'plan multi-region DR topology', 'set up VNets firewalls and private endpoints', 'subscription-scope Bicep deployment'. PREFER azure-prepare FOR app-centric workflows."
 license: MIT
 metadata:
   author: Microsoft
@@ -18,12 +18,12 @@ metadata:
 ## Triggers
 
 Activate this skill when user wants to:
-- Plan enterprise Azure infrastructure from a workload description
+- Plan enterprise Azure infrastructure from a workload or architecture description
 - Architect a landing zone, hub-spoke network, or multi-region topology
-- Design networking, security, or compliance-driven infrastructure
+- Design networking infrastructure: VNets, subnets, firewalls, private endpoints, VPN gateways
+- Plan identity, RBAC, and compliance-driven infrastructure
 - Generate Bicep or Terraform for subscription-scope or multi-resource-group deployments
-- Set up multi-environment infrastructure (dev/staging/prod) at the platform level
-- Plan disaster recovery or high-availability infrastructure
+- Plan disaster recovery, failover, or cross-region high-availability topologies
 
 ## Rules
 
