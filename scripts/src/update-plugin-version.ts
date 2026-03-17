@@ -15,8 +15,8 @@ interface PluginConfig {
  */
 function updatePluginVersion(version: string): void {
   const pluginFiles: string[] = [
-    "../plugin/.claude-plugin/plugin.json",
-    "../plugin/.plugin/plugin.json"
+    "../../plugin/.claude-plugin/plugin.json",
+    "../../plugin/.plugin/plugin.json"
   ];
 
   console.log(`Updating plugin files to version: ${version}`);
