@@ -23,7 +23,7 @@ function updatePluginVersion(version: string): void {
 
   let hadError = false;
 
-  pluginFiles.forEach((filePath: string) => {
+  for (const filePath of pluginFiles) {
     let fd: number | undefined;
     try {
       const fullPath = path.resolve(__dirname, filePath);
@@ -49,11 +49,12 @@ function updatePluginVersion(version: string): void {
     } catch (error: unknown) {
       const err = error as NodeJS.ErrnoException;
       if (err.code === "ENOENT") {
-        console.warn(`File not found: ${filePath}`);
-        return;
+        console.error(`File not found: ${filePath}`);
+      } else {
+        console.error(`Failed to update ${filePath}:`, err.message);
       }
-      console.error(`Failed to update ${filePath}:`, err.message);
       hadError = true;
+      break; // Stop processing further files if there's an error
     } finally {
       // Always close the file descriptor if it was opened
       if (fd !== undefined) {
@@ -65,7 +66,7 @@ function updatePluginVersion(version: string): void {
         }
       }
     }
-  });
+  }
 
   if (hadError) {
     process.exit(1);
