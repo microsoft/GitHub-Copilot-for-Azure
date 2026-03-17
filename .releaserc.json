@@ -6,7 +6,7 @@
     [
       "@semantic-release/exec", 
       {
-        "prepareCmd": "npx tsx scripts/update-plugin-version.ts ${nextRelease.version}"
+        "prepareCmd": "cd scripts && npm run update-plugin-version -- ${nextRelease.version}"
       }
     ],
     [
