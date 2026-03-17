@@ -12,13 +12,15 @@ kubectl describe node <node-name>
 
 **Condition decision tree:**
 
-| Condition            | Value   | Meaning                           | Fix Path                                           |
-| -------------------- | ------- | --------------------------------- | -------------------------------------------------- |
-| `Ready`              | `False` | kubelet stopped reporting         | SSH to node or cordon + drain + delete             |
-| `MemoryPressure`     | `True`  | Node running out of memory        | Evict pods; scale out pool; reduce pod density     |
-| `DiskPressure`       | `True`  | OS disk or ephemeral storage full | Check logs and images; clean up or increase disk   |
-| `PIDPressure`        | `True`  | Too many processes                | App spawning excessive threads/processes           |
-| `NetworkUnavailable` | `True`  | CNI plugin issue                  | Check CNI pods in kube-system; node network config |
+| Condition            | Value   | Meaning                           | Fix Path                                                      |
+| -------------------- | ------- | --------------------------------- | ------------------------------------------------------------- |
+| `Ready`              | `False` | kubelet stopped reporting         | SSH to node; if unrecoverable, consider cordon/drain/delete\* |
+| `MemoryPressure`     | `True`  | Node running out of memory        | Evict pods; scale out pool; reduce pod density                |
+| `DiskPressure`       | `True`  | OS disk or ephemeral storage full | Check logs and images; clean up or increase disk              |
+| `PIDPressure`        | `True`  | Too many processes                | App spawning excessive threads/processes                      |
+| `NetworkUnavailable` | `True`  | CNI plugin issue                  | Check CNI pods in kube-system; node network config            |
+
+\*Only after explicit user request for remediation and confirmation of workload impact.
 
 **AKS-specific - SSH to a node:**
 
@@ -31,7 +33,9 @@ chroot /host systemctl status kubelet
 chroot /host journalctl -u kubelet -n 50
 ```
 
-**If kubelet can't recover:** cordon -> drain -> delete. AKS auto-replaces via node pool VMSS.
+**Optional remediation if kubelet can't recover (after confirmation):** cordon -> drain -> delete. AKS auto-replaces via node pool VMSS.
+
+> ⚠️ **Warning:** These commands are disruptive. By default, stay in read-only diagnostic mode. Only suggest or run them if the user has explicitly requested remediation and confirmed they understand the workload and PodDisruptionBudget impact.
 
 ```bash
 kubectl cordon <node-name>
