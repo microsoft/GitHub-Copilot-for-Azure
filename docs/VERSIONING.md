@@ -49,11 +49,7 @@ The GitHub Actions workflow `.github/workflows/update-plugin-versions.yml` autom
 
 ### Example Scenarios:
 - **PR updates skill files** → Version bumps ✅
-- **PR updates plugin.json** → Version bumps ✅  
-- **PR updates skill documentation** → Version bumps ✅
 - **PR updates README.md only** → No version change ❌
-- **PR updates docs/ folder only** → No version change ❌
-- **PR updates docs + plugin code** → Version bumps ✅
 
 ## Troubleshooting
 

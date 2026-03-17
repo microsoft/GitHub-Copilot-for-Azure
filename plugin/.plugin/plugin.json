@@ -15,7 +15,9 @@
     "infrastructure",
     "deployment",
     "microsoft",
-    "devops"
+    "devops",
+    "foundry",
+    "diagnostics"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"
