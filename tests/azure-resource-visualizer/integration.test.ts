@@ -11,14 +11,12 @@
  * 3. az login (for Azure resource access)
  */
 
-import * as fs from "fs";
-import * as path from "path";
 import {
   useAgentRunner,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, doesWorkspaceFileIncludePattern } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-resource-visualizer";
 const RUNS_PER_PROMPT = 5;
@@ -34,19 +32,6 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 const visualizerTestTimeoutMs = 1800000;
-
-/**
- * Check if the workspace contains an architecture markdown file
- * with a Mermaid diagram (graph TB or graph LR).
- */
-function hasArchitectureDiagramFile(workspacePath: string): boolean {
-  const files = fs.readdirSync(workspacePath, { recursive: true, encoding: "utf-8" });
-  const architectureFiles = files.filter(f => /architecture.*\.md$/i.test(f));
-  return architectureFiles.some(file => {
-    const content = fs.readFileSync(path.join(workspacePath, file), "utf-8");
-    return /graph\s+(TB|LR)/i.test(content);
-  });
-}
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
@@ -109,7 +94,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasDiagramFile = hasArchitectureDiagramFile(workspacePath!);
+      expect(workspacePath).toBeDefined();
+      const hasDiagramFile = doesWorkspaceFileIncludePattern(workspacePath!, /graph\s+(TB|LR)/i, /architecture.*\.md$/i);
 
       expect(isSkillUsed).toBe(true);
       expect(hasDiagramFile).toBe(true);
@@ -128,7 +114,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasDiagramFile = hasArchitectureDiagramFile(workspacePath!);
+      expect(workspacePath).toBeDefined();
+      const hasDiagramFile = doesWorkspaceFileIncludePattern(workspacePath!, /graph\s+(TB|LR)/i, /architecture.*\.md$/i);
 
       expect(isSkillUsed).toBe(true);
       expect(hasDiagramFile).toBe(true);
