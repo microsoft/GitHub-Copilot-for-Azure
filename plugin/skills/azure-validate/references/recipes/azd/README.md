@@ -77,7 +77,36 @@ azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <location>
 ```
 
-### 6. Provision Preview
+### 6. Aspire Functions Secret Storage
+
+> ⚠️ **CRITICAL for Aspire + Azure Functions projects.** Must run BEFORE provisioning.
+
+Check if the project uses `AddAzureFunctionsProject` in its AppHost:
+
+```bash
+grep -r "AddAzureFunctionsProject" . --include="*.cs"
+```
+
+**If found**, verify `AzureWebJobsSecretStorageType` is already configured:
+
+```bash
+grep -r "AzureWebJobsSecretStorageType" . --include="*.cs"
+```
+
+**If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured**, edit `AppHost.cs` to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions project builder chain:
+
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
+    .WithHostStorage(storage)
+    .WithEnvironment("AzureWebJobsSecretStorageType", "Files")  // Required for Container Apps
+    // ... other configuration
+```
+
+> 💡 **Why:** Azure Functions' secret/key management does not support identity-based storage URIs. Without this setting, the Functions host fails at startup. See [Aspire Functions Secrets Reference](../../aspire-functions-secrets.md) for details.
+
+**If `AddAzureFunctionsProject` is NOT found**, skip this step.
+
+### 7. Provision Preview
 
 Validate IaC is ready (must complete without error):
 
@@ -87,11 +116,11 @@ azd provision --preview --no-prompt
 
 > 💡 **Note:** This works for both Bicep and Terraform. azd will automatically detect the provider from `azure.yaml` and run the appropriate validation (`bicep build` or `terraform plan`).
 
-### 7. Build Verification
+### 8. Build Verification
 
 Build the project and verify there are no errors. If the build fails, fix the issues and re-build until it succeeds. Do NOT proceed to packaging or deployment with build errors.
 
-### 8. Package Validation
+### 9. Package Validation
 
 Confirm all services package successfully:
 
@@ -99,11 +128,11 @@ Confirm all services package successfully:
 azd package --no-prompt
 ```
 
-### 9. Azure Policy Validation
+### 10. Azure Policy Validation
 
 See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
 
-### 9. Aspire Container Apps Environment Variables
+### 11. Aspire Container Apps Environment Variables
 
 > ⚠️ **CRITICAL for .NET Aspire projects:** When using Aspire with Container Apps in "limited mode" (in-memory infrastructure generation), `azd provision` creates Azure resources but doesn't automatically populate environment variables that `azd deploy` needs.
 
