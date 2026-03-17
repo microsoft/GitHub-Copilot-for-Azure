@@ -59,17 +59,18 @@ describe("eval-datasets - Unit Tests", () => {
       expect(datasetsContent).toContain(".foundry/results/");
     });
 
-    test("documents environment-aware versioning and cache reuse", () => {
+    test("documents agentName-based versioning and cache reuse", () => {
       expect(datasetsContent).toContain("<agent-name>-eval-seed");
-      expect(datasetsContent).toContain("<agent-name>-<environment>-traces");
-      expect(datasetsContent).toContain("<agent-name>-<environment>-curated");
-      expect(datasetsContent).toContain("<agent-name>-<environment>-prod");
-      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-<environment>-traces-v<N>.jsonl");
-      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-<environment>-curated-v<N>.jsonl");
-      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-<environment>-prod-v<N>.jsonl");
+      expect(datasetsContent).toContain("<agent-name>-traces");
+      expect(datasetsContent).toContain("<agent-name>-curated");
+      expect(datasetsContent).toContain("<agent-name>-prod");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-traces-v<N>.jsonl");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-curated-v<N>.jsonl");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-prod-v<N>.jsonl");
       expect(datasetsContent).toContain("Foundry dataset version");
       expect(datasetsContent).toContain("v<N>");
       expect(datasetsContent).toMatch(/filenames? must start with the selected Foundry agent name/i);
+      expect(datasetsContent).toMatch(/do\s+\*\*not\*\*\s+append the environment key a second time/i);
       expect(datasetsContent).toMatch(/cache|refresh/i);
       expect(datasetsContent).toContain("testCases[]");
     });
@@ -126,6 +127,7 @@ describe("eval-datasets - Unit Tests", () => {
       expect(metadataContractContent).toContain("datasetVersion: v3");
       expect(metadataContractContent).toContain("dataset: support-agent-prod-curated");
       expect(metadataContractContent).toContain("datasetVersion: v2");
+      expect(metadataContractContent).toMatch(/do not append the environment key again/i);
       expect(traceToDatasetContent).toContain('datasetVersion: "v<N>"');
       expect(traceToDatasetContent).toContain('"name": "support-bot-prod-traces"');
       expect(traceToDatasetContent).toContain('"version": "v3"');

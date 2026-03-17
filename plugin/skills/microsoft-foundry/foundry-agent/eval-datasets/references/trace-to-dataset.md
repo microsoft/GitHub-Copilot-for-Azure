@@ -261,7 +261,7 @@ dependencies
 Extract the `query` from the last user-role entry in `gen_ai.input.messages` and the `response` from `gen_ai.output.messages`. Save extracted data to a local JSONL file:
 
 ```
-.foundry/datasets/<agent-name>-<environment>-traces-candidates-<date>.jsonl
+.foundry/datasets/<agent-name>-traces-candidates-<date>.jsonl
 ```
 
 ## Step 3 — Human Review (Curation)
@@ -283,7 +283,7 @@ Ask the user:
 
 ## Step 4 — Persist Dataset (Local JSONL)
 
-Save approved candidates to `.foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl`:
+Save approved candidates to `.foundry/datasets/<agent-name>-<source>-v<N>.jsonl`:
 
 ```json
 {"query": "How do I reset my password?", "context": "User account management", "metadata": {"source": "trace", "conversationId": "conv-abc-123", "harvestRule": "error"}}
@@ -359,12 +359,12 @@ Upload the local dataset file to a `datasets` container in the storage account:
 az storage blob upload \
   --account-name <storage-account> \
   --container-name datasets \
-  --name <agent-name>-<environment>-<source>-v<N>.jsonl \
-  --file .foundry/datasets/<agent-name>-<environment>-<source>-v<N>.jsonl \
+  --name <agent-name>-<source>-v<N>.jsonl \
+  --file .foundry/datasets/<agent-name>-<source>-v<N>.jsonl \
   --auth-mode login
 ```
 
-The local dataset filename should start with the selected Foundry agent name before the environment/source/version suffixes so trace-derived datasets stay grouped with the owning agent.
+The local dataset filename should start with the selected Foundry agent name before the source/stage/version suffixes so trace-derived datasets stay grouped with the owning agent.
 
 > ⚠️ **Always pass `--auth-mode login`** to use AAD credentials. If the container doesn't exist, create it first with `az storage container create`.
 
@@ -377,7 +377,7 @@ evaluation_dataset_create(
   projectEndpoint: "<project-endpoint>",
   datasetContentUri: "https://<storage-account>.blob.core.windows.net/datasets/<file>.jsonl",
   connectionName: "datasets-storage",
-  datasetName: "<agent-name>-<environment>-<source>",
+  datasetName: "<agent-name>-<source>",
   datasetVersion: "v<N>"
 )
 ```
@@ -387,7 +387,7 @@ evaluation_dataset_create(
 Confirm the dataset is registered:
 
 ```
-evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>", datasetVersion: "v<N>")
+evaluation_dataset_get(projectEndpoint, datasetName: "<agent-name>-<source>", datasetVersion: "v<N>")
 ```
 
 Display the registered dataset details to the user. Update `.foundry/datasets/manifest.json` with `"synced": true` and the server-side dataset name/version.

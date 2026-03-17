@@ -4,14 +4,15 @@ Manage dataset versions with naming conventions, tagging, and version pinning fo
 
 ## Naming Convention
 
-Use the pattern `<agent-name>-<environment>-<source>-v<N>`:
+Use the pattern `<agent-name>-<source>-v<N>`:
 
 | Component | Values | Example |
 |-----------|--------|---------|
-| `<agent-name>` | Agent name from `agent-metadata.yaml` | `support-bot` |
-| `<environment>` | Selected environment key | `prod` |
+| `<agent-name>` | Selected environment's `agentName` from `agent-metadata.yaml` | `support-bot-prod` |
 | `<source>` | `traces`, `synthetic`, `manual`, `combined` | `traces` |
 | `v<N>` | Incremental version number | `v3` |
+
+`<agent-name>` already refers to the environment-specific deployed Foundry agent name. If that value includes the environment key, do **not** append the environment again.
 
 **Full examples:**
 - `support-bot-prod-traces-v1` — first production dataset from trace harvesting
@@ -49,7 +50,7 @@ Pass the contents via `inputData` parameter in **`evaluation_agent_batch_eval_cr
 Use `evaluation_dataset_versions_get` to list all versions of a dataset registered in Foundry:
 
 ```
-evaluation_dataset_versions_get(projectEndpoint, datasetName: "<agent-name>-<environment>-<source>")
+evaluation_dataset_versions_get(projectEndpoint, datasetName: "<agent-name>-<source>")
 ```
 
 Use `evaluation_dataset_get` without a name to list all datasets in the project:

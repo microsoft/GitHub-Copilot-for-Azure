@@ -81,11 +81,13 @@ Each cycle makes the test suite harder and more representative. Production failu
 | Dataset type | Foundry dataset name | Foundry dataset version | Typical local file | Metadata stage |
 |--------------|----------------------|-------------------------|--------------------|----------------|
 | Seed dataset | `<agent-name>-eval-seed` | `v1` | `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl` | `seed` |
-| Trace-harvested dataset | `<agent-name>-<environment>-traces` | `v<N>` | `.foundry/datasets/<agent-name>-<environment>-traces-v<N>.jsonl` | `traces` |
-| Curated/refined dataset | `<agent-name>-<environment>-curated` | `v<N>` | `.foundry/datasets/<agent-name>-<environment>-curated-v<N>.jsonl` | `curated` |
-| Production-ready dataset | `<agent-name>-<environment>-prod` | `v<N>` | `.foundry/datasets/<agent-name>-<environment>-prod-v<N>.jsonl` | `prod` |
+| Trace-harvested dataset | `<agent-name>-traces` | `v<N>` | `.foundry/datasets/<agent-name>-traces-v<N>.jsonl` | `traces` |
+| Curated/refined dataset | `<agent-name>-curated` | `v<N>` | `.foundry/datasets/<agent-name>-curated-v<N>.jsonl` | `curated` |
+| Production-ready dataset | `<agent-name>-prod` | `v<N>` | `.foundry/datasets/<agent-name>-prod-v<N>.jsonl` | `prod` |
 
-Local dataset filenames must start with the selected Foundry agent name (`environments.<env>.agentName` in `agent-metadata.yaml`). Put stage, environment, and version suffixes **after** that prefix so cache files sort and group by agent first.
+Here `<agent-name>` means the selected environment's `environments.<env>.agentName` from `agent-metadata.yaml`. If that deployed agent name already includes the environment (for example, `support-agent-dev`), do **not** append the environment key a second time.
+
+Local dataset filenames must start with the selected Foundry agent name (`environments.<env>.agentName` in `agent-metadata.yaml`). Put stage and version suffixes **after** that prefix so cache files sort and group by agent first.
 
 Keep the Foundry dataset name stable across versions. Store the version only in `datasetVersion` (or manifest `version`) using the `v<N>` format, while local filenames keep the `-v<N>` suffix for cache readability.
 
