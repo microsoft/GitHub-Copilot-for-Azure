@@ -9,7 +9,7 @@ parameters:
 - name: buildVersionDetail
   displayName: 'Build version detail (branch name or build ID)'
   type: string
-  default: 'main'
+  default: 'refs/heads/main'
 
 trigger: none
 pr: none
