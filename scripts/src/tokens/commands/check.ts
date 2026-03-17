@@ -5,7 +5,6 @@
 import { parseArgs } from "node:util";
 import { readFileSync, existsSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { execFileSync } from "node:child_process";
 import type { 
   ValidationResult, 
   ValidationReport
@@ -115,38 +114,12 @@ function printConsoleReport(report: ValidationReport): void {
   console.log("");
 }
 
-function getStagedMarkdownFiles(rootDir: string): string[] {
-  try {
-    const output = execFileSync("git", [
-      "-C",
-      rootDir,
-      "diff",
-      "--cached",
-      "--name-only",
-      "--diff-filter=ACMRTUXB"
-    ], {
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "ignore"]
-    });
-
-    return output
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean)
-      .filter(file => file.toLowerCase().endsWith(".md"))
-      .map(file => resolve(rootDir, file));
-  } catch {
-    return [];
-  }
-}
-
 export function check(rootDir: string, args: string[]): void {
   const { values, positionals } = parseArgs({
     args,
     options: {
       markdown: { type: "boolean", default: false },
-      json: { type: "boolean", default: false },
-      staged: { type: "boolean", default: false }
+      json: { type: "boolean", default: false }
     },
     strict: false,
     allowPositionals: true
@@ -154,13 +127,10 @@ export function check(rootDir: string, args: string[]): void {
 
   const markdownOutput = values.markdown ?? false;
   const jsonOutput = values.json ?? false;
-  const stagedOnly = values.staged ?? false;
   
   let filesToCheck: string[] | undefined;
   if (positionals.length > 0) {
     filesToCheck = positionals.map(f => resolve(rootDir, f));
-  } else if (stagedOnly) {
-    filesToCheck = getStagedMarkdownFiles(rootDir);
   } else {
     // Default: scan only skill/agent directories
     const allFiles: string[] = [];

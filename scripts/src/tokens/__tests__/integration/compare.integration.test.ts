@@ -10,10 +10,6 @@ import { compare } from "../../commands/compare.js";
 
 const TEST_DIR = join(process.cwd(), "__integration_compare__");
 
-function getConsoleOutput(calls: unknown[][]): string {
-  return calls.map(([message]) => String(message ?? "")).join("");
-}
-
 describe("compare command integration", () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -57,7 +53,7 @@ describe("compare command integration", () => {
 
       compare(TEST_DIR, []);
 
-      const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
+      const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
       expect(output).toContain("TOKEN CHANGE REPORT");
     } catch {
       // Git operations might fail in test environment, that's ok
@@ -68,14 +64,14 @@ describe("compare command integration", () => {
   it("outputs markdown format when --markdown flag is provided", () => {
     compare(TEST_DIR, ["--markdown"]);
 
-    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
     expect(output).toContain("## 📊 Token Change Report");
   });
 
   it("outputs JSON when --json flag is provided", () => {
     compare(TEST_DIR, ["--json"]);
 
-    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
     expect(() => JSON.parse(output)).not.toThrow();
   });
 

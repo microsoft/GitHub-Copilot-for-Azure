@@ -9,10 +9,6 @@ import { count } from "../../commands/count.js";
 
 const TEST_DIR = join(process.cwd(), "__integration_count__");
 
-function getConsoleOutput(calls: unknown[][]): string {
-  return calls.map(([message]) => String(message ?? "")).join("");
-}
-
 describe("count command integration", () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
@@ -60,7 +56,7 @@ describe("count command integration", () => {
     count(TEST_DIR, ["--json"]);
 
     // Should output JSON
-    const output = getConsoleOutput(consoleSpy.mock.calls as unknown[][]);
+    const output = consoleSpy.mock.calls.map((call: any) => call[0]).join("");
     expect(() => JSON.parse(output)).not.toThrow();
   });
 
