@@ -27,7 +27,7 @@ export function countSecretsInCode(metadata: AgentMetadata): number {
   ];
 
   let count = 0;
-  const writeTools = ["create", "edit", "powershell"];
+  const writeTools = ["create", "edit", "powershell", "bash"];
 
   for (const event of metadata.events) {
     if (event.type !== "tool.execution_start") continue;
