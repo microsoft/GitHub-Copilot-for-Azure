@@ -13,6 +13,7 @@ interface PluginConfig {
  * Updates both plugin.json files with the specified version
  * @param version - The new version to set
  * @param pluginFiles - Array of paths to plugin.json files (defaults to standard locations)
+ * @returns true if there was an error, false otherwise
  */
 export function updatePluginVersion(
   version: string, 
@@ -20,7 +21,7 @@ export function updatePluginVersion(
     "../../plugin/.claude-plugin/plugin.json",
     "../../plugin/.plugin/plugin.json"
   ]
-): void {
+): boolean {
   console.log(`Updating plugin files to version: ${version}`);
 
   let hadError = false;
@@ -72,9 +73,7 @@ export function updatePluginVersion(
     }
   }
 
-  if (hadError) {
-    process.exit(1);
-  }
+  return hadError;
 }
 
 /**
@@ -88,7 +87,10 @@ function main(): void {
     process.exit(1);
   }
 
-  updatePluginVersion(version);
+  const hadError = updatePluginVersion(version);
+  if (hadError) {
+    process.exit(1);
+  }
 }
 
 // Only run main if this file is executed directly (not imported)

@@ -14,7 +14,6 @@ import { updatePluginVersion } from "../update-plugin-version.js";
 describe("updatePluginVersion", () => {
   let consoleLogSpy: SpyInstance;
   let consoleErrorSpy: SpyInstance;
-  let processExitSpy: SpyInstance;
 
   beforeEach(() => {
     // Clean up and create test directory
@@ -26,7 +25,6 @@ describe("updatePluginVersion", () => {
     // Setup spies
     consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    processExitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
     // Create the directory structure that the function expects
     mkdirSync(join(TEST_DIR, "plugin", ".claude-plugin"), { recursive: true });
@@ -37,7 +35,6 @@ describe("updatePluginVersion", () => {
     // Restore spies
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
 
     // Small delay to allow file handles to close
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -70,7 +67,10 @@ describe("updatePluginVersion", () => {
       writeFileSync(regularPluginPath, JSON.stringify(initialConfig, null, 2) + "\n");
 
       // Call the function with custom paths
-      updatePluginVersion("2.0.0", testPluginFiles);
+      const result = updatePluginVersion("2.0.0", testPluginFiles);
+
+      // Verify function returned success (no errors)
+      expect(result).toBe(false);
 
       // Verify both files were updated
       const claudePluginContent = JSON.parse(readFileSync(claudePluginPath, "utf8"));
@@ -110,7 +110,10 @@ describe("updatePluginVersion", () => {
       writeFileSync(claudePluginPath, JSON.stringify(complexConfig, null, 2) + "\n");
       writeFileSync(regularPluginPath, JSON.stringify(complexConfig, null, 2) + "\n");
 
-      updatePluginVersion("3.0.0", testPluginFiles);
+      const result = updatePluginVersion("3.0.0", testPluginFiles);
+
+      // Verify function returned success (no errors)
+      expect(result).toBe(false);
 
       const claudeUpdatedConfig = JSON.parse(readFileSync(claudePluginPath, "utf8"));
       const regularUpdatedConfig = JSON.parse(readFileSync(regularPluginPath, "utf8"));
@@ -136,7 +139,10 @@ describe("updatePluginVersion", () => {
       writeFileSync(claudePluginPath, JSON.stringify(initialConfig));
       writeFileSync(regularPluginPath, JSON.stringify(initialConfig));
 
-      updatePluginVersion("2.0.0", testPluginFiles);
+      const result = updatePluginVersion("2.0.0", testPluginFiles);
+
+      // Verify function returned success (no errors)
+      expect(result).toBe(false);
 
       const claudeFileContent = readFileSync(claudePluginPath, "utf8");
       const regularFileContent = readFileSync(regularPluginPath, "utf8");
@@ -150,29 +156,29 @@ describe("updatePluginVersion", () => {
   });
 
   describe("error handling", () => {
-    it("handles file not found error and exits with code 1", () => {
+    it("handles file not found error and returns true", () => {
       const nonExistentFiles = [join(TEST_DIR, "nonexistent1.json"), join(TEST_DIR, "nonexistent2.json")];
       
-      updatePluginVersion("2.0.0", nonExistentFiles);
+      const result = updatePluginVersion("2.0.0", nonExistentFiles);
 
+      expect(result).toBe(true);
       expect(consoleErrorSpy).toHaveBeenCalledWith(`File not found: ${nonExistentFiles[0]}`);
-      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
-    it("handles invalid JSON content and exits with code 1", () => {
+    it("handles invalid JSON content and returns true", () => {
       const claudePluginPath = join(TEST_DIR, "plugin", ".claude-plugin", "plugin.json");
       const testPluginFiles = [claudePluginPath];
       
       // Create file with invalid JSON
       writeFileSync(claudePluginPath, "{ invalid json content");
 
-      updatePluginVersion("2.0.0", testPluginFiles);
+      const result = updatePluginVersion("2.0.0", testPluginFiles);
 
+      expect(result).toBe(true);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         `Failed to update ${claudePluginPath}:`,
         expect.any(String)
       );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
     it("stops processing further files after first error", () => {
@@ -184,11 +190,12 @@ describe("updatePluginVersion", () => {
       writeFileSync(claudePluginPath, "{ invalid json }");
       writeFileSync(regularPluginPath, JSON.stringify({ version: "1.0.0" }, null, 2) + "\n");
 
-      updatePluginVersion("2.0.0", testPluginFiles);
+      const result = updatePluginVersion("2.0.0", testPluginFiles);
 
+      // Should return true indicating an error occurred
+      expect(result).toBe(true);
       // Should only see error for first file, not attempt second
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
-      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 
@@ -206,8 +213,9 @@ describe("updatePluginVersion", () => {
         writeFileSync(claudePluginPath, JSON.stringify(initialConfig, null, 2) + "\n");
         writeFileSync(regularPluginPath, JSON.stringify(initialConfig, null, 2) + "\n");
 
-        updatePluginVersion(version, testPluginFiles);
+        const result = updatePluginVersion(version, testPluginFiles);
 
+        expect(result).toBe(false);
         const claudeUpdatedConfig = JSON.parse(readFileSync(claudePluginPath, "utf8"));
         const regularUpdatedConfig = JSON.parse(readFileSync(regularPluginPath, "utf8"));
         
@@ -226,8 +234,9 @@ describe("updatePluginVersion", () => {
       writeFileSync(claudePluginPath, JSON.stringify(initialConfig, null, 2) + "\n");
       writeFileSync(regularPluginPath, JSON.stringify(initialConfig, null, 2) + "\n");
 
-      updatePluginVersion("custom-version-string", testPluginFiles);
+      const result = updatePluginVersion("custom-version-string", testPluginFiles);
 
+      expect(result).toBe(false);
       const claudeUpdatedConfig = JSON.parse(readFileSync(claudePluginPath, "utf8"));
       const regularUpdatedConfig = JSON.parse(readFileSync(regularPluginPath, "utf8"));
       
@@ -252,8 +261,9 @@ describe("updatePluginVersion", () => {
       writeFileSync(claudePluginPath, JSON.stringify(minimalConfig, null, 2) + "\n");
       writeFileSync(regularPluginPath, JSON.stringify(minimalConfig, null, 2) + "\n");
 
-      updatePluginVersion("1.0.0", testPluginFiles);
+      const result = updatePluginVersion("1.0.0", testPluginFiles);
 
+      expect(result).toBe(false);
       const claudeUpdatedConfig = JSON.parse(readFileSync(claudePluginPath, "utf8"));
       const regularUpdatedConfig = JSON.parse(readFileSync(regularPluginPath, "utf8"));
       
