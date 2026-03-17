@@ -43,7 +43,7 @@ Activate this skill when user wants to:
 
 ---
 
-## ⚠️ MANDATORY WORKFLOW — EXECUTE PHASES IN ORDER
+## MANDATORY WORKFLOW — EXECUTE PHASES IN ORDER
 
 > **Complete each phase fully before starting the next. Phases are sequential, not parallel.**
 
