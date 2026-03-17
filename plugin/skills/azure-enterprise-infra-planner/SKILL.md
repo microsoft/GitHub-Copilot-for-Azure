@@ -18,14 +18,12 @@ metadata:
 ## Triggers
 
 Activate this skill when user wants to:
-- Plan and provision a multi-resource Azure workload described in natural language
-- Generate Bicep or Terraform from workload requirements or architecture descriptions
-- Determine which Azure resources, SKUs, and services a described system needs
-- Deploy a GenAI, LLM, or AI-powered backend (e.g., GPT summarization, chatbot, document search)
-- Provision microservices on AKS, container apps, or serverless compute
-- Set up a data pipeline, ML training environment, or inference endpoint infrastructure
-- Create infrastructure for IoT solutions, backup/DR, or multi-tier VM architectures
-- Set up multi-environment infrastructure (dev/staging/prod)
+- Plan enterprise Azure infrastructure from a workload description
+- Architect a landing zone, hub-spoke network, or multi-region topology
+- Design networking, security, or compliance-driven infrastructure
+- Generate Bicep or Terraform for subscription-scope or multi-resource-group deployments
+- Set up multi-environment infrastructure (dev/staging/prod) at the platform level
+- Plan disaster recovery or high-availability infrastructure
 
 ## Rules
 
