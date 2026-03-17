@@ -1,6 +1,6 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,8 +15,8 @@ interface PluginConfig {
  */
 function updatePluginVersion(version: string): void {
   const pluginFiles: string[] = [
-    '../plugin/.claude-plugin/plugin.json',
-    '../plugin/.plugin/plugin.json'
+    "../plugin/.claude-plugin/plugin.json",
+    "../plugin/.plugin/plugin.json"
   ];
 
   console.log(`Updating plugin files to version: ${version}`);
@@ -27,26 +27,26 @@ function updatePluginVersion(version: string): void {
       const fullPath = path.resolve(__dirname, filePath);
       
       // Open file for reading and writing
-      fd = fs.openSync(fullPath, 'r+');
+      fd = fs.openSync(fullPath, "r+");
       
       // Read current content
-      const content: string = fs.readFileSync(fd, 'utf8');
+      const content: string = fs.readFileSync(fd, "utf8");
       const pluginConfig: PluginConfig = JSON.parse(content);
       
       // Update version
       pluginConfig.version = version;
       
       // Prepare new content
-      const newContent: string = JSON.stringify(pluginConfig, null, 2) + '\n';
+      const newContent: string = JSON.stringify(pluginConfig, null, 2) + "\n";
       
       // Truncate and write back with formatted JSON
       fs.ftruncateSync(fd, 0);
-      fs.writeFileSync(fd, newContent, 'utf8');
+      fs.writeFileSync(fd, newContent, "utf8");
       
       console.log(`✓ Updated ${filePath} to version ${version}`);
     } catch (error: unknown) {
       const err = error as NodeJS.ErrnoException;
-      if (err.code === 'ENOENT') {
+      if (err.code === "ENOENT") {
         console.warn(`File not found: ${filePath}`);
         return;
       }
@@ -70,7 +70,7 @@ function updatePluginVersion(version: string): void {
 const version: string | undefined = process.argv[2];
 
 if (!version) {
-  console.error('Usage: npx tsx update-plugin-version.ts <version>');
+  console.error("Usage: npx tsx update-plugin-version.ts <version>");
   process.exit(1);
 }
 
