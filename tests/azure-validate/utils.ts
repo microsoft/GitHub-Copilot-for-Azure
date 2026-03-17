@@ -4,7 +4,7 @@ import { getToolCalls } from "../utils/evaluate";
 /**
  * Validation command patterns that indicate the agent is performing
  * validation (not deployment). When any of these are detected in a
- * powershell tool call, the session can be terminated early.
+ * shell tool call (powershell or bash), the session can be terminated early.
  */
 const VALIDATION_COMMAND_PATTERNS = [
   /azd\s+provision/,
