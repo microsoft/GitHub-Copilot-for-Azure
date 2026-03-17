@@ -12,55 +12,55 @@ jobs:
       contents: write
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Required for semantic versioning
-        token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }} # This token needs content write access to this repo to create commits
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for semantic versioning
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }} # This token needs content write access to this repo to create commits
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Check for plugin changes
-      id: plugin_changes
-      run: |
-        # Handle case where github.event.before is null SHA
-        BEFORE_SHA="${{ github.event.before }}"
-        if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE_SHA" ]; then
-          BEFORE_SHA="HEAD~1"
-        fi
-        
-        # Get the list of changed files from the push event range
-        CHANGED_FILES=$(git diff --name-only $BEFORE_SHA ${{ github.sha }})
-        echo "Changed files:"
-        echo "$CHANGED_FILES"
-        
-        # Check if any files under plugin/ were changed
-        PLUGIN_CHANGES=$(echo "$CHANGED_FILES" | grep '^plugin/' || true)
-        
-        if [ -n "$PLUGIN_CHANGES" ]; then
-          echo "Plugin changes detected:"
-          echo "$PLUGIN_CHANGES"
-          echo "should_update=true" >> $GITHUB_OUTPUT
-        else
-          echo "No plugin changes detected - skipping version update"
-          echo "should_update=false" >> $GITHUB_OUTPUT
-        fi
+      - name: Check for plugin changes
+        id: plugin_changes
+        run: |
+          # Handle case where github.event.before is null SHA
+          BEFORE_SHA="${{ github.event.before }}"
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE_SHA" ]; then
+            BEFORE_SHA="HEAD~1"
+          fi
+          
+          # Get the list of changed files from the push event range
+          CHANGED_FILES=$(git diff --name-only $BEFORE_SHA ${{ github.sha }})
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Check if any files under plugin/ were changed
+          PLUGIN_CHANGES=$(echo "$CHANGED_FILES" | grep '^plugin/' || true)
+          
+          if [ -n "$PLUGIN_CHANGES" ]; then
+            echo "Plugin changes detected:"
+            echo "$PLUGIN_CHANGES"
+            echo "should_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "No plugin changes detected - skipping version update"
+            echo "should_update=false" >> $GITHUB_OUTPUT
+          fi
 
-    - name: Run semantic release
-      if: steps.plugin_changes.outputs.should_update == 'true'
-      run: npm run release
-      env:
-        GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+      - name: Run semantic release
+        if: steps.plugin_changes.outputs.should_update == 'true'
+        run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
 
-    - name: Skip version update
-      if: steps.plugin_changes.outputs.should_update == 'false'
-      run: |
-        echo "ℹ️  Version update skipped - no changes to plugin files detected"
-        echo "Only changes outside the plugin/ folder don't require version updates"
+      - name: Skip version update
+        if: steps.plugin_changes.outputs.should_update == 'false'
+        run: |
+          echo "ℹ️  Version update skipped - no changes to plugin files detected"
+          echo "Only changes outside the plugin/ folder don't require version updates"
