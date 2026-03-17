@@ -192,4 +192,116 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     }
   });
+
+  test("aks pod rightsizing scenarios", async () => {
+    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "My AKS pods are over-provisioned and costs are high, how do I rightsize them?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasRightsizingContent = doesAssistantMessageIncludeKeyword(agentMetadata, "request") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "limit") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "VPA") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "resource");
+        expect(hasRightsizingContent).toBe(true);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    }
+  });
+
+  test("aks Cluster Autoscaler scenarios", async () => {
+    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "How do I enable Cluster Autoscaler on my AKS cluster to reduce costs?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasCASContent = doesAssistantMessageIncludeKeyword(agentMetadata, "autoscaler") ||
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "min") ||
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "node");
+        expect(hasCASContent).toBe(true);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    }
+  });
+
+  test("aks Spot node cost savings scenarios", async () => {
+    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "How do I use Spot VMs in AKS to cut node pool costs?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasSpotContent = doesAssistantMessageIncludeKeyword(agentMetadata, "spot") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "eviction") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "priority");
+        expect(hasSpotContent).toBe(true);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    }
+  });
+
+  test("aks cost analysis add-on scenarios", async () => {
+    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "How do I enable cost analysis for my AKS cluster?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasCostAddonContent = doesAssistantMessageIncludeKeyword(agentMetadata, "cost") ||
+                                    doesAssistantMessageIncludeKeyword(agentMetadata, "add-on") ||
+                                    doesAssistantMessageIncludeKeyword(agentMetadata, "Standard");
+        expect(hasCostAddonContent).toBe(true);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    }
+  });
+
+  test("aks cost anomaly investigation scenarios", async () => {
+    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "My AKS cost spiked unexpectedly this month, how do I investigate?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasAnomalyContent = doesAssistantMessageIncludeKeyword(agentMetadata, "spike") ||
+                                  doesAssistantMessageIncludeKeyword(agentMetadata, "scaling") ||
+                                  doesAssistantMessageIncludeKeyword(agentMetadata, "budget") ||
+                                  doesAssistantMessageIncludeKeyword(agentMetadata, "alert");
+        expect(hasAnomalyContent).toBe(true);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
+      }
+    }
+  });
 });
