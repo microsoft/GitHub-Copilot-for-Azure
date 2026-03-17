@@ -12,7 +12,7 @@
     [
       "@semantic-release/exec", 
       {
-        "prepareCmd": "node --import tsx scripts/src/update-plugin-version.ts ${nextRelease.version}"
+        "prepareCmd": "cd scripts && node --import tsx src/update-plugin-version.ts ${nextRelease.version}"
       }
     ],
     [
