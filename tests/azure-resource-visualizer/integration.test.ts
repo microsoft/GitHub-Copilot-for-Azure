@@ -11,13 +11,14 @@
  * 3. az login (for Azure resource access)
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import {
   useAgentRunner,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import type { AgentMetadata } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, getToolCalls } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-resource-visualizer";
 const RUNS_PER_PROMPT = 5;
@@ -35,16 +36,15 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const visualizerTestTimeoutMs = 1800000;
 
 /**
- * Check if a file-creation tool call produced an architecture markdown file
- * containing a Mermaid diagram (graph TB or graph LR).
+ * Check if the workspace contains an architecture markdown file
+ * with a Mermaid diagram (graph TB or graph LR).
  */
-function hasArchitectureDiagramFile(agentMetadata: AgentMetadata): boolean {
-  const fileToolCalls = getToolCalls(agentMetadata, "create");
-  return fileToolCalls.some(event => {
-    const args = JSON.stringify(event.data);
-    const hasArchitectureFile = /architecture.*\.md/i.test(args);
-    const hasMermaidDiagram = /graph\s+(TB|LR)/i.test(args);
-    return hasArchitectureFile && hasMermaidDiagram;
+function hasArchitectureDiagramFile(workspacePath: string): boolean {
+  const files = fs.readdirSync(workspacePath, { recursive: true, encoding: "utf-8" });
+  const architectureFiles = files.filter(f => /architecture.*\.md$/i.test(f));
+  return architectureFiles.some(file => {
+    const content = fs.readFileSync(path.join(workspacePath, file), "utf-8");
+    return /graph\s+(TB|LR)/i.test(content);
   });
 }
 
@@ -97,28 +97,38 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("resource-group-visualization", () => {
     test("generates architecture diagram for a resource group", async () => {
+      let workspacePath: string | undefined;
+
       const agentMetadata = await agent.run({
         prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
         nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
+        followUp: FOLLOW_UP_PROMPT,
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        }
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasDiagramFile = hasArchitectureDiagramFile(agentMetadata);
+      const hasDiagramFile = hasArchitectureDiagramFile(workspacePath!);
 
       expect(isSkillUsed).toBe(true);
       expect(hasDiagramFile).toBe(true);
     }, visualizerTestTimeoutMs);
 
     test("visualizes resource connections and relationships", async () => {
+      let workspacePath: string | undefined;
+
       const agentMetadata = await agent.run({
         prompt: "Visualize how my Azure resources are connected and show their relationships",
         nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT
+        followUp: FOLLOW_UP_PROMPT,
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        }
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      const hasDiagramFile = hasArchitectureDiagramFile(agentMetadata);
+      const hasDiagramFile = hasArchitectureDiagramFile(workspacePath!);
 
       expect(isSkillUsed).toBe(true);
       expect(hasDiagramFile).toBe(true);
