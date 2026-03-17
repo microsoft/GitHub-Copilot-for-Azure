@@ -13,7 +13,7 @@
     "postinstall": "cd scripts && npm install"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "semantic-release": "^22.0.0",
