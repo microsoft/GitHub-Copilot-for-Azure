@@ -16,36 +16,6 @@ The following files have their versions automatically updated:
 - `plugin/.claude-plugin/plugin.json`
 - `plugin/.plugin/plugin.json`
 
-## Setup for New Developers
-
-No setup required! The versioning system works automatically via GitHub Actions when PRs are merged.
-
-Optionally, to test version updates locally:
-
-```bash
-npm install
-npm run update-version -- 1.2.3  # Test with a specific version
-```
-
-## Manual Operations
-
-### Check Current Version
-```bash
-# Check package.json or git tags
-git describe --tags --abbrev=0
-```
-
-### Manually Update Plugin Versions
-```bash
-npm run update-version -- 1.2.3
-```
-
-### Test Semantic Release Locally
-```bash
-# Dry run (won't actually release)
-npm run release -- --dry-run
-```
-
 ## Version Calculation Rules
 
 Versions are calculated based on **commit message conventions**:
