@@ -11,7 +11,7 @@ Resource names below match the `Resource` column in [resources.md](resources.md)
 | AI & ML | AI Search, Cognitive Services, ML Workspace |
 | Compute | AKS Cluster, App Service, App Service Plan, Availability Set, Container App, Container Apps Environment, Container Registry, Function App, Managed Disk, Static Web App, Virtual Machine, VM Scale Set |
 | Data | Cosmos DB, Data Factory, MySQL Flexible Server, PostgreSQL Flexible Server, Redis Cache, SQL Database, SQL Server, Storage Account, Synapse Workspace |
-| Messaging | Event Grid, Event Hub, Service Bus |
+| Messaging | Event Grid Topic, Event Hub, Service Bus |
 | Monitoring | Application Insights, Log Analytics |
 | Networking | API Management, Application Gateway, Azure Bastion, Azure Firewall, DNS Zone, Front Door, Load Balancer, NAT Gateway, Network Interface, NSG, Private DNS Zone, Private Endpoint, Public IP, Route Table, Subnet, Virtual Network, VPN Gateway |
 | Security | Key Vault, Managed Identity |
