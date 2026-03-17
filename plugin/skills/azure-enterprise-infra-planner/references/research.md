@@ -33,19 +33,17 @@ Walk through every concern in the [WAF cross-cutting checklist](waf-checklist.md
 
 ## Step 4 — Resource Lookup via Tools (MANDATORY)
 
-> ⚠️ **HARD GATE**: You MUST complete this step for every resource before generating the plan. WAF tools (Step 2) provide architecture guidance but do NOT provide ARM types, naming rules, or pairing constraints. This step fills those gaps. Read [resources.md](resources.md) **in full** — it contains ARM types, API versions, CAF prefixes, and documentation URLs you need for every resource.
+> ⚠️ **HARD GATE**: You MUST complete this step for every resource before generating the plan. WAF tools (Step 2) provide architecture guidance but do NOT provide ARM types, naming rules, or pairing constraints. This step fills those gaps. Read [resources/README.md](resources/README.md) to identify which category files contain the resources you need, then load only those category files.
 
 For each resource identified in Steps 1-3:
 
-1. **Look up the resource** in [resources.md](resources.md) to get its ARM type, API version, and CAF prefix. You must read the full catalog (both the resource tables and the documentation tables) to get all URLs.
-2. **Use a sub-agent** to call `microsoft_docs_fetch` with the naming rules URL from [resources.md](resources.md). Instruct the sub-agent: "Extract naming rules for {service}: min/max length, allowed characters, uniqueness scope. ≤200 tokens." Fall back to `microsoft_docs_search` with `"<resource-name> naming rules"` only if the URL is missing or returns an error.
-3. **Extract pairing constraints** for the resource from [constraints.md](constraints.md). Do NOT read the entire file — extract only the relevant `### {Resource Name}` section (~100-400 tokens instead of ~10K). Two valid approaches:
-   - **Grep**: `grep -A 50 "^### {Resource Name}$" references/constraints.md` — stop reading at the next `### ` heading.
-   - **Line-range read**: Use `Select-String` or similar to find the `### {Resource Name}` line number, then read only that section's lines.
+1. **Look up the resource** in the relevant [resources/](resources/README.md) category file (e.g., `resources/compute-infra.md` for AKS, `resources/data-analytics.md` for Cosmos DB) to get its ARM type, API version, and CAF prefix. Read the index in `resources/README.md` to find the right category file.
+2. **Use a sub-agent** to call `microsoft_docs_fetch` with the naming rules URL from the resource category file. Instruct the sub-agent: "Extract naming rules for {service}: min/max length, allowed characters, uniqueness scope. ≤200 tokens." Fall back to `microsoft_docs_search` with `"<resource-name> naming rules"` only if the URL is missing or returns an error.
+3. **Read pairing constraints** for the resource from the matching [constraints/](constraints/README.md) category file (e.g., `constraints/networking-core.md` for VNet, `constraints/security.md` for Key Vault). Each category file is <2K tokens — read the whole file for all resources in that category.
 
-   Replace `{Resource Name}` with the exact heading from the [Section Index](constraints.md#section-index) (e.g., `Service Bus`, `AKS Cluster`, `Virtual Network`). If no results, the resource has no pairing constraints — proceed without them.
+   Use the [constraints/README.md](constraints/README.md) index to find the right category file for each resource name.
 
-> ⚠️ **Context window management**: constraints.md is ~10K tokens. Always extract specific sections from large reference files (via grep or line-range reads), and delegate doc fetches to sub-agents with token limits, to avoid diluting the main planning context.
+> ⚠️ **Selective loading**: Only load the category files you need. For a plan with AKS + Cosmos DB + VNet + Key Vault, you'd load 4 constraint files and 4 resource files (~5,500 tokens total) instead of the full catalog (~21,600 tokens).
 
 From the tool results, verify:
 

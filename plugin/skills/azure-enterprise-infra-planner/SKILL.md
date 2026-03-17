@@ -30,7 +30,7 @@ Activate this skill when user wants to:
 | MCP tools | `get_azure_bestpractices`, `wellarchitectedframework_serviceguide_get`, `microsoft_docs_fetch`, `microsoft_docs_search`, `bicepschema_get` |
 | CLI commands | `az deployment group create`, `az bicep build`, `az resource list`, `terraform init`, `terraform plan`, `terraform validate`, `terraform apply` |
 | Output schema | [plan-schema.md](references/plan-schema.md) |
-| Key references | [research.md](references/research.md), [resources.md](references/resources.md), [waf-checklist.md](references/waf-checklist.md), [constraints.md](references/constraints.md) |
+| Key references | [research.md](references/research.md), [resources/](references/resources/README.md), [waf-checklist.md](references/waf-checklist.md), [constraints/](references/constraints/README.md) |
 | Error handling | [error-handling.md](references/error-handling.md) |
 
 ## Rules
@@ -57,13 +57,13 @@ Call MCP tools to gather best practices and WAF guidance. See [research.md](refe
 
 ### Phase 2: Research — Refine & Lookup
 
-> ⚠️ **You MUST read [resources.md](references/resources.md) in full before generating the plan.** It contains ARM types, API versions, CAF prefixes, naming rule URLs, and region categories that MCP tools do not provide.
+> ⚠️ **You MUST look up resources before generating the plan.** The [resources/](references/resources/README.md) directory contains ARM types, API versions, CAF prefixes, naming rule URLs, and region categories that MCP tools do not provide.
 
 Apply WAF findings, then look up every resource in local reference files. See [research.md](references/research.md) Steps 3-4.
 - Walk through [waf-checklist.md](references/waf-checklist.md) — add missing resources, document omissions
-- Read [resources.md](references/resources.md) **in full** — all resource tables and documentation tables
-- For each resource: use **sub-agents** to fetch naming rules via `microsoft_docs_fetch` using URLs from [resources.md](references/resources.md)
-- For each resource: extract pairing constraints from [constraints.md](references/constraints.md) via grep or line-range read (direct — small responses)
+- Read [resources/README.md](references/resources/README.md) to identify which category files to load, then read only the relevant category files (e.g., `resources/compute-infra.md` for AKS, `resources/security.md` for Key Vault)
+- For each resource: use **sub-agents** to fetch naming rules via `microsoft_docs_fetch` using URLs from the resource category files
+- For each resource: read pairing constraints from the matching [constraints/](references/constraints/README.md) category file (e.g., `constraints/networking-core.md` for VNet)
 
 **Gate**: Every resource has an ARM type, naming rules, and pairing constraints checked before proceeding.
 
@@ -84,7 +84,7 @@ Run a full verification pass on the generated plan. See [verification.md](refere
 ### Phase 5: IaC Generation
 Generate Bicep or Terraform from the approved plan. See [bicep-generation.md](references/bicep-generation.md) or [terraform-generation.md](references/terraform-generation.md).
 - Create `<project-root>/infra/` and `infra/modules/` directories
-- For each resource: use **sub-agents** to call `bicepschema_get` with the ARM type from [resources.md](references/resources.md) (large responses — 25-95KB each)
+- For each resource: use **sub-agents** to call `bicepschema_get` with the ARM type from the relevant [resources/](references/resources/README.md) category file (large responses — 25-95KB each)
 - Generate modules, main file, and parameter files inside `infra/`
 
 **Gate**: `meta.status` must be `approved` before generating any IaC files.
@@ -125,6 +125,6 @@ Execute deployment commands. See [deployment.md](references/deployment.md).
 |------|---------|-------------|------------|
 | `mcp_azure_mcp_get_azure_bestpractices` | `get_azure_bestpractices_get` | Get baseline WAF and deployment best practices. Call with `parameters: { resource: "general", action: "all" }`. | Once at start of research |
 | `mcp_azure_mcp_wellarchitectedframework` | `wellarchitectedframework_serviceguide_get` | Get WAF service guide for a specific Azure service. Call with `parameters: { service: "<service-name>" }` (e.g., `"Container Apps"`, `"Cosmos DB"`). Returns a raw markdown URL — **REQUIRED** use a sub-agent to fetch and summarize. | Once per core service — call in parallel |
-| `mcp_azure_mcp_documentation` | `microsoft_docs_fetch` | Fetch specific Microsoft Learn documents (e.g., WAF service guide URLs, naming rules URLs from [resources.md](references/resources.md)). | Primary doc lookup — use URLs from resources.md |
+| `mcp_azure_mcp_documentation` | `microsoft_docs_fetch` | Fetch specific Microsoft Learn documents (e.g., WAF service guide URLs, naming rules URLs from [resources/](references/resources/README.md)). | Primary doc lookup — use URLs from resources/ category files |
 | `mcp_azure_mcp_documentation` | `microsoft_docs_search` | Search Microsoft Learn for architecture patterns, SKU details, and best practices. | Fallback when no direct URL is available |
 | `mcp_azure_mcp_bicepschema` | `bicepschema_get` | Get Bicep resource schema. Call with `parameters: { "resource-type": "{ARM type}" }` (e.g., `Microsoft.KeyVault/vaults`). Returns latest API version schema — no version parameter needed. | Phase 5 (IaC generation) — once per resource via sub-agent |
