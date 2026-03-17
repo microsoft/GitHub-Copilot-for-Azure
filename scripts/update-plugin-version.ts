@@ -21,6 +21,8 @@ function updatePluginVersion(version: string): void {
 
   console.log(`Updating plugin files to version: ${version}`);
 
+  let hadError = false;
+
   pluginFiles.forEach((filePath: string) => {
     let fd: number | undefined;
     try {
@@ -51,7 +53,7 @@ function updatePluginVersion(version: string): void {
         return;
       }
       console.error(`Failed to update ${filePath}:`, err.message);
-      process.exit(1);
+      hadError = true;
     } finally {
       // Always close the file descriptor if it was opened
       if (fd !== undefined) {
@@ -64,6 +66,10 @@ function updatePluginVersion(version: string): void {
       }
     }
   });
+
+  if (hadError) {
+    process.exit(1);
+  }
 }
 
 // Get version from command line argument
