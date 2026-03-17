@@ -271,11 +271,5 @@ describe("updatePluginVersion", () => {
       expect(regularUpdatedConfig.version).toBe("1.0.0");
       expect(Object.keys(claudeUpdatedConfig)).toEqual(["version"]);
     });
-
-    it("uses default paths when no custom paths provided", () => {
-      expect(() => updatePluginVersion("1.0.0")).toBeDefined();
-      // This would fail in practice since the default paths don't exist in test env,
-      // but it shows the function accepts the optional parameter
-    });
   });
 });
