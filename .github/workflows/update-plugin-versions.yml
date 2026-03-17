@@ -57,7 +57,7 @@ jobs:
       if: steps.plugin_changes.outputs.should_update == 'true'
       run: npm run release
       env:
-        SEMANTIC_RELEASE_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+        GH_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
 
     - name: Skip version update
       if: steps.plugin_changes.outputs.should_update == 'false'
