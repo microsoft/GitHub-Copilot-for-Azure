@@ -46,7 +46,7 @@ jobs:
       - name: Check CHANGELOG modifications
         run: |
           echo "Checking if CHANGELOG.md was modified in this PR..."
-          if git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | grep -q "plugin/CHANGELOG.md"; then
+          if git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | grep -Fqx "plugin/CHANGELOG.md"; then
             echo "❌ ERROR: CHANGELOG.md should not be modified in pull requests"
             echo "The CHANGELOG.md is automatically maintained. Please remove changes to plugin/CHANGELOG.md from your PR."
             exit 1
