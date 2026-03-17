@@ -12,16 +12,18 @@ const VALIDATION_COMMAND_PATTERNS = [
   /terraform\s+validate/,
 ];
 
+const SHELL_TOOL_NAMES = ["powershell", "bash"];
+
 /**
- * Check if any powershell tool call contains a validation command
+ * Check if any shell tool call (powershell or bash) contains a validation command
  * (azd provision, az deployment ... validate, or terraform validate).
  *
  * Useful as a `shouldEarlyTerminate` callback to stop agent sessions
  * once a validation command has been issued, without waiting for deployment.
  */
 export function hasValidationCommand(metadata: AgentMetadata): boolean {
-  const powershellCalls = getToolCalls(metadata, "powershell");
-  return powershellCalls.some(event => {
+  const shellCalls = getToolCalls(metadata).filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName));
+  return shellCalls.some(event => {
     const data = event.data as Record<string, unknown>;
     const args = data.arguments as { command?: string } | undefined;
     const cmd = args?.command ?? "";
