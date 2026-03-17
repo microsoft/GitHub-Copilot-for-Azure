@@ -36,11 +36,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const maxToolCallBeforeTerminate = 3;
 
   describe("skill-invocation", () => {
-    test("invokes skill for enterprise 3-tier infrastructure prompt", async () => {
+    test("invokes skill for hardened 3-tier VM infrastructure prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Provision a classic 3-tier application consisting of IIS web servers, .NET business logic tier, and SQL Server backend, distribute across availability zones for high availability.",
+            prompt: "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -211,7 +211,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let testWorkspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
-        prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier. Assume all defaults to make the plan.",
+        prompt: "Spin up a policy-driven backup for SAP workloads, ensure encrypted and compressed backups, and provide audit logs for all recovery tests. Assume all defaults to make the plan.",
         nonInteractive: true,
         followUp: [
           ...FOLLOW_UP_PROMPT,

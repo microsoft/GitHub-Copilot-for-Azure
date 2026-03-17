@@ -21,8 +21,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Provision a classic 3-tier application consisting of IIS web servers, .NET business logic tier, and SQL Server backend, distribute across availability zones for high availability.",
-      "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier.",
+      "Deploy a geo-redundant backup solution for on-premises SQL servers using Azure Backup, configure encryption-at-rest, and automate monthly DR tests.",
+      "Configure an autoscaled VMSS-based presentation tier, application servers in separate subnet, and encrypted SQL Managed Instance as the backend database.",
       "Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.",
       "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer.",
       "Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.",
