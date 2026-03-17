@@ -191,6 +191,23 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(Array.isArray(plan.plan.resources)).toBe(true);
       expect(plan.plan.resources.length).toBeGreaterThan(0);
 
+      // Verify meta required fields
+      expect(plan.meta).toHaveProperty("planId");
+      expect(plan.meta).toHaveProperty("status");
+      expect(plan.meta).toHaveProperty("version");
+
+      // Verify inputs
+      expect(plan).toHaveProperty("inputs.userGoal");
+      expect(typeof plan.inputs.userGoal).toBe("string");
+
+      // Verify each resource has required fields
+      for (const resource of plan.plan.resources) {
+        expect(resource).toHaveProperty("name");
+        expect(resource).toHaveProperty("type");
+        expect(resource).toHaveProperty("location");
+        expect(resource).toHaveProperty("reasoning");
+      }
+
       // Should contain networking and compute resources
       const resourceTypes = plan.plan.resources.map((r: { type?: string }) =>
         (r.type || "").toLowerCase()
@@ -204,6 +221,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       console.log(`📋 Plan has ${plan.plan.resources.length} resources`);
       console.log(`   Networking present: ${hasNetworking}`);
       console.log(`   Compute present: ${hasCompute}`);
+      expect(hasNetworking).toBe(true);
+      expect(hasCompute).toBe(true);
+
+      // Verify plan-level required fields
+      expect(plan.plan).toHaveProperty("overallReasoning");
+      expect(plan.plan).toHaveProperty("validation");
     });
 
     test("generates Bicep files from approved plan", async () => {
@@ -240,12 +263,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
       expect(allBicepFiles.length).toBeGreaterThan(0);
 
-      if (infraBicepFiles.length === 0) {
-        const misplaced = allBicepFiles.map(f => path.relative(testWorkspacePath!, f));
-        console.warn(`⚠️  Bicep files generated outside infra/: [${misplaced.join(", ")}]. Skill instructs <project-root>/infra/.`);
-      } else {
-        console.log(`✅ ${infraBicepFiles.length} Bicep file(s) correctly under infra/`);
-      }
+      // Bicep files must be under infra/ per skill instructions
+      expect(infraBicepFiles.length).toBeGreaterThan(0);
+      console.log(`✅ ${infraBicepFiles.length} Bicep file(s) correctly under infra/`);
+
+      // Should have a main.bicep entry point
+      const hasMainBicep = infraBicepFiles.some(f =>
+        path.basename(f).toLowerCase() === "main.bicep"
+      );
+      console.log(`   main.bicep present: ${hasMainBicep}`);
+      expect(hasMainBicep).toBe(true);
     });
   });
 });
