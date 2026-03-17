@@ -29,7 +29,7 @@ Activate this skill when user wants to:
 
 ## Rules
 
-1. **Research before planning** — You **MUST** call `mcp_azure_mcp_get_azure_bestpractices` and `mcp_azure_mcp_wellarchitectedframework_serviceguide_get` MCP tools BEFORE reading local resource files or generating a plan. See [research.md](references/research.md) Step 2.
+1. **Research before planning** — You **MUST** call `mcp_azure_mcp_get_azure_bestpractices` and `mcp_azure_mcp_wellarchitectedframework` MCP tools BEFORE reading local resource files or generating a plan. See [research.md](references/research.md) Step 2.
 2. **Plan before IaC** — Generate `<project-root>/.azure/infrastructure-plan.json` before any IaC so we can map the plan to generated code and ensure alignment.
 3. **Get approval** — Plan status must be `approved` before deployment.
 4. **User chooses IaC format** — Bicep or Terraform; ask if not specified.
