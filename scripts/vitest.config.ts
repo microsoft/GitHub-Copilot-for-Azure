@@ -5,7 +5,7 @@ export default defineConfig({
     fileParallelism: false,  // Run test files sequentially to avoid race conditions on Windows
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html"],
+      reporter: ["text", "json", "json-summary", "html"],
       include: ["src/**/*.ts"],
       exclude: [
         "src/**/*.test.ts",

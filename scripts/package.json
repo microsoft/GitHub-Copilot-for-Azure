@@ -17,7 +17,10 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
+    "dashboard:serve": "sirv ../dashboard --port 3000 --dev",
+    "dashboard": "npm run dashboard:collect && npm run dashboard:serve"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
@@ -27,6 +30,7 @@
     "eslint": "^10.0.0",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
+    "sirv-cli": "^3.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1",

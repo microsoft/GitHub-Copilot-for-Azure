@@ -25,6 +25,7 @@
  */
 
 import { spawn } from "child_process";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -148,6 +149,53 @@ jest.on("error", (err) => {
 
 jest.on("close", (code) => {
   const jestExitCode = code || 0;
+
+  // Write run metadata when running in GitHub Actions
+  const runUrl =
+    process.env.GITHUB_SERVER_URL && process.env.GITHUB_RUN_ID
+      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+      : null;
+  if (runUrl) {
+    const reportsDir = path.resolve(__dirname, "..", "reports");
+    try {
+      const dirs = fs
+        .readdirSync(reportsDir)
+        .filter((d) => d.startsWith("test-run-"))
+        .sort()
+        .reverse();
+      if (dirs.length > 0) {
+        const metadataPath = path.join(
+          reportsDir,
+          dirs[0],
+          "run-metadata.json",
+        );
+        fs.writeFileSync(
+          metadataPath,
+          JSON.stringify(
+            {
+              runUrl,
+              runId: process.env.GITHUB_RUN_ID,
+              repository: process.env.GITHUB_REPOSITORY,
+              workflow: process.env.GITHUB_WORKFLOW || null,
+              actor: process.env.GITHUB_ACTOR || null,
+              ref: process.env.GITHUB_REF || null,
+              sha: process.env.GITHUB_SHA || null,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2,
+          ),
+        );
+        console.log(`\u{1F4CE} Run metadata saved: ${metadataPath}`);
+      }
+    } catch (err) {
+      // Non-fatal — log and continue
+      console.warn(
+        "\u26A0\uFE0F Could not write run metadata:",
+        err.message,
+      );
+    }
+  }
 
   // Show results table if not in CI and not in watch mode
   if (!isCI && testType !== "watch") {

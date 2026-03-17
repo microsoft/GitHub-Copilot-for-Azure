@@ -17,9 +17,10 @@
  *   npm run frontmatter <path/SKILL.md> # Validate a specific file
  */
 
-import { dirname, resolve, basename } from "node:path";
+import { dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { parseArgs } from "node:util";
 import { parseSkillContent } from "../shared/skill-helper.js";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
@@ -433,16 +434,112 @@ function getAllSkillFiles(): string[] {
   return [...findSkillFiles(PLUGIN_SKILLS_DIR), ...findSkillFiles(META_SKILLS_DIR)];
 }
 
+// ── JSON output ──────────────────────────────────────────────────────────────
+
+/** All check identifiers produced by the validator */
+const ALL_CHECKS = [
+  "frontmatter",
+  "name-format",
+  "missing-field",
+  "description-format",
+  "no-xml-tags",
+  "reserved-prefix",
+  "description-length",
+  "license",
+  "metadata",
+  "metadata-version",
+  "compatibility",
+  "allowed-tools",
+] as const;
+
+export interface FrontmatterSkillResult {
+  name: string;
+  path: string;
+  status: "pass" | "fail" | "warn";
+  errors: string[];
+  warnings: string[];
+  checks: Record<string, boolean>;
+}
+
+export interface FrontmatterJsonResult {
+  skills: FrontmatterSkillResult[];
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    warnings: number;
+  };
+}
+
+function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
+  const skills: FrontmatterSkillResult[] = [];
+  let passed = 0;
+  let failed = 0;
+  let warningCount = 0;
+
+  for (const result of results) {
+    const errors = result.issues.filter(i => i.severity !== "warning");
+    const warnings = result.issues.filter(i => i.severity === "warning");
+
+    // Build checks map: true = passed, false = has issue for that check
+    const failedChecks = new Set(result.issues.map(i => i.check));
+    const checks: Record<string, boolean> = {};
+    for (const check of ALL_CHECKS) {
+      checks[check] = !failedChecks.has(check);
+    }
+
+    let status: "pass" | "fail" | "warn";
+    if (errors.length > 0) {
+      status = "fail";
+      failed++;
+    } else if (warnings.length > 0) {
+      status = "warn";
+      warningCount++;
+    } else {
+      status = "pass";
+      passed++;
+    }
+
+    skills.push({
+      name: result.skill,
+      path: relative(REPO_ROOT, result.file).replace(/\\/g, "/"),
+      status,
+      errors: errors.map(e => `[${e.check}] ${e.message}`),
+      warnings: warnings.map(w => `[${w.check}] ${w.message}`),
+      checks,
+    });
+  }
+
+  return {
+    skills,
+    summary: {
+      total: results.length,
+      passed,
+      failed,
+      warnings: warningCount,
+    },
+  };
+}
+
 // ── CLI entry point ──────────────────────────────────────────────────────────
 
 function main(): void {
-  const args = process.argv.slice(2);
+  const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      json: { type: "boolean", default: false },
+    },
+    strict: false,
+    allowPositionals: true,
+  });
+
+  const jsonOutput = values.json ?? false;
 
   let skillFiles: string[];
 
-  if (args.length > 0) {
+  if (positionals.length > 0) {
     skillFiles = [];
-    for (const arg of args) {
+    for (const arg of positionals) {
       // Accept either a skill name or a direct path to SKILL.md
       if (arg.endsWith("SKILL.md") && existsSync(arg)) {
         skillFiles.push(resolve(arg));
@@ -466,6 +563,24 @@ function main(): void {
     skillFiles = getAllSkillFiles();
   }
 
+  // Validate all skill files
+  const results: ValidationResult[] = [];
+  for (const file of skillFiles) {
+    results.push(validateSkillFile(file));
+  }
+
+  // ── JSON output mode ────────────────────────────────────────────────────
+  if (jsonOutput) {
+    const jsonResult = buildJsonResult(results);
+    console.log(JSON.stringify(jsonResult, null, 2));
+    const hasErrors = results.some(r => r.issues.some(i => i.severity !== "warning"));
+    if (hasErrors) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  // ── Console output mode (default) ───────────────────────────────────────
   console.log("\n📋 Frontmatter Spec Validator\n");
   console.log("────────────────────────────────────────────────────────────");
 
@@ -473,8 +588,7 @@ function main(): void {
   let totalWarnings = 0;
   let skillsWithIssues = 0;
 
-  for (const file of skillFiles) {
-    const result = validateSkillFile(file);
+  for (const result of results) {
     const errors = result.issues.filter(i => i.severity !== "warning");
     const warnings = result.issues.filter(i => i.severity === "warning");
 
