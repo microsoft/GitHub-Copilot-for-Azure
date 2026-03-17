@@ -2,7 +2,8 @@
  * Tests for update-plugin-version.ts
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, SpyInstance } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { SpyInstance } from "vitest";
 import { join } from "node:path";
 import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs";
 
