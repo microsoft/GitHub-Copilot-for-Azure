@@ -9,7 +9,7 @@
     "test": "cd scripts && npm test",
     "test:skills": "cd tests && npm test --",
     "test:skills:integration": "cd tests && npm run test:integration --",
-    "update-version": "node scripts/update-plugin-version.js",
+    "update-version": "npx tsx scripts/update-plugin-version.ts",
     "release": "semantic-release",
     "postinstall": "cd scripts && npm install"
   },
