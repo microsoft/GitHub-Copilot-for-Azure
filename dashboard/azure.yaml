@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: ghcp4a-health-dashboard
+metadata:
+  template: azd-init
+services:
+  dashboard:
+    project: .
+    dist: dist
+    host: staticwebapp
+    language: js
+hooks:
+  prepackage:
+    shell: pwsh
+    run: |
+      if (!(Test-Path dist)) { New-Item -ItemType Directory -Path dist }
+      Copy-Item -Path index.html -Destination dist/ -Force
+      Copy-Item -Path .nojekyll -Destination dist/ -Force -ErrorAction SilentlyContinue
+      if (Test-Path assets) { Copy-Item -Path assets -Destination dist/ -Recurse -Force }
+      if (Test-Path data) { Copy-Item -Path data -Destination dist/ -Recurse -Force }

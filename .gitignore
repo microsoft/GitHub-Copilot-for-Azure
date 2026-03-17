@@ -243,6 +243,9 @@ _UpgradeReport_Files/
 # TFS 2012 Local Workspace
 # The packages folder can be ignored because of Package Restore
 # to a newer Visual Studio version. Backup files are not needed,
+# Dashboard generated data
+dashboard/data/
+
 # Token management tools
 # tools/**
 # Uncomment if necessary however generally it will be regenerated when needed
@@ -340,3 +343,6 @@ UpgradeLog*.htm
 UpgradeLog*.XML
 x64/
 x86/
+
+dashboard/.azure/
+dashboard/dist/
