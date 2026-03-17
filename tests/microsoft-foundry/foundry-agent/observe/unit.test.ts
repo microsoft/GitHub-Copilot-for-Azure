@@ -311,24 +311,20 @@ describe("observe - Unit Tests", () => {
       expect(compareContent).toMatch(/reuse the same `evaluationId` only when `evaluatorNames` and thresholds are unchanged/i);
     });
 
-    test("downloads detailed results through the Foundry OpenAI evals REST API", () => {
+    test("documents downloading detailed results via Azure AI Projects Python SDK", () => {
       const analyzeContent = fs.readFileSync(
         path.join(REFERENCES_PATH, "analyze-results.md"),
         "utf-8"
       );
 
-      expect(analyzeContent).toContain("/openai/evals/{eval_id}/runs/{run_id}/output_items");
-      expect(analyzeContent).toContain("2025-11-15-preview");
-      expect(analyzeContent).toContain("https://ai.azure.com/.default");
-      expect(analyzeContent).toContain("has_more");
-      expect(analyzeContent).toContain("last_id");
+      expect(analyzeContent).toContain("AIProjectClient");
+      expect(analyzeContent).toContain("get_openai_client()");
+      expect(analyzeContent).toMatch(/evals\.runs\.output_items\.list/);
       expect(analyzeContent).toContain("datasource_item.query");
       expect(analyzeContent).toContain("sample.output_text");
       expect(analyzeContent).toContain("custom_score");
       expect(analyzeContent).toContain("extract_evaluator_result");
-      expect(analyzeContent).not.toContain("AIProjectClient");
-      expect(analyzeContent).not.toContain("get_openai_client()");
-      expect(analyzeContent).not.toContain("openai_client.evals.runs.output_items.list");
+      expect(analyzeContent).not.toContain("/openai/evals/{eval_id}/runs/{run_id}/output_items");
     });
   });
 });
