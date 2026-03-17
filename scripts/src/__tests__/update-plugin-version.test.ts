@@ -2,8 +2,7 @@
  * Tests for update-plugin-version.ts
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { SpyInstance } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from "vitest";
 import { join } from "node:path";
 import { mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs";
 
@@ -13,8 +12,8 @@ const TEST_DIR = join(process.cwd(), "__test_fixtures_update_plugin__");
 import { updatePluginVersion } from "../update-plugin-version.js";
 
 describe("updatePluginVersion", () => {
-  let consoleLogSpy: SpyInstance;
-  let consoleErrorSpy: SpyInstance;
+  let consoleLogSpy: MockInstance;
+  let consoleErrorSpy: MockInstance;
 
   beforeEach(() => {
     // Clean up and create test directory
