@@ -7,6 +7,7 @@ on:
 
 jobs:
   update-version-on-merge:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
