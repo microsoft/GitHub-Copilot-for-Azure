@@ -3,8 +3,8 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
-description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS."
+  version: "1.0.3"
+description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security (workload identity, Azure Policy, Key Vault CSI driver, Deployment Safeguards), and operations (monitoring, upgrade strategy, autoscaling, cost analysis, node pools). WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, secure AKS, set up AKS, rightsize pods, over-provisioned pods, CPU requests, memory requests, enable CAS, Cluster Autoscaler, idle nodes, node utilization, CAS profile, scale-in, Spot VM, Spot node pool, batch workloads, eviction, cost analysis add-on, namespace cost, cost spike, anomaly."
 ---
 
 # Azure Kubernetes Service
