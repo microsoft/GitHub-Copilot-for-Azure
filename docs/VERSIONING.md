@@ -33,7 +33,7 @@ Versions are calculated based on **commit message conventions**:
 
 - `.releaserc.json` - Semantic-release configuration
 - `package.json` - npm dependencies and scripts
-- `scripts/update-plugin-version.ts` - TypeScript version update script
+- `scripts/src/update-plugin-version.ts` - TypeScript version update script
 
 ## CI/CD Integration
 

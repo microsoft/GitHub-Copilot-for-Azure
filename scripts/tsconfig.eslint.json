@@ -6,6 +6,5 @@
     "include": [
         "src/**/*",
         "vitest.config.ts",
-        "update-plugin-version.ts"
     ]
 }
