@@ -12,13 +12,15 @@ interface PluginConfig {
 /**
  * Updates both plugin.json files with the specified version
  * @param version - The new version to set
+ * @param pluginFiles - Array of paths to plugin.json files (defaults to standard locations)
  */
-function updatePluginVersion(version: string): void {
-  const pluginFiles: string[] = [
+export function updatePluginVersion(
+  version: string, 
+  pluginFiles: string[] = [
     "../../plugin/.claude-plugin/plugin.json",
     "../../plugin/.plugin/plugin.json"
-  ];
-
+  ]
+): void {
   console.log(`Updating plugin files to version: ${version}`);
 
   let hadError = false;
@@ -43,7 +45,9 @@ function updatePluginVersion(version: string): void {
       
       // Truncate and write back with formatted JSON
       fs.ftruncateSync(fd, 0);
-      fs.writeFileSync(fd, newContent, "utf8");
+      
+      // Seek back to the beginning of the file after truncation
+      fs.writeSync(fd, newContent, 0);
       
       console.log(`✓ Updated ${filePath} to version ${version}`);
     } catch (error: unknown) {
@@ -73,12 +77,22 @@ function updatePluginVersion(version: string): void {
   }
 }
 
-// Get version from command line argument
-const version: string | undefined = process.argv[2];
+/**
+ * Main function for CLI execution
+ */
+function main(): void {
+  const version: string | undefined = process.argv[2];
+  
+  if (!version) {
+    console.error("Usage: npx tsx update-plugin-version.ts <version>");
+    process.exit(1);
+  }
 
-if (!version) {
-  console.error("Usage: npx tsx update-plugin-version.ts <version>");
-  process.exit(1);
+  updatePluginVersion(version);
 }
 
-updatePluginVersion(version);
+// Only run main if this file is executed directly (not imported)
+// Convert import.meta.url to file path and compare with resolved argv[1]
+if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main();
+}
