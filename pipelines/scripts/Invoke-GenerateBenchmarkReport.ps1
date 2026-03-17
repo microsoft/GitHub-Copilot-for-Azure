@@ -54,7 +54,7 @@
         if (-not $inputRunIds -or $inputRunIds.Count -eq 0) {
             throw "No run IDs found in $runIdsFile. Ensure run_ids.json contains at least one run ID."
         }
-        Write-Host "Loaded run IDs from $runIdsFile: $($inputRunIds -join ',')"
+        Write-Host "Loaded run IDs from ${runIdsFile}: $($inputRunIds -join ',')"
     }
 
     $vaultName = "kv-msbench-eval-azuremcp"
