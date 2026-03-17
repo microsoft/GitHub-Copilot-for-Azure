@@ -1,5 +1,5 @@
 /**
- * Unit Tests for azure-infra-planner
+ * Unit Tests for azure-enterprise-infra-planner
  * 
  * Test isolated skill logic, validation rules, and reference data integrity.
  */
@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-infra-planner";
+const SKILL_NAME = "azure-enterprise-infra-planner";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -30,14 +30,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeLessThanOrEqual(1024);
     });
 
-    test("description contains USE FOR trigger phrases", () => {
+    test("description contains WHEN trigger phrases", () => {
       const description = skill.metadata.description.toLowerCase();
-      expect(description).toContain("use for:");
+      expect(description).toContain("when:");
     });
 
-    test("description contains DO NOT USE FOR anti-triggers", () => {
+    test("description contains PREFER routing guidance", () => {
       const description = skill.metadata.description.toLowerCase();
-      expect(description).toContain("do not use for:");
+      expect(description).toContain("prefer");
     });
   });
 
@@ -78,8 +78,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("documents plan-first workflow gate", () => {
-      expect(skill.content).toContain("PLAN-FIRST WORKFLOW");
-      expect(skill.content).toContain("STOP HERE");
+      expect(skill.content).toContain("MANDATORY WORKFLOW");
+      expect(skill.content).toContain("wait for approval");
     });
 
     test("lists all required MCP tools", () => {
@@ -100,7 +100,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("has blocking plan requirement", () => {
-      expect(skill.content).toContain("PLAN-FIRST");
+      expect(skill.content).toContain("approved");
     });
 
     test("references plan schema", () => {
@@ -114,228 +114,62 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Reference Data Integrity", () => {
     let referencesDir: string;
-    let resourcesDir: string;
 
     beforeAll(() => {
       referencesDir = path.join(skill.path, "references");
-      resourcesDir = path.join(referencesDir, "resources");
     });
 
     test("references directory exists", () => {
       expect(fs.existsSync(referencesDir)).toBe(true);
     });
 
-    test("required top-level reference files exist", () => {
+    test("required reference files exist", () => {
       const requiredFiles = [
         "resources.md",
         "plan-schema.md",
         "verification.md",
         "research.md",
         "deployment.md",
+        "constraints.md",
+        "waf-checklist.md",
+        "pairing-checks.md",
+        "bicep-generation.md",
+        "terraform-generation.md",
+        "error-handling.md",
       ];
       for (const file of requiredFiles) {
         expect(fs.existsSync(path.join(referencesDir, file))).toBe(true);
       }
     });
 
-    test("all 7 resource category directories exist", () => {
-      const expectedCategories = [
-        "compute", "data", "networking", "messaging",
-        "monitoring", "ai", "security"
-      ];
-      for (const cat of expectedCategories) {
-        const catDir = path.join(resourcesDir, cat);
-        expect(fs.existsSync(catDir)).toBe(true);
-      }
-    });
-
-    test("every category has an index.md", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-      for (const cat of categories) {
-        const indexPath = path.join(resourcesDir, cat, "index.md");
-        expect(fs.existsSync(indexPath)).toBe(true);
-      }
-    });
-
-    test("every resource subdirectory has required files", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-      
-      let resourceCount = 0;
-      const missingFiles: string[] = [];
-
-      for (const cat of categories) {
-        const catDir = path.join(resourcesDir, cat);
-        const resources = fs.readdirSync(catDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-        
-        for (const res of resources) {
-          resourceCount++;
-          const resDir = path.join(catDir, res);
-          const mainFile = path.join(resDir, `${res}.md`);
-          const bicepFile = path.join(resDir, "bicep.md");
-          const constraintsFile = path.join(resDir, "constraints.md");
-
-          if (!fs.existsSync(mainFile)) missingFiles.push(`${cat}/${res}/${res}.md`);
-          if (!fs.existsSync(bicepFile)) missingFiles.push(`${cat}/${res}/bicep.md`);
-          if (!fs.existsSync(constraintsFile)) missingFiles.push(`${cat}/${res}/constraints.md`);
-        }
-      }
-
-      expect(missingFiles).toEqual([]);
-      expect(resourceCount).toBe(48);
-    });
-
-    test("every resource main file has an Identity section with ARM type and API version", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-
-      const malformed: string[] = [];
-
-      for (const cat of categories) {
-        const catDir = path.join(resourcesDir, cat);
-        const resources = fs.readdirSync(catDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-
-        for (const res of resources) {
-          const mainFile = path.join(catDir, res, `${res}.md`);
-          if (!fs.existsSync(mainFile)) continue;
-          const content = fs.readFileSync(mainFile, "utf-8");
-          if (!content.includes("## Identity")) malformed.push(`${cat}/${res}: missing ## Identity`);
-          if (!content.includes("ARM Type")) malformed.push(`${cat}/${res}: missing ARM Type`);
-          if (!content.includes("Bicep API Version")) malformed.push(`${cat}/${res}: missing Bicep API Version`);
-        }
-      }
-
-      expect(malformed).toEqual([]);
-    });
-
-    test("every resource main file has a Naming section", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-
-      const missing: string[] = [];
-      for (const cat of categories) {
-        const catDir = path.join(resourcesDir, cat);
-        const resources = fs.readdirSync(catDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-        for (const res of resources) {
-          const mainFile = path.join(catDir, res, `${res}.md`);
-          if (!fs.existsSync(mainFile)) continue;
-          const content = fs.readFileSync(mainFile, "utf-8");
-          if (!content.includes("## Naming")) missing.push(`${cat}/${res}`);
-        }
-      }
-      expect(missing).toEqual([]);
-    });
-
-    test("every bicep.md contains a Bicep resource block", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-
-      const missing: string[] = [];
-      for (const cat of categories) {
-        const catDir = path.join(resourcesDir, cat);
-        const resources = fs.readdirSync(catDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-        for (const res of resources) {
-          const bicepFile = path.join(catDir, res, "bicep.md");
-          if (!fs.existsSync(bicepFile)) continue;
-          const content = fs.readFileSync(bicepFile, "utf-8");
-          if (!content.includes("resource ")) missing.push(`${cat}/${res}/bicep.md`);
-        }
-      }
-      expect(missing).toEqual([]);
-    });
-
-    test("every constraints.md has at least one constraint rule", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-
-      const empty: string[] = [];
-      for (const cat of categories) {
-        const catDir = path.join(resourcesDir, cat);
-        const resources = fs.readdirSync(catDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-        for (const res of resources) {
-          const file = path.join(catDir, res, "constraints.md");
-          if (!fs.existsSync(file)) continue;
-          const content = fs.readFileSync(file, "utf-8").trim();
-          // Should have more than just a heading
-          if (content.split("\n").length < 3) empty.push(`${cat}/${res}/constraints.md`);
-        }
-      }
-      expect(empty).toEqual([]);
-    });
-
-    test("resources.md category links all resolve", () => {
-      const indexContent = fs.readFileSync(
+    test("resources.md contains ARM type references", () => {
+      const content = fs.readFileSync(
         path.join(referencesDir, "resources.md"), "utf-8"
       );
-      const linkPattern = /\(resources\/([^)]+)\)/g;
-      const broken: string[] = [];
-      let match;
-      while ((match = linkPattern.exec(indexContent)) !== null) {
-        const relPath = match[1];
-        const fullPath = path.join(referencesDir, "resources", relPath);
-        if (!fs.existsSync(fullPath)) broken.push(relPath);
-      }
-      expect(broken).toEqual([]);
+      expect(content).toContain("Microsoft.");
     });
 
-    test("category index links all resolve to resource files", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-
-      const broken: string[] = [];
-      for (const cat of categories) {
-        const indexPath = path.join(resourcesDir, cat, "index.md");
-        if (!fs.existsSync(indexPath)) continue;
-        const content = fs.readFileSync(indexPath, "utf-8");
-        const linkPattern = /\(([^)]+\.md)\)/g;
-        let match;
-        while ((match = linkPattern.exec(content)) !== null) {
-          const relPath = match[1];
-          const fullPath = path.join(resourcesDir, cat, relPath);
-          if (!fs.existsSync(fullPath)) broken.push(`${cat}/index.md -> ${relPath}`);
-        }
-      }
-      expect(broken).toEqual([]);
+    test("constraints.md has pairing rules", () => {
+      const content = fs.readFileSync(
+        path.join(referencesDir, "constraints.md"), "utf-8"
+      );
+      expect(content.split("\n").length).toBeGreaterThan(10);
     });
 
-    test("no resource main file exceeds 1100 tokens", () => {
-      const categories = fs.readdirSync(resourcesDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
+    test("plan-schema.md documents the infrastructure plan format", () => {
+      const content = fs.readFileSync(
+        path.join(referencesDir, "plan-schema.md"), "utf-8"
+      );
+      expect(content).toContain("meta");
+      expect(content).toContain("resources");
+      expect(content).toContain("reasoning");
+    });
 
-      const oversized: string[] = [];
-      for (const cat of categories) {
-        const catDir = path.join(resourcesDir, cat);
-        const resources = fs.readdirSync(catDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-        for (const res of resources) {
-          const mainFile = path.join(catDir, res, `${res}.md`);
-          if (!fs.existsSync(mainFile)) continue;
-          const content = fs.readFileSync(mainFile, "utf-8");
-          const estTokens = Math.round(content.length / 4);
-          if (estTokens > 1100) oversized.push(`${cat}/${res}: ${estTokens} tokens`);
-        }
-      }
-      expect(oversized).toEqual([]);
+    test("error-handling.md has remediation table", () => {
+      const content = fs.readFileSync(
+        path.join(referencesDir, "error-handling.md"), "utf-8"
+      );
+      expect(content).toContain("Remediation");
     });
   });
 });

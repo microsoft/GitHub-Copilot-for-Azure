@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for azure-infra-planner
+ * Trigger Tests for azure-enterprise-infra-planner
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-infra-planner";
+const SKILL_NAME = "azure-enterprise-infra-planner";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -21,15 +21,15 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      "Create an infrastructure plan for my Azure deployment",
-      "Plan Azure infrastructure for a serverless data pipeline",
-      "Generate Bicep templates for my workload",
-      "Deploy infrastructure to Azure with Terraform",
-      "What Azure resources do I need for this project?",
-      "Create a multi-environment infrastructure plan",
-      "Plan dev staging and production Azure environments",
-      "I need to provision Azure resources for my app",
-      "Generate infrastructure as code for Azure",
+      "Provision a classic 3-tier application consisting of IIS web servers, .NET business logic tier, and SQL Server backend, distribute across availability zones for high availability.",
+      "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier.",
+      "Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.",
+      "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer.",
+      "Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.",
+      "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks.",
+      "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly.",
+      "Establish disaster recovery for AKS clusters across two Azure regions, replicate persistent storage, and simulate failover on a quarterly basis.",
+      "Deploy disaster recovery for VMware VMs using Azure Site Recovery, configure runbooks for smooth failover, and maintain compliance audit trails.",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -65,14 +65,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Boundary Cases - azure-prepare territory (keyword overlap expected)", () => {
     // NOTE: These app-first prompts DO trigger the keyword matcher because they
-    // contain "Azure", "deployment", etc. This is expected behavior — the keyword
+    // contain "Azure", "infrastructure", etc. This is expected behavior — the keyword
     // matcher is intentionally broad. Skill disambiguation is handled by the LLM
     // routing layer, not by the trigger matcher. These tests document that overlap.
     const preparePrompts: string[] = [
-      "Add authentication to my existing Express app on Azure",
-      "Set up my Node.js app for Azure deployment",
-      "Add Azure Key Vault to my existing application code",
-      "Help me migrate my app from Heroku to Azure",
+      "Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps.",
+      "Launch a serverless web backend with Azure Container Apps, integrate managed Azure PostgreSQL for database, and set up distributed tracing for monitoring transactions.",
+      "Set up a staging and production environment for a Python Flask API on ACA, route traffic via Azure Front Door, and implement rollbacks for failed deployments.",
+      "Deploy a microservices-based e-commerce backend with independent catalog, order, and payment services, use AKS with Helm for deployments, and implement service mesh for traffic control.",
     ];
 
     test.each(preparePrompts)(

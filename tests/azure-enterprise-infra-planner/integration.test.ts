@@ -1,5 +1,5 @@
 /**
- * Integration Tests for azure-infra-planner
+ * Integration Tests for azure-enterprise-infra-planner
  * 
  * Tests skill behavior with a real Copilot agent session.
  * Runs prompts to verify skill invocation.
@@ -18,7 +18,7 @@ import {
 } from "../utils/agent-runner";
 import { isSkillInvoked, softCheckSkill, getToolCalls, listFilesRecursive } from "../utils/evaluate";
 
-const SKILL_NAME = "azure-infra-planner";
+const SKILL_NAME = "azure-enterprise-infra-planner";
 const RUNS_PER_PROMPT = 1;
 const FOLLOW_UP_PROMPT = ["Go with recommended options. Assume all defaults to make the plan."];
 
@@ -36,11 +36,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const maxToolCallBeforeTerminate = 3;
 
   describe("skill-invocation", () => {
-    test("invokes skill for architecture planning prompt", async () => {
+    test("invokes skill for enterprise 3-tier infrastructure prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Plan Azure infrastructure for an event-driven serverless data pipeline with Cosmos DB and Event Hub.",
+            prompt: "Provision a classic 3-tier application consisting of IIS web servers, .NET business logic tier, and SQL Server backend, distribute across availability zones for high availability.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -57,11 +57,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
 
-    test("invokes skill for web app infrastructure prompt", async () => {
+    test("invokes skill for multi-region DR topology prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "I need to design Azure infrastructure for a web application with a SQL database, Redis cache, and VNet isolation.",
+            prompt: "Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -78,11 +78,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
 
-    test("invokes skill for microservices architecture prompt", async () => {
+    test("invokes skill for Terraform IaC generation prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Plan Azure infrastructure for a microservices platform with AKS, Service Bus messaging, and API Management.",
+            prompt: "Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -99,11 +99,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
 
-    test("invokes skill for Bicep generation prompt", async () => {
+    test("invokes skill for VMSS with WAF and encryption prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Generate Bicep templates for my Azure workload that includes App Service, Key Vault, and managed identity.",
+            prompt: "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -120,11 +120,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
 
-    test("invokes skill for web app with database and cache prompt", async () => {
+    test("invokes skill for backup and compliance prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Plan Azure infrastructure for a web application with a database and cache layer. Assume all defaults to make the plan.",
+            prompt: "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -141,11 +141,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
 
-    test("invokes skill for REST API with relational database prompt", async () => {
+    test("invokes skill for secure multi-region 3-tier prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Plan Azure infrastructure for a REST API with a relational database. Assume all defaults to make the plan.",
+            prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier.",
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
@@ -168,7 +168,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let testWorkspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
-        prompt: "Plan Azure infrastructure for a web application with a database and cache layer. Assume all defaults to make the plan.",
+        prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         preserveWorkspace: true,
@@ -192,26 +192,26 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(Array.isArray(plan.plan.resources)).toBe(true);
       expect(plan.plan.resources.length).toBeGreaterThan(0);
 
-      // Should contain database and cache resources
+      // Should contain networking and compute resources
       const resourceTypes = plan.plan.resources.map((r: { type?: string }) =>
         (r.type || "").toLowerCase()
       );
-      const hasDatabase = resourceTypes.some((t: string) =>
-        t.includes("sql") || t.includes("cosmosdb") || t.includes("documentdb") || t.includes("postgresql")
+      const hasNetworking = resourceTypes.some((t: string) =>
+        t.includes("virtualnetwork") || t.includes("networksecuritygroup") || t.includes("loadbalancer")
       );
-      const hasCache = resourceTypes.some((t: string) =>
-        t.includes("redis") || t.includes("cache")
+      const hasCompute = resourceTypes.some((t: string) =>
+        t.includes("virtualmachine") || t.includes("compute")
       );
       console.log(`📋 Plan has ${plan.plan.resources.length} resources`);
-      console.log(`   Database present: ${hasDatabase}`);
-      console.log(`   Cache present: ${hasCache}`);
+      console.log(`   Networking present: ${hasNetworking}`);
+      console.log(`   Compute present: ${hasCompute}`);
     });
 
     test("generates Bicep files from approved plan", async () => {
       let testWorkspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
-        prompt: "Plan Azure infrastructure for a REST API with a relational database. Assume all defaults to make the plan.",
+        prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier. Assume all defaults to make the plan.",
         nonInteractive: true,
         followUp: [
           ...FOLLOW_UP_PROMPT,
@@ -247,48 +247,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       } else {
         console.log(`✅ ${infraBicepFiles.length} Bicep file(s) correctly under infra/`);
       }
-    });
-  });
-
-  describe("workspace-context", () => {
-    test("detects Express + Cosmos from package.json", async () => {
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          fs.writeFileSync(
-            path.join(workspace, "package.json"),
-            JSON.stringify({
-              name: "my-api",
-              dependencies: {
-                "express": "^4.18.0",
-                "@azure/cosmos": "^4.0.0"
-              }
-            })
-          );
-        },
-        prompt: "What Azure infrastructure do I need for this project? Assume all defaults to make the plan.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
-      });
-
-      softCheckSkill(agentMetadata, SKILL_NAME);
-    });
-
-    test("detects Python Flask + PostgreSQL from requirements.txt", async () => {
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          fs.writeFileSync(
-            path.join(workspace, "requirements.txt"),
-            "flask==3.0.0\npsycopg2-binary==2.9.9\nazure-identity==1.15.0\n"
-          );
-        },
-        prompt: "Plan Azure infrastructure for this Python application. Assume all defaults to make the plan.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: (agentMetadata) => isSkillInvoked(agentMetadata, SKILL_NAME) || getToolCalls(agentMetadata).length > maxToolCallBeforeTerminate
-      });
-
-      softCheckSkill(agentMetadata, SKILL_NAME);
     });
   });
 });
