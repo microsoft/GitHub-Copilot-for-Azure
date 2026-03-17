@@ -32,13 +32,9 @@ Downloads artifacts from a GitHub Actions integration test run, generates a summ
 
 1. Extract the numeric run ID from the input (strip URL prefix if needed)
 2. Fetch run metadata:
-   ```bash
-   gh run view <run-id> --repo microsoft/GitHub-Copilot-for-Azure --json jobs,status,conclusion,name
-   ```
-3. Download artifacts to a temp directory:
-   ```bash
-   gh run download <run-id> --repo microsoft/GitHub-Copilot-for-Azure --dir "$TMPDIR/gh-run-<run-id>"
-   ```
+   Use `github` tool to list the Action run with the given `<run-id>` in the "microsoft/GitHub-Copilot-for-Azure" repo. Get its jobs, status, conclusion and name. 
+3. Download this run's artifacts to a temp directory:
+   Use `github` tool to download this run's artifacts to a local directory "$TMPDIR/gh-run-<run-id>".
 4. Locate these files in the downloaded artifacts:
    - `junit.xml` — test pass/fail/skip/error results
    - `*-SKILL-REPORT.md` — generated skill report with per-test details
@@ -111,13 +107,15 @@ Repeat Phase 1–3 for the second run, then produce a side-by-side delta table. 
 
 For Skill Invocation Success Rate that is available and is less than 80%, create a GitHub issue, assign the label with the same name as the skill, and assign it to the code owners listed in .github/CODEOWNERS file based on which skill it is for:
 
+Use `create_issue` tool to create this issue.
 ```
-gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
-  --title "Integration test failure: <skill> – skill-invocation" \
-  --label "bug,integration-test,test-failure,skill-invocation,<skill>" \
-  --body "<body>"
-  --assignee "<codeowners-in-codeowners-file>"
+create_issue:
+   title: "Integration test failure: <skill> – skill-invocation" 
+   labels: ["bug,integration-test,test-failure,skill-invocation,<skill>]
+   assignees: [<codeowners-in-codeowners-file>]
+   body: "<body>"
 ```
+
 Issue body template — see [issue-template.md](references/issue-template.md).
 
 For every test with a `<failure>` element in `junit.xml`:
@@ -133,21 +131,18 @@ For every test with a `<failure>` element in `junit.xml`:
    - **Assertion mismatch** — expected files/links not found
    - **Quota exhaustion** — Azure region quota prevented deployment
 6. Search for existing open issue before creating a new one:
-   ```bash
-   gh issue list --repo microsoft/GitHub-Copilot-for-Azure \
-     --state open \
-     --search "Integration test failure: {skill} in:title" \
-     --json number,title,body
-   ```
+   Use `github` tool to list issues in the "microsoft/GitHub-Copilot-for-Azure" repo with a given title pattern "Integration test failure: {skill} in:title". Focus on their issue number, title and body.
+
    Match criteria: an open issue whose title and body describe a similar problem. If a match is found, skip issue creation for this failure and note the existing issue number(s) in the summary report.
 7. If no existing issue was found, create a GitHub issue, assign the label with the name of the skill, and assign it to the code owners listed in .github/CODEOWNERS file based on which skill it is for:
 
+Use `create_issue` tool to create this issue.
 ```
-gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
-  --title "Integration test failure: <skill> – <keywords> [<root-cause-category>]" \
-  --label "bug,integration-test,test-failure,<skill>" \
-  --body "<body>"
-  --assignee "<codeowners-in-codeowners-file>"
+create_issue:
+   title: "Integration test failure: <skill> – <keywords> [<root-cause-category>]" 
+   labels: ["bug,integration-test,test-failure,<skill>]
+   assignees: [<codeowners-in-codeowners-file>]
+   body: "<body>"
 ```
 
    **Title format:** `Integration test failure: {skill} – {keywords} [{root-cause-category}]`
@@ -164,9 +159,8 @@ Issue body template — see [issue-template.md](references/issue-template.md).
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `gh: command not found` | GitHub CLI not installed | Install with `winget install GitHub.cli` or `brew install gh` |
+| `gh: not authenticated` | GitHub CLI not authenticated | This workflow cannot authenticate to GH CLI with necessary permission by design. Use your Agent tools instead. |
 | `no artifacts found` | Run has no uploadable reports | Verify the run completed the "Export report" step |
-| `HTTP 404` on run view | Invalid run ID or no access | Check the run ID and ensure `gh auth status` is authenticated |
 | `rate limit exceeded` | Too many GitHub API calls | Wait and retry, or use `--limit` on searches |
 
 ## References

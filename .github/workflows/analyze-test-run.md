@@ -32,7 +32,7 @@ tools:
 safe-outputs:
   create-issue:
     max: 10
-    labels: [bug, integration-test]
+    labels: [bug, integration-test,test-failure]
 
 engine: copilot
 ---
