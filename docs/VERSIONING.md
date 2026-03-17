@@ -9,12 +9,14 @@ This repository uses [semantic-release](https://github.com/semantic-release/sema
 - **Semantic Versioning**: Automatically determines patch, minor, or major version bumps
 - **CI-Driven**: All version updates happen automatically via GitHub Actions
 - **Consistent Versioning**: All plugin files maintain the same version number across the repository
+- **Automatic Changelog**: Release notes are automatically generated and maintained in `plugin/CHANGELOG.md`
 
 ## Files Managed
 
 The following files have their versions automatically updated:
 - `plugin/.claude-plugin/plugin.json`
 - `plugin/.plugin/plugin.json`
+- `plugin/CHANGELOG.md` (automatically generated release notes)
 
 ## Version Calculation Rules
 
@@ -31,9 +33,19 @@ Versions are calculated based on **commit message conventions**:
 
 ## Configuration Files
 
-- `.releaserc.json` - Semantic-release configuration
+- `.releaserc.json` - Semantic-release configuration with changelog generation
 - `package.json` - npm dependencies and scripts
 - `scripts/src/update-plugin-version.ts` - TypeScript version update script
+
+## Changelog Generation
+
+Release notes are automatically generated based on conventional commit messages and written to `plugin/CHANGELOG.md`. The changelog includes:
+- **Features** - commits with `feat:` prefix
+- **Bug Fixes** - commits with `fix:` prefix  
+- **Breaking Changes** - commits with `BREAKING CHANGE:` or `!` suffix
+- **Performance Improvements** - commits with `perf:` prefix
+
+The changelog is updated with each release and committed along with the version files.
 
 ## CI/CD Integration
 

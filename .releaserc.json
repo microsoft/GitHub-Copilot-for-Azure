@@ -4,6 +4,12 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "plugin/CHANGELOG.md"
+      }
+    ],
+    [
       "@semantic-release/exec", 
       {
         "prepareCmd": "node --import tsx scripts/src/update-plugin-version.ts ${nextRelease.version}"
@@ -12,7 +18,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["plugin/.claude-plugin/plugin.json", "plugin/.plugin/plugin.json"],
+        "assets": ["plugin/.claude-plugin/plugin.json", "plugin/.plugin/plugin.json", "plugin/CHANGELOG.md"],
         "message": "chore: update plugin versions to ${nextRelease.version} [skip ci]"
       }
     ]
