@@ -22,7 +22,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
       "Deploy a geo-redundant backup solution for on-premises SQL servers using Azure Backup, configure encryption-at-rest, and automate monthly DR tests.",
-      "Configure an autoscaled VMSS-based presentation tier, application servers in separate subnet, and encrypted SQL Managed Instance as the backend database.",
+      "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier.",
       "Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.",
       "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer.",
       "Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.",
@@ -51,7 +51,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me write unit tests for my React app",
       "What is the capital of France?",
       "Explain quantum computing",
-      "How do I use Google Cloud Platform?",
+      "How do I set up a CI/CD pipeline in GitHub Actions?",
     ];
 
     test.each(shouldNotTriggerPrompts)(
