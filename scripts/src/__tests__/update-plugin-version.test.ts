@@ -148,8 +148,9 @@ describe("updatePluginVersion", () => {
       const regularFileContent = readFileSync(regularPluginPath, "utf8");
 
       // Check proper formatting (2-space indentation and trailing newline)
-      expect(claudeFileContent).toMatch(/\{\n  "version": "2\.0\.0",\n  "name": "test"\n\}\n$/);
-      expect(regularFileContent).toMatch(/\{\n  "version": "2\.0\.0",\n  "name": "test"\n\}\n$/);
+      const expectedFormat = '{\n  "version": "2.0.0",\n  "name": "test"\n}\n';
+      expect(claudeFileContent).toBe(expectedFormat);
+      expect(regularFileContent).toBe(expectedFormat);
       expect(claudeFileContent.endsWith("\n")).toBe(true);
       expect(regularFileContent.endsWith("\n")).toBe(true);
     });
