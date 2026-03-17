@@ -114,7 +114,7 @@ For Skill Invocation Success Rate that is available and is less than 80%, create
 ```
 gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
   --title "Integration test failure: <skill> – skill-invocation" \
-  --label "bug,integration-test,skill-invocation,<skill>" \
+  --label "bug,integration-test,test-failure,skill-invocation,<skill>" \
   --body "<body>"
   --assignee "<codeowners-in-codeowners-file>"
 ```
@@ -145,7 +145,7 @@ For every test with a `<failure>` element in `junit.xml`:
 ```
 gh issue create --repo microsoft/GitHub-Copilot-for-Azure \
   --title "Integration test failure: <skill> – <keywords> [<root-cause-category>]" \
-  --label "bug,integration-test,<skill>" \
+  --label "bug,integration-test,test-failure,<skill>" \
   --body "<body>"
   --assignee "<codeowners-in-codeowners-file>"
 ```
