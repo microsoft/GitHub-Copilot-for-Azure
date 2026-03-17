@@ -27,7 +27,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
+
+      - name: Install dependencies for plugin checks
+        run: |
+          cd scripts
+          npm ci
+
       - name: Check plugin version changes
         run: |
           echo "Checking if plugin versions were modified in this PR..."
