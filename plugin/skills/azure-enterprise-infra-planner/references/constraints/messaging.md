@@ -1,6 +1,6 @@
 # Messaging Pairing Constraints
 
-### Event Grid
+### Event Grid Topic
 
 | Paired With | Constraint |
 |-------------|------------|
