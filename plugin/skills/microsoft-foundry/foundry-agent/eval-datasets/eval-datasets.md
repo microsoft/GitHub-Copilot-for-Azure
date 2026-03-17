@@ -21,8 +21,6 @@ USE FOR: create dataset from traces, harvest traces into dataset, build test dat
 | Prerequisites | Agent deployed, `.foundry/agent-metadata.yaml` available, App Insights connected |
 | Local cache | `.foundry/datasets/`, `.foundry/results/`, `.foundry/evaluators/` |
 
-> 💡 **Tip:** In this repository, Foundry dataset commands are exposed through the `azure` MCP server configured in `plugin/.mcp.json`.
-
 ## Entry Points
 
 | User Intent | Start At |

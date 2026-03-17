@@ -13,8 +13,6 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | Container protocols | `a2a`, `responses`, `mcp` |
 | Supported languages | .NET, Node.js, Python, Go, Java |
 
-> 💡 **Tip:** In this repository, Foundry MCP commands are exposed through the `azure` MCP server configured in `plugin/.mcp.json`.
-
 ## When to Use This Skill
 
 USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, start agent container, stop agent container, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
