@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Required for semantic versioning
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -30,8 +30,14 @@ jobs:
     - name: Check for plugin changes
       id: plugin_changes
       run: |
+        # Handle case where github.event.before is null SHA
+        BEFORE_SHA="${{ github.event.before }}"
+        if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE_SHA" ]; then
+          BEFORE_SHA="HEAD~1"
+        fi
+        
         # Get the list of changed files from the push event range
-        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        CHANGED_FILES=$(git diff --name-only $BEFORE_SHA ${{ github.sha }})
         echo "Changed files:"
         echo "$CHANGED_FILES"
         
@@ -51,7 +57,7 @@ jobs:
       if: steps.plugin_changes.outputs.should_update == 'true'
       run: npm run release
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SEMANTIC_RELEASE_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
 
     - name: Skip version update
       if: steps.plugin_changes.outputs.should_update == 'false'

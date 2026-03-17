@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,28 +17,44 @@ function updatePluginVersion(version) {
   console.log(`Updating plugin files to version: ${version}`);
 
   pluginFiles.forEach(filePath => {
+    let fd;
     try {
       const fullPath = path.resolve(__dirname, filePath);
       
-      if (!fs.existsSync(fullPath)) {
-        console.warn(`File not found: ${filePath}`);
-        return;
-      }
-
+      // Open file for reading and writing
+      fd = fs.openSync(fullPath, 'r+');
+      
       // Read current content
-      const content = fs.readFileSync(fullPath, 'utf8');
+      const content = fs.readFileSync(fd, 'utf8');
       const pluginConfig = JSON.parse(content);
       
       // Update version
       pluginConfig.version = version;
       
-      // Write back with formatted JSON
-      fs.writeFileSync(fullPath, JSON.stringify(pluginConfig, null, 2) + '\n', 'utf8');
+      // Prepare new content
+      const newContent = JSON.stringify(pluginConfig, null, 2) + '\n';
+      
+      // Truncate and write back with formatted JSON
+      fs.ftruncateSync(fd, 0);
+      fs.writeFileSync(fd, newContent, 'utf8');
       
       console.log(`✓ Updated ${filePath} to version ${version}`);
     } catch (error) {
+      if (error.code === 'ENOENT') {
+        console.warn(`File not found: ${filePath}`);
+        return;
+      }
       console.error(`Failed to update ${filePath}:`, error.message);
       process.exit(1);
+    } finally {
+      // Always close the file descriptor if it was opened
+      if (fd !== undefined) {
+        try {
+          fs.closeSync(fd);
+        } catch (closeError) {
+          console.error(`Failed to close file ${filePath}:`, closeError.message);
+        }
+      }
     }
   });
 }
@@ -52,4 +68,3 @@ if (!version) {
 }
 
 updatePluginVersion(version);
-console.log('Plugin version update completed successfully!');
