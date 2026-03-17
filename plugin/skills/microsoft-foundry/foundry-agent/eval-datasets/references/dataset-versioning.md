@@ -69,9 +69,9 @@ Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.jso
 {
   "datasets": [
     {
-      "name": "support-bot-prod-traces-v1",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v1.jsonl",
-      "version": "1",
+      "version": "v1",
       "tag": "deprecated",
       "source": "trace-harvest",
       "harvestRule": "error",
@@ -81,9 +81,9 @@ Track all dataset versions, tags, and lineage in `.foundry/datasets/manifest.jso
       "evalRunIds": ["run-abc-123"]
     },
     {
-      "name": "support-bot-prod-traces-v2",
+      "name": "support-bot-prod-traces",
       "file": "support-bot-prod-traces-v2.jsonl",
-      "version": "2",
+      "version": "v2",
       "tag": "baseline",
       "source": "trace-harvest",
       "harvestRule": "error+latency",

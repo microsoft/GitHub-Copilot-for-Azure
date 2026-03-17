@@ -132,7 +132,13 @@ describe("eval-datasets - Unit Tests", () => {
       expect(traceToDatasetContent).toContain('"name": "support-bot-prod-traces"');
       expect(traceToDatasetContent).toContain('"version": "v3"');
       expect(versioningContent).toContain('"name": "support-bot-prod-traces"');
+      expect(versioningContent).toContain('"version": "v1"');
+      expect(versioningContent).toContain('"version": "v2"');
       expect(versioningContent).toContain('"version": "v3"');
+      expect(versioningContent).not.toContain('"name": "support-bot-prod-traces-v1"');
+      expect(versioningContent).not.toContain('"name": "support-bot-prod-traces-v2"');
+      expect(versioningContent).not.toContain('"version": "1"');
+      expect(versioningContent).not.toContain('"version": "2"');
       expect(lineageContent).toContain('"name": "support-bot-prod-traces"');
       expect(lineageContent).toContain('"version": "v3"');
     });
