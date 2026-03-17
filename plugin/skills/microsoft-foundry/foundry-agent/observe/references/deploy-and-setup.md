@@ -70,54 +70,7 @@ The local filename must start with the selected environment's Foundry agent name
 
 Include `expected_behavior` even though Phase 1 uses built-in evaluators only. That field pre-positions the seed dataset for Phase 2 custom evaluators if the first run reveals gaps that need a per-query behavioral rubric.
 
-### 6.5 Register Dataset in Foundry
-
-After saving the seed dataset locally, register it in Foundry so shared evaluation workflows and CI/CD pipelines can reuse it from the start.
-
-1. Resolve the active Foundry project resource ID from the deployment context, then use `project_connection_list` with category `AzureStorageAccount` to discover the project's connected Azure storage account for dataset upload.
-2. Upload the JSONL file to `https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-eval-seed-v1.jsonl`.
-3. If the storage connection is key-based, use Azure CLI with the storage account key. If it is AAD-based, prefer `--auth-mode login`.
-
-**Key-based upload example:**
-
-```bash
-az storage blob upload \
-  --account-name <storage-account> \
-  --container-name eval-datasets \
-  --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
-  --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
-  --account-key <storage-account-key>
-```
-
-**AAD-based upload example:**
-
-```bash
-az storage blob upload \
-  --account-name <storage-account> \
-  --container-name eval-datasets \
-  --name <agent-name>/<agent-name>-eval-seed-v1.jsonl \
-  --file .foundry/datasets/<agent-name>-eval-seed-v1.jsonl \
-  --auth-mode login
-```
-
-4. Register the uploaded file with `evaluation_dataset_create`, always including `connectionName` so the dataset is bound to the discovered project connection:
-
-```
-evaluation_dataset_create(
-  projectEndpoint: "<project-endpoint>",
-  datasetContentUri: "https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-eval-seed-v1.jsonl",
-  connectionName: "<storage-connection-name>",
-  datasetName: "<agent-name>-eval-seed",
-  datasetVersion: "v1",
-  description: "Seed dataset for <agent-name>; <query-count> queries; covers <category-list>"
-)
-```
-
-5. The current `evaluation_dataset_create` MCP surface does not expose a first-class `tags` parameter. Persist the required dataset tags in metadata using:
-   - `agent`: `<agent-name>`
-   - `stage`: `seed`
-   - `version`: `v1`
-6. Save the returned `datasetUri` in `agent-metadata.yaml` alongside the local `datasetFile`, the remote dataset name/version, and the tag values so both local and remote references stay aligned.
+Use [Generate Seed Evaluation Dataset](../../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
 
 ### 7. Persist Artifacts and Test Cases
 

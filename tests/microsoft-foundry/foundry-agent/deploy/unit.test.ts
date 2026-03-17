@@ -135,15 +135,17 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
     });
 
-    test("registers the seed dataset in Foundry after generation", () => {
-      expect(deployContent).toContain("Register Dataset in Foundry");
+    test("uses the seed dataset guide as the canonical registration flow", () => {
+      expect(deployContent).toContain("Generate Seed Evaluation Dataset");
+      expect(deployContent).toMatch(/single source of truth for seed dataset registration/i);
       expect(deployContent).toContain("project_connection_list");
       expect(deployContent).toContain("AzureStorageAccount");
       expect(deployContent).toContain("evaluation_dataset_create");
-      expect(deployContent).toContain('connectionName: "<storage-connection-name>"');
+      expect(deployContent).toContain("connectionName");
       expect(deployContent).toContain("<agent-name>-eval-seed");
-      expect(deployContent).toContain("--account-key <storage-account-key>");
-      expect(deployContent).toContain("--auth-mode login");
+      expect(deployContent).toContain("datasetUri");
+      expect(deployContent).not.toContain("--account-key <storage-account-key>");
+      expect(deployContent).not.toContain("--auth-mode login");
     });
 
     test("describes seed generation rules without a separate validation pass", () => {

@@ -183,16 +183,17 @@ describe("observe - Unit Tests", () => {
       expect(setupContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
     });
 
-    test("registers the seed dataset in Foundry after local generation", () => {
-      expect(setupContent).toContain("Register Dataset in Foundry");
+    test("uses the seed dataset guide as the canonical registration flow", () => {
+      expect(setupContent).toContain("Generate Seed Evaluation Dataset");
+      expect(setupContent).toMatch(/single source of truth for registration/i);
       expect(setupContent).toContain("project_connection_list");
       expect(setupContent).toContain("AzureStorageAccount");
       expect(setupContent).toContain("evaluation_dataset_create");
-      expect(setupContent).toContain('connectionName: "<storage-connection-name>"');
+      expect(setupContent).toContain("connectionName");
       expect(setupContent).toContain("<agent-name>-eval-seed");
-      expect(setupContent).toContain("--account-key <storage-account-key>");
-      expect(setupContent).toContain("--auth-mode login");
       expect(setupContent).toContain("datasetUri");
+      expect(setupContent).not.toContain("--account-key <storage-account-key>");
+      expect(setupContent).not.toContain("--auth-mode login");
     });
 
     test("prompts user to run evaluation after auto-setup", () => {
