@@ -56,7 +56,7 @@ stages:
       inputs:
         versionSpec: '22'
 
-    - script: npm install -g @github/copilot-cli
+    - script: npm install -g @github/copilot
       displayName: 'Install GitHub Copilot CLI'
 
     - task: UsePythonVersion@0
