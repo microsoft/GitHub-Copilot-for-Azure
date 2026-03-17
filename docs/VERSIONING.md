@@ -24,7 +24,7 @@ Optionally, to test version updates locally:
 
 ```bash
 npm install
-npm run update-version 1.2.3  # Test with a specific version
+npm run update-version -- 1.2.3  # Test with a specific version
 ```
 
 ## Manual Operations
@@ -37,7 +37,7 @@ git describe --tags --abbrev=0
 
 ### Manually Update Plugin Versions
 ```bash
-npm run update-version 1.2.3
+npm run update-version -- 1.2.3
 ```
 
 ### Test Semantic Release Locally
