@@ -83,7 +83,7 @@ terraform apply tfplan
 After successful deployment:
 
 1. **Update status** — Set `meta.status` to `deployed` in `<project-root>/.azure/infrastructure-plan.json`
-2. **Verify resources** — Use `mcp_azure_mcp_group_list` to confirm resources exist
+2. **Verify resources** — List resources in the target resource group using Azure CLI: `az resource list -g <resource-group-name> -o table`
 3. **Report to user** — List deployed resources, endpoints, and any follow-up actions
 
 ## Error Handling
