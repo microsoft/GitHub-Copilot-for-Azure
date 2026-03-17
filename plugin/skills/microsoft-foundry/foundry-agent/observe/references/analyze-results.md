@@ -2,52 +2,47 @@
 
 ## Step 3 — Download Results
 
-`evaluation_get` returns run metadata but **not** full per-row output. Write a Python script (save to `scripts/`) to download detailed results via the OpenAI evals REST API.
+`evaluation_get` returns run metadata but **not** full per-row output. Write a Python script (save to `scripts/`) to download detailed results using the **Azure AI Projects Python SDK**.
 
-### Endpoint
+### Prerequisites
 
 ```text
-GET {projectEndpoint}/openai/evals/{eval_id}/runs/{run_id}/output_items?api-version=2025-11-15-preview
-Authorization: Bearer <token>
+pip install azure-ai-projects>=2.0.0 azure-identity
 ```
 
-| Property | Value |
-|----------|-------|
-| Base URL | `{projectEndpoint}/openai/` (the `/openai/` segment is **required**) |
-| Auth scope | `https://ai.azure.com/.default` (NOT `cognitiveservices`) |
-| API version | `2025-11-15-preview` |
-| Pagination | Response includes `has_more`, `last_id`; pass `after={last_id}` for the next page |
-
-> ⚠️ **Common auth mistake:** Using `https://cognitiveservices.azure.com/.default` returns 401. The correct scope for Foundry project endpoints is `https://ai.azure.com/.default`.
-
-### Authentication
+### SDK Client Setup
 
 ```python
 from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
 
-credential = DefaultAzureCredential()
-token = credential.get_token("https://ai.azure.com/.default").token
-headers = {"Authorization": f"Bearer {token}"}
+project_client = AIProjectClient(
+    endpoint=project_endpoint,       # e.g. "https://<hub>.services.ai.azure.com/api/projects/<project>"
+    credential=DefaultAzureCredential(),
+)
+# The evals API lives on the OpenAI sub-client, not on AIProjectClient directly
+client = project_client.get_openai_client()
 ```
 
-### Pagination Loop
+> ⚠️ **Common mistake:** Calling `project_client.evals` directly — the `evals` namespace is on the OpenAI client returned by `get_openai_client()`, not on `AIProjectClient` itself.
+
+### Retrieve Run Status
 
 ```python
-import requests
-
-url = f"{project_endpoint}/openai/evals/{eval_id}/runs/{run_id}/output_items"
-params = {"api-version": "2025-11-15-preview"}
-all_items = []
-
-while True:
-    resp = requests.get(url, headers=headers, params=params)
-    resp.raise_for_status()
-    data = resp.json()
-    all_items.extend(data.get("data", []))
-    if not data.get("has_more", False):
-        break
-    params["after"] = data["last_id"]
+run = client.evals.runs.retrieve(run_id=run_id, eval_id=eval_id)
+print(f"Status: {run.status}  Report: {run.report_url}")
 ```
+
+### Download Per-Row Output Items
+
+The SDK handles pagination automatically — no manual `has_more` / `after` loop required.
+
+```python
+output_items = list(client.evals.runs.output_items.list(run_id=run_id, eval_id=eval_id))
+all_items = [item.model_dump() for item in output_items]
+```
+
+> 💡 **Tip:** Use `model_dump()` to convert each SDK object to a plain dict for JSON serialization.
 
 ### Data Structure
 
