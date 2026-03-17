@@ -115,6 +115,20 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Reference Data Integrity", () => {
     let referencesDir: string;
 
+    const categoryFiles = [
+      "README.md",
+      "ai-ml.md",
+      "compute-apps.md",
+      "compute-infra.md",
+      "data-analytics.md",
+      "data-relational.md",
+      "messaging.md",
+      "monitoring.md",
+      "networking-core.md",
+      "networking-services.md",
+      "security.md",
+    ];
+
     beforeAll(() => {
       referencesDir = path.join(skill.path, "references");
     });
@@ -125,12 +139,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("required reference files exist", () => {
       const requiredFiles = [
-        "resources.md",
         "plan-schema.md",
         "verification.md",
         "research.md",
         "deployment.md",
-        "constraints.md",
         "waf-checklist.md",
         "pairing-checks.md",
         "bicep-generation.md",
@@ -142,16 +154,32 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       }
     });
 
-    test("resources.md contains ARM type references", () => {
+    test("constraints/ directory exists with all category files", () => {
+      const constraintsDir = path.join(referencesDir, "constraints");
+      expect(fs.existsSync(constraintsDir)).toBe(true);
+      for (const file of categoryFiles) {
+        expect(fs.existsSync(path.join(constraintsDir, file))).toBe(true);
+      }
+    });
+
+    test("resources/ directory exists with all category files", () => {
+      const resourcesDir = path.join(referencesDir, "resources");
+      expect(fs.existsSync(resourcesDir)).toBe(true);
+      for (const file of categoryFiles) {
+        expect(fs.existsSync(path.join(resourcesDir, file))).toBe(true);
+      }
+    });
+
+    test("resources category files contain ARM type references", () => {
       const content = fs.readFileSync(
-        path.join(referencesDir, "resources.md"), "utf-8"
+        path.join(referencesDir, "resources", "compute-infra.md"), "utf-8"
       );
       expect(content).toContain("Microsoft.");
     });
 
-    test("constraints.md has pairing rules", () => {
+    test("constraints category files have pairing rules", () => {
       const content = fs.readFileSync(
-        path.join(referencesDir, "constraints.md"), "utf-8"
+        path.join(referencesDir, "constraints", "networking-core.md"), "utf-8"
       );
       expect(content.split("\n").length).toBeGreaterThan(10);
     });
