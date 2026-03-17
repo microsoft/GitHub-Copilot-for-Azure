@@ -6,7 +6,7 @@
  * Plugin versions should be updated automatically through CI/CD processes.
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,7 +33,7 @@ interface VersionChange {
  */
 function getFileAtRef(filePath: string, ref: string): string | null {
   try {
-    const content = execSync(`git show ${ref}:${filePath}`, { 
+    const content = execFileSync("git", ["show", `${ref}:${filePath}`], {
       encoding: "utf8",
       stdio: ["pipe", "pipe", "ignore"] // Suppress stderr
     });
