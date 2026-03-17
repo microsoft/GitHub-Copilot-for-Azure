@@ -51,6 +51,11 @@ stages:
         artifactName: 'benchmark-run-ids'
         targetPath: '$(Pipeline.Workspace)/benchmark-run-ids'
 
+    - task: NodeTool@0
+      displayName: 'Setup Node.js'
+      inputs:
+        versionSpec: '22'
+
     - script: npm install -g @github/copilot-cli
       displayName: 'Install GitHub Copilot CLI'
 
