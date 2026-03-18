@@ -75,12 +75,12 @@ function checkPluginVersionChanges(): void {
   
   if (!baseSha || !headSha) {
     console.error("❌ Missing BASE_SHA or HEAD_SHA environment variables");
-    process.exit(1);
+    return;
   }
 
   if (!validateGitRef(baseSha) || !validateGitRef(headSha)) {
     console.error("❌ Invalid BASE_SHA or HEAD_SHA value. Expected a commit SHA.");
-    process.exit(1);
+    return;
   }
   
   console.log(`🔍 Checking plugin version changes between ${baseSha} and ${headSha}`);
