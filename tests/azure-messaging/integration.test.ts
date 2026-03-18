@@ -12,7 +12,8 @@ import {
   useAgentRunner,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason
+  getIntegrationSkipReason,
+  AgentMetadata
 } from "../utils/agent-runner";
 import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
@@ -163,21 +164,25 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invoked = false;
       let hasRelevantContent = false;
 
+      const hasExpectedContent = (metadata: AgentMetadata) =>
+        doesAssistantMessageIncludeKeyword(metadata, "retry", { caseSensitive: false }) &&
+        (doesAssistantMessageIncludeKeyword(metadata, "EventHubConsumerClient", { caseSensitive: false }) ||
+          doesAssistantMessageIncludeKeyword(metadata, "retry_total", { caseSensitive: false }) ||
+          doesAssistantMessageIncludeKeyword(metadata, "retry_backoff", { caseSensitive: false }));
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          // No early termination — the agent must complete the full conversation
-          // (including skill execution and reference file reads) to produce
-          // SDK-specific configuration details in its response.
-          const agentMetadata = await agent.run({ prompt });
+          // Terminate early once the skill is invoked AND the response
+          // contains the expected SDK-specific retry keywords.
+          const agentMetadata = await agent.run({
+            prompt,
+            shouldEarlyTerminate: (metadata) =>
+              isSkillInvoked(metadata, SKILL_NAME) && hasExpectedContent(metadata)
+          });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invoked = true;
-            // Validate response provides SDK retry configuration guidance
-            hasRelevantContent =
-              doesAssistantMessageIncludeKeyword(agentMetadata, "retry", { caseSensitive: false }) &&
-              (doesAssistantMessageIncludeKeyword(agentMetadata, "EventHubConsumerClient", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_total", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }));
+            hasRelevantContent = hasExpectedContent(agentMetadata);
             if (hasRelevantContent) break;
           }
         } catch (e: unknown) {
