@@ -8,7 +8,7 @@ Ask the user: "When did you notice the spike? (e.g., 'last Tuesday', 'between 2 
 
 ## Step 2 - Pull Cost Data
 
-```powershell
+```bash
 az rest --method post \
   --url "https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.CostManagement/query?api-version=2023-11-01" \
   --body '{
@@ -25,7 +25,7 @@ az rest --method post \
 
 ## Step 3 - Pull Node Count and Scaling Events
 
-```powershell
+```bash
 # Node count over the anomaly window
 az monitor metrics list \
   --resource "<AKS_RESOURCE_ID>" \
@@ -41,9 +41,9 @@ kubectl get events --all-namespaces \
 
 ## Step 4 - Top Consumers
 
-```powershell
+```bash
 kubectl top nodes
-kubectl top pods --all-namespaces --sort-by=cpu | head -20
+kubectl top pods --all-namespaces --sort-by=cpu
 ```
 
 ## Common Causes
@@ -58,7 +58,7 @@ kubectl top pods --all-namespaces --sort-by=cpu | head -20
 
 ## Set Up Budget Alert
 
-```powershell
+```bash
 az consumption budget create \
   --budget-name "aks-monthly-budget" \
   --amount <BUDGET_AMOUNT> \
@@ -69,3 +69,4 @@ az consumption budget create \
   --threshold 80 \
   --contact-emails "<EMAIL>"
 ```
+
