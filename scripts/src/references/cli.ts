@@ -72,6 +72,7 @@ function isIgnoredLink(rawTarget: string): boolean {
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return true;
   if (trimmed.startsWith("mailto:")) return true;
   if (trimmed.startsWith("mdc:")) return true;
+  if (trimmed.startsWith("vscode://")) return true;
   if (trimmed.startsWith("#")) return true; // pure fragment
   return false;
 }
