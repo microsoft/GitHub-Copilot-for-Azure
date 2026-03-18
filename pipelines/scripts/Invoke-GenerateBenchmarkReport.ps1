@@ -27,8 +27,8 @@
 #>
 
     param(
-        [Parameter(Mandatory=$true)][string]$InputPath,
-        [Parameter(Mandatory=$true)][string]$OutputPath
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$InputPath,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
@@ -51,6 +51,7 @@
             throw "run_ids.json not found at $runIdsFile"
         }
         $inputRunIds = Get-Content -Path $runIdsFile -Raw | ConvertFrom-Json
+        $inputRunIds = @($inputRunIds)
         if (-not $inputRunIds -or $inputRunIds.Count -eq 0) {
             throw "No run IDs found in $runIdsFile. Ensure run_ids.json contains at least one run ID."
         }
@@ -163,6 +164,7 @@
     # Generate benchmark analysis report using GitHub Copilot CLI
     # Copilot will analyze the specified run IDs and generate detailed markdown reports
     Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
+    New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
     $reportGenerationPrompt = "analyze msbench run: $($inputRunIds -join ', ')"
     $copilotLogDir = Join-Path $OutputPath "copilot_log"
     $copilotLogFile = Join-Path $copilotLogDir "copilot_log.md"
@@ -170,8 +172,7 @@
     $copilotArgs = @(
             "-p", $reportGenerationPrompt,
             "--model", "claude-opus-4.6",
-            "--share", $copilotLogFile,
-            "--yolo"
+            "--share", $copilotLogFile
         )
     & 'copilot' @copilotArgs
     if ($LASTEXITCODE -ne 0) {

@@ -34,7 +34,7 @@
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
         ),
-        [Parameter(Mandatory=$true)][string]$OutputPath
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
