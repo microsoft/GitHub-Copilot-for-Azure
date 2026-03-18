@@ -199,7 +199,7 @@
         Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
     }
 
-    New-Item -Path $OutputPath -ItemType Directory -ErrorAction Ignore | Out-Null
+    New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
     $jsonPath = Join-Path $OutputPath "run_ids.json"
 
     Write-Host "Saving run IDs to $jsonPath"
