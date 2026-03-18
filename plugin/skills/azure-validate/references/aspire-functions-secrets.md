@@ -1,6 +1,6 @@
 # Aspire + Azure Functions: Secret Storage Validation
 
-> ⚠️ **Pre-provisioning check** — Run this BEFORE `azd provision` or `azd up`.
+> ⚠️ **Pre-provisioning check** — Run this BEFORE `azd provision`.
 
 ## When This Applies
 
@@ -14,23 +14,24 @@ This check is required when **all** of these are true:
 
 ## Detection
 
-Search for `AddAzureFunctionsProject` in the AppHost:
+Search for `AddAzureFunctionsProject` in the AppHost source file(s):
 
 ```bash
-grep -r "AddAzureFunctionsProject" . --include="*.cs"
+grep -rn "AddAzureFunctionsProject" . --include="*.cs" -l
 ```
 
-If found, check whether `AzureWebJobsSecretStorageType` is already configured:
+If found, check whether `AzureWebJobsSecretStorageType` is already configured in those same file(s):
 
 ```bash
-grep -r "AzureWebJobsSecretStorageType" . --include="*.cs"
+# Check only the AppHost file(s) that contain AddAzureFunctionsProject
+grep -l "AddAzureFunctionsProject" $(find . -name "*.cs" -path "*AppHost*") | xargs grep -l "AzureWebJobsSecretStorageType"
 ```
 
-**If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured → fix is required.**
+**If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured in the same file → fix is required.**
 
 ## Fix
 
-Add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Azure Functions project builder chain in `AppHost.cs`.
+Add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Azure Functions project builder chain in the AppHost source file that contains the `AddAzureFunctionsProject` call (often `Program.cs` in the `*.AppHost` project).
 
 ### Before
 

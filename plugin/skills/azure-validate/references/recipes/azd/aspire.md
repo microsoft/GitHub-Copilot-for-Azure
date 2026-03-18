@@ -19,21 +19,22 @@ A project is Aspire-based if any of these are true:
 
 ## Pre-Provisioning: Functions Secret Storage
 
-> ⚠️ **CRITICAL — Must run BEFORE `azd provision` or `azd up`.**
+> ⚠️ **CRITICAL — Must run BEFORE `azd provision`.**
 
-Check if the project uses Azure Functions within Aspire:
-
-```bash
-grep -r "AddAzureFunctionsProject" . --include="*.cs"
-```
-
-**If found**, verify `AzureWebJobsSecretStorageType` is already configured:
+Check if the project uses Azure Functions within Aspire by searching the AppHost source file(s):
 
 ```bash
-grep -r "AzureWebJobsSecretStorageType" . --include="*.cs"
+grep -rn "AddAzureFunctionsProject" . --include="*.cs" -l
 ```
 
-**If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured**, edit `AppHost.cs` to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions project builder chain:
+**If found**, check whether `AzureWebJobsSecretStorageType` is already configured in those same file(s):
+
+```bash
+# Check only the AppHost file(s) that contain AddAzureFunctionsProject
+grep -l "AddAzureFunctionsProject" $(find . -name "*.cs" -path "*AppHost*") | xargs grep -l "AzureWebJobsSecretStorageType"
+```
+
+**If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured in the same file**, edit the AppHost source file that contains the `AddAzureFunctionsProject` call (often `Program.cs` in the `*.AppHost` project) to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions project builder chain:
 
 ```csharp
 var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
