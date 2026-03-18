@@ -37,7 +37,9 @@ infra/
 
 - Use `@description()` decorators on all parameters
 - Use `@secure()` for secrets and connection strings
-- Declare `targetScope = 'resourceGroup'` at top of `main.bicep`
+- Choose `targetScope` in `main.bicep` based on the deployment plan:
+  - For **single resource group** deployments, set `targetScope = 'resourceGroup'` and deploy with `az deployment group create`.
+  - For **subscription-scope** deployments (for example, resources across multiple resource groups or subscription-level resources), set `targetScope = 'subscription'` and deploy with `az deployment sub create`.
 - Use `existing` keyword for referencing pre-existing resources
 - Output resource IDs and endpoints needed by other resources
 - Use `dependsOn` only when implicit dependencies are insufficient
