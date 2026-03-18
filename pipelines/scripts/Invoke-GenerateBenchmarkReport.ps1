@@ -197,10 +197,9 @@
             Move-Item -Path $report.FullName -Destination $destination -Force
             Write-Host "Moved report to $destination"
             
-            # Upload report to build artifacts if running in pipeline
+            # Upload report summary if running in pipeline
             if ($pipelineRun) {
-                Write-Host "##vso[artifact.upload containerfolder=BenchmarkReports;artifactname=BenchmarkReports;]$destination"
-                # Also add to build summary for easy access
+                # Add to build summary for easy access
                 Write-Host "##vso[task.uploadsummary]$destination"
             }
         }
