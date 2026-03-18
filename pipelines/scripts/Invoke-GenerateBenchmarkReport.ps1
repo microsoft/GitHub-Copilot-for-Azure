@@ -122,7 +122,7 @@
 
     # Check if all the runs have completed
     Write-Host "Checking status of run ID: $($inputRunIds -join ',')"
-    $statusResult = & 'msbench-cli' resume --run-id $($inputRunIds -join ',')
+    & 'msbench-cli' resume --run-id $($inputRunIds -join ',')
     if ($LASTEXITCODE -ne 0) {
         throw "msbench-cli resume failed for run ID $($inputRunIds -join ',') with exit code $LASTEXITCODE"
     }
