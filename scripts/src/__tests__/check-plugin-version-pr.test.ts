@@ -31,7 +31,7 @@ describe("checkPluginVersionChanges", () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     // Restore environment
     process.env = originalEnv;
   });
