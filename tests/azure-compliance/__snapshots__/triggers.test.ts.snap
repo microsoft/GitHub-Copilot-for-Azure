@@ -2,7 +2,7 @@
 
 exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Run Azure compliance and security audits with azqr plus Key Vault expiration checks. Covers best-practice assessment, resource review, policy/compliance validation, and security posture checks. WHEN: compliance scan, security audit, run azqr, Azure best practices, Key Vault expiration check, expired certificates, expiring secrets, orphaned resources, compliance assessment.",
+  "description": "Run Azure compliance and security audits with azqr plus Key Vault expiration checks. Covers best-practice assessment, resource review, policy/compliance validation, and security posture checks. WHEN: compliance scan, security audit, BEFORE running azqr (compliance cli tool), Azure best practices, Key Vault expiration check, expired certificates, expiring secrets, orphaned resources, compliance assessment.",
   "extractedKeywords": [
     "assessment",
     "audit",
@@ -10,6 +10,7 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill descri
     "authentication",
     "azqr",
     "azure",
+    "before",
     "best",
     "best-practice",
     "certificates",
@@ -32,9 +33,11 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill descri
     "resource",
     "resources",
     "review",
+    "running",
     "scan",
     "secrets",
     "security",
+    "tool",
     "validation",
     "vault",
     "when",
@@ -52,6 +55,7 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill keywor
   "authentication",
   "azqr",
   "azure",
+  "before",
   "best",
   "best-practice",
   "certificates",
@@ -74,9 +78,11 @@ exports[`azure-compliance - Trigger Tests Trigger Keywords Snapshot skill keywor
   "resource",
   "resources",
   "review",
+  "running",
   "scan",
   "secrets",
   "security",
+  "tool",
   "validation",
   "vault",
   "when",
