@@ -26,6 +26,25 @@ module identity './modules/managed-identity.bicep' = {
   }
 }
 
+module storage './modules/storage.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    environmentName: environmentName
+    principalId: identity.outputs.identityPrincipalId
+  }
+}
+
+module appInsights './modules/appinsights.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    environmentName: environmentName
+  }
+}
+
 module functionApp './modules/function-app.bicep' = {
   scope: rg
   params: {
@@ -34,6 +53,8 @@ module functionApp './modules/function-app.bicep' = {
     environmentName: environmentName
     userAssignedIdentityId: identity.outputs.identityId
     userAssignedIdentityClientId: identity.outputs.identityClientId
+    storageAccountName: storage.outputs.storageAccountName
+    appInsightsConnectionString: appInsights.outputs.appInsightsConnectionString
   }
 }
 

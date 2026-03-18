@@ -1,8 +1,6 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
-import { DefaultAzureCredential } from "@azure/identity";
+import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 
-// Todo: use an env var for storage account name
-const STORAGE_ACCOUNT_NAME = "skilltestreports";
 const CONTAINER_NAME = "integration-reports";
 
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
@@ -40,9 +38,13 @@ function createNode(): BlobTreeNode {
 
 function getContainerClient(): ContainerClient {
     const clientId = process.env.AZURE_CLIENT_ID;
-    const credential = new DefaultAzureCredential(
-        clientId ? { managedIdentityClientId: clientId } : undefined
-    );
+    const isDevEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development";
+    const credential = isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
+    const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
+
+    if (!STORAGE_ACCOUNT_NAME) {
+        throw new Error("STORAGE_ACCOUNT_NAME is not defined");
+    }
     const blobServiceClient = new BlobServiceClient(
         `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
         credential
