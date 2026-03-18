@@ -8,10 +8,14 @@ import { resolve } from "node:path";
 import {
   validateName,
   validateDescriptionFormat,
+  validateDescriptionLength,
   validateNoXmlTags,
   validateNoReservedPrefix,
   validateLicense,
+  validateMetadata,
   validateMetadataVersion,
+  validateCompatibility,
+  validateAllowedTools,
   validateSkillFile,
 } from "../cli.js";
 import { parseSkillContent } from "../../shared/skill-helper.js";
@@ -189,6 +193,35 @@ describe("Frontmatter Spec Validator", () => {
     });
   });
 
+  // ── validateDescriptionLength ────────────────────────────────────────────
+
+  describe("validateDescriptionLength", () => {
+    it("passes for a normal description", () => {
+      expect(validateDescriptionLength("Deploy apps to Azure.")).toEqual([]);
+    });
+
+    it("passes for exactly 1024 chars", () => {
+      const desc = "a".repeat(1024);
+      expect(validateDescriptionLength(desc)).toEqual([]);
+    });
+
+    it("fails for description exceeding 1024 chars", () => {
+      const desc = "a".repeat(1025);
+      const issues = validateDescriptionLength(desc);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("description-length");
+      expect(issues[0].message).toContain("max 1024");
+    });
+
+    it("returns no issues for null description", () => {
+      expect(validateDescriptionLength(null)).toEqual([]);
+    });
+
+    it("returns no issues for empty description", () => {
+      expect(validateDescriptionLength("")).toEqual([]);
+    });
+  });
+
   // ── validateNoXmlTags ────────────────────────────────────────────────────
 
   describe("validateNoXmlTags", () => {
@@ -285,6 +318,57 @@ describe("Frontmatter Spec Validator", () => {
     });
   });
 
+  // ── validateMetadata ────────────────────────────────────────────────────
+
+  describe("validateMetadata", () => {
+    it("passes for a valid string-valued map", () => {
+      expect(validateMetadata({ author: "Microsoft", version: "1.0.0" })).toEqual([]);
+    });
+
+    it("warns when metadata is missing", () => {
+      const issues = validateMetadata(undefined);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("metadata");
+      expect(issues[0].severity).toBe("warning");
+    });
+
+    it("warns when metadata is null", () => {
+      const issues = validateMetadata(null);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].severity).toBe("warning");
+    });
+
+    it("fails when metadata is a string", () => {
+      const issues = validateMetadata("not-a-map");
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("metadata");
+      expect(issues[0].message).toContain("key-value mapping");
+    });
+
+    it("fails when metadata is an array", () => {
+      const issues = validateMetadata(["a", "b"]);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("array");
+    });
+
+    it("warns for non-string values in the map", () => {
+      const issues = validateMetadata({ author: "Microsoft", count: 42 });
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("metadata");
+      expect(issues[0].severity).toBe("warning");
+      expect(issues[0].message).toContain("metadata.count");
+    });
+
+    it("warns for multiple non-string values", () => {
+      const issues = validateMetadata({ author: "Microsoft", count: 42, active: true });
+      expect(issues).toHaveLength(2);
+    });
+
+    it("passes for an empty map", () => {
+      expect(validateMetadata({})).toEqual([]);
+    });
+  });
+
   // ── validateMetadataVersion ─────────────────────────────────────────────
 
   describe("validateMetadataVersion", () => {
@@ -326,6 +410,81 @@ describe("Frontmatter Spec Validator", () => {
       const issues = validateMetadataVersion({ version: "01.0.0" });
       expect(issues).toHaveLength(1);
       expect(issues[0].message).toContain("not valid semver");
+    });
+  });
+
+  // ── validateCompatibility ────────────────────────────────────────────────
+
+  describe("validateCompatibility", () => {
+    it("passes when not provided", () => {
+      expect(validateCompatibility(undefined)).toEqual([]);
+    });
+
+    it("passes when null", () => {
+      expect(validateCompatibility(null)).toEqual([]);
+    });
+
+    it("passes for a valid string within 500 chars", () => {
+      expect(validateCompatibility("Requires git, docker, jq, and access to the internet")).toEqual([]);
+    });
+
+    it("passes for exactly 500 chars", () => {
+      const compat = "a".repeat(500);
+      expect(validateCompatibility(compat)).toEqual([]);
+    });
+
+    it("fails for non-string value", () => {
+      const issues = validateCompatibility(42);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("compatibility");
+      expect(issues[0].message).toContain("must be a string");
+    });
+
+    it("fails for empty string", () => {
+      const issues = validateCompatibility("");
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("must not be empty");
+    });
+
+    it("fails for string exceeding 500 chars", () => {
+      const compat = "a".repeat(501);
+      const issues = validateCompatibility(compat);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("compatibility");
+      expect(issues[0].message).toContain("max 500");
+    });
+  });
+
+  // ── validateAllowedTools ─────────────────────────────────────────────────
+
+  describe("validateAllowedTools", () => {
+    it("passes when not provided", () => {
+      expect(validateAllowedTools(undefined)).toEqual([]);
+    });
+
+    it("passes when null", () => {
+      expect(validateAllowedTools(null)).toEqual([]);
+    });
+
+    it("passes for a valid space-delimited string", () => {
+      expect(validateAllowedTools("Bash(git:*) Bash(jq:*) Read")).toEqual([]);
+    });
+
+    it("passes for a single tool", () => {
+      expect(validateAllowedTools("Read")).toEqual([]);
+    });
+
+    it("fails for non-string value", () => {
+      const issues = validateAllowedTools(["Read", "Write"]);
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("allowed-tools");
+      expect(issues[0].message).toContain("must be a string");
+    });
+
+    it("fails for empty string", () => {
+      const issues = validateAllowedTools("");
+      expect(issues).toHaveLength(1);
+      expect(issues[0].message).toContain("must not be empty");
     });
   });
 
@@ -379,11 +538,24 @@ describe("Frontmatter Spec Validator", () => {
 
       writeFileSync(
         resolve(skillDir, "SKILL.md"),
-        "---\nname: correct-name\ndescription: \"Some description.\"\n---\n\n# Skill\n",
+        '---\nname: correct-name\ndescription: "Some description."\nlicense: MIT\nmetadata:\n  version: "1.0.0"\n---\n\n# Skill\n',
       );
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
       expect(result.issues.some((i) => i.message.includes("does not match parent directory"))).toBe(true);
+    });
+
+    it("passes when name matches parent directory", () => {
+      const skillDir = resolve(TEST_DIR, "matching-name");
+      mkdirSync(skillDir, { recursive: true });
+
+      writeFileSync(
+        resolve(skillDir, "SKILL.md"),
+        '---\nname: matching-name\ndescription: "Some description."\nlicense: MIT\nmetadata:\n  version: "1.0.0"\n---\n\n# Skill\n',
+      );
+
+      const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
+      expect(result.issues.some((i) => i.message.includes("does not match parent directory"))).toBe(false);
     });
 
     it("catches >- description format", () => {
@@ -410,6 +582,47 @@ describe("Frontmatter Spec Validator", () => {
 
       const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
       expect(result.issues.some((i) => i.check === "missing-field" && i.message.includes("description"))).toBe(true);
+    });
+
+    it("catches description exceeding 1024 chars", () => {
+      const skillDir = resolve(TEST_DIR, "long-desc");
+      mkdirSync(skillDir, { recursive: true });
+
+      const longDesc = "a".repeat(1025);
+      writeFileSync(
+        resolve(skillDir, "SKILL.md"),
+        `---\nname: long-desc\ndescription: "${longDesc}"\nlicense: MIT\nmetadata:\n  version: "1.0.0"\n---\n\n# Skill\n`,
+      );
+
+      const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
+      expect(result.issues.some((i) => i.check === "description-length")).toBe(true);
+    });
+
+    it("catches invalid compatibility field", () => {
+      const skillDir = resolve(TEST_DIR, "bad-compat");
+      mkdirSync(skillDir, { recursive: true });
+
+      const longCompat = "a".repeat(501);
+      writeFileSync(
+        resolve(skillDir, "SKILL.md"),
+        `---\nname: bad-compat\ndescription: "Some description."\ncompatibility: "${longCompat}"\nlicense: MIT\nmetadata:\n  version: "1.0.0"\n---\n\n# Skill\n`,
+      );
+
+      const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
+      expect(result.issues.some((i) => i.check === "compatibility")).toBe(true);
+    });
+
+    it("passes with valid optional fields", () => {
+      const skillDir = resolve(TEST_DIR, "full-skill");
+      mkdirSync(skillDir, { recursive: true });
+
+      writeFileSync(
+        resolve(skillDir, "SKILL.md"),
+        '---\nname: full-skill\ndescription: "Deploy apps to Azure. WHEN: deploy, host."\nlicense: MIT\ncompatibility: "Requires docker and git"\nallowed-tools: "Bash(git:*) Read"\nmetadata:\n  author: Microsoft\n  version: "1.0.0"\n---\n\n# Full Skill\n',
+      );
+
+      const result = validateSkillFile(resolve(skillDir, "SKILL.md"));
+      expect(result.issues.filter((i) => i.severity !== "warning")).toEqual([]);
     });
   });
 });

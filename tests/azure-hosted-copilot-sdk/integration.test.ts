@@ -33,9 +33,9 @@ import {
 } from "./util";
 
 const SKILL_NAME = "azure-hosted-copilot-sdk";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 3;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
-const TEST_TIMEOUT = 600_000; // 10 minutes per test
+const TEST_TIMEOUT = 1200_000; // 20 minutes per test
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();

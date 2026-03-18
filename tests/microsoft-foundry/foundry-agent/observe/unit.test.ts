@@ -296,6 +296,13 @@ describe("observe - Unit Tests", () => {
       expect(observeContent).toMatch(/Discover version numbers with `evaluator_catalog_get`/i);
     });
 
+    test("documents Data Viewer deeplinks for dataset and result files", () => {
+      expect(observeContent).toMatch(/Data Viewer deeplinks/i);
+      expect(observeContent).toContain("vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer");
+      expect(observeContent).toContain(".foundry/datasets/");
+      expect(observeContent).toContain(".foundry/results/");
+    });
+
     test("documents eval group immutability for evaluators and thresholds", () => {
       const evaluateContent = fs.readFileSync(
         path.join(REFERENCES_PATH, "evaluate-step.md"),

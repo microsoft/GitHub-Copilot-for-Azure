@@ -52,6 +52,7 @@ Examples:
   npm run tokens count                    # Count tokens in default directories
   npm run tokens count -- --json          # Output as JSON
   npm run tokens check                    # Check default directories
+  npm run tokens check -- --staged        # Check staged markdown files only
   npm run tokens check -- --markdown      # Output as markdown
   npm run tokens check -- docs/           # Check specific directory
   npm run tokens compare                  # Compare HEAD vs main

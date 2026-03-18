@@ -97,6 +97,8 @@ Save evaluator definitions to `.foundry/evaluators/<name>.yaml`, test data to `.
 - tag values for `agent`, `stage`, and `version`
 - evaluator names and thresholds
 
+> ⚠️ **Show Data Viewer deeplinks (for VS Code runtime only):** Append a Data Viewer deeplink immediately after reference to a dataset file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis".
+
 ### 8. Prompt User
 
 *"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*

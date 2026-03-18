@@ -4,10 +4,9 @@ description: "Check/manage Azure quotas and usage across providers. For deployme
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.5"
+  version: "1.0.6"
 ---
 
----
 
 # Azure Quotas - Service Limits & Capacity Management
 
