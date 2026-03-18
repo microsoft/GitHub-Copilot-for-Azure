@@ -117,15 +117,30 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 4. Replace repository URLs in synced files
+      # 4. Copy plugin.json, .mcp.json, and skills/ to the repo root
+      - name: Copy plugin files to repo root
+        run: |
+          cp "source-repo/plugin/.plugin/plugin.json" "target-repo/plugin.json"
+          cp "source-repo/plugin/.mcp.json" "target-repo/.mcp.json"
+          mkdir -p "target-repo/skills/"
+          rsync --archive --delete --verbose "source-repo/plugin/skills/" "target-repo/skills/"
+
+      # 5. Replace repository URLs in synced files
       - name: Replace repository URLs
         run: |
-          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
-          grep -rl --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$TARGET_DIR" | while IFS= read -r file; do
-            sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
+          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/plugin.json" "target-repo/.mcp.json")
+          for target in "${TARGET_DIRS[@]}"; do
+            if [ -e "$target" ]; then
+              if matches=$(grep -rli --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
+                echo "$matches" | while IFS= read -r file; do
+                  sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
+                  sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
+                done
+              fi
+            fi
           done
 
-      # 5. Commit changes and create a PR
+      # 6. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
