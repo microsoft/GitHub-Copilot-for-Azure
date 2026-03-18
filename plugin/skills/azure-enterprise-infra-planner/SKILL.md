@@ -89,7 +89,8 @@ Generate Bicep or Terraform from the approved plan. You must refer to instructio
 ### Phase 6: Deployment
 Execute deployment commands. See [deployment.md](references/deployment.md).
 - Confirm subscription and resource group with user
-- Run `az bicep build` to validate, then `az deployment group create` or `terraform apply`
+- Select the correct deployment scope based on `targetScope` in `main.bicep` (resource group, subscription, management group, or tenant)
+- Run `az bicep build` to validate, then execute the matching scope command (`az deployment group create`, `az deployment sub create`, etc.) or `terraform apply`
 
 **Gate**: `meta.status` must be `approved`. Destructive actions require explicit user confirmation.
 

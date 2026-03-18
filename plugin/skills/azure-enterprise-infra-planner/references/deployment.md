@@ -22,9 +22,29 @@ If status is not `approved`, **STOP** and inform the user. Do NOT manually chang
 
 ## Bicep Deployment
 
+**Scope selection:** Use **resource-group scope** when your template deploys into an existing resource group. Use **subscription scope** when your template creates resource groups or other subscription-level resources (policies, role assignments, etc.).
+
 ```bash
-# Validate first
+# Validate first (applies to both scopes)
 az bicep build --file infra/main.bicep
+```
+
+Choose the command based on the `targetScope` set in `main.bicep` (see [bicep-generation.md](bicep-generation.md) Bicep Conventions):
+
+| `targetScope` | When to use | Command |
+|---|---|---|
+| `resourceGroup` (default) | All resources in one resource group | `az deployment group create` |
+| `subscription` | Resources span multiple resource groups, or includes subscription-level resources (policy, RBAC, resource group creation) | `az deployment sub create` |
+
+### Resource Group Scope
+
+```bash
+# What-if preview
+az deployment group create \
+  --resource-group <resource-group-name> \
+  --template-file infra/main.bicep \
+  --parameters infra/main.bicepparam \
+  --what-if
 
 # Deploy
 az deployment group create \
@@ -43,16 +63,31 @@ az deployment group create `
   --name <deployment-name>
 ```
 
-### What-If Preview
-
-Run `--what-if` before actual deployment to preview changes:
+### Subscription Scope
 
 ```bash
-az deployment group create \
-  --resource-group <resource-group-name> \
+# What-if preview
+az deployment sub create \
+  --location <location> \
   --template-file infra/main.bicep \
   --parameters infra/main.bicepparam \
   --what-if
+
+# Deploy
+az deployment sub create \
+  --location <location> \
+  --template-file infra/main.bicep \
+  --parameters infra/main.bicepparam \
+  --name <deployment-name>
+```
+
+PowerShell:
+```powershell
+az deployment sub create `
+  --location <location> `
+  --template-file infra/main.bicep `
+  --parameters infra/main.bicepparam `
+  --name <deployment-name>
 ```
 
 ## Terraform Deployment
