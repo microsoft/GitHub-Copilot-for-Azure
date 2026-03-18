@@ -65,7 +65,7 @@ Apply WAF findings, then look up every resource in local reference files. See [r
 - For each resource: use **sub-agents** to fetch naming rules via `microsoft_docs_fetch` using URLs from the resource category files
 - For each resource: read pairing constraints from the matching [constraints/](references/constraints/README.md) category file (e.g., `constraints/networking-core.md` for VNet)
 
-**Gate**: Every resource has an ARM type, naming rules, and pairing constraints checked before proceeding.
+**Gate**: Every resource has an ARM type, naming rules, and pairing constraints checked. Present the preliminary resource list to the user with brief justifications and **STOP — wait for approval**.
 
 ### Phase 3: Plan Generation
 Build `<project-root>/.azure/infrastructure-plan.json` using the schema in [plan-schema.md](references/plan-schema.md). Set `meta.status` to `draft`.
