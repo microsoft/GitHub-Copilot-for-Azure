@@ -195,6 +195,13 @@
             $destination = Join-Path $OutputPath $report.Name
             Move-Item -Path $report.FullName -Destination $destination -Force
             Write-Host "Moved report to $destination"
+            
+            # Upload report to build artifacts if running in pipeline
+            if ($pipelineRun) {
+                Write-Host "##vso[artifact.upload containerfolder=BenchmarkReports;artifactname=BenchmarkReports;]$destination"
+                # Also add to build summary for easy access
+                Write-Host "##vso[task.uploadsummary]$destination"
+            }
         }
     } else {
         Write-Warning "No generated report (.md) files found in $reportsDir or $targetDir"
