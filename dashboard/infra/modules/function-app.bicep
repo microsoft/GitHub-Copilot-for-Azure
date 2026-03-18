@@ -15,6 +15,12 @@ param userAssignedIdentityId string
 @description('Client ID of the user-assigned managed identity.')
 param userAssignedIdentityClientId string
 
+@description('Name of the storage account for integration reports.')
+param storageAccountName string
+
+@description('Application Insights connection string for monitoring.')
+param appInsightsConnectionString string
+
 var resourceSuffix = take(uniqueString(subscription().id, resourceGroup().name, environmentName), 6)
 var storagePrefix = take(replace(environmentName, '-', ''), 14)
 
@@ -96,7 +102,9 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
         }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
         { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
+        { name: 'STORAGE_ACCOUNT_NAME', value: storageAccountName }
       ]
     }
     httpsOnly: true
