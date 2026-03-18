@@ -124,8 +124,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       "data-relational.md",
       "messaging.md",
       "monitoring.md",
+      "networking-connectivity.md",
       "networking-core.md",
-      "networking-services.md",
+      "networking-traffic.md",
       "security.md",
     ];
 
