@@ -10,7 +10,6 @@ param environmentName string
 param location string
 
 var tags = { 'azd-env-name': environmentName }
-var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: 'rg-${environmentName}'
@@ -18,17 +17,36 @@ resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   tags: tags
 }
 
-module swa './swa.bicep' = {
-  name: 'swa-${resourceToken}'
+module identity './modules/managed-identity.bicep' = {
   scope: rg
   params: {
-    name: 'swa-${resourceToken}'
     location: location
-    tags: union(tags, { 'azd-service-name': 'dashboard' })
+    tags: tags
+    environmentName: environmentName
+  }
+}
+
+module functionApp './modules/function-app.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    environmentName: environmentName
+    userAssignedIdentityId: identity.outputs.identityId
+    userAssignedIdentityClientId: identity.outputs.identityClientId
+  }
+}
+
+module swa './modules/static-web-app.bicep' = {
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    environmentName: environmentName
+    functionAppResourceId: functionApp.outputs.functionAppId
   }
 }
 
 output AZURE_LOCATION string = location
 output AZURE_RESOURCE_GROUP string = rg.name
-output AZURE_STATIC_WEB_APP_NAME string = swa.outputs.name
-output AZURE_STATIC_WEB_APP_HOSTNAME string = swa.outputs.hostname
+output WEB_URL string = swa.outputs.url

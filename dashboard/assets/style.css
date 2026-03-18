@@ -62,6 +62,40 @@ body {
   top: 16px;
 }
 
+/* === Site Navigation === */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 24px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.site-nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 44px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.site-nav-link:hover {
+  color: var(--color-text);
+}
+
+.site-nav-link.active {
+  color: var(--color-focus);
+  border-bottom-color: var(--color-focus);
+}
+
 /* === Focus Styles === */
 :focus-visible {
   outline: 2px solid var(--color-focus);
@@ -208,8 +242,13 @@ button.header-status-pill {
 }
 
 /* === Main Content === */
-main {
+#main:has(.panel-grid) {
   padding: 24px 32px;
+}
+
+#root {
+  flex: 1;
+  min-height: 0;
 }
 
 /* === Panel Grid === */
@@ -220,7 +259,7 @@ main {
 }
 
 /* === Panel Card === */
-.panel {
+.panel-grid>.panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -228,7 +267,7 @@ main {
   box-shadow: var(--shadow);
 }
 
-.panel h2 {
+.panel-grid>.panel h2 {
   font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 0;
@@ -942,6 +981,7 @@ main {
 
 /* === Reduced Motion === */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -952,6 +992,7 @@ main {
 
 /* === Print === */
 @media print {
+
   .skip-link,
   .dashboard-header,
   .item-filter-bar {
@@ -973,7 +1014,7 @@ main {
     display: block;
   }
 
-  .panel + .panel {
+  .panel+.panel {
     margin-top: 16px;
   }
 
