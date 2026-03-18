@@ -3,23 +3,23 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from "vitest";
-import { execSync } from "node:child_process";
-import { checkPluginVersionChanges, type PluginConfig, type VersionChange } from "../check-plugin-version-pr.ts";
+import { execFileSync } from "node:child_process";
+import { checkPluginVersionChanges } from "../check-plugin-version-pr.js";
 
 // Mock child_process
 vi.mock("node:child_process", () => ({
-  execSync: vi.fn()
+  execFileSync: vi.fn()
 }));
 
 describe("checkPluginVersionChanges", () => {
-  let mockExecSync: MockInstance;
+  let mockExecFileSync: MockInstance;
   let mockExit: MockInstance;
   let mockConsoleLog: MockInstance;
   let mockConsoleError: MockInstance;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    mockExecSync = vi.mocked(execSync);
+    mockExecFileSync = vi.mocked(execFileSync);
     mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit() called");
     });
@@ -70,7 +70,7 @@ describe("checkPluginVersionChanges", () => {
       });
 
       // Mock same content for both base and head
-      mockExecSync.mockReturnValue(pluginJsonContent);
+      mockExecFileSync.mockReturnValue(pluginJsonContent);
 
       checkPluginVersionChanges();
 
@@ -92,11 +92,11 @@ describe("checkPluginVersionChanges", () => {
       });
 
       // Mock different content for base vs head
-      mockExecSync.mockImplementation((command) => {
-        const cmdStr = String(command);
-        if (cmdStr.includes("base123:")) {
+      mockExecFileSync.mockImplementation((command, args) => {
+        const gitShowArg = args && args[1]; // git show ref:path
+        if (gitShowArg && gitShowArg.includes("base123:")) {
           return baseContent;
-        } else if (cmdStr.includes("head123:")) {
+        } else if (gitShowArg && gitShowArg.includes("head123:")) {
           return headContent;
         }
         return "";
@@ -114,14 +114,14 @@ describe("checkPluginVersionChanges", () => {
         description: "New plugin"
       });
 
-      mockExecSync.mockImplementation((command) => {
-        const cmdStr = String(command);
-        if (cmdStr.includes("base123:")) {
+      mockExecFileSync.mockImplementation((command, args) => {
+        const gitShowArg = args && args[1]; // git show ref:path
+        if (gitShowArg && gitShowArg.includes("base123:")) {
           // Simulate file not existing in base
           const error = new Error("File not found") as Error & { status: number };
           error.status = 128;
           throw error;
-        } else if (cmdStr.includes("head123:")) {
+        } else if (gitShowArg && gitShowArg.includes("head123:")) {
           return newFileContent;
         }
         return "";
@@ -140,11 +140,11 @@ describe("checkPluginVersionChanges", () => {
         description: "Deleted plugin"
       });
 
-      mockExecSync.mockImplementation((command) => {
-        const cmdStr = String(command);
-        if (cmdStr.includes("base123:")) {
+      mockExecFileSync.mockImplementation((command, args) => {
+        const gitShowArg = args && args[1]; // git show ref:path
+        if (gitShowArg && gitShowArg.includes("base123:")) {
           return deletedFileContent;
-        } else if (cmdStr.includes("head123:")) {
+        } else if (gitShowArg && gitShowArg.includes("head123:")) {
           // Simulate file not existing in head
           const error = new Error("File not found") as Error & { status: number };
           error.status = 128;
@@ -160,7 +160,7 @@ describe("checkPluginVersionChanges", () => {
     });
 
     it("should handle invalid JSON gracefully", () => {
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         return "{ invalid json content"; // Invalid JSON
       });
 
@@ -176,12 +176,12 @@ describe("checkPluginVersionChanges", () => {
       const baseContent2 = JSON.stringify({ version: "2.0.0" });
       const headContent2 = JSON.stringify({ version: "2.1.0" }); // Also changed
 
-      mockExecSync.mockImplementation((command) => {
-        const cmdStr = String(command);
-        if (cmdStr.includes("plugin/.plugin/plugin.json")) {
-          return cmdStr.includes("base123:") ? baseContent1 : headContent1;
-        } else if (cmdStr.includes("plugin/.claude-plugin/plugin.json")) {
-          return cmdStr.includes("base123:") ? baseContent2 : headContent2;
+      mockExecFileSync.mockImplementation((command, args) => {
+        const gitShowArg = args && args[1]; // git show ref:path
+        if (gitShowArg && gitShowArg.includes("plugin/.plugin/plugin.json")) {
+          return gitShowArg.includes("base123:") ? baseContent1 : headContent1;
+        } else if (gitShowArg && gitShowArg.includes("plugin/.claude-plugin/plugin.json")) {
+          return gitShowArg.includes("base123:") ? baseContent2 : headContent2;
         }
         return "";
       });
@@ -202,21 +202,21 @@ describe("checkPluginVersionChanges", () => {
       const baseContent = JSON.stringify({ version: "1.0.0" });
       const headContent = JSON.stringify({ version: "1.1.0" });
 
-      mockExecSync.mockImplementation((command) => {
-        const cmdStr = String(command);
-        return cmdStr.includes("base123:") ? baseContent : headContent;
+      mockExecFileSync.mockImplementation((command, args) => {
+        const gitShowArg = args && args[1]; // git show ref:path
+        return gitShowArg && gitShowArg.includes("base123:") ? baseContent : headContent;
       });
 
       expect(() => checkPluginVersionChanges()).toThrow("process.exit() called");
 
       expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining("🚫 Plugin versions should not be updated manually in PRs."));
       expect(mockConsoleError).toHaveBeenCalledWith("   Plugin versions are managed automatically through CI/CD.");
-      expect(mockConsoleError).toHaveBeenCalledWith("   Please revert the version changes and submit your PR again.\n");
+      expect(mockConsoleError).toHaveBeenCalledWith("   Please revert the version changes in your PR.\n");
     });
 
     it("should log progress information", () => {
       const pluginContent = JSON.stringify({ version: "1.0.0" });
-      mockExecSync.mockReturnValue(pluginContent);
+      mockExecFileSync.mockReturnValue(pluginContent);
 
       checkPluginVersionChanges();
 

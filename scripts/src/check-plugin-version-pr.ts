@@ -39,7 +39,7 @@ function getFileAtRef(filePath: string, ref: string): string | null {
     });
     return content.trim();
   } catch (error) {
-    // File might not exist at this ref
+    console.error(`Error retrieving ${filePath} at ${ref}:`, error);
     return null;
   }
 }
@@ -51,6 +51,7 @@ function parseJsonSafely(content: string | null): PluginConfig | null {
   try {
     return content ? JSON.parse(content) : null;
   } catch (error) {
+    console.error("Error parsing JSON content for:\n", content, "\nHere is the error:", error);
     return null;
   }
 }
@@ -78,26 +79,18 @@ function checkPluginVersionChanges(): void {
     // Get file content at base and head
     const baseContent = getFileAtRef(pluginPath, baseSha);
     const headContent = getFileAtRef(pluginPath, headSha);
-    
+
+    if (baseContent === null || headContent === null) {
+      console.log(`  ℹ️  File not found in either version of ${pluginPath}, skipping...`);
+      continue;
+    }
+
     // Parse JSON
     const baseJson = parseJsonSafely(baseContent);
     const headJson = parseJsonSafely(headContent);
     
-    // Skip if file doesn't exist in either version
-    if (!baseJson && !headJson) {
-      console.log("  ℹ️  File not found in either version, skipping");
-      continue;
-    }
-    
-    // Handle new file
-    if (!baseJson && headJson) {
-      console.log(`  ✅ New file detected with version: ${headJson.version}`);
-      continue;
-    }
-    
-    // Handle deleted file
-    if (baseJson && !headJson) {
-      console.log("  ⚠️  File was deleted");
+    if (baseJson === null || headJson === null) {
+      console.log(`  ℹ️  Failed to parse Json content in either version of ${pluginPath}, skipping...`);
       continue;
     }
     
@@ -130,7 +123,7 @@ function checkPluginVersionChanges(): void {
     
     console.error("\n🚫 Plugin versions should not be updated manually in PRs.");
     console.error("   Plugin versions are managed automatically through CI/CD.");
-    console.error("   Please revert the version changes and submit your PR again.\n");
+    console.error("   Please revert the version changes in your PR.\n");
     
     process.exit(1);
   } else {
