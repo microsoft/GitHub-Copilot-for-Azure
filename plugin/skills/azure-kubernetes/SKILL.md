@@ -36,7 +36,7 @@ Activate this skill when user wants to:
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
-2. Use the `azure` MCP server and its AKS-related MCP tools (`mcp_azure_mcp_aks`, `mcp_aks_mcp_az_aks_operations`) to invoke Azure APIs and perform AKS and kubectl operations; fall back to Azure CLI (`az aks`) only when required functionality is not available via MCP tools.
+2. Use the `azure` MCP server and its AKS-related MCP tools (`mcp_azure_mcp_aks`) to invoke Azure APIs and perform AKS and kubectl operations; fall back to Azure CLI (`az aks`) only when required functionality is not available via MCP tools.
 3. Determine if AKS Automatic or Standard SKU is more appropriate based on the user's need for control vs convenience. Default to AKS Automatic unless specific customizations are required.
 4. Document decisions and rationale for cluster configuration choices, especially for Day-0 decisions that are hard to change later (networking, API server access).
 
