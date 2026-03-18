@@ -131,9 +131,12 @@ jobs:
           TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/plugin.json" "target-repo/.mcp.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
-              grep -rl --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target" | while IFS= read -r file; do
-                sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
-              done
+              if matches=$(grep -rli --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
+                echo "$matches" | while IFS= read -r file; do
+                  sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
+                  sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
+                done
+              fi
             fi
           done
 
