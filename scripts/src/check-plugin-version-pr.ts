@@ -57,6 +57,16 @@ function parseJsonSafely(content: string | null): PluginConfig | null {
 }
 
 /**
+ * Validate that a git ref is a safe commit SHA.
+ * We are intentionally conservative and only allow full/abbreviated hex SHAs.
+ */
+function validateGitRef(ref: string): boolean {
+  // Disallow values that could be parsed as options or complex revision syntax.
+  // Accept only hex commit SHAs (7-40 characters).
+  return /^[0-9a-fA-F]{7,40}$/.test(ref);
+}
+
+/**
  * Check if plugin versions have changed between base and head
  */
 function checkPluginVersionChanges(): void {
@@ -65,6 +75,11 @@ function checkPluginVersionChanges(): void {
   
   if (!baseSha || !headSha) {
     console.error("❌ Missing BASE_SHA or HEAD_SHA environment variables");
+    process.exit(1);
+  }
+
+  if (!validateGitRef(baseSha) || !validateGitRef(headSha)) {
+    console.error("❌ Invalid BASE_SHA or HEAD_SHA value. Expected a commit SHA.");
     process.exit(1);
   }
   
