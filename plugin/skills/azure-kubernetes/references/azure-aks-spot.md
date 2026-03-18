@@ -4,7 +4,7 @@ Recommend and create Spot VM node pools for batch, dev/test, or fault-tolerant w
 
 ## Check Existing Node Pools
 
-```powershell
+```bash
 az aks nodepool list \
   --cluster-name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
   --query "[].{name:name, vmSize:vmSize, priority:scaleSetPriority, count:count, mode:mode}" \
@@ -13,7 +13,7 @@ az aks nodepool list \
 
 ## Estimate Savings (Azure Retail Prices API)
 
-```powershell
+```bash
 # Regular price
 az rest --method get \
   --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption'" \
@@ -27,7 +27,7 @@ az rest --method get \
 
 ## Create Spot Node Pool
 
-```powershell
+```bash
 az aks nodepool add \
   --cluster-name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
   --name "<SPOT_POOL_NAME>" \

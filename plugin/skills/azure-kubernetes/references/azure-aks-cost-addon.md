@@ -4,7 +4,7 @@ Enable namespace-level cost visibility using the built-in AKS cost monitoring ad
 
 ## Check Status
 
-```powershell
+```bash
 # Check if add-on is enabled
 az aks show \
   --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
@@ -18,7 +18,7 @@ az aks show \
 
 ## Enable Add-on
 
-```powershell
+```bash
 # Requires Standard or Premium tier
 az aks update \
   --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
@@ -29,7 +29,7 @@ az aks update \
 
 Warn user: upgrading to Standard costs ~$0.10/cluster/hour. Wait for confirmation, then:
 
-```powershell
+```bash
 az aks update \
   --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
   --tier standard

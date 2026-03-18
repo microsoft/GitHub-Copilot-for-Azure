@@ -4,28 +4,31 @@ Enable and tune the Cluster Autoscaler to automatically scale down idle nodes.
 
 ## Check CAS Status
 
-```powershell
-az aks show --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
-  --query "agentPoolProfiles[].{name:name, casEnabled:enableAutoScaling, min:minCount, max:maxCount, count:count}" -o table
+```bash
+az aks show \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --query "agentPoolProfiles[].{name:name, casEnabled:enableAutoScaling, min:minCount, max:maxCount, count:count}" \
+  -o table
 
-az aks show --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+az aks show \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
   --query "autoScalerProfile" -o json
 ```
 
 ## Check Node Utilization (7 days)
 
-```powershell
+```bash
 az monitor metrics list \
   --resource "<AKS_RESOURCE_ID>" \
   --metric "node_cpu_usage_percentage" \
   --interval PT1H --aggregation Average \
-  --start-time (Get-Date).AddDays(-7).ToString("yyyy-MM-ddTHH:mm:ssZ") \
-  --end-time (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
+  --start-time "<YYYY-MM-DDTHH:mm:ssZ>" \
+  --end-time "<YYYY-MM-DDTHH:mm:ssZ>"
 ```
 
 ## Enable CAS
 
-```powershell
+```bash
 # Cluster-level
 az aks update \
   --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
@@ -54,7 +57,7 @@ az aks nodepool update \
 
 Apply when CAS is already on but idle nodes persist:
 
-```powershell
+```bash
 az aks update \
   --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
   --cluster-autoscaler-profile \
