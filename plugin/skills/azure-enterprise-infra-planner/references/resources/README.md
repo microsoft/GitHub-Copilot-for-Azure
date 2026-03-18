@@ -24,5 +24,6 @@ Resources share the `Microsoft.*` ARM type namespace. Each file documents the re
 | Messaging | [messaging.md](messaging.md) | Event Grid, Event Hub, Service Bus |
 | Monitoring | [monitoring.md](monitoring.md) | App Insights, Log Analytics |
 | Networking (Core) | [networking-core.md](networking-core.md) | VNet, Subnet, NSG, Route Table, NIC, Public IP, NAT Gateway |
-| Networking (Services) | [networking-services.md](networking-services.md) | App Gateway, Bastion, Firewall, Front Door, LB, VPN GW, APIM, DNS, PE |
+| Networking (Traffic) | [networking-traffic.md](networking-traffic.md) | App Gateway, Front Door, LB, APIM |
+| Networking (Connectivity) | [networking-connectivity.md](networking-connectivity.md) | Bastion, Firewall, VPN GW, DNS, Private DNS, PE |
 | Security | [security.md](security.md) | Key Vault, Managed Identity |

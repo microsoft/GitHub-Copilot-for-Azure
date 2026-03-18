@@ -82,10 +82,7 @@ Run a full verification pass on the generated plan. See [verification.md](refere
 **Gate**: All verification checks pass. Present plan to user and **STOP — wait for approval**.
 
 ### Phase 5: IaC Generation
-Generate Bicep or Terraform from the approved plan. See [bicep-generation.md](references/bicep-generation.md) or [terraform-generation.md](references/terraform-generation.md).
-- Create `<project-root>/infra/` and `infra/modules/` directories
-- For each resource: use **sub-agents** to call `bicepschema_get` with the ARM type from the relevant [resources/](references/resources/README.md) category file (large responses — 25-95KB each)
-- Generate modules, main file, and parameter files inside `infra/`
+Generate Bicep or Terraform from the approved plan. You must refer to instructions in [bicep-generation.md](references/bicep-generation.md) for Bicep or [terraform-generation.md](references/terraform-generation.md) for Terraform.
 
 **Gate**: `meta.status` must be `approved` before generating any IaC files.
 
