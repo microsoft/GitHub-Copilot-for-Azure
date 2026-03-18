@@ -200,8 +200,18 @@
             
             # Upload report summary if running in pipeline
             if ($pipelineRun) {
-                # Add to build summary for easy access
-                Write-Host "##vso[task.uploadsummary]$destination"
+                # Verify file exists before uploading
+                if (Test-Path $destination) {
+                    # Use relative path from agent working directory for better compatibility
+                    $relativePath = Resolve-Path -Path $destination -Relative -ErrorAction SilentlyContinue
+                    if (-not $relativePath) {
+                        $relativePath = $destination
+                    }
+                    Write-Host "##vso[task.uploadsummary]$relativePath"
+                    Write-Host "##vso[task.addattachment type=Distributedtask.Core.Summary;name=$($report.BaseName) Report;]$destination"
+                } else {
+                    Write-Warning "Report file not found at $destination, skipping upload to build summary"
+                }
             }
         }
     } else {
