@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "${PLUGIN_ROOT}/hooks/scripts/test-hook.sh"
+      }
+    ]
+  }
+}
