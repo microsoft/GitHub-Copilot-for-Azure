@@ -58,7 +58,7 @@
     }
 
     $vaultName = "kv-msbench-eval-azuremcp"
-    $secretName = "azure-eval-gh-pat"
+    $secretName = "msbench-report-copilot-usage"
 
     Write-Host "Input Path: $InputPath"
     Write-Host "Output Path: $OutputPath"
