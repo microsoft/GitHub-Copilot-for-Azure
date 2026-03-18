@@ -152,20 +152,24 @@ testCases:
         threshold: 4
 ```
 
-Update `.foundry/datasets/manifest.json` with dataset metadata:
+Update `.foundry/datasets/manifest.json` by appending a new entry to the `datasets[]` list:
 
 ```json
 {
-  "name": "<agent-name>-eval-seed",
-  "version": "v1",
-  "stage": "seed",
-  "agent": "<agent-name>",
-  "environment": "<env>",
-  "localFile": ".foundry/datasets/<agent-name>-eval-seed-v1.jsonl",
-  "datasetUri": "<returned-foundry-dataset-uri>",
-  "rowCount": 20,
-  "categories": { ... },
-  "createdAt": "<ISO-timestamp>"
+  "datasets": [
+    {
+      "name": "<agent-name>-eval-seed",
+      "version": "v1",
+      "stage": "seed",
+      "agent": "<agent-name>",
+      "environment": "<env>",
+      "localFile": ".foundry/datasets/<agent-name>-eval-seed-v1.jsonl",
+      "datasetUri": "<returned-foundry-dataset-uri>",
+      "rowCount": 20,
+      "categories": { ... },
+      "createdAt": "<ISO-timestamp>"
+    }
+  ]
 }
 ```
 

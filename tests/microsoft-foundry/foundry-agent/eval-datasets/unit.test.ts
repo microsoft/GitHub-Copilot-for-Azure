@@ -98,6 +98,9 @@ describe("eval-datasets - Unit Tests", () => {
       expect(traceToDatasetContent).toContain("connectionName");
       expect(traceToDatasetContent).toContain("evaluation_dataset_create");
       expect(traceToDatasetContent).toMatch(/include it in this workflow so the dataset is bound/i);
+      expect(seedGuideContent).toMatch(/appending a new entry to the `datasets\[\]` list/i);
+      expect(seedGuideContent).toContain('"datasets": [');
+      expect(seedGuideContent).toContain('"name": "<agent-name>-eval-seed"');
       expect(seedGuideContent).toContain("--account-key <storage-account-key>");
       expect(seedGuideContent).toContain("--auth-mode login");
     });
