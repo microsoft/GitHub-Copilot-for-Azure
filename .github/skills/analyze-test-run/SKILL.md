@@ -4,7 +4,7 @@ description: "Analyze a GitHub Actions integration test run and produce a skill 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "1.0.5"
 ---
 
 # Analyze Test Run
@@ -26,23 +26,44 @@ Downloads artifacts from a GitHub Actions integration test run, generates a summ
 | **Run ID or URL** | Yes | GitHub Actions run ID (e.g. `22373768875`) or full URL |
 | **Comparison Run** | No | Second run ID/URL for side-by-side comparison |
 
+## MCP Tools
+
+| Tool | Method / Usage | Required Parameters | Purpose |
+|------|---------------|--------------------:|---------|
+| `actions_get` | `get_workflow_run` | `resource_id`: run ID | Fetch run status and metadata |
+| `actions_list` | `list_workflow_run_artifacts` | `resource_id`: run ID | List all artifacts for a run |
+| `actions_get` | `download_workflow_run_artifact` | `resource_id`: artifact ID | Get a temporary download URL for an artifact ZIP |
+| `get_job_logs` | — | `run_id` + `failed_only: true` | Retrieve job logs when artifact content is inaccessible |
+
 ## Workflow
 
 ### Phase 1 — Download & Parse
 
 1. Extract the numeric run ID from the input (strip URL prefix if needed)
-2. Fetch run metadata:
-   ```bash
-   gh run view <run-id> --repo microsoft/GitHub-Copilot-for-Azure --json jobs,status,conclusion,name
+2. Fetch run metadata using the MCP `actions_get` tool:
+   ```javascript
+   actions_get({ method: "get_workflow_run", owner: "microsoft", repo: "GitHub-Copilot-for-Azure", resource_id: "<run-id>" })
    ```
-3. Download artifacts to a temp directory:
-   ```bash
-   gh run download <run-id> --repo microsoft/GitHub-Copilot-for-Azure --dir "$TMPDIR/gh-run-<run-id>"
+3. List artifacts using the MCP `actions_list` tool, then download each relevant artifact:
+   ```javascript
+   // List artifacts
+   actions_list({ method: "list_workflow_run_artifacts", owner: "microsoft", repo: "GitHub-Copilot-for-Azure", resource_id: "<run-id>" })
+   // Download individual artifacts by ID
+   actions_get({ method: "download_workflow_run_artifact", owner: "microsoft", repo: "GitHub-Copilot-for-Azure", resource_id: "<artifact-id>" })
    ```
+   The download returns a temporary URL. Fetch the ZIP archive from that URL and extract it locally. If the environment restricts outbound HTTP (e.g. AWF sandbox), record in the analysis report that artifact content was unavailable and fall back to job logs via the `get_job_logs` MCP tool.
+
+   > 💡 **Tip:** As a fallback when MCP tools are unavailable, use the CLI:
+   > ```bash
+   > gh run download <run-id> --repo microsoft/GitHub-Copilot-for-Azure --dir "$TMPDIR/gh-run-<run-id>"
+   > ```
+
 4. Locate these files in the downloaded artifacts:
    - `junit.xml` — test pass/fail/skip/error results
    - `*-SKILL-REPORT.md` — generated skill report with per-test details
    - `agent-metadata-*.md` files — raw agent session logs per test
+
+   > ⚠️ **Note:** If artifact ZIP files cannot be extracted due to network restrictions, use job logs via `get_job_logs` MCP tool to identify test failures and produce a best-effort analysis from whatever data is accessible.
 
 ### Phase 2 — Build Summary Report
 
@@ -164,10 +185,11 @@ Issue body template — see [issue-template.md](references/issue-template.md).
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `gh: command not found` | GitHub CLI not installed | Install with `winget install GitHub.cli` or `brew install gh` |
+| `gh: command not found` | GitHub CLI not installed | Install with `winget install GitHub.cli` or `brew install gh`, or use MCP `actions_list`/`actions_get` tools instead |
 | `no artifacts found` | Run has no uploadable reports | Verify the run completed the "Export report" step |
 | `HTTP 404` on run view | Invalid run ID or no access | Check the run ID and ensure `gh auth status` is authenticated |
 | `rate limit exceeded` | Too many GitHub API calls | Wait and retry, or use `--limit` on searches |
+| Artifact ZIP download blocked | AWF sandbox restricts outbound HTTP to blob storage | Use `get_job_logs` MCP tool to get failure details from job logs; produce best-effort analysis from metadata |
 
 ## References
 
