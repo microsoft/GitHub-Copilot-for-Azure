@@ -105,7 +105,7 @@ function checkPluginVersionChanges(): void {
     const headJson = parseJsonSafely(headContent);
     
     if (baseJson === null || headJson === null) {
-      console.log(`  ℹ️  Failed to parse Json content in either version of ${pluginPath}, skipping...`);
+      console.log(`  ℹ️  Failed to parse JSON content in either version of ${pluginPath}, skipping...`);
       continue;
     }
     

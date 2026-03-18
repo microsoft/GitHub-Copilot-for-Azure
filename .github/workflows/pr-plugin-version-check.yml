@@ -39,8 +39,6 @@ jobs:
           echo "Checking if plugin versions were modified in this PR..."
           cd scripts && npm run checkPluginVersionPr
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.number }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           

@@ -39,7 +39,7 @@ describe("checkPluginVersionChanges", () => {
   describe("environment validation", () => {
     it("should exit if BASE_SHA is missing", () => {
       delete process.env.BASE_SHA;
-      process.env.HEAD_SHA = "head123";
+      process.env.HEAD_SHA = "f9e8d7c6b5a4321098765";
 
       expect(() => checkPluginVersionChanges()).toThrow("process.exit() called");
       expect(mockExit).toHaveBeenCalledWith(1);
@@ -47,7 +47,7 @@ describe("checkPluginVersionChanges", () => {
     });
 
     it("should exit if HEAD_SHA is missing", () => {
-      process.env.BASE_SHA = "base123";
+      process.env.BASE_SHA = "a1b2c3d4e5f6789012345";
       delete process.env.HEAD_SHA;
 
       expect(() => checkPluginVersionChanges()).toThrow("process.exit() called");
@@ -58,8 +58,8 @@ describe("checkPluginVersionChanges", () => {
 
   describe("version comparison", () => {
     beforeEach(() => {
-      process.env.BASE_SHA = "base123";
-      process.env.HEAD_SHA = "head123";
+      process.env.BASE_SHA = "a1b2c3d4e5f6789012345";
+      process.env.HEAD_SHA = "f9e8d7c6b5a4321098765";
     });
 
     it("should pass when no version changes detected", () => {
@@ -94,9 +94,9 @@ describe("checkPluginVersionChanges", () => {
       // Mock different content for base vs head
       mockExecFileSync.mockImplementation((command, args) => {
         const gitShowArg = args && args[1]; // git show ref:path
-        if (gitShowArg && gitShowArg.includes("base123:")) {
+        if (gitShowArg && gitShowArg.includes("a1b2c3d4e5f6789012345:")) {
           return baseContent;
-        } else if (gitShowArg && gitShowArg.includes("head123:")) {
+        } else if (gitShowArg && gitShowArg.includes("f9e8d7c6b5a4321098765:")) {
           return headContent;
         }
         return "";
@@ -116,12 +116,12 @@ describe("checkPluginVersionChanges", () => {
 
       mockExecFileSync.mockImplementation((command, args) => {
         const gitShowArg = args && args[1]; // git show ref:path
-        if (gitShowArg && gitShowArg.includes("base123:")) {
+        if (gitShowArg && gitShowArg.includes("a1b2c3d4e5f6789012345:")) {
           // Simulate file not existing in base
           const error = new Error("File not found") as Error & { status: number };
           error.status = 128;
           throw error;
-        } else if (gitShowArg && gitShowArg.includes("head123:")) {
+        } else if (gitShowArg && gitShowArg.includes("f9e8d7c6b5a4321098765:")) {
           return newFileContent;
         }
         return "";
@@ -142,9 +142,9 @@ describe("checkPluginVersionChanges", () => {
 
       mockExecFileSync.mockImplementation((command, args) => {
         const gitShowArg = args && args[1]; // git show ref:path
-        if (gitShowArg && gitShowArg.includes("base123:")) {
+        if (gitShowArg && gitShowArg.includes("a1b2c3d4e5f6789012345:")) {
           return deletedFileContent;
-        } else if (gitShowArg && gitShowArg.includes("head123:")) {
+        } else if (gitShowArg && gitShowArg.includes("f9e8d7c6b5a4321098765:")) {
           // Simulate file not existing in head
           const error = new Error("File not found") as Error & { status: number };
           error.status = 128;
@@ -179,9 +179,9 @@ describe("checkPluginVersionChanges", () => {
       mockExecFileSync.mockImplementation((command, args) => {
         const gitShowArg = args && args[1]; // git show ref:path
         if (gitShowArg && gitShowArg.includes("plugin/.plugin/plugin.json")) {
-          return gitShowArg.includes("base123:") ? baseContent1 : headContent1;
+          return gitShowArg.includes("a1b2c3d4e5f6789012345:") ? baseContent1 : headContent1;
         } else if (gitShowArg && gitShowArg.includes("plugin/.claude-plugin/plugin.json")) {
-          return gitShowArg.includes("base123:") ? baseContent2 : headContent2;
+          return gitShowArg.includes("a1b2c3d4e5f6789012345:") ? baseContent2 : headContent2;
         }
         return "";
       });
@@ -194,8 +194,8 @@ describe("checkPluginVersionChanges", () => {
 
   describe("console output", () => {
     beforeEach(() => {
-      process.env.BASE_SHA = "base123";
-      process.env.HEAD_SHA = "head123";
+      process.env.BASE_SHA = "a1b2c3d4e5f6789012345";
+      process.env.HEAD_SHA = "f9e8d7c6b5a4321098765";
     });
 
     it("should provide detailed output for version changes", () => {
@@ -204,7 +204,7 @@ describe("checkPluginVersionChanges", () => {
 
       mockExecFileSync.mockImplementation((command, args) => {
         const gitShowArg = args && args[1]; // git show ref:path
-        return gitShowArg && gitShowArg.includes("base123:") ? baseContent : headContent;
+        return gitShowArg && gitShowArg.includes("a1b2c3d4e5f6789012345:") ? baseContent : headContent;
       });
 
       expect(() => checkPluginVersionChanges()).toThrow("process.exit() called");
@@ -220,7 +220,7 @@ describe("checkPluginVersionChanges", () => {
 
       checkPluginVersionChanges();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith("🔍 Checking plugin version changes between base123 and head123");
+      expect(mockConsoleLog).toHaveBeenCalledWith("🔍 Checking plugin version changes between a1b2c3d4e5f6789012345 and f9e8d7c6b5a4321098765");
       expect(mockConsoleLog).toHaveBeenCalledWith("\n📝 Checking plugin/.plugin/plugin.json...");
       expect(mockConsoleLog).toHaveBeenCalledWith("\n📝 Checking plugin/.claude-plugin/plugin.json...");
     });
