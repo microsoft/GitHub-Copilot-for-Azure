@@ -172,7 +172,8 @@
     $copilotArgs = @(
             "-p", $reportGenerationPrompt,
             "--model", "claude-opus-4.6",
-            "--share", $copilotLogFile
+            "--share", $copilotLogFile,
+            "--yolo"
         )
     & 'copilot' @copilotArgs
     if ($LASTEXITCODE -ne 0) {
