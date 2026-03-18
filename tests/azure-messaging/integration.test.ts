@@ -158,28 +158,26 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("sdk-configuration-guidance", async () => {
       const prompt =
-        "How do I configure retry policy and prefetch count for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
+        "How do I configure retry policy for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
 
       let invoked = false;
       let hasRelevantContent = false;
 
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
-          const agentMetadata = await agent.run({
-            prompt,
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
-          });
+          // No early termination — the agent must complete the full conversation
+          // (including skill execution and reference file reads) to produce
+          // SDK-specific configuration details in its response.
+          const agentMetadata = await agent.run({ prompt });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invoked = true;
-            // Validate response provides SDK configuration guidance
+            // Validate response provides SDK retry configuration guidance
             hasRelevantContent =
-              (doesAssistantMessageIncludeKeyword(agentMetadata, "retry", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch", { caseSensitive: false })) &&
+              doesAssistantMessageIncludeKeyword(agentMetadata, "retry", { caseSensitive: false }) &&
               (doesAssistantMessageIncludeKeyword(agentMetadata, "EventHubConsumerClient", { caseSensitive: false }) ||
                 doesAssistantMessageIncludeKeyword(agentMetadata, "retry_total", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch_count", { caseSensitive: false }));
+                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }));
             if (hasRelevantContent) break;
           }
         } catch (e: unknown) {
