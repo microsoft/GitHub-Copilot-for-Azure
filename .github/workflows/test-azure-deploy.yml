@@ -45,6 +45,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish-reports:
+        description: 'Whether to publish reports to Azure Storage'
+        required: false
+        type: boolean
+        default: false
     secrets:
       COPILOT_CLI_TOKEN:
         required: true
@@ -163,6 +168,7 @@ jobs:
       - name: Run tests – ${{ matrix.test-group }}
         env:
           GH_HEAD_SHA: ${{ github.sha }}
+          TEST_RUN_ID: azure-deploy
           DEBUG: ${{ inputs.debug && '1' || '' }}
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           TEST_GROUP: ${{ matrix.test-group }}
@@ -195,3 +201,26 @@ jobs:
           name: azure-deploy-${{ matrix.test-group }}-reports
           path: tests/reports/
           retention-days: 30
+
+      # Note: The managed identity must have write permission to the target storage account
+      - name: Publish report to Azure Storage
+        # Todo: Remove the condition and only publish for scheduled runs
+        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        # if: always() && inputs.publish-reports && vars.REPORT_STORAGE_ACCOUNT != ''
+        env:
+          RUN_ID: ${{ github.run_id }}
+          JOB_ID: ${{ github.job }}
+          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
+          TEST_GROUP: ${{ matrix.test-group }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          PREFIX="${DATE}/${RUN_ID}/azure-deploy/${TEST_GROUP}/"
+          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --destination "$STORAGE_CONTAINER" \
+            --destination-path "$PREFIX" \
+            --source reports/test-run-azure-deploy \
+            --auth-mode login \
+            --overwrite
