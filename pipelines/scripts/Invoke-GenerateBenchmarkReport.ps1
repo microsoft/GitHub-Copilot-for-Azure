@@ -73,7 +73,7 @@
             throw "Secret $secretName not found in KeyVault $vaultName."
         }
 
-        $env:GITHUB_MCP_SERVER_TOKEN = $pat
+        $env:COPILOT_GITHUB_TOKEN = $pat
         
         # Log the PAT as a secret variable to avoid exposing it in logs
         if ($pipelineRun) {
