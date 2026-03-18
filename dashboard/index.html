@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'">
   <title>Repository Health Dashboard</title>
   <link rel="stylesheet" href="assets/style.css">
   <script type="module" src="assets/dashboard.js" defer></script>
 </head>
+
 <body>
   <a href="#main" class="skip-link">Skip to content</a>
+
+  <nav class="site-nav" role="navigation" aria-label="Main navigation">
+    <a href="/" class="site-nav-link active" aria-current="page">Dashboard</a>
+    <a href="/nightly-runs.html" class="site-nav-link">Nightly Runs</a>
+  </nav>
 
   <header class="dashboard-header">
     <h1>Repository Health Dashboard</h1>
@@ -92,4 +100,5 @@
     <p class="noscript-message">JavaScript is required to render this dashboard.</p>
   </noscript>
 </body>
+
 </html>

@@ -2,6 +2,24 @@
   "name": "ghcp4a-health-dashboard",
   "private": true,
   "scripts": {
-    "build": "node -e \"const fs=require('fs');const p=require('path');function cp(s,d){if(!fs.existsSync(s))return;const st=fs.statSync(s);if(st.isDirectory()){fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>cp(p.join(s,f),p.join(d,f)))}else{fs.mkdirSync(p.dirname(d),{recursive:true});fs.copyFileSync(s,d)}}fs.mkdirSync('dist',{recursive:true});['index.html','.nojekyll'].forEach(f=>{if(fs.existsSync(f))fs.copyFileSync(f,'dist/'+f)});['assets','data'].forEach(d=>cp(d,'dist/'+d));console.log('Build complete: dist/')\""
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:api": "cd api && npm run prestart && func start",
+    "dev:all": "npx concurrently \"npm run dev\" \"npm run dev:api\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
   }
 }

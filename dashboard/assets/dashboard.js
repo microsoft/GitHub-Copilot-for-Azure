@@ -1077,8 +1077,8 @@ registerPanel("integration", (section, category) => {
         tMeta.direction === "below"
           ? "threshold: < " + tMeta.threshold
           : "threshold: " +
-            tMeta.threshold +
-            (tMeta.unit === "%" ? "%" : "");
+          tMeta.threshold +
+          (tMeta.unit === "%" ? "%" : "");
       card.appendChild(el("div", "quality-metric-threshold", thresholdStr));
 
       // Pass/fail badge
