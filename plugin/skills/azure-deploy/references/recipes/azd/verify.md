@@ -9,7 +9,7 @@ azd show
 ```
 
 Expected output:
-```
+```text
 Showing deployed resources:
   Resource Group: rg-myapp-dev
   Services:
@@ -48,7 +48,7 @@ azd show
 
 Example response format:
 
-```
+```text
 ✅ Deployment succeeded!
 
 | Service | Endpoint |
