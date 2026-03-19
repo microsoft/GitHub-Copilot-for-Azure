@@ -10,7 +10,6 @@ if ($env:AZURE_MCP_COLLECT_TELEMETRY -eq "false") {
 }
 
 # === Setup directories and paths ===
-$hooksDir = Split-Path -Parent $PSScriptRoot
 
 # Return success and exit
 function Return-Success {
