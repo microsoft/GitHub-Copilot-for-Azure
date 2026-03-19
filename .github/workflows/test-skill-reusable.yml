@@ -48,7 +48,7 @@ jobs:
         env:
           CI: true
           SKILL_NAME: ${{ inputs.skill-name }}
-        run: npm run test:ci -- --testPathPattern="$SKILL_NAME"
+        run: npm run test:ci -- --testPathPatterns="$SKILL_NAME"
 
       - name: Upload test results
         if: always()

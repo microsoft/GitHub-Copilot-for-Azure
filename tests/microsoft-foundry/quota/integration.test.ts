@@ -9,7 +9,7 @@
  * 2. Run `copilot` and authenticate
  * 3. Have an Azure subscription with Microsoft Foundry resources
  *
- * Run with: npm run test:integration -- --testPathPattern=microsoft-foundry-quota
+ * Run with: npm run test:integration -- --testPathPatterns=microsoft-foundry-quota
  */
 
 import {
