@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../utils/agent-runner";
-import { softCheckSkill } from "../../utils/evaluate";
+import { softCheckSkill, shouldEarlyTerminateForSkillInvocation } from "../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -36,7 +36,8 @@ describeIntegration(`${SKILL_NAME}_foundry-agent - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Create a new prompt agent with gpt-4o model in Foundry"
+            prompt: "Create a new prompt agent with gpt-4o model in Foundry",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -54,7 +55,8 @@ describeIntegration(`${SKILL_NAME}_foundry-agent - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Troubleshoot my Foundry agent that is returning errors"
+            prompt: "Troubleshoot my Foundry agent that is returning errors",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

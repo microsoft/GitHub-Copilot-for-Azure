@@ -28,11 +28,13 @@ export function softCheckContainerDeployEnvVars(agentMetadata: AgentMetadata): v
  */
 const DEPLOY_LINK_PATTERNS = [
   // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
-  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s.`'"?#)\]]|$)/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s.`'"?#)\]]|$)/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s.`'"?#)\]]|$)/i,
+  // static website from a storage account
+  /https:\/\/[\w.-]+\.web\.core\.windows\.net(?=[/\s.`'"?#)\]]|$)/i
 ];
 
 /**
@@ -48,4 +50,15 @@ export function softCheckDeploySkills(agentMetadata: AgentMetadata): void {
   softCheckSkill(agentMetadata, "azure-deploy");
   softCheckSkill(agentMetadata, "azure-validate");
   softCheckSkill(agentMetadata, "azure-prepare");
+}
+
+export function shouldEarlyTerminateForCompletedDeployment(agentMetadata: AgentMetadata): boolean {
+  const containsDeployLinks = hasDeployLinks(agentMetadata);
+  if (containsDeployLinks) {
+    const commentToAdd = "✅ Found link of the deployed web app in the response. Deployment completed successfully.";
+    if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
+      agentMetadata.testComments.push(commentToAdd);
+    }
+  }
+  return containsDeployLinks;
 }

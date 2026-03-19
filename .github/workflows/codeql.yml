@@ -18,22 +18,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript', 'python' ]
+        language: [ 'actions', 'javascript', 'python' ]
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@603b797f8b14b413fe025cd935a91c16c4782713 # v3
       with:
         languages: ${{ matrix.language }}
         queries: security-and-quality
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      uses: github/codeql-action/autobuild@603b797f8b14b413fe025cd935a91c16c4782713 # v3
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@603b797f8b14b413fe025cd935a91c16c4782713 # v3
       with:
         category: "/language:${{matrix.language}}"

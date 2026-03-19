@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../../../utils/agent-runner";
-import { softCheckSkill } from "../../../../utils/evaluate";
+import { softCheckSkill, shouldEarlyTerminateForSkillInvocation } from "../../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -35,7 +35,8 @@ describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Find available capacity for gpt-4o across all Azure regions"
+            prompt: "Find available capacity for gpt-4o across all Azure regions",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -53,7 +54,8 @@ describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?"
+            prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

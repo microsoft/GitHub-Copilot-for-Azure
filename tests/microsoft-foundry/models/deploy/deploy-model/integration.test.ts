@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../../../utils/agent-runner";
-import { softCheckSkill } from "../../../../utils/evaluate";
+import { softCheckSkill, shouldEarlyTerminateForSkillInvocation } from "../../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -35,7 +35,8 @@ describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy gpt-4o model to my Azure project"
+            prompt: "Deploy gpt-4o model to my Azure project",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -53,7 +54,8 @@ describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Where can I deploy gpt-4o? Check capacity across regions"
+            prompt: "Where can I deploy gpt-4o? Check capacity across regions",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -71,7 +73,8 @@ describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy gpt-4o with custom SKU and capacity settings"
+            prompt: "Deploy gpt-4o with custom SKU and capacity settings",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

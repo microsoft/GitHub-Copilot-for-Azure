@@ -17,7 +17,7 @@ Before installing the plugin, ensure the following tools are installed:
 #### Git
 
 Git is required to add the marketplace plugin. If it is not installed, you will see an error like:
-`Failed to add marketplace: Failed to fetch GitHub marketplace microsoft/github-copilot-for-azure: Error: spawn git ENOENT`
+`Failed to add marketplace: Failed to fetch GitHub marketplace microsoft/azure-skills: Error: spawn git ENOENT`
 
 **Windows (winget):**
 ```powershell
@@ -50,9 +50,9 @@ brew install node
 
 To install the Azure plugin into Copilot CLI and Claude:
 
-1. Add the marketplace with `/plugin marketplace add microsoft/github-copilot-for-azure`
-2. Install the plugin with `/plugin install azure@github-copilot-for-azure`
-3. Update the plugin with `/plugin update azure@github-copilot-for-azure`
+1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`
+2. Install the plugin with `/plugin install azure@azure-skills`
+3. Update the plugin with `/plugin update azure@azure-skills`
 
 ## Contributing
 

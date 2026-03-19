@@ -50,7 +50,7 @@ describe("deploy - Trigger Tests", () => {
       "Help me with AWS SageMaker",
       "How do I configure my PostgreSQL database?",
       "Explain how Kubernetes pods work",
-      "Set up monitoring for my web application",
+      "Set up logging for my web application",
       "Push my image to a registry",
     ];
 

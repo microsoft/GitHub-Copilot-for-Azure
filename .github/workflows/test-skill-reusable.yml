@@ -32,10 +32,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
@@ -45,13 +45,14 @@ jobs:
         run: npm ci
 
       - name: Run tests for ${{ inputs.skill-name }}
-        run: npm run test:ci -- --testPathPattern="${{ inputs.skill-name }}"
         env:
           CI: true
+          SKILL_NAME: ${{ inputs.skill-name }}
+        run: npm run test:ci -- --testPathPattern="$SKILL_NAME"
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: test-results-${{ inputs.skill-name }}
           path: tests/reports/junit.xml
@@ -59,7 +60,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-${{ inputs.skill-name }}
           path: tests/coverage/
@@ -67,8 +68,10 @@ jobs:
 
       - name: Test Report Summary
         if: always()
+        env:
+          SKILL_NAME: ${{ inputs.skill-name }}
         run: |
-          echo "## Test Results - ${{ inputs.skill-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results - $SKILL_NAME" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f reports/junit.xml ]; then
             TESTS=$(grep -o 'tests="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')

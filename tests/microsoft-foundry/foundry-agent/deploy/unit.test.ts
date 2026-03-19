@@ -107,13 +107,16 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain("coherence");
     });
 
-    test("instructs identifying LLM-judge deployment", () => {
+    test("instructs identifying judge deployment from actual project deployments", () => {
       expect(deployContent).toContain("model_deployment_get");
+      expect(deployContent).toMatch(/actual model deployments/i);
+      expect(deployContent).toMatch(/supports chat completions/i);
+      expect(deployContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
     });
 
-    test("instructs persisting artifacts to evaluators/ and datasets/", () => {
-      expect(deployContent).toContain("evaluators/");
-      expect(deployContent).toContain("datasets/");
+    test("instructs persisting artifacts to .foundry/evaluators/ and .foundry/datasets/", () => {
+      expect(deployContent).toContain(".foundry/evaluators/");
+      expect(deployContent).toContain(".foundry/datasets/");
     });
 
     test("asks to RUN evaluation (not just set up)", () => {
@@ -129,11 +132,11 @@ describe("deploy - Unit Tests", () => {
   });
 
   describe("Document Deployment Context", () => {
-    test("persists environment variables to .env", () => {
-      expect(deployContent).toContain("AZURE_AI_PROJECT_ENDPOINT");
-      expect(deployContent).toContain("AZURE_AI_AGENT_NAME");
-      expect(deployContent).toContain("AZURE_AI_AGENT_VERSION");
-      expect(deployContent).toContain("AZURE_CONTAINER_REGISTRY");
+    test("persists deployment context to agent-metadata.yaml", () => {
+      expect(deployContent).toContain("projectEndpoint");
+      expect(deployContent).toContain("agentName");
+      expect(deployContent).toContain("azureContainerRegistry");
+      expect(deployContent).toContain("testCases[]");
     });
   });
 });
