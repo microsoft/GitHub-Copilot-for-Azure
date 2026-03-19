@@ -2,23 +2,27 @@ import * as fs from "fs";
 import * as path from "path";
 import { type AgentMetadata } from "./agent-runner";
 
+const SHELL_TOOL_NAMES = ["powershell", "bash"];
+
 /**
- * Extract all powershell command strings from agent metadata.
+ * Extract all shell command strings (powershell and bash) from agent metadata.
  */
-function getPowershellCommands(metadata: AgentMetadata): string[] {
-  return getToolCalls(metadata, "powershell").map(event => {
-    const data = event.data as Record<string, unknown>;
-    const args = data.arguments as { command?: string } | undefined;
-    return args?.command ?? "";
-  });
+function getShellCommands(metadata: AgentMetadata): string[] {
+  return getToolCalls(metadata)
+    .filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName))
+    .map(event => {
+      const data = event.data as Record<string, unknown>;
+      const args = data.arguments as { command?: string } | undefined;
+      return args?.command ?? "";
+    });
 }
 
 /**
- * Check whether any powershell command executed by the agent matches
+ * Check whether any shell command executed by the agent matches
  * the given pattern.
  */
 export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
-  return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+  return getShellCommands(metadata).some(cmd => pattern.test(cmd));
 }
 
 /**
