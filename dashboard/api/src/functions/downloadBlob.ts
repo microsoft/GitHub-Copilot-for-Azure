@@ -18,7 +18,8 @@ async function downloadBlob(request: HttpRequest, context: InvocationContext): P
 
     try {
         const content = await getBlobContent(blobPath);
-        const fileName = blobPath.split("/").pop() ?? "download";
+        const rawFileName = blobPath.split("/").pop() ?? "download";
+        const fileName = rawFileName.replace(/[\r\n"\\]/g, "_");
 
         return {
             status: 200,
