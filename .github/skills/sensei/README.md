@@ -108,7 +108,7 @@ cd tests
 npm install
 
 # Verify tests run
-npm test -- --testPathPattern=azure-validation
+npm test -- --testPathPatterns=azure-validation
 ```
 
 ---
@@ -164,7 +164,7 @@ npm test -- --testPathPattern=azure-validation
 └─────────────────────┬───────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│  6. VERIFY: npm test -- --testPathPattern={skill-name}  │
+│  6. VERIFY: npm test -- --testPathPatterns={skill-name}  │
 │     • If tests fail → fix and retry                     │
 │     • If tests pass → continue                          │
 └─────────────────────┬───────────────────────────────────┘
@@ -368,7 +368,7 @@ const shouldNotTriggerPrompts = [
 3. Run tests manually to see specific failures:
    ```bash
    cd tests
-   npm test -- --testPathPattern={skill-name} --verbose
+   npm test -- --testPathPatterns={skill-name} --verbose
    ```
 
 ### Skill Not Reaching Target Score

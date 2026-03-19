@@ -70,7 +70,7 @@ jobs:
         run: |
           TEST_ARGS=""
           if [ -n "$SKILL_NAME" ]; then
-            TEST_ARGS="--testPathPattern=$SKILL_NAME"
+            TEST_ARGS="--testPathPatterns=$SKILL_NAME"
           fi
           if [ "$COVERAGE" = "true" ] || [ "$EVENT_NAME" = "push" ]; then
             npm run test:ci -- --coverage $TEST_ARGS
