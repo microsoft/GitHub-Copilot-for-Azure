@@ -31,7 +31,6 @@ Activate this skill when user wants to:
 | CLI commands | `az deployment group create`, `az bicep build`, `az resource list`, `terraform init`, `terraform plan`, `terraform validate`, `terraform apply` |
 | Output schema | [plan-schema.md](references/plan-schema.md) |
 | Key references | [research.md](references/research.md), [resources/](references/resources/README.md), [waf-checklist.md](references/waf-checklist.md), [constraints/](references/constraints/README.md) |
-| Error handling | [error-handling.md](references/error-handling.md) |
 
 ## Rules
 
@@ -126,3 +125,12 @@ Execute deployment commands. See [deployment.md](references/deployment.md).
 | `mcp_azure_mcp_documentation` | `microsoft_docs_fetch` | Fetch specific Microsoft Learn documents (e.g., WAF service guide URLs, naming rules URLs from [resources/](references/resources/README.md)). | Primary doc lookup — use URLs from resources/ category files |
 | `mcp_azure_mcp_documentation` | `microsoft_docs_search` | Search Microsoft Learn for architecture patterns, SKU details, and best practices. | Fallback when no direct URL is available |
 | `mcp_azure_mcp_bicepschema` | `bicepschema_get` | Get Bicep resource schema. Call with `parameters: { "resource-type": "{ARM type}" }` (e.g., `Microsoft.KeyVault/vaults`). Returns latest API version schema — no version parameter needed. | Phase 5 (IaC generation) — once per resource via sub-agent |
+
+## Error Handling
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| MCP tool unreachable | Tool call timeout or connection error | Retry once; fall back to reference files and notify user |
+| `bicepschema_get` returns empty | Invalid ARM type string | Verify format matches `Microsoft.{Provider}/{resourceType}` from resource category files; try parent type instead of sub-resource |
+| `microsoft_docs_search` returns no results | Search terms too specific or misspelled | Broaden search terms; fall back to `microsoft_docs_fetch` with direct URL from resource category files |
+| `wellarchitectedframework_serviceguide_get` returns empty URL | Service name not recognized | Check exact service name (e.g., "Container Apps" not "ACA"); skip and note gap in plan reasoning |
