@@ -58,7 +58,7 @@ Example response format:
 Aspire Dashboard: https://aspire-dashboard.xxx.azurecontainerapps.io
 ```
 
-> ⚠️ **Do NOT end your response without including the endpoint URLs.** If `azd` printed endpoint URLs in its output, you already have them — extract and present them. If the output was truncated, run `azd show` to retrieve them.
+> ⚠️ If output was truncated, run `azd show` to retrieve endpoint URLs.
 
 ## Step 4: Post-Deployment Verification (if applicable)
 
