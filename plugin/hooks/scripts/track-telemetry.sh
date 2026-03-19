@@ -136,7 +136,6 @@ if [ "$toolName" = "view" ]; then
                 skillName="${BASH_REMATCH[1]}"
                 eventType="skill_invocation"
                 shouldTrack=true
-                filePath="$pathToCheck"
             fi
         fi
     fi

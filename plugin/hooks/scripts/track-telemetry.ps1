@@ -113,7 +113,6 @@ if ($toolName -eq "view") {
                 $skillName = $Matches[1]
                 $eventType = "skill_invocation"
                 $shouldTrack = $true
-                $filePath = $pathToCheck
             }
         }
     }
