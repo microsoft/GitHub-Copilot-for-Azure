@@ -9,7 +9,7 @@ azd show
 ```
 
 Expected output:
-```
+```text
 Showing deployed resources:
   Resource Group: rg-myapp-dev
   Services:
