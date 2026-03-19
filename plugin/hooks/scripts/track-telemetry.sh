@@ -20,22 +20,35 @@ extract_json_field() {
     echo "$json" | sed -n "s/.*\"$field\":\s*\"\([^\"]*\)\".*/\1/p"
 }
 
-# Extract nested field from toolArgs (e.g., toolArgs.skill)
+# Extract nested field from toolArgs/tool_input (e.g., toolArgs.skill or tool_input.skill)
 extract_toolargs_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | sed -n "s/.*\"toolArgs\":\s*{[^}]*\"$field\":\s*\"\([^\"]*\)\".*/\1/p"
+    local value=""
+    # Try Copilot CLI format (toolArgs) first, then Claude Code format (tool_input)
+    value=$(echo "$json" | sed -n "s/.*\"toolArgs\":\s*{[^}]*\"$field\":\s*\"\([^\"]*\)\".*/\1/p")
+    if [ -z "$value" ]; then
+        value=$(echo "$json" | sed -n "s/.*\"tool_input\":\s*{[^}]*\"$field\":\s*\"\([^\"]*\)\".*/\1/p")
+    fi
+    echo "$value"
 }
 
-# Extract path from toolArgs (handles both 'path' and 'filePath')
+# Extract path from toolArgs/tool_input (handles both 'path' and 'filePath')
 extract_toolargs_path() {
     local json="$1"
     local path_value=""
 
-    # Try 'path' field first, then 'filePath' - using sed for portability
+    # Try Copilot CLI format (toolArgs) first
     path_value=$(echo "$json" | sed -n 's/.*"toolArgs":\s*{[^}]*"path":\s*"\([^"]*\)".*/\1/p')
     if [ -z "$path_value" ]; then
         path_value=$(echo "$json" | sed -n 's/.*"toolArgs":\s*{[^}]*"filePath":\s*"\([^"]*\)".*/\1/p')
+    fi
+    # Fall back to Claude Code format (tool_input)
+    if [ -z "$path_value" ]; then
+        path_value=$(echo "$json" | sed -n 's/.*"tool_input":\s*{[^}]*"file_path":\s*"\([^"]*\)".*/\1/p')
+    fi
+    if [ -z "$path_value" ]; then
+        path_value=$(echo "$json" | sed -n 's/.*"tool_input":\s*{[^}]*"path":\s*"\([^"]*\)".*/\1/p')
     fi
 
     echo "$path_value"
@@ -58,15 +71,29 @@ fi
 
 # === STEP 1: Read and parse input ===
 
-# Extract fields from hook data (Copilot CLI format only)
+# Extract fields from hook data
+# Support both Copilot CLI (camelCase) and Claude Code (snake_case) formats
 toolName=$(extract_json_field "$rawInput" "toolName")
 sessionId=$(extract_json_field "$rawInput" "sessionId")
+
+# Fall back to Claude Code snake_case field names
+if [ -z "$toolName" ]; then
+    toolName=$(extract_json_field "$rawInput" "tool_name")
+fi
+if [ -z "$sessionId" ]; then
+    sessionId=$(extract_json_field "$rawInput" "session_id")
+fi
+
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# TODO: Update client_type detection when adding VS Code support
-clientType="copilot-cli"
+# Detect client type based on which format was used
+if echo "$rawInput" | grep -q '"hook_event_name"'; then
+    clientType="claude-code"
+else
+    clientType="copilot-cli"
+fi
 
-# Skip if not Copilot CLI format
+# Skip if no tool name found in either format
 if [ -z "$toolName" ]; then
     return_success
 fi
@@ -79,11 +106,11 @@ skillName=""
 azureToolName=""
 filePath=""
 
-# Check for skill invocation via 'skill' tool
-if [ "$toolName" = "skill" ]; then
+# Check for skill invocation via 'skill'/'Skill' tool
+if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
     skillName=$(extract_toolargs_field "$rawInput" "skill")
     if [ -n "$skillName" ]; then
-        eventType="plugin_invocation"
+        eventType="skill_invocation"
         shouldTrack=true
     fi
 fi
@@ -95,13 +122,13 @@ if [ "$toolName" = "view" ]; then
         # Normalize path: convert to lowercase, replace backslashes, and squeeze consecutive slashes
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
-        # Check for SKILL.md pattern
-        if [[ "$pathLower" == *".copilot"*"skills"*"/skill.md" ]]; then
+        # Check for SKILL.md pattern (Copilot: .copilot/...skills/; Claude: .claude/...skills/)
+        if [[ "$pathLower" == *".copilot"*"skills"*"/skill.md" ]] || [[ "$pathLower" == *".claude"*"skills"*"/skill.md" ]]; then
             # Normalize path and extract skill name using regex
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
             if [[ "$pathNormalized" =~ /skills/([^/]+)/SKILL\.md$ ]]; then
                 skillName="${BASH_REMATCH[1]}"
-                eventType="plugin_invocation"
+                eventType="skill_invocation"
                 shouldTrack=true
                 filePath="$pathToCheck"
             fi
@@ -109,9 +136,11 @@ if [ "$toolName" = "view" ]; then
     fi
 fi
 
-# Check for Azure MCP tool invocation (handles both "mcp_azure_" and "azure-" prefixes)
+# Check for Azure MCP tool invocation
+# Copilot CLI: "mcp_azure_*" or "azure-*" prefixes
+# Claude Code: "mcp__plugin_azure_azure__*" prefix (double underscores)
 if [ -n "$toolName" ]; then
-    if [[ "$toolName" == mcp_azure_* ]] || [[ "$toolName" == azure-* ]]; then
+    if [[ "$toolName" == mcp_azure_* ]] || [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]]; then
         azureToolName="$toolName"
         eventType="tool_invocation"
         shouldTrack=true
@@ -126,13 +155,15 @@ if [ -z "$filePath" ]; then
         # Normalize path for matching: replace backslashes and squeeze consecutive slashes
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
-        # Check if path matches the full installed-plugins azure skills folder structure
-        if [[ "$pathLower" == *".copilot"*"installed-plugins"*"azure-skills"*"azure"*"skills"* ]]; then
-            # Extract relative path after 'azure/skills/'
+        # Check if path matches azure skills folder structure
+        # Copilot: .copilot/installed-plugins/azure-skills/azure/skills/...
+        # Claude:  .claude/plugins/cache/azure-skills/azure/<version>/skills/...
+        if [[ "$pathLower" == *".copilot"*"installed-plugins"*"azure-skills"*"azure"*"skills"* ]] || [[ "$pathLower" == *".claude"*"plugins"*"cache"*"azure-skills"*"azure"*"skills"* ]]; then
+            # Extract relative path after 'azure/skills/' or 'azure/<version>/skills/'
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
 
-            if [[ "$pathNormalized" =~ azure/skills/(.+)$ ]]; then
-                filePath="${BASH_REMATCH[1]}"
+            if [[ "$pathNormalized" =~ azure/([0-9]+\.[0-9]+\.[0-9]+/)?skills/(.+)$ ]]; then
+                filePath="${BASH_REMATCH[2]}"
 
                 if [ "$shouldTrack" = false ]; then
                     shouldTrack=true
@@ -155,7 +186,7 @@ if [ "$shouldTrack" = true ]; then
 
     [ -n "$eventType" ] && mcpArgs+=("--event-type" "$eventType")
     [ -n "$sessionId" ] && mcpArgs+=("--session-id" "$sessionId")
-    [ -n "$skillName" ] && mcpArgs+=("--plugin-name" "$skillName")
+    [ -n "$skillName" ] && mcpArgs+=("--skill-name" "$skillName")
     [ -n "$azureToolName" ] && mcpArgs+=("--tool-name" "$azureToolName")
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")
