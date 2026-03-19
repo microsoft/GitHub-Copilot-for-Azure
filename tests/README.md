@@ -93,7 +93,7 @@ Run tests manually anytime during development (see [Running Tests Locally](#runn
 
 **Snapshots:** Trigger tests use Jest snapshots to detect keyword changes. If you intentionally change a skill's trigger behavior, update snapshots with:
 ```bash
-npm run update:snapshots -- --testPathPattern={skill-name}
+npm run update:snapshots -- --testPathPatterns={skill-name}
 ```
 
 ### 3. Integration Tests (`integration.test.ts`)
@@ -394,7 +394,7 @@ npm test
 
 If trigger keywords changed intentionally:
 ```bash
-npm run update:snapshots -- --testPathPattern={skill-name}
+npm run update:snapshots -- --testPathPatterns={skill-name}
 git diff  # Review changes before committing
 ```
 

@@ -8,7 +8,7 @@
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
  * 
- * Run with: npm run test:integration -- --testPathPattern={skill-name}
+ * Run with: npm run test:integration -- --testPathPatterns={skill-name}
  */
 
 import * as fs from "node:fs";
