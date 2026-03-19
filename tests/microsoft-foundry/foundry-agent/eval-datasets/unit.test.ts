@@ -47,6 +47,7 @@ describe("eval-datasets - Unit Tests", () => {
 
     test("contains expected sections", () => {
       expect(datasetsContent).toContain("## Quick Reference");
+      expect(datasetsContent).toContain("| MCP server | `azure` |");
       expect(datasetsContent).toContain("## Before Starting");
       expect(datasetsContent).toContain("## The Foundry Flywheel");
       expect(datasetsContent).toContain("## Behavioral Rules");
@@ -58,10 +59,99 @@ describe("eval-datasets - Unit Tests", () => {
       expect(datasetsContent).toContain(".foundry/results/");
     });
 
-    test("documents environment-aware versioning and cache reuse", () => {
-      expect(datasetsContent).toContain("<agent-name>-<environment>-<source>-v<N>");
+    test("documents agentName-based versioning and cache reuse", () => {
+      expect(datasetsContent).toContain("<agent-name>-eval-seed");
+      expect(datasetsContent).toContain("<agent-name>-traces");
+      expect(datasetsContent).toContain("<agent-name>-curated");
+      expect(datasetsContent).toContain("<agent-name>-prod");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-traces-v<N>.jsonl");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-curated-v<N>.jsonl");
+      expect(datasetsContent).toContain(".foundry/datasets/<agent-name>-prod-v<N>.jsonl");
+      expect(datasetsContent).toContain("Foundry dataset version");
+      expect(datasetsContent).toContain("v<N>");
+      expect(datasetsContent).toMatch(/filenames? must start with the selected Foundry agent name/i);
+      expect(datasetsContent).toMatch(/do\s+\*\*not\*\*\s+append the environment key a second time/i);
       expect(datasetsContent).toMatch(/cache|refresh/i);
       expect(datasetsContent).toContain("testCases[]");
+    });
+
+    test("documents dataset metadata conventions and remote dataset tracking", () => {
+      expect(datasetsContent).toContain("agent");
+      expect(datasetsContent).toContain("stage");
+      expect(datasetsContent).toContain("version");
+      expect(datasetsContent).toContain("datasetUri");
+      expect(datasetsContent).toContain("AzureStorageAccount");
+      expect(datasetsContent).toMatch(/evaluation_dataset_create.*does not expose a first-class `tags` parameter/i);
+    });
+
+    test("uses AzureStorageAccount connections and always includes connectionName when registering datasets", () => {
+      const traceToDatasetContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "trace-to-dataset.md"),
+        "utf-8"
+      );
+      const seedGuideContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "generate-seed-dataset.md"),
+        "utf-8"
+      );
+
+      expect(traceToDatasetContent).toContain('category: "AzureStorageAccount"');
+      expect(traceToDatasetContent).toContain("connectionName");
+      expect(traceToDatasetContent).toContain("evaluation_dataset_create");
+      expect(traceToDatasetContent).toMatch(/include it in this workflow so the dataset is bound/i);
+      expect(traceToDatasetContent).toContain("--container-name eval-datasets");
+      expect(traceToDatasetContent).toContain("blob.core.windows.net/eval-datasets/");
+      expect(traceToDatasetContent).not.toContain("--container-name datasets");
+      expect(seedGuideContent).toMatch(/appending a new entry to the `datasets\[\]` list/i);
+      expect(seedGuideContent).toContain('"datasets": [');
+      expect(seedGuideContent).toContain('"name": "<agent-name>-eval-seed"');
+      expect(seedGuideContent).toContain("--account-key <storage-account-key>");
+      expect(seedGuideContent).toContain("--auth-mode login");
+    });
+
+    test("keeps dataset names versionless and stores versions separately in metadata examples", () => {
+      const metadataContractContent = fs.readFileSync(
+        path.resolve(
+          __dirname,
+          "../../../../plugin/skills/microsoft-foundry/references/agent-metadata-contract.md"
+        ),
+        "utf-8"
+      );
+      const traceToDatasetContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "trace-to-dataset.md"),
+        "utf-8"
+      );
+      const versioningContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "dataset-versioning.md"),
+        "utf-8"
+      );
+      const lineageContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "eval-lineage.md"),
+        "utf-8"
+      );
+
+      expect(metadataContractContent).toContain("dataset: support-agent-dev-traces");
+      expect(metadataContractContent).toContain("datasetVersion: v3");
+      expect(metadataContractContent).toContain("dataset: support-agent-prod-curated");
+      expect(metadataContractContent).toContain("datasetVersion: v2");
+      expect(metadataContractContent).toMatch(/do not append the environment key again/i);
+      expect(traceToDatasetContent).toContain('datasetVersion: "v<N>"');
+      expect(traceToDatasetContent).toContain('"name": "support-bot-prod-traces"');
+      expect(traceToDatasetContent).toContain('"version": "v3"');
+      expect(versioningContent).toContain('"name": "support-bot-prod-traces"');
+      expect(versioningContent).toContain('"version": "v1"');
+      expect(versioningContent).toContain('"version": "v2"');
+      expect(versioningContent).toContain('"version": "v3"');
+      expect(versioningContent).toContain('"agent": "support-bot-prod"');
+      expect(versioningContent).toContain('"stage": "traces"');
+      expect(versioningContent).toContain('"datasetUri": "<foundry-dataset-uri-v1>"');
+      expect(versioningContent).toContain('"datasetUri": "<foundry-dataset-uri-v2>"');
+      expect(versioningContent).toContain('"datasetUri": "<foundry-dataset-uri-v3>"');
+      expect(versioningContent).not.toContain('"name": "support-bot-prod-traces-v1"');
+      expect(versioningContent).not.toContain('"name": "support-bot-prod-traces-v2"');
+      expect(versioningContent).not.toContain('"version": "1"');
+      expect(versioningContent).not.toContain('"version": "2"');
+      expect(lineageContent).toContain('"name": "support-bot-prod-traces"');
+      expect(lineageContent).toContain('"version": "v3"');
     });
 
     test("documents evalId versus evaluationId guidance", () => {

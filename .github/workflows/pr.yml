@@ -13,11 +13,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0  # Full history for comparison
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -25,11 +25,11 @@ jobs:
 
       - name: Install tests dependencies
         working-directory: ./tests
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install scripts dependencies
         working-directory: ./scripts
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Typecheck tests
         working-directory: ./tests
@@ -58,12 +58,12 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0  # Full history for comparison
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -71,7 +71,7 @@ jobs:
 
       - name: Install scripts dependencies
         working-directory: ./scripts
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Check Copilot CLI skill char budget
         working-directory: ./scripts
@@ -79,7 +79,7 @@ jobs:
 
       - name: Check changed markdown files
         id: changed-files
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
             **/*.md
@@ -142,7 +142,7 @@ jobs:
 
       - name: Upload report artifact
         if: steps.changed-files.outputs.any_changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: token-analysis-report
           path: combined-report.md
@@ -161,12 +161,12 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
       - name: Check changed skill files
         id: changed-skills
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
             plugin/skills/*/SKILL.md
@@ -174,7 +174,7 @@ jobs:
 
       - name: Check all changed plugin skill files
         id: changed-plugin-skills
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
             plugin/skills/**
@@ -182,7 +182,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.changed-skills.outputs.any_changed == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -191,7 +191,7 @@ jobs:
       - name: Install scripts dependencies
         if: steps.changed-skills.outputs.any_changed == 'true'
         working-directory: ./scripts
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Validate skill frontmatter
         if: steps.changed-skills.outputs.any_changed == 'true'
@@ -224,7 +224,7 @@ jobs:
           fi
 
       - name: Validate skills.json
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const fs = require('fs');
@@ -363,11 +363,11 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Check changed skill markdown files
         id: changed-markdown
-        uses: tj-actions/changed-files@v46
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
             plugin/skills/**/*.md
@@ -375,7 +375,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.changed-markdown.outputs.any_changed == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -384,7 +384,7 @@ jobs:
       - name: Install scripts dependencies
         if: steps.changed-markdown.outputs.any_changed == 'true'
         working-directory: ./scripts
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Validate markdown references
         if: steps.changed-markdown.outputs.any_changed == 'true'

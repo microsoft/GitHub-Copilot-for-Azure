@@ -8,7 +8,7 @@
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
  * 
- * Run with: npm run test:integration -- --testPathPattern=appinsights-instrumentation
+ * Run with: npm run test:integration -- --testPathPatterns=appinsights-instrumentation
  */
 
 import * as fs from "fs";

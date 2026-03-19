@@ -4,6 +4,9 @@
 # Default owners for everything in the repo
 * @microsoft/ghcp4a
 
+# Workflow files — explicit protection (changes require team review)
+/.github/workflows/ @microsoft/ghcp4a
+
 # Plugin skills owners
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT
 /plugin/skills/azure-ai/ @charris-msft
@@ -25,4 +28,4 @@
 /plugin/skills/azure-storage/ @charris-msft
 /plugin/skills/azure-validate/ @wbreza @tmeschter
 /plugin/skills/entra-app-registration/ @JasonYeMSFT
-/plugin/skills/microsoft-foundry/ @ankitbko @tendau
+/plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst

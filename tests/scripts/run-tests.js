@@ -80,7 +80,7 @@ const testConfigs = {
   },
   skill: {
     description: "skill-specific tests",
-    jestArgs: ["--testPathPattern"],
+    jestArgs: ["--testPathPatterns"],
     requiresPattern: true
   }
 };
@@ -104,17 +104,17 @@ if (config.requiresPattern && extraArgs.length === 0) {
 // Build jest command args
 let jestArgs = [...config.jestArgs];
 
-// For skill type, append the pattern to --testPathPattern
+// For skill type, append the pattern to --testPathPatterns
 if (config.requiresPattern && extraArgs.length > 0) {
-  jestArgs = [`--testPathPattern=${extraArgs[0]}`, ...extraArgs.slice(1)];
+  jestArgs = [`--testPathPatterns=${extraArgs[0]}`, ...extraArgs.slice(1)];
 } else if (config.optionalPattern && extraArgs.length > 0 && !extraArgs[0].startsWith("-")) {
   const skillPattern = extraArgs[0];
   const remaining = extraArgs.slice(1);
   // If there's a second positional arg (not a flag), use it as --testNamePattern
   if (remaining.length > 0 && !remaining[0].startsWith("-")) {
-    jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
+    jestArgs = [...jestArgs, `--testPathPatterns=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
   } else {
-    jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, ...remaining];
+    jestArgs = [...jestArgs, `--testPathPatterns=${skillPattern}`, ...remaining];
   }
 } else {
   jestArgs = [...jestArgs, ...extraArgs];

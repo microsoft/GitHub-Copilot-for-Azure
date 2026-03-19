@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }} # This token needs content write access to this repo to create commits
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'

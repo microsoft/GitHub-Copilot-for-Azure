@@ -85,7 +85,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let workspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
-        prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
+        prompt: "Generate a Mermaid diagram showing my Azure resource group architecture. Save the diagram to an architecture.md file in the current working directory.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         setup: async (workspace: string) => {
@@ -105,7 +105,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let workspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
-        prompt: "Visualize how my Azure resources are connected and show their relationships",
+        prompt: "Visualize how my Azure resources are connected and show their relationships. Save the diagram to an architecture.md file in the current working directory.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         setup: async (workspace: string) => {

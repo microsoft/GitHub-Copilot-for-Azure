@@ -58,10 +58,10 @@ Follow existing `integration.test.ts` files for how to implement such tests.
 cd tests
 
 # Run all tests (integration runs if SDK available)
-npm test -- --testPathPattern={skill-name}
+npm test -- --testPathPatterns={skill-name}
 
 # Skip integration tests explicitly
-SKIP_INTEGRATION_TESTS=true npm test -- --testPathPattern={skill-name}
+SKIP_INTEGRATION_TESTS=true npm test -- --testPathPatterns={skill-name}
 ```
 
 ### Step 8: Update coverage grid
@@ -167,7 +167,7 @@ test('skill keywords match snapshot', () => {
 When trigger behavior intentionally changes:
 
 ```bash
-npm run update:snapshots -- --testPathPattern=your-skill-name
+npm run update:snapshots -- --testPathPatterns=your-skill-name
 ```
 
 **Always review snapshot changes before committing!**
@@ -294,13 +294,13 @@ npm run test:unit
 SKIP_INTEGRATION_TESTS=true npm test
 
 # Specific skill
-npm test -- --testPathPattern=azure-validation
+npm test -- --testPathPatterns=azure-validation
 
 # Watch mode
-npm run test:watch -- --testPathPattern=azure-validation
+npm run test:watch -- --testPathPatterns=azure-validation
 
 # With coverage
-npm run test:coverage -- --testPathPattern=azure-validation
+npm run test:coverage -- --testPathPatterns=azure-validation
 
 # Verbose output
 npm run test:verbose
