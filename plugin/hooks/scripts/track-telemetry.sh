@@ -197,7 +197,7 @@ if [ "$shouldTrack" = true ]; then
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")
 
     # Publish telemetry via npx
-    npx -y @azure/mcp@latest "${mcpArgs[@]}" 2>/dev/null || true
+    npx -y @azure/mcp@latest "${mcpArgs[@]}" >/dev/null 2>&1 || true
 fi
 
 # Output success to stdout (required by hooks)
