@@ -5,6 +5,12 @@
 
 set +e  # Don't exit on errors - fail silently for privacy
 
+# Skip telemetry if opted out
+if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then
+    echo '{"continue":true}'
+    exit 0
+fi
+
 # Return success and exit
 return_success() {
     echo '{"continue":true}'

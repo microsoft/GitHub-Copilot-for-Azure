@@ -3,7 +3,8 @@
     "PostToolUse": [
       {
         "type": "command",
-        "command": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh"
+        "bash": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh",
+        "powershell": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1"
       }
     ]
   }
