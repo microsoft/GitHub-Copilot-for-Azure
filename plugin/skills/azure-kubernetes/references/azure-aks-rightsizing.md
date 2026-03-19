@@ -2,6 +2,43 @@
 
 Identify pods requesting far more CPU/memory than they use and recommend reduced resource requests.
 
+## Prerequisites — Check Monitoring State First
+
+Before collecting usage data, determine what monitoring is available on the cluster:
+
+```bash
+# 1. Check if Azure Managed Prometheus is enabled
+az aks show \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --query "azureMonitorProfile.metrics.enabled" -o tsv
+
+# 2. Check if Container Insights (Log Analytics) is enabled
+az aks show \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --query "addonProfiles.omsagent.enabled" -o tsv
+
+# 3. Check if Metrics Server is running (pre-installed on AKS, but may be unhealthy)
+kubectl get deployment metrics-server -n kube-system
+```
+
+Based on the result, follow the appropriate path:
+
+| State | Rightsizing Possible? | Data Source | Accuracy |
+|-------|-----------------------|-------------|----------|
+| Azure Managed Prometheus enabled |  Yes | Prometheus metrics via Azure Monitor | Best — full P95/7-day history |
+| Container Insights (Log Analytics) enabled |  Yes | KQL queries on `Perf` / `KubePodInventory` | Good — 7-day trends |
+| Only Metrics Server (no Azure Monitor) |  Limited | `kubectl top pods` — live data only | Low — no historical trends |
+| Nothing enabled (Azure Monitor) |  Limited | Metrics Server pre-installed on AKS — use `kubectl top` for live data | Low — no historical trends |
+
+> If nothing is enabled, Metrics Server is pre-installed on AKS — confirm it is healthy and use it for live rightsizing data:
+> ```bash
+> kubectl get deployment metrics-server -n kube-system
+> kubectl top pods --all-namespaces --sort-by=cpu
+> ```
+> For historical P95 trends (more accurate rightsizing), recommend enabling Azure Managed Prometheus. Warn user this incurs cost and wait for confirmation before proceeding.
+
+---
+
 ## Detection
 
 ```bash
@@ -20,7 +57,7 @@ MEM_LIM:.spec.containers[0].resources.limits.memory"
 kubectl top pods --all-namespaces --sort-by=cpu
 ```
 
-## Historical Metrics (Azure Monitor — 14 days)
+## Historical Metrics (Azure Monitor — use when Prometheus or Container Insights is enabled)
 
 ```bash
 az monitor metrics list \
