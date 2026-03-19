@@ -101,6 +101,7 @@ function Dashboard() {
     useEffect(() => {
         if (!selectedDate) return;
 
+        setError(null);
         setLoadingData(true);
         setLoadingReport(true);
         setFileSections([]);
