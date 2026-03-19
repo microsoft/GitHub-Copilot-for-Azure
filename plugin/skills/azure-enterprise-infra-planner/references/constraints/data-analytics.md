@@ -36,7 +36,7 @@
 | **Functions (Consumption plan)** | Cannot use network-secured storage (VNet rules). Only Premium/Dedicated plans support VNet-restricted storage. |
 | **Functions (zone-redundant)** | Must use ZRS SKU (`Standard_ZRS`). LRS/GRS not sufficient. |
 | **VM Boot Diagnostics** | Cannot use Premium storage or ZRS. Use `Standard_LRS` or `Standard_GRS`. Managed boot diagnostics (no storage account required) is also available. |
-| **CMK Encryption** | Key Vault must have `softDeleteEnabled: true` AND `enablePurgeProtection: true`. |
+| **CMK Encryption** | Key Vault must have `enableSoftDelete: true` AND `enablePurgeProtection: true`. |
 | **CMK at creation** | Requires user-assigned managed identity (system-assigned only works for existing accounts). |
 | **Geo-redundant failover** | Certain features (SFTP, NFS 3.0, etc.) block GRS/GZRS failover. |
 
@@ -45,7 +45,7 @@
 | Paired With | Constraint |
 |-------------|------------|
 | **Storage Account** | Linked service requires `Storage Blob Data Contributor` role on the storage account for the ADF managed identity. For ADLS Gen2, also requires `Storage Blob Data Reader` at minimum. |
-| **Key Vault** | For CMK encryption, Key Vault must have `softDeleteEnabled: true` and `enablePurgeProtection: true`. ADF managed identity needs `Key Vault Crypto Service Encryption User` role or equivalent access policy. |
+| **Key Vault** | For CMK encryption, Key Vault must have `enableSoftDelete: true` and `enablePurgeProtection: true`. ADF managed identity needs `Key Vault Crypto Service Encryption User` role or equivalent access policy. |
 | **Managed VNet** | When `managedVirtualNetworks` is configured, all outbound connections must use managed private endpoints (`factories/managedVirtualNetworks/managedPrivateEndpoints`). |
 | **Private Endpoint** | When `publicNetworkAccess: 'Disabled'`, must create private endpoint to `dataFactory` sub-resource for studio access and pipeline connectivity. |
 | **Purview** | Requires Microsoft Purview instance resource ID. ADF managed identity must have `Data Curator` role in Purview. |
@@ -56,7 +56,7 @@
 | Paired With | Constraint |
 |-------------|------------|
 | **ADLS Gen2 Storage Account** | **Required.** Storage account must have `isHnsEnabled: true` (hierarchical namespace / Data Lake Storage Gen2) and `kind: 'StorageV2'`. Synapse managed identity needs `Storage Blob Data Contributor` role on the storage account. |
-| **Key Vault** | For CMK encryption, Key Vault must have `softDeleteEnabled: true` and `enablePurgeProtection: true`. Synapse managed identity needs `Get`, `Unwrap Key`, and `Wrap Key` permissions. |
+| **Key Vault** | For CMK encryption, Key Vault must have `enableSoftDelete: true` and `enablePurgeProtection: true`. Synapse managed identity needs `Get`, `Unwrap Key`, and `Wrap Key` permissions. |
 | **Managed VNet** | When `managedVirtualNetwork: 'default'`, all outbound connections require managed private endpoints. Set at creation time — cannot be changed after. |
 | **Private Endpoint** | When `publicNetworkAccess: 'Disabled'`, create private endpoints for sub-resources: `Dev` (Studio), `Sql` (dedicated SQL), `SqlOnDemand` (serverless SQL). |
 | **Purview** | Requires Microsoft Purview resource ID. Synapse managed identity needs appropriate Purview roles. |

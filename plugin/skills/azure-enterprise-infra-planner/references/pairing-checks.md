@@ -42,7 +42,7 @@ Cross-check each new resource's properties against **every already-written resou
 
 | # | Check | Fix |
 |---|-------|-----|
-| 1 | Any service using CMK has its Key Vault with `softDeleteEnabled: true` and `enablePurgeProtection: true` | Add properties to Key Vault (or fix the already-written Key Vault entry) |
+| 1 | Any service using CMK has its Key Vault with `enableSoftDelete: true` and `enablePurgeProtection: true` | Add properties to Key Vault (or fix the already-written Key Vault entry) |
 | 2 | CMK at storage creation uses user-assigned managed identity (not system-assigned) | Add a user-assigned identity resource before this resource |
 
 ## SQL Database
