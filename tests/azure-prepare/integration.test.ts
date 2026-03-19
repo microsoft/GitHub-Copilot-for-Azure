@@ -714,7 +714,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(workspacePath).toBeDefined();
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
       expectFiles(workspacePath!,
-        [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.parameters\.json$/],
+        [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/.*\.(parameters\.json|bicepparam)$/],
         [/azure\.yaml$/, /\.tf$/],
       );
     });
