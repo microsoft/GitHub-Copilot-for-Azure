@@ -108,23 +108,6 @@ function filterableStatBox(value, label, filterStatus, itemsContainer) {
 }
 
 /**
- * Render summary stat boxes into a container.
- * @param {HTMLElement} container
- * @param {object} summary - { total, passed, failed, warnings, skipped }
- */
-function renderSummaryStats(container, summary) {
-  const row = el("div", "stats-row");
-  row.appendChild(statBox(summary.total, "Total"));
-  row.appendChild(statBox(summary.passed, "Passed"));
-  if (summary.failed > 0) row.appendChild(statBox(summary.failed, "Failed"));
-  if (summary.warnings > 0)
-    row.appendChild(statBox(summary.warnings, "Warnings"));
-  if (summary.skipped > 0)
-    row.appendChild(statBox(summary.skipped, "Skipped"));
-  container.appendChild(row);
-}
-
-/**
  * Render clickable/filterable summary stat boxes.
  * Clicking a stat box filters the items container to show only items
  * with the matching status.  Clicking again resets to show all.

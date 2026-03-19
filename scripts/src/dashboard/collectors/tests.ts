@@ -5,7 +5,7 @@
  * produces a {@link CategoryReport} with one item per test suite.
  */
 
-import { readFile, access, readdir } from "node:fs/promises";
+import { readFile, access, readdir, open } from "node:fs/promises";
 import path from "node:path";
 import { XMLParser } from "fast-xml-parser";
 import type {
@@ -72,26 +72,27 @@ const testsCollector: Collector = {
     const reportsDir = path.resolve(options.cwd, "tests/reports");
     const primaryPath = path.join(reportsDir, "junit.xml");
 
-    // 1. Check primary file existence
-    try {
-      await access(primaryPath);
-    } catch {
-      return makeSkipReport("JUnit XML not found");
-    }
-
-    // 2. Read primary file
+    // 1. Open and read primary file via file descriptor to avoid TOCTOU races
     let xml: string;
+    let fd;
     try {
-      xml = await readFile(primaryPath, "utf-8");
+      fd = await open(primaryPath, "r");
+      xml = await fd.readFile("utf-8");
     } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        return makeSkipReport("JUnit XML not found");
+      }
       return makeSkipReport(String(err));
+    } finally {
+      await fd?.close();
     }
 
     if (!xml.trim()) {
       return makeSkipReport("JUnit XML is empty");
     }
 
-    // 3. Parse primary XML
+    // 2. Parse primary XML
     let parsed: unknown;
     try {
       const parser = new XMLParser({
@@ -104,10 +105,10 @@ const testsCollector: Collector = {
       return makeSkipReport(`Malformed XML: ${String(err)}`);
     }
 
-    // 4. Extract suites from primary file
+    // 3. Extract suites from primary file
     const suites = extractSuites(parsed);
 
-    // 5. Scan for additional JUnit XML files (e.g. integration tests)
+    // 4. Scan for additional JUnit XML files (e.g. integration tests)
     try {
       const entries = await readdir(reportsDir, { recursive: true });
       for (const entry of entries) {
@@ -138,7 +139,7 @@ const testsCollector: Collector = {
       return makeSkipReport("No test suites found in JUnit XML");
     }
 
-    // 6. Build items
+    // 5. Build items
     const items: CategoryItem[] = [];
     for (const suite of suites) {
       const name = String(suite["@_name"] ?? "unnamed");
@@ -155,7 +156,7 @@ const testsCollector: Collector = {
       });
     }
 
-    // 7. Compute overall
+    // 6. Compute overall
     const passedCount = items.filter((i) => i.status === "pass").length;
     const failedCount = items.filter((i) => i.status === "fail").length;
 
