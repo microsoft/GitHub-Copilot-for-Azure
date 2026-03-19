@@ -45,6 +45,18 @@ Read [workflow.md](references/workflow.md) for detailed step-by-step instruction
 | 5 | IaC Generation | `meta.status` = `approved` |
 | 6 | Deployment | User confirms destructive actions |
 
+## MCP Tools
+
+See [workflow.md](references/workflow.md) for full tool parameters and usage.
+
+| Tool | Purpose |
+|------|---------|
+| `get_azure_bestpractices` | Azure best practices for code generation, operations, and deployment |
+| `wellarchitectedframework_serviceguide_get` | WAF service guide for a specific Azure service |
+| `microsoft_docs_search` | Search Microsoft Learn for relevant documentation chunks |
+| `microsoft_docs_fetch` | Fetch full content of a Microsoft Learn page by URL |
+| `bicepschema_get` | Bicep schema definition for any Azure resource type (latest API version) |
+
 ## Error Handling
 
 | Error | Cause | Fix |
