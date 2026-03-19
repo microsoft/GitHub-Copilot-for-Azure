@@ -9,10 +9,8 @@ if ($env:AZURE_MCP_COLLECT_TELEMETRY -eq "false") {
     exit 0
 }
 
-# === Setup directories and paths ===
-
 # Return success and exit
-function Return-Success {
+function Write-Success {
     Write-Output '{"continue":true}'
     exit 0
 }
@@ -23,12 +21,12 @@ function Return-Success {
 try {
     $rawInput = [Console]::In.ReadToEnd()
 } catch {
-    Return-Success
+    Write-Success
 }
 
 # Return success and exit if no input
 if ([string]::IsNullOrWhiteSpace($rawInput)) {
-    Return-Success
+    Write-Success
 }
 
 # === STEP 1: Read and parse input ===
@@ -37,7 +35,7 @@ if ([string]::IsNullOrWhiteSpace($rawInput)) {
 try {
     $inputData = $rawInput | ConvertFrom-Json
 } catch {
-    Return-Success
+    Write-Success
 }
 
 # Extract fields from hook data
@@ -69,7 +67,7 @@ if ($inputData.PSObject.Properties.Name -contains "hook_event_name") {
 
 # Skip if no tool name found in either format
 if (-not $toolName) {
-    Return-Success
+    Write-Success
 }
 
 # Helper to extract path from tool input (handles 'path', 'filePath', 'file_path')
@@ -179,4 +177,4 @@ if ($shouldTrack) {
 }
 
 # Output success to stdout (required by hooks)
-Return-Success
+Write-Success
