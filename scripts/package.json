@@ -24,7 +24,7 @@
     "@types/micromatch": "^4.0.10",
     "@types/node": "^25.1.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^9.0.0",
+    "eslint": "^10.0.3",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
     "tsx": "^4.21.0",
