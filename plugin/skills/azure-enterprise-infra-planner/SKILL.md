@@ -47,8 +47,6 @@ Read [workflow.md](references/workflow.md) for detailed step-by-step instruction
 
 ## MCP Tools
 
-See [workflow.md](references/workflow.md) for full tool parameters and usage.
-
 | Tool | Purpose |
 |------|---------|
 | `get_azure_bestpractices` | Azure best practices for code generation, operations, and deployment |

@@ -78,16 +78,3 @@ Execute deployment commands. See [deployment.md](deployment.md).
 > 2. Create `infra/modules/` for child modules
 > 3. Write `main.bicep` (or `main.tf`) inside `infra/`, NOT in the project root or `.azure/`
 
----
-
-## MCP Tools
-
-> ⚠️ **You MUST call these tools during research (Phase 1)** See [research.md](research.md) Step 2.
-
-| Tool | Command | Purpose | When to Call |
-|------|---------|-------------|------------|
-| `mcp_azure_mcp_get_azure_bestpractices` | `get_azure_bestpractices_get` | Get baseline WAF and deployment best practices. Call with `parameters: { resource: "general", action: "all" }`. | Once at start of research |
-| `mcp_azure_mcp_wellarchitectedframework` | `wellarchitectedframework_serviceguide_get` | Get WAF service guide for a specific Azure service. Call with `parameters: { service: "<service-name>" }` (e.g., `"Container Apps"`, `"Cosmos DB"`). Returns a raw markdown URL — **REQUIRED** use a sub-agent to fetch and summarize. | Once per core service — call in parallel |
-| `mcp_azure_mcp_documentation` | `microsoft_docs_fetch` | Fetch specific Microsoft Learn documents (e.g., WAF service guide URLs, naming rules URLs from [resources/](resources/README.md)). | Primary doc lookup — use URLs from resources/ category files |
-| `mcp_azure_mcp_documentation` | `microsoft_docs_search` | Search Microsoft Learn for architecture patterns, SKU details, and best practices. | Fallback when no direct URL is available |
-| `mcp_azure_mcp_bicepschema` | `bicepschema_get` | Get Bicep resource schema. Call with `parameters: { "resource-type": "{ARM type}" }` (e.g., `Microsoft.KeyVault/vaults`). Returns latest API version schema — no version parameter needed. | Phase 5 (IaC generation) — once per resource via sub-agent |
