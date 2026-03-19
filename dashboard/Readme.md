@@ -84,3 +84,17 @@ azd up
 ```
 
 You will be prompted to authenticate and select an Azure subscription and location.
+
+## Integration Test Data
+
+Integration test data are published at the end of scheduled integration test runs. See [Integration Test Workflow](../.github/workflows/test-all-integration.yml) for how it's done. You need to configure the `STORAGE_ACCOUNT` and `STORAGE_CONTAINER` environment variable to point the workflow to the target storage account for storing the data and give the Managed Identity used by the workflow the RBAC permission to write to the target storage account. 
+
+## Overall Health Data
+
+Overall health data are collected by running scripts locally, which includes running non-integration tests, running evaluation scripts and extracting key metrics from **local** integration test runs. This can be done by running the `dashboard:collect` command at the root of the repository.
+
+```bash
+npm run dashboard:collect
+```
+
+The collected data will be saved at `data/latest.json` file. To deploy it to the website, move this file into `dashboard/public/data/latest.json` and redeploy the app. The web app will pick up the data and use it to render the dashboard.
