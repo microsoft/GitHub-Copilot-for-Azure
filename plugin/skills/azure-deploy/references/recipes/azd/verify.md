@@ -48,7 +48,7 @@ azd show
 
 Example response format:
 
-```
+```text
 ✅ Deployment succeeded!
 
 | Service | Endpoint |
