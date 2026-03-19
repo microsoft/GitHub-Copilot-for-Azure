@@ -23,7 +23,7 @@ return_success() {
 extract_json_field() {
     local json="$1"
     local field="$2"
-    echo "$json" | sed -n "s/.*\"$field\":\s*\"\([^\"]*\)\".*/\1/p"
+    echo "$json" | sed -n "s/.*\"$field\":[[:space:]]*\"\([^\"]*\)\".*/\1/p"
 }
 
 # Extract nested field from toolArgs/tool_input (e.g., toolArgs.skill or tool_input.skill)
@@ -32,9 +32,9 @@ extract_toolargs_field() {
     local field="$2"
     local value=""
     # Try Copilot CLI format (toolArgs) first, then Claude Code format (tool_input)
-    value=$(echo "$json" | sed -n "s/.*\"toolArgs\":\s*{[^}]*\"$field\":\s*\"\([^\"]*\)\".*/\1/p")
+    value=$(echo "$json" | sed -n "s/.*\"toolArgs\":[[:space:]]*{[^}]*\"$field\":[[:space:]]*\"\([^\"]*\)\".*/\1/p")
     if [ -z "$value" ]; then
-        value=$(echo "$json" | sed -n "s/.*\"tool_input\":\s*{[^}]*\"$field\":\s*\"\([^\"]*\)\".*/\1/p")
+        value=$(echo "$json" | sed -n "s/.*\"tool_input\":[[:space:]]*{[^}]*\"$field\":[[:space:]]*\"\([^\"]*\)\".*/\1/p")
     fi
     echo "$value"
 }
@@ -45,16 +45,16 @@ extract_toolargs_path() {
     local path_value=""
 
     # Try Copilot CLI format (toolArgs) first
-    path_value=$(echo "$json" | sed -n 's/.*"toolArgs":\s*{[^}]*"path":\s*"\([^"]*\)".*/\1/p')
+    path_value=$(echo "$json" | sed -n 's/.*"toolArgs":[[:space:]]*{[^}]*"path":[[:space:]]*"\([^"]*\)".*/\1/p')
     if [ -z "$path_value" ]; then
-        path_value=$(echo "$json" | sed -n 's/.*"toolArgs":\s*{[^}]*"filePath":\s*"\([^"]*\)".*/\1/p')
+        path_value=$(echo "$json" | sed -n 's/.*"toolArgs":[[:space:]]*{[^}]*"filePath":[[:space:]]*"\([^"]*\)".*/\1/p')
     fi
     # Fall back to Claude Code format (tool_input)
     if [ -z "$path_value" ]; then
-        path_value=$(echo "$json" | sed -n 's/.*"tool_input":\s*{[^}]*"file_path":\s*"\([^"]*\)".*/\1/p')
+        path_value=$(echo "$json" | sed -n 's/.*"tool_input":[[:space:]]*{[^}]*"file_path":[[:space:]]*"\([^"]*\)".*/\1/p')
     fi
     if [ -z "$path_value" ]; then
-        path_value=$(echo "$json" | sed -n 's/.*"tool_input":\s*{[^}]*"path":\s*"\([^"]*\)".*/\1/p')
+        path_value=$(echo "$json" | sed -n 's/.*"tool_input":[[:space:]]*{[^}]*"path":[[:space:]]*"\([^"]*\)".*/\1/p')
     fi
 
     echo "$path_value"
