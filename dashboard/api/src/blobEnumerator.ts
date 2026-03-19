@@ -58,20 +58,30 @@ function isExcluded(blobName: string): boolean {
 }
 
 /**
- * List all top-level date prefixes (yyyy-mm-dd) in the integration-reports container.
+ * List top-level date prefixes (yyyy-mm-dd) in the integration-reports container
+ * that fall within 30 days before or after today.
  * Uses hierarchical listing with "/" delimiter to efficiently enumerate only the
  * first-level virtual directories without downloading the full blob list.
  *
- * @returns An array of date strings sorted in descending order.
+ * @returns An array of date strings within the ±30-day window, sorted in descending order.
  */
 export async function listDates(): Promise<string[]> {
     const containerClient = getContainerClient();
+    const now = new Date();
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const minDate = new Date(now.getTime() - 30 * msPerDay);
+    const maxDate = new Date(now.getTime() + 30 * msPerDay);
+
     const dates: string[] = [];
 
     for await (const item of containerClient.listBlobsByHierarchy("/")) {
         if (item.kind === "prefix" && item.name) {
             // item.name is "yyyy-mm-dd/", strip the trailing slash
-            dates.push(item.name.replace(/\/$/, ""));
+            const dateStr = item.name.replace(/\/$/, "");
+            const parsed = new Date(dateStr + "T00:00:00");
+            if (!isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
+                dates.push(dateStr);
+            }
         }
     }
 
