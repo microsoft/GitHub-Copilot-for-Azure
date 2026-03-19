@@ -5,7 +5,7 @@
  * produces a {@link CategoryReport} with one item per test suite.
  */
 
-import { readFile, access, readdir, open } from "node:fs/promises";
+import { readFile, readdir, open } from "node:fs/promises";
 import path from "node:path";
 import { XMLParser } from "fast-xml-parser";
 import type {
