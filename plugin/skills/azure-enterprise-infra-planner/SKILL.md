@@ -4,7 +4,7 @@ description: "Architect and provision enterprise Azure infrastructure from workl
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Azure Enterprise Infra Planner
@@ -58,8 +58,9 @@ Read [workflow.md](references/workflow.md) for detailed step-by-step instruction
 ## Error Handling
 
 | Error | Cause | Fix |
-|-------|-------|-----|
-| MCP tool unreachable | Tool call timeout or connection error | Retry once; fall back to reference files and notify user |
-| `bicepschema_get` returns empty | Invalid ARM type string | Verify format matches `Microsoft.{Provider}/{resourceType}` from resource category files; try parent type instead of sub-resource |
-| `microsoft_docs_search` returns no results | Search terms too specific or misspelled | Broaden search terms; fall back to `microsoft_docs_fetch` with direct URL from resource category files |
-| `wellarchitectedframework_serviceguide_get` returns empty URL | Service name not recognized | Check exact service name (e.g., "Container Apps" not "ACA"); skip and note gap in plan reasoning |
+|---|---|---|
+| MCP tool error or not available | Tool call timeout, connection error, or tool doesn't exist | Retry once; fall back to reference files and notify user if unresolved |
+| Plan approval missing | `meta.status` is not `approved` | Stop and prompt user for approval before IaC generation or deployment |
+| IaC validation failure | `az bicep build` or `terraform validate` returns errors | Fix the generated code and re-validate; notify user if unresolved |
+| Pairing constraint violation | Incompatible SKU or resource combination | Fix in plan before proceeding to IaC generation |
+| Infra plan or IaC files not found | Files written to wrong location or not created | Verify files exist at `<project-root>/.azure/` and `<project-root>/infra/`; if missing, re-create the files by following [workflow.md](references/workflow.md) exactly |
