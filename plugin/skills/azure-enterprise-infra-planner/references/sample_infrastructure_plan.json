@@ -109,7 +109,7 @@
           "enableSoftDelete": true,
           "enablePurgeProtection": true,
           "softDeleteRetentionInDays": 90,
-          "tenantId": "[subscription().tenantId]",
+          "tenantId": "<tenant-id>",
           "sku": {
             "name": "standard",
             "family": "A"
@@ -148,8 +148,8 @@
           "appLogsConfiguration": {
             "destination": "log-analytics",
             "logAnalyticsConfiguration": {
-              "customerId": "[reference log-datapipeline-dev-001 customerId]",
-              "sharedKey": "[reference log-datapipeline-dev-001 sharedKey]"
+              "customerId": "<customer-id>",
+              "sharedKey": "<shared-key>"
             }
           },
           "workloadProfiles": [
@@ -369,11 +369,11 @@
         "location": "eastus",
         "sku": "Consumption",
         "properties": {
-          "environmentId": "[resourceId cae-datapipeline-dev-001]",
+          "environmentId": "<environment-resource-id>",
           "identity": {
             "type": "UserAssigned",
             "userAssignedIdentities": {
-              "[resourceId id-datapipeline-dev-001]": {}
+              "<managed-identity-resource-id>": {}
             }
           },
           "configuration": {
