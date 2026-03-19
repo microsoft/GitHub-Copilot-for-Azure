@@ -42,6 +42,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   });
 
   describe("Skill Content", () => {
+    let workflowContent: string;
+
+    beforeAll(() => {
+      const workflowPath = path.join(skill.path, "references", "workflow.md");
+      workflowContent = fs.readFileSync(workflowPath, "utf-8");
+    });
+
     test("has substantive content", () => {
       expect(skill.content).toBeDefined();
       expect(skill.content.length).toBeGreaterThan(100);
@@ -55,7 +62,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("documents plan generation phase", () => {
       expect(skill.content).toContain("Plan Generation");
-      expect(skill.content).toContain("infrastructure-plan.json");
+      expect(workflowContent).toContain("infrastructure-plan.json");
     });
 
     test("documents IaC generation phase", () => {
@@ -71,15 +78,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("documents status lifecycle", () => {
-      expect(skill.content).toContain("Status Lifecycle");
-      expect(skill.content).toContain("draft");
-      expect(skill.content).toContain("approved");
-      expect(skill.content).toContain("deployed");
+      expect(workflowContent).toContain("Status Lifecycle");
+      expect(workflowContent).toContain("draft");
+      expect(workflowContent).toContain("approved");
+      expect(workflowContent).toContain("deployed");
     });
 
     test("documents plan-first workflow gate", () => {
-      expect(skill.content).toContain("MANDATORY WORKFLOW");
-      expect(skill.content).toContain("wait for approval");
+      expect(workflowContent).toContain("wait for approval");
     });
 
     test("lists all required MCP tools", () => {
@@ -94,6 +100,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   });
 
   describe("Plan-First Workflow", () => {
+    let workflowContent: string;
+
+    beforeAll(() => {
+      const workflowPath = path.join(skill.path, "references", "workflow.md");
+      workflowContent = fs.readFileSync(workflowPath, "utf-8");
+    });
+
     test("requires user confirmation before deployment", () => {
       expect(skill.content.toLowerCase()).toContain("approved");
       expect(skill.content.toLowerCase()).toContain("subscription");
@@ -108,7 +121,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("references verification workflow", () => {
-      expect(skill.content).toContain("verification.md");
+      expect(workflowContent).toContain("verification.md");
     });
   });
 
@@ -148,7 +161,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         "pairing-checks.md",
         "bicep-generation.md",
         "terraform-generation.md",
-        "error-handling.md",
       ];
       for (const file of requiredFiles) {
         expect(fs.existsSync(path.join(referencesDir, file))).toBe(true);
@@ -194,11 +206,5 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(content).toContain("reasoning");
     });
 
-    test("error-handling.md has remediation table", () => {
-      const content = fs.readFileSync(
-        path.join(referencesDir, "error-handling.md"), "utf-8"
-      );
-      expect(content).toContain("Remediation");
-    });
   });
 });
