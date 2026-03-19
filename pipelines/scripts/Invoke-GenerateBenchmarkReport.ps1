@@ -45,18 +45,16 @@
     # --- Parse run IDs from input file if provided ---
     Write-Host "Parsing run IDs from input path: $InputPath"
     $inputRunIds = @()
-    if ($InputPath) {
-        $runIdsFile = Join-Path $InputPath 'run_ids.json'
-        if (!(Test-Path $runIdsFile)) {
-            throw "run_ids.json not found at $runIdsFile"
-        }
-        $inputRunIds = Get-Content -Path $runIdsFile -Raw | ConvertFrom-Json
-        $inputRunIds = @($inputRunIds)
-        if (-not $inputRunIds -or $inputRunIds.Count -eq 0) {
-            throw "No run IDs found in $runIdsFile. Ensure run_ids.json contains at least one run ID."
-        }
-        Write-Host "Loaded run IDs from ${runIdsFile}: $($inputRunIds -join ',')"
+    $runIdsFile = Join-Path $InputPath 'run_ids.json'
+    if (!(Test-Path $runIdsFile)) {
+        throw "run_ids.json not found at $runIdsFile"
     }
+    $inputRunIds = Get-Content -Path $runIdsFile -Raw | ConvertFrom-Json
+    $inputRunIds = @($inputRunIds)
+    if (-not $inputRunIds -or $inputRunIds.Count -eq 0) {
+        throw "No run IDs found in $runIdsFile. Ensure run_ids.json contains at least one run ID."
+    }
+    Write-Host "Loaded run IDs from ${runIdsFile}: $($inputRunIds -join ',')"
 
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretName = "msbench-report-copilot-usage"
@@ -140,7 +138,12 @@
 
     Write-Host "Cloning $msbenchRepo into $cloneDir"
     # ADO resource id for Azure Repos is 499b84ac-1321-427f-aa17-267ca6975798
-    git -c http.extraheader="AUTHORIZATION: bearer $(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)" `
+    $token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv  
+    if ($pipelineRun) {  
+        Write-Host "##vso[task.setsecret]$token"  
+    }  
+    
+    git -c http.extraheader="AUTHORIZATION: bearer $token" `
         clone --depth 1 $msbenchRepo $cloneDir
     if ($LASTEXITCODE -ne 0) {
         throw "git clone failed with exit code $LASTEXITCODE"

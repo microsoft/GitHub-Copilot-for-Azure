@@ -124,7 +124,12 @@
 
     Write-Host "Cloning $msbenchRepo into $cloneDir"
     # ADO resource id for Azure Repos is 499b84ac-1321-427f-aa17-267ca6975798
-    git -c http.extraheader="AUTHORIZATION: bearer $(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)" `
+    $token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv  
+    if ($pipelineRun) {  
+        Write-Host "##vso[task.setsecret]$token"  
+    }  
+    
+    git -c http.extraheader="AUTHORIZATION: bearer $token" `
         clone --depth 1 $msbenchRepo $cloneDir
     if ($LASTEXITCODE -ne 0) {
         throw "git clone failed with exit code $LASTEXITCODE"
