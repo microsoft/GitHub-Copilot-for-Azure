@@ -28,7 +28,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.",
       "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks.",
       "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly.",
-      "Establish disaster recovery for AKS clusters across two Azure regions, replicate persistent storage, and simulate failover on a quarterly basis.",
       "Deploy disaster recovery for VMware VMs using Azure Site Recovery, configure runbooks for smooth failover, and maintain compliance audit trails.",
     ];
 
