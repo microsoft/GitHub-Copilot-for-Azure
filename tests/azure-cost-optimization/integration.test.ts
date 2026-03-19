@@ -60,7 +60,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "Find orphaned and unused resources in my Azure subscription that I can delete",
+            prompt: "Find orphaned and unused resources in my Azure subscription that I can delete for cost savings",
             shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
