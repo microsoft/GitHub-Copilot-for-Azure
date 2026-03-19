@@ -353,13 +353,13 @@ project_connection_create(
 
 ### 5c. Upload JSONL to Blob Storage
 
-Upload the local dataset file to a `datasets` container in the storage account:
+Upload the local dataset file to the same `eval-datasets` container used for seed datasets so all Foundry-registered eval datasets follow one storage pattern:
 
 ```bash
 az storage blob upload \
   --account-name <storage-account> \
-  --container-name datasets \
-  --name <agent-name>-<source>-v<N>.jsonl \
+  --container-name eval-datasets \
+  --name <agent-name>/<agent-name>-<source>-v<N>.jsonl \
   --file .foundry/datasets/<agent-name>-<source>-v<N>.jsonl \
   --auth-mode login
 ```
@@ -375,7 +375,7 @@ Use `evaluation_dataset_create` with the blob URI and the `AzureStorageAccount` 
 ```
 evaluation_dataset_create(
   projectEndpoint: "<project-endpoint>",
-  datasetContentUri: "https://<storage-account>.blob.core.windows.net/datasets/<file>.jsonl",
+  datasetContentUri: "https://<storage-account>.blob.core.windows.net/eval-datasets/<agent-name>/<agent-name>-<source>-v<N>.jsonl",
   connectionName: "datasets-storage",
   datasetName: "<agent-name>-<source>",
   datasetVersion: "v<N>"

@@ -98,6 +98,9 @@ describe("eval-datasets - Unit Tests", () => {
       expect(traceToDatasetContent).toContain("connectionName");
       expect(traceToDatasetContent).toContain("evaluation_dataset_create");
       expect(traceToDatasetContent).toMatch(/include it in this workflow so the dataset is bound/i);
+      expect(traceToDatasetContent).toContain("--container-name eval-datasets");
+      expect(traceToDatasetContent).toContain("blob.core.windows.net/eval-datasets/");
+      expect(traceToDatasetContent).not.toContain("--container-name datasets");
       expect(seedGuideContent).toMatch(/appending a new entry to the `datasets\[\]` list/i);
       expect(seedGuideContent).toContain('"datasets": [');
       expect(seedGuideContent).toContain('"name": "<agent-name>-eval-seed"');
@@ -138,6 +141,11 @@ describe("eval-datasets - Unit Tests", () => {
       expect(versioningContent).toContain('"version": "v1"');
       expect(versioningContent).toContain('"version": "v2"');
       expect(versioningContent).toContain('"version": "v3"');
+      expect(versioningContent).toContain('"agent": "support-bot-prod"');
+      expect(versioningContent).toContain('"stage": "traces"');
+      expect(versioningContent).toContain('"datasetUri": "<foundry-dataset-uri-v1>"');
+      expect(versioningContent).toContain('"datasetUri": "<foundry-dataset-uri-v2>"');
+      expect(versioningContent).toContain('"datasetUri": "<foundry-dataset-uri-v3>"');
       expect(versioningContent).not.toContain('"name": "support-bot-prod-traces-v1"');
       expect(versioningContent).not.toContain('"name": "support-bot-prod-traces-v2"');
       expect(versioningContent).not.toContain('"version": "1"');
