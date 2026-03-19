@@ -71,45 +71,55 @@ function App() {
 }
 
 function Dashboard() {
-    const [tree, setTree] = useState<BlobTree | null>(null);
     const [dates, setDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [reportMarkdown, setReportMarkdown] = useState<string>("");
     const [fileSections, setFileSections] = useState<FileSection[]>([]);
-    const [loadingTree, setLoadingTree] = useState(true);
+    const [loadingDates, setLoadingDates] = useState(true);
+    const [loadingData, setLoadingData] = useState(false);
     const [loadingReport, setLoadingReport] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Fetch available dates on mount
     useEffect(() => {
-        fetch("/api/data")
+        fetch("/api/dates")
+            .then((res) => {
+                if (!res.ok) throw new Error(`API error: ${res.status}`);
+                return res.json();
+            })
+            .then((data: string[]) => {
+                setDates(data);
+                if (data.length > 0) {
+                    setSelectedDate(data[0]);
+                }
+            })
+            .catch((err) => setError(err.message))
+            .finally(() => setLoadingDates(false));
+    }, []);
+
+    // Fetch data and reports when a date is selected
+    useEffect(() => {
+        if (!selectedDate) return;
+
+        setLoadingData(true);
+        setLoadingReport(true);
+        setFileSections([]);
+        setReportMarkdown("");
+
+        fetch(`/api/data/${encodeURIComponent(selectedDate)}`)
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
             })
             .then((data: BlobTree) => {
-                setTree(data);
-                const sortedDates = Object.keys(data).sort().reverse();
-                setDates(sortedDates);
-                if (sortedDates.length > 0) {
-                    setSelectedDate(sortedDates[0]);
+                const dateNode = data[selectedDate];
+                if (dateNode) {
+                    setFileSections(organizeFilesIntoSections(dateNode));
                 }
             })
             .catch((err) => setError(err.message))
-            .finally(() => setLoadingTree(false));
-    }, []);
+            .finally(() => setLoadingData(false));
 
-    useEffect(() => {
-        if (!selectedDate || !tree) return;
-
-        const dateNode = tree[selectedDate];
-        if (dateNode) {
-            setFileSections(organizeFilesIntoSections(dateNode));
-        } else {
-            setFileSections([]);
-        }
-
-        setLoadingReport(true);
-        setReportMarkdown("");
         fetch(`/api/reports/${encodeURIComponent(selectedDate)}`)
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load reports: ${res.status}`);
@@ -118,14 +128,14 @@ function Dashboard() {
             .then((md) => setReportMarkdown(md))
             .catch((err) => setReportMarkdown(`*Error loading reports: ${err.message}*`))
             .finally(() => setLoadingReport(false));
-    }, [selectedDate, tree]);
+    }, [selectedDate]);
 
     const handleDownload = useCallback((blobName: string) => {
         const viewerUrl = `${window.location.origin}${window.location.pathname}?file=${encodeURIComponent(blobName)}`;
         window.open(viewerUrl, "_blank");
     }, []);
 
-    if (loadingTree) {
+    if (loadingDates) {
         return <div className="nr-app"><p className="nr-loading">Loading&hellip;</p></div>;
     }
 
@@ -160,7 +170,7 @@ function Dashboard() {
                 {/* Center panel - skill reports */}
                 <main className="nr-panel nr-panel-reports">
                     <h2>Skill Reports &mdash; {selectedDate ?? "none"}</h2>
-                    {loadingReport ? (
+                    {loadingReport || loadingData ? (
                         <p>Loading reports&hellip;</p>
                     ) : (
                         <div className="nr-markdown-body">

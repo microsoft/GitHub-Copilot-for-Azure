@@ -58,6 +58,27 @@ function isExcluded(blobName: string): boolean {
 }
 
 /**
+ * List all top-level date prefixes (yyyy-mm-dd) in the integration-reports container.
+ * Uses hierarchical listing with "/" delimiter to efficiently enumerate only the
+ * first-level virtual directories without downloading the full blob list.
+ *
+ * @returns An array of date strings sorted in descending order.
+ */
+export async function listDates(): Promise<string[]> {
+    const containerClient = getContainerClient();
+    const dates: string[] = [];
+
+    for await (const item of containerClient.listBlobsByHierarchy("/")) {
+        if (item.kind === "prefix" && item.name) {
+            // item.name is "yyyy-mm-dd/", strip the trailing slash
+            dates.push(item.name.replace(/\/$/, ""));
+        }
+    }
+
+    return dates.sort().reverse();
+}
+
+/**
  * Enumerate all blobs in the integration-reports container and categorize them
  * into a nested tree structure keyed by date at the top level, then by each
  * subsequent path segment (RUN_ID, skill-name, test-group/test-case, etc.).

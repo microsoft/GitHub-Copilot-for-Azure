@@ -32,7 +32,12 @@ import { enumerateBlobs } from "../blobEnumerator";
  * All ${DATE} are in the format of yyyy-mm-dd.
  */
 async function getData(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const root = await enumerateBlobs();
+    const date = request.params.date;
+    if (!date) {
+        return { status: 400, body: "Missing date parameter" };
+    }
+
+    const root = await enumerateBlobs(`${date}/`);
 
     return {
         status: 200,
@@ -43,6 +48,6 @@ async function getData(request: HttpRequest, context: InvocationContext): Promis
 app.http("getData", {
     methods: ["GET"],
     authLevel: "anonymous",
-    route: "data",
+    route: "data/{date}",
     handler: getData,
 });
