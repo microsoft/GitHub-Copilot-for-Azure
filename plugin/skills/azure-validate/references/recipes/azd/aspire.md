@@ -31,7 +31,7 @@ grep -rn "AddAzureFunctionsProject" . --include="*.cs" -l
 
 ```bash
 # Check only the AppHost file(s) that contain AddAzureFunctionsProject
-grep -l "AddAzureFunctionsProject" $(find . -name "*.cs" -path "*AppHost*") | xargs grep -l "AzureWebJobsSecretStorageType"
+find . -name "*.cs" -path "*AppHost*" -print0 | xargs -0 grep -l "AddAzureFunctionsProject" 2>/dev/null | xargs grep -l "AzureWebJobsSecretStorageType"
 ```
 
 **If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured in the same file**, edit the AppHost source file that contains the `AddAzureFunctionsProject` call (often `Program.cs` in the `*.AppHost` project) to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions project builder chain:

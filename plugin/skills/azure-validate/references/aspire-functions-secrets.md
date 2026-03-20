@@ -24,7 +24,7 @@ If found, check whether `AzureWebJobsSecretStorageType` is already configured in
 
 ```bash
 # Check only the AppHost file(s) that contain AddAzureFunctionsProject
-grep -l "AddAzureFunctionsProject" $(find . -name "*.cs" -path "*AppHost*") | xargs grep -l "AzureWebJobsSecretStorageType"
+find . -name "*.cs" -path "*AppHost*" -print0 | xargs -0 grep -l "AddAzureFunctionsProject" 2>/dev/null | xargs grep -l "AzureWebJobsSecretStorageType"
 ```
 
 **If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured in the same file → fix is required.**
