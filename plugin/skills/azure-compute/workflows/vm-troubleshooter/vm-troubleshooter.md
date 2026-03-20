@@ -48,7 +48,7 @@ Infer the connectivity issue from the user's message. If the issue is clear, pro
 
 If unclear, ask: **"Are you trying to connect via RDP (Windows) or SSH (Linux), and what error message or behavior are you seeing?"**
 
-If the user shares a Azure VM name or resource ID, attempt to use the azure-resource-lookup skill if available. If not available, attempt to the use the Azure CLI.
+If the user shares an Azure VM name or resource ID, attempt to use the azure-resource-lookup skill if available. If not available, attempt to the use the Azure CLI.
 
 ### Phase 2: Route to Solution
 
