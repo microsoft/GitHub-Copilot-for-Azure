@@ -17,7 +17,7 @@ This check is required when **all** of these are true:
 Search for `AddAzureFunctionsProject` in the AppHost source file(s):
 
 ```bash
-grep -rn "AddAzureFunctionsProject" . --include="*.cs" -l
+grep -rn "AddAzureFunctionsProject" . --include="*.cs"
 ```
 
 **PowerShell:**
