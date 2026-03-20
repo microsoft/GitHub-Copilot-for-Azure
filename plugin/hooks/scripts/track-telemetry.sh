@@ -202,3 +202,4 @@ fi
 
 # Output success to stdout (required by hooks)
 return_success
+
