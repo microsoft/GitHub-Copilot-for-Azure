@@ -26,6 +26,9 @@ import {
   countApiKeyInByomConfig
 } from "../utils/regression-detectors";
 import {
+  shouldEarlyTerminateForSkillInvocation
+} from "../utils/evaluate";
+import {
   setupExpressApp,
   setupCopilotSdkApp,
   measureInvocationRate,
@@ -57,6 +60,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("greenfield: invokes skill when prompt mentions copilot SDK", async () => {
       const rate = await measureInvocationRate(agent, SKILL_NAME, {
         prompt: "Build an Azure app that uses the Copilot SDK to brutally review GitHub repos based on user input",
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
       }, "greenfield-explicit", RUNS_PER_PROMPT);
       if (rate >= 0) expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     }, TEST_TIMEOUT);
@@ -66,6 +70,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const rate = await measureInvocationRate(agent, SKILL_NAME, {
         setup: setupExpressApp,
         prompt: "Add a Copilot SDK agent to my existing Express app that reviews code",
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
       }, "existing-add-sdk", RUNS_PER_PROMPT);
       if (rate >= 0) expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     }, TEST_TIMEOUT);
@@ -75,6 +80,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const rate = await measureInvocationRate(agent, SKILL_NAME, {
         setup: setupCopilotSdkApp,
         prompt: "Deploy this app to Azure",
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
       }, "existing-sdk-deploy", RUNS_PER_PROMPT);
       if (rate >= 0) expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     }, TEST_TIMEOUT);
@@ -84,6 +90,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const rate = await measureInvocationRate(agent, SKILL_NAME, {
         setup: setupCopilotSdkApp,
         prompt: "Add a new feature to this app that summarizes pull requests",
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
       }, "existing-sdk-modify", RUNS_PER_PROMPT);
       if (rate >= 0) expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     }, TEST_TIMEOUT);
@@ -92,6 +99,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("greenfield: invokes skill for vague copilot-powered prompt", async () => {
       const rate = await measureInvocationRate(agent, SKILL_NAME, {
         prompt: "Help me set up a copilot-powered Azure app that does code review",
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
       }, "greenfield-vague", RUNS_PER_PROMPT);
       if (rate >= 0) expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
     }, TEST_TIMEOUT);

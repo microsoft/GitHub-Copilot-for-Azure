@@ -52,7 +52,7 @@ function logRate(skillName: string, label: string, successCount: number, runsPer
 export async function measureInvocationRate(
   agent: ReturnType<typeof useAgentRunner>,
   skillName: string,
-  config: { prompt: string; setup?: (workspace: string) => Promise<void> },
+  config: { prompt: string; setup?: (workspace: string) => Promise<void>; shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean },
   label: string,
   runsPerPrompt: number
 ): Promise<number> {
