@@ -72,10 +72,33 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Compare Azure VM pricing tiers for compute-optimized sizes",
       "What is the cheapest Azure VM for running a small website?",
       "Estimate monthly cost for an Azure VM scale set with autoscale",
+      "How much does a Standard_D4s_v5 Azure VM cost per hour in East US?",
     ];
 
     test.each(pricingPrompts)(
       'triggers on pricing prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting", () => {
+    const vmTroubleshootingPrompts: string[] = [
+      "I can't connect to my Azure VM via RDP",
+      "SSH connection to my Azure VM is refused",
+      "My Azure VM is unreachable after updating NSG rules",
+      "How do I reset the password on my Azure VM?",
+      "RDP to my Azure VM shows a black screen",
+      "I can't SSH into my Azure Linux VM anymore",
+      "Azure VM connectivity issue after reboot",
+      "Troubleshoot why I can't reach my VM on port 3389",
+    ];
+
+    test.each(vmTroubleshootingPrompts)(
+      'triggers on troubleshooting prompt: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(true);
