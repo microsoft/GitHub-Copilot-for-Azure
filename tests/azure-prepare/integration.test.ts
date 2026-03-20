@@ -22,6 +22,7 @@ import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyT
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
 const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+const invocationRateThreshold = 0.8;
 
 /**
  * System prompt override for prepare-deployment tests.
@@ -50,6 +51,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("skill-invocation", () => {
     const followUp = ["Go with recommended options."];
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -60,6 +62,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -68,9 +73,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for modernizing application for Azure prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -81,6 +88,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -89,9 +99,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for Key Vault secrets integration prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -102,6 +114,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -110,9 +125,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for Azure Identity authentication prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -123,6 +140,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -131,8 +151,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
     test("invokes azure-prepare skill for Azure deployment with Terraform prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -143,6 +165,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -151,9 +176,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for create serverless HTTP API and deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -164,6 +191,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -172,9 +202,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for create event-driven function app and deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -185,6 +217,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -193,9 +228,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for create Azure Functions app with timer trigger prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -206,6 +243,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -214,10 +254,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (SWA) ---
     test("invokes azure-prepare skill for static whiteboard web app deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -228,6 +270,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -236,9 +281,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for static portfolio website deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -249,6 +296,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -257,10 +307,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (App Service) ---
     test("invokes azure-prepare skill for discussion board App Service deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -271,6 +323,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -279,9 +334,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for todo list App Service deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -292,6 +349,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -300,10 +360,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (Azure Functions) ---
     test("invokes azure-prepare skill for serverless HTTP API Functions deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -314,6 +376,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -322,9 +387,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for event-driven function app deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -335,6 +402,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -343,9 +413,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for Python function app Service Bus trigger deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -356,6 +428,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -364,10 +439,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (Container Apps) ---
     test("invokes azure-prepare skill for containerized web app Container Apps deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -378,6 +455,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -386,9 +466,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for Node.js Container Apps deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -399,6 +481,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -407,10 +492,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (Terraform SWA) ---
     test("invokes azure-prepare skill for static whiteboard Terraform deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -421,6 +508,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -429,9 +519,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for static portfolio Terraform deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -442,6 +534,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -450,10 +545,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (Terraform App Service) ---
     test("invokes azure-prepare skill for discussion board Terraform App Service deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -464,6 +561,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -472,9 +572,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for todo list Terraform App Service deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -485,6 +587,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -493,10 +598,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (Terraform Azure Functions) ---
     test("invokes azure-prepare skill for serverless HTTP API Terraform Functions deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -507,6 +614,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -515,9 +625,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for event-driven function app Terraform deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -528,6 +640,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -536,9 +651,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for URL shortener Terraform Functions deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -549,6 +666,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -557,10 +677,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // --- Deploy integration test prompts (Terraform Container Apps) ---
     test("invokes azure-prepare skill for containerized web app Terraform Container Apps deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -571,6 +693,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -579,9 +704,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for Node.js Terraform Container Apps deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -592,6 +719,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -600,9 +730,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-prepare skill for social media app Terraform deploy prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -613,6 +745,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -621,6 +756,33 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+    });
+
+    test("invokes azure-prepare skill for APIM deployment prompt", async () => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Deploy a new Azure API Management instance for my application",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
   });
 

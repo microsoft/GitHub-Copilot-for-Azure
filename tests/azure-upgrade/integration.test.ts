@@ -27,7 +27,7 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { softCheckSkill, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-upgrade";
 
@@ -56,6 +56,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
+        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
       } catch (e: unknown) {
         if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
           console.log("⏭️  SDK not loadable, skipping test");
@@ -75,6 +76,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
+        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
       } catch (e: unknown) {
         if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
           console.log("⏭️  SDK not loadable, skipping test");

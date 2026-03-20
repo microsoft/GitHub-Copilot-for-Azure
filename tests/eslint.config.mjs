@@ -84,7 +84,7 @@ export default defineConfig(
       "@typescript-eslint/no-require-imports": "error",
       // A significant number of integration tests generate reports for human review.
       // We don't have deterministic metrics for them yet.
-      "jest/expect-expect": "off",
+      "jest/expect-expect": "warn",
       "import/no-unused-modules": [1, { "unusedExports": true }]
     },
   },

@@ -21,6 +21,7 @@ const RECOMMENDER_WORKFLOW_PATH = /workflows\/vm-recommender\/vm-recommender\.md
 const TROUBLESHOOTER_WORKFLOW_PATH = /workflows\/vm-troubleshooter\/vm-troubleshooter\.md/i;
 const VMSS_GUIDE_PATH = /references\/vmss-guide\.md/i;
 const RUNS_PER_PROMPT = 5;
+const invocationRateThreshold = 0.8;
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
