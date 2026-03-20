@@ -12,7 +12,8 @@ import {
   useAgentRunner,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
-  getIntegrationSkipReason
+  getIntegrationSkipReason,
+  AgentMetadata
 } from "../utils/agent-runner";
 import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
@@ -158,28 +159,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("sdk-configuration-guidance", async () => {
       const prompt =
-        "How do I configure retry policy and prefetch count for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
+        "How do I configure retry policy for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
 
       let invoked = false;
       let hasRelevantContent = false;
 
+      const hasExpectedContent = (metadata: AgentMetadata) =>
+        doesAssistantMessageIncludeKeyword(metadata, "retry", { caseSensitive: false }) &&
+        (doesAssistantMessageIncludeKeyword(metadata, "EventHubConsumerClient", { caseSensitive: false }) ||
+          doesAssistantMessageIncludeKeyword(metadata, "retry_total", { caseSensitive: false }) ||
+          doesAssistantMessageIncludeKeyword(metadata, "retry_backoff", { caseSensitive: false }));
+
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
+          // Terminate early once the skill is invoked AND the response
+          // contains the expected SDK-specific retry keywords.
           const agentMetadata = await agent.run({
             prompt,
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+            shouldEarlyTerminate: (metadata) =>
+              isSkillInvoked(metadata, SKILL_NAME) && hasExpectedContent(metadata)
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invoked = true;
-            // Validate response provides SDK configuration guidance
-            hasRelevantContent =
-              (doesAssistantMessageIncludeKeyword(agentMetadata, "retry", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch", { caseSensitive: false })) &&
-              (doesAssistantMessageIncludeKeyword(agentMetadata, "EventHubConsumerClient", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_total", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "retry_backoff", { caseSensitive: false }) ||
-                doesAssistantMessageIncludeKeyword(agentMetadata, "prefetch_count", { caseSensitive: false }));
+            hasRelevantContent = hasExpectedContent(agentMetadata);
             if (hasRelevantContent) break;
           }
         } catch (e: unknown) {
