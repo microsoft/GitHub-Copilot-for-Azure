@@ -20,11 +20,24 @@ Search for `AddAzureFunctionsProject` in the AppHost source file(s):
 grep -rn "AddAzureFunctionsProject" . --include="*.cs" -l
 ```
 
+**PowerShell:**
+```powershell
+Get-ChildItem -Recurse -Filter "*.cs" | Select-String "AddAzureFunctionsProject" -List
+```
+
 If found, check whether `AzureWebJobsSecretStorageType` is already configured in those same file(s):
 
 ```bash
 # Check only the AppHost file(s) that contain AddAzureFunctionsProject
 find . -name "*.cs" -path "*AppHost*" -print0 | xargs -0 grep -l "AddAzureFunctionsProject" 2>/dev/null | xargs grep -l "AzureWebJobsSecretStorageType"
+```
+
+**PowerShell:**
+```powershell
+Get-ChildItem -Recurse -Filter "*.cs" |
+  Where-Object { $_.FullName -match "AppHost" } |
+  Select-String "AddAzureFunctionsProject" -List |
+  ForEach-Object { Select-String "AzureWebJobsSecretStorageType" -Path $_.Path }
 ```
 
 **If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured in the same file → fix is required.**
