@@ -1,0 +1,23 @@
+{
+    "name": "skill-test-dashboard-api",
+    "version": "1.0.0",
+    "private": true,
+    "description": "SWA managed API for Skill Test Dashboard",
+    "main": "dist/src/functions/*.js",
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w",
+        "prestart": "npm run build",
+        "start": "func start",
+        "test": "echo \"No tests yet\""
+    },
+    "dependencies": {
+        "@azure/functions": "^4.6.0",
+        "@azure/identity": "^4.13.0",
+        "@azure/storage-blob": "^12.31.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "typescript": "^5.9.3"
+    }
+}

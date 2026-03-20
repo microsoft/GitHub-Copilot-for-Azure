@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: ghcp4a-health-dashboard
+metadata:
+  template: azd-init
+services:
+  web:
+    project: .
+    dist: dist
+    host: staticwebapp
+    language: ts
+  api:
+    project: ./api
+    language: ts
+    host: function
