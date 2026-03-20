@@ -14,13 +14,13 @@ parameters:
 trigger: none
 pr: none
 
-# schedules:
-# - cron: '0 8 * * *'
-#   displayName: 'Daily 8am UTC'
-#   branches:
-#     include:
-#     - main
-#   always: true
+schedules:
+- cron: '0 11 * * *'
+  displayName: 'Daily 11am UTC'
+  branches:
+    include:
+    - main
+  always: true
 
 stages:
 - stage: ReportBenchmark
