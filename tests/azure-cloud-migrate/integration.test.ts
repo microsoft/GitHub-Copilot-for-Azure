@@ -43,6 +43,8 @@ function findAzureOutputDir(workspacePath: string): string {
   return siblingPath;
 }
 
+const SKIP_DIRS = new Set([".git", "node_modules"]);
+
 function findDirRecursive(dir: string, targetName: string): string | null {
   let entries: fs.Dirent[];
   try {
@@ -50,14 +52,20 @@ function findDirRecursive(dir: string, targetName: string): string | null {
   } catch {
     return null;
   }
+  const subdirs: fs.Dirent[] = [];
   for (const entry of entries) {
     if (entry.isDirectory()) {
       if (entry.name === targetName) {
         return path.join(dir, entry.name);
       }
-      const found = findDirRecursive(path.join(dir, entry.name), targetName);
-      if (found) return found;
+      if (!SKIP_DIRS.has(entry.name)) {
+        subdirs.push(entry);
+      }
     }
+  }
+  for (const entry of subdirs) {
+    const found = findDirRecursive(path.join(dir, entry.name), targetName);
+    if (found) return found;
   }
   return null;
 }
