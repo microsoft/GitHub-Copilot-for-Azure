@@ -18,6 +18,7 @@
 import { dirname, resolve, relative, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { parseArgs } from "node:util";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -326,6 +327,76 @@ function validateSkill(skillName: string): ValidationResult {
   return { skill: skillName, issues, orphanedFiles };
 }
 
+// ── JSON output ──────────────────────────────────────────────────────────────
+
+export interface ReferenceEntry {
+  source: string;
+  target: string;
+  status: "valid" | "broken" | "warning";
+  message?: string;
+}
+
+export interface ReferencesJsonResult {
+  references: ReferenceEntry[];
+  summary: {
+    total: number;
+    valid: number;
+    broken: number;
+    warnings: number;
+  };
+}
+
+function buildReferencesJson(
+  skills: string[],
+  results: ValidationResult[],
+): ReferencesJsonResult {
+  const references: ReferenceEntry[] = [];
+  let validCount = 0;
+  let brokenCount = 0;
+  let warningCount = 0;
+
+  for (const result of results) {
+    const hasIssues = result.issues.length > 0 || result.orphanedFiles.length > 0;
+
+    if (!hasIssues) {
+      validCount++;
+      continue;
+    }
+
+    // Link issues → broken
+    for (const issue of result.issues) {
+      references.push({
+        source: formatPath(issue.file),
+        target: issue.link,
+        status: "broken",
+        message: issue.reason,
+      });
+      brokenCount++;
+    }
+
+    // Orphaned files → warning
+    for (const orphan of result.orphanedFiles) {
+      references.push({
+        source: formatPath(orphan.file),
+        target: result.skill + "/SKILL.md",
+        status: "warning",
+        message: orphan.reason,
+      });
+      warningCount++;
+    }
+  }
+
+  return {
+    references,
+    summary: {
+      total: skills.length,
+      valid: validCount,
+      broken: brokenCount,
+      warnings: warningCount,
+    },
+  };
+}
+
 // ── CLI entry point ──────────────────────────────────────────────────────────
 
 function listSkills(): string[] {
@@ -342,8 +413,17 @@ function formatPath(absPath: string): string {
 }
 
 function main(): void {
-  const args = process.argv.slice(2);
-  const requestedSkill = args[0];
+  const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      json: { type: "boolean", default: false },
+    },
+    strict: false,
+    allowPositionals: true,
+  });
+
+  const jsonOutput = values.json ?? false;
+  const requestedSkill = positionals[0];
 
   const skills = requestedSkill ? [requestedSkill] : listSkills();
 
@@ -361,6 +441,24 @@ function main(): void {
     }
   }
 
+  // Validate all skills
+  const results: ValidationResult[] = [];
+  for (const skill of skills) {
+    results.push(validateSkill(skill));
+  }
+
+  // ── JSON output mode ────────────────────────────────────────────────────
+  if (jsonOutput) {
+    const jsonResult = buildReferencesJson(skills, results);
+    console.log(JSON.stringify(jsonResult, null, 2));
+    const hasErrors = results.some(r => r.issues.length > 0);
+    if (hasErrors) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  // ── Console output mode (default) ───────────────────────────────────────
   console.log("\n🔗 Markdown Reference Validator\n");
   console.log("────────────────────────────────────────────────────────────");
 
@@ -368,20 +466,19 @@ function main(): void {
   let totalOrphanedFiles = 0;
   let skillsWithIssues = 0;
 
-  for (const skill of skills) {
-    const result = validateSkill(skill);
+  for (const result of results) {
     const hasLinkIssues = result.issues.length > 0;
     const hasOrphanedFiles = result.orphanedFiles.length > 0;
 
     if (!hasLinkIssues && !hasOrphanedFiles) {
-      console.log(`  ✅ ${skill}`);
+      console.log(`  ✅ ${result.skill}`);
     } else {
       skillsWithIssues++;
       const issueCount = result.issues.length + result.orphanedFiles.length;
       totalIssues += result.issues.length;
       totalOrphanedFiles += result.orphanedFiles.length;
 
-      console.log(`  ❌ ${skill} — ${issueCount} issue(s)`);
+      console.log(`  ❌ ${result.skill} — ${issueCount} issue(s)`);
 
       // Report link issues
       for (const issue of result.issues) {

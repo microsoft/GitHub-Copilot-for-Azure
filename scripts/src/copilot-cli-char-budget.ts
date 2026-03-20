@@ -7,7 +7,10 @@ import { listSkills, loadSkill } from "./shared/skill-helper.js";
 import { escapeXml } from "./shared/string-helpers.js";
 
 const SKILL_CHAR_BUDGET_ENV = "SKILL_CHAR_BUDGET";
-const DEFAULT_SKILL_CHAR_BUDGET = 15000;
+// Note: Copilot CLI's default skill char budget is 15000,
+// we set our budget to 20000 as a soft cap to not block skill contributions
+// and remind us when the consumption grows too fast.
+const DEFAULT_SKILL_CHAR_BUDGET = 20000;
 
 function getSkillCharBudget() {
   const envBudget = process.env[SKILL_CHAR_BUDGET_ENV];
