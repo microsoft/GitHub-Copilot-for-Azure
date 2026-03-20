@@ -9,7 +9,7 @@ metadata:
 
 # Azure Compute Skill
 
-Routes Azure VM requests to the appropriate sub-skill based on user intent.
+Routes Azure VM requests to the appropriate workflow based on user intent.
 
 ## When to Use This Skill
 
@@ -26,23 +26,23 @@ Activate this skill when the user:
 ```text
 User intent?
 ├─ Recommend / choose / compare / price a VM or VMSS
-│  └─ Route to [VM Recommender](agents/vm-recommender.md)
+│  └─ Route to [VM Recommender](workflows/vm-recommender/vm-recommender.md)
 │
 ├─ Can't connect / RDP / SSH / troubleshoot a VM
-│  └─ Route to [VM Troubleshooter](agents/vm-troubleshooter.md)
+│  └─ Route to [VM Troubleshooter](workflows/vm-troubleshooter/vm-troubleshooter.md)
 │
 └─ Unclear
    └─ Ask: "Are you looking for a VM recommendation, or troubleshooting a connectivity issue?"
 ```
 
-| Signal                                                                        | Sub-Skill                                              |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------ |
-| "recommend VM", "which VM", "VM size", "VM pricing", "VMSS", "scale set"     | [VM Recommender](agents/vm-recommender.md)             |
-| "can't connect", "RDP", "SSH", "NSG blocking", "reset password", "black screen" | [VM Troubleshooter](agents/vm-troubleshooter.md)       |
+| Signal                                                                        | Workflow                                                           |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| "recommend VM", "which VM", "VM size", "VM pricing", "VMSS", "scale set"     | [VM Recommender](workflows/vm-recommender/vm-recommender.md)       |
+| "can't connect", "RDP", "SSH", "NSG blocking", "reset password", "black screen" | [VM Troubleshooter](workflows/vm-troubleshooter/vm-troubleshooter.md) |
 
-## Sub-Skills
+## Workflows
 
-| Sub-Skill          | Purpose                                                  | References                                                                   |
-| ------------------ | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **VM Recommender** | Recommend VM sizes, VMSS, pricing using public APIs/docs | [vm-families](references/vm-families.md), [retail-prices-api](references/retail-prices-api.md), [vmss-guide](references/vmss-guide.md) |
-| **VM Troubleshooter** | Diagnose and resolve VM connectivity failures (RDP/SSH) | [cannot-connect-to-vm](references/vm-troubleshooting/cannot-connect-to-vm.md) |
+| Workflow              | Purpose                                                  | References                                                                   |
+| --------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **VM Recommender**    | Recommend VM sizes, VMSS, pricing using public APIs/docs | [vm-families](references/vm-families.md), [retail-prices-api](references/retail-prices-api.md), [vmss-guide](references/vmss-guide.md) |
+| **VM Troubleshooter** | Diagnose and resolve VM connectivity failures (RDP/SSH) | [cannot-connect-to-vm](workflows/vm-troubleshooter/references/cannot-connect-to-vm.md) |

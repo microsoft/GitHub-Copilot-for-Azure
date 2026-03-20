@@ -72,6 +72,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Compare Azure VM pricing tiers for compute-optimized sizes",
       "What is the cheapest Azure VM for running a small website?",
       "Estimate monthly cost for an Azure VM scale set with autoscale",
+      "How much does a Standard_D4s_v5 Azure VM cost per hour in East US?",
     ];
 
     test.each(pricingPrompts)(

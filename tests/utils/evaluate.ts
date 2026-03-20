@@ -111,6 +111,25 @@ export function isSkillInvoked(metadata: AgentMetadata, skillName: string): bool
     });
 }
 
+/**
+ * Normalize serialized tool arguments so Windows paths are comparable with slash-based regexes
+ */
+function normalizeToolArgumentText(argumentsData: unknown): string {
+  return JSON.stringify(argumentsData ?? {})
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/");
+}
+
+/**
+ * Check whether a tool was called and its serialized arguments match the given pattern
+ */
+export function isToolCalled(metadata: AgentMetadata, toolName: string, argumentPattern: RegExp): boolean {
+  return getToolCalls(metadata, toolName).some(event => {
+    const argsText = normalizeToolArgumentText(event.data.arguments);
+    return argumentPattern.test(argsText);
+  });
+}
+
 export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
   const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
 

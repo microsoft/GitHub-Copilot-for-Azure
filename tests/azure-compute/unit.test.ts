@@ -1,7 +1,7 @@
 /**
  * Unit Tests for azure-compute
  *
- * Tests the azure-compute router skill, its sub-skills
+ * Tests the azure-compute router skill, its workflows
  * (vm-recommender and vm-troubleshooter), and reference files.
  */
 
@@ -64,8 +64,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Routing");
     });
 
-    test("contains sub-skills section", () => {
-      expect(skill.content).toContain("## Sub-Skills");
+    test("contains workflows section", () => {
+      expect(skill.content).toContain("## Workflows");
     });
 
     test("routes to vm-recommender", () => {
@@ -88,13 +88,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("VM Recommender Sub-Skill", () => {
+  describe("VM Recommender Workflow", () => {
     let recommenderContent: string;
 
     beforeAll(async () => {
       const agentFile = path.join(
         SKILLS_PATH,
-        "azure-compute/agents/vm-recommender.md"
+        "azure-compute/workflows/vm-recommender/vm-recommender.md"
       );
       recommenderContent = await fs.readFile(agentFile, "utf-8");
     });
@@ -198,20 +198,20 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       );
     });
 
-    test("references use relative paths to parent references dir", () => {
-      expect(recommenderContent).toContain("../references/vm-families.md");
-      expect(recommenderContent).toContain("../references/retail-prices-api.md");
-      expect(recommenderContent).toContain("../references/vmss-guide.md");
+    test("references use relative paths to shared references dir", () => {
+      expect(recommenderContent).toContain("../../references/vm-families.md");
+      expect(recommenderContent).toContain("../../references/retail-prices-api.md");
+      expect(recommenderContent).toContain("../../references/vmss-guide.md");
     });
   });
 
-  describe("VM Troubleshooter Sub-Skill", () => {
+  describe("VM Troubleshooter Workflow", () => {
     let troubleshooterContent: string;
 
     beforeAll(async () => {
       const agentFile = path.join(
         SKILLS_PATH,
-        "azure-compute/agents/vm-troubleshooter.md"
+        "azure-compute/workflows/vm-troubleshooter/vm-troubleshooter.md"
       );
       troubleshooterContent = await fs.readFile(agentFile, "utf-8");
     });
@@ -256,8 +256,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(troubleshooterContent).toContain("### Phase 5: Escalation");
     });
 
-    test("references use relative paths to parent references dir", () => {
-      expect(troubleshooterContent).toContain("../references/vm-troubleshooting/cannot-connect-to-vm.md");
+    test("references use local workflow reference path", () => {
+      expect(troubleshooterContent).toContain("references/cannot-connect-to-vm.md");
     });
   });
 
@@ -286,7 +286,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         "utf-8"
       );
       cannotConnectContent = await fs.readFile(
-        path.join(refsDir, "vm-troubleshooting/cannot-connect-to-vm.md"),
+        path.join(
+          SKILLS_PATH,
+          "azure-compute/workflows/vm-troubleshooter/references/cannot-connect-to-vm.md"
+        ),
         "utf-8"
       );
     });

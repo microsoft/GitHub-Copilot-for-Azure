@@ -8,7 +8,7 @@
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Best for      | RDP/SSH connection failures, NSG/firewall misconfig, credential resets, NIC issues                                |
 | Primary tools | Azure CLI, Azure PowerShell, Serial Console, Boot Diagnostics, Run Command                                        |
-| Reference     | [references/vm-troubleshooting/cannot-connect-to-vm.md](../references/vm-troubleshooting/cannot-connect-to-vm.md) |
+| Reference     | [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) |
 
 ## MCP Tools
 
@@ -52,7 +52,7 @@ If the user shares a Azure VM name or resource ID, attempt to use the azure-reso
 
 ### Phase 2: Route to Solution
 
-Open [references/vm-troubleshooting/cannot-connect-to-vm.md](../references/vm-troubleshooting/cannot-connect-to-vm.md) and find the **Symptoms → Solutions** table that matches the user's category. Narrow down to the specific row matching their symptom.
+Open [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) and find the **Symptoms → Solutions** table that matches the user's category. Narrow down to the specific row matching their symptom.
 
 If additional details are needed to narrow to a specific solution row, ask the user. For example:
 - "What error message do you see in the RDP dialog?"
@@ -107,4 +107,4 @@ If the symptom doesn't match any solution in the reference file, or the fix does
 
 ## References
 
-- [Cannot Connect to VM — Symptom Router](../references/vm-troubleshooting/cannot-connect-to-vm.md)
+- [Cannot Connect to VM — Symptom Router](references/cannot-connect-to-vm.md)
