@@ -21,29 +21,8 @@ A project is Aspire-based if any of these are true:
 
 > ⚠️ **CRITICAL — Must run BEFORE `azd provision`.**
 
-Check if the project uses Azure Functions within Aspire by searching the AppHost source file(s):
-
-```bash
-grep -rn "AddAzureFunctionsProject" . --include="*.cs" -l
-```
-
-**If found**, check whether `AzureWebJobsSecretStorageType` is already configured in those same file(s):
-
-```bash
-# Check only the AppHost file(s) that contain AddAzureFunctionsProject
-find . -name "*.cs" -path "*AppHost*" -print0 | xargs -0 grep -l "AddAzureFunctionsProject" 2>/dev/null | xargs grep -l "AzureWebJobsSecretStorageType"
-```
-
-**If `AddAzureFunctionsProject` is present but `AzureWebJobsSecretStorageType` is NOT configured in the same file**, edit the AppHost source file that contains the `AddAzureFunctionsProject` call (often `Program.cs` in the `*.AppHost` project) to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions project builder chain:
-
-```csharp
-var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
-    .WithHostStorage(storage)
-    .WithEnvironment("AzureWebJobsSecretStorageType", "Files")  // Required for Container Apps
-    // ... other configuration
-```
-
-> 💡 **Why:** Azure Functions' secret/key management does not support identity-based storage URIs. Without this setting, the Functions host fails at startup. See [Aspire Functions Secrets Reference](../../aspire-functions-secrets.md) for full details and before/after examples.
+Check if the project uses Azure Functions within Aspire and ensure `AzureWebJobsSecretStorageType` is configured.
+See [Aspire Functions Secrets Reference](../../aspire-functions-secrets.md) for detection commands, fix examples, and full details.
 
 **If `AddAzureFunctionsProject` is NOT found**, skip this section.
 
