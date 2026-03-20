@@ -517,7 +517,7 @@ export function useAgentRunner() {
         env: {
           ...process.env,
           SKILLS_INSTRUCTIONS: "true",
-          SKILL_CHAR_BUDGET_ENV: "20000"
+          SKILL_CHAR_BUDGET: "20000"
         }
       }) as CopilotClient;
       entry.client = client;
