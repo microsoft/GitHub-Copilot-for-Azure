@@ -8,6 +8,8 @@
  * 2. Run `copilot` and authenticate
  */
  
+import * as fs from "fs";
+import * as path from "path";
 import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -15,6 +17,50 @@ import {
 } from "../utils/agent-runner";
 import { cloneRepo } from "../utils/git-clone";
 import { expectFiles, isSkillInvoked } from "../utils/evaluate";
+
+/**
+ * Find the -azure output directory. The skill may create it as a sibling
+ * of the workspace (e.g. /tmp/ws-azure) or nested inside the workspace
+ * (e.g. /tmp/ws/ws-azure). Returns the first match found.
+ */
+function findAzureOutputDir(workspacePath: string): string {
+  const basename = path.basename(workspacePath);
+  const azureDirName = basename + "-azure";
+
+  // Check sibling location first (original expected path)
+  const siblingPath = workspacePath + "-azure";
+  if (fs.existsSync(siblingPath)) {
+    return siblingPath;
+  }
+
+  // Search recursively inside the workspace
+  const nested = findDirRecursive(workspacePath, azureDirName);
+  if (nested) {
+    return nested;
+  }
+
+  // Return sibling path to produce a clear assertion error
+  return siblingPath;
+}
+
+function findDirRecursive(dir: string, targetName: string): string | null {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      if (entry.name === targetName) {
+        return path.join(dir, entry.name);
+      }
+      const found = findDirRecursive(path.join(dir, entry.name), targetName);
+      if (found) return found;
+    }
+  }
+  return null;
+}
  
 const SKILL_NAME = "azure-cloud-migrate";
 const FACE_BLUR_REPO = "https://github.com/aws-samples/serverless-face-blur-service.git";
@@ -59,7 +105,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
  
       // Verify migrated files exist in the -azure directory
       expect(workspacePath).toBeDefined();
-      const migratedPath = workspacePath + "-azure";
+      const migratedPath = findAzureOutputDir(workspacePath!);
       expectFiles(migratedPath, [
         /src\/app\.js$/,
         /src\/detectFaces\.js$/,
@@ -95,7 +141,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
  
       // Verify migrated files exist in the -azure directory
       expect(workspacePath).toBeDefined();
-      const migratedPath = workspacePath + "-azure";
+      const migratedPath = findAzureOutputDir(workspacePath!);
       expectFiles(migratedPath, [
         /migration-status\.md$/,
         /migration-assessment-report\.md$/
