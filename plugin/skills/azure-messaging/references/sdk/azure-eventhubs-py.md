@@ -32,6 +32,8 @@ client = EventHubProducerClient(
 
 ## Consumer Client Retry Configuration
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 Under heavy load, tune the retry policy on `EventHubConsumerClient` to reduce timeouts:
 
 | Parameter | Default | Description |
