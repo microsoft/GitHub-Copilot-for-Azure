@@ -79,7 +79,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       );
     });
 
-    test.only("routes VM vs VMSS prompt to vm-recommender", async () => {
+    test("routes VM vs VMSS prompt to vm-recommender", async () => {
       await expectPromptToInvokeWorkflow(
         "When should I use VMSS versus individual VMs on Azure?",
         VMSS_GUIDE_PATH,
