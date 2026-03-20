@@ -1,0 +1,403 @@
+/* ── Nightly Runs ─────────────────────────────────────────────────────────── */
+/* All classes prefixed with nr- to avoid collision with dashboard styles.    */
+/* Uses the same CSS custom properties defined in assets/style.css.          */
+
+/* ── Page-level overrides ───────────────── */
+/* The nightly-runs view is a full-viewport app; prevent body scroll. */
+body:has(.nr-dashboard),
+body:has(.nr-file-viewer) {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── App shell ──────────────────────────── */
+
+.nr-app {
+    padding: 24px 32px;
+}
+
+.nr-loading {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.nr-error {
+    color: var(--color-fail);
+    font-weight: 600;
+}
+
+/* ── Dashboard layout ───────────────────── */
+
+.nr-dashboard {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 44px);
+    /* subtract nav bar height */
+}
+
+.nr-header {
+    padding: 12px 24px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.nr-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.nr-body {
+    display: grid;
+    grid-template-columns: 200px 1fr 260px;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ── Panels ─────────────────────────────── */
+
+.nr-panel {
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.nr-panel h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+}
+
+.nr-panel-dates h2 {
+    position: sticky;
+    top: 0;
+    background: inherit;
+}
+
+/* Left panel – dates */
+.nr-panel-dates {
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+}
+
+.nr-date-list {
+    list-style: none;
+}
+
+.nr-date-link {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    color: var(--color-text);
+    transition: background 0.15s;
+}
+
+.nr-date-link:hover {
+    background: var(--color-border);
+}
+
+.nr-date-link.active {
+    background: var(--color-focus);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Center panel – reports */
+.nr-panel-reports {
+    background: var(--color-bg);
+    padding: 1.5rem 2rem;
+}
+
+/* Right panel – file list */
+.nr-panel-files {
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+}
+
+.nr-file-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nr-file-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nr-file-section-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    padding: 0.25rem 0.5rem;
+    background: var(--color-border);
+    border-radius: 4px;
+    word-break: break-word;
+    letter-spacing: 0.02em;
+}
+
+.nr-file-list {
+    list-style: none;
+}
+
+.nr-file-link {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--color-focus);
+    word-break: break-all;
+    border-radius: 4px;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+.nr-file-link:hover {
+    background: var(--color-border);
+    text-decoration: underline;
+}
+
+.nr-muted {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+/* ── Markdown body ──────────────────────── */
+
+.nr-markdown-body h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.nr-markdown-body h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 1.25rem 0 0.5rem;
+    color: var(--color-text);
+}
+
+.nr-markdown-body h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.4rem;
+    color: var(--color-text);
+}
+
+.nr-markdown-body p {
+    margin: 0.5rem 0;
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.nr-markdown-body ul,
+.nr-markdown-body ol {
+    margin: 0.5rem 0 0.5rem 1.5rem;
+    color: var(--color-text);
+}
+
+.nr-markdown-body code {
+    background: var(--color-surface);
+    padding: 0.15em 0.35em;
+    border-radius: 4px;
+    font-size: 0.88em;
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    color: var(--color-text);
+}
+
+.nr-markdown-body pre {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    padding: 1rem;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.nr-markdown-body pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.nr-markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.875rem;
+}
+
+.nr-markdown-body th,
+.nr-markdown-body td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.nr-markdown-body th {
+    background: var(--color-surface);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+}
+
+.nr-markdown-body hr {
+    border: none;
+    border-top: 2px solid var(--color-border);
+    margin: 2rem 0;
+}
+
+.nr-markdown-body blockquote {
+    border-left: 4px solid var(--color-focus);
+    margin: 0.75rem 0;
+    padding: 0.5rem 1rem;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+}
+
+.nr-markdown-body a {
+    color: var(--color-focus);
+    text-decoration: none;
+}
+
+.nr-markdown-body a:hover {
+    text-decoration: underline;
+}
+
+.nr-markdown-body img {
+    max-width: 100%;
+}
+
+/* ── File Viewer ────────────────────────── */
+
+.nr-file-viewer {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 44px);
+    background: var(--color-bg);
+}
+
+.nr-file-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.nr-file-viewer-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nr-file-viewer-title h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.nr-back-button {
+    padding: 6px 14px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.nr-back-button:hover {
+    border-color: var(--color-focus);
+    background: var(--color-bg);
+}
+
+.nr-download-button {
+    padding: 6px 14px;
+    background: var(--color-focus);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: opacity 0.15s;
+}
+
+.nr-download-button:hover {
+    opacity: 0.85;
+}
+
+.nr-file-viewer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.nr-code-content {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ── Responsive ─────────────────────────── */
+
+@media (max-width: 768px) {
+    .nr-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+    }
+
+    .nr-panel-dates {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .nr-date-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .nr-panel-files {
+        border-left: none;
+        border-top: 1px solid var(--color-border);
+    }
+}
