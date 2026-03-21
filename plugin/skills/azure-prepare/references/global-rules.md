@@ -31,7 +31,7 @@ ask_user(
 - Do NOT proceed based on "the user asked to deploy" (deploy ≠ delete old)
 - Do NOT batch destructive actions without individual confirmation
 - ⛔ Do NOT delete user project directories (`rm -rf <project>`) even when adding features, converting, or migrating — use MODIFY mode to edit existing files instead
-- ⛔ `azd init` and template commands are for NEW projects only — NEVER run on an existing workspace without explicit user confirmation
+- ⛔ `azd init` and template commands are for NEW projects only — run them **only** in an empty/new directory. If the user explicitly requests re-initialization of an existing project, create a separate new directory, run the template there, and then migrate changes into the existing project with user-confirmed edits. Never run these commands directly in a non-empty existing workspace.
 
 ---
 
