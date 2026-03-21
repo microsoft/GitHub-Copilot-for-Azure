@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { join } from "node:path";
-import { mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
+import { join, isAbsolute } from "node:path";
+import { mkdirSync, writeFileSync, rmSync, readFileSync, readdirSync, statSync } from "node:fs";
 
 const TEST_DIR = join(process.cwd(), "__test_fixtures_count__");
 
@@ -64,7 +64,6 @@ describe("count command", () => {
       writeFileSync(join(TEST_DIR, "guide.md"), "# Guide");
       writeFileSync(join(TEST_DIR, "script.ts"), 'console.log("test")');
 
-      const { readdirSync } = require("node:fs");
       const files = readdirSync(TEST_DIR).filter((f: string) => f.endsWith(".md"));
 
       expect(files.length).toBe(2);
@@ -80,7 +79,6 @@ describe("count command", () => {
       const allFiles: string[] = [];
 
       function findMdFiles(dir: string) {
-        const { readdirSync, statSync } = require("node:fs");
         const entries = readdirSync(dir);
         for (const entry of entries) {
           const fullPath = join(dir, entry);
@@ -109,7 +107,6 @@ describe("count command", () => {
       const allFiles: string[] = [];
 
       function findMdFiles(dir: string) {
-        const { readdirSync, statSync } = require("node:fs");
         const entries = readdirSync(dir);
         for (const entry of entries) {
           if (EXCLUDED_DIRS.includes(entry)) continue;
@@ -129,7 +126,6 @@ describe("count command", () => {
     it("handles .mdx files", () => {
       writeFileSync(join(TEST_DIR, "component.mdx"), "# MDX Component");
 
-      const { readdirSync } = require("node:fs");
       const files = readdirSync(TEST_DIR).filter((f: string) =>
         f.endsWith(".md") || f.endsWith(".mdx")
       );
@@ -210,7 +206,6 @@ describe("count command", () => {
     });
 
     it("handles absolute paths", () => {
-      const { isAbsolute } = require("node:path");
       const isWindows = process.platform === "win32";
 
       expect(isAbsolute("/absolute/path")).toBe(true);

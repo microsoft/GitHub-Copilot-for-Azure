@@ -26,7 +26,7 @@ Use this template to create tests for a new skill.
 
 5. **Run tests:**
    ```bash
-   npm test -- --testPathPattern=your-skill-name
+   npm test -- --testPathPatterns=your-skill-name
    ```
 
 ## File Structure
@@ -61,16 +61,16 @@ your-skill-name/
 
 ```bash
 # Run all tests for a skill
-npm test -- --testPathPattern=your-skill-name
+npm test -- --testPathPatterns=your-skill-name
 
 # Run with coverage
-npm run test:coverage -- --testPathPattern=your-skill-name
+npm run test:coverage -- --testPathPatterns=your-skill-name
 
 # Update snapshots
-npm run update:snapshots -- --testPathPattern=your-skill-name
+npm run update:snapshots -- --testPathPatterns=your-skill-name
 
 # Watch mode during development
-npm run test:watch -- --testPathPattern=your-skill-name
+npm run test:watch -- --testPathPatterns=your-skill-name
 ```
 
 ## Best Practices

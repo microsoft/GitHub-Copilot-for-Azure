@@ -30,22 +30,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description contains trigger phrases", () => {
       const description = skill.metadata.description.toLowerCase();
-      const hasTriggerPhrases = 
+      const hasTriggerPhrases =
         description.includes("use for") ||
         description.includes("use when") ||
         description.includes("helps") ||
         description.includes("activate") ||
         description.includes("trigger");
       expect(hasTriggerPhrases).toBe(true);
-    });
-
-    test("description contains anti-triggers", () => {
-      const description = skill.metadata.description.toLowerCase();
-      const hasAntiTriggers = 
-        description.includes("do not use for") ||
-        description.includes("not for") ||
-        description.includes("instead use");
-      expect(hasAntiTriggers).toBe(true);
     });
   });
 
@@ -119,6 +110,25 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const content = skill.content.toLowerCase();
       const hasBicepAssignment = content.includes("role assignment") && content.includes("bicep");
       expect(hasBicepAssignment).toBe(true);
+    });
+  });
+
+  describe("Prerequisites Guidance", () => {
+    test("mentions prerequisites for granting roles", () => {
+      const content = skill.content.toLowerCase();
+      const hasPrerequisites = content.includes("prerequisite") || content.includes("permission");
+      expect(hasPrerequisites).toBe(true);
+    });
+
+    test("mentions User Access Administrator role", () => {
+      expect(skill.content.toLowerCase()).toContain("user access administrator");
+    });
+
+    test("mentions authorization write permission", () => {
+      const content = skill.content.toLowerCase();
+      const hasAuthPermission = content.includes("microsoft.authorization/roleassignments/write") ||
+        content.includes("roleassignments/write");
+      expect(hasAuthPermission).toBe(true);
     });
   });
 });

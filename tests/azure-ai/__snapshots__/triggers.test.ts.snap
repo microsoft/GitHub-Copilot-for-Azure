@@ -1,28 +1,20 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR. USE FOR: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech. DO NOT USE FOR: Function apps/Functions (use azure-functions), databases (azure-postgres/azure-kusto), general Azure resources.",
+  "description": "Use for Azure AI: Search, Speech, OpenAI, Document Intelligence. Helps with search, vector/hybrid search, speech-to-text, text-to-speech, transcription, OCR. WHEN: AI Search, query search, vector search, hybrid search, semantic search, speech-to-text, text-to-speech, transcribe, OCR, convert text to speech.",
   "extractedKeywords": [
-    "apps",
+    "ai",
     "azure",
-    "azure-functions",
-    "azure-kusto",
-    "azure-postgres",
     "cli",
     "convert",
-    "databases",
     "document",
-    "function",
-    "functions",
-    "general",
     "helps",
     "hybrid",
     "intelligence",
     "mcp",
     "openai",
     "query",
-    "resources",
     "search",
     "semantic",
     "speech",
@@ -32,6 +24,7 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
     "transcribe",
     "transcription",
     "vector",
+    "when",
     "with",
   ],
   "name": "azure-ai",
@@ -40,25 +33,17 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill description tr
 
 exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
-  "apps",
+  "ai",
   "azure",
-  "azure-functions",
-  "azure-kusto",
-  "azure-postgres",
   "cli",
   "convert",
-  "databases",
   "document",
-  "function",
-  "functions",
-  "general",
   "helps",
   "hybrid",
   "intelligence",
   "mcp",
   "openai",
   "query",
-  "resources",
   "search",
   "semantic",
   "speech",
@@ -68,6 +53,7 @@ exports[`azure-ai - Trigger Tests Trigger Keywords Snapshot skill keywords match
   "transcribe",
   "transcription",
   "vector",
+  "when",
   "with",
 ]
 `;

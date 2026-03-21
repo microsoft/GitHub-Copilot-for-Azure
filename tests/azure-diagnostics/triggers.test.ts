@@ -42,8 +42,21 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Investigate health probe failures",
       "My health probes are failing",
       
-      // Resource health
-      "Check resource health of my container app",
+      // Function App diagnostics
+      "Troubleshoot my function app",
+      "My Azure Function is not working",
+      "Debug function invocation failures",
+      "Find the App Insights for my function app",
+      "Troubleshoot Azure Function invocation failures and timeout issues",
+      
+      // AKS diagnostics
+      "Troubleshoot my AKS cluster, pods are in CrashLoopBackOff",
+      "My Kubernetes node is NotReady",
+      "Troubleshoot my AKS pod stuck in Pending state",
+      "AKS networking issue, service is unreachable",
+      "kubectl cannot connect to my AKS cluster",
+      "AKS upgrade failed and nodes are not coming back",
+      "CoreDNS is failing in kube-system on my AKS cluster",
       "Check the health of my Azure resources",
       
       // Root cause analysis
@@ -72,11 +85,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "How do I bake a cake?",
       
       // Wrong cloud provider - without diagnostic keywords
-      "Debug my AWS Lambda function",
+      "Debug my AWS Lambda",
       
       // Deployment tasks (not diagnostics)
       "Publish my app to Azure",
       "Create a new Container App",
+      "Create a new function app",
       
       // Monitoring setup (not diagnostics)
       "Configure Application Insights",

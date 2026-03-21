@@ -1,0 +1,23 @@
+id: scaffold-alongside-001
+name: "Scaffold Alongside — Add SDK Service to Existing Repo"
+description: >
+  Verifies that when a user has an existing Node.js app and wants to add
+  a Copilot SDK service alongside it, the skill routes to Step 2B
+  (scaffold alongside), scaffolds the template to a temp dir, copies the API
+  service and infra into the user's repo, and adapts azure.yaml.
+tags:
+  - scaffold
+  - happy-path
+  - step-2b
+
+inputs:
+  prompt: "Add a Copilot SDK service to my existing Node.js app"
+
+expected:
+  output_contains:
+    - "azure.yaml"
+  output_not_contains:
+    - "error"
+    - "failed"
+  behavior:
+    max_tool_calls: 10

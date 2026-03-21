@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync, readdirSync } from "node:fs";
 
 const TEST_DIR_PREFIX = join(tmpdir(), "__test_fixtures_suggest__");
 
@@ -231,7 +231,6 @@ describe("suggest command", () => {
       writeFileSync(join(testRootDir, "docs", "guide.md"), "# Guide");
 
       const files: string[] = [];
-      const { readdirSync } = require("node:fs");
 
       function scan(dir: string) {
         const entries = readdirSync(dir, { withFileTypes: true });

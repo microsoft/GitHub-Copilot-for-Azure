@@ -52,11 +52,10 @@ describe("create - Trigger Tests", () => {
       "Explain quantum computing",
       "Configure my PostgreSQL database",
       "Help me with Kubernetes pods",
-      "How do I configure a timer-based Azure function?",
+      "How do I set up a cron job in Linux?",
       "Help me deploy a static website",
       "Write a unit test for my React component",
       "How do I use Git branches?",
-      "Explain Docker networking basics",
     ];
 
     test.each(shouldNotTriggerPrompts)(

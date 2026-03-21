@@ -1,0 +1,42 @@
+# Task: If no AVM+AZD pattern module exists, stay in AVM modules
+id: avm-fallback-no-pattern-001
+name: AVM Fallback When No AZD Pattern
+description: |
+  Validate deploy guidance states that if no AVM+AZD pattern module exists,
+  the fallback remains AVM resource then AVM utility modules.
+
+tags:
+  - deploy
+  - bicep
+  - avm
+  - fallback
+
+inputs:
+  prompt: |
+    I'm deploying with Bicep and there is no AVM+AZD pattern module for my scenario.
+    What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
+  context:
+    phase: deploy
+    iac: bicep
+    no_pattern_module: true
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "AVM"
+    - "resource"
+    - "utility"
+
+graders:
+  - name: explicit_no_pattern_fallback
+    type: regex
+    config:
+      must_match:
+        - "(?is)(no .*pattern module|if no .*pattern).*AVM.*resource.*AVM.*utility"
+
+  - name: avoids_non_avm_fallback
+    type: regex
+    config:
+      must_not_match:
+        - "(?i)fallback to non-AVM|use non-AVM modules"

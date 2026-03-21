@@ -13,6 +13,8 @@ Package: `azure-eventhub` | [README](https://github.com/Azure/azure-sdk-for-pyth
 
 ## Retry Configuration
 
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
 ```python
 from azure.eventhub import EventHubProducerClient
 from azure.identity import DefaultAzureCredential
@@ -23,6 +25,44 @@ client = EventHubProducerClient(
     credential=DefaultAzureCredential(),
     retry_total=3,
     retry_backoff_factor=0.8,
+    retry_backoff_max=120,
+    retry_mode='exponential'
+)
+```
+
+## Consumer Client Retry Configuration
+
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+
+Under heavy load, tune the retry policy on `EventHubConsumerClient` to reduce timeouts:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `retry_total` | 3 | Max retry attempts per operation |
+| `retry_backoff_factor` | 0.8 | Backoff multiplier between retries (seconds) |
+| `retry_backoff_max` | 120 | Max backoff interval (seconds) |
+| `retry_mode` | `exponential` | `fixed` or `exponential` |
+
+```python
+from azure.eventhub import EventHubConsumerClient
+from azure.eventhub.extensions.checkpointstoreblob import BlobCheckpointStore
+from azure.identity import DefaultAzureCredential
+
+credential = DefaultAzureCredential()
+checkpoint_store = BlobCheckpointStore(
+    blob_account_url="https://<storage-account>.blob.core.windows.net",
+    container_name="<checkpoint-container>",
+    credential=credential
+)
+
+client = EventHubConsumerClient(
+    fully_qualified_namespace="<your-namespace>.servicebus.windows.net",
+    eventhub_name="<your-eventhub>",
+    consumer_group="$Default",
+    credential=credential,
+    checkpoint_store=checkpoint_store,
+    retry_total=5,
+    retry_backoff_factor=1.0,
     retry_backoff_max=120,
     retry_mode='exponential'
 )
@@ -55,25 +95,7 @@ client = EventHubProducerClient(..., logging_enable=True)
 
 Package: `azure-eventhub-checkpointstoreblob` (sync) / `azure-eventhub-checkpointstoreblob-aio` (async)
 
-```python
-from azure.eventhub import EventHubConsumerClient
-from azure.eventhub.extensions.checkpointstoreblob import BlobCheckpointStore
-from azure.identity import DefaultAzureCredential
-
-credential = DefaultAzureCredential()
-checkpoint_store = BlobCheckpointStore(
-    blob_account_url="https://<storage-account>.blob.core.windows.net",
-    container_name="<checkpoint-container>",
-    credential=credential
-)
-client = EventHubConsumerClient(
-    fully_qualified_namespace="<your-namespace>.servicebus.windows.net",
-    eventhub_name="<your-eventhub>",
-    consumer_group="$Default",
-    credential=credential,
-    checkpoint_store=checkpoint_store
-)
-```
+See the [Consumer Client Retry Configuration](#consumer-client-retry-configuration) section above for a full `EventHubConsumerClient` example with `BlobCheckpointStore`.
 
 **Common issues:**
 - **Soft delete / blob versioning**: Disable both on the storage account — they cause large delays during load balancing.
