@@ -3,7 +3,7 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.0"
 description: "Plan and create production-ready AKS clusters: Day-0 decisions, SKU selection (Automatic vs Standard), networking, security, and operations. WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, configure AKS security, set up AKS observability, plan AKS upgrades, AKS Day-0 checklist. DO NOT USE FOR: debugging AKS issues (use azure-diagnostics), deploying apps to AKS (use azure-deploy), AKS monitoring queries (use azure-kusto)."
 ---
 
