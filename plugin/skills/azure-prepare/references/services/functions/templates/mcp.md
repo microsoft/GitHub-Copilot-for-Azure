@@ -7,7 +7,7 @@ Templates for hosting MCP (Model Context Protocol) servers on Azure Functions.
 > ⚠️ **Warning: Templates are for NEW projects only.**
 > If the user has an existing Azure Functions project, do NOT use `azd init` — this will overwrite their workspace.
 > For existing projects, use the **recipe approach** instead: [recipes/mcp/](recipes/mcp/README.md).
-> ⛔ **NEVER run `rm -rf` or delete the user's project directory.** Destructive actions require `ask_user` confirmation — see [global-rules.md](../../../global-rules.md).
+> ⛔ **NEVER run `rm -rf` or delete the user's project/workspace directory under any circumstances.** For all other destructive actions (excluding deletion of user workspaces), follow `ask_user` confirmation rules as described in [global-rules.md](../../../global-rules.md).
 
 ## When to Use Templates vs. Recipes
 
