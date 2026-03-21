@@ -1,8 +1,18 @@
 trigger: none
+
 pr: none
+
+schedules:
+- cron: '0 8 * * *'
+  displayName: 'Daily 8am UTC'
+  branches:
+    include:
+    - main
+  always: true
 
 stages:
 - stage: RunBenchmark
+  displayName: 'Run Benchmarks'
   pool:
     name: $(LINUXPOOL)
     image: $(LINUXVMIMAGE)
@@ -14,7 +24,18 @@ stages:
   - job: RunBenchmark
     displayName: 'Run Copilot Benchmarks'
     steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.12'
+      inputs:
+        versionSpec: '3.12'
+
+    - task: PipAuthenticate@1
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
+      inputs:
+        artifactFeeds: 'internal/MicrosoftSweBench'
+
     - task: AzureCLI@2
+      name: RunBenchmarks
       displayName: 'Run Copilot Benchmarks script'
       inputs:
         connectedServiceNameARM: 'azure_msbench_eval'
@@ -22,5 +43,12 @@ stages:
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
-        arguments: >
-          -BuildId $(OfficialBuildId)
+        scriptArguments: >
+          -OutputPath "$(Build.ArtifactStagingDirectory)"
+
+    - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
+      displayName: 'Display Run IDs'
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-run-ids
+      displayName: 'Publish benchmark run IDs artifact'

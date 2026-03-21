@@ -7,7 +7,7 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | Property | Value |
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
-| MCP server | `foundry-mcp` |
+| MCP server | `azure` |
 | Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
 | Container protocols | `a2a`, `responses`, `mcp` |
@@ -15,13 +15,9 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 
 ## When to Use This Skill
 
-- Containerize an existing agent project and deploy it as a hosted agent
-- Create a new prompt agent with a model deployment
-- Create a new hosted agent from a container image
-- Start or stop hosted agent containers
-- Check agent container status
-- Update agent configuration or instructions
-- Clone or delete an agent
+USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, start agent container, stop agent container, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
+
+> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, `agent_update`, or `agent_container_control` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → container startup → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, status polling).
 
 ## MCP Tools
 
@@ -93,7 +89,7 @@ Collect ACR details from project context. Let the user choose the build method:
 
 **Cloud Build (ACR Tasks) (Recommended)** — no local Docker required:
 ```bash
-az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --file Dockerfile .
+az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --source-acr-auth-id "[caller]" --file Dockerfile .
 ```
 
 **Local Docker Build:**
@@ -175,6 +171,12 @@ Delegate status polling to a sub-agent. Provide the project endpoint, agent name
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
 
+> ⚠️ **DO NOT stop here.** Continue to Step 10 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+
+### Step 10: Auto-Create Evaluators & Dataset
+
+Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+
 ## Workflow: Prompt Agent Deployment
 
 ### Step 1: Collect Agent Configuration
@@ -207,6 +209,12 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
+> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+
+### Step 5: Auto-Create Evaluators & Dataset
+
+Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+
 ## Display Agent Information
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
@@ -219,6 +227,101 @@ To calculate the encodedSubId, you need to take subscription id and convert it i
 ```
 python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRIPTION_ID>').bytes).rstrip(b'=').decode())"
 ```
+
+## Document Deployment Context
+
+After a successful deployment, persist the deployment context to `<agent-root>/.foundry/agent-metadata.yaml` under the selected environment so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
+
+| Metadata Field | Purpose | Example |
+|----------------|---------|---------|
+| `environments.<env>.projectEndpoint` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
+| `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
+| `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
+| `environments.<env>.testCases[]` | Evaluation bundles for datasets, evaluators, and thresholds | `smoke-core`, `trace-regressions` |
+| `environments.<env>.testCases[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
+
+If `agent-metadata.yaml` already exists, merge the selected environment instead of overwriting other environments or cached test cases without confirmation.
+
+## After Deployment — Auto-Create Evaluators & Dataset
+
+> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the selected `.foundry` environment for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
+
+### 1. Read Agent Instructions
+
+Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
+
+### 2. Reuse or Refresh Local Cache
+
+Inspect the selected agent root before generating anything new:
+
+- Reuse `.foundry/evaluators/` and `.foundry/datasets/` when they already contain the right assets for the selected environment.
+- Ask before refreshing cached files or replacing thresholds.
+- If cache is missing or stale, regenerate the dataset/evaluators and update metadata for the active environment only.
+
+### 2.5 Discover Existing Evaluators
+
+Use **`evaluator_catalog_get`** with the selected environment's project endpoint to list all evaluators already registered in the project. Display them to the user grouped by type (`custom` vs `built-in`) with name, category, and version. During Phase 1, catalog any promising custom evaluators for later reuse, but keep the first run on the built-in baseline. Only propose creating a new evaluator in Phase 2 when no existing evaluator covers the required dimension.
+
+### 3. Select Default Evaluators
+
+Follow the [observe skill's Two-Phase Evaluator Strategy](../observe/observe.md). Phase 1 is built-in only, so do not create a new custom evaluator during the initial setup pass.
+
+Start with <=5 built-in evaluators for the initial eval run so the first pass stays fast:
+
+| Category | Evaluators |
+|----------|-----------|
+| **Quality (built-in)** | relevance, task_adherence, intent_resolution |
+| **Safety (built-in)** | indirect_attack |
+| **Tool use (built-in, conditional)** | tool_call_accuracy (use when the agent calls tools; some catalogs label it as `builtin.tool_call_accuracy`) |
+
+After analyzing initial results, suggest additional evaluators (custom or built-in) targeted at specific failure patterns instead of front-loading a larger default set.
+
+If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring.
+
+### 4. Identify LLM-Judge Deployment
+
+Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
+
+### 5. Generate Seed Dataset
+
+> ⚠️ **MANDATORY: Read the full generation workflow before proceeding.**
+
+Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md). That reference contains:
+- The required JSONL row schema (`query` + `expected_behavior` are both mandatory)
+- Coverage distribution targets and generation rules
+- Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
+- Foundry registration steps (blob upload + `evaluation_dataset_create`)
+- Metadata updates for `agent-metadata.yaml` and `manifest.json`
+
+Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
+
+The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
+
+Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
+
+### 6. Persist Artifacts and Test Cases
+
+Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update test cases in `agent-metadata.yaml` for the selected environment:
+
+```text
+.foundry/
+  agent-metadata.yaml
+  evaluators/
+    <name>.yaml
+  datasets/
+    <agent-name>-eval-seed-v1.jsonl
+  results/
+```
+
+Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one `P0` smoke test case after deployment.
+
+### 7. Prompt User
+
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+
+- **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
+- **No** → stop. The user can return later.
+- **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
 
 ## Agent Definition Schemas
 

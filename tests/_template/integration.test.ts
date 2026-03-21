@@ -8,18 +8,18 @@
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
  * 
- * Run with: npm run test:integration -- --testPathPattern={skill-name}
+ * Run with: npm run test:integration -- --testPathPatterns={skill-name}
  */
 
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
   useAgentRunner,
-  isSkillInvoked,
   areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
+import { isSkillInvoked } from "../utils/evaluate";
 
 // Replace with your skill name
 const SKILL_NAME = "your-skill-name";

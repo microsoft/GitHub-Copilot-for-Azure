@@ -1,6 +1,6 @@
 # Azure Context (Subscription & Location)
 
-Detect and confirm Azure subscription and location before generating artifacts.
+Detect and confirm Azure subscription and location before generating artifacts. Run region capacity check for customer selected location
 
 ---
 
@@ -93,6 +93,7 @@ az account list --output table
 1. Consult [Region Availability](region-availability.md) for services with limited availability
 2. Present only regions that support ALL selected services
 3. Use `ask_user`:
+4. After customer selected region, do provisioning limit check, consult [Resource Limits and Quotas](resources-limits-quotas.md). For this also invoke azure-quotas
 
 ```
 Question: "Which Azure region would you like to deploy to?"
@@ -107,6 +108,25 @@ Choices: [
 ⚠️ Do NOT include regions that don't support all services — deployment will fail.
 
 ---
+## Step 5: Check Resource Provisioning Limits
+
+1. **List resource types and quantities** that will be deployed from the planned architecture (e.g., 2x Standard D4s v3 VMs, 1x VNet, 3x Storage Accounts)
+
+2. **Determine limits for each resource type** using the user-selected subscription and region:
+   - Reference [./resources-limits-quotas.md](./resources-limits-quotas.md) for documented limits
+   - Use **azure-quotas** skill to check current quotas and usage for the selected subscription and region
+   - If `az quota list` returns `BadRequest` error, the resource provider doesn't support quota API
+
+3. **For resources that don't support quota API** (e.g., Microsoft.DocumentDB, or when you get `BadRequest` from `az quota list`):
+   - Invoke **azure-resource-lookup** skill to count existing deployments of that resource type in the selected subscription and region
+   - Use the count to calculate: `Total After Deployment = Current Count + Planned Deployment`
+   - Reference [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) for the limit value
+   - Document in provisioning checklist as "Fetched from: azure-resource-lookup + Official docs"
+
+4. **Validate deployment capacity**:
+   - Compare planned deployment quantities against available quota (limit - current usage)
+   - If **insufficient capacity** is found, notify the customer and return to **Step 4** to select a different region
+   - Use **azure-quotas** skill to compare capacity across multiple regions and recommend alternatives
 
 ## Record in Plan
 
@@ -120,7 +140,7 @@ After confirmation, record in `.azure/plan.md`:
 
 ---
 
-## Step 5: Apply to AZD Environment
+## Step 6: Apply to AZD Environment
 
 > **⛔ CRITICAL for Aspire and azd projects**: After user confirms subscription and location, you **MUST** set these values in the azd environment immediately after running `azd init` or `azd env new`.
 >

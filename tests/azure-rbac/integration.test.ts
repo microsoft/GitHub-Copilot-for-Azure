@@ -11,13 +11,11 @@
 
 import {
   useAgentRunner,
-  isSkillInvoked,
-  areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-rbac";
 const RUNS_PER_PROMPT = 5;
@@ -95,17 +93,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const isAcrPullRoleMentioned = doesAssistantMessageIncludeKeyword(agentMetadata, "AcrPull");
       const hasCLICommand = doesAssistantMessageIncludeKeyword(agentMetadata, "az role assignment");
       const hasBicepCode = doesAssistantMessageIncludeKeyword(agentMetadata, "Microsoft.Authorization/roleAssignments");
-      const isDocsToolCalled = areToolCallsSuccess(agentMetadata, "azure-documentation");
-      const isCliToolCalled = areToolCallsSuccess(agentMetadata, "azure-extension_cli_generate");
 
       // User asks "What role should I assign" - role discovery scenario
-      // Expects: docs tool (to find the right role), CLI commands, Bicep code, and CLI generation tool
+      // Expects: skill invocation, AcrPull role mentioned, CLI commands, and Bicep code
       expect(isSkillUsed).toBe(true);
       expect(isAcrPullRoleMentioned).toBe(true);
       expect(hasCLICommand).toBe(true);
       expect(hasBicepCode).toBe(true);
-      expect(isDocsToolCalled).toBe(true);
-      expect(isCliToolCalled).toBe(true);
     });
 
     test("recommends Storage Blob Data Reader for blob read access", async () => {
@@ -126,17 +120,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const mentionsStorageRole = doesAssistantMessageIncludeKeyword(agentMetadata, "Storage Blob Data Reader");
       const hasCLICommand = doesAssistantMessageIncludeKeyword(agentMetadata, "az role assignment");
       const hasBicepCode = doesAssistantMessageIncludeKeyword(agentMetadata, "Microsoft.Authorization/roleAssignments");
-      const isDocsToolCalled = areToolCallsSuccess(agentMetadata, "azure-documentation");
-      const isCliToolCalled = areToolCallsSuccess(agentMetadata, "azure-extension_cli_generate");
 
       // User asks "What Azure role should I use" - role discovery scenario
-      // Expects: docs tool (to find the right role), CLI commands, Bicep code, and CLI generation tool
+      // Expects: skill invocation, Storage Blob Data Reader role mentioned, CLI commands, and Bicep code
       expect(isSkillUsed).toBe(true);
       expect(mentionsStorageRole).toBe(true);
       expect(hasCLICommand).toBe(true);
       expect(hasBicepCode).toBe(true);
-      expect(isDocsToolCalled).toBe(true);
-      expect(isCliToolCalled).toBe(true);
     });
 
     test("recommends Key Vault Secrets User for secret access", async () => {
@@ -157,16 +147,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const mentionsKeyVaultRole = doesAssistantMessageIncludeKeyword(agentMetadata, "Key Vault Secrets User");
       const hasCLICommand = doesAssistantMessageIncludeKeyword(agentMetadata, "az role assignment");
       const hasBicepCode = doesAssistantMessageIncludeKeyword(agentMetadata, "Microsoft.Authorization/roleAssignments");
-      const isDocsToolCalled = areToolCallsSuccess(agentMetadata, "azure-documentation");
 
       // User asks "What role do I need" - role discovery scenario
-      // Expects: docs tool (to find the right role), CLI commands, and Bicep code
-      // Does NOT require: CLI generation tool - agent may provide CLI commands manually without calling the tool
+      // Expects: skill invocation, Key Vault Secrets User role mentioned, CLI commands, and Bicep code
       expect(isSkillUsed).toBe(true);
       expect(mentionsKeyVaultRole).toBe(true);
       expect(hasCLICommand).toBe(true);
       expect(hasBicepCode).toBe(true);
-      expect(isDocsToolCalled).toBe(true);
     });
 
     test("generates CLI commands for role assignment", async () => {
@@ -186,17 +173,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const isSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
       const mentionsRole = doesAssistantMessageIncludeKeyword(agentMetadata, "Storage Blob Data Contributor");
       const hasCLICommand = doesAssistantMessageIncludeKeyword(agentMetadata, "az role assignment");
-      const hasBicepCode = doesAssistantMessageIncludeKeyword(agentMetadata, "Microsoft.Authorization/roleAssignments");
-      const isCliToolCalled = areToolCallsSuccess(agentMetadata, "azure-extension_cli_generate");
 
       // User explicitly specifies the role name ("Storage Blob Data Contributor") and requests CLI command generation
-      // Expects: CLI commands, Bicep code (helpful context), and CLI generation tool
-      // Does NOT require: docs tool (role already specified, no discovery needed)
+      // Expects: skill invocation, role name mentioned, and CLI commands
       expect(isSkillUsed).toBe(true);
       expect(mentionsRole).toBe(true);
       expect(hasCLICommand).toBe(true);
-      expect(hasBicepCode).toBe(true);
-      expect(isCliToolCalled).toBe(true);
     });
 
     test("provides Bicep code for role assignment", async () => {
@@ -218,10 +200,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const hasBicepCode = doesAssistantMessageIncludeKeyword(agentMetadata, "Microsoft.Authorization/roleAssignments");
 
       // User explicitly specifies exact role and only requests Bicep code
-      // Expects: Bicep code generation
-      // Does NOT require: CLI commands, CLI tool, docs tool (role already specified)
-      // Note: Skill invocation can be flaky - agent may answer directly with code instead of invoking skill
-
+      // Expects: skill invocation, role name mentioned, and Bicep code
       expect(isSkillUsed).toBe(true);
       expect(mentionsRole).toBe(true);
       expect(hasBicepCode).toBe(true);

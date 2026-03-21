@@ -25,6 +25,7 @@
  */
 
 import { spawn } from "child_process";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -41,83 +42,83 @@ const extraArgs = args[0] && !args[0].startsWith("-") ? args.slice(1) : args;
 
 // Test type configurations
 const testConfigs = {
-    all: {
-        description: "all tests",
-        jestArgs: []
-    },
-    unit: {
-        description: "unit tests",
-        jestArgs: ["--testPathIgnorePatterns=\"node_modules|_template|integration\""]
-    },
-    integration: {
-        description: "integration tests",
-        jestArgs: [
-            "--testMatch=**/*integration*.ts",
-            "--testPathIgnorePatterns=\"node_modules|_template\""
-        ],
-        optionalPattern: true
-    },
-    verbose: {
-        description: "all tests (verbose)",
-        jestArgs: ["--verbose"]
-    },
-    coverage: {
-        description: "tests with coverage",
-        jestArgs: ["--coverage", "--testPathIgnorePatterns=\"node_modules|_template|integration\""]
-    },
-    ci: {
-        description: "tests in CI mode",
-        jestArgs: [
-            "--ci",
-            "--reporters=default",
-            "--reporters=jest-junit",
-            "--testPathIgnorePatterns=\"node_modules|_template|integration\""
-        ]
-    },
-    watch: {
-        description: "tests in watch mode",
-        jestArgs: ["--watch"]
-    },
-    skill: {
-        description: "skill-specific tests",
-        jestArgs: ["--testPathPattern"],
-        requiresPattern: true
-    }
+  all: {
+    description: "all tests",
+    jestArgs: []
+  },
+  unit: {
+    description: "unit tests",
+    jestArgs: ["--testPathIgnorePatterns=\"node_modules|_template|integration\""]
+  },
+  integration: {
+    description: "integration tests",
+    jestArgs: [
+      "--testMatch=**/*integration*.ts",
+      "--testPathIgnorePatterns=\"node_modules|_template\""
+    ],
+    optionalPattern: true
+  },
+  verbose: {
+    description: "all tests (verbose)",
+    jestArgs: ["--verbose"]
+  },
+  coverage: {
+    description: "tests with coverage",
+    jestArgs: ["--coverage", "--testPathIgnorePatterns=\"node_modules|_template|integration\""]
+  },
+  ci: {
+    description: "tests in CI mode",
+    jestArgs: [
+      "--ci",
+      "--reporters=default",
+      "--reporters=jest-junit",
+      "--testPathIgnorePatterns=\"node_modules|_template|integration\""
+    ]
+  },
+  watch: {
+    description: "tests in watch mode",
+    jestArgs: ["--watch"]
+  },
+  skill: {
+    description: "skill-specific tests",
+    jestArgs: ["--testPathPatterns"],
+    requiresPattern: true
+  }
 };
 
 // Validate test type
 if (!testConfigs[testType]) {
-    console.error(`Unknown test type: ${testType}`);
-    console.error(`Available types: ${Object.keys(testConfigs).join(", ")}`);
-    process.exit(1);
+  console.error(`Unknown test type: ${testType}`);
+  console.error(`Available types: ${Object.keys(testConfigs).join(", ")}`);
+  process.exit(1);
 }
 
 const config = testConfigs[testType];
 
 // Handle skill type which requires a pattern
 if (config.requiresPattern && extraArgs.length === 0) {
-    console.error(`Test type "${testType}" requires a pattern argument.`);
-    console.error("Example: node run-tests.js skill azure-ai");
-    process.exit(1);
+  console.error(`Test type "${testType}" requires a pattern argument.`);
+  console.error("Example: node run-tests.js skill azure-ai");
+  process.exit(1);
 }
 
 // Build jest command args
 let jestArgs = [...config.jestArgs];
 
-// For skill type, append the pattern to --testPathPattern
+// For skill type, append the pattern to --testPathPatterns
 if (config.requiresPattern && extraArgs.length > 0) {
-    jestArgs = [`--testPathPattern=${extraArgs[0]}`, ...extraArgs.slice(1)];
+  jestArgs = [`--testPathPatterns=${extraArgs[0]}`, ...extraArgs.slice(1)];
 } else if (config.optionalPattern && extraArgs.length > 0 && !extraArgs[0].startsWith("-")) {
-    const skillPattern = extraArgs[0];
-    const remaining = extraArgs.slice(1);
-    // If there's a second positional arg (not a flag), use it as --testNamePattern
-    if (remaining.length > 0 && !remaining[0].startsWith("-")) {
-        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
-    } else {
-        jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, ...remaining];
-    }
+  const skillPattern = extraArgs[0];
+  const remaining = extraArgs.slice(1);
+  // If there's a second positional arg (not a flag), use it as --testNamePattern
+  if (remaining.length > 0 && !remaining[0].startsWith("-")) {
+    jestArgs = [...jestArgs, `--testPathPatterns=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
+  } else {
+    jestArgs = [...jestArgs, `--testPathPatterns=${skillPattern}`, ...remaining];
+  }
 } else {
-    jestArgs = [...jestArgs, ...extraArgs];
+  jestArgs = [...jestArgs, ...extraArgs];
 }
 
 console.log(`Running ${config.description}${isCI ? " (CI mode)" : ""}...`);
@@ -127,46 +128,93 @@ console.log("Env:NODE_OPTIONS", process.env.NODE_OPTIONS);
 // Set NODE_OPTIONS for ESM support (append to existing if present)
 const existingNodeOptions = process.env.NODE_OPTIONS || "";
 const env = {
-    ...process.env,
-    NODE_OPTIONS: existingNodeOptions
-        ? `${existingNodeOptions} --experimental-vm-modules`
-        : "--experimental-vm-modules"
+  ...process.env,
+  NODE_OPTIONS: existingNodeOptions
+    ? `${existingNodeOptions} --experimental-vm-modules`
+    : "--experimental-vm-modules"
 };
 
 // Run jest
 const jest = spawn("npx", ["jest", ...jestArgs], {
-    stdio: "inherit",
-    shell: true,
-    env,
-    cwd: path.resolve(__dirname, "..")
+  stdio: "inherit",
+  shell: true,
+  env,
+  cwd: path.resolve(__dirname, "..")
 });
 
 jest.on("error", (err) => {
-    console.error("Failed to start jest:", err.message);
-    process.exit(1);
+  console.error("Failed to start jest:", err.message);
+  process.exit(1);
 });
 
 jest.on("close", (code) => {
-    const jestExitCode = code || 0;
+  const jestExitCode = code || 0;
 
-    // Show results table if not in CI and not in watch mode
-    if (!isCI && testType !== "watch") {
-        console.log("\n");
-        const results = spawn("node", [path.join(__dirname, "show-test-results.js")], {
-            stdio: "inherit",
-            cwd: path.resolve(__dirname, "..")
-        });
-
-        results.on("error", (err) => {
-            console.error("Failed to display results:", err.message);
-            process.exit(jestExitCode);
-        });
-
-        results.on("close", () => {
-            // Always use jest exit code, not results script exit code
-            process.exit(jestExitCode);
-        });
-    } else {
-        process.exit(jestExitCode);
+  // Write run metadata when running in GitHub Actions
+  const runUrl =
+    process.env.GITHUB_SERVER_URL && process.env.GITHUB_RUN_ID
+      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+      : null;
+  if (runUrl) {
+    const reportsDir = path.resolve(__dirname, "..", "reports");
+    try {
+      const dirs = fs
+        .readdirSync(reportsDir)
+        .filter((d) => d.startsWith("test-run-"))
+        .sort()
+        .reverse();
+      if (dirs.length > 0) {
+        const metadataPath = path.join(
+          reportsDir,
+          dirs[0],
+          "run-metadata.json",
+        );
+        fs.writeFileSync(
+          metadataPath,
+          JSON.stringify(
+            {
+              runUrl,
+              runId: process.env.GITHUB_RUN_ID,
+              repository: process.env.GITHUB_REPOSITORY,
+              workflow: process.env.GITHUB_WORKFLOW || null,
+              actor: process.env.GITHUB_ACTOR || null,
+              ref: process.env.GITHUB_REF || null,
+              sha: process.env.GITHUB_SHA || null,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2,
+          ),
+        );
+        console.log(`\u{1F4CE} Run metadata saved: ${metadataPath}`);
+      }
+    } catch (err) {
+      // Non-fatal — log and continue
+      console.warn(
+        "\u26A0\uFE0F Could not write run metadata:",
+        err.message,
+      );
     }
+  }
+
+  // Show results table if not in CI and not in watch mode
+  if (!isCI && testType !== "watch") {
+    console.log("\n");
+    const results = spawn("node", [path.join(__dirname, "show-test-results.js")], {
+      stdio: "inherit",
+      cwd: path.resolve(__dirname, "..")
+    });
+
+    results.on("error", (err) => {
+      console.error("Failed to display results:", err.message);
+      process.exit(jestExitCode);
+    });
+
+    results.on("close", () => {
+      // Always use jest exit code, not results script exit code
+      process.exit(jestExitCode);
+    });
+  } else {
+    process.exit(jestExitCode);
+  }
 });

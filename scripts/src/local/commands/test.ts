@@ -11,9 +11,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { execFileSync } from "node:child_process";
+import { parseSkillContent } from "../../shared/skill-helper.js";
 
 const TIMEOUT_MS = 120_000;
-const MARKETPLACE_NAME = "github-copilot-for-azure";
+const MARKETPLACE_NAME = "azure-skills";
 const PLUGIN_NAME = "azure";
 
 interface TestOptions {
@@ -61,7 +62,7 @@ function checkPluginConfig(expectedCachePath: string): TestResult {
 
   const marketplace = config.marketplaces?.[MARKETPLACE_NAME];
   if (!marketplace || marketplace.source?.source !== "github" ||
-      marketplace.source?.repo !== "microsoft/github-copilot-for-azure") {
+    marketplace.source?.repo !== "microsoft/azure-skills") {
     return { name: "Plugin config", passed: false, detail: `Marketplace "${MARKETPLACE_NAME}" not configured correctly` };
   }
 
@@ -151,30 +152,26 @@ function checkSkills(pluginPath: string, verbose: boolean): TestResult {
       continue;
     }
 
-    if (!content.startsWith("---")) {
-      invalid.push({ name: skill, error: "missing YAML frontmatter" });
+    const parsed = parseSkillContent(content);
+    if (parsed === null) {
+      invalid.push({ name: skill, error: "missing or invalid YAML frontmatter" });
       continue;
     }
 
-    const fmEnd = content.indexOf("---", 3);
-    if (fmEnd === -1) {
-      invalid.push({ name: skill, error: "unclosed YAML frontmatter" });
+    const name = typeof parsed.data.name === "string" ? parsed.data.name : null;
+    const description = parsed.data.description != null ? String(parsed.data.description) : null;
+
+    if (!name) {
+      invalid.push({ name: skill, error: "frontmatter missing \"name\"" });
+      continue;
+    }
+    if (!description) {
+      invalid.push({ name: skill, error: "frontmatter missing \"description\"" });
       continue;
     }
 
-    const frontmatter = content.slice(3, fmEnd);
-    if (!/^name:\s*.+/m.test(frontmatter)) {
-      invalid.push({ name: skill, error: 'frontmatter missing "name"' });
-      continue;
-    }
-    if (!/^description:\s*.+/m.test(frontmatter) && !/^description:\s*\|/m.test(frontmatter)) {
-      invalid.push({ name: skill, error: 'frontmatter missing "description"' });
-      continue;
-    }
-
-    const nameMatch = frontmatter.match(/^name:\s*(.+)/m);
-    if (nameMatch && nameMatch[1].trim() !== skill) {
-      invalid.push({ name: skill, error: `name "${nameMatch[1].trim()}" doesn't match directory` });
+    if (name !== skill) {
+      invalid.push({ name: skill, error: `name "${name}" doesn't match directory` });
       continue;
     }
   }
@@ -245,12 +242,6 @@ const MCP_TOOL_PROBES: McpToolProbe[] = [
     prompt: "Call the context7-resolve-library-id tool with libraryName set to react and query set to react hooks. If it returns data, say CONTEXT7_OK. If it fails, say CONTEXT7_FAIL.",
     successPattern: /CONTEXT7_OK/i,
     invokedPattern: /context7-resolve-library-id/i,
-  },
-  {
-    server: "playwright",
-    prompt: "Call the playwright-browser_tabs tool with action set to list. If it returns data or an error response, say PLAYWRIGHT_OK. If the tool is not found, say PLAYWRIGHT_FAIL.",
-    successPattern: /PLAYWRIGHT_OK/i,
-    invokedPattern: /playwright-browser_tabs/i,
   },
   {
     server: "azure",

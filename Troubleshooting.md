@@ -88,3 +88,25 @@ If the issue persists after following these steps, you may want to inspect the i
 3. **Collect more information and file an issue**
    - If the executable runs when manually started in the terminal, or you are not running Windows, collect the information in "Collecting Information for troubleshooting" (above).
    - File an issue in this repo with the collected information.
+
+
+### Foundry MCP Server Authorization Failure
+**Issue**: When launching Copilot CLI, you see an authorization failure in the browser with the message:
+
+> "The resource parameter provided in the request doesn't match with the requested scope"
+
+This is often accompanied by an error in Copilot CLI such as:
+
+> "Failed to connect to MCP server 'foundry-mcp'. Execute '/mcp show foundry-mcp' to inspect or check the logs."
+
+This can occur when stale or mismatched OAuth metadata files are cached on disk from a previous authentication session.
+
+**Resolution**:
+1. **Check for stale OAuth metadata files**:
+   - Check whether the directory `~/.copilot/mcp-oauth-config` exists.
+
+2. **Delete the cached metadata**:
+   - If the directory exists, delete it.
+
+3. **Relaunch Copilot CLI**:
+   - After deleting the directory, restart Copilot CLI and attempt to authenticate again. The authorization issue should be resolved.

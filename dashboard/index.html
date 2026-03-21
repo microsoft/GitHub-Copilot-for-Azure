@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'">
+  <title>Repository Health Dashboard</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script type="module" src="assets/dashboard.js" defer></script>
+</head>
+
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <nav class="site-nav" role="navigation" aria-label="Main navigation">
+    <a href="/" class="site-nav-link active" aria-current="page">Dashboard</a>
+    <a href="/nightly-runs.html" class="site-nav-link">Nightly Runs</a>
+  </nav>
+
+  <header class="dashboard-header">
+    <h1>Repository Health Dashboard</h1>
+    <div class="header-summary" id="header-summary">
+      <span class="loading-text">Loading...</span>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="panel-grid" id="panel-grid">
+      <section class="panel" id="panel-tests" role="region" aria-label="Tests">
+        <h2>Tests</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-coverage" role="region" aria-label="Coverage">
+        <h2>Coverage</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-lint" role="region" aria-label="Lint">
+        <h2>Lint</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-typecheck" role="region" aria-label="Type Check">
+        <h2>Type Check</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-tokens" role="region" aria-label="Tokens">
+        <h2>Tokens</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-frontmatter" role="region" aria-label="Frontmatter">
+        <h2>Frontmatter</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-references" role="region" aria-label="References">
+        <h2>References</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-integration" role="region" aria-label="Quality Metrics">
+        <h2>Quality Metrics</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+    </div>
+
+    <div class="sr-only" aria-live="polite" id="live-region"></div>
+  </main>
+
+  <noscript>
+    <p class="noscript-message">JavaScript is required to render this dashboard.</p>
+  </noscript>
+</body>
+
+</html>

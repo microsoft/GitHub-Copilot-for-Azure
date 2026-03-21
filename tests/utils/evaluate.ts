@@ -1,24 +1,28 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata, getToolCalls, isSkillInvoked } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner";
+
+const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
 /**
- * Extract all powershell command strings from agent metadata.
+ * Extract all shell command strings (powershell and bash) from agent metadata.
  */
-function getPowershellCommands(metadata: AgentMetadata): string[] {
-    return getToolCalls(metadata, "powershell").map(event => {
-        const data = event.data as Record<string, unknown>;
-        const args = data.arguments as { command?: string } | undefined;
-        return args?.command ?? "";
+function getShellCommands(metadata: AgentMetadata): string[] {
+  return getToolCalls(metadata)
+    .filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName))
+    .map(event => {
+      const data = event.data as Record<string, unknown>;
+      const args = data.arguments as { command?: string } | undefined;
+      return args?.command ?? "";
     });
 }
 
 /**
- * Check whether any powershell command executed by the agent matches
+ * Check whether any shell command executed by the agent matches
  * the given pattern.
  */
 export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
-    return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+  return getShellCommands(metadata).some(cmd => pattern.test(cmd));
 }
 
 /**
@@ -30,31 +34,31 @@ export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolea
  * @returns True if any file contains content matching the value pattern
  */
 export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern: RegExp, filePattern?: RegExp): boolean {
-    const scanDirectory = (dir: string): boolean => {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            if (entry.isDirectory() && entry.name !== "node_modules") {
-                if (scanDirectory(fullPath)) return true;
-            } else if (entry.isFile()) {
-                // Skip if filePattern is provided and doesn't match
-                if (filePattern && !entry.name.match(filePattern)) {
-                    continue;
-                }
-                try {
-                    const content = fs.readFileSync(fullPath, "utf-8");
-                    if (content.match(valuePattern)) {
-                        return true;
-                    }
-                } catch {
-                    // Skip files that can't be read as text
-                }
-            }
+  const scanDirectory = (dir: string): boolean => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        if (scanDirectory(fullPath)) return true;
+      } else if (entry.isFile()) {
+        // Skip if filePattern is provided and doesn't match
+        if (filePattern && !entry.name.match(filePattern)) {
+          continue;
         }
-        return false;
-    };
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (content.match(valuePattern)) {
+            return true;
+          }
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+    return false;
+  };
 
-    return scanDirectory(workspace);
+  return scanDirectory(workspace);
 }
 
 /**
@@ -62,16 +66,16 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
  * Paths are normalized to use forward slashes for cross-platform regex matching.
  */
 export function listFilesRecursive(dir: string): string[] {
-    return fs
-        .readdirSync(dir, { recursive: true })
-        .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
+  return fs
+    .readdirSync(dir, { recursive: true })
+    .map(p => path.join(dir, String(p)).replace(/\\/g, "/"));
 }
 
 /**
  * Check if any file in the list matches the given regex pattern.
  */
-export function hasFile(files: string[], pattern: RegExp): boolean {
-    return files.some(f => pattern.test(f));
+function hasFile(files: string[], pattern: RegExp): boolean {
+  return files.some(f => pattern.test(f));
 }
 
 /**
@@ -82,25 +86,57 @@ export function expectFiles(
   expected: RegExp[],
   unexpected: RegExp[],
 ): void {
-    const files = listFilesRecursive(workspacePath);
+  const files = listFilesRecursive(workspacePath);
 
-    for (const pattern of expected) {
+  for (const pattern of expected) {
     expect(hasFile(files, pattern)).toBe(true);
-    }
-    for (const pattern of unexpected) {
+  }
+  for (const pattern of unexpected) {
     expect(hasFile(files, pattern)).toBe(false);
-    }
-}
-  
-export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
-    const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
-
-    if (!isSkillUsed) {
-        agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
-    }
+  }
 }
 
 // ─── Agent metadata helpers ──────────────────────────────────────────────────
+
+/**
+ * Check if a skill was invoked during the session
+ */
+export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
+  return metadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .filter(event => event.data.toolName === "skill")
+    .some(event => {
+      const args = event.data.arguments;
+      return JSON.stringify(args).includes(skillName);
+    });
+}
+
+/**
+ * Normalize serialized tool arguments so Windows paths are comparable with slash-based regexes
+ */
+function normalizeToolArgumentText(argumentsData: unknown): string {
+  return JSON.stringify(argumentsData ?? {})
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/");
+}
+
+/**
+ * Check whether a tool was called and its serialized arguments match the given pattern
+ */
+export function isToolCalled(metadata: AgentMetadata, toolName: string, argumentPattern: RegExp): boolean {
+  return getToolCalls(metadata, toolName).some(event => {
+    const argsText = normalizeToolArgumentText(event.data.arguments);
+    return argumentPattern.test(argsText);
+  });
+}
+
+export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
+  const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
+
+  if (!isSkillUsed) {
+    agentMetadata.testComments.push(`⚠️ ${skillName} skill was expected to be used but was not used.`);
+  }
+}
 
 /**
  * Get all assistant messages from agent metadata
@@ -133,21 +169,31 @@ export function argsString(event: { data: Record<string, unknown> }): string {
   }
 }
 
-/** Get all tool execution results (complete events) */
-export function getToolResults(metadata: AgentMetadata): Array<{
-  toolCallId: string;
-  success: boolean;
-  content: string;
-  error: string;
+/**
+ * Get all tool calls made during the session
+ */
+export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): Array<{
+  id: string;
+  timestamp: string;
+  parentId: string | null;
+  ephemeral?: boolean;
+  type: "tool.execution_start";
+  data: {
+    toolCallId: string;
+    toolName: string;
+    arguments?: unknown;
+    mcpServerName?: string;
+    mcpToolName?: string;
+    parentToolCallId?: string;
+  };
 }> {
-  return metadata.events
-    .filter(e => e.type === "tool.execution_complete")
-    .map(e => ({
-      toolCallId: e.data.toolCallId as string,
-      success: e.data.success as boolean,
-      content: (e.data.result as { content?: string })?.content ?? "",
-      error: (e.data.error as { message?: string })?.message ?? ""
-    }));
+  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_start");
+
+  if (toolName) {
+    calls = calls.filter(event => event.data.toolName === toolName);
+  }
+
+  return calls;
 }
 
 /** Get combined text of all tool args and results for scanning */
@@ -165,4 +211,31 @@ export function getAllToolText(metadata: AgentMetadata): string {
     }
   }
   return parts.join("\n");
+}
+
+/**
+ * Maximum number of tool calls allowed before invoking the expected skill.
+ * If more than this number of tool calls are made before invoking the expected skill,
+ * we consider the agent failed to invoke the skill.
+ */
+const maxToolCallBeforeSkillInvocationTerminate = 3;
+
+export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
+  const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
+  if (shouldEarlyTerminateForInvokedSkill) {
+    const earlyTerminateComment = `✅ ${skillName} is invoked as expected. Terminating the agent run early.`;
+    // Due to follow up mechanism, we may run the agent twice and trigger the early terminate condition twice.
+    // Check if a comment has been made to avoid adding redundant comment.
+    if (!agentMetadata.testComments.some((comment) => comment === earlyTerminateComment)) {
+      agentMetadata.testComments.push(earlyTerminateComment);
+    }
+    return true;
+  }
+
+  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > maxToolCallBeforeSkillInvocationTerminate;
+  if (shouldEarlyTerminateForTooLate) {
+    agentMetadata.testComments.push(`⚠️ ${skillName} is not invoked within early tool calls. Terminating the agent run early.`);
+    return true;
+  }
+  return false;
 }

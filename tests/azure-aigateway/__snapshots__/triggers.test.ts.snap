@@ -1,16 +1,14 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Configure Azure API Management as an AI Gateway for AI models, MCP tools, and agents. USE FOR: semantic caching, token limit, content safety, load balancing, AI model governance, MCP rate limiting, jailbreak detection, add Azure OpenAI backend, add AI Foundry model, test AI gateway, LLM policies, configure AI backend, token metrics, AI cost control, convert API to MCP, import OpenAPI to gateway. DO NOT USE FOR: deploying APIM (use azure-prepare), general API policies (use azure-deploy), creating new APIM instance (use azure-prepare).",
+  "description": "Configure Azure API Management as an AI Gateway for AI models, MCP tools, and agents. WHEN: semantic caching, token limit, content safety, load balancing, AI model governance, MCP rate limiting, jailbreak detection, add Azure OpenAI backend, add AI Foundry model, test AI gateway, LLM policies, configure AI backend, token metrics, AI cost control, convert API to MCP, import OpenAPI to gateway.",
   "extractedKeywords": [
     "agents",
+    "ai",
     "aigateway",
-    "apim",
     "authentication",
     "azure",
-    "azure-deploy",
-    "azure-prepare",
     "backend",
     "balancing",
     "caching",
@@ -19,17 +17,13 @@ exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill descrip
     "control",
     "convert",
     "cost",
-    "creating",
     "deploy",
-    "deploying",
     "detection",
     "foundry",
     "gateway",
-    "general",
     "governance",
     "identity",
     "import",
-    "instance",
     "jailbreak",
     "limit",
     "limiting",
@@ -49,6 +43,7 @@ exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill descrip
     "test",
     "token",
     "tools",
+    "when",
   ],
   "name": "azure-aigateway",
 }
@@ -57,12 +52,10 @@ exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill descrip
 exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "agents",
+  "ai",
   "aigateway",
-  "apim",
   "authentication",
   "azure",
-  "azure-deploy",
-  "azure-prepare",
   "backend",
   "balancing",
   "caching",
@@ -71,17 +64,13 @@ exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill keyword
   "control",
   "convert",
   "cost",
-  "creating",
   "deploy",
-  "deploying",
   "detection",
   "foundry",
   "gateway",
-  "general",
   "governance",
   "identity",
   "import",
-  "instance",
   "jailbreak",
   "limit",
   "limiting",
@@ -101,5 +90,6 @@ exports[`azure-aigateway - Trigger Tests Trigger Keywords Snapshot skill keyword
   "test",
   "token",
   "tools",
+  "when",
 ]
 `;

@@ -31,7 +31,7 @@ Before contributing, ensure you have the following installed:
 In GitHub Copilot CLI, add the plugin marketplace:
 
 ```
-/plugin marketplace add microsoft/github-copilot-for-azure
+/plugin marketplace add microsoft/azure-skills
 ```
 
 #### 2. Install the Azure Plugin
@@ -39,7 +39,7 @@ In GitHub Copilot CLI, add the plugin marketplace:
 Install the Azure plugin:
 
 ```
-/plugin install azure@github-copilot-for-azure
+/plugin install azure@azure-skills
 ```
 
 ---
@@ -48,7 +48,7 @@ Install the Azure plugin:
 
 To develop and test skills locally, you'll need to link your cloned repository to the installed plugins folder. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
 
-> **Important:** Do NOT run `/plugin install azure@github-copilot-for-azure` when developing locally. The symlink setup below IS the installation. Running the install command would create a nested copy that shadows your local changes.
+> **Important:** Do NOT run `/plugin install azure@azure-skills` when developing locally. The symlink setup below IS the installation. Running the install command would create a nested copy that shadows your local changes.
 
 ### 1. Fork and Clone the Repository
 
@@ -82,7 +82,7 @@ npm run local verify
 ```
 
 The setup script will:
-- Create a symlink from `~/.copilot/installed-plugins/github-copilot-for-azure` to your local `plugin/` folder
+- Create a symlink from `~/.copilot/installed-plugins/azure-skills` to your local `plugin/` folder
 - Handle Windows junction fallback if admin privileges aren't available
 
 The verify script will:
@@ -99,19 +99,19 @@ If you prefer to create the symlink manually:
 #### Windows (Command Prompt - Run as Administrator)
 
 ```cmd
-mklink /J "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure\azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
+mklink /J "%USERPROFILE%\.copilot\installed-plugins\azure-skills\azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
 #### Windows (PowerShell - Run as Administrator)
 
 ```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure\azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\azure-skills\azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
 ```
 
 #### macOS / Linux
 
 ```bash
-ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/github-copilot-for-azure/azure
+ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/azure-skills/azure
 ```
 
 > **Note:** Replace the paths above with your actual cloned repository location.
@@ -147,7 +147,7 @@ Get-ChildItem "$env:USERPROFILE\.copilot\installed-plugins" | Format-List
 ls -la ~/.copilot/installed-plugins/
 ```
 
-You should see `github-copilot-for-azure` pointing to your cloned repository's `plugin` folder.
+You should see `azure-skills` pointing to your cloned repository's `plugin` folder.
 
 ### 6. Remove an Existing Symlink (If Needed)
 
@@ -155,17 +155,17 @@ If you need to remove or recreate a symlink:
 
 #### Windows (Command Prompt - Run as Administrator)
 ```cmd
-rmdir "%USERPROFILE%\.copilot\installed-plugins\github-copilot-for-azure"
+rmdir "%USERPROFILE%\.copilot\installed-plugins\azure-skills"
 ```
 
 #### Windows (PowerShell - Run as Administrator)
 ```powershell
-Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\github-copilot-for-azure" -Force
+Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\azure-skills" -Force
 ```
 
 #### macOS / Linux
 ```bash
-rm ~/.copilot/installed-plugins/github-copilot-for-azure
+rm ~/.copilot/installed-plugins/azure-skills
 ```
 
 ### 7. Testing Pull Requests Locally
@@ -226,6 +226,8 @@ plugin/skills/your-skill-name/
 ```
 
 ### Creating a New Skill
+
+> ⚠️ Char count of skill descriptions in this repo is close to the char count budget in tools like Copilot CLI. Exceeding the char count budget may result in any skill being truncated at runtime, causing inconsistent agent behavior. Consider adding the new content to an existing skill or rebrand an existing skill to cover the new content.
 
 _NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill.
 - The Creator agents expects you already know what scenarios the skill should address

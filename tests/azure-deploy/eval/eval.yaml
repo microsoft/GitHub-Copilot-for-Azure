@@ -1,0 +1,51 @@
+# Waza eval specification for azure-deploy skill
+# Focuses on deploy-time AVM guidance and fallback behavior from issue #1085.
+name: azure-deploy-eval
+description: |
+  Evaluation suite for the azure-deploy skill.
+  Tests deployment guidance quality with emphasis on:
+  - AVM+AZD pattern-module preference
+  - AVM fallback when no pattern module exists
+  - deploy-only routing (not prepare/validate)
+
+skill: azure-deploy
+version: "1.0"
+
+config:
+  trials_per_task: 3
+  timeout_seconds: 420
+  parallel: false
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+metrics:
+  - name: task_completion
+    weight: 0.4
+    threshold: 0.8
+    description: Did the skill complete a deploy-focused request?
+
+  - name: trigger_accuracy
+    weight: 0.3
+    threshold: 0.85
+    description: Does the skill trigger on deploy prompts and avoid prepare-only prompts?
+
+  - name: behavior_quality
+    weight: 0.3
+    threshold: 0.75
+    description: Does output preserve AVM+AZD preference and AVM fallback order?
+
+graders:
+  - type: code
+    name: has_output
+    config:
+      assertions:
+        - "len(output) > 10"
+
+  - type: regex
+    name: no_runtime_failure
+    config:
+      must_not_match:
+        - "(?i)fatal error|exception occurred|crashed"
+
+tasks:
+  - "tasks/*.yaml"

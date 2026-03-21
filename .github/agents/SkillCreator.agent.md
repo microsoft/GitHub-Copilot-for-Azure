@@ -69,5 +69,5 @@ To create tests:
 cp -r tests/_template tests/{skill-name}
 # Update SKILL_NAME in each test file
 # Add trigger prompts specific to the skill
-npm test -- --testPathPattern={skill-name}
+npm test -- --testPathPatterns={skill-name}
 ```

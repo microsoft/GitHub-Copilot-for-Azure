@@ -56,7 +56,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("contains agent routing references", () => {
       expect(skill.content).toContain("deploy");
       expect(skill.content).toContain("invoke");
+      expect(skill.content).toContain("observe");
       expect(skill.content).toContain("troubleshoot");
+    });
+
+    test("description includes prompt optimization routing keywords", () => {
+      const description = skill.metadata.description;
+      expect(description).toContain("improve prompt");
+      expect(description).toContain("prompt optimizer");
+      expect(description).toContain("improve agent instructions");
+      expect(description).toContain("optimize system prompt");
     });
 
     test("contains common project context resolution", () => {
@@ -68,6 +77,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("AZURE_AI_PROJECT_ENDPOINT");
       expect(skill.content).toContain("AZURE_CONTAINER_REGISTRY_NAME");
     });
+
+    test("documents .foundry workspace standard", () => {
+      expect(skill.content).toContain(".foundry/agent-metadata.yaml");
+      expect(skill.content).toContain("defaultEnvironment");
+      expect(skill.content).toContain("Agent Metadata Contract");
+    });
+
   });
 
   describe("Sub-Skills Reference", () => {
@@ -78,7 +94,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("references agent sub-skills in table", () => {
       expect(skill.content).toContain("foundry-agent/deploy/deploy.md");
       expect(skill.content).toContain("foundry-agent/invoke/invoke.md");
+      expect(skill.content).toContain("foundry-agent/observe/observe.md");
       expect(skill.content).toContain("foundry-agent/troubleshoot/troubleshoot.md");
+    });
+
+    test("observe sub-skill row routes prompt optimization scenarios", () => {
+      expect(skill.content).toMatch(/observe.*optimize prompts/i);
+      expect(skill.content).toMatch(/observe.*improve agent instructions/i);
+      expect(skill.content).toMatch(/observe.*CI\/CD monitoring/i);
     });
 
     test("references quota sub-skill", () => {
@@ -113,12 +136,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("contains quota management workflows", () => {
       expect(quotaContent).toContain("### 1. Check Regional Quota");
       expect(quotaContent).toContain("### 2. Find Best Region for Deployment");
-      expect(quotaContent).toContain("### 3. Deploy with PTU");
-      expect(quotaContent).toContain("### 4. Delete Deployment (Free Quota)");
+      expect(quotaContent).toContain("### 3. Check Quota Before Deployment");
+      expect(quotaContent).toContain("### 5. Delete Deployment (Free Quota)");
     });
 
     test("contains command patterns for each workflow", () => {
-      expect(quotaContent).toContain("Show my Microsoft Foundry quota usage");
+      expect(quotaContent).toContain("View quota usage");
       expect(quotaContent).toContain("Request quota increase");
     });
 
@@ -140,6 +163,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("contains bash command examples", () => {
       expect(quotaContent).toContain("```bash");
       expect(quotaContent).toContain("az rest");
+    });
+  });
+
+  describe("Agent Development Lifecycle Routing", () => {
+    test("routes prompt optimization intents to observe", () => {
+      expect(skill.content).toContain(
+        "Optimize / improve agent prompt or instructions"
+      );
+      expect(skill.content).toContain("observe (Step 4: Optimize)");
+      expect(skill.content).toContain("Evaluate and optimize agent (full loop)");
+    });
+
+    test("mentions prompt_optimize at the top level", () => {
+      expect(skill.content).toContain("prompt_optimize");
+      expect(skill.content).toMatch(/Prompt Optimization:/i);
     });
   });
 
@@ -221,6 +259,121 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("contains bash command examples", () => {
       expect(rbacContent).toContain("```bash");
+    });
+  });
+
+  describe("Standard Agent Setup Reference", () => {
+    let setupContent: string;
+
+    beforeAll(async () => {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const setupPath = path.join(
+        SKILLS_PATH,
+        "microsoft-foundry/references/standard-agent-setup.md"
+      );
+      setupContent = await fs.readFile(setupPath, "utf-8");
+    });
+
+    test("has standard agent setup reference file", () => {
+      expect(setupContent).toBeDefined();
+      expect(setupContent.length).toBeGreaterThan(100);
+    });
+
+    test("contains mandatory Learn docs link", () => {
+      expect(setupContent).toContain("MANDATORY");
+      expect(setupContent).toContain("https://learn.microsoft.com");
+    });
+
+    test("documents basic vs standard setup types", () => {
+      expect(setupContent).toContain("Basic");
+      expect(setupContent).toContain("Standard");
+      expect(setupContent).toContain("Capability Host");
+    });
+
+    test("contains standard setup connections table", () => {
+      expect(setupContent).toContain("Azure Cosmos DB");
+      expect(setupContent).toContain("Azure Storage");
+      expect(setupContent).toContain("Azure AI Search");
+    });
+
+    test("documents prerequisites for RBAC and quota", () => {
+      expect(setupContent).toContain("Owner");
+      expect(setupContent).toContain("roleAssignments/write");
+      expect(setupContent).toContain("quota");
+    });
+
+    test("contains Bicep template link", () => {
+      expect(setupContent).toContain("Bicep");
+      expect(setupContent).toContain("github.com");
+    });
+
+    test("warns about async capability host provisioning", () => {
+      expect(setupContent).toContain("asynchronous");
+      expect(setupContent).toContain("poll");
+    });
+
+    test("contains post-deployment steps", () => {
+      expect(setupContent).toContain("Deploy a model");
+      expect(setupContent).toContain("Create the agent");
+    });
+  });
+
+  describe("Private Network Standard Agent Setup Reference", () => {
+    let privateContent: string;
+
+    beforeAll(async () => {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const privatePath = path.join(
+        SKILLS_PATH,
+        "microsoft-foundry/references/private-network-standard-agent-setup.md"
+      );
+      privateContent = await fs.readFile(privatePath, "utf-8");
+    });
+
+    test("has private network setup reference file", () => {
+      expect(privateContent).toBeDefined();
+      expect(privateContent.length).toBeGreaterThan(100);
+    });
+
+    test("contains mandatory Learn docs link", () => {
+      expect(privateContent).toContain("MANDATORY");
+      expect(privateContent).toContain("https://learn.microsoft.com");
+    });
+
+    test("references standard agent setup as base", () => {
+      expect(privateContent).toContain("standard-agent-setup.md");
+    });
+
+    test("documents subnet requirements", () => {
+      expect(privateContent).toContain("Agent Subnet");
+      expect(privateContent).toContain("Private Endpoint Subnet");
+      expect(privateContent).toContain("Microsoft.App/environments");
+    });
+
+    test("contains critical networking constraints", () => {
+      expect(privateContent).toContain("must be in the same region");
+      expect(privateContent).toContain("exclusive to one Foundry account");
+    });
+
+    test("warns about existing VNet subnet pre-creation", () => {
+      expect(privateContent).toContain("ensure both subnets exist before deployment");
+    });
+
+    test("contains Bicep template link", () => {
+      expect(privateContent).toContain("Bicep");
+      expect(privateContent).toContain("github.com");
+    });
+
+    test("warns about async capability host provisioning", () => {
+      expect(privateContent).toContain("asynchronous");
+      expect(privateContent).toContain("Poll deployment status");
+    });
+
+    test("contains post-deployment steps", () => {
+      expect(privateContent).toContain("Deploy a model");
+      expect(privateContent).toContain("Create the agent");
     });
   });
 });

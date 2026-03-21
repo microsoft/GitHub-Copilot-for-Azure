@@ -1,0 +1,87 @@
+parameters:
+- name: buildVersionToDownload
+  displayName: 'Build version to download'
+  type: string
+  default: 'latestFromBranch'
+  values:
+  - latestFromBranch
+  - specific
+- name: buildVersionDetail
+  displayName: 'Build version detail (branch name or build ID)'
+  type: string
+  default: 'refs/heads/main'
+
+trigger: none
+pr: none
+
+schedules:
+- cron: '0 11 * * *'
+  displayName: 'Daily 11am UTC'
+  branches:
+    include:
+    - main
+  always: true
+
+stages:
+- stage: ReportBenchmark
+  displayName: 'Report Copilot Benchmarks'
+  pool:
+    name: $(LINUXPOOL)
+    image: $(LINUXVMIMAGE)
+    os: linux
+  variables:
+  - template: /pipelines/templates/variables/image.yml
+  - template: /pipelines/templates/variables/globals.yml
+  jobs:
+  - job: ReportBenchmark
+    displayName: 'Report Copilot Benchmarks'
+    steps:
+
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download benchmark results artifact'
+      inputs:
+        buildType: specific
+        project: 'internal'
+        definition: 8091
+        buildVersionToDownload: ${{ parameters.buildVersionToDownload }}
+        ${{ if eq(parameters.buildVersionToDownload, 'specific') }}:
+          runId: ${{ parameters.buildVersionDetail }}
+        ${{ else }}:
+          branchName: ${{ parameters.buildVersionDetail }}
+        artifactName: 'benchmark-run-ids'
+        targetPath: '$(Pipeline.Workspace)/benchmark-run-ids'
+
+    - task: NodeTool@0
+      displayName: 'Setup Node.js'
+      inputs:
+        versionSpec: '22'
+
+    - script: npm install -g @github/copilot
+      displayName: 'Install GitHub Copilot CLI'
+
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.12'
+      inputs:
+        versionSpec: '3.12'
+
+    - task: PipAuthenticate@1
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
+      inputs:
+        artifactFeeds: 'internal/MicrosoftSweBench'
+
+    - task: AzureCLI@2
+      name: GenerateBenchmarkReports
+      displayName: 'Generate benchmark reports for MSBench runs'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval'
+        addSpnToEnvironment: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-GenerateBenchmarkReport.ps1
+        scriptArguments: >
+          -InputPath "$(Pipeline.Workspace)/benchmark-run-ids"
+          -OutputPath "$(Build.ArtifactStagingDirectory)"
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-reports
+      displayName: 'Publish benchmark reports artifact'

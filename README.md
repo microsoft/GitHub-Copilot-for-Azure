@@ -10,11 +10,49 @@ GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and 
 
 ## Usage
 
+### Prerequisites
+
+Before installing the plugin, ensure the following tools are installed:
+
+#### Git
+
+Git is required to add the marketplace plugin. If it is not installed, you will see an error like:
+`Failed to add marketplace: Failed to fetch GitHub marketplace microsoft/azure-skills: Error: spawn git ENOENT`
+
+**Windows (winget):**
+```powershell
+winget install --id Git.Git -e --source winget
+```
+
+**macOS (Homebrew):**
+```bash
+brew install git
+```
+
+#### Node.js
+
+Node.js is required for the Azure MCP server. If it is not installed, you may see errors such as:
+- Windows: `'npx' is not recognized as an internal or external command`
+- macOS/Linux: `npx: command not found`
+- Or the MCP server may fail silently with `npx failed to connect to azure`
+
+**Windows (winget):**
+```powershell
+winget install --id OpenJS.NodeJS.LTS -e --source winget
+```
+
+**macOS (Homebrew):**
+```bash
+brew install node
+```
+
+### Installation
+
 To install the Azure plugin into Copilot CLI and Claude:
 
-1. Add the marketplace with `/plugin marketplace add microsoft/github-copilot-for-azure`
-2. Install the plugin with `/plugin install azure@github-copilot-for-azure`
-3. Update the plugin with `/plugin update azure@github-copilot-for-azure`
+1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`
+2. Install the plugin with `/plugin install azure@azure-skills`
+3. Update the plugin with `/plugin update azure@azure-skills`
 
 ## Contributing
 
