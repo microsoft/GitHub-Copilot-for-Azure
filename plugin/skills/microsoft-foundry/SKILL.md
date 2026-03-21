@@ -1,9 +1,10 @@
 ---
 name: microsoft-foundry
-description: >-
-  Use this skill to work with Microsoft Foundry (Azure AI Foundry) and tools from Foundry MCP server: deploy AI models, manage AI agents (create, deploy, invoke, run, troubleshoot Foundry Agents), manage RBAC permissions and role assignments, manage quotas and capacity, create Foundry resources.
-  USE FOR: Microsoft Foundry, AI Foundry, create agent, deploy agent, debug agent, invoke agent, run agent, agent chat, evaluate agent, agent monitoring, deploy model, model catalog, knowledge index, create Foundry project, new Foundry project, set up Foundry, onboard to Foundry, create Foundry resource, create AI Services, AIServices kind, register resource provider, enable Cognitive Services, setup AI Services account, create resource group for Foundry, RBAC, role assignment, quota, capacity, TPM, deployment failure, QuotaExceeded.
-  DO NOT USE FOR: Azure Functions (use azure-functions), App Service (use azure-create-app), generic Azure resource creation (use azure-create-app).
+description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, prompt optimization, prompt optimizer workflows, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, optimize prompt, improve prompt, prompt optimization, prompt optimizer, improve agent instructions, optimize agent instructions, optimize system prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.7"
 ---
 
 # Microsoft Foundry Skill
@@ -20,8 +21,11 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 |-----------|-------------|-----------|
 | **deploy** | Containerize, build, push to ACR, create/update/start/stop/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
+| **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, and set up CI/CD monitoring | [observe](foundry-agent/observe/observe.md) |
+| **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View container logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create/agent-framework** | Create agents and workflows using Microsoft Agent Framework SDK. Supports single-agent and multi-agent workflow patterns with HTTP server and F5/debug support. | [create/agent-framework](foundry-agent/create/agent-framework/SKILL.md) |
+| **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. Downloads starter samples from foundry-samples repo. | [create](foundry-agent/create/create.md) |
+| **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
 | **models/deploy-model** | Unified model deployment with intelligent routing. Handles quick preset deployments, fully customized deployments (version/SKU/capacity/RAI), and capacity discovery across regions. Routes to sub-skills: `preset` (quick deploy), `customize` (full control), `capacity` (find availability). | [models/deploy-model/SKILL.md](models/deploy-model/SKILL.md) |
@@ -32,45 +36,97 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 > 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
+> 💡 **Prompt Optimization:** For requests like "optimize my prompt" or "improve my agent instructions," load [observe](foundry-agent/observe/observe.md) and use the `prompt_optimize` MCP tool through that eval-driven workflow.
+
 ## Agent Development Lifecycle
 
 Match user intent to the correct workflow. Read each sub-skill in order before executing.
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create a new agent from scratch | create/agent-framework → deploy → invoke |
+| Create a new agent from scratch | [create](foundry-agent/create/create.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Deploy an agent (code already exists) | deploy → invoke |
 | Update/redeploy an agent after code changes | deploy → invoke |
 | Invoke/test/chat with an agent | invoke |
+| Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
+| Evaluate and optimize agent (full loop) | observe |
 | Troubleshoot an agent issue | invoke → troubleshoot |
 | Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
 | Start/stop agent container | deploy |
 
+## Agent: .foundry Workspace Standard
+
+Every agent source folder should keep Foundry-specific state under `.foundry/`:
+
+```text
+<agent-root>/
+  .foundry/
+    agent-metadata.yaml
+    datasets/
+    evaluators/
+    results/
+```
+
+- `agent-metadata.yaml` is the required source of truth for environment-specific project settings, agent names, registry details, and evaluation test cases.
+- `datasets/` and `evaluators/` are local cache folders. Reuse them when they are current, and ask before refreshing or overwriting them.
+- See [Agent Metadata Contract](references/agent-metadata-contract.md) for the canonical schema and workflow rules.
+
+## Agent: Setup References
+
+- [Standard Agent Setup](references/standard-agent-setup.md) - Standard capability-host setup with customer-managed data, search, and AI Services resources.
+- [Private Network Standard Agent Setup](references/private-network-standard-agent-setup.md) - Standard setup with VNet isolation and private endpoints.
+
 ## Agent: Project Context Resolution
 
-Agent skills should run this step **only when they need configuration values they don't already have**. If a value (e.g., project endpoint, agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
+Agent skills should run this step **only when they need configuration values they don't already have**. If a value (for example, agent root, environment, project endpoint, or agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
 
-### Step 1: Detect azd Project
+### Step 1: Discover Agent Roots
 
-If any required configuration value is missing, check if `azure.yaml` exists in the project root (workspace root or user-specified project path). If found, run `azd env get-values` to load environment variables.
+Search the workspace for `.foundry/agent-metadata.yaml`.
 
-### Step 2: Resolve Common Configuration
+- **One match** → use that agent root.
+- **Multiple matches** → require the user to choose the target agent folder.
+- **No matches** → for create/deploy workflows, seed a new `.foundry/` folder during setup; for all other workflows, stop and ask the user which agent source folder to initialize.
 
-Match missing values against the azd environment:
+### Step 2: Resolve Environment
 
-| azd Variable | Resolves To | Used By |
-|-------------|-------------|---------|
-| `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | Project endpoint | deploy, invoke, troubleshoot |
-| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | ACR registry name / image URL prefix | deploy |
-| `AZURE_SUBSCRIPTION_ID` | Azure subscription | troubleshoot |
+Read `.foundry/agent-metadata.yaml` and resolve the environment in this order:
+1. Environment explicitly named by the user
+2. Environment already selected earlier in the session
+3. `defaultEnvironment` from metadata
 
-### Step 3: Collect Missing Values
+If the metadata contains multiple environments and none of the rules above selects one, prompt the user to choose. Keep the selected agent root and environment visible in every workflow summary.
 
-Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, or azd environment. Common values skills may need:
+### Step 3: Resolve Common Configuration
+
+Use the selected environment in `agent-metadata.yaml` as the primary source:
+
+| Metadata Field | Resolves To | Used By |
+|----------------|-------------|---------|
+| `environments.<env>.projectEndpoint` | Project endpoint | deploy, invoke, observe, trace, troubleshoot |
+| `environments.<env>.agentName` | Agent name | invoke, observe, trace, troubleshoot |
+| `environments.<env>.azureContainerRegistry` | ACR registry name / image URL prefix | deploy |
+| `environments.<env>.testCases[]` | Dataset + evaluator + threshold bundles | observe, eval-datasets |
+
+### Step 4: Bootstrap Missing Metadata (Create/Deploy Only)
+
+If create/deploy is initializing a new `.foundry` workspace and metadata fields are still missing, check if `azure.yaml` exists in the project root. If found, run `azd env get-values` and use it to seed `agent-metadata.yaml` before continuing.
+
+| azd Variable | Seeds |
+|-------------|-------|
+| `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | `environments.<env>.projectEndpoint` |
+| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | `environments.<env>.azureContainerRegistry` |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription for trace/troubleshoot lookups |
+
+### Step 5: Collect Missing Values
+
+Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, metadata, or azd bootstrap. Common values skills may need:
+- **Agent root** — Target folder containing `.foundry/agent-metadata.yaml`
+- **Environment** — `dev`, `prod`, or another environment key from metadata
 - **Project endpoint** — AI Foundry project endpoint URL
 - **Agent name** — Name of the target agent
 
-> 💡 **Tip:** If the user provides a project endpoint or agent name in their initial message, extract it directly — do not ask again.
+> 💡 **Tip:** If the user already provides the agent path, environment, project endpoint, or agent name, extract it directly — do not ask again.
 
 ## Agent: Agent Types
 

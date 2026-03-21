@@ -19,7 +19,25 @@ az account show --query "{name:name, id:id}" -o json
 
 ## Step 2: Prompt User for Subscription
 
-**You MUST use `ask_user`** to confirm the subscription. Include the actual subscription name and ID from Step 1 in the choices.
+**You MUST use `ask_user`** to confirm the subscription. Find the default subscription (marked `isDefault: true`) from Step 1 results and present it as the recommended choice.
+
+✅ **Correct — show actual name and ID as a choice:**
+```
+ask_user(
+  question: "Which Azure subscription would you like to deploy to?",
+  choices: [
+    "Use current: <subscription-name> (<subscription-id>) (Recommended)",
+    "Let me specify a different subscription"
+  ]
+)
+```
+
+❌ **Wrong — never use freeform input for subscription:**
+```
+ask_user(
+  question: "Which Azure subscription should I deploy to? I'll need the subscription name or ID."
+)
+```
 
 ## Step 3: Create AZD Environment FIRST
 
@@ -77,7 +95,10 @@ az group show --name rg-<environment-name> --query "{location:location}" -o json
 az resource list --resource-group rg-<env-name> --tag azd-service-name=<service-name> --query "[].name" -o table
 ```
 
-Check for each service in `azure.yaml`. If duplicates exist **in the target RG**, delete or rename.
+Check for each service in `azure.yaml`. If duplicates exist **in the target RG**:
+
+1. **Preferred — Fresh environment**: Run `azd env new <new-name>` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
+2. **Alternative — Delete conflicts**: Use `ask_user` to confirm deletion of old resources (required by global rules).
 
 ## Step 6: Prompt User for Location
 
@@ -131,6 +152,22 @@ azd up --no-prompt
 | Running `azd up` without environment | `azd env new <name>` first |
 | Assuming location without checking RG | Check `az group show` before choosing |
 | Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env>` before deploy |
+
+---
+
+## Service-Specific Checks
+
+### Durable Functions — Verify DTS Backend
+
+> **⛔ MANDATORY**: If the plan includes Durable Functions, verify infrastructure uses **Durable Task Scheduler** (DTS), NOT Azure Storage.
+
+Check that `infra/` Bicep files contain:
+- `Microsoft.DurableTask/schedulers` resource
+- `Microsoft.DurableTask/schedulers/taskHubs` child resource
+- `Durable Task Data Contributor` RBAC role assignment
+- `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` app setting
+
+If any are missing, **STOP** and invoke **azure-prepare** to regenerate with the durable recipe.
 
 ---
 

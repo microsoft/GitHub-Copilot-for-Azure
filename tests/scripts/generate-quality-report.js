@@ -1,0 +1,1013 @@
+#!/usr/bin/env node
+
+/**
+ * Quality Report Generator
+ *
+ * Post-processes raw test outputs (JUnit XML, token-usage.json, agent-metadata)
+ * into a single skill-quality-report.json contract file.
+ *
+ * This is the "Layer 2" processor — sits between raw pipeline outputs and the
+ * reporting dashboard. The dashboard reads only this JSON, doing zero processing.
+ *
+ * Usage:
+ *   node generate-quality-report.js                  # Process most recent test run
+ *   node generate-quality-report.js --run <run-dir>  # Process a specific test run
+ *   node generate-quality-report.js --junit <path>   # Use a specific JUnit XML
+ */
+
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const REPORTS_PATH = path.resolve(__dirname, "../reports");
+const TEST_RUN_PREFIX = "test-run-";
+const CONTRACT_VERSION = "1.0";
+
+// ─── CLI Argument Parsing ────────────────────────────────────────────────────
+
+function parseArgs(argv) {
+  const args = argv.slice(2);
+  let runDir = null;
+  let junitPath = null;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--run" && i + 1 < args.length) runDir = args[++i];
+    if (args[i] === "--junit" && i + 1 < args.length) junitPath = args[++i];
+  }
+
+  return { runDir, junitPath };
+}
+
+// ─── Find Most Recent Test Run ───────────────────────────────────────────────
+
+function getMostRecentTestRun() {
+  if (!fs.existsSync(REPORTS_PATH)) return null;
+  const entries = fs.readdirSync(REPORTS_PATH, { withFileTypes: true });
+  const testRuns = entries
+    .filter(e => e.isDirectory() && e.name.startsWith(TEST_RUN_PREFIX))
+    .map(e => e.name)
+    .sort()
+    .reverse();
+  return testRuns.length > 0 ? testRuns[0] : null;
+}
+
+// ─── JUnit XML Parser (regex-based, matches existing show-test-results.js) ──
+
+function extractAttr(tag, name) {
+  const match = tag.match(new RegExp(`${name}="([^"]*)"`));
+  return match ? match[1] : null;
+}
+
+function parseJunitXml(xmlPath) {
+  if (!fs.existsSync(xmlPath)) return null;
+  const xml = fs.readFileSync(xmlPath, "utf-8");
+
+  const result = {
+    totalTests: 0,
+    failures: 0,
+    errors: 0,
+    time: 0,
+    suites: [],
+  };
+
+  const headerMatch = xml.match(/<testsuites[^>]*>/);
+  if (headerMatch) {
+    const attrs = headerMatch[0];
+    result.totalTests = parseInt(extractAttr(attrs, "tests") || "0", 10);
+    result.failures = parseInt(extractAttr(attrs, "failures") || "0", 10);
+    result.errors = parseInt(extractAttr(attrs, "errors") || "0", 10);
+    result.time = parseFloat(extractAttr(attrs, "time") || "0");
+  }
+
+  const suiteRegex = /<testsuite(?!s)[^>]*>[\s\S]*?<\/testsuite>/g;
+  let suiteMatch;
+  while ((suiteMatch = suiteRegex.exec(xml)) !== null) {
+    const suiteXml = suiteMatch[0];
+    const suiteAttrsMatch = suiteXml.match(/<testsuite[^>]*>/);
+    if (!suiteAttrsMatch) continue;
+
+    const sa = suiteAttrsMatch[0];
+    const suite = {
+      name: extractAttr(sa, "name") || "Unknown",
+      tests: parseInt(extractAttr(sa, "tests") || "0", 10),
+      failures: parseInt(extractAttr(sa, "failures") || "0", 10),
+      time: parseFloat(extractAttr(sa, "time") || "0"),
+      testcases: [],
+    };
+
+    const tcRegex = /<testcase[^>]*>[\s\S]*?<\/testcase>|<testcase[^/]*\/>/g;
+    let tcMatch;
+    while ((tcMatch = tcRegex.exec(suiteXml)) !== null) {
+      const tcXml = tcMatch[0];
+      const tcAttrs = tcXml.match(/<testcase[^>]*>/)?.[0];
+      if (!tcAttrs) continue;
+
+      const tc = {
+        classname: extractAttr(tcAttrs, "classname") || "",
+        name: extractAttr(tcAttrs, "name") || "Unknown",
+        time: parseFloat(extractAttr(tcAttrs, "time") || "0"),
+        status: "passed",
+        failure: null,
+      };
+
+      const failMatch = tcXml.match(/<failure[^>]*>([\s\S]*?)<\/failure>/);
+      if (failMatch) {
+        tc.status = "failed";
+        tc.failure = failMatch[1].trim().substring(0, 500);
+      }
+      const errMatch = tcXml.match(/<error[^>]*>([\s\S]*?)<\/error>/);
+      if (errMatch) {
+        tc.status = "error";
+        tc.failure = errMatch[1].trim().substring(0, 500);
+      }
+      if (tcXml.includes("<skipped")) tc.status = "skipped";
+
+      suite.testcases.push(tc);
+    }
+    result.suites.push(suite);
+  }
+  return result;
+}
+
+// ─── Token Data Loader ───────────────────────────────────────────────────────
+
+function loadTokenSummary(testRunPath) {
+  // Try JSONL format first (one JSON object per line, safe for concurrent writes)
+  const jsonlPath = path.join(testRunPath, "token-summary.jsonl");
+  try {
+    const raw = fs.readFileSync(jsonlPath, "utf-8");
+    if (!raw.trim()) return [];
+    return raw.trim().split("\n").map(line => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+  } catch {
+    // Fall back to legacy JSON format
+  }
+  const summaryPath = path.join(testRunPath, "token-summary.json");
+  try {
+    const raw = fs.readFileSync(summaryPath, "utf-8");
+    if (!raw.trim()) return [];
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn(
+      `Warning: Failed to load token summary at ${testRunPath}: ${
+        err && err.message ? err.message : err
+      }`
+    );
+    return [];
+  }
+}
+
+// ─── Skill Area Extraction ───────────────────────────────────────────────────
+
+/**
+ * Extract skill area from test directory name or JUnit classname.
+ * Handles both formats:
+ *   Directory: "microsoft-foundry_deploy-model_-_Integration_Tests_..." → "microsoft-foundry/deploy-model"
+ *   JUnit:     "microsoft-foundry_deploy-model - Integration Tests ›..." → "microsoft-foundry/deploy-model"
+ *   JUnit:     "microsoft-foundry_ - Integration Tests" → "microsoft-foundry"
+ */
+function extractSkillArea(name) {
+  // Try JUnit classname format first: "skill_sub - Integration Tests..."
+  const match = name.match(/^(.+?)\s*-\s*Integration Tests/);
+  if (match) {
+    let skillPart = match[1].trim();
+    // "microsoft-foundry_deploy-model" → "microsoft-foundry/deploy-model"
+    // "microsoft-foundry_" → "microsoft-foundry"
+    skillPart = skillPart.replace(/_$/, ""); // trailing underscore
+    return skillPart.replace(/_/g, "/");
+  }
+
+  // Try directory name format: "skill_sub_-_Integration_Tests_..."
+  const integrationIdx = name.indexOf("_-_Integration_Tests");
+  if (integrationIdx !== -1) {
+    const skillPart = name.substring(0, integrationIdx);
+    return skillPart.replace(/_/g, "/");
+  }
+
+  // Fallback
+  const parts = name.split("_");
+  return parts[0];
+}
+
+// ─── Tool Call Extraction ─────────────────────────────────────────────────────
+
+/**
+ * Extract tool calls from structured agent-metadata.json.
+ */
+function extractToolCalls(testRunPath, dirName) {
+  const dirPath = path.join(testRunPath, dirName);
+  if (!fs.existsSync(dirPath)) return [];
+
+  const jsonPath = path.join(dirPath, "agent-metadata.json");
+  if (!fs.existsSync(jsonPath)) return [];
+
+  try {
+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    const toolCalls = [];
+
+    for (const event of (data.events || [])) {
+      // SDK events use tool.execution_start with data.toolName
+      if (event.type === "tool.execution_start") {
+        const toolName = event.data?.toolName || "";
+        if (toolName === "skill") {
+          const args = event.data?.arguments;
+          const skillName = typeof args === "string" ? args : JSON.stringify(args || "");
+          toolCalls.push({ tool: "skill", args: skillName, source: "agent-metadata.json" });
+        } else {
+          const args = event.data?.arguments || "";
+          let argsStr = "";
+          if (typeof args === "string") {
+            try {
+              const parsed = JSON.parse(args);
+              argsStr = Object.entries(parsed).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+            } catch { argsStr = args.substring(0, 100); }
+          } else if (typeof args === "object") {
+            argsStr = Object.entries(args).map(([k,v]) => `${k}: ${typeof v === "string" ? v.substring(0, 80) : v}`).join(", ");
+          }
+          toolCalls.push({ tool: toolName, args: argsStr, source: "agent-metadata.json" });
+        }
+      } else if (event.type === "assistant.reasoning") {
+        const reasoning = event.data?.content || event.data?.text || "";
+        const lastCall = toolCalls[toolCalls.length - 1];
+        if (lastCall && reasoning) {
+          lastCall.reasoning = reasoning.substring(0, 500);
+        }
+      }
+    }
+
+    return toolCalls;
+  } catch (err) {
+    console.warn(`Warning: Failed to parse ${jsonPath}: ${err.message}`);
+    return [];
+  }
+}
+
+// ─── Build Area Summaries ────────────────────────────────────────────────────
+
+function buildAreaSummaries(junit, tokenEntries) {
+  const areaMap = new Map();
+
+  // Process JUnit test cases
+  if (junit) {
+    for (const suite of junit.suites) {
+      for (const tc of suite.testcases) {
+        const area = extractSkillArea(tc.classname.split(" › ")[0] || suite.name);
+        if (!areaMap.has(area)) {
+          areaMap.set(area, {
+            name: area,
+            tests: 0,
+            passed: 0,
+            failed: 0,
+            skipped: 0,
+            totalInputTokens: 0,
+            totalOutputTokens: 0,
+            totalLLMCalls: 0,
+            totalDurationMs: 0,
+            testDetails: [],
+          });
+        }
+        const entry = areaMap.get(area);
+        entry.tests++;
+        if (tc.status === "passed") entry.passed++;
+        else if (tc.status === "failed" || tc.status === "error") entry.failed++;
+        else if (tc.status === "skipped") entry.skipped++;
+
+        entry.testDetails.push({
+          name: tc.name,
+          status: tc.status,
+          time: tc.time,
+          failure: tc.failure,
+        });
+      }
+    }
+  }
+
+  // Merge token data
+  for (const tokenEntry of tokenEntries) {
+    const area = extractSkillArea(tokenEntry.testName);
+    if (!areaMap.has(area)) {
+      areaMap.set(area, {
+        name: area,
+        tests: 0,
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        totalLLMCalls: 0,
+        totalDurationMs: 0,
+        testDetails: [],
+      });
+    }
+    const entry = areaMap.get(area);
+    entry.totalInputTokens += tokenEntry.inputTokens || 0;
+    entry.totalOutputTokens += tokenEntry.outputTokens || 0;
+    entry.totalLLMCalls += tokenEntry.apiCallCount || 0;
+    entry.totalDurationMs += tokenEntry.totalApiDurationMs || 0;
+  }
+
+  // Compute derived metrics
+  const areas = [];
+  for (const [, entry] of areaMap) {
+    const totalTests = entry.tests || 1;
+    areas.push({
+      name: entry.name,
+      tests: entry.tests,
+      passed: entry.passed,
+      failed: entry.failed,
+      skipped: entry.skipped,
+      passRate: totalTests > 0 ? Math.round((entry.passed / totalTests) * 1000) / 10 : null,
+      avgInputTokens: Math.round(entry.totalInputTokens / totalTests),
+      avgOutputTokens: Math.round(entry.totalOutputTokens / totalTests),
+      totalInputTokens: entry.totalInputTokens,
+      totalOutputTokens: entry.totalOutputTokens,
+      avgLLMCalls: Math.round((entry.totalLLMCalls / totalTests) * 10) / 10,
+      totalLLMCalls: entry.totalLLMCalls,
+      avgDurationMs: Math.round(entry.totalDurationMs / totalTests),
+      testDetails: entry.testDetails,
+    });
+  }
+
+  return areas.sort((a, b) => a.passRate - b.passRate);
+}
+
+// ─── Build Token Usage Per Test ──────────────────────────────────────────────
+
+function buildTokenUsage(tokenEntries) {
+  return tokenEntries.map(entry => ({
+    testName: entry.testName,
+    prompt: entry.prompt,
+    timestamp: entry.timestamp,
+    model: entry.model,
+    inputTokens: entry.inputTokens,
+    outputTokens: entry.outputTokens,
+    cacheReadTokens: entry.cacheReadTokens || 0,
+    cacheWriteTokens: entry.cacheWriteTokens || 0,
+    llmCalls: entry.apiCallCount,
+    durationMs: entry.totalApiDurationMs,
+    perCall: (entry.perCallUsage || []).map((call, i) => ({
+      call: i + 1,
+      model: call.model,
+      inputTokens: call.inputTokens,
+      outputTokens: call.outputTokens,
+      durationMs: call.durationMs,
+      initiator: call.initiator,
+    })),
+  }));
+}
+
+// ─── Expected Path Definitions ───────────────────────────────────────────────
+
+/**
+ * Expected execution paths per skill area.
+ * Each entry defines the ideal sequence of tool calls the agent should make.
+ * Used for side-by-side comparison in the trace viewer.
+ */
+const EXPECTED_PATHS = {
+  // Derived from passing test traces — each path reflects the common
+  // tool-call sequence observed across successful test executions.
+  "microsoft-foundry/deploy-model": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog deployment intent" },
+      { tool: "view", label: "📖 Read skill doc\ndeploy-model SKILL.md" },
+      { tool: "azure-foundry", label: "🏗️ azure-foundry\nList/check resources" },
+      { tool: "powershell", label: "💻 powershell\naz cognitiveservices deploy" },
+    ],
+    endLabel: "⬜ EXPECTED END\nModel deployed",
+  },
+  "microsoft-foundry/quota": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog quota check" },
+      { tool: "view", label: "📖 Read skill doc\nquota SKILL.md" },
+      { tool: "azure-foundry", label: "🏗️ azure-foundry\nQuery Foundry resources" },
+      { tool: "azure-quota", label: "📊 azure-quota\nRetrieve quota data" },
+    ],
+    endLabel: "⬜ EXPECTED END\nQuota info returned",
+  },
+  "microsoft-foundry/resource/create": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog resource creation" },
+      { tool: "view", label: "📖 Read skill doc\nresource/create SKILL.md" },
+      { tool: "powershell", label: "💻 powershell\naz group create" },
+      { tool: "powershell", label: "💻 powershell\naz cognitiveservices create" },
+    ],
+    endLabel: "⬜ EXPECTED END\nResource created",
+  },
+  "microsoft-foundry/capacity": {
+    steps: [
+      { tool: "report_intent", label: "📋 report_intent\nLog capacity check" },
+      { tool: "azure-foundry", label: "🏗️ azure-foundry\nQuery Foundry resources" },
+      { tool: "azure-quota", label: "📊 azure-quota\nCheck capacity/quota" },
+      { tool: "azure-extension_cli_generate", label: "🔧 cli_generate\nGenerate CLI command" },
+    ],
+    endLabel: "⬜ EXPECTED END\nCapacity report shown",
+  },
+  "microsoft-foundry/customize-deployment": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog customization" },
+      { tool: "view", label: "📖 Read skill doc\ncustomize-deployment SKILL.md" },
+      { tool: "view", label: "📖 Read references\nDeployment config docs" },
+      { tool: "azure-foundry", label: "🏗️ azure-foundry\nApply custom settings" },
+    ],
+    endLabel: "⬜ EXPECTED END\nDeployment customized",
+  },
+  "microsoft-foundry/deploy-model-optimal-region": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog region search" },
+      { tool: "view", label: "📖 Read skill doc\noptimal-region SKILL.md" },
+      { tool: "azure-foundry", label: "🏗️ azure-foundry\nCheck region availability" },
+      { tool: "powershell", label: "💻 powershell\nDeploy to optimal region" },
+      { tool: "azure-quota", label: "📊 azure-quota\nVerify region capacity" },
+    ],
+    endLabel: "⬜ EXPECTED END\nDeployed to best region",
+  },
+  "microsoft-foundry/create": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog agent creation" },
+      { tool: "view", label: "📖 Read skill doc\ncreate agent SKILL.md" },
+      { tool: "powershell", label: "💻 powershell\nSetup agent resources" },
+    ],
+    endLabel: "⬜ EXPECTED END\nAgent created",
+  },
+  "microsoft-foundry/foundry-agent": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog agent task" },
+      { tool: "view", label: "📖 Read skill doc\nfoundry-agent SKILL.md" },
+      { tool: "azure-foundry", label: "🏗️ azure-foundry\nManage agent resources" },
+      { tool: "powershell", label: "💻 powershell\nExecute agent operation" },
+    ],
+    endLabel: "⬜ EXPECTED END\nAgent task complete",
+  },
+  "microsoft-foundry/observe": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog agent observe" },
+      { tool: "view", label: "📖 Read skill doc\nobserve SKILL.md" },
+      { tool: "powershell", label: "💻 powershell\nQuery agent metrics" },
+    ],
+    endLabel: "⬜ EXPECTED END\nAgent observability shown",
+  },
+  "microsoft-foundry": {
+    steps: [
+      { tool: "skill", args: "microsoft-foundry", label: "🔧 skill:\nmicrosoft-foundry" },
+      { tool: "report_intent", label: "📋 report_intent\nLog skill routing" },
+      { tool: "view", label: "📖 Read skill doc\nmicrosoft-foundry SKILL.md" },
+      { tool: "view", label: "📖 Read sub-skill doc\nSub-skill reference" },
+      { tool: "powershell", label: "💻 powershell\nExecute Azure operation" },
+    ],
+    endLabel: "⬜ EXPECTED END\nOperation complete",
+  },
+};
+
+/**
+ * Build expected path nodes and edges for a skill area.
+ * Returns { nodes: [], edges: [] } with Cytoscape-ready data.
+ */
+function buildExpectedPath(skillArea) {
+  const expectedDef = EXPECTED_PATHS[skillArea];
+  if (!expectedDef) return null;
+
+  const nodes = [];
+  const edges = [];
+  let prevId = "start"; // share start node with actual
+
+  for (let i = 0; i < expectedDef.steps.length; i++) {
+    const step = expectedDef.steps[i];
+    const llmId = `el${i + 1}`;
+    const stepId = `e${i + 1}`;
+
+    // LLM call node
+    nodes.push({
+      id: llmId,
+      label: `🤖 LLM Call #${i + 1}\nAnalyze & route`,
+      type: "expected_llm",
+      detail: { desc: `Expected: LLM decides to call ${step.tool}` },
+    });
+    edges.push({ source: prevId, target: llmId, type: "expected" });
+
+    // Tool call node
+    nodes.push({
+      id: stepId,
+      label: step.label,
+      type: "expected",
+      step: i + 1,
+      detail: { tool: step.tool, args: step.args || "", desc: step.label.replace(/\n/g, " ") },
+    });
+    edges.push({ source: llmId, target: stepId, type: "expected" });
+
+    prevId = stepId;
+  }
+
+  // End expected
+  const endLlmId = `el${expectedDef.steps.length + 1}`;
+  nodes.push({
+    id: endLlmId,
+    label: `🤖 LLM Call #${expectedDef.steps.length + 1}\nGenerate response`,
+    type: "expected_llm",
+    detail: { desc: "Expected: LLM generates final response to user" },
+  });
+  edges.push({ source: prevId, target: endLlmId, type: "expected" });
+
+  nodes.push({
+    id: "end_exp",
+    label: expectedDef.endLabel,
+    type: "endOk",
+    shape: "ellipse",
+    detail: { desc: "Expected outcome" },
+  });
+  edges.push({ source: endLlmId, target: "end_exp", type: "expected" });
+
+  return { nodes, edges, stepCount: expectedDef.steps.length };
+}
+
+// ─── Build Execution Traces ──────────────────────────────────────────────────
+
+/**
+ * Build execution trace graphs for the dashboard trace viewer.
+ *
+ * For each test that has agent-metadata output (from agent-runner), this function:
+ * 1. Extracts the ordered sequence of tool/skill calls from agent-metadata.json.
+ * 2. Pairs each call with token usage data from the per-call breakdown.
+ * 3. Builds a Cytoscape-compatible node/edge graph: Start → LLM Call → Tool → ... → End.
+ * 4. Overlays the expected execution path (if defined) and computes path adherence
+ *    metrics (matched/deviated/extra/skipped steps and adherence percentage).
+ *
+ * @param {string} testRunPath - Path to the test-run reports directory.
+ * @param {Array} tokenEntries - Token usage entries from token-summary.jsonl.
+ * @returns {Object} Map of testName → { prompt, model, summary, nodes, edges,
+ *   expectedNodes?, expectedEdges?, pathAdherence? }
+ */
+function buildTraces(testRunPath, tokenEntries) {
+  const traces = {};
+
+  // Group token entries by testName
+  const tokenByTest = new Map();
+  for (const entry of tokenEntries) {
+    if (!tokenByTest.has(entry.testName)) {
+      tokenByTest.set(entry.testName, []);
+    }
+    tokenByTest.get(entry.testName).push(entry);
+  }
+
+  for (const [testName, entries] of tokenByTest) {
+    // Use the last entry (most recent run) for this test
+    const latestEntry = entries[entries.length - 1];
+    const toolCalls = extractToolCalls(testRunPath, testName);
+
+    // Build Cytoscape-ready nodes
+    const nodes = [];
+    const edges = [];
+
+    // Start node
+    nodes.push({
+      id: "start",
+      label: `🟢 START\n${(latestEntry.prompt || "").substring(0, 40)}`,
+      type: "start",
+      shape: "ellipse",
+      detail: { prompt: latestEntry.prompt },
+    });
+
+    // Build actual path nodes from perCallUsage + tool calls
+    const perCall = latestEntry.perCallUsage || [];
+    let prevNodeId = "start";
+
+    for (let i = 0; i < perCall.length; i++) {
+      const call = perCall[i];
+      const llmNodeId = `llm${i + 1}`;
+      const toolCall = toolCalls[i]; // May not align 1:1
+
+      // LLM call node
+      nodes.push({
+        id: llmNodeId,
+        label: `🤖 LLM Call #${i + 1}\n${call.inputTokens.toLocaleString()}↓ ${call.outputTokens.toLocaleString()}↑`,
+        type: "llmcall",
+        detail: {
+          desc: `LLM inference call #${i + 1}`,
+          tokens: { in: call.inputTokens, out: call.outputTokens },
+          durationMs: call.durationMs,
+          model: call.model,
+        },
+      });
+
+      edges.push({
+        source: prevNodeId,
+        target: llmNodeId,
+        type: "llmcall",
+        label: `${call.inputTokens.toLocaleString()} in`,
+      });
+
+      // If there's a corresponding tool call, add it
+      if (toolCall) {
+        const toolNodeId = `t${i + 1}`;
+        nodes.push({
+          id: toolNodeId,
+          label: `🔧 ${toolCall.tool}\n${toolCall.args.substring(0, 30)}`,
+          type: "matched",
+          detail: {
+            tool: toolCall.tool,
+            args: toolCall.args,
+            reasoning: toolCall.reasoning,
+          },
+        });
+        edges.push({
+          source: llmNodeId,
+          target: toolNodeId,
+          type: "matched",
+          label: `${call.outputTokens.toLocaleString()} out`,
+        });
+        prevNodeId = toolNodeId;
+      } else {
+        prevNodeId = llmNodeId;
+      }
+    }
+
+    // End node
+    const endNodeId = "end_act";
+    nodes.push({
+      id: endNodeId,
+      label: `⬜ END\n${perCall.length} LLM calls`,
+      type: "endOk",
+      shape: "ellipse",
+      detail: {
+        totalTokens: {
+          in: latestEntry.inputTokens,
+          out: latestEntry.outputTokens,
+          llmCalls: latestEntry.apiCallCount,
+        },
+      },
+    });
+    edges.push({ source: prevNodeId, target: endNodeId, type: "matched" });
+
+    traces[testName] = {
+      prompt: latestEntry.prompt,
+      model: latestEntry.model,
+      summary: {
+        inputTokens: latestEntry.inputTokens,
+        outputTokens: latestEntry.outputTokens,
+        llmCalls: latestEntry.apiCallCount,
+        durationMs: latestEntry.totalApiDurationMs,
+      },
+      nodes,
+      edges,
+    };
+
+    // Add expected path and compute path adherence if available
+    const skillArea = extractSkillArea(testName);
+    const expectedPath = buildExpectedPath(skillArea);
+    if (expectedPath) {
+      traces[testName].expectedNodes = expectedPath.nodes;
+      traces[testName].expectedEdges = expectedPath.edges;
+      traces[testName].expectedSteps = expectedPath.stepCount;
+
+      // Compute path adherence: compare actual tool calls vs expected steps
+      const actualTools = nodes.filter(n => n.type === "matched").map(n => ({
+        tool: n.detail.tool,
+        args: n.detail.args || "",
+      }));
+      const expectedSteps = expectedPath.nodes
+        .filter(n => n.type === "expected")
+        .map(n => ({ tool: n.detail.tool, args: n.detail.args || "" }));
+
+      let matched = 0, deviated = 0, extra = 0;
+      const matchedExpectedIdx = new Set();
+
+      for (let ai = 0; ai < actualTools.length; ai++) {
+        const at = actualTools[ai];
+        // Find matching expected step (in order, not yet matched)
+        let found = false;
+        for (let ei = 0; ei < expectedSteps.length; ei++) {
+          if (matchedExpectedIdx.has(ei)) continue;
+          const et = expectedSteps[ei];
+          if (at.tool === et.tool && (et.args === "" || at.args.includes(et.args))) {
+            matched++;
+            matchedExpectedIdx.add(ei);
+            found = true;
+            // Update node type to 'matched'
+            const matchIdx = nodes.findIndex(n => n.id === `t${ai + 1}`);
+            if (matchIdx >= 0) nodes[matchIdx].type = "matched";
+            break;
+          }
+        }
+        if (!found) {
+          // Check if tool exists in expected but wrong order/args → deviated
+          const anyMatch = expectedSteps.some(et => at.tool === et.tool);
+          if (anyMatch) {
+            deviated++;
+            const nodeIdx = nodes.findIndex(n => n.id === `t${ai + 1}`);
+            if (nodeIdx >= 0) {
+              nodes[nodeIdx].type = "deviated";
+              nodes[nodeIdx].label = nodes[nodeIdx].label.replace("🔧", "❌");
+            }
+            // Update edge type too
+            const edgeIdx = edges.findIndex(e => e.target === `t${ai + 1}`);
+            if (edgeIdx >= 0) edges[edgeIdx].type = "deviated";
+          } else {
+            extra++;
+            const nodeIdx = nodes.findIndex(n => n.id === `t${ai + 1}`);
+            if (nodeIdx >= 0) {
+              nodes[nodeIdx].type = "extra";
+              nodes[nodeIdx].label = nodes[nodeIdx].label.replace("🔧", "⚡");
+            }
+            const edgeIdx = edges.findIndex(e => e.target === `t${ai + 1}`);
+            if (edgeIdx >= 0) edges[edgeIdx].type = "extra";
+          }
+        }
+      }
+
+      const skipped = expectedSteps.length - matchedExpectedIdx.size;
+      const adherence = expectedSteps.length > 0
+        ? Math.round((matched / expectedSteps.length) * 100)
+        : 0;
+
+      // Update end node based on adherence
+      const endNode = nodes.find(n => n.id === "end_act");
+      if (endNode) {
+        if (adherence >= 70) {
+          endNode.type = "endOk";
+          endNode.label = `🟢 END\n${adherence}% adherence`;
+        } else if (adherence >= 40) {
+          endNode.type = "endWarn";
+          endNode.label = `🟡 END\n${adherence}% adherence`;
+        } else {
+          endNode.type = "endBad";
+          endNode.label = `🔴 END\n${adherence}% adherence`;
+        }
+      }
+
+      traces[testName].pathAdherence = {
+        expected: expectedSteps.length,
+        actual: actualTools.length,
+        matched,
+        deviated,
+        extra,
+        skipped,
+        adherence,
+      };
+    }
+  }
+
+  return traces;
+}
+
+// ─── Skill Coverage Analysis ─────────────────────────────────────────────────
+
+const SKILLS_PATH = path.resolve(__dirname, "../../plugin/skills");
+const TESTS_PATH = path.resolve(__dirname, "..");
+
+/**
+ * Recursively find sub-skills within a skill directory.
+ * A sub-skill is a directory containing a SKILL.md or a primary .md file
+ * (excluding references/ directories).
+ */
+function findSubSkills(skillDir, prefix = "") {
+  const subSkills = [];
+  if (!fs.existsSync(skillDir)) return subSkills;
+
+  const entries = fs.readdirSync(skillDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (["references", "templates", "assets", "scripts", "examples"].includes(entry.name)) continue;
+
+    const subPath = path.join(skillDir, entry.name);
+    const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+
+    // Check if this directory is a sub-skill (has SKILL.md or a primary .md)
+    const hasSkillMd = fs.existsSync(path.join(subPath, "SKILL.md"));
+    const mdFiles = fs.readdirSync(subPath).filter(f =>
+      f.endsWith(".md") && f !== "SKILL.md" && !f.startsWith("TEST_") && !f.startsWith("EXAMPLES")
+    );
+    const hasPrimaryMd = mdFiles.length > 0;
+
+    if (hasSkillMd || hasPrimaryMd) {
+      subSkills.push({
+        name: entry.name,
+        path: relPath,
+        hasSkillMd,
+        primaryMd: hasSkillMd ? "SKILL.md" : mdFiles[0] || null,
+      });
+    }
+
+    // Recurse into subdirectories
+    const nested = findSubSkills(subPath, relPath);
+    subSkills.push(...nested);
+  }
+  return subSkills;
+}
+
+/**
+ * Check if a test directory exists for a given skill/sub-skill path.
+ */
+function hasIntegrationTest(skillPath) {
+  // Direct match: tests/<skill-path>/integration.test.ts
+  const testDir = path.join(TESTS_PATH, skillPath);
+  if (fs.existsSync(path.join(testDir, "integration.test.ts"))) return true;
+
+  const parts = skillPath.split("/");
+  const lastPart = parts[parts.length - 1];
+  const parentSkill = parts[0];
+
+  // Check alternative test layout patterns
+  const testPaths = [
+    // Nested under parent: tests/microsoft-foundry/quota/integration.test.ts
+    path.join(TESTS_PATH, parentSkill, lastPart, "integration.test.ts"),
+    // Skill path with models/deploy nesting: tests/microsoft-foundry/models/deploy/deploy-model
+    path.join(TESTS_PATH, skillPath, "integration.test.ts"),
+  ];
+
+  // Also try finding a test dir anywhere under parent that contains lastPart
+  if (fs.existsSync(path.join(TESTS_PATH, parentSkill))) {
+    const findTest = (dir) => {
+      if (!fs.existsSync(dir)) return false;
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const e of entries) {
+        if (!e.isDirectory()) continue;
+        const sub = path.join(dir, e.name);
+        if (e.name === lastPart && fs.existsSync(path.join(sub, "integration.test.ts"))) return true;
+        if (findTest(sub)) return true;
+      }
+      return false;
+    };
+    if (findTest(path.join(TESTS_PATH, parentSkill))) return true;
+  }
+
+  return testPaths.some(p => fs.existsSync(p));
+}
+
+/**
+ * Build coverage analysis for all skills.
+ * Compares skill definitions (SKILL.md) against test coverage.
+ */
+function buildCoverage(areas) {
+  const coverage = {};
+
+  if (!fs.existsSync(SKILLS_PATH)) {
+    console.warn("⚠️  Skills directory not found, skipping coverage analysis");
+    return coverage;
+  }
+
+  const topLevelSkills = fs.readdirSync(SKILLS_PATH, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+
+  // Set of area keys that have test results
+  const testedAreas = new Set(areas.map(a => a.name));
+
+  for (const skillName of topLevelSkills) {
+    const skillDir = path.join(SKILLS_PATH, skillName);
+    const subSkills = findSubSkills(skillDir);
+
+    // Check top-level integration test
+    const hasTopLevelTest = fs.existsSync(
+      path.join(TESTS_PATH, skillName, "integration.test.ts")
+    );
+    const hasUnitTest = fs.existsSync(
+      path.join(TESTS_PATH, skillName, "unit.test.ts")
+    );
+    const hasTriggersTest = fs.existsSync(
+      path.join(TESTS_PATH, skillName, "triggers.test.ts")
+    );
+
+    // Check sub-skill test coverage
+    const subSkillCoverage = subSkills.map(ss => {
+      const fullPath = `${skillName}/${ss.path}`;
+      const hasTest = hasIntegrationTest(fullPath);
+      // Also check if area appears in test results
+      const hasResults = testedAreas.has(fullPath) ||
+        testedAreas.has(`${skillName}/${ss.name}`);
+      return {
+        name: ss.name,
+        path: ss.path,
+        hasTest,
+        hasResults,
+      };
+    });
+
+    const coveredSubSkills = subSkillCoverage.filter(s => s.hasTest || s.hasResults).length;
+    const totalSubSkills = subSkillCoverage.length;
+
+    coverage[skillName] = {
+      hasIntegrationTest: hasTopLevelTest,
+      hasUnitTest,
+      hasTriggersTest,
+      subSkills: {
+        total: totalSubSkills,
+        covered: coveredSubSkills,
+        percentage: totalSubSkills > 0
+          ? Math.round((coveredSubSkills / totalSubSkills) * 100)
+          : (hasTopLevelTest ? 100 : 0),
+        missing: subSkillCoverage
+          .filter(s => !s.hasTest && !s.hasResults)
+          .map(s => s.path),
+        details: subSkillCoverage,
+      },
+    };
+  }
+
+  return coverage;
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+
+function main() {
+  const { runDir, junitPath } = parseArgs(process.argv);
+
+  // Resolve test run directory
+  let testRunName = runDir;
+  if (!testRunName) {
+    testRunName = getMostRecentTestRun();
+    if (!testRunName) {
+      console.error("❌ No test runs found in", REPORTS_PATH);
+      process.exit(1);
+    }
+  }
+  const testRunPath = path.join(REPORTS_PATH, testRunName);
+  console.log(`📂 Processing test run: ${testRunName}`);
+
+  // Parse JUnit XML
+  const resolvedJunit = junitPath || path.join(REPORTS_PATH, "junit.xml");
+  console.log(`📋 Reading JUnit XML: ${resolvedJunit}`);
+  const junit = parseJunitXml(resolvedJunit);
+
+  // Load token data
+  console.log("🔢 Loading token data...");
+  const tokenEntries = loadTokenSummary(testRunPath);
+  console.log(`   Found ${tokenEntries.length} token entries`);
+
+  // Build report sections
+  console.log("📊 Building area summaries...");
+  const areas = buildAreaSummaries(junit, tokenEntries);
+
+  console.log("💬 Building token usage details...");
+  const tokenUsage = buildTokenUsage(tokenEntries);
+
+  console.log("🔀 Building execution traces...");
+  const traces = buildTraces(testRunPath, tokenEntries);
+
+  console.log("📋 Building skill coverage analysis...");
+  const coverage = buildCoverage(areas);
+
+  // Compute global summary
+  const totalTests = junit ? junit.totalTests : areas.reduce((s, a) => s + a.tests, 0);
+  const totalPassed = areas.reduce((s, a) => s + a.passed, 0);
+  const totalFailed = areas.reduce((s, a) => s + a.failed, 0);
+  const totalInputTokens = areas.reduce((s, a) => s + a.totalInputTokens, 0);
+  const totalOutputTokens = areas.reduce((s, a) => s + a.totalOutputTokens, 0);
+  const totalLLMCalls = areas.reduce((s, a) => s + a.totalLLMCalls, 0);
+
+  // Build the contract
+  const report = {
+    version: CONTRACT_VERSION,
+    generatedAt: new Date().toISOString(),
+    testRun: testRunName,
+    model: tokenEntries.length > 0 ? tokenEntries[0].model : "unknown",
+
+    summary: {
+      totalTests,
+      passed: totalPassed,
+      failed: totalFailed,
+      passRate: totalTests > 0 ? Math.round((totalPassed / totalTests) * 1000) / 10 : null,
+      totalInputTokens,
+      totalOutputTokens,
+      totalLLMCalls,
+      avgTokensPerTest: totalTests > 0
+        ? Math.round((totalInputTokens + totalOutputTokens) / totalTests)
+        : 0,
+      totalDurationSec: junit ? Math.round(junit.time) : 0,
+    },
+
+    areas,
+    tokenUsage,
+    traces,
+    coverage,
+  };
+
+  // Write output
+  const outputPath = path.join(testRunPath, "skill-quality-report.json");
+  fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), "utf-8");
+  console.log(`\n✅ Report generated: ${outputPath}`);
+  console.log(`   Version: ${CONTRACT_VERSION}`);
+  console.log(`   Tests: ${totalTests} (${totalPassed} passed, ${totalFailed} failed)`);
+  console.log(`   Areas: ${areas.length}`);
+  console.log(`   Traces: ${Object.keys(traces).length}`);
+  console.log(`   Total tokens: ${(totalInputTokens + totalOutputTokens).toLocaleString()}`);
+  console.log(`   Total LLM calls: ${totalLLMCalls}`);
+
+  // Coverage summary
+  const covKeys = Object.keys(coverage);
+  const withTests = covKeys.filter(k => coverage[k].hasIntegrationTest).length;
+  const totalMissingSubs = covKeys.reduce((s, k) => s + coverage[k].subSkills.missing.length, 0);
+  console.log(`   Coverage: ${withTests}/${covKeys.length} skills have integration tests, ${totalMissingSubs} sub-skills missing tests`);
+}
+
+main();

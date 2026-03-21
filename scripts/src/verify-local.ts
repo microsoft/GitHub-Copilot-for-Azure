@@ -19,7 +19,7 @@ function getRepoRoot(): string {
 }
 
 function getInstalledPluginPath(): string {
-  return join(homedir(), ".copilot", "installed-plugins", "github-copilot-for-azure");
+  return join(homedir(), ".copilot", "installed-plugins", "azure-skills");
 }
 
 function resolveSymlinkTarget(linkPath: string): string | null {

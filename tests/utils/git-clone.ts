@@ -8,7 +8,7 @@
 import { mkdirSync } from "node:fs";
 import { simpleGit, type SimpleGitOptions } from "simple-git";
 
-export interface CloneOptions {
+interface CloneOptions {
   /** Full repository URL (HTTPS or SSH). */
   repoUrl: string;
   /** Target directory to clone into. */
@@ -55,6 +55,10 @@ export async function cloneRepo(options: CloneOptions): Promise<void> {
   }
 
   if (sparseCheckoutPath) {
+    // Validate to prevent path traversal or argument injection
+    if (/\.\.[/\\]/.test(sparseCheckoutPath) || /[^a-zA-Z0-9_\-/.]/.test(sparseCheckoutPath)) {
+      throw new Error(`Invalid sparse checkout path: ${sparseCheckoutPath}`);
+    }
     // Clone without checking out files, then sparse-checkout the target path
     cloneArgs.push("--filter=tree:0", "--no-checkout");
     await git.clone(repoUrl, targetDir, cloneArgs);

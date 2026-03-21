@@ -167,7 +167,8 @@ export function matchesPattern(filePath: string, pattern: string): boolean {
     return normalizedPath.endsWith("/" + pattern) || normalizedPath === pattern;
   }
 
-  return isMatch(normalizedPath, pattern);
+  const matches = isMatch([normalizedPath], pattern);
+  return matches.length > 0
 }
 
 /**

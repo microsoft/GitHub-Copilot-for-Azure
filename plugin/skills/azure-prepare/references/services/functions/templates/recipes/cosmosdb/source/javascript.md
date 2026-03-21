@@ -68,6 +68,7 @@ COSMOS_CONTAINER_NAME=<container>
 
 ## Common Patterns
 
+- [Node.js Entry Point](../../common/nodejs-entry-point.md) — **REQUIRED** src/index.js setup
 - [Error Handling](../../common/error-handling.md) — Try/catch + logging patterns
 - [Health Check](../../common/health-check.md) — Health endpoint for monitoring
 - [UAMI Bindings](../../common/uami-bindings.md) — Managed identity settings

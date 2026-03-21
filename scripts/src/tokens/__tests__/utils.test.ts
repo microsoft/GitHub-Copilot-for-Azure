@@ -45,7 +45,7 @@ describe("loadConfig", () => {
       }
     };
     writeFileSync(join(TEST_DIR, ".token-limits.json"), JSON.stringify(testConfig));
-    
+
     const config = loadConfig(TEST_DIR);
     expect(config.defaults["*.md"]).toBe(1500);
     expect(config.defaults["SKILL.md"]).toBe(3000);
@@ -54,7 +54,7 @@ describe("loadConfig", () => {
 
   it("returns defaults for invalid JSON", () => {
     writeFileSync(join(TEST_DIR, ".token-limits.json"), "not valid json");
-    
+
     const config = loadConfig(TEST_DIR);
     expect(config.defaults).toBeDefined();
     expect(config.defaults["*.md"]).toBeDefined();
@@ -62,7 +62,7 @@ describe("loadConfig", () => {
 
   it("returns defaults for config missing defaults field", () => {
     writeFileSync(join(TEST_DIR, ".token-limits.json"), JSON.stringify({ overrides: {} }));
-    
+
     const config = loadConfig(TEST_DIR);
     expect(config.defaults).toBeDefined();
   });
@@ -118,7 +118,7 @@ describe("getLimitForFile", () => {
       },
       overrides: {}
     };
-    
+
     const result = getLimitForFile("plugin/skills/my-skill/SKILL.md", configWithMultiplePatterns, "/root");
     // SKILL.md exact filename match wins over globstar pattern due to specificity scoring
     // (no wildcards = +10000 points)
@@ -144,7 +144,7 @@ describe("findMarkdownFiles", () => {
     writeFileSync(join(TEST_DIR, "README.md"), "# Test");
     writeFileSync(join(TEST_DIR, "GUIDE.md"), "# Guide");
     writeFileSync(join(TEST_DIR, "script.ts"), 'console.log("hi")');
-    
+
     const files = findMarkdownFiles(TEST_DIR);
     expect(files.length).toBe(2);
     expect(files.some(f => f.endsWith("README.md"))).toBe(true);
@@ -153,7 +153,7 @@ describe("findMarkdownFiles", () => {
 
   it("finds .mdx files", () => {
     writeFileSync(join(TEST_DIR, "component.mdx"), "# MDX");
-    
+
     const files = findMarkdownFiles(TEST_DIR);
     expect(files.length).toBe(1);
     expect(files[0].endsWith("component.mdx")).toBe(true);
@@ -164,7 +164,7 @@ describe("findMarkdownFiles", () => {
     writeFileSync(join(TEST_DIR, "root.md"), "# Root");
     writeFileSync(join(TEST_DIR, "sub", "sub.md"), "# Sub");
     writeFileSync(join(TEST_DIR, "sub", "deep", "deep.md"), "# Deep");
-    
+
     const files = findMarkdownFiles(TEST_DIR);
     expect(files.length).toBe(3);
   });
@@ -173,7 +173,7 @@ describe("findMarkdownFiles", () => {
     mkdirSync(join(TEST_DIR, "node_modules"));
     writeFileSync(join(TEST_DIR, "README.md"), "# Test");
     writeFileSync(join(TEST_DIR, "node_modules", "pkg.md"), "# Package");
-    
+
     const files = findMarkdownFiles(TEST_DIR);
     expect(files.length).toBe(1);
     expect(files[0].endsWith("README.md")).toBe(true);
@@ -183,7 +183,7 @@ describe("findMarkdownFiles", () => {
     mkdirSync(join(TEST_DIR, ".git"));
     writeFileSync(join(TEST_DIR, "README.md"), "# Test");
     writeFileSync(join(TEST_DIR, ".git", "config.md"), "# Config");
-    
+
     const files = findMarkdownFiles(TEST_DIR);
     expect(files.length).toBe(1);
   });
@@ -196,7 +196,7 @@ describe("findMarkdownFiles", () => {
   it("returns empty array for directory with no markdown files", () => {
     writeFileSync(join(TEST_DIR, "script.ts"), "code");
     writeFileSync(join(TEST_DIR, "data.json"), "{}");
-    
+
     const files = findMarkdownFiles(TEST_DIR);
     expect(files).toEqual([]);
   });

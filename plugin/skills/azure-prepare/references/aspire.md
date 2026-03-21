@@ -1,6 +1,15 @@
 # .NET Aspire Projects
 
+> ⛔ **CRITICAL - READ THIS FIRST**
+>
+> For .NET Aspire projects, **NEVER manually create azure.yaml or infra/ files.**
+> Always use `azd init --from-code` which auto-detects the AppHost and generates everything correctly.
+>
+> **Failure to follow this causes:** "Could not find a part of the path 'infra\main.bicep'" error.
+
 Guidance for preparing .NET Aspire applications for Azure deployment.
+
+**📖 For detailed AZD workflow:** See [recipes/azd/aspire.md](recipes/azd/aspire.md)
 
 ## What is .NET Aspire?
 
@@ -280,7 +289,10 @@ azd env get-values
 ## Next Steps
 
 After `azd init --from-code`:
-1. Review generated `azure.yaml` and `infra/` files
-2. Customize infrastructure as needed
-3. Proceed to **azure-validate** skill
-4. Deploy with **azure-deploy** skill (`azd up`)
+1. Review generated `azure.yaml` and `infra/` files (if present)
+2. Set AZURE_SUBSCRIPTION_ID and AZURE_LOCATION with `azd env set`
+3. Customize infrastructure as needed
+4. Proceed to **azure-validate** skill
+5. Deploy with **azure-deploy** skill
+
+> ⚠️ **Important for Container Apps:** If using Aspire with Container Apps, azure-validate will check and help set up required environment variables after provisioning.

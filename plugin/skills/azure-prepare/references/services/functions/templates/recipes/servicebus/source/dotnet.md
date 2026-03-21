@@ -1,6 +1,8 @@
 # C# (.NET) Service Bus Trigger - Isolated Worker Model
 
-Replace the contents of `src/api/` with these files.
+> ⚠️ **IMPORTANT**: Do NOT modify `Program.cs` — the base template's entry point already has the correct configuration (`ConfigureFunctionsWebApplication()` with App Insights). Only add trigger-specific files.
+
+Add the following trigger file under `src/api/` (keep the existing `Program.cs` and other base template files intact).
 
 ## ServiceBusFunctions.cs
 
@@ -94,18 +96,6 @@ public class ServiceBusFunctions
 }
 ```
 
-## Program.cs
-
-```csharp
-using Microsoft.Extensions.Hosting;
-
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .Build();
-
-host.Run();
-```
-
 ## .csproj additions
 
 ```xml
@@ -136,7 +126,7 @@ Set these in `local.settings.json`:
 ```
 
 > **Note:** For local development with UAMI, use Azure Identity `DefaultAzureCredential`
-> which will use your `az login` credentials.
+> which will use your `az login` credentials. See [auth-best-practices.md](../../../../../../auth-best-practices.md) for production guidance.
 
 ## Common Patterns
 

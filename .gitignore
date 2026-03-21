@@ -1,4 +1,6 @@
 
+venv/
+.venv/
 __integration_*__/
 __pycache__/
 __test_fixtures__/
@@ -241,6 +243,9 @@ _UpgradeReport_Files/
 # TFS 2012 Local Workspace
 # The packages folder can be ignored because of Package Restore
 # to a newer Visual Studio version. Backup files are not needed,
+# Dashboard generated data
+dashboard/data/
+
 # Token management tools
 # tools/**
 # Uncomment if necessary however generally it will be regenerated when needed
@@ -304,6 +309,7 @@ FakesAssemblies/
 FodyWeavers.xsd
 Generated_Code/
 Generated\ Files/
+GitHub-Copilot-for-Azure.sln
 healthchecksdb
 ipch/
 MigrationBackup/
@@ -330,9 +336,14 @@ ServiceFabricBackup/
 skill-invocation-test-summary.md
 StyleCopReport.xml
 TestResult.xml
+tests/reports/
 tests/reports/.DS_Store
 token-metadata.json
 UpgradeLog*.htm
 UpgradeLog*.XML
 x64/
 x86/
+
+dashboard/.azure/
+dashboard/dist/
+dashboard/**/dist/

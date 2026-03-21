@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../../../utils/agent-runner";
-import { softCheckSkill } from "../../../../utils/evaluate";
+import { softCheckSkill, shouldEarlyTerminateForSkillInvocation } from "../../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -28,14 +28,15 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_preset - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tests`, () => {
   describe("skill-invocation", () => {
     const agent = useAgentRunner();
     test("invokes skill for quick deployment prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy gpt-4o quickly to the optimal region"
+            prompt: "Deploy gpt-4o quickly to the optimal region",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -53,7 +54,8 @@ describeIntegration(`${SKILL_NAME}_preset - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Deploy gpt-4o to the best available region with high availability"
+            prompt: "Deploy gpt-4o to the best available region with high availability",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

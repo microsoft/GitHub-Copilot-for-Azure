@@ -15,7 +15,7 @@ import {
   getIntegrationSkipReason,
   doesAssistantMessageIncludeKeyword
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { shouldEarlyTerminateForSkillInvocation, softCheckSkill } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-cost-optimization";
 const RUNS_PER_PROMPT = 5;
@@ -39,9 +39,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "How can I reduce my Azure spending and find cost savings in my subscription?"
+            prompt: "How can I reduce my Azure spending and find cost savings in my subscription?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
-
           softCheckSkill(agentMetadata, SKILL_NAME);
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
@@ -57,7 +57,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Find orphaned and unused resources in my Azure subscription that I can delete"
+            prompt: "Find orphaned and unused resources in my Azure subscription that I can delete",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -75,7 +76,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Rightsize my Azure VMs to reduce costs"
+            prompt: "Rightsize my Azure VMs to reduce costs",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -93,7 +95,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "How can I optimize my Azure Redis costs?"
+            prompt: "How can I optimize my Azure Redis costs?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -111,7 +114,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "Find unused storage accounts to reduce my Azure costs"
+            prompt: "Find unused storage accounts to reduce my Azure costs",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -143,5 +147,4 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       throw e;
     }
   });
-
 });

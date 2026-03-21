@@ -2,6 +2,8 @@
 
 Replace the contents of `src/functions/` with these files.
 
+> ⚠️ **IMPORTANT**: Do NOT delete `src/index.js` — it's required for function discovery. See [nodejs-entry-point.md](../../common/nodejs-entry-point.md).
+
 ## src/functions/httpStart.js
 
 ```javascript
