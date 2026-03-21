@@ -19,6 +19,7 @@ az aks create --name <cluster-name> --resource-group <resource-group> --sku auto
 az aks create --name <cluster-name> --resource-group <resource-group> \
   --node-count 3 --zones 1 2 3 \
   --network-plugin azure --network-plugin-mode overlay \
+  --enable-oidc-issuer --enable-workload-identity \
   --enable-cluster-autoscaler --min-count 1 --max-count 10
 
 # Get credentials

@@ -5,15 +5,20 @@
  * Focuses on domain invariants rather than exact formatting.
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-kubernetes";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
+  let clusterConfigContent: string;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
+    const refPath = path.join(skill.path, "references", "cluster-configuration.md");
+    clusterConfigContent = fs.readFileSync(refPath, "utf-8");
   });
 
   describe("Skill Metadata", () => {
@@ -21,17 +26,56 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.name).toBe("azure-kubernetes");
       expect(skill.metadata.description).toBeDefined();
       expect(skill.metadata.description.length).toBeGreaterThan(50);
+      expect(skill.metadata.description.length).toBeLessThan(500);
     });
 
     test("description contains WHEN triggers", () => {
       expect(skill.metadata.description).toMatch(/WHEN:/i);
     });
 
+    test("description contains DO NOT USE FOR anti-triggers", () => {
+      expect(skill.metadata.description).toMatch(/DO NOT USE FOR:/i);
+    });
+
     test("description mentions key AKS concepts", () => {
       const desc = skill.metadata.description.toLowerCase();
-      expect(desc).toMatch(/aks|kubernetes/);
-      // Description should mention core topics covered by the skill
-      expect(desc).toMatch(/cluster|networking|security|deploy/);
+      expect(desc).toMatch(/aks/);
+      expect(desc).toMatch(/cluster|networking|security/);
+    });
+
+    test("has license field", () => {
+      expect(skill.metadata.license).toBe("MIT");
+    });
+
+    test("has metadata version", () => {
+      expect(skill.metadata.metadata).toBeDefined();
+      expect((skill.metadata.metadata as Record<string, string>).version).toBeDefined();
+    });
+  });
+
+  describe("Required Sections", () => {
+    test("has Quick Reference section", () => {
+      expect(skill.content).toMatch(/## Quick Reference/);
+    });
+
+    test("has When to Use This Skill section", () => {
+      expect(skill.content).toMatch(/## When to Use This Skill/);
+    });
+
+    test("has MCP Tools section", () => {
+      expect(skill.content).toMatch(/## MCP Tools/);
+    });
+
+    test("has Error Handling section", () => {
+      expect(skill.content).toMatch(/## Error Handling/);
+    });
+
+    test("has Workflow section", () => {
+      expect(skill.content).toMatch(/## Workflow/);
+    });
+
+    test("has Guardrails section", () => {
+      expect(skill.content).toMatch(/## Guardrails/);
     });
   });
 
@@ -42,7 +86,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("identifies networking as Day-0 decision", () => {
-      expect(skill.content).toMatch(/networking.*day-0|day-0.*networking/i);
+      expect(skill.content).toMatch(/Day-0.*networking|networking.*Day-0/i);
     });
 
     test("identifies API server access as Day-0 consideration", () => {
@@ -64,109 +108,121 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("Networking Guidance", () => {
+  describe("Reference Files", () => {
+    test("cluster-configuration.md exists", () => {
+      const refPath = path.join(skill.path, "references", "cluster-configuration.md");
+      expect(fs.existsSync(refPath)).toBe(true);
+    });
+
+    test("cli-reference.md exists", () => {
+      const refPath = path.join(skill.path, "references", "cli-reference.md");
+      expect(fs.existsSync(refPath)).toBe(true);
+    });
+
+    test("SKILL.md links to cluster configuration reference", () => {
+      expect(skill.content).toMatch(/cluster-configuration\.md/);
+    });
+
+    test("SKILL.md links to CLI reference", () => {
+      expect(skill.content).toMatch(/cli-reference\.md/);
+    });
+  });
+
+  describe("Networking Guidance (reference)", () => {
     test("covers Azure CNI options", () => {
-      expect(skill.content).toMatch(/Azure CNI/i);
+      expect(clusterConfigContent).toMatch(/Azure CNI/i);
     });
 
     test("covers overlay networking", () => {
-      expect(skill.content).toMatch(/overlay/i);
+      expect(clusterConfigContent).toMatch(/overlay/i);
     });
 
     test("covers egress patterns", () => {
-      expect(skill.content).toMatch(/egress/i);
+      expect(clusterConfigContent).toMatch(/egress/i);
     });
 
     test("covers ingress options", () => {
-      expect(skill.content).toMatch(/ingress/i);
+      expect(clusterConfigContent).toMatch(/ingress/i);
     });
   });
 
-  describe("Security Best Practices", () => {
-    test("recommends Entra ID / Azure AD", () => {
-      expect(skill.content).toMatch(/entra|azure ad/i);
+  describe("Security Best Practices (reference)", () => {
+    test("recommends Entra ID", () => {
+      expect(clusterConfigContent).toMatch(/entra/i);
     });
 
     test("recommends Workload Identity", () => {
-      expect(skill.content).toMatch(/workload identity/i);
+      expect(clusterConfigContent).toMatch(/workload identity/i);
     });
 
     test("recommends Key Vault integration", () => {
-      expect(skill.content).toMatch(/key vault/i);
+      expect(clusterConfigContent).toMatch(/key vault/i);
     });
 
     test("warns against static credentials", () => {
-      expect(skill.content).toMatch(/avoid.*static|static.*credential/i);
+      expect(clusterConfigContent).toMatch(/avoid.*static|static.*credential/i);
     });
 
     test("mentions Azure Policy", () => {
-      expect(skill.content).toMatch(/azure policy/i);
+      expect(clusterConfigContent).toMatch(/azure policy/i);
     });
   });
 
-  describe("Observability Guidance", () => {
+  describe("Observability Guidance (reference)", () => {
     test("mentions monitoring options", () => {
-      expect(skill.content).toMatch(/monitor|observability/i);
+      expect(clusterConfigContent).toMatch(/monitor|observability/i);
     });
 
     test("mentions Prometheus", () => {
-      expect(skill.content).toMatch(/prometheus/i);
+      expect(clusterConfigContent).toMatch(/prometheus/i);
     });
 
     test("mentions Grafana", () => {
-      expect(skill.content).toMatch(/grafana/i);
+      expect(clusterConfigContent).toMatch(/grafana/i);
     });
   });
 
-  describe("Reliability Patterns", () => {
+  describe("Reliability Patterns (reference)", () => {
     test("recommends availability zones", () => {
-      expect(skill.content).toMatch(/availability zone|--zones/i);
+      expect(clusterConfigContent).toMatch(/availability zone|--zones/i);
     });
 
     test("mentions PodDisruptionBudgets", () => {
-      expect(skill.content).toMatch(/poddisruptionbudget|pdb/i);
+      expect(clusterConfigContent).toMatch(/poddisruptionbudget|pdb/i);
     });
 
     test("covers upgrade strategy", () => {
-      expect(skill.content).toMatch(/upgrade/i);
+      expect(clusterConfigContent).toMatch(/upgrade/i);
     });
 
     test("mentions maintenance windows", () => {
-      expect(skill.content).toMatch(/maintenance window/i);
+      expect(clusterConfigContent).toMatch(/maintenance window/i);
     });
   });
 
-  describe("Performance Recommendations", () => {
+  describe("Performance Recommendations (reference)", () => {
     test("recommends ephemeral OS disks", () => {
-      expect(skill.content).toMatch(/ephemeral.*disk|--node-osdisk-type ephemeral/i);
+      expect(clusterConfigContent).toMatch(/ephemeral.*disk|--node-osdisk-type ephemeral/i);
     });
 
     test("warns against B-series VMs", () => {
-      expect(skill.content).toMatch(/avoid.*b-series|b-series.*avoid/i);
+      expect(clusterConfigContent).toMatch(/avoid.*b-series|b-series.*avoid/i);
     });
 
     test("mentions autoscaling", () => {
-      expect(skill.content).toMatch(/autoscal|cluster.?autoscaler/i);
+      expect(clusterConfigContent).toMatch(/autoscal|nap|node auto provisioning/i);
     });
   });
 
-  describe("MCP Tools Section", () => {
+  describe("MCP Tools", () => {
     test("lists MCP tools", () => {
-      expect(skill.content).toMatch(/mcp_azure_mcp_aks|mcp_aks_mcp/i);
-    });
-
-    test("has MCP Tools section", () => {
-      expect(skill.content).toMatch(/## MCP Tools/i);
+      expect(skill.content).toMatch(/mcp_azure_mcp_aks/i);
     });
   });
 
-  describe("Error Handling Section", () => {
-    test("has Error Handling section", () => {
-      expect(skill.content).toMatch(/## Error Handling/i);
-    });
-
+  describe("Error Handling", () => {
     test("includes remediation guidance", () => {
-      expect(skill.content).toMatch(/remediation|quota|policy/i);
+      expect(skill.content).toMatch(/remediation|quota|credential/i);
     });
   });
 

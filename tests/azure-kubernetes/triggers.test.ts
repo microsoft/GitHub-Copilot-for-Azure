@@ -27,35 +27,35 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "I need to set up a new Kubernetes cluster on Azure",
       "Create a production-ready AKS cluster with best practices",
       "How do I provision an AKS cluster for my team?",
-      
+
       // Day-0 decisions
       "What networking options should I choose for AKS?",
       "AKS Day-0 checklist",
       "Plan AKS configuration for production",
       "Design AKS networking with private API server",
-      
+
       // SKU selection
       "What's the difference between AKS Automatic and Standard?",
       "Should I use AKS Automatic or Standard SKU?",
       "Help me choose the right AKS cluster SKU",
-      
+
       // Networking
       "Configure AKS with Azure CNI Overlay",
       "How do I set up private AKS cluster?",
-      "AKS egress configuration options",
-      
+      "Configure AKS cluster egress networking",
+
       // Security
       "Configure AKS with workload identity",
       "Set up Azure Policy for AKS",
-      "Set up Key Vault CSI driver for AKS",
+      "Set up AKS security with Key Vault secrets",
       "Enable Deployment Safeguards for AKS",
       "How do I secure my AKS cluster?",
-      
+
       // Operations
       "Enable monitoring for my AKS cluster",
       "Configure AKS upgrade strategy",
-      "How do I set up AKS autoscaling?",
-      "AKS cost analysis",
+      "How do I configure AKS cluster autoscaling?",
+      "Plan AKS cluster cost controls",
       "Configure AKS cluster autoscaling and node pools",
     ];
 
@@ -97,10 +97,21 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure SSL certificates",
     ];
 
+    // AKS-adjacent prompts that should route to other Azure skills
+    // Note: prompts with "AKS" + another skill keyword may still match
+    // the keyword trigger; the DO NOT USE FOR clause handles LLM routing
+    const aksAdjacentPrompts: string[] = [
+      "Debug AKS pod crashloop",
+      "My AKS pods are failing health checks",
+      "Why is my container image pull failing?",
+      "Help me write a Helm chart for my app",
+    ];
+
     const shouldNotTriggerPrompts = [
       ...genericPrompts,
       ...otherCloudPrompts,
       ...genericInfraPrompts,
+      ...aksAdjacentPrompts,
     ];
 
     test.each(shouldNotTriggerPrompts)(

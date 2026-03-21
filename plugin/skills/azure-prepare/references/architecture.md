@@ -29,7 +29,7 @@ Select hosting stack and map components to Azure services.
 | **Scale to zero** | ✓✓ | |
 | **Kubernetes API access** | | ✓✓ |
 | **Custom operators/CRDs** | | ✓✓ |
-| **Service mesh** | Dapr (built-in) | Istio, Cilium |
+| **Service mesh** | Dapr (built-in) | Istio, Linkerd |
 | **GPU workloads** | | ✓✓ |
 | **Best for** | Microservices, event-driven | Full K8s control, complex workloads |
 
