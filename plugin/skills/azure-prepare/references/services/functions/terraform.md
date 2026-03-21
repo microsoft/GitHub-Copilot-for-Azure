@@ -268,7 +268,7 @@ resource "azurerm_windows_function_app" "function_app" {
   app_settings = {
     "FUNCTIONS_EXTENSION_VERSION"             = "~4"
     "FUNCTIONS_WORKER_RUNTIME"                = "node"
-    "WEBSITE_CONTENTSHARE"                    = "${var.service_name}-prod"  # must differ per slot
+    "WEBSITE_CONTENTSHARE"                    = "${lower(var.service_name)}-prod"  # must differ per slot; Azure Files share names are lowercase
     "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING" = azurerm_storage_account.function_storage.primary_connection_string
   }
 
