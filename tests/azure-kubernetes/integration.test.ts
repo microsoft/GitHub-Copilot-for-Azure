@@ -33,6 +33,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
+  /* eslint-disable jest/expect-expect -- softCheckSkill logs warnings; no hard assertion by convention */
   describe("skill-invocation", () => {
     test("invokes azure-kubernetes skill for AKS cluster creation prompt", async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
@@ -110,6 +111,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       }
     });
   });
+  /* eslint-enable jest/expect-expect */
 
   test("responds with Day-0 vs Day-1 guidance", async () => {
     try {

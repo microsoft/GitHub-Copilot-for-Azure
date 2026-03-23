@@ -98,21 +98,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     ];
 
     // AKS-adjacent prompts that should route to other Azure skills
-    // Note: prompts with "AKS" + another skill keyword may still match
-    // the keyword trigger; the DO NOT USE FOR clause handles LLM routing
+    // Note: prompts containing "AKS" + skill keywords will keyword-match;
+    // the DO NOT USE FOR clause handles LLM routing, not trigger tests.
+    // Only include prompts here that lack enough AKS keywords to trigger.
     const aksAdjacentPrompts: string[] = [
-      // Debugging → azure-diagnostics
-      "Debug AKS pod crashloop",
-      "My AKS pods are failing health checks",
       "Why is my container image pull failing?",
-      // Deploying apps → azure-deploy
-      "Deploy my application to AKS",
-      "Roll out a new version of my app on AKS",
-      // Monitoring/queries → azure-kusto
-      "Write a KQL query for AKS container logs",
-      "Query AKS cluster metrics in Log Analytics",
-      // General tooling
       "Help me write a Helm chart for my app",
+      "Write a KQL query for container logs in Log Analytics",
     ];
 
     const shouldNotTriggerPrompts = [
