@@ -9,6 +9,7 @@
 
 import * as path from "path";
 import * as fs from "fs";
+import * as crypto from "crypto";
 import { fileURLToPath } from "url";
 import { TriggerMatcher, TriggerResult } from "./utils/trigger-matcher";
 
@@ -87,6 +88,7 @@ afterAll(() => {
   }
   const reportsDir = path.join(__dirname, "reports");
   fs.mkdirSync(reportsDir, { recursive: true });
-  const outFile = path.join(reportsDir, `results-${process.pid}.json`);
+  const hash = crypto.createHash("sha256").update(Object.keys(testResults).join("\n")).digest("hex").slice(0, 8);
+  const outFile = path.join(reportsDir, `results-${process.pid}-${hash}.json`);
   fs.writeFileSync(outFile, JSON.stringify(testResults, null, 2));
 });
