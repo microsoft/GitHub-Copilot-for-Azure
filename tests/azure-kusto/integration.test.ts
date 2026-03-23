@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-kusto";
 const RUNS_PER_PROMPT = 5;
@@ -36,9 +36,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-kusto skill for KQL query prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "Write a KQL query to analyze logs in my Azure Data Explorer database"
           });
@@ -47,21 +47,17 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount += 1;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-kusto skill for Kusto time series prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "Query my Kusto database to show events aggregated by hour for the last 24 hours"
           });
@@ -70,15 +66,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount += 1;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
   });
 });

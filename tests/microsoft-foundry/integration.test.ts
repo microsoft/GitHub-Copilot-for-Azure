@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -34,269 +34,203 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
   describe("skill-invocation", () => {
-    test("invokes microsoft-foundry skill for AI model deployment prompt", async () => {
+    test("invokes microsoft-foundry skill for AI model deployment prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for RAG application prompt", async () => {
+    test("invokes microsoft-foundry skill for RAG application prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for RBAC role assignment prompt", async () => {
+    test("invokes microsoft-foundry skill for RBAC role assignment prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Grant a user the Azure AI User role on my Foundry project",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Grant a user the Azure AI User role on my Foundry project",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for service principal CI/CD prompt", async () => {
+    test("invokes microsoft-foundry skill for service principal CI/CD prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Create a service principal for my Foundry CI/CD pipeline",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Create a service principal for my Foundry CI/CD pipeline",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for managed identity roles prompt", async () => {
+    test("invokes microsoft-foundry skill for managed identity roles prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Set up managed identity roles for my Foundry project to access Azure Storage",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Set up managed identity roles for my Foundry project to access Azure Storage",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for audit role assignments prompt", async () => {
+    test("invokes microsoft-foundry skill for audit role assignments prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Who has access to my Foundry project? List all role assignments",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Who has access to my Foundry project? List all role assignments",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for developer permissions prompt", async () => {
+    test("invokes microsoft-foundry skill for developer permissions prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Make Bob a project manager in my Azure AI Foundry",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Make Bob a project manager in my Azure AI Foundry",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for validate permissions prompt", async () => {
+    test("invokes microsoft-foundry skill for validate permissions prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Can I deploy models to my Foundry project? Check my permissions",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Can I deploy models to my Foundry project? Check my permissions",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for agent lifecycle prompt", async () => {
+    test("invokes microsoft-foundry skill for agent lifecycle prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Help me build and deploy a Foundry agent",
-            shouldEarlyTerminate: (metadata) =>
-              isSkillInvoked(metadata, SKILL_NAME),
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Help me build and deploy a Foundry agent",
+          shouldEarlyTerminate: (metadata) =>
+            isSkillInvoked(metadata, SKILL_NAME),
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for trace-to-dataset prompt", async () => {
+    test("invokes microsoft-foundry skill for trace-to-dataset prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Create an evaluation dataset from my Foundry agent traces",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Create an evaluation dataset from my Foundry agent traces",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes microsoft-foundry skill for dataset versioning prompt", async () => {
+    test("invokes microsoft-foundry skill for dataset versioning prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Version my Foundry evaluation dataset and compare regressions",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Version my Foundry evaluation dataset and compare regressions",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
   });
 });
