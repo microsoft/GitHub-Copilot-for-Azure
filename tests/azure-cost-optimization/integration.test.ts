@@ -40,21 +40,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "How can I reduce my Azure spending and find cost savings in my subscription?",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          const agentMetadata = await agent.run({
+            prompt: "How can I reduce my Azure spending and find cost savings in my subscription?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -67,22 +59,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "Find orphaned and unused resources in my Azure subscription that I can delete",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "Find orphaned and unused resources in my Azure subscription that I can delete",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -95,22 +79,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "Rightsize my Azure VMs to reduce costs",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "Rightsize my Azure VMs to reduce costs",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -123,22 +99,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "How can I optimize my Azure Redis costs?",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "How can I optimize my Azure Redis costs?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -151,22 +119,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "Find unused storage accounts to reduce my Azure costs",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "Find unused storage accounts to reduce my Azure costs",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -178,21 +138,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   test("response mentions Cost Management for cost analysis", async () => {
     await withTestResult(async () => {
-      try {
-        const agentMetadata = await agent.run({
-          prompt: "Analyze my Azure costs and show me where I can save money"
-        });
+      const agentMetadata = await agent.run({
+        prompt: "Analyze my Azure costs and show me where I can save money"
+      });
 
-        const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
-        expect(mentionsCostManagement).toBe(true);
-      } catch (e: unknown) {
-        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
-      }
+      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
+      expect(mentionsCostManagement).toBe(true);
     });
   });
 });

@@ -35,22 +35,14 @@ describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
     test("invokes skill for capacity discovery prompt", async () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Find available capacity for gpt-4o across all Azure regions",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Find available capacity for gpt-4o across all Azure regions",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
@@ -59,22 +51,14 @@ describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
     test("invokes skill for region comparison prompt", async () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);

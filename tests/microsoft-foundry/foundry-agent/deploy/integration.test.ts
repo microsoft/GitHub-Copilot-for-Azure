@@ -27,59 +27,32 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("invokes skill for relevant prompt", () => withTestResult(async () => {
-    let agentMetadata;
-    try {
-      agentMetadata = await agent.run({
-        prompt: "Deploy my agent to Azure AI Foundry",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME),
-      });
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
-        console.log(`⏭️  Skipping integration test: ${e.message}`);
-        return;
-      }
-      throw e;
-    }
+    const agentMetadata = await agent.run({
+      prompt: "Deploy my agent to Azure AI Foundry",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME),
+    });
 
     expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
   }));
 
   test("response mentions agent concepts", () => withTestResult(async () => {
-    let agentMetadata;
-    try {
-      agentMetadata = await agent.run({
-        prompt: "Deploy my agent to Azure AI Foundry",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME) &&
-          doesAssistantMessageIncludeKeyword(metadata, "agent"),
-      });
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
-        console.log(`⏭️  Skipping integration test: ${e.message}`);
-        return;
-      }
-      throw e;
-    }
+    const agentMetadata = await agent.run({
+      prompt: "Deploy my agent to Azure AI Foundry",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME) &&
+        doesAssistantMessageIncludeKeyword(metadata, "agent"),
+    });
 
     expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
   }));
 
   test("invokes skill for containerize prompt", () => withTestResult(async () => {
-    let agentMetadata;
-    try {
-      agentMetadata = await agent.run({
-        prompt: "Containerize my agent project for Foundry",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME),
-      });
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
-        console.log(`⏭️  Skipping integration test: ${e.message}`);
-        return;
-      }
-      throw e;
-    }
+    const agentMetadata = await agent.run({
+      prompt: "Containerize my agent project for Foundry",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME),
+    });
 
     expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
   }));

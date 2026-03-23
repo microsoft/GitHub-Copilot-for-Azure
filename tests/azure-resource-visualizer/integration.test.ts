@@ -41,22 +41,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("invokes azure-resource-visualizer skill for architecture diagram prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Generate a Mermaid diagram showing my Azure resource group architecture",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       const rate = invocationCount / RUNS_PER_PROMPT;
@@ -67,22 +59,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("invokes azure-resource-visualizer skill for resource relationships prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Visualize how my Azure resources are connected and show their relationships",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Visualize how my Azure resources are connected and show their relationships",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       const rate = invocationCount / RUNS_PER_PROMPT;

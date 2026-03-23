@@ -42,22 +42,14 @@ function defineInvocationTest(
     await withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt,
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt,
+          shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       const rate = invocationCount / RUNS_PER_PROMPT;
@@ -138,29 +130,21 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let hasRelevantContent = false;
 
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt,
-              shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt,
+            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+          });
 
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invoked = true;
-              // Validate response addresses session lock with actionable guidance
-              hasRelevantContent =
-                doesAssistantMessageIncludeKeyword(agentMetadata, "session", { caseSensitive: false }) &&
-                doesAssistantMessageIncludeKeyword(agentMetadata, "lock", { caseSensitive: false }) &&
-                (doesAssistantMessageIncludeKeyword(agentMetadata, "renew", { caseSensitive: false }) ||
-                  doesAssistantMessageIncludeKeyword(agentMetadata, "duration", { caseSensitive: false }) ||
-                  doesAssistantMessageIncludeKeyword(agentMetadata, "auto_lock_renewer", { caseSensitive: false }));
-              if (hasRelevantContent) break;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invoked = true;
+            // Validate response addresses session lock with actionable guidance
+            hasRelevantContent =
+              doesAssistantMessageIncludeKeyword(agentMetadata, "session", { caseSensitive: false }) &&
+              doesAssistantMessageIncludeKeyword(agentMetadata, "lock", { caseSensitive: false }) &&
+              (doesAssistantMessageIncludeKeyword(agentMetadata, "renew", { caseSensitive: false }) ||
+                doesAssistantMessageIncludeKeyword(agentMetadata, "duration", { caseSensitive: false }) ||
+                doesAssistantMessageIncludeKeyword(agentMetadata, "auto_lock_renewer", { caseSensitive: false }));
+            if (hasRelevantContent) break;
           }
         }
 
@@ -184,26 +168,18 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             doesAssistantMessageIncludeKeyword(metadata, "retry_backoff", { caseSensitive: false }));
 
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            // Terminate early once the skill is invoked AND the response
-            // contains the expected SDK-specific retry keywords.
-            const agentMetadata = await agent.run({
-              prompt,
-              shouldEarlyTerminate: (metadata) =>
-                isSkillInvoked(metadata, SKILL_NAME) && hasExpectedContent(metadata)
-            });
+          // Terminate early once the skill is invoked AND the response
+          // contains the expected SDK-specific retry keywords.
+          const agentMetadata = await agent.run({
+            prompt,
+            shouldEarlyTerminate: (metadata) =>
+              isSkillInvoked(metadata, SKILL_NAME) && hasExpectedContent(metadata)
+          });
 
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invoked = true;
-              hasRelevantContent = hasExpectedContent(agentMetadata);
-              if (hasRelevantContent) break;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invoked = true;
+            hasRelevantContent = hasExpectedContent(agentMetadata);
+            if (hasRelevantContent) break;
           }
         }
 

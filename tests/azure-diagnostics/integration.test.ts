@@ -39,21 +39,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "My Azure Container App keeps restarting, how do I troubleshoot it?"
-            });
+          const agentMetadata = await agent.run({
+            prompt: "My Azure Container App keeps restarting, how do I troubleshoot it?"
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -66,21 +58,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "I'm getting an image pull failure error in my Azure Container App deployment"
-            });
+          const agentMetadata = await agent.run({
+            prompt: "I'm getting an image pull failure error in my Azure Container App deployment"
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -93,21 +77,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "My AKS cluster has pods stuck in Pending and one node is NotReady. Can you troubleshoot it?"
-            });
+          const agentMetadata = await agent.run({
+            prompt: "My AKS cluster has pods stuck in Pending and one node is NotReady. Can you troubleshoot it?"
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;

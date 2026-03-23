@@ -56,22 +56,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "How do I check my Azure compute quota limits in East US?",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "How do I check my Azure compute quota limits in East US?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -84,22 +76,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "I need to request a quota increase for VM vCPUs in my subscription",
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "I need to request a quota increase for VM vCPUs in my subscription",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -112,18 +96,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("azure-quotas", () => {
     test("provides quota check commands for compute resources", async () => {
       await withTestResult(async () => {
-        let agentMetadata;
-        try {
-          agentMetadata = await agent.run({
-            prompt: "Check my Azure VM quota limits and current usage in East US"
-          });
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
+        const agentMetadata = await agent.run({
+          prompt: "Check my Azure VM quota limits and current usage in East US"
+        });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         // Agent may suggest CLI commands in the response or execute them via powershell tool
@@ -140,18 +115,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("provides quota increase workflow", async () => {
       await withTestResult(async () => {
-        let agentMetadata;
-        try {
-          agentMetadata = await agent.run({
-            prompt: "How do I request an Azure quota increase for Standard_DS_v3 VMs?"
-          });
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
+        const agentMetadata = await agent.run({
+          prompt: "How do I request an Azure quota increase for Standard_DS_v3 VMs?"
+        });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         const mentionsUpdate = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota update");
@@ -163,18 +129,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("handles region comparison query", async () => {
       await withTestResult(async () => {
-        let agentMetadata;
-        try {
-          agentMetadata = await agent.run({
-            prompt: "Compare Azure compute quota availability across East US, West US 2, and Central US"
-          });
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
+        const agentMetadata = await agent.run({
+          prompt: "Compare Azure compute quota availability across East US, West US 2, and Central US"
+        });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         // Agent may suggest CLI commands in the response or execute them via powershell tool
@@ -188,18 +145,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("mentions extension installation requirement", async () => {
       await withTestResult(async () => {
-        let agentMetadata;
-        try {
-          agentMetadata = await agent.run({
-            prompt: "What are my Azure service quotas and how do I check them?"
-          });
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
+        const agentMetadata = await agent.run({
+          prompt: "What are my Azure service quotas and how do I check them?"
+        });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         const mentionsExtension = doesAssistantMessageIncludeKeyword(agentMetadata, "az extension add");

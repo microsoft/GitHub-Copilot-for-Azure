@@ -44,24 +44,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "Run azd up to deploy my already-prepared app to Azure",
-              nonInteractive: true,
-              followUp,
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "Run azd up to deploy my already-prepared app to Azure",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -74,24 +66,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
-              nonInteractive: true,
-              followUp,
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -104,24 +88,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
-              nonInteractive: true,
-              followUp,
-              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-            });
+          const agentMetadata = await agent.run({
+            prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;

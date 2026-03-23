@@ -41,22 +41,14 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
     test("invokes skill for agent creation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Create a new hosted agent for Foundry using Python.",
-            shouldEarlyTerminate: terminateOnCreate,
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Create a new hosted agent for Foundry using Python.",
+          shouldEarlyTerminate: terminateOnCreate,
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       const rate = invocationCount / RUNS_PER_PROMPT;
@@ -67,22 +59,14 @@ describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
     test("invokes skill for multi-agent workflow prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Create a LangGraph hosted agent for Foundry in Python.",
-            shouldEarlyTerminate: terminateOnCreate,
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Create a LangGraph hosted agent for Foundry in Python.",
+          shouldEarlyTerminate: terminateOnCreate,
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
       const rate = invocationCount / RUNS_PER_PROMPT;

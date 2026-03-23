@@ -47,43 +47,27 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-upgrade skill for Functions Consumption to Flex migration prompt", () => withTestResult(async () => {
-      try {
-        const agentMetadata = await agent.run({
-          prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan",
-          nonInteractive: true,
-          followUp: ["Go with recommended options."],
-          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
-        });
+      const agentMetadata = await agent.run({
+        prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan",
+        nonInteractive: true,
+        followUp: ["Go with recommended options."],
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+      });
 
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-      } catch (e: unknown) {
-        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
-      }
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
     }));
 
     test("invokes azure-upgrade skill for upgrading Functions plan prompt", () => withTestResult(async () => {
-      try {
-        const agentMetadata = await agent.run({
-          prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption",
-          nonInteractive: true,
-          followUp: ["Go with recommended options."],
-          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
-        });
+      const agentMetadata = await agent.run({
+        prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption",
+        nonInteractive: true,
+        followUp: ["Go with recommended options."],
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+      });
 
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-      } catch (e: unknown) {
-        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
-        }
-        throw e;
-      }
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
     }));
   });
 

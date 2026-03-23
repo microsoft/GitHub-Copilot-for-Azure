@@ -27,39 +27,23 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("invokes skill for relevant prompt", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Troubleshoot my Foundry agent that is returning errors",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME),
-      });
+    const agentMetadata = await agent.run({
+      prompt: "Troubleshoot my Foundry agent that is returning errors",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME),
+    });
 
-      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  Skipping integration test due to Copilot SDK load failure:", e.message);
-        return;
-      }
-      throw e;
-    }
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
   });
 
   test("response mentions agent concepts", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Troubleshoot my Foundry agent that is returning errors",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME) &&
-          doesAssistantMessageIncludeKeyword(metadata, "agent"),
-      });
+    const agentMetadata = await agent.run({
+      prompt: "Troubleshoot my Foundry agent that is returning errors",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME) &&
+        doesAssistantMessageIncludeKeyword(metadata, "agent"),
+    });
 
-      expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
-    } catch (e) {
-      if (e instanceof Error && e.message.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  Skipping integration test due to Copilot SDK load failure:", e.message);
-        return;
-      }
-      throw e;
-    }
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
   });
 });

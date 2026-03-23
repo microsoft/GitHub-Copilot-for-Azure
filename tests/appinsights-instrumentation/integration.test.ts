@@ -44,21 +44,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              prompt: "How do I add Application Insights to my ASP.NET Core web app?"
-            });
+          const agentMetadata = await agent.run({
+            prompt: "How do I add Application Insights to my ASP.NET Core web app?"
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
@@ -71,28 +63,20 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          try {
-            const agentMetadata = await agent.run({
-              setup: async (workspace: string) => {
-                // Create a package.json to indicate Node.js project
-                fs.writeFileSync(
-                  path.join(workspace, "package.json"),
-                  JSON.stringify({ name: "test-app", version: "1.0.0" })
-                );
-              },
-              prompt: "Add telemetry to my Node.js application"
-            });
+          const agentMetadata = await agent.run({
+            setup: async (workspace: string) => {
+              // Create a package.json to indicate Node.js project
+              fs.writeFileSync(
+                path.join(workspace, "package.json"),
+                JSON.stringify({ name: "test-app", version: "1.0.0" })
+              );
+            },
+            prompt: "Add telemetry to my Node.js application"
+          });
 
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-              invocationCount += 1;
-            }
-          } catch (e: unknown) {
-            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-              console.log("⏭️  SDK not loadable, skipping test");
-              return;
-            }
-            throw e;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
         }
         const rate = invocationCount / RUNS_PER_PROMPT;

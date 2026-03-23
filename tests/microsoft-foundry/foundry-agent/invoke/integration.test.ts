@@ -27,47 +27,23 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("invokes skill for relevant prompt", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Send a test message to my Foundry agent",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME),
-      });
+    const agentMetadata = await agent.run({
+      prompt: "Send a test message to my Foundry agent",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME),
+    });
 
-      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    } catch (e) {
-      if (
-        e instanceof Error &&
-        e.message &&
-        e.message.includes("Failed to load @github/copilot-sdk")
-      ) {
-        console.log(`⏭️  Skipping integration test: ${e.message}`);
-        return;
-      }
-      throw e;
-    }
+    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
   });
 
   test("response mentions agent concepts", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Send a test message to my Foundry agent",
-        shouldEarlyTerminate: (metadata) =>
-          isSkillInvoked(metadata, SKILL_NAME) &&
-          doesAssistantMessageIncludeKeyword(metadata, "agent"),
-      });
+    const agentMetadata = await agent.run({
+      prompt: "Send a test message to my Foundry agent",
+      shouldEarlyTerminate: (metadata) =>
+        isSkillInvoked(metadata, SKILL_NAME) &&
+        doesAssistantMessageIncludeKeyword(metadata, "agent"),
+    });
 
-      expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
-    } catch (e) {
-      if (
-        e instanceof Error &&
-        e.message &&
-        e.message.includes("Failed to load @github/copilot-sdk")
-      ) {
-        console.log(`⏭️  Skipping integration test: ${e.message}`);
-        return;
-      }
-      throw e;
-    }
+    expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
   });
 });
