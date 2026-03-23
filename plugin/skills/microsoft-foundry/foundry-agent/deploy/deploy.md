@@ -87,8 +87,8 @@ Also generate `docker-compose.yml` and `.env` files for local development.
 
 Collect ACR details from project context.
 
-- If an ACR already exists, use it directly and skip role assignment.
-- If no ACR exists, create a new one with ABAC repository permissions mode, and assign `Container Registry Repository Reader` to the Foundry project managed identity
+- If an ACR already exists, use it, then verify that the Foundry project managed identity has pull permissions (for example, `Container Registry Repository Reader` or equivalent) on the target repository/registry. If the role assignment is missing, add it.
+- If no ACR exists, create a new one with ABAC repository permissions mode, and assign `Container Registry Repository Reader` to the Foundry project managed identity.
 
 Let the user choose the build method:
 
