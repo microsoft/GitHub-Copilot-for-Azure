@@ -101,9 +101,17 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     // Note: prompts with "AKS" + another skill keyword may still match
     // the keyword trigger; the DO NOT USE FOR clause handles LLM routing
     const aksAdjacentPrompts: string[] = [
+      // Debugging → azure-diagnostics
       "Debug AKS pod crashloop",
       "My AKS pods are failing health checks",
       "Why is my container image pull failing?",
+      // Deploying apps → azure-deploy
+      "Deploy my application to AKS",
+      "Roll out a new version of my app on AKS",
+      // Monitoring/queries → azure-kusto
+      "Write a KQL query for AKS container logs",
+      "Query AKS cluster metrics in Log Analytics",
+      // General tooling
       "Help me write a Helm chart for my app",
     ];
 
