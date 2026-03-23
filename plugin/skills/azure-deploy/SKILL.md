@@ -4,7 +4,7 @@ description: "Execute Azure deployments for ALREADY-PREPARED applications that h
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.7"
+  version: "1.0.8"
 ---
 
 # Azure Deploy
@@ -65,7 +65,11 @@ Activate this skill when user wants to:
 | 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
 | 6 | **Handle Errors** — See recipe's `errors.md` | — |
 | 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
-| 8 | **Report Results** — Present deployed endpoint URLs to the user | [Verification](references/recipes/azd/verify.md) |
+| 8 | **Report Results** — Present deployed endpoint URLs to the user as fully-qualified `https://` links | [Verification](references/recipes/azd/verify.md) |
+
+> **⛔ URL FORMAT RULE**
+>
+> When presenting endpoint URLs to the user, you **MUST** always use fully-qualified URLs with the `https://` scheme (e.g. `https://myapp.azurewebsites.net`, not `myapp.azurewebsites.net`). Many Azure CLI commands return bare hostnames without a scheme — always prepend `https://` before presenting them.
 
 > **⛔ VALIDATION PROOF CHECK**
 >

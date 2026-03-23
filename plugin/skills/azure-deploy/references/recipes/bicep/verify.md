@@ -28,4 +28,4 @@ Extract endpoints from deployment outputs:
 az deployment sub show --name main --query properties.outputs
 ```
 
-Present a summary including all service URLs. Do NOT end your response without including them.
+Present a summary including all service URLs as fully-qualified `https://` links. If a deployment output returns a bare hostname (e.g. `myapp.azurewebsites.net`), always prepend `https://`. Do NOT end your response without including them.
