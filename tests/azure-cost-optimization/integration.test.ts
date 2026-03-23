@@ -15,7 +15,7 @@ import {
   getIntegrationSkipReason,
   doesAssistantMessageIncludeKeyword
 } from "../utils/agent-runner";
-import { shouldEarlyTerminateForSkillInvocation, softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { shouldEarlyTerminateForSkillInvocation, softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-cost-optimization";
 const RUNS_PER_PROMPT = 5;
@@ -37,140 +37,162 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-cost-optimization skill for cost savings prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "How can I reduce my Azure spending and find cost savings in my subscription?",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "How can I reduce my Azure spending and find cost savings in my subscription?",
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-cost-optimization skill for orphaned resources prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Find orphaned and unused resources in my Azure subscription that I can delete",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "Find orphaned and unused resources in my Azure subscription that I can delete",
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes skill for VM rightsizing prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Rightsize my Azure VMs to reduce costs",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "Rightsize my Azure VMs to reduce costs",
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes skill for Redis cost optimization prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "How can I optimize my Azure Redis costs?",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "How can I optimize my Azure Redis costs?",
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes skill for storage cost optimization prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Find unused storage accounts to reduce my Azure costs",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "Find unused storage accounts to reduce my Azure costs",
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
   });
 
   test("response mentions Cost Management for cost analysis", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Analyze my Azure costs and show me where I can save money"
-      });
+    await withTestResult(async () => {
+      try {
+        const agentMetadata = await agent.run({
+          prompt: "Analyze my Azure costs and show me where I can save money"
+        });
 
-      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
-      expect(mentionsCostManagement).toBe(true);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  SDK not loadable, skipping test");
-        return;
+        const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
+        expect(mentionsCostManagement).toBe(true);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+          console.log("⏭️  SDK not loadable, skipping test");
+          return;
+        }
+        throw e;
       }
-      throw e;
-    }
+    });
   });
 });

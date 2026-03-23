@@ -21,6 +21,7 @@ import {
   softCheckSkill,
   getAllAssistantMessages,
   getAllToolText,
+  withTestResult,
 } from "../../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
@@ -61,7 +62,7 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("avm-module-priority", () => {
-    test("prefers AVM+AZD pattern modules for Bicep deploy guidance", async () => {
+    test("prefers AVM+AZD pattern modules for Bicep deploy guidance", () => withTestResult(async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -110,11 +111,11 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           throw e;
         }
       }
-    });
+    }));
   });
 
   describe("avm-fallback-behavior", () => {
-    test("stays within AVM modules when no pattern module exists", async () => {
+    test("stays within AVM modules when no pattern module exists", () => withTestResult(async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -184,11 +185,11 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           throw e;
         }
       }
-    });
+    }));
   });
 
   describe("avm-azd-pattern-preference", () => {
-    test("prioritizes AZD pattern modules for azd infrastructure setup", async () => {
+    test("prioritizes AZD pattern modules for azd infrastructure setup", () => withTestResult(async () => {
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -235,6 +236,6 @@ describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
           throw e;
         }
       }
-    });
+    }));
   });
 });

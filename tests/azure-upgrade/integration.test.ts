@@ -27,7 +27,7 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-upgrade";
 
@@ -46,7 +46,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
-    test("invokes azure-upgrade skill for Functions Consumption to Flex migration prompt", async () => {
+    test("invokes azure-upgrade skill for Functions Consumption to Flex migration prompt", () => withTestResult(async () => {
       try {
         const agentMetadata = await agent.run({
           prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan",
@@ -64,9 +64,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
         throw e;
       }
-    });
+    }));
 
-    test("invokes azure-upgrade skill for upgrading Functions plan prompt", async () => {
+    test("invokes azure-upgrade skill for upgrading Functions plan prompt", () => withTestResult(async () => {
       try {
         const agentMetadata = await agent.run({
           prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption",
@@ -84,7 +84,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
         throw e;
       }
-    });
+    }));
   });
 
 });

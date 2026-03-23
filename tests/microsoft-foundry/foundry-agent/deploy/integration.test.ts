@@ -11,7 +11,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../../utils/agent-runner";
-import { isSkillInvoked } from "../../../utils/evaluate";
+import { isSkillInvoked, withTestResult } from "../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 
@@ -26,7 +26,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
-  test("invokes skill for relevant prompt", async () => {
+  test("invokes skill for relevant prompt", () => withTestResult(async () => {
     let agentMetadata;
     try {
       agentMetadata = await agent.run({
@@ -43,9 +43,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }
 
     expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-  });
+  }));
 
-  test("response mentions agent concepts", async () => {
+  test("response mentions agent concepts", () => withTestResult(async () => {
     let agentMetadata;
     try {
       agentMetadata = await agent.run({
@@ -63,9 +63,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }
 
     expect(doesAssistantMessageIncludeKeyword(agentMetadata, "agent")).toBe(true);
-  });
+  }));
 
-  test("invokes skill for containerize prompt", async () => {
+  test("invokes skill for containerize prompt", () => withTestResult(async () => {
     let agentMetadata;
     try {
       agentMetadata = await agent.run({
@@ -82,5 +82,5 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }
 
     expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-  });
+  }));
 });

@@ -9,7 +9,7 @@ import {
   useAgentRunner,
   shouldSkipIntegrationTests
 } from "../../../utils/agent-runner";
-import { isSkillInvoked } from "../../../utils/evaluate";
+import { isSkillInvoked, withTestResult } from "../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 
@@ -18,21 +18,21 @@ const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : descr
 describeIntegration(`${SKILL_NAME}_trace - Integration Tests`, () => {
   const agent = useAgentRunner();
 
-  test("invokes skill for trace analysis prompt", async () => {
+  test("invokes skill for trace analysis prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({
       prompt: "Analyze traces for my Foundry agent in App Insights"
     });
 
     const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
     expect(isSkillUsed).toBe(true);
-  });
+  }));
 
-  test("invokes skill for failing traces prompt", async () => {
+  test("invokes skill for failing traces prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({
       prompt: "Find failing traces and errors for my Foundry agent"
     });
 
     const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
     expect(isSkillUsed).toBe(true);
-  });
+  }));
 });

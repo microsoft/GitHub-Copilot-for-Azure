@@ -16,7 +16,7 @@ import {
 } from "../utils/agent-runner";
 import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, shouldEarlyTerminateForSkillInvocation, isSkillInvoked } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -41,81 +41,93 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("skill-invocation", () => {
     const followUp = ["Go with recommended options."];
     test("invokes azure-deploy skill for deployment prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Run azd up to deploy my already-prepared app to Azure",
-            nonInteractive: true,
-            followUp,
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "Run azd up to deploy my already-prepared app to Azure",
+              nonInteractive: true,
+              followUp,
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-deploy skill for publish to Azure prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
-            nonInteractive: true,
-            followUp,
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now.",
+              nonInteractive: true,
+              followUp,
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-deploy skill for Azure Functions deployment prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
-            nonInteractive: true,
-            followUp,
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          try {
+            const agentMetadata = await agent.run({
+              prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up.",
+              nonInteractive: true,
+              followUp,
+              shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
+            softCheckSkill(agentMetadata, SKILL_NAME);
+            if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+              invocationCount += 1;
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+              console.log("⏭️  SDK not loadable, skipping test");
+              return;
+            }
+            throw e;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
   });
 
@@ -125,47 +137,51 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Static Web Apps (SWA)
   describe("static-web-apps-deploy", () => {
     test("creates whiteboard application", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
   });
@@ -173,47 +189,51 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // App Service
   describe("app-service-deploy", () => {
     test("creates discussion board", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
   });
@@ -221,147 +241,159 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Azure Functions
   describe("azure-functions-deploy", () => {
     test("creates serverless HTTP API", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
     test("creates Python function app with Service Bus trigger", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
   });
 
   // Durable Task Scheduler (Durable Functions with DTS)
   describe("durable-task-scheduler-deploy", () => {
     test("creates and deploys workflow app with Durable Task Scheduler", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        expect(workspacePath).toBeDefined();
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+
+        // Verify DTS-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers\/taskHubs/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /0ad04412-c4d5-4796-b79c-f76d14c8d402/i, bicepPattern)).toBe(true);
+
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      expect(workspacePath).toBeDefined();
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
-
-      // Verify DTS-specific Bicep content on disk
-      const bicepPattern = /\.bicep$/;
-      expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers/i, bicepPattern)).toBe(true);
-      expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers\/taskHubs/i, bicepPattern)).toBe(true);
-      expect(doesWorkspaceFileIncludePattern(workspacePath!, /0ad04412-c4d5-4796-b79c-f76d14c8d402/i, bicepPattern)).toBe(true);
-
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-      expect(containsDeployLinks).toBe(true);
     }, deployTestTimeoutMs);
   });
 
   // Azure Container Apps (ACA)
   describe("azure-container-apps-deploy", () => {
     test("creates containerized web application", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
     }, deployTestTimeoutMs);
 
   });
@@ -369,654 +401,702 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Terraform - Static Web Apps
   describe("terraform-static-web-apps-deploy", () => {
     test("creates whiteboard application with Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website with Terraform infrastructure", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
   });
 
   // Terraform - App Service
   describe("terraform-app-service-deploy", () => {
     test("creates discussion board with Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API using Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
   });
 
   // Terraform - Azure Functions
   describe("terraform-azure-functions-deploy", () => {
     test("creates serverless HTTP API with Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
 
     test("creates event-driven function app with Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
 
     test("creates URL shortener service with Terraform infrastructure", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
   });
 
   // Terraform - Azure Container Apps
   describe("terraform-azure-container-apps-deploy", () => {
     test("creates containerized web application with Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
 
     test("creates simple containerized Node.js app with Terraform", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
 
     test("creates social media application with Terraform infrastructure", async () => {
-      let workspacePath: string | undefined;
+      await withTestResult(async () => {
+        let workspacePath: string | undefined;
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          workspacePath = workspace;
-        },
-        prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        preserveWorkspace: true,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
+          prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(workspacePath).toBeDefined();
+        expect(containsDeployLinks).toBe(true);
+        expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(workspacePath).toBeDefined();
-      expect(containsDeployLinks).toBe(true);
-      expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
     }, deployTestTimeoutMs);
   });
 
   describe("brownfield-dotnet", () => {
     test("deploys eShop", async () => {
-      const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
+      await withTestResult(async () => {
+        const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ESHOP_REPO,
-            targetDir: workspace,
-            depth: 1,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ESHOP_REPO,
+              targetDir: workspace,
+              depth: 1,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys MvcMovie 90", async () => {
-      const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-      const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
+      await withTestResult(async () => {
+        const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
+        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPNETCORE_DOCS_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPNETCORE_DOCS_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire azure functions", async () => {
-      const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
+      await withTestResult(async () => {
+        const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire client apps integration", async () => {
-      const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
+      await withTestResult(async () => {
+        const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: CLIENT_APPS_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${CLIENT_APPS_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: CLIENT_APPS_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${CLIENT_APPS_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire container build", async () => {
-      const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
+      await withTestResult(async () => {
+        const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: CONTAINER_BUILD_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${CONTAINER_BUILD_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: CONTAINER_BUILD_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${CONTAINER_BUILD_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("does not deploy aspire custom resources", async () => {
-      const CUSTOM_RESOURCES_SPARSE_PATH = "samples/custom-resources";
+      await withTestResult(async () => {
+        const CUSTOM_RESOURCES_SPARSE_PATH = "samples/custom-resources";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: CUSTOM_RESOURCES_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${CUSTOM_RESOURCES_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: CUSTOM_RESOURCES_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${CUSTOM_RESOURCES_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(false); //should not deploy
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(false); //should not deploy
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire database containers", async () => {
-      const DATABASE_CONTAINERS_SPARSE_PATH = "samples/database-containers";
+      await withTestResult(async () => {
+        const DATABASE_CONTAINERS_SPARSE_PATH = "samples/database-containers";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: DATABASE_CONTAINERS_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${DATABASE_CONTAINERS_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: DATABASE_CONTAINERS_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${DATABASE_CONTAINERS_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire health-checks-ui", async () => {
-      const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
+      await withTestResult(async () => {
+        const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: HEALTH_CHECKS_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${HEALTH_CHECKS_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: HEALTH_CHECKS_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${HEALTH_CHECKS_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire orleans-voting", async () => {
-      const ORLEANS_VOTING_SPARSE_PATH = "samples/orleans-voting";
+      await withTestResult(async () => {
+        const ORLEANS_VOTING_SPARSE_PATH = "samples/orleans-voting";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: ORLEANS_VOTING_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${ORLEANS_VOTING_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: ORLEANS_VOTING_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${ORLEANS_VOTING_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        softCheckContainerDeployEnvVars(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      softCheckContainerDeployEnvVars(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
   });
 
   describe("brownfield-javascript", () => {
     test("deploys nodejs-demoapp", async () => {
-      const NODEJS_DEMOAPP_REPO = "https://github.com/benc-uk/nodejs-demoapp.git";
+      await withTestResult(async () => {
+        const NODEJS_DEMOAPP_REPO = "https://github.com/benc-uk/nodejs-demoapp.git";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: NODEJS_DEMOAPP_REPO,
-            targetDir: workspace,
-            depth: 1,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: NODEJS_DEMOAPP_REPO,
+              targetDir: workspace,
+              depth: 1,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with javascript", async () => {
-      const ASPIRE_JAVASCRIPT_SPARSE_PATH = "samples/aspire-with-javascript";
+      await withTestResult(async () => {
+        const ASPIRE_JAVASCRIPT_SPARSE_PATH = "samples/aspire-with-javascript";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: ASPIRE_JAVASCRIPT_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${ASPIRE_JAVASCRIPT_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: ASPIRE_JAVASCRIPT_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${ASPIRE_JAVASCRIPT_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with node", async () => {
-      const ASPIRE_NODE_SPARSE_PATH = "samples/aspire-with-node";
+      await withTestResult(async () => {
+        const ASPIRE_NODE_SPARSE_PATH = "samples/aspire-with-node";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: ASPIRE_NODE_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${ASPIRE_NODE_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: ASPIRE_NODE_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${ASPIRE_NODE_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
   });
 
   describe("brownfield-python", () => {
     test("deploys flask calculator", async () => {
-      const FLASK_CALCULATOR_REPO = "https://github.com/UltiRequiem/flask-calculator.git";
+      await withTestResult(async () => {
+        const FLASK_CALCULATOR_REPO = "https://github.com/UltiRequiem/flask-calculator.git";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: FLASK_CALCULATOR_REPO,
-            targetDir: workspace,
-            depth: 1,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs.",
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: FLASK_CALCULATOR_REPO,
+              targetDir: workspace,
+              depth: 1,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs.",
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with python", async () => {
-      const ASPIRE_PYTHON_SPARSE_PATH = "samples/aspire-with-python";
+      await withTestResult(async () => {
+        const ASPIRE_PYTHON_SPARSE_PATH = "samples/aspire-with-python";
 
-      const agentMetadata = await agent.run({
-        setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: ASPIRE_PYTHON_SPARSE_PATH,
-          });
-        },
-        prompt:
-          "Please deploy this application to Azure. " +
-          "Use the eastus2 region. " +
-          "Use my current subscription. " +
-          "This is for a small scale production environment. " +
-          "Use standard SKUs. " +
-          `The app can be found under ${ASPIRE_PYTHON_SPARSE_PATH}.`,
-        nonInteractive: true,
-        followUp: FOLLOW_UP_PROMPT,
-        shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            await cloneRepo({
+              repoUrl: ASPIRE_SAMPLES_REPO,
+              targetDir: workspace,
+              depth: 1,
+              sparseCheckoutPath: ASPIRE_PYTHON_SPARSE_PATH,
+            });
+          },
+          prompt:
+            "Please deploy this application to Azure. " +
+            "Use the eastus2 region. " +
+            "Use my current subscription. " +
+            "This is for a small scale production environment. " +
+            "Use standard SKUs. " +
+            `The app can be found under ${ASPIRE_PYTHON_SPARSE_PATH}.`,
+          nonInteractive: true,
+          followUp: FOLLOW_UP_PROMPT,
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+        });
+
+        softCheckDeploySkills(agentMetadata);
+        const containsDeployLinks = hasDeployLinks(agentMetadata);
+
+        expect(containsDeployLinks).toBe(true);
       });
-
-      softCheckDeploySkills(agentMetadata);
-      const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-      expect(containsDeployLinks).toBe(true);
     }, brownfieldTestTimeoutMs);
   });
 });
