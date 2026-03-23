@@ -8,6 +8,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: resolve(__dirname, "index.html"),
+                "integration-tests": resolve(__dirname, "integration-tests.html"),
                 "nightly-runs": resolve(__dirname, "nightly-runs.html"),
             },
         },

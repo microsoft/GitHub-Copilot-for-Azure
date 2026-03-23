@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-diagnostics";
 const RUNS_PER_PROMPT = 5;
@@ -36,9 +36,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-diagnostics skill for Container Apps troubleshooting prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "My Azure Container App keeps restarting, how do I troubleshoot it?"
           });
@@ -47,21 +47,17 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount += 1;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-diagnostics skill for image pull failure prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "I'm getting an image pull failure error in my Azure Container App deployment"
           });
@@ -70,21 +66,17 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount += 1;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-diagnostics skill for AKS troubleshooting prompt", async () => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "My AKS cluster has pods stuck in Pending and one node is NotReady. Can you troubleshoot it?"
           });
@@ -93,15 +85,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount += 1;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
   });
 });
