@@ -15,7 +15,7 @@
 /plugin/skills/azure-compliance/ @saikoumudi
 /plugin/skills/azure-compute/ @alex-thompson
 /plugin/skills/azure-cost-optimization/ @saikoumudi
-/plugin/skills/azure-deploy/ @tmeschter @wbreza
+/plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
 /plugin/skills/azure-hosted-copilot-sdk/ @jongio
 /plugin/skills/azure-kusto/ @saikoumudi
