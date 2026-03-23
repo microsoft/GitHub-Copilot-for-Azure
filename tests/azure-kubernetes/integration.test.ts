@@ -3,6 +3,11 @@
  *
  * Tests skill behavior with a real Copilot agent session.
  * Runs prompts multiple times to measure skill invocation rate.
+ *
+ * Note: skill-invocation tests use softCheckSkill() (non-failing warnings)
+ * because LLM skill routing is nondeterministic — this matches the repo-wide
+ * convention used by all other skills. Hard assertions (expect + isSkillInvoked)
+ * are reserved for behavioral/content tests below.
  */
 
 import {
