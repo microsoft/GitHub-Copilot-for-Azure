@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../../../../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../../../../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 const RUNS_PER_PROMPT = 5;
@@ -32,7 +32,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tests`, () => {
   describe("skill-invocation", () => {
     const agent = useAgentRunner();
-    test("invokes skill for quick deployment prompt", async () => {
+    test("invokes skill for quick deployment prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
@@ -45,10 +45,12 @@ describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tes
           invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes skill for best region deployment prompt", async () => {
+    test("invokes skill for best region deployment prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
@@ -61,7 +63,9 @@ describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tes
           invocationCount += 1;
         }
       }
-      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
   });
 });
