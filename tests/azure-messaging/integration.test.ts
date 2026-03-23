@@ -19,6 +19,7 @@ import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-messaging";
 const RUNS_PER_PROMPT = 3;
+const invocationRateThreshold = 0.8;
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -38,6 +39,7 @@ function defineInvocationTest(
   prompt: string
 ) {
   test(testLabel, async () => {
+    let invocationCount = 0;
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await agent.run({
@@ -46,6 +48,9 @@ function defineInvocationTest(
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
       } catch (e: unknown) {
         if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
           console.log("⏭️  SDK not loadable, skipping test");
@@ -54,6 +59,7 @@ function defineInvocationTest(
         throw e;
       }
     }
+    expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
   });
 }
 
