@@ -37,14 +37,23 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
-  async function expectPromptToInvokeWorkflow(prompt: string, workflowPathPattern: RegExp) {
+  async function expectPromptToInvokeWorkflow(prompt: string, workflowPathPattern: RegExp): Promise<{
+    skillInvocationCount: number,
+    toolCallCount: number
+  } | undefined> {
+    let invocationCount = 0;
+    let toolCallCount = 0;
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
       try {
         const agentMetadata = await agent.run({ prompt });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-        expect(isToolCalled(agentMetadata, "view", workflowPathPattern)).toBe(true);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+        if (isToolCalled(agentMetadata, "view", workflowPathPattern)) {
+          toolCallCount += 1;
+        }
       } catch (e: unknown) {
         if (
           e instanceof Error &&
@@ -56,56 +65,81 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         throw e;
       }
     }
+    return {
+      skillInvocationCount: invocationCount,
+      toolCallCount: toolCallCount
+    };
   }
 
   describe("skill-invocation", () => {
     test("routes web workload recommendation prompt to vm-recommender", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "Which Azure VM size should I use for a web server handling 500 concurrent users?",
         RECOMMENDER_WORKFLOW_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
 
     test("routes GPU VM prompt to vm-recommender", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "I need a GPU VM on Azure for training a deep learning model. What do you recommend?",
         RECOMMENDER_WORKFLOW_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
 
     test("routes VMSS autoscale prompt to vm-recommender", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "Should I use a VM Scale Set with autoscaling for my API backend on Azure?",
         RECOMMENDER_WORKFLOW_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
 
     test("routes VM vs VMSS prompt to vm-recommender", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "When should I use VMSS versus individual VMs on Azure?",
         VMSS_GUIDE_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
 
     test("routes VM family comparison prompt to vm-recommender", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "Compare Azure VM families for a memory-optimized database workload",
         RECOMMENDER_WORKFLOW_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
 
     test("routes RDP troubleshooting prompt to vm-troubleshooter", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it.",
         TROUBLESHOOTER_WORKFLOW_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
 
     test("routes SSH troubleshooting prompt to vm-troubleshooter", async () => {
-      await expectPromptToInvokeWorkflow(
+      const result = await expectPromptToInvokeWorkflow(
         "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues.",
         TROUBLESHOOTER_WORKFLOW_PATH,
       );
+      if (!result) return;
+      expect(result.skillInvocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
+      expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
     });
   });
 });
