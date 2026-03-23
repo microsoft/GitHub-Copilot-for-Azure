@@ -132,8 +132,6 @@ Load only the reference file relevant to the user's request:
 | Pod Rightsizing | over-provisioned pods, CPU requests, memory requests, rightsize workloads | [azure-aks-rightsizing.md](./references/azure-aks-rightsizing.md) |
 | Cluster Autoscaler | idle nodes, CAS off, enable autoscaler, scale-down profile, node utilization | [azure-aks-autoscaler.md](./references/azure-aks-autoscaler.md) |
 | Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
-| Cost Analysis Add-on | namespace costs, cost visibility, cost monitoring, enable cost add-on | [azure-aks-cost-addon.md](./references/azure-aks-cost-addon.md) |
-| Anomaly Investigation | cost spike, utilization spike, node surge, HPA issue, budget alert | [azure-aks-anomalies.md](./references/azure-aks-anomalies.md) |
 
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
