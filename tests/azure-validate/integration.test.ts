@@ -23,6 +23,7 @@ import { matchesCommand, softCheckSkill, isSkillInvoked, shouldEarlyTerminateFor
 
 const SKILL_NAME = "azure-validate";
 const RUNS_PER_PROMPT = 1;
+const invocationRateThreshold = 0.8;
 const aspireEnvVarTestTimeoutMs = 2700000; // 45 minutes
 
 // Check if integration tests should be skipped at module level
@@ -41,6 +42,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-validate skill for deployment readiness check", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -49,6 +51,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -57,9 +62,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-validate skill for azure.yaml validation prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -68,6 +75,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -76,10 +86,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     // Preflight validation tests (formerly azure-deployment-preflight)
     test("invokes azure-validate skill for Bicep validation prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -88,6 +100,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -96,9 +111,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-validate skill for what-if analysis prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
@@ -107,6 +124,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -115,6 +135,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
   });
 

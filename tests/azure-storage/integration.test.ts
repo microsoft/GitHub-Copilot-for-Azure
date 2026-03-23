@@ -14,10 +14,11 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-storage";
 const RUNS_PER_PROMPT = 5;
+const invocationRateThreshold = 0.8;
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -35,13 +36,18 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-storage skill for blob storage prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "How do I upload files to Azure Blob Storage and manage containers?"
+            prompt: "How do I upload files to Azure Blob Storage and manage containers?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -50,16 +56,22 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-storage skill for storage tiers prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "What are the different Azure Storage access tiers and when should I use them?"
+            prompt: "What are the different Azure Storage access tiers and when should I use them?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -68,16 +80,22 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
 
     test("invokes azure-storage skill for blob SDK usage prompt", async () => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         try {
           const agentMetadata = await agent.run({
-            prompt: "How do I upload and download blobs from Azure Blob Storage in my application?"
+            prompt: "How do I upload and download blobs from Azure Blob Storage in my application?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
             console.log("⏭️  SDK not loadable, skipping test");
@@ -86,6 +104,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           throw e;
         }
       }
+      expect(invocationCount / RUNS_PER_PROMPT).toBeGreaterThanOrEqual(invocationRateThreshold);
     });
   });
 });
