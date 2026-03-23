@@ -128,6 +128,44 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
       }
     });
+
+    test("invokes skill for AKS cost analysis add-on prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Enable AKS Cost Analysis add-on on my cluster to get namespace-level cost visibility",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
+
+    test("invokes skill for AKS cost anomaly investigation prompt", async () => {
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Investigate a cost spike in my AKS cluster and set up a budget alert",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
+        }
+      }
+    });
   });
 
   test("response mentions Cost Management for cost analysis", async () => {

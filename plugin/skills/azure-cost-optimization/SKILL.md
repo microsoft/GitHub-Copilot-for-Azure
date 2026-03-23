@@ -1,6 +1,6 @@
 ---
 name: azure-cost-optimization
-description: "Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, reduce Azure expenses, analyze Azure costs, find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs, cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis costs. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)"
+description: "Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, reduce Azure expenses, analyze Azure costs, find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs, cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis costs, AKS cost analysis add-on, namespace cost, cost spike, anomaly, budget alert, AKS cost visibility. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)"
 license: MIT
 metadata:
   author: Microsoft
@@ -96,7 +96,32 @@ mcp_azure_mcp_get_azure_bestpractices({
 
 Wait for user response before proceeding to Step 2.
 
-### Step 2: Run Azure Quick Review
+### Step 1.7: AKS-Specific Analysis (Conditional)
+
+**If the user specifically requests AKS cost optimization**, use the specialized AKS reference files:
+
+**When to use AKS-specific analysis:**
+- User mentions "AKS", "Kubernetes", "cluster", "node pool", "pod", or "kubectl"
+- User wants to enable the AKS cost analysis add-on or namespace cost visibility
+- User reports a cost spike, unusual cluster utilization, or wants budget alerts
+
+**Reference files (load only what is needed for the request):**
+- [Cost Analysis Add-on](./references/azure-aks-cost-addon.md) — enable namespace-level cost visibility
+- [Anomaly Investigation](./references/azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
+
+> **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the relevant reference file above.
+
+### Step 1.8: Choose Analysis Scope (for AKS-specific analysis)
+
+**If performing AKS cost optimization**, ask the user to select their analysis scope:
+
+**Prompt the user with these options:**
+1. **Specific Cluster Name** - Analyze a single AKS cluster
+2. **Resource Group** - Analyze all clusters in a resource group
+3. **Subscription ID** - Analyze all clusters in a subscription
+4. **All My Clusters** - Scan all accessible clusters across subscriptions
+
+Wait for user response before proceeding to Step 2.
 
 Run azqr to find orphaned resources (immediate cost savings):
 
