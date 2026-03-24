@@ -128,51 +128,11 @@ function renderFilterableSummaryStats(container, summary, itemsContainer) {
   container.appendChild(row);
 }
 
-/**
- * Create a horizontal progress bar.
- * @param {string} label
- * @param {number} percent - 0–100
- * @returns {HTMLElement}
- */
-function progressBar(label, percent) {
-  const clamped = Math.max(0, Math.min(100, percent));
-  const container = el("div", "progress-bar-container");
 
-  container.appendChild(el("span", "progress-bar-label", label));
-
-  const track = el("div", "progress-bar-track");
-  track.setAttribute("role", "progressbar");
-  track.setAttribute("aria-valuenow", String(Math.round(clamped)));
-  track.setAttribute("aria-valuemin", "0");
-  track.setAttribute("aria-valuemax", "100");
-  track.setAttribute("aria-label", label + " coverage");
-
-  const fill = el("div", "progress-bar-fill");
-  fill.style.width = clamped + "%";
-  fill.style.backgroundColor = barColor(clamped);
-  track.appendChild(fill);
-
-  container.appendChild(track);
-  container.appendChild(el("span", "progress-bar-value", clamped.toFixed(1) + "%"));
-
-  return container;
-}
-
-/**
- * Return a color based on percentage thresholds.
- * @param {number} pct
- * @returns {string}
- */
-function barColor(pct) {
-  if (pct >= 80) return "var(--color-pass)";
-  if (pct >= 50) return "var(--color-warn)";
-  return "var(--color-fail)";
-}
 
 /**
  * Return the CSS color variable for a token item status.
- * Unlike barColor() which treats high % as good (for coverage),
- * token bars use item status: fail = over budget, warn = near limit, pass = within budget.
+ * Token bars use item status: fail = over budget, warn = near limit, pass = within budget.
  * @param {string} status - pass | warn | fail
  * @returns {string}
  */
@@ -467,10 +427,6 @@ function setupCollapsible(section, category, name) {
 
   // Panel-specific action links (GitHub Actions)
   var panelLinks = {
-    integration: {
-      text: "View Test Runs",
-      href: "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/test-all-integration.yml",
-    },
     tests: {
       text: "View All Workflows",
       href: "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions",
@@ -677,58 +633,7 @@ registerPanel("tests", (section, category) => {
   }
 });
 
-// 2. Coverage panel: horizontal bar charts
-registerPanel("coverage", (section, category) => {
-  const summaryEl = section.querySelector(".panel-summary");
-  const itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  if (category.summary) {
-    renderFilterableSummaryStats(summaryEl, category.summary, itemsEl);
-  }
-
-  const items = category.items || [];
-  if (items.length === 0 || category.status === "skip") {
-    itemsEl.appendChild(
-      el(
-        "p",
-        "no-data-message",
-        category.items?.[0]?.message || "No coverage data available."
-      )
-    );
-    return;
-  }
-
-  // Look for coverage items with metadata containing metric percentages
-  for (const item of items) {
-    const meta = item.metadata || {};
-    const metrics = ["statements", "branches", "functions", "lines"];
-    let hasMetric = false;
-
-    for (const metric of metrics) {
-      if (metric in meta) {
-        itemsEl.appendChild(progressBar(metric, Number(meta[metric])));
-        hasMetric = true;
-      }
-    }
-
-    if (!hasMetric) {
-      // Fallback: show item as row
-      const row = el("div", "progress-bar-container");
-      row.appendChild(el("span", "progress-bar-label", shortName(item.name)));
-      row.appendChild(statusBadge(item.status));
-      if (item.message) {
-        row.appendChild(el("span", "item-message", item.message));
-      }
-      itemsEl.appendChild(row);
-    }
-  }
-});
-
-// 3. Lint panel: error/warning counts + expandable file list
+// 2. Lint panel: error/warning counts + expandable file list
 registerPanel("lint", (section, category) => {
   const summaryEl = section.querySelector(".panel-summary");
   const itemsEl = section.querySelector(".panel-items");
@@ -982,161 +887,6 @@ registerPanel("references", (section, category) => {
     list.appendChild(li);
   }
   itemsEl.appendChild(list);
-});
-
-// 8. Quality Metrics panel: threshold cards + per-skill breakdown
-registerPanel("integration", (section, category) => {
-  var summaryEl = section.querySelector(".panel-summary");
-  var itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  var items = category.items || [];
-  var summary = category.summary;
-
-  // Separate threshold items from skill-breakdown items
-  var thresholdItems = [];
-  var skillItems = [];
-  for (var k = 0; k < items.length; k++) {
-    var meta = items[k].metadata || {};
-    if (meta.metricType === "threshold") {
-      thresholdItems.push(items[k]);
-    } else {
-      skillItems.push(items[k]);
-    }
-  }
-
-  // Summary row with filterable stat boxes (threshold counts)
-  if (summary) {
-    renderFilterableSummaryStats(summaryEl, summary, itemsEl);
-  }
-
-  // Custom summary text for the collapsed header
-  if (summary) {
-    var parts = [];
-    if (summary.passed > 0) parts.push(summary.passed + " met");
-    if (summary.failed > 0) parts.push(summary.failed + " not met");
-    if (summary.warnings > 0) parts.push(summary.warnings + " near threshold");
-    section.setAttribute(
-      "data-summary-text",
-      parts.join(", ") || "No thresholds checked",
-    );
-  }
-
-  // Handle skip / empty state
-  if (category.status === "skip" || items.length === 0) {
-    var skipMsg =
-      items.length > 0 && items[0].message
-        ? items[0].message
-        : "No quality metrics available.";
-    itemsEl.appendChild(el("p", "no-data-message", skipMsg));
-    return;
-  }
-
-  // ── Threshold metric cards ────────────────────────────────────────────
-  if (thresholdItems.length > 0) {
-    var cardsContainer = el("div", "quality-threshold-cards");
-
-    for (var ti = 0; ti < thresholdItems.length; ti++) {
-      var tItem = thresholdItems[ti];
-      var tMeta = tItem.metadata || {};
-      var card = el("div", "quality-threshold-card");
-      card.setAttribute("data-item-status", tItem.status);
-
-      // Metric name
-      card.appendChild(el("div", "quality-metric-name", tItem.name));
-
-      // Big value
-      var valueStr =
-        tMeta.unit === "%"
-          ? Math.round(Number(tMeta.rate)) + "%"
-          : String(tMeta.rate);
-      card.appendChild(el("div", "quality-metric-value", valueStr));
-
-      // Threshold label
-      var thresholdStr =
-        tMeta.direction === "below"
-          ? "threshold: < " + tMeta.threshold
-          : "threshold: " +
-          tMeta.threshold +
-          (tMeta.unit === "%" ? "%" : "");
-      card.appendChild(el("div", "quality-metric-threshold", thresholdStr));
-
-      // Pass/fail badge
-      card.appendChild(statusBadge(tItem.status));
-
-      cardsContainer.appendChild(card);
-    }
-
-    itemsEl.appendChild(cardsContainer);
-  }
-
-  // ── Skill breakdown table ─────────────────────────────────────────────
-  if (skillItems.length > 0) {
-    var tableSection = el("div", "quality-skill-breakdown");
-    tableSection.appendChild(
-      el("h3", "quality-section-heading", "Breakdown by Skill"),
-    );
-
-    var table = el("table", "quality-skill-table");
-
-    // Header row
-    var thead = el("thead");
-    var headerRow = el("tr");
-    var headers = ["Skill", "Tests", "Passed", "Pass Rate", "Tokens", "Duration"];
-    for (var hi = 0; hi < headers.length; hi++) {
-      headerRow.appendChild(el("th", "", headers[hi]));
-    }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    // Body rows
-    var tbody = el("tbody");
-    for (var si = 0; si < skillItems.length; si++) {
-      var sItem = skillItems[si];
-      var sMeta = sItem.metadata || {};
-      var tr = el("tr");
-      tr.setAttribute("data-item-status", sItem.status);
-
-      // Status + Name cell
-      var nameCell = el("td");
-      nameCell.appendChild(statusBadge(sItem.status));
-      nameCell.appendChild(document.createTextNode(" " + sItem.name));
-      tr.appendChild(nameCell);
-
-      // Tests
-      tr.appendChild(el("td", "", String(sMeta.tests || 0)));
-
-      // Passed
-      tr.appendChild(el("td", "", String(sMeta.passed || 0)));
-
-      // Pass Rate
-      var passRateVal =
-        sMeta.passRate !== undefined ? sMeta.passRate + "%" : "\u2014";
-      tr.appendChild(el("td", "", passRateVal));
-
-      // Tokens
-      tr.appendChild(el("td", "", String(sMeta.tokenDisplay || "\u2014")));
-
-      // Duration
-      var durMs = Number(sMeta.avgDurationMs || sMeta.durationMs || 0);
-      var durStr = durMs > 0 ? (durMs / 1000).toFixed(1) + "s" : "\u2014";
-      tr.appendChild(el("td", "", durStr));
-
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    tableSection.appendChild(table);
-    itemsEl.appendChild(tableSection);
-  }
-
-  if (thresholdItems.length === 0 && skillItems.length === 0) {
-    itemsEl.appendChild(
-      el("p", "no-data-message", "No quality metrics available."),
-    );
-  }
 });
 
 // ── URL Hash State ───────────────────────────────────────────────────────────

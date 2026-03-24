@@ -3,7 +3,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import testsCollector from "../../collectors/tests.js";
 import type { CollectorOptions } from "../../schema.js";
 
@@ -15,7 +15,6 @@ vi.mock("node:fs/promises", () => ({
 
 const mockAccess = access as unknown as ReturnType<typeof vi.fn>;
 const mockReadFile = readFile as unknown as ReturnType<typeof vi.fn>;
-const mockReaddir = readdir as unknown as ReturnType<typeof vi.fn>;
 
 const defaultOptions: CollectorOptions = {
   cwd: "/repo",
@@ -195,31 +194,5 @@ describe("testsCollector", () => {
     const report = await testsCollector.collect(defaultOptions);
 
     expect(report.items[0].name).not.toContain("<script>");
-  });
-
-  it("aggregates suites from multiple JUnit XML files", async () => {
-    const integrationXml = [
-      "<testsuites>",
-      "  <testsuite name=\"IntegrationSuite\" tests=\"3\" failures=\"1\" errors=\"0\" time=\"5.0\">",
-      "    <testcase name=\"intTest\" />",
-      "  </testsuite>",
-      "</testsuites>",
-    ].join("\n");
-
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile
-      .mockResolvedValueOnce(ALL_PASSING_XML)
-      .mockResolvedValueOnce(integrationXml);
-    mockReaddir.mockResolvedValue(["junit.xml", "integration/junit.xml"]);
-
-    const report = await testsCollector.collect(defaultOptions);
-
-    // 2 from primary + 1 from integration
-    expect(report.items).toHaveLength(3);
-    expect(report.items.some((i) => i.name === "IntegrationSuite")).toBe(true);
-    // integration suite has failures → overall fail
-    expect(report.status).toBe("fail");
-    expect(report.summary.failed).toBe(1);
-    expect(report.summary.passed).toBe(2);
   });
 });
