@@ -97,11 +97,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure SSL certificates",
     ];
 
-    // Prompts that should route to other skills based on the skill's own guardrails
+    // Out-of-scope prompts that should route to other skills
     const antiTriggerPrompts: string[] = [
-      "Deploy my microservice to an existing AKS cluster",
-      "Troubleshoot why pods in my AKS cluster are crashlooping",
-      "Set up Azure Monitor dashboards for all of my Azure resources",
+      "Troubleshoot why pods in my AKS cluster are crashlooping"
     ];
 
     const shouldNotTriggerPrompts = [

@@ -3,8 +3,8 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
-description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security (workload identity, Azure Policy, Key Vault CSI driver, Deployment Safeguards), and operations (monitoring, upgrade strategy, autoscaling, cost analysis, node pools). WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, secure AKS, set up AKS. DO NOT USE FOR: deploying apps to AKS (use azure-deploy), debugging AKS issues (use azure-diagnostics)."
+  version: "1.0.2"
+description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS."
 ---
 
 # Azure Kubernetes Service
@@ -19,7 +19,7 @@ description: "Plan, create, and configure production-ready Azure Kubernetes Serv
 | Best for | AKS cluster planning and Day-0 decisions |
 | MCP Tools | `mcp_azure_mcp_aks` |
 | CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
-| Related skills | azure-diagnostics (troubleshooting AKS), azure-deploy (app deployment) |
+| Related skills | azure-diagnostics (troubleshooting AKS), azure-validate (readiness checks) |
 
 ## When to Use This Skill
 Activate this skill when user wants to:
@@ -28,7 +28,7 @@ Activate this skill when user wants to:
 - Design AKS networking (API server access, pod IP model, egress)
 - Set up AKS identity and secrets management
 - Configure AKS governance (Azure Policy, Deployment Safeguards)
-- Enable AKS observability (monitoring, Prometheus, Grafana)
+- Enable AKS observability (Container Insights, Managed Prometheus, Grafana)
 - Define AKS upgrade and patching strategy
 - Enable AKS cost visibility and analysis
 - Understand AKS Automatic vs Standard SKU differences
@@ -43,7 +43,7 @@ Activate this skill when user wants to:
 
 ## Required Inputs (Ask only what’s needed)
 If the user is unsure, use safe defaults.
-- Cluster environment: dev/test or production
+- AKS environment type: dev/test or production
 - Region(s), availability zones, preferred node VM sizes
 - Expected scale (node/cluster count, workload size)
 - Networking requirements (API server access, pod IP model, ingress/egress control)
@@ -55,12 +55,12 @@ If the user is unsure, use safe defaults.
 
 ### 1. Cluster Type
 - **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by Node Auto-Provisioning (NAP).
-- **AKS Standard**: Use if you need full control over cluster configuration, will require additional overhead to set up and manage.
+- **AKS Standard**: Use if you need full control over environment configuration, which requires additional overhead to set up and manage.
 
 ### 2. Networking (Pod IP, Egress, Ingress, Dataplane)
 
 **Pod IP Model** (Key Day-0 decision):
-- **Azure CNI Overlay** (recommended): pod IPs from private overlay range, not VNet-routable, scales to large clusters and good for most workloads
+- **Azure CNI Overlay** (recommended): pod IPs from private overlay range, not VNet-routable, scales to large environments and good for most workloads
 - **Azure CNI (VNet-routable)**: pod IPs directly from VNet (pod subnet or node subnet), use when pods must be directly addressable from VNet or on-prem
   - Docs: https://learn.microsoft.com/azure/aks/azure-cni-overlay
 
@@ -73,7 +73,7 @@ If the user is unsure, use safe defaults.
 
 **Ingress**:
 - **App Routing addon with Gateway API** — recommended default for HTTP/HTTPS workloads
-- **Istio service mesh with Gateway API** — for advanced traffic management, mTLS, canary deployments
+- **Istio service mesh with Gateway API** - for advanced traffic management, mTLS, canary releases
 - **Application Gateway for Containers** — for L7 load balancing with WAF integration
 
 **DNS**:
@@ -88,13 +88,15 @@ If the user is unsure, use safe defaults.
 - **Isolation**: Use namespaces, network policies, scoped logging
 
 ### 4. Observability
-- Use Azure Monitor and Container Insights for AKS monitoring enablement (logs + Prometheus + Grafana).
+- Use Managed Prometheus and Container Insights with Grafana for AKS observability (logs + metrics).
+- Enable Diagnostic Settings to collect control plane logs and audit logs in a Log Analytics workspace for security monitoring and troubleshooting.
+- For other monitoring and troubleshooting tools, use features like the Agentic CLI for AKS, Application Insights, Resource Health Center, AppLens detectors, and Azure Advisors.
 
 ### 5. Upgrades & Patching
 - Configure **Maintenance Windows** for controlled upgrade timing
-- Enable **auto-upgrades** for cluster and node OS to stay up-to-date with security patches and Kubernetes versions
-- Consider **LTS versions** for enterprise stability (2-year support) by upgrading your cluster to the AKS Premium tier
-- **Multi-cluster upgrades**: Use **AKS Fleet Manager** for staged rollout across test → production clusters
+- Enable **auto-upgrades** for control plane and node OS to stay up-to-date with security patches and Kubernetes versions
+- Consider **LTS versions** for enterprise stability (2-year support) by upgrading your AKS environment to the Premium tier
+- **Fleet upgrades**: Use **AKS Fleet Manager** for staged rollout across test to production environments
 
 ### 6. Performance
 - Use **Ephemeral OS disks** (`--node-osdisk-type Ephemeral`) for faster node startup
@@ -134,7 +136,7 @@ If the user is unsure, use safe defaults.
 ## Error Handling
 | Error / Symptom | Likely Cause | Remediation |
 |-----------------|--------------|-------------|
-| MCP tool call fails or times out | Invalid credentials, subscription, or cluster context | Verify `az login`, confirm the active subscription context with `az account show`, and check the target resource group without echoing subscription identifiers back to the user |
+| MCP tool call fails or times out | Invalid credentials, subscription, or AKS context | Verify `az login`, confirm the active subscription context with `az account show`, and check the target resource group without echoing subscription identifiers back to the user |
 | Quota exceeded | Regional vCPU or resource limits | Request quota increase or select different region/VM SKU |
 | Networking conflict (IP exhaustion) | Pod subnet too small for overlay/CNI | Re-plan IP ranges; may require cluster recreation (Day-0) |
 | Workload Identity not working | Missing OIDC issuer or federated credential | Enable `--enable-oidc-issuer --enable-workload-identity`, configure federated identity |
