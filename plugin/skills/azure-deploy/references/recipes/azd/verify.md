@@ -60,6 +60,8 @@ Aspire Dashboard: https://aspire-dashboard.xxx.azurecontainerapps.io
 
 > ⚠️ If output was truncated, run `azd show` to retrieve endpoint URLs.
 
+> ⚠️ **Always use fully-qualified URLs with the `https://` scheme.** If a command returns a bare hostname (e.g. `myapp.azurestaticapps.net`), prepend `https://` before presenting it to the user.
+
 ## Step 4: Post-Deployment Verification (if applicable)
 
 For deployments with Azure SQL Database and managed identity:

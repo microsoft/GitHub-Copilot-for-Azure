@@ -27,4 +27,4 @@ Extract endpoints from Terraform outputs:
 terraform output -raw api_url
 ```
 
-Present a summary including all service URLs. Do NOT end your response without including them.
+Present a summary including all service URLs as fully-qualified `https://` links. If a Terraform output returns a bare hostname (e.g. `myapp.azurewebsites.net`), always prepend `https://`. Do NOT end your response without including them.
