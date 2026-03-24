@@ -10,11 +10,11 @@ Ask the user: "When did you notice the spike? (e.g., 'last Tuesday', 'between 2 
 
 ```bash
 az rest --method post \
-  --url "https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.CostManagement/query?api-version=2023-11-01" \
+  --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CostManagement/query?api-version=2023-11-01" \
   --body '{
     "type": "ActualCost",
     "timeframe": "Custom",
-    "timePeriod": { "from": "<START>", "to": "<END>" },
+    "timePeriod": { "from": "<start-date>", "to": "<end-date>" },
     "dataset": {
       "granularity": "Daily",
       "aggregation": { "totalCost": { "name": "Cost", "function": "Sum" } },
@@ -28,10 +28,10 @@ az rest --method post \
 ```bash
 # Node count over the anomaly window
 az monitor metrics list \
-  --resource "<AKS_RESOURCE_ID>" \
+  --resource "<aks-resource-id>" \
   --metric "kube_node_status_condition" \
   --interval PT5M --aggregation Count \
-  --start-time "<START>" --end-time "<END>"
+  --start-time "<start-date>" --end-time "<end-date>"
 
 # HPA scaling events
 kubectl get events --all-namespaces \
@@ -61,12 +61,12 @@ kubectl top pods --all-namespaces --sort-by=cpu
 ```bash
 az consumption budget create \
   --budget-name "aks-monthly-budget" \
-  --amount <BUDGET_AMOUNT> \
+  --amount <budget-amount> \
   --time-grain Monthly \
   --start-date "<YYYY-MM-01>" \
   --end-date "<YYYY-MM-01>" \
-  --resource-group "<RESOURCE_GROUP>" \
+  --resource-group "<resource-group>" \
   --threshold 80 \
-  --contact-emails "<EMAIL>"
+  --contact-emails "<contact-email>"
 ```
 
