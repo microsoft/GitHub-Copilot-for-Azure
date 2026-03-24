@@ -7,12 +7,12 @@ Enable namespace-level cost visibility using the built-in AKS cost monitoring ad
 ```bash
 # Check if add-on is enabled
 az aks show \
-  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<cluster-name>" --resource-group "<resource-group>" \
   --query "addonProfiles.costAnalysis" -o json
 
 # Check cluster tier (add-on requires Standard or Premium)
 az aks show \
-  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<cluster-name>" --resource-group "<resource-group>" \
   --query "{tier:sku.tier, name:name}" -o table
 ```
 
@@ -21,7 +21,7 @@ az aks show \
 ```bash
 # Requires Standard or Premium tier
 az aks update \
-  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<cluster-name>" --resource-group "<resource-group>" \
   --enable-cost-analysis
 ```
 
@@ -31,11 +31,11 @@ Warn user: upgrading to Standard costs ~$0.10/cluster/hour. Wait for confirmatio
 
 ```bash
 az aks update \
-  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<cluster-name>" --resource-group "<resource-group>" \
   --tier standard
 
 az aks update \
-  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<cluster-name>" --resource-group "<resource-group>" \
   --enable-cost-analysis
 ```
 
