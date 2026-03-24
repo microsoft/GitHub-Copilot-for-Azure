@@ -8,13 +8,10 @@ description: |
 
 tags:
   - ml
-  - terraform
 
 inputs:
   prompt: |
-    Provision an Azure ML workspace for distributed deep learning, scale GPU clusters dynamically, and version datasets with Azure ML Data.
-  context:
-    iac_format: terraform
+    Provision an Azure ML workspace for distributed deep learning, scale GPU clusters dynamically, and version datasets with Azure ML Data. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
 
 expected:
   outcomes:
@@ -23,7 +20,6 @@ expected:
     - "ml"
     - "gpu"
     - "dataset"
-    - "terraform"
 
 graders:
   - name: identifies_ml_workspace
@@ -54,8 +50,8 @@ graders:
     type: file
     config:
       must_exist:
-        - "infrastructure-plan.json"
+        - ".azure/infrastructure-plan.json"
       content_patterns:
-        - path: "infrastructure-plan.json"
+        - path: ".azure/infrastructure-plan.json"
           must_match:
             - "(?i)ml|machinelearning|workspace"

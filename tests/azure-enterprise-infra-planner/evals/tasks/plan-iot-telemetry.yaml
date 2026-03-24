@@ -8,13 +8,10 @@ description: |
 
 tags:
   - iot
-  - terraform
 
 inputs:
   prompt: |
-    Provision an IoT solution that collects data from 1000+ edge devices, processes data with Azure IoT Edge, and forwards alerts in real time to Azure Event Hub.
-  context:
-    iac_format: terraform
+    Provision an IoT solution that collects data from 1000+ edge devices, processes data with Azure IoT Edge, and forwards alerts in real time to Azure Event Hub. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
 
 expected:
   outcomes:
@@ -23,7 +20,6 @@ expected:
     - "iot"
     - "edge"
     - "event hub"
-    - "terraform"
 
 graders:
   - name: identifies_iot_resources
@@ -54,8 +50,8 @@ graders:
     type: file
     config:
       must_exist:
-        - "infrastructure-plan.json"
+        - ".azure/infrastructure-plan.json"
       content_patterns:
-        - path: "infrastructure-plan.json"
+        - path: ".azure/infrastructure-plan.json"
           must_match:
             - "(?i)iot|iothub"

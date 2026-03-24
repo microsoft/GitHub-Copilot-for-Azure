@@ -8,13 +8,10 @@ description: |
 
 tags:
   - ml
-  - bicep
 
 inputs:
   prompt: |
-    Launch an ML model scoring endpoint using Azure ML online endpoint, load model from registry, enforce JWT authentication, and log predictions to Azure Monitor.
-  context:
-    iac_format: bicep
+    Launch an ML model scoring endpoint using Azure ML online endpoint, load model from registry, enforce JWT authentication, and log predictions to Azure Monitor. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
 
 expected:
   outcomes:
@@ -23,7 +20,6 @@ expected:
     - "endpoint"
     - "model"
     - "monitor"
-    - "bicep"
 
 graders:
   - name: identifies_ml_endpoint
@@ -54,8 +50,8 @@ graders:
     type: file
     config:
       must_exist:
-        - "infrastructure-plan.json"
+        - ".azure/infrastructure-plan.json"
       content_patterns:
-        - path: "infrastructure-plan.json"
+        - path: ".azure/infrastructure-plan.json"
           must_match:
             - "(?i)ml|machinelearning|endpoint"

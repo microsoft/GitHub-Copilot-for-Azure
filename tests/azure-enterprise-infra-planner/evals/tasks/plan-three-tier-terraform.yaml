@@ -8,20 +8,16 @@ description: |
 
 tags:
   - three-tier
-  - terraform
 
 inputs:
   prompt: |
-    Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance.
-  context:
-    iac_format: terraform
+    Spin up Linux VMs for each tier, automate patch management via Azure Automation, and log traffic between subnets for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
 
 expected:
   outcomes:
     - type: task_completed
   output_contains:
     - "vm"
-    - "terraform"
     - "subnet"
     - "automation"
 
@@ -54,8 +50,8 @@ graders:
     type: file
     config:
       must_exist:
-        - "infrastructure-plan.json"
+        - ".azure/infrastructure-plan.json"
       content_patterns:
-        - path: "infrastructure-plan.json"
+        - path: ".azure/infrastructure-plan.json"
           must_match:
             - "(?i)virtual.?machine|vm"

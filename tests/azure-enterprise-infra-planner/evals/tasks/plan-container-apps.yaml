@@ -8,13 +8,10 @@ description: |
 
 tags:
   - container-apps
-  - bicep
 
 inputs:
   prompt: |
-    Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps.
-  context:
-    iac_format: bicep
+    Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
 
 expected:
   outcomes:
@@ -23,7 +20,6 @@ expected:
     - "container"
     - "scale"
     - "blob"
-    - "bicep"
 
 graders:
   - name: identifies_container_apps
@@ -54,8 +50,8 @@ graders:
     type: file
     config:
       must_exist:
-        - "infrastructure-plan.json"
+        - ".azure/infrastructure-plan.json"
       content_patterns:
-        - path: "infrastructure-plan.json"
+        - path: ".azure/infrastructure-plan.json"
           must_match:
             - "(?i)container.?app|containerapp"

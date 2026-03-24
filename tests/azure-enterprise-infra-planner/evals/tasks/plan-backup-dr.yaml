@@ -8,13 +8,10 @@ description: |
 
 tags:
   - disaster-recovery
-  - bicep
 
 inputs:
   prompt: |
-    Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks.
-  context:
-    iac_format: bicep
+    Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
 
 expected:
   outcomes:
@@ -23,7 +20,6 @@ expected:
     - "site recovery"
     - "failover"
     - "region"
-    - "bicep"
 
 graders:
   - name: identifies_site_recovery
@@ -54,8 +50,8 @@ graders:
     type: file
     config:
       must_exist:
-        - "infrastructure-plan.json"
+        - ".azure/infrastructure-plan.json"
       content_patterns:
-        - path: "infrastructure-plan.json"
+        - path: ".azure/infrastructure-plan.json"
           must_match:
             - "(?i)recovery|replicate|failover"
