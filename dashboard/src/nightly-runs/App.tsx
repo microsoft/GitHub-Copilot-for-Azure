@@ -95,7 +95,9 @@ function Dashboard() {
             .then((data: string[]) => {
                 setDates(data);
                 if (data.length > 0) {
-                    setSelectedDate(data[0]);
+                    const params = new URLSearchParams(window.location.search);
+                    const requested = params.get("date");
+                    setSelectedDate(requested && data.includes(requested) ? requested : data[0]);
                 }
             })
             .catch((err) => setError(err.message))

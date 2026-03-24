@@ -193,7 +193,7 @@ function App() {
                                     <li key={idx} className="it-failed-item">
                                         <a
                                             className="it-failed-name"
-                                            href={`/nightly-runs.html#${encodeURIComponent(formatTestName(ft.testName))}`}
+                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(ft.testName))}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
