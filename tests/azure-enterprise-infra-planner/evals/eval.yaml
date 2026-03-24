@@ -21,7 +21,9 @@ config:
   timeout_seconds: 600
   parallel: false
   executor: copilot-sdk
-  model: claude-opus-4.6
+  model: claude-sonnet-4.6
+  skill_directories:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
 
 metrics:
   - name: task_completion
