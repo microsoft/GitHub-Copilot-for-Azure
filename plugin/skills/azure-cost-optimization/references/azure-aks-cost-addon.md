@@ -27,7 +27,7 @@ az aks update \
 
 ## If Cluster is Free Tier
 
-Warn user: upgrading to Standard costs ~$0.10/cluster/hour. Wait for confirmation, then:
+Warn user that upgrading from Free to Standard introduces an ongoing cluster management fee. Use the official AKS pricing page or this skill’s pricing validation step to confirm the current cost with the user and obtain explicit approval before proceeding. After user approval:
 
 ```bash
 az aks update \
