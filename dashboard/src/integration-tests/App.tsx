@@ -23,6 +23,10 @@ function formatRate(rate: number | null): string {
     return `${(rate * 100).toFixed(1)}%`;
 }
 
+function formatTestName(name: string): string {
+    return name.replace(/\s+/g, "_").replace(/_+/g, "_");
+}
+
 function App() {
     const [dates, setDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -120,7 +124,12 @@ function App() {
                                 return (
                                     <section key={skillName} className="it-skill-section">
                                         <div className="it-skill-header">
-                                            <h2 className="it-skill-name">{skillName}</h2>
+                                            <h2 className="it-skill-name">
+                                                {stats.worstSkillInvocationRate !== null && stats.worstSkillInvocationRate < 0.8 && (
+                                                    <span className="it-warn-icon" title="Worst skill invocation rate is below 80%">&#9888;</span>
+                                                )}
+                                                {skillName}
+                                            </h2>
                                             {totalFailed > 0 && (
                                                 <button
                                                     className={`it-show-failures-btn${failurePanelSkill === skillName ? " active" : ""}`}
@@ -182,7 +191,14 @@ function App() {
                             <ul className="it-failed-list">
                                 {panelStats.failedTests.map((ft, idx) => (
                                     <li key={idx} className="it-failed-item">
-                                        <span className="it-failed-name">{ft.testName}</span>
+                                        <a
+                                            className="it-failed-name"
+                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(ft.testName))}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {formatTestName(ft.testName)}
+                                        </a>
                                         {ft.skillInvocationRate !== undefined && (
                                             <span className="it-failed-rate">
                                                 rate: {formatRate(ft.skillInvocationRate)}
