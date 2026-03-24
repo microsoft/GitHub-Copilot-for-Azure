@@ -1,6 +1,6 @@
-# Trigger accuracy tests for azure-infra-planner skill
+# Trigger accuracy tests for azure-enterprise-infra-planner skill
 # Tests prompt routing — which prompts should and shouldn't invoke this skill
-skill: azure-infra-planner
+skill: azure-enterprise-infra-planner
 
 should_trigger_prompts:
   - prompt: "Plan Azure infrastructure for a multi-service workload"

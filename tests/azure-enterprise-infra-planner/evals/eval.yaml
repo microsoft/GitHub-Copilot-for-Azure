@@ -1,11 +1,11 @@
-# Waza eval specification for azure-infra-planner skill
+# Waza eval specification for azure-enterprise-infra-planner skill
 # Tests infrastructure planning from workload descriptions and correct anti-trigger behavior
 #
-# Run:  waza run tests/azure-infra-planner/evals/eval.yaml -v
-# Or:   azd waza run tests/azure-infra-planner/evals/eval.yaml -v
-name: azure-infra-planner-eval
+# Run:  waza run tests/azure-enterprise-infra-planner/evals/eval.yaml -v
+# Or:   azd waza run tests/azure-enterprise-infra-planner/evals/eval.yaml -v
+name: azure-enterprise-infra-planner-eval
 description: |
-  Evaluation suite for the azure-infra-planner skill.
+  Evaluation suite for the azure-enterprise-infra-planner skill.
   Tests across dimensions:
   - Infrastructure plan quality (resource selection, plan schema, plan-first workflow)
   - Anti-trigger accuracy (redirects to azure-prepare, azure-deploy, azure-validate)
@@ -13,7 +13,7 @@ description: |
   - Security posture (managed identity, RBAC, no connection strings)
   - Workload coverage (GenAI, AKS, Container Apps, 3-tier, serverless, data pipeline, ML, IoT, backup/DR)
 
-skill: azure-infra-planner
+skill: azure-enterprise-infra-planner
 version: "1.0"
 
 config:
