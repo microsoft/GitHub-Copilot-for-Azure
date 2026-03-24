@@ -123,6 +123,8 @@ Wait for user response before proceeding to Step 2.
 
 Wait for user response before proceeding to Step 2.
 
+### Step 2: Run Azure Quick Review
+
 Run azqr to find orphaned resources (immediate cost savings):
 
 📋 **Reference**: [Azure Quick Review](./references/azure-quick-review.md) - Detailed instructions for running azqr scans
