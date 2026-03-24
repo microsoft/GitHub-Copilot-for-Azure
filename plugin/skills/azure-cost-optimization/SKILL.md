@@ -94,7 +94,7 @@ mcp_azure_mcp_get_azure_bestpractices({
 4. **All My Subscriptions** - Scan all accessible subscriptions
 5. **Tenant-wide** - Analyze entire organization
 
-Wait for user response before proceeding to Step 2.
+Wait for user response, then proceed to Step 2. If the user also mentions AKS, proceed to Step 1.7 first.
 
 ### Step 1.7: AKS-Specific Analysis (Conditional)
 
