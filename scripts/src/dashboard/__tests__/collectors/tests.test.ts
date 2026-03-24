@@ -3,7 +3,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { access, readFile } from "node:fs/promises";
+import { access, open, readFile } from "node:fs/promises";
 import testsCollector from "../../collectors/tests.js";
 import type { CollectorOptions } from "../../schema.js";
 
@@ -11,10 +11,20 @@ vi.mock("node:fs/promises", () => ({
   access: vi.fn(),
   readFile: vi.fn(),
   readdir: vi.fn(),
+  open: vi.fn()
 }));
 
 const mockAccess = access as unknown as ReturnType<typeof vi.fn>;
 const mockReadFile = readFile as unknown as ReturnType<typeof vi.fn>;
+const mockOpen = open as unknown as ReturnType<typeof vi.fn>;
+
+/** Create a mock file-descriptor whose readFile returns `content`. */
+function makeMockFd(content: string) {
+  return {
+    readFile: vi.fn().mockResolvedValue(content),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+}
 
 const defaultOptions: CollectorOptions = {
   cwd: "/repo",
@@ -62,7 +72,7 @@ describe("testsCollector", () => {
   });
 
   it("returns skip when JUnit XML does not exist", async () => {
-    mockAccess.mockRejectedValue(new Error("ENOENT"));
+    mockOpen.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -72,8 +82,7 @@ describe("testsCollector", () => {
   });
 
   it("returns skip for empty file", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue("");
+    mockOpen.mockResolvedValue(makeMockFd(""));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -82,8 +91,7 @@ describe("testsCollector", () => {
   });
 
   it("returns skip for malformed XML", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue("   ");
+    mockOpen.mockResolvedValue(makeMockFd("   "));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -92,10 +100,9 @@ describe("testsCollector", () => {
   });
 
   it("returns skip when XML has no test suites", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue(
+    mockOpen.mockResolvedValue(makeMockFd(
       "<?xml version=\"1.0\"?><other>content</other>"
-    );
+    ));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -104,8 +111,7 @@ describe("testsCollector", () => {
   });
 
   it("returns pass with correct items for all-passing suites", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue(ALL_PASSING_XML);
+    mockOpen.mockResolvedValue(makeMockFd(ALL_PASSING_XML));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -130,8 +136,7 @@ describe("testsCollector", () => {
   });
 
   it("returns fail when one suite has failures", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue(ONE_FAILING_XML);
+    mockOpen.mockResolvedValue(makeMockFd(ONE_FAILING_XML));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -151,8 +156,7 @@ describe("testsCollector", () => {
       "  <testcase name=\"only\" />",
       "</testsuite>",
     ].join("\n");
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue(xml);
+    mockOpen.mockResolvedValue(makeMockFd(xml));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -162,8 +166,7 @@ describe("testsCollector", () => {
   });
 
   it("returns valid collectorVersion and collectedAt", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue(ALL_PASSING_XML);
+    mockOpen.mockResolvedValue(makeMockFd(ALL_PASSING_XML));
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -172,8 +175,11 @@ describe("testsCollector", () => {
   });
 
   it("returns skip when readFile throws", async () => {
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockRejectedValue(new Error("Permission denied"));
+    const fd = {
+      readFile: vi.fn().mockRejectedValue(new Error("Permission denied")),
+      close: vi.fn().mockResolvedValue(undefined),
+    };
+    mockOpen.mockResolvedValue(fd);
 
     const report = await testsCollector.collect(defaultOptions);
 
@@ -188,8 +194,7 @@ describe("testsCollector", () => {
       "  </testsuite>",
       "</testsuites>",
     ].join("\n");
-    mockAccess.mockResolvedValue(undefined);
-    mockReadFile.mockResolvedValue(xml);
+    mockOpen.mockResolvedValue(makeMockFd(xml));
 
     const report = await testsCollector.collect(defaultOptions);
 
