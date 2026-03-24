@@ -1133,7 +1133,7 @@ function applyItemFilter(section, status) {
 
 async function init() {
   try {
-    const response = await fetch("data/latest.json");
+    const response = await fetch("/api/static");
     if (!response.ok) {
       throw new Error("HTTP " + response.status);
     }

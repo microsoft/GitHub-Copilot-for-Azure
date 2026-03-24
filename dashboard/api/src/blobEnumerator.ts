@@ -1,7 +1,7 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 
-const CONTAINER_NAME = "integration-reports";
+const INTEGRATION_REPORTS_CONTAINER_NAME = "integration-reports";
 
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
 
@@ -36,7 +36,7 @@ function createNode(): BlobTreeNode {
     return { files: [], children: {} };
 }
 
-function getContainerClient(): ContainerClient {
+function getContainerClient(containerName: string): ContainerClient {
     const clientId = process.env.AZURE_CLIENT_ID;
     const isDevEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development";
     const credential = isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
@@ -49,7 +49,7 @@ function getContainerClient(): ContainerClient {
         `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
         credential
     );
-    return blobServiceClient.getContainerClient(CONTAINER_NAME);
+    return blobServiceClient.getContainerClient(containerName);
 }
 
 function isExcluded(blobName: string): boolean {
@@ -66,7 +66,7 @@ function isExcluded(blobName: string): boolean {
  * @returns An array of date strings within the ±30-day window, sorted in descending order.
  */
 export async function listDates(): Promise<string[]> {
-    const containerClient = getContainerClient();
+    const containerClient = getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME);
     const now = new Date();
     const msPerDay = 24 * 60 * 60 * 1000;
     const minDate = new Date(now.getTime() - 30 * msPerDay);
@@ -100,7 +100,7 @@ export async function listDates(): Promise<string[]> {
  * @returns A BlobTree mapping date → nested path segments → files.
  */
 export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
-    const containerClient = getContainerClient();
+    const containerClient = getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME);
     const tree: BlobTree = {};
 
     for await (const blob of containerClient.listBlobsFlat({ prefix })) {
@@ -195,7 +195,7 @@ export function getPerSkillReports(root: BlobTree, date: string): Record<string,
  * @param blobPath Full blob path
  */
 export async function getBlobContent(blobPath: string): Promise<string> {
-    const containerClient = getContainerClient();
+    const containerClient = getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME);
     const blobClient = containerClient.getBlobClient(blobPath);
     const response = await blobClient.download();
     if (!response.readableStreamBody) {
@@ -206,4 +206,27 @@ export async function getBlobContent(blobPath: string): Promise<string> {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
     return Buffer.concat(chunks).toString("utf-8");
+}
+
+const NON_INTEGRATION_CONTAINER = "non-integration";
+const HEALTH_BLOB_PATH = "data/latest.json";
+
+/**
+ * Read the non-integration health dashboard blob (data/latest.json)
+ * from the "non-integration" container.
+ *
+ * @returns The parsed JSON content of the health blob.
+ */
+export async function getHealthData(): Promise<unknown> {
+    const containerClient = getContainerClient(NON_INTEGRATION_CONTAINER);
+    const blobClient = containerClient.getBlobClient(HEALTH_BLOB_PATH);
+    const response = await blobClient.download();
+    if (!response.readableStreamBody) {
+        return null;
+    }
+    const chunks: Buffer[] = [];
+    for await (const chunk of response.readableStreamBody) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
 }
