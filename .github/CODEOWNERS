@@ -17,6 +17,7 @@
 /plugin/skills/azure-cost-optimization/ @saikoumudi
 /plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
+/plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab
 /plugin/skills/azure-hosted-copilot-sdk/ @jongio
 /plugin/skills/azure-kusto/ @saikoumudi
 /plugin/skills/azure-messaging/ @kashifkhan
