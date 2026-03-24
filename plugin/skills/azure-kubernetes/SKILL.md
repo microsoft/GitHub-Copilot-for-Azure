@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "1.0.0"
-description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security (workload identity, Azure Policy, Key Vault CSI driver, Deployment Safeguards), and operations (monitoring, upgrade strategy, autoscaling, cost analysis, node pools). WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, secure AKS, set up AKS."
+description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security (workload identity, Azure Policy, Key Vault CSI driver, Deployment Safeguards), and operations (monitoring, upgrade strategy, autoscaling, cost analysis, node pools). WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, secure AKS, set up AKS. DO NOT USE FOR: deploying apps to AKS (use azure-deploy), debugging AKS issues (use azure-diagnostics)."
 ---
 
 # Azure Kubernetes Service
@@ -36,7 +36,7 @@ Activate this skill when user wants to:
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
-2. Use the `azure` MCP server and its AKS-related MCP tools (`mcp_azure_mcp_aks`) to invoke Azure APIs and perform AKS and kubectl operations; fall back to Azure CLI (`az aks`) only when required functionality is not available via MCP tools.
+2. Use the `azure` MCP server and select `mcp_azure_mcp_aks` first to discover the exact AKS-specific MCP tools surfaced by the client. Choose the smallest discovered AKS tool that fits the task, and fall back to Azure CLI (`az aks`) only when the needed functionality is not exposed through the AKS MCP surface.
 3. Determine if AKS Automatic or Standard SKU is more appropriate based on the user's need for control vs convenience. Default to AKS Automatic unless specific customizations are required.
 4. Document decisions and rationale for cluster configuration choices, especially for Day-0 decisions that are hard to change later (networking, API server access).
 
@@ -122,19 +122,19 @@ If the user is unsure, use safe defaults.
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
 ## Guardrails / Safety
-- Do not request or output secrets (tokens, keys, subscription IDs).
+- Do not request or output secrets (tokens, keys).
 - If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
 - Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades along with best practices for reliability and performance.
 
 ## MCP Tools
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `mcp_azure_mcp_aks` | Create and query AKS clusters at subscription scope | `subscription_id`, `resource_group` |
+| `mcp_azure_mcp_aks` | AKS MCP entry point used to discover the exact AKS-specific tools exposed by the client | Discover the callable AKS tool first, then use that tool's parameters |
 
 ## Error Handling
 | Error / Symptom | Likely Cause | Remediation |
 |-----------------|--------------|-------------|
-| MCP tool call fails or times out | Invalid credentials, subscription, or cluster context | Verify `az login`, check subscription ID and resource group |
+| MCP tool call fails or times out | Invalid credentials, subscription, or cluster context | Verify `az login`, confirm the active subscription context with `az account show`, and check the target resource group without echoing subscription identifiers back to the user |
 | Quota exceeded | Regional vCPU or resource limits | Request quota increase or select different region/VM SKU |
 | Networking conflict (IP exhaustion) | Pod subnet too small for overlay/CNI | Re-plan IP ranges; may require cluster recreation (Day-0) |
 | Workload Identity not working | Missing OIDC issuer or federated credential | Enable `--enable-oidc-issuer --enable-workload-identity`, configure federated identity |

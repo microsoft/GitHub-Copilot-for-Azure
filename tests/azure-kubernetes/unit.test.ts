@@ -35,6 +35,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("Required Section Structure", () => {
+    test("contains the standard skill sections", () => {
+      expect(skill.content).toContain("## Quick Reference");
+      expect(skill.content).toContain("## When to Use This Skill");
+      expect(skill.content).toContain("## MCP Tools");
+      expect(skill.content).toContain("## Workflow");
+      expect(skill.content).toContain("## Error Handling");
+    });
+  });
+
   describe("Day-0 vs Day-1 Guidance", () => {
     test("distinguishes between Day-0 and Day-1 decisions", () => {
       expect(skill.content).toMatch(/Day-0/i);

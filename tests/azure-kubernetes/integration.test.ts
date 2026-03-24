@@ -15,10 +15,11 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-kubernetes";
-const RUNS_PER_PROMPT = 2;
+const RUNS_PER_PROMPT = 5;
+const invocationRateThreshold = 0.8;
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -33,21 +34,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("invokes azure-kubernetes skill for AKS cluster creation prompt", async () => {
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
-        const agentMetadata = await agent.run({
-          prompt: "Help me create a production-ready AKS cluster with best practices"
-        });
+    await withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        try {
+          const agentMetadata = await agent.run({
+            prompt: "Help me create a production-ready AKS cluster with best practices"
+          });
 
-        softCheckSkill(agentMetadata, SKILL_NAME);
-      } catch (e: unknown) {
-        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
+            console.log("⏭️  SDK not loadable, skipping test");
+            return;
+          }
+          throw e;
         }
-        throw e;
       }
-    }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    });
   });
 
   test("responds with Day-0 vs Day-1 guidance", async () => {
