@@ -35,7 +35,7 @@ function App() {
     const [loadingDates, setLoadingDates] = useState(true);
     const [loadingResults, setLoadingResults] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [failurePanelSkill, setFailurePanelSkill] = useState<string | null>(null);
+    const [detailsPanelSkill, setDetailsPanelSkill] = useState<string | null>(null);
 
     // Fetch available dates on mount
     useEffect(() => {
@@ -61,7 +61,7 @@ function App() {
         setError(null);
         setLoadingResults(true);
         setTestResults(null);
-        setFailurePanelSkill(null);
+        setDetailsPanelSkill(null);
 
         fetch(`/api/test-results/${encodeURIComponent(selectedDate)}`)
             .then((res) => {
@@ -82,8 +82,8 @@ function App() {
     }
 
     const skillNames = testResults ? Object.keys(testResults).sort() : [];
-    const panelOpen = failurePanelSkill !== null;
-    const panelStats = panelOpen && testResults ? testResults[failurePanelSkill!] : null;
+    const panelOpen = detailsPanelSkill !== null;
+    const panelStats = panelOpen && testResults ? testResults[detailsPanelSkill!] : null;
 
     return (
         <div className="it-dashboard" id="main">
@@ -132,12 +132,12 @@ function App() {
                                                 {skillName}
                                             </h2>
                                             <button
-                                                className={`it-show-failures-btn${failurePanelSkill === skillName ? " active" : ""}`}
-                                                onClick={() => setFailurePanelSkill(
-                                                    failurePanelSkill === skillName ? null : skillName
+                                                className={`it-show-details-btn${totalFailed === 0 ? " it-show-details-btn-pass" : ""}${detailsPanelSkill === skillName ? " active" : ""}`}
+                                                onClick={() => setDetailsPanelSkill(
+                                                    detailsPanelSkill === skillName ? null : skillName
                                                 )}
                                             >
-                                                {failurePanelSkill === skillName ? "Hide Details" : `Show Details${totalFailed > 0 ? ` (${totalFailed} failed)` : ""}`}
+                                                {detailsPanelSkill === skillName ? "Hide Details" : `Show Details${totalFailed > 0 ? ` (${totalFailed} failed)` : ""}`}
                                             </button>
                                         </div>
                                         <div className="it-stats-grid">
@@ -171,14 +171,14 @@ function App() {
                     )}
                 </main>
 
-                {/* Right panel - failure details (collapsible) */}
+                {/* Right panel - test details (collapsible) */}
                 {panelOpen && panelStats && (
-                    <aside className="it-panel it-panel-failures">
-                        <div className="it-panel-failures-header">
-                            <h2>Test Details &mdash; {failurePanelSkill}</h2>
+                    <aside className="it-panel it-panel-details">
+                        <div className="it-panel-details-header">
+                            <h2>Test Details &mdash; {detailsPanelSkill}</h2>
                             <button
                                 className="it-close-panel-btn"
-                                onClick={() => setFailurePanelSkill(null)}
+                                onClick={() => setDetailsPanelSkill(null)}
                                 aria-label="Close panel"
                             >
                                 &times;
