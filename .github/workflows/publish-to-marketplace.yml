@@ -31,7 +31,20 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
 
-      # 3. Sync files from source to target (mirror: add new, update existing, remove stale)
+      # 3. Record current version before syncing
+      - name: Record current version
+        id: version
+        run: |
+          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+          if [ -f "${TARGET_DIR}.plugin/plugin.json" ]; then
+            CURRENT_VERSION=$(jq -r '.version' "${TARGET_DIR}.plugin/plugin.json")
+          else
+            CURRENT_VERSION="1.0.0"
+          fi
+          echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Current version: $CURRENT_VERSION"
+
+      # 4. Sync files from source to target (mirror: add new, update existing, remove stale)
       - name: Sync files
         run: |
           SOURCE_DIR="source-repo/plugin/"
@@ -46,7 +59,48 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 4. Commit changes and create a PR
+      # 5. Bump version if content changed
+      - name: Bump version if content changed
+        working-directory: target-repo
+        run: |
+          VERSION_FILES=(
+            ".github/plugins/azure-skills/.claude-plugin/plugin.json"
+            ".github/plugins/azure-skills/.plugin/plugin.json"
+          )
+
+          git add --all
+
+          # Check for changes excluding the version files
+          CHANGED=$(git diff --cached --name-only)
+          HAS_CONTENT_CHANGES=false
+          if [ -n "$CHANGED" ]; then
+            NON_VERSION_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' || true)
+            if [ -n "$NON_VERSION_CHANGES" ]; then
+              HAS_CONTENT_CHANGES=true
+            fi
+          fi
+
+          if [ "$HAS_CONTENT_CHANGES" = true ]; then
+            echo "Content changes detected. Bumping version."
+            CURRENT_VERSION="${{ steps.version.outputs.current }}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+            echo "Version: $CURRENT_VERSION -> $NEW_VERSION"
+
+            for f in "${VERSION_FILES[@]}"; do
+              if [ -f "$f" ]; then
+                jq --arg v "$NEW_VERSION" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+                echo "Updated $f to version $NEW_VERSION"
+              fi
+            done
+          else
+            echo "No content changes detected. Skipping version bump."
+          fi
+
+          # Reset staging so the commit step handles it cleanly
+          git reset HEAD
+
+      # 6. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
