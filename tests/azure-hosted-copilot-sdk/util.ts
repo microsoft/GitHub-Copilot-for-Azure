@@ -52,23 +52,15 @@ function logRate(skillName: string, label: string, successCount: number, runsPer
 export async function measureInvocationRate(
   agent: ReturnType<typeof useAgentRunner>,
   skillName: string,
-  config: { prompt: string; setup?: (workspace: string) => Promise<void> },
+  config: { prompt: string; setup?: (workspace: string) => Promise<void>; shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean },
   label: string,
   runsPerPrompt: number
 ): Promise<number> {
   let successCount = 0;
   for (let i = 0; i < runsPerPrompt; i++) {
-    try {
-      const metadata = await agent.run(config);
-      if (isSkillInvoked(metadata, skillName)) {
-        successCount++;
-      }
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  SDK not loadable, skipping remaining runs");
-        return -1; // signal to skip assertion
-      }
-      throw e;
+    const metadata = await agent.run(config);
+    if (isSkillInvoked(metadata, skillName)) {
+      successCount++;
     }
   }
   return logRate(skillName, label, successCount, runsPerPrompt);

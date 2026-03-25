@@ -4,6 +4,8 @@
  * Test isolated skill logic and validation rules.
  */
 
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-diagnostics";
@@ -85,8 +87,32 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("kql-queries.md");
     });
 
-    test("links to Azure Resource Graph reference", () => {
-      expect(skill.content).toContain("references/azure-resource-graph.md");
+    test("links to Azure Kubernetes troubleshooting reference", () => {
+      expect(skill.content).toContain("aks-troubleshooting/aks-troubleshooting.md");
+    });
+
+    test("routes AKS incidents to the troubleshooting guide", () => {
+      expect(skill.content).toContain("Route active AKS incidents");
+    });
+
+    test("supports sidecar references for AKS command flows and MCP guidance", () => {
+      const troubleshootingSkillPath = path.join(skill.path, "aks-troubleshooting", "aks-troubleshooting.md");
+      const troubleshootingContent = readFileSync(troubleshootingSkillPath, "utf-8");
+
+      expect(troubleshootingContent).toContain("references/command-flows.md");
+      expect(troubleshootingContent).toContain("references/structured-input-modes.md");
+      expect(troubleshootingContent).toContain("references/aks-mcp.md");
+    });
+
+    test("documents AKS-MCP preference and lightweight discovery guidance", () => {
+      const aksMcpReferencePath = path.join(skill.path, "aks-troubleshooting", "references", "aks-mcp.md");
+      const aksMcpReference = readFileSync(aksMcpReferencePath, "utf-8");
+
+      expect(aksMcpReference).toContain("mcp_azure_mcp_aks");
+      expect(aksMcpReference).toContain("enumerate the exact AKS-MCP tools");
+      expect(aksMcpReference).toContain("readonly");
+      expect(aksMcpReference).toContain("AZURE_CLIENT_ID");
+      expect(aksMcpReference).toContain("AZURE_SUBSCRIPTION_ID");
     });
   });
 

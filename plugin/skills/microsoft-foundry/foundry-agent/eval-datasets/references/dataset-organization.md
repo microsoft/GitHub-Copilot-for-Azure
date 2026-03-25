@@ -51,7 +51,7 @@ Run evaluations on specific subsets of a dataset by filtering JSONL before passi
 import json
 
 # Read full dataset
-with open("datasets/support-bot-traces-v3.jsonl") as f:
+with open(".foundry/datasets/support-bot-prod-traces-v3.jsonl") as f:
     examples = [json.loads(line) for line in f]
 
 # Filter to test split only

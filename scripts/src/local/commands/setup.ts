@@ -9,7 +9,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-const MARKETPLACE_NAME = "github-copilot-for-azure";
+const MARKETPLACE_NAME = "azure-skills";
 const PLUGIN_NAME = "azure";
 
 interface Marketplace {
@@ -191,7 +191,7 @@ function getExpectedMarketplace(): Marketplace {
   return {
     source: {
       source: "github",
-      repo: "microsoft/github-copilot-for-azure",
+      repo: "microsoft/azure-skills",
     },
   };
 }

@@ -47,16 +47,25 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Agent Lifecycle");
+      expect(skill.content).toContain("## Agent Development Lifecycle");
       expect(skill.content).toContain("## Sub-Skills");
-      expect(skill.content).toContain("## Project Context Resolution");
-      expect(skill.content).toContain("## Agent Types");
+      expect(skill.content).toContain("## Agent: Project Context Resolution");
+      expect(skill.content).toContain("## Agent: Agent Types");
     });
 
     test("contains agent routing references", () => {
       expect(skill.content).toContain("deploy");
       expect(skill.content).toContain("invoke");
+      expect(skill.content).toContain("observe");
       expect(skill.content).toContain("troubleshoot");
+    });
+
+    test("description includes prompt optimization routing keywords", () => {
+      const description = skill.metadata.description;
+      expect(description).toContain("improve prompt");
+      expect(description).toContain("prompt optimizer");
+      expect(description).toContain("improve agent instructions");
+      expect(description).toContain("optimize system prompt");
     });
 
     test("contains common project context resolution", () => {
@@ -68,6 +77,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("AZURE_AI_PROJECT_ENDPOINT");
       expect(skill.content).toContain("AZURE_CONTAINER_REGISTRY_NAME");
     });
+
+    test("documents .foundry workspace standard", () => {
+      expect(skill.content).toContain(".foundry/agent-metadata.yaml");
+      expect(skill.content).toContain("defaultEnvironment");
+      expect(skill.content).toContain("Agent Metadata Contract");
+    });
+
   });
 
   describe("Sub-Skills Reference", () => {
@@ -78,7 +94,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("references agent sub-skills in table", () => {
       expect(skill.content).toContain("foundry-agent/deploy/deploy.md");
       expect(skill.content).toContain("foundry-agent/invoke/invoke.md");
+      expect(skill.content).toContain("foundry-agent/observe/observe.md");
       expect(skill.content).toContain("foundry-agent/troubleshoot/troubleshoot.md");
+    });
+
+    test("observe sub-skill row routes prompt optimization scenarios", () => {
+      expect(skill.content).toMatch(/observe.*optimize prompts/i);
+      expect(skill.content).toMatch(/observe.*improve agent instructions/i);
+      expect(skill.content).toMatch(/observe.*CI\/CD monitoring/i);
     });
 
     test("references quota sub-skill", () => {
@@ -140,6 +163,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("contains bash command examples", () => {
       expect(quotaContent).toContain("```bash");
       expect(quotaContent).toContain("az rest");
+    });
+  });
+
+  describe("Agent Development Lifecycle Routing", () => {
+    test("routes prompt optimization intents to observe", () => {
+      expect(skill.content).toContain(
+        "Optimize / improve agent prompt or instructions"
+      );
+      expect(skill.content).toContain("observe (Step 4: Optimize)");
+      expect(skill.content).toContain("Evaluate and optimize agent (full loop)");
+    });
+
+    test("mentions prompt_optimize at the top level", () => {
+      expect(skill.content).toContain("prompt_optimize");
+      expect(skill.content).toMatch(/Prompt Optimization:/i);
     });
   });
 

@@ -20,7 +20,7 @@ import { homedir } from "node:os";
 import { setup } from "./setup.js";
 import { parseSkillContent } from "../../shared/skill-helper.js";
 
-const MARKETPLACE_NAME = "github-copilot-for-azure";
+const MARKETPLACE_NAME = "azure-skills";
 const PLUGIN_NAME = "azure";
 
 interface Marketplace {
@@ -100,7 +100,7 @@ function checkMarketplace(config: CopilotConfig): MarketplaceCheckResult {
 
   const hasCorrectSource =
     marketplace.source?.source === "github" &&
-    marketplace.source?.repo === "microsoft/github-copilot-for-azure";
+    marketplace.source?.repo === "microsoft/azure-skills";
 
   return {
     passed: hasCorrectSource,
@@ -361,7 +361,7 @@ export function verify(rootDir: string, args: string[]): void {
       if (marketplaceCheck.actual?.source) {
         console.log(`      Current: source="${marketplaceCheck.actual.source.source}", repo="${marketplaceCheck.actual.source.repo}"`);
       }
-      console.log("      Expected: source=\"github\", repo=\"microsoft/github-copilot-for-azure\"");
+      console.log("      Expected: source=\"github\", repo=\"microsoft/azure-skills\"");
     }
   }
 

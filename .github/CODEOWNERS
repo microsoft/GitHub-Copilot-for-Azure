@@ -1,0 +1,33 @@
+# This is a CODEOWNERS file for the GitHub-Copilot-for-Azure repository.
+# Each line is a file pattern followed by one or more code owners.
+
+# Default owners for everything in the repo
+* @microsoft/ghcp4a
+
+# Workflow files — explicit protection (changes require team review)
+/.github/workflows/ @microsoft/ghcp4a
+
+# Plugin skills owners
+/plugin/skills/appinsights-instrumentation/ @JasonYeMSFT
+/plugin/skills/azure-ai/ @charris-msft
+/plugin/skills/azure-aigateway/ @azaslonov
+/plugin/skills/azure-cloud-migrate/ @saikoumudi
+/plugin/skills/azure-compliance/ @saikoumudi
+/plugin/skills/azure-compute/ @alex-thompson
+/plugin/skills/azure-cost-optimization/ @saikoumudi
+/plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk
+/plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
+/plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab
+/plugin/skills/azure-hosted-copilot-sdk/ @jongio
+/plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel
+/plugin/skills/azure-kusto/ @saikoumudi
+/plugin/skills/azure-messaging/ @kashifkhan
+/plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan
+/plugin/skills/azure-quotas/ @rakal-dyh
+/plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman
+/plugin/skills/azure-resource-lookup/ @charris-msft
+/plugin/skills/azure-resource-visualizer/ @tmeschter
+/plugin/skills/azure-storage/ @charris-msft
+/plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan
+/plugin/skills/entra-app-registration/ @JasonYeMSFT
+/plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst

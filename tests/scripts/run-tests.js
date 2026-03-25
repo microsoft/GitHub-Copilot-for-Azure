@@ -25,6 +25,7 @@
  */
 
 import { spawn } from "child_process";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -80,7 +81,7 @@ const testConfigs = {
   },
   skill: {
     description: "skill-specific tests",
-    jestArgs: ["--testPathPattern"],
+    jestArgs: ["--testPathPatterns"],
     requiresPattern: true
   }
 };
@@ -104,17 +105,17 @@ if (config.requiresPattern && extraArgs.length === 0) {
 // Build jest command args
 let jestArgs = [...config.jestArgs];
 
-// For skill type, append the pattern to --testPathPattern
+// For skill type, append the pattern to --testPathPatterns
 if (config.requiresPattern && extraArgs.length > 0) {
-  jestArgs = [`--testPathPattern=${extraArgs[0]}`, ...extraArgs.slice(1)];
+  jestArgs = [`--testPathPatterns=${extraArgs[0]}`, ...extraArgs.slice(1)];
 } else if (config.optionalPattern && extraArgs.length > 0 && !extraArgs[0].startsWith("-")) {
   const skillPattern = extraArgs[0];
   const remaining = extraArgs.slice(1);
   // If there's a second positional arg (not a flag), use it as --testNamePattern
   if (remaining.length > 0 && !remaining[0].startsWith("-")) {
-    jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
+    jestArgs = [...jestArgs, `--testPathPatterns=${skillPattern}`, `--testNamePattern="${remaining[0]}"`, ...remaining.slice(1)];
   } else {
-    jestArgs = [...jestArgs, `--testPathPattern=${skillPattern}`, ...remaining];
+    jestArgs = [...jestArgs, `--testPathPatterns=${skillPattern}`, ...remaining];
   }
 } else {
   jestArgs = [...jestArgs, ...extraArgs];
@@ -148,6 +149,53 @@ jest.on("error", (err) => {
 
 jest.on("close", (code) => {
   const jestExitCode = code || 0;
+
+  // Write run metadata when running in GitHub Actions
+  const runUrl =
+    process.env.GITHUB_SERVER_URL && process.env.GITHUB_RUN_ID
+      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+      : null;
+  if (runUrl) {
+    const reportsDir = path.resolve(__dirname, "..", "reports");
+    try {
+      const dirs = fs
+        .readdirSync(reportsDir)
+        .filter((d) => d.startsWith("test-run-"))
+        .sort()
+        .reverse();
+      if (dirs.length > 0) {
+        const metadataPath = path.join(
+          reportsDir,
+          dirs[0],
+          "run-metadata.json",
+        );
+        fs.writeFileSync(
+          metadataPath,
+          JSON.stringify(
+            {
+              runUrl,
+              runId: process.env.GITHUB_RUN_ID,
+              repository: process.env.GITHUB_REPOSITORY,
+              workflow: process.env.GITHUB_WORKFLOW || null,
+              actor: process.env.GITHUB_ACTOR || null,
+              ref: process.env.GITHUB_REF || null,
+              sha: process.env.GITHUB_SHA || null,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2,
+          ),
+        );
+        console.log(`\u{1F4CE} Run metadata saved: ${metadataPath}`);
+      }
+    } catch (err) {
+      // Non-fatal — log and continue
+      console.warn(
+        "\u26A0\uFE0F Could not write run metadata:",
+        err.message,
+      );
+    }
+  }
 
   // Show results table if not in CI and not in watch mode
   if (!isCI && testType !== "watch") {

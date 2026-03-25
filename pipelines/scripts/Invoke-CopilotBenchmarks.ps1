@@ -33,7 +33,8 @@
             "gpt-5.2-codex-autodev-test",
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
-        )
+        ),
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath
     )
 
     Set-StrictMode -Version Latest
@@ -52,6 +53,7 @@
 
     Write-Host "Benchmark: $Benchmark"
     Write-Host "Models: $($Model -join ', ')"
+    Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     # --- Retrieve GitHub PAT from KeyVault ---
@@ -103,6 +105,12 @@
         throw "msbench-cli version failed with exit code $LASTEXITCODE"
     }
 
+    Write-Host "Checking database used by MSBench CLI"
+    & 'msbench-cli' database
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli database failed with exit code $LASTEXITCODE"
+    }
+
     # --- Clone repo and cd to working directory ---
     $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
     $repoName = "msbench-benchmarks"
@@ -116,7 +124,12 @@
 
     Write-Host "Cloning $msbenchRepo into $cloneDir"
     # ADO resource id for Azure Repos is 499b84ac-1321-427f-aa17-267ca6975798
-    git -c http.extraheader="AUTHORIZATION: bearer $(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)" `
+    $token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv  
+    if ($pipelineRun) {  
+        Write-Host "##vso[task.setsecret]$token"  
+    }  
+    
+    git -c http.extraheader="AUTHORIZATION: bearer $token" `
         clone --depth 1 $msbenchRepo $cloneDir
     if ($LASTEXITCODE -ne 0) {
         throw "git clone failed with exit code $LASTEXITCODE"
@@ -191,4 +204,10 @@
         Write-Host "##vso[task.setvariable variable=RUN_IDS;isoutput=true]$runIdsValue"
     }
 
+    New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
+    $jsonPath = Join-Path $OutputPath "run_ids.json"
+
+    Write-Host "Saving run IDs to $jsonPath"
+    $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
+    
     Write-Host "`nAll $($Model.Count) model runs completed successfully."

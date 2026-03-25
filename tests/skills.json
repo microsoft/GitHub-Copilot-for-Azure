@@ -9,7 +9,9 @@
         "azure-cost",
         "azure-deploy",
         "azure-diagnostics",
+        "azure-enterprise-infra-planner",
         "azure-hosted-copilot-sdk",
+        "azure-kubernetes",
         "azure-kusto",
         "azure-messaging",
         "azure-prepare",
@@ -18,6 +20,7 @@
         "azure-resource-lookup",
         "azure-resource-visualizer",
         "azure-storage",
+        "azure-upgrade",
         "azure-validate",
         "entra-app-registration",
         "microsoft-foundry"
@@ -25,6 +28,6 @@
     "integrationTestSchedule": {
         "0 5 * * 2-6": "microsoft-foundry",
         "0 8 * * 2-6": "azure-deploy",
-        "0 12 * * 2-6": "appinsights-instrumentation,azure-ai,azure-aigateway,azure-cloud-migrate,azure-compliance,azure-compute,azure-cost,azure-diagnostics,azure-hosted-copilot-sdk,azure-kusto,azure-messaging,azure-prepare,azure-quotas,azure-rbac,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-validate,entra-app-registration"
+        "0 12 * * 2-6": "appinsights-instrumentation,azure-ai,azure-aigateway,azure-cloud-migrate,azure-compliance,azure-compute,azure-cost,azure-diagnostics,azure-enterprise-infra-planner,azure-hosted-copilot-sdk,azure-kubernetes,azure-kusto,azure-messaging,azure-prepare,azure-quotas,azure-rbac,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-upgrade,azure-validate,entra-app-registration"
     }
 }

@@ -4,11 +4,15 @@
  * Tests skill behavior with a real Copilot agent session.
  * These tests require Copilot CLI to be installed and authenticated.
  * 
+ * IMPORTANT: All test cases MUST be wrapped with `withTestResult` so that
+ * pass/fail results and skill invocation rates are automatically recorded
+ * to testResults.json after each test run.
+ * 
  * Prerequisites:
  * 1. npm install -g @github/copilot-cli
  * 2. Run `copilot` and authenticate
  * 
- * Run with: npm run test:integration -- --testPathPattern={skill-name}
+ * Run with: npm run test:integration -- --testPathPatterns={skill-name}
  */
 
 import * as fs from "node:fs";
@@ -19,10 +23,12 @@ import {
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
-import { isSkillInvoked } from "../utils/evaluate";
+import { isSkillInvoked, softCheckSkill, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 // Replace with your skill name
 const SKILL_NAME = "your-skill-name";
+const RUNS_PER_PROMPT = 5;
+const invocationRateThreshold = 0.8;
 
 // Use centralized skip logic from agent-runner
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
@@ -30,53 +36,73 @@ const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : descr
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
-  // Example test: Verify the skill is invoked for a relevant prompt
-  test("invokes skill for relevant prompt", async () => {
-    const agentMetadata = await agent.run({
-      prompt: "Your test prompt that should trigger this skill"
-    });
+  // ──────────────────────────────────────────────────────────────────
+  // Pattern 1: Skill invocation rate test (with setSkillInvocationRate)
+  //
+  // Use this when running the same prompt multiple times to measure
+  // how reliably the skill gets invoked.
+  // ──────────────────────────────────────────────────────────────────
+  describe("skill-invocation", () => {
+    test("invokes skill for relevant prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Your test prompt that should trigger this skill",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-    const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-    expect(isSkillUsed).toBe(true);
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
   });
 
-  // Example test: Verify expected content in response
-  test("response contains expected keywords", async () => {
-    const agentMetadata = await agent.run({
-      prompt: "Your test prompt here"
-    });
+  // ──────────────────────────────────────────────────────────────────
+  // Pattern 2: Simple assertion test (no invocation rate)
+  //
+  // Use this for single-run tests that check response content,
+  // tool calls, or other non-rate assertions.
+  // ──────────────────────────────────────────────────────────────────
+  describe("response-quality", () => {
+    test("response contains expected keywords", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Your test prompt here"
+      });
 
-    const hasExpectedContent = doesAssistantMessageIncludeKeyword(
-      agentMetadata,
-      "expected keyword"
-    );
-    expect(hasExpectedContent).toBe(true);
-  });
+      const hasExpectedContent = doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "expected keyword"
+      );
+      expect(hasExpectedContent).toBe(true);
+    }));
 
-  // Example test: Verify MCP tool calls succeed
-  test("MCP tool calls are successful", async () => {
-    const agentMetadata = await agent.run({
-      prompt: "Your test prompt that uses Azure tools"
-    });
+    test("MCP tool calls are successful", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Your test prompt that uses Azure tools"
+      });
 
-    // Check that azure-documentation (or other relevant tool) calls succeeded
-    const toolsSucceeded = areToolCallsSuccess(agentMetadata, "azure-documentation");
-    expect(toolsSucceeded).toBe(true);
-  });
+      const toolsSucceeded = areToolCallsSuccess(agentMetadata, "azure-documentation");
+      expect(toolsSucceeded).toBe(true);
+    }));
 
-  // Example test with workspace setup
-  test("works with project files", async () => {
-    const agentMetadata = await agent.run({
-      setup: async (workspace: string) => {
-        // Create any files needed in the workspace
-        fs.writeFileSync(
-          path.join(workspace, "example.json"),
-          JSON.stringify({ key: "value" })
-        );
-      },
-      prompt: "Your test prompt that needs workspace files"
-    });
+    // Example test with workspace setup
+    test("works with project files", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        setup: async (workspace: string) => {
+          fs.writeFileSync(
+            path.join(workspace, "example.json"),
+            JSON.stringify({ key: "value" })
+          );
+        },
+        prompt: "Your test prompt that needs workspace files"
+      });
 
-    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    }));
   });
 });

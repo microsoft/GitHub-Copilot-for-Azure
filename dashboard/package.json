@@ -1,0 +1,25 @@
+{
+  "name": "ghcp4a-health-dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:api": "cd api && npm run prestart && func start",
+    "dev:all": "npx concurrently \"npm run dev\" \"npm run dev:api\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.0"
+  }
+}

@@ -60,6 +60,7 @@ describe("deploy - Unit Tests", () => {
 
     test("contains Quick Reference section", () => {
       expect(deployContent).toContain("## Quick Reference");
+      expect(deployContent).toContain("| MCP server | `azure` |");
     });
 
     test("contains When to Use section", () => {
@@ -100,20 +101,58 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("specifies default evaluator categories", () => {
+      expect(deployContent).toContain("evaluator_catalog_get");
+      expect(deployContent).toMatch(/custom.*built-in|built-in.*custom/i);
+      expect(deployContent).toMatch(/name, category, and version/i);
+      expect(deployContent).toMatch(/<=5/i);
       expect(deployContent).toContain("Quality");
       expect(deployContent).toContain("Safety");
+      expect(deployContent).toContain("relevance");
       expect(deployContent).toContain("intent_resolution");
       expect(deployContent).toContain("task_adherence");
-      expect(deployContent).toContain("coherence");
+      expect(deployContent).toContain("indirect_attack");
+      expect(deployContent).toContain("tool_call_accuracy");
     });
 
-    test("instructs identifying LLM-judge deployment", () => {
+    test("uses the observe skill's two-phase evaluator strategy", () => {
+      expect(deployContent).toContain("Two-Phase Evaluator Strategy");
+      expect(deployContent).toMatch(/Phase 1 is built-in only/i);
+      expect(deployContent).toContain("expected_behavior");
+      expect(deployContent).toMatch(/behavioral scoring/i);
+    });
+
+    test("instructs identifying judge deployment from actual project deployments", () => {
       expect(deployContent).toContain("model_deployment_get");
+      expect(deployContent).toMatch(/actual model deployments/i);
+      expect(deployContent).toMatch(/supports chat completions/i);
+      expect(deployContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
     });
 
-    test("instructs persisting artifacts to evaluators/ and datasets/", () => {
-      expect(deployContent).toContain("evaluators/");
-      expect(deployContent).toContain("datasets/");
+    test("instructs persisting artifacts to .foundry/evaluators/ and .foundry/datasets/", () => {
+      expect(deployContent).toContain(".foundry/evaluators/");
+      expect(deployContent).toContain(".foundry/datasets/");
+      expect(deployContent).toContain("datasetUri");
+      expect(deployContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
+    });
+
+    test("uses the seed dataset guide as the canonical registration flow", () => {
+      expect(deployContent).toContain("Generate Seed Evaluation Dataset");
+      expect(deployContent).toMatch(/single source of truth for seed dataset registration/i);
+      expect(deployContent).toContain("project_connection_list");
+      expect(deployContent).toContain("AzureStorageAccount");
+      expect(deployContent).toContain("evaluation_dataset_create");
+      expect(deployContent).toContain("connectionName");
+      expect(deployContent).toContain("<agent-name>-eval-seed");
+      expect(deployContent).toContain("datasetUri");
+      expect(deployContent).not.toContain("--account-key <storage-account-key>");
+      expect(deployContent).not.toContain("--auth-mode login");
+    });
+
+    test("describes seed generation rules without a separate validation pass", () => {
+      expect(deployContent).toMatch(/keep rows valid by construction/i);
+      expect(deployContent).not.toContain(
+        "Validation gates (JSON parsing, required fields, category coverage, minimum row count)"
+      );
     });
 
     test("asks to RUN evaluation (not just set up)", () => {
@@ -129,11 +168,12 @@ describe("deploy - Unit Tests", () => {
   });
 
   describe("Document Deployment Context", () => {
-    test("persists environment variables to .env", () => {
-      expect(deployContent).toContain("AZURE_AI_PROJECT_ENDPOINT");
-      expect(deployContent).toContain("AZURE_AI_AGENT_NAME");
-      expect(deployContent).toContain("AZURE_AI_AGENT_VERSION");
-      expect(deployContent).toContain("AZURE_CONTAINER_REGISTRY");
+    test("persists deployment context to agent-metadata.yaml", () => {
+      expect(deployContent).toContain("projectEndpoint");
+      expect(deployContent).toContain("agentName");
+      expect(deployContent).toContain("azureContainerRegistry");
+      expect(deployContent).toContain("testCases[]");
+      expect(deployContent).toContain("datasetUri");
     });
   });
 });

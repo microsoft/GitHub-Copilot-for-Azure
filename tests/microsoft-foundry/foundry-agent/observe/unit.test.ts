@@ -71,7 +71,7 @@ describe("observe - Unit Tests", () => {
 
     test("contains Quick Reference table", () => {
       expect(observeContent).toContain("## Quick Reference");
-      expect(observeContent).toContain("foundry-mcp");
+      expect(observeContent).toContain("azure");
     });
   });
 
@@ -93,13 +93,14 @@ describe("observe - Unit Tests", () => {
       expect(observeContent).toMatch(/Agent just deployed|Set up evaluation/i);
     });
 
-    test("routes evaluate intent through auto-setup when evaluators missing", () => {
-      expect(observeContent).toMatch(/evaluators\/.*empty|check.*evaluators/i);
+    test("routes evaluate intent through auto-setup when cache is missing or stale", () => {
+      expect(observeContent).toMatch(/cache is missing|stale|refresh|check.*evaluators/i);
     });
 
     test("warns to check for existing evaluators before evaluation", () => {
-      expect(observeContent).toContain("evaluators/");
-      expect(observeContent).toContain("datasets/");
+      expect(observeContent).toContain(".foundry/agent-metadata.yaml");
+      expect(observeContent).toContain(".foundry/evaluators/");
+      expect(observeContent).toContain(".foundry/datasets/");
       expect(observeContent).toMatch(/auto-setup|Auto-Setup/i);
     });
   });
@@ -139,23 +140,60 @@ describe("observe - Unit Tests", () => {
     });
 
     test("includes evaluator selection with quality and safety categories", () => {
+      expect(setupContent).toContain("evaluator_catalog_get");
+      expect(setupContent).toMatch(/custom.*built-in|built-in.*custom/i);
+      expect(setupContent).toMatch(/name, category, and version/i);
+      expect(setupContent).toMatch(/<=5/i);
       expect(setupContent).toContain("Quality");
       expect(setupContent).toContain("Safety");
+      expect(setupContent).toContain("relevance");
       expect(setupContent).toContain("intent_resolution");
       expect(setupContent).toContain("task_adherence");
-      expect(setupContent).toContain("violence");
-      expect(setupContent).toContain("self_harm");
+      expect(setupContent).toContain("indirect_attack");
+      expect(setupContent).toContain("tool_call_accuracy");
     });
 
-    test("includes LLM-judge deployment step", () => {
+    test("references the built-in-first two-phase evaluator strategy", () => {
+      expect(setupContent).toContain("Two-Phase Evaluator Strategy");
+      expect(setupContent).toMatch(/Phase 1 is built-in only/i);
+      expect(setupContent).toMatch(/do not create a new custom evaluator during the initial setup pass/i);
+      expect(setupContent).toContain("expected_behavior");
+      expect(setupContent).toContain("behavioral rubric");
+    });
+
+    test("includes judge deployment step based on actual project deployments", () => {
       expect(setupContent).toContain("model_deployment_get");
+      expect(setupContent).toMatch(/actual model deployments/i);
+      expect(setupContent).toMatch(/supports chat completions/i);
+      expect(setupContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
+    });
+
+    test("generates seed datasets directly instead of invoking the judge deployment", () => {
+      expect(setupContent).toMatch(/Generate the seed rows directly/i);
+      expect(setupContent).toMatch(/Do \*\*not\*\* call the identified chat-capable deployment/i);
     });
 
     test("includes artifact persistence structure", () => {
-      expect(setupContent).toContain("evaluators/");
-      expect(setupContent).toContain("datasets/");
+      expect(setupContent).toContain(".foundry/agent-metadata.yaml");
+      expect(setupContent).toContain(".foundry/evaluators/");
+      expect(setupContent).toContain(".foundry/datasets/");
+      expect(setupContent).toContain("datasetUri");
       expect(setupContent).toContain(".yaml");
       expect(setupContent).toContain(".jsonl");
+      expect(setupContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
+    });
+
+    test("uses the seed dataset guide as the canonical registration flow", () => {
+      expect(setupContent).toContain("Generate Seed Evaluation Dataset");
+      expect(setupContent).toMatch(/single source of truth for registration/i);
+      expect(setupContent).toContain("project_connection_list");
+      expect(setupContent).toContain("AzureStorageAccount");
+      expect(setupContent).toContain("evaluation_dataset_create");
+      expect(setupContent).toContain("connectionName");
+      expect(setupContent).toContain("<agent-name>-eval-seed");
+      expect(setupContent).toContain("datasetUri");
+      expect(setupContent).not.toContain("--account-key <storage-account-key>");
+      expect(setupContent).not.toContain("--auth-mode login");
     });
 
     test("prompts user to run evaluation after auto-setup", () => {
@@ -188,9 +226,112 @@ describe("observe - Unit Tests", () => {
     });
 
     test("requires persisting eval artifacts", () => {
-      expect(observeContent).toContain("evaluators/");
-      expect(observeContent).toContain("datasets/");
-      expect(observeContent).toContain("results/");
+      expect(observeContent).toContain(".foundry/evaluators/");
+      expect(observeContent).toContain(".foundry/datasets/");
+      expect(observeContent).toContain(".foundry/results/");
+      expect(observeContent).toContain("P0");
+    });
+
+    test("documents evalId versus evaluationId guardrail", () => {
+      const evaluateContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "evaluate-step.md"),
+        "utf-8"
+      );
+      const compareContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "compare-iterate.md"),
+        "utf-8"
+      );
+
+      expect(evaluateContent).toContain("evaluationId");
+      expect(evaluateContent).toContain("evalId");
+      expect(evaluateContent).toContain("expected_behavior");
+      expect(evaluateContent).toMatch(/evaluation_get.*does\s+\*\*not\*\*\s+accept\s+`evaluationId`/i);
+      expect(compareContent).toMatch(/creation uses `evaluationId`.*`evaluation_get`.*`evalId`/i);
+    });
+
+    test("requires judge deployment lookup instead of assuming gpt-4o", () => {
+      const evaluateContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "evaluate-step.md"),
+        "utf-8"
+      );
+
+      expect(evaluateContent).toContain("model_deployment_get");
+      expect(evaluateContent).toMatch(/supports chat completions/i);
+      expect(evaluateContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
+    });
+
+    test("requires checking existing evaluators before creating new ones", () => {
+      expect(observeContent).toContain("evaluator_catalog_get");
+      expect(observeContent).toMatch(/existing evaluators before creating new ones/i);
+      expect(observeContent).toMatch(/initial setup, re-evaluation, and optimization loops/i);
+    });
+
+    test("documents the two-phase evaluator strategy and expected_behavior usage", () => {
+      expect(observeContent).toContain("## Two-Phase Evaluator Strategy");
+      expect(observeContent).toMatch(/Phase 1 - Initial setup/i);
+      expect(observeContent).toMatch(/Phase 2 - After analysis/i);
+      expect(observeContent).toContain("expected_behavior");
+      expect(observeContent).toContain("behavioral_adherence");
+      expect(observeContent).toMatch(/per-query behavioral rubric/i);
+    });
+
+    test("documents LLM judge knowledge-cutoff mitigation for real-time data", () => {
+      const analyzeContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "analyze-results.md"),
+        "utf-8"
+      );
+
+      expect(observeContent).toMatch(/LLM judge knowledge cutoff/i);
+      expect(observeContent).toMatch(/web search, Bing Grounding, live APIs/i);
+      expect(observeContent).toMatch(/fabricated|beyond knowledge cutoff/i);
+      expect(analyzeContent).toMatch(/LLM judge knowledge cutoff/i);
+      expect(analyzeContent).toMatch(/cannot verify|beyond knowledge cutoff|no evidence/i);
+      expect(analyzeContent).toContain("Behavioral Rule 13");
+    });
+
+    test("documents evaluator deletion parameter requirements", () => {
+      expect(observeContent).toContain("evaluator_catalog_delete");
+      expect(observeContent).toMatch(/`name` \(not `evaluatorName`\) and `version`/i);
+      expect(observeContent).toMatch(/delete each version individually/i);
+      expect(observeContent).toMatch(/Discover version numbers with `evaluator_catalog_get`/i);
+    });
+
+    test("documents Data Viewer deeplinks for dataset and result files", () => {
+      expect(observeContent).toMatch(/Data Viewer deeplinks/i);
+      expect(observeContent).toContain("vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer");
+      expect(observeContent).toContain(".foundry/datasets/");
+      expect(observeContent).toContain(".foundry/results/");
+    });
+
+    test("documents eval group immutability for evaluators and thresholds", () => {
+      const evaluateContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "evaluate-step.md"),
+        "utf-8"
+      );
+      const compareContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "compare-iterate.md"),
+        "utf-8"
+      );
+
+      expect(evaluateContent).toMatch(/new evaluation group/i);
+      expect(evaluateContent).toMatch(/thresholds/i);
+      expect(compareContent).toMatch(/reuse the same `evaluationId` only when `evaluatorNames` and thresholds are unchanged/i);
+    });
+
+    test("documents downloading detailed results via Azure AI Projects Python SDK", () => {
+      const analyzeContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "analyze-results.md"),
+        "utf-8"
+      );
+
+      expect(analyzeContent).toContain("AIProjectClient");
+      expect(analyzeContent).toContain("get_openai_client()");
+      expect(analyzeContent).toMatch(/evals\.runs\.output_items\.list/);
+      expect(analyzeContent).toContain("datasource_item.query");
+      expect(analyzeContent).toContain("sample.output_text");
+      expect(analyzeContent).toContain("custom_score");
+      expect(analyzeContent).toContain("extract_evaluator_result");
+      expect(analyzeContent).not.toContain("/openai/evals/{eval_id}/runs/{run_id}/output_items");
     });
   });
 });

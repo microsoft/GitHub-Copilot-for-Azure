@@ -208,10 +208,10 @@ description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"
 **Command:**
 ```bash
 # Standard (unit + trigger tests only - fast)
-cd tests && npm test -- --testPathPattern={skill-name} --testPathIgnorePatterns=integration
+cd tests && npm test -- --testPathPatterns={skill-name} --testPathIgnorePatterns=integration
 
 # With integration tests (slower, requires Copilot SDK)
-cd tests && npm test -- --testPathPattern={skill-name}
+cd tests && npm test -- --testPathPatterns={skill-name}
 ```
 
 **Skip Integration Tests Flag:**

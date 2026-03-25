@@ -1,0 +1,54 @@
+name: PR Plugin Version and CHANGELOG Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'plugin/.plugin/plugin.json'
+      - 'plugin/.claude-plugin/plugin.json'
+      - 'plugin/CHANGELOG.md'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-plugin-modifications:
+    runs-on: ubuntu-latest
+    name: Check Plugin Version and CHANGELOG Not Modified
+    
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '20'
+
+      - name: Install dependencies for plugin checks
+        run: |
+          cd scripts
+          npm ci
+
+      - name: Check plugin version changes
+        run: |
+          echo "Checking if plugin versions were modified in this PR..."
+          cd scripts && npm run checkPluginVersionPr
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          
+      - name: Check CHANGELOG modifications
+        run: |
+          echo "Checking if CHANGELOG.md was modified in this PR..."
+          if git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | grep -Fqx "plugin/CHANGELOG.md"; then
+            echo "❌ ERROR: CHANGELOG.md should not be modified in pull requests"
+            echo "The CHANGELOG.md is automatically maintained. Please remove changes to plugin/CHANGELOG.md from your PR."
+            exit 1
+          else
+            echo "✅ CHANGELOG.md was not modified"
+          fi

@@ -23,16 +23,19 @@ export function softCheckContainerDeployEnvVars(agentMetadata: AgentMetadata): v
 }
 
 /**
- * Common Azure deployment link patterns
- * Patterns ensure the domain ends properly to prevent matching evil.com/azurewebsites.net or similar
+ * Common Azure deployment link patterns.
+ * Lookahead ensures the domain ends properly (not a substring of a longer host).
+ * Includes `*` to handle markdown bold-wrapped URLs (`**url**`).
  */
 const DEPLOY_LINK_PATTERNS = [
-  // Azure App Service URLs (matches domain followed by path, query, fragment, whitespace, or punctuation)
-  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s?#)\]]|$)/i,
+  // Azure App Service URLs
+  /https?:\/\/[\w.-]+\.azurewebsites\.net(?=[/\s.`'"?#)\]*]|$)/i,
   // Azure Static Web Apps URLs
-  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s?#)\]]|$)/i,
+  /https:\/\/[\w.-]+\.azurestaticapps\.net(?=[/\s.`'"?#)\]*]|$)/i,
   // Azure Container Apps URLs
-  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s?#)\]]|$)/i
+  /https:\/\/[\w.-]+\.azurecontainerapps\.io(?=[/\s.`'"?#)\]*]|$)/i,
+  // static website from a storage account
+  /https:\/\/[\w.-]+\.web\.core\.windows\.net(?=[/\s.`'"?#)\]*]|$)/i
 ];
 
 /**

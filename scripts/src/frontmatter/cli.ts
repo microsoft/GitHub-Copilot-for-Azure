@@ -17,9 +17,10 @@
  *   npm run frontmatter <path/SKILL.md> # Validate a specific file
  */
 
-import { dirname, resolve, basename } from "node:path";
+import { dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { parseArgs } from "node:util";
 import { parseSkillContent } from "../shared/skill-helper.js";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
@@ -177,10 +178,30 @@ export function validateNoReservedPrefix(name: string | null): ValidationIssue[]
   return issues;
 }
 
+/**
+ * Check 5: Validate description length (max 1024 chars per agentskills.io spec).
+ */
+export function validateDescriptionLength(description: string | null): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (description === null || description === "") {
+    return issues; // Missing description is caught by missing-field check
+  }
+
+  if (description.length > 1024) {
+    issues.push({
+      check: "description-length",
+      message: `Description is ${description.length} chars (max 1024)`,
+    });
+  }
+
+  return issues;
+}
+
 const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 /**
- * Check 5: Validate that `license` field is present and is a string.
+ * Check 6: Validate that `license` field is present and is a string.
  */
 export function validateLicense(license: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -202,7 +223,44 @@ export function validateLicense(license: unknown): ValidationIssue[] {
 }
 
 /**
- * Check 6: Validate `metadata.version` is present and follows semver (X.Y.Z).
+ * Check 7: Validate `metadata` field structure (optional, map of string keys to string values per spec).
+ */
+export function validateMetadata(metadata: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (metadata === undefined || metadata === null) {
+    issues.push({
+      check: "metadata",
+      message: "Missing 'metadata' block in frontmatter",
+      severity: "warning",
+    });
+    return issues;
+  }
+
+  if (typeof metadata !== "object" || Array.isArray(metadata)) {
+    issues.push({
+      check: "metadata",
+      message: `'metadata' field must be a key-value mapping, got ${Array.isArray(metadata) ? "array" : typeof metadata}`,
+    });
+    return issues;
+  }
+
+  const meta = metadata as Record<string, unknown>;
+  for (const [key, value] of Object.entries(meta)) {
+    if (typeof value !== "string") {
+      issues.push({
+        check: "metadata",
+        message: `metadata.${key} must be a string, got ${typeof value}`,
+        severity: "warning",
+      });
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Check 8: Validate `metadata.version` is present and follows semver (X.Y.Z).
  */
 export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -233,6 +291,70 @@ export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
     issues.push({
       check: "metadata-version",
       message: `metadata.version "${versionStr}" is not valid semver (expected X.Y.Z)`,
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Check 8: Validate `compatibility` field (optional, max 500 chars per spec).
+ */
+export function validateCompatibility(compatibility: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (compatibility === undefined || compatibility === null) {
+    return issues; // Optional field
+  }
+
+  if (typeof compatibility !== "string") {
+    issues.push({
+      check: "compatibility",
+      message: `'compatibility' field must be a string, got ${typeof compatibility}`,
+    });
+    return issues;
+  }
+
+  if (compatibility === "") {
+    issues.push({
+      check: "compatibility",
+      message: "'compatibility' field must not be empty if provided",
+    });
+    return issues;
+  }
+
+  if (compatibility.length > 500) {
+    issues.push({
+      check: "compatibility",
+      message: `Compatibility is ${compatibility.length} chars (max 500)`,
+    });
+  }
+
+  return issues;
+}
+
+/**
+ * Check 9: Validate `allowed-tools` field (optional, space-delimited string per spec).
+ */
+export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (allowedTools === undefined || allowedTools === null) {
+    return issues; // Optional field
+  }
+
+  if (typeof allowedTools !== "string") {
+    issues.push({
+      check: "allowed-tools",
+      message: `'allowed-tools' field must be a string, got ${typeof allowedTools}`,
+    });
+    return issues;
+  }
+
+  if (allowedTools === "") {
+    issues.push({
+      check: "allowed-tools",
+      message: "'allowed-tools' field must not be empty if provided",
     });
   }
 
@@ -272,11 +394,23 @@ export function validateSkillFile(filePath: string): ValidationResult {
   // Check 4: No reserved prefixes
   issues.push(...validateNoReservedPrefix(name));
 
-  // Check 5: License field
+  // Check 5: Description length
+  issues.push(...validateDescriptionLength(description));
+
+  // Check 6: License field
   issues.push(...validateLicense(parsed.data.license));
 
-  // Check 6: metadata.version (semver)
+  // Check 7: Metadata structure
+  issues.push(...validateMetadata(parsed.data.metadata));
+
+  // Check 8: metadata.version (semver)
   issues.push(...validateMetadataVersion(parsed.data.metadata));
+
+  // Check 9: Compatibility field
+  issues.push(...validateCompatibility(parsed.data.compatibility));
+
+  // Check 10: Allowed tools field
+  issues.push(...validateAllowedTools(parsed.data["allowed-tools"]));
 
   return { skill: parentDir, file: filePath, issues };
 }
@@ -300,16 +434,112 @@ function getAllSkillFiles(): string[] {
   return [...findSkillFiles(PLUGIN_SKILLS_DIR), ...findSkillFiles(META_SKILLS_DIR)];
 }
 
+// ── JSON output ──────────────────────────────────────────────────────────────
+
+/** All check identifiers produced by the validator */
+const ALL_CHECKS = [
+  "frontmatter",
+  "name-format",
+  "missing-field",
+  "description-format",
+  "no-xml-tags",
+  "reserved-prefix",
+  "description-length",
+  "license",
+  "metadata",
+  "metadata-version",
+  "compatibility",
+  "allowed-tools",
+] as const;
+
+export interface FrontmatterSkillResult {
+  name: string;
+  path: string;
+  status: "pass" | "fail" | "warn";
+  errors: string[];
+  warnings: string[];
+  checks: Record<string, boolean>;
+}
+
+export interface FrontmatterJsonResult {
+  skills: FrontmatterSkillResult[];
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    warnings: number;
+  };
+}
+
+function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
+  const skills: FrontmatterSkillResult[] = [];
+  let passed = 0;
+  let failed = 0;
+  let warningCount = 0;
+
+  for (const result of results) {
+    const errors = result.issues.filter(i => i.severity !== "warning");
+    const warnings = result.issues.filter(i => i.severity === "warning");
+
+    // Build checks map: true = passed, false = has issue for that check
+    const failedChecks = new Set(result.issues.map(i => i.check));
+    const checks: Record<string, boolean> = {};
+    for (const check of ALL_CHECKS) {
+      checks[check] = !failedChecks.has(check);
+    }
+
+    let status: "pass" | "fail" | "warn";
+    if (errors.length > 0) {
+      status = "fail";
+      failed++;
+    } else if (warnings.length > 0) {
+      status = "warn";
+      warningCount++;
+    } else {
+      status = "pass";
+      passed++;
+    }
+
+    skills.push({
+      name: result.skill,
+      path: relative(REPO_ROOT, result.file).replace(/\\/g, "/"),
+      status,
+      errors: errors.map(e => `[${e.check}] ${e.message}`),
+      warnings: warnings.map(w => `[${w.check}] ${w.message}`),
+      checks,
+    });
+  }
+
+  return {
+    skills,
+    summary: {
+      total: results.length,
+      passed,
+      failed,
+      warnings: warningCount,
+    },
+  };
+}
+
 // ── CLI entry point ──────────────────────────────────────────────────────────
 
 function main(): void {
-  const args = process.argv.slice(2);
+  const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      json: { type: "boolean", default: false },
+    },
+    strict: false,
+    allowPositionals: true,
+  });
+
+  const jsonOutput = values.json ?? false;
 
   let skillFiles: string[];
 
-  if (args.length > 0) {
+  if (positionals.length > 0) {
     skillFiles = [];
-    for (const arg of args) {
+    for (const arg of positionals) {
       // Accept either a skill name or a direct path to SKILL.md
       if (arg.endsWith("SKILL.md") && existsSync(arg)) {
         skillFiles.push(resolve(arg));
@@ -333,6 +563,24 @@ function main(): void {
     skillFiles = getAllSkillFiles();
   }
 
+  // Validate all skill files
+  const results: ValidationResult[] = [];
+  for (const file of skillFiles) {
+    results.push(validateSkillFile(file));
+  }
+
+  // ── JSON output mode ────────────────────────────────────────────────────
+  if (jsonOutput) {
+    const jsonResult = buildJsonResult(results);
+    console.log(JSON.stringify(jsonResult, null, 2));
+    const hasErrors = results.some(r => r.issues.some(i => i.severity !== "warning"));
+    if (hasErrors) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
+  // ── Console output mode (default) ───────────────────────────────────────
   console.log("\n📋 Frontmatter Spec Validator\n");
   console.log("────────────────────────────────────────────────────────────");
 
@@ -340,8 +588,7 @@ function main(): void {
   let totalWarnings = 0;
   let skillsWithIssues = 0;
 
-  for (const file of skillFiles) {
-    const result = validateSkillFile(file);
+  for (const result of results) {
     const errors = result.issues.filter(i => i.severity !== "warning");
     const warnings = result.issues.filter(i => i.severity === "warning");
 

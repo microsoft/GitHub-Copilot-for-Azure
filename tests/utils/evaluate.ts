@@ -2,23 +2,27 @@ import * as fs from "fs";
 import * as path from "path";
 import { type AgentMetadata } from "./agent-runner";
 
+const SHELL_TOOL_NAMES = ["powershell", "bash"];
+
 /**
- * Extract all powershell command strings from agent metadata.
+ * Extract all shell command strings (powershell and bash) from agent metadata.
  */
-function getPowershellCommands(metadata: AgentMetadata): string[] {
-  return getToolCalls(metadata, "powershell").map(event => {
-    const data = event.data as Record<string, unknown>;
-    const args = data.arguments as { command?: string } | undefined;
-    return args?.command ?? "";
-  });
+function getShellCommands(metadata: AgentMetadata): string[] {
+  return getToolCalls(metadata)
+    .filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName))
+    .map(event => {
+      const data = event.data as Record<string, unknown>;
+      const args = data.arguments as { command?: string } | undefined;
+      return args?.command ?? "";
+    });
 }
 
 /**
- * Check whether any powershell command executed by the agent matches
+ * Check whether any shell command executed by the agent matches
  * the given pattern.
  */
 export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolean {
-  return getPowershellCommands(metadata).some(cmd => pattern.test(cmd));
+  return getShellCommands(metadata).some(cmd => pattern.test(cmd));
 }
 
 /**
@@ -105,6 +109,25 @@ export function isSkillInvoked(metadata: AgentMetadata, skillName: string): bool
       const args = event.data.arguments;
       return JSON.stringify(args).includes(skillName);
     });
+}
+
+/**
+ * Normalize serialized tool arguments so Windows paths are comparable with slash-based regexes
+ */
+function normalizeToolArgumentText(argumentsData: unknown): string {
+  return JSON.stringify(argumentsData ?? {})
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/");
+}
+
+/**
+ * Check whether a tool was called and its serialized arguments match the given pattern
+ */
+export function isToolCalled(metadata: AgentMetadata, toolName: string, argumentPattern: RegExp): boolean {
+  return getToolCalls(metadata, toolName).some(event => {
+    const argsText = normalizeToolArgumentText(event.data.arguments);
+    return argumentPattern.test(argsText);
+  });
 }
 
 export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
@@ -196,6 +219,38 @@ export function getAllToolText(metadata: AgentMetadata): string {
  * we consider the agent failed to invoke the skill.
  */
 const maxToolCallBeforeSkillInvocationTerminate = 3;
+
+/**
+ * Helper context passed to the test function inside `withTestResult`.
+ */
+interface WithTestResultContext {
+  setSkillInvocationRate: (rate: number) => void;
+}
+
+/**
+ * Wraps a test case function and automatically records the result via `global.addTestResult`.
+ * If the function completes without throwing, `isPass` is `true`; otherwise `false`.
+ * The test function receives a context object with `setSkillInvocationRate` to optionally
+ * report the skill invocation rate in the recorded test result data.
+ */
+export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise<void> | void): Promise<void> {
+  let skillInvocationRate: number | undefined;
+
+  const ctx: WithTestResultContext = {
+    setSkillInvocationRate: (rate: number) => {
+      skillInvocationRate = rate;
+    },
+  };
+
+  try {
+    await fn(ctx);
+    global.addTestResult({ isPass: true, skillInvocationRate });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    throw e;
+  }
+}
 
 export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
