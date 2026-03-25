@@ -134,6 +134,46 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
+
+    test("invokes skill for AKS cost analysis add-on prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "How do I enable namespace-level cost visibility for my AKS cluster?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes skill for AKS cost anomaly investigation prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "My AKS cluster costs spiked unexpectedly this week, help me investigate",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
   });
 
   test("response mentions Cost Management for cost analysis", async () => {
@@ -145,6 +185,32 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
       expect(mentionsCostManagement).toBe(true);
+    });
+  });
+
+  test("response mentions cost analysis add-on for AKS namespace cost prompt", async () => {
+    await withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "How do I enable namespace-level cost visibility for my AKS cluster?"
+      });
+
+      const mentionsAddon = doesAssistantMessageIncludeKeyword(agentMetadata, "--enable-cost-analysis") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "costAnalysis") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Analysis");
+      expect(mentionsAddon).toBe(true);
+    });
+  });
+
+  test("response mentions monitoring commands for AKS cost anomaly prompt", async () => {
+    await withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "My AKS cluster costs spiked unexpectedly this week, help me investigate"
+      });
+
+      const mentionsMonitoring = doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl top") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "az monitor metrics") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "az consumption budget");
+      expect(mentionsMonitoring).toBe(true);
     });
   });
 });
