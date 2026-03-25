@@ -219,6 +219,11 @@ body:has(.it-dashboard) {
     color: var(--color-fail);
 }
 
+.it-warn-icon {
+    color: var(--color-fail);
+    margin-right: 0.35em;
+}
+
 .it-stat-pass {
     color: var(--color-pass);
     font-weight: 600;
