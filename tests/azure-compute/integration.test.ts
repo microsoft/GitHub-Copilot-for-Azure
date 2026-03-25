@@ -14,10 +14,14 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { isSkillInvoked, isToolCalled, softCheckSkill, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-compute";
+const RECOMMENDER_WORKFLOW_PATH = /workflows\/vm-recommender\/vm-recommender\.md/i;
+const TROUBLESHOOTER_WORKFLOW_PATH = /workflows\/vm-troubleshooter\/vm-troubleshooter\.md/i;
+const VMSS_GUIDE_PATH = /references\/vmss-guide\.md/i;
 const RUNS_PER_PROMPT = 5;
+const invocationRateThreshold = 0.8;
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -33,110 +37,126 @@ const describeIntegration = skipTests ? describe.skip : describe;
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
+  async function expectPromptToInvokeWorkflow(prompt: string, workflowPathPattern: RegExp): Promise<{
+    skillInvocationCount: number,
+    toolCallCount: number
+  } | undefined> {
+    let invocationCount = 0;
+    let toolCallCount = 0;
+    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+      const agentMetadata = await agent.run({ prompt });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+        invocationCount += 1;
+      }
+      if (isToolCalled(agentMetadata, "view", workflowPathPattern)) {
+        toolCallCount += 1;
+      }
+    }
+    return {
+      skillInvocationCount: invocationCount,
+      toolCallCount: toolCallCount
+    };
+  }
+
   describe("skill-invocation", () => {
-    test("invokes azure-compute skill for VM recommendation prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Which Azure VM size should I use for a web server handling 500 concurrent users?",
-          });
-
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (
-            e instanceof Error &&
-            e.message?.includes("Failed to load @github/copilot-sdk")
-          ) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
+    test("routes web workload recommendation prompt to vm-recommender", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "Which Azure VM size should I use for a web server handling 500 concurrent users?",
+          RECOMMENDER_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
     });
 
-    test("invokes azure-compute skill for GPU VM prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "I need a GPU VM on Azure for training a deep learning model. What do you recommend?",
-          });
-
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (
-            e instanceof Error &&
-            e.message?.includes("Failed to load @github/copilot-sdk")
-          ) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
+    test("routes GPU VM prompt to vm-recommender", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "I need a GPU VM on Azure for training a deep learning model. What do you recommend?",
+          RECOMMENDER_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
     });
 
-    test("invokes azure-compute skill for VMSS autoscale prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Should I use a VM Scale Set with autoscaling for my API backend on Azure?",
-          });
-
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (
-            e instanceof Error &&
-            e.message?.includes("Failed to load @github/copilot-sdk")
-          ) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
+    test("routes VMSS autoscale prompt to vm-recommender", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "Should I use a VM Scale Set with autoscaling for my API backend on Azure?",
+          RECOMMENDER_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
     });
 
-    test("invokes azure-compute skill for VM pricing prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "How much does a Standard_D4s_v5 Azure VM cost per hour in East US?",
-          });
-
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (
-            e instanceof Error &&
-            e.message?.includes("Failed to load @github/copilot-sdk")
-          ) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
+    test("routes VM vs VMSS prompt to vm-recommender", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "When should I use VMSS versus individual VMs on Azure?",
+          VMSS_GUIDE_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
     });
 
-    test("invokes azure-compute skill for VM family comparison prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Compare Azure VM families for a memory-optimized database workload",
-          });
+    test("routes VM family comparison prompt to vm-recommender", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "Compare Azure VM families for a memory-optimized database workload",
+          RECOMMENDER_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
+    });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (
-            e instanceof Error &&
-            e.message?.includes("Failed to load @github/copilot-sdk")
-          ) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
-        }
-      }
+    test("routes RDP troubleshooting prompt to vm-troubleshooter", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it.",
+          TROUBLESHOOTER_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
+    });
+
+    test("routes SSH troubleshooting prompt to vm-troubleshooter", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues.",
+          TROUBLESHOOTER_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
     });
   });
 });

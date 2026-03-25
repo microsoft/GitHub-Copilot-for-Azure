@@ -1,10 +1,10 @@
 ---
 name: azure-cost-optimization
-description: "Identify and quantify cost savings across Azure subscriptions by analyzing actual costs, utilization metrics, and generating actionable optimization recommendations. USE FOR: optimize Azure costs, reduce Azure spending, reduce Azure expenses, analyze Azure costs, find cost savings, generate cost optimization report, find orphaned resources, rightsize VMs, cost analysis, reduce waste, Azure spending analysis, find unused resources, optimize Redis costs, AKS cost analysis add-on, namespace cost, cost spike, anomaly, budget alert, AKS cost visibility. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)"
+description: "Identify Azure cost savings from usage and spending data. USE FOR: optimize Azure costs, reduce Azure spending/expenses, analyze Azure costs, find cost savings, generate cost optimization report, identify orphaned resources to delete, rightsize VMs, reduce waste, optimize Redis costs, optimize storage costs, AKS cost analysis add-on, namespace cost, cost spike, anomaly, budget alert, AKS cost visibility. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)"
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Azure Cost Optimization Skill

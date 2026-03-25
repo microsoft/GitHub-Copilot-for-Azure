@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "checkCopilotCliCharBudget": "node --import tsx src/copilot-cli-char-budget.ts",
+    "checkPluginVersionPr": "node --import tsx src/check-plugin-version-pr.ts",
     "tokens": "node --import tsx src/tokens/cli.ts",
     "local": "node --import tsx src/local/cli.ts",
     "references": "node --import tsx src/references/cli.ts",
@@ -16,22 +17,27 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
+    "dashboard:serve": "sirv ../dashboard --port 3000 --dev",
+    "dashboard": "npm run dashboard:collect && npm run dashboard:serve"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^10.0.0",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^25.1.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^9.0.0",
+    "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "eslint": "^10.1.0",
+    "fast-xml-parser": "^5.5.8",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
+    "sirv-cli": "^3.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.0.0",
+    "typescript-eslint": "^8.57.1",
     "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=20.19.0 || >=22.12.0"
+    "node": "^20.19.0 || ^22.13.0 || >=24"
   }
 }

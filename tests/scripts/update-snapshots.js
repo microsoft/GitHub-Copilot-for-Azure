@@ -24,7 +24,7 @@ const jestArgs = ["--updateSnapshot", "--testPathIgnorePatterns=\"integration|_t
 
 // If a pattern is provided, add it as testPathPattern
 if (args.length > 0 && !args[0].startsWith("-")) {
-  jestArgs.push(`--testPathPattern=${args[0]}`);
+  jestArgs.push(`--testPathPatterns=${args[0]}`);
   jestArgs.push(...args.slice(1));
 } else {
   jestArgs.push(...args);

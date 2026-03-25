@@ -111,6 +111,25 @@ export function isSkillInvoked(metadata: AgentMetadata, skillName: string): bool
     });
 }
 
+/**
+ * Normalize serialized tool arguments so Windows paths are comparable with slash-based regexes
+ */
+function normalizeToolArgumentText(argumentsData: unknown): string {
+  return JSON.stringify(argumentsData ?? {})
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/");
+}
+
+/**
+ * Check whether a tool was called and its serialized arguments match the given pattern
+ */
+export function isToolCalled(metadata: AgentMetadata, toolName: string, argumentPattern: RegExp): boolean {
+  return getToolCalls(metadata, toolName).some(event => {
+    const argsText = normalizeToolArgumentText(event.data.arguments);
+    return argumentPattern.test(argsText);
+  });
+}
+
 export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
   const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
 
@@ -200,6 +219,38 @@ export function getAllToolText(metadata: AgentMetadata): string {
  * we consider the agent failed to invoke the skill.
  */
 const maxToolCallBeforeSkillInvocationTerminate = 3;
+
+/**
+ * Helper context passed to the test function inside `withTestResult`.
+ */
+interface WithTestResultContext {
+  setSkillInvocationRate: (rate: number) => void;
+}
+
+/**
+ * Wraps a test case function and automatically records the result via `global.addTestResult`.
+ * If the function completes without throwing, `isPass` is `true`; otherwise `false`.
+ * The test function receives a context object with `setSkillInvocationRate` to optionally
+ * report the skill invocation rate in the recorded test result data.
+ */
+export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise<void> | void): Promise<void> {
+  let skillInvocationRate: number | undefined;
+
+  const ctx: WithTestResultContext = {
+    setSkillInvocationRate: (rate: number) => {
+      skillInvocationRate = rate;
+    },
+  };
+
+  try {
+    await fn(ctx);
+    global.addTestResult({ isPass: true, skillInvocationRate });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    throw e;
+  }
+}
 
 export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
