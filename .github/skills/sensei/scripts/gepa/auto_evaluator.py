@@ -135,6 +135,10 @@ def parse_trigger_arrays(test_file: Path) -> dict:
                     depth -= 1
                 i += 1
             array_text = content[start : i - 1]
+            # Strip single-line comments to avoid extracting commented-out examples
+            array_text = re.sub(r"//.*", "", array_text)
+            # Strip multi-line comments
+            array_text = re.sub(r"/\*.*?\*/", "", array_text, flags=re.DOTALL)
             # Extract strings from the array
             strings = re.findall(r'["\']([^"\']+)["\']', array_text)
             result[key] = strings

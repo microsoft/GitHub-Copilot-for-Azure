@@ -119,13 +119,13 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add WHEN: triggers (stay under 60 words and 1024 chars)
-5b. **IMPROVE WITH GEPA** (when `--gepa` flag is set) — Replaces steps 5-6 with automated optimization:
+5b. **IMPROVE WITH GEPA** (when `--gepa` flag is set) — Replaces step 5 (IMPROVE FRONTMATTER) with automated optimization; step 6 (IMPROVE TESTS) still runs normally:
    - Auto-discovers `tests/{skill-name}/triggers.test.ts` and extracts prompt arrays
    - Builds a GEPA evaluator scoring content quality + trigger accuracy
    - Runs `python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill {skill-name} --skills-dir plugin/skills --tests-dir tests`
    - Shows diff of optimized SKILL.md for user approval
    - GEPA wraps existing tests — does NOT replace or modify them
-6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
+6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match the finalized frontmatter (including any GEPA changes)
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPatterns={skill-name}`
 8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
 9. **TOKENS** - Check token budget and line count (< 500 lines per spec), gather optimization suggestions
