@@ -19,15 +19,15 @@
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
 /plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab
 /plugin/skills/azure-hosted-copilot-sdk/ @jongio
-/plugin/skills/azure-kubernetes/ @saikoumudi
+/plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel
 /plugin/skills/azure-kusto/ @saikoumudi
 /plugin/skills/azure-messaging/ @kashifkhan
-/plugin/skills/azure-prepare/ @tmeschter @wbreza
+/plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan
 /plugin/skills/azure-quotas/ @rakal-dyh
 /plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman
 /plugin/skills/azure-resource-lookup/ @charris-msft
 /plugin/skills/azure-resource-visualizer/ @tmeschter
 /plugin/skills/azure-storage/ @charris-msft
-/plugin/skills/azure-validate/ @wbreza @tmeschter
+/plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan
 /plugin/skills/entra-app-registration/ @JasonYeMSFT
 /plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst
