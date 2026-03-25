@@ -70,13 +70,28 @@ jobs:
 
           git add --all
 
-          # Check for changes excluding the version files
+          # Check for content changes (non-version-only)
           CHANGED=$(git diff --cached --name-only)
           HAS_CONTENT_CHANGES=false
           if [ -n "$CHANGED" ]; then
-            NON_VERSION_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' || true)
-            if [ -n "$NON_VERSION_CHANGES" ]; then
+            # Non-plugin.json changes are always content changes
+            NON_JSON_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' || true)
+            if [ -n "$NON_JSON_CHANGES" ]; then
               HAS_CONTENT_CHANGES=true
+            fi
+
+            # For plugin.json files, detect changes beyond just the version field
+            if [ "$HAS_CONTENT_CHANGES" = false ]; then
+              PLUGIN_JSON_CHANGES=$(echo "$CHANGED" | grep -F 'plugin.json' || true)
+              for file in $PLUGIN_JSON_CHANGES; do
+                HEAD_NO_VER=$(git show "HEAD:$file" 2>/dev/null | jq --sort-keys 'del(.version)' 2>/dev/null || echo "")
+                STAGED_NO_VER=$(git show ":$file" 2>/dev/null | jq --sort-keys 'del(.version)' 2>/dev/null || echo "")
+                if [ "$HEAD_NO_VER" != "$STAGED_NO_VER" ]; then
+                  HAS_CONTENT_CHANGES=true
+                  echo "Non-version content change detected in $file"
+                  break
+                fi
+              done
             fi
           fi
 
@@ -219,13 +234,28 @@ jobs:
 
           git add --all
 
-          # Check for changes excluding the version files
+          # Check for content changes (non-version-only)
           CHANGED=$(git diff --cached --name-only)
           HAS_CONTENT_CHANGES=false
           if [ -n "$CHANGED" ]; then
-            NON_VERSION_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' | grep -v -x 'plugin.json' || true)
-            if [ -n "$NON_VERSION_CHANGES" ]; then
+            # Non-plugin.json changes are always content changes
+            NON_JSON_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' | grep -v -x 'plugin.json' || true)
+            if [ -n "$NON_JSON_CHANGES" ]; then
               HAS_CONTENT_CHANGES=true
+            fi
+
+            # For plugin.json files, detect changes beyond just the version field
+            if [ "$HAS_CONTENT_CHANGES" = false ]; then
+              PLUGIN_JSON_CHANGES=$(echo "$CHANGED" | grep -F 'plugin.json' || true)
+              for file in $PLUGIN_JSON_CHANGES; do
+                HEAD_NO_VER=$(git show "HEAD:$file" 2>/dev/null | jq --sort-keys 'del(.version)' 2>/dev/null || echo "")
+                STAGED_NO_VER=$(git show ":$file" 2>/dev/null | jq --sort-keys 'del(.version)' 2>/dev/null || echo "")
+                if [ "$HEAD_NO_VER" != "$STAGED_NO_VER" ]; then
+                  HAS_CONTENT_CHANGES=true
+                  echo "Non-version content change detected in $file"
+                  break
+                fi
+              done
             fi
           fi
 
