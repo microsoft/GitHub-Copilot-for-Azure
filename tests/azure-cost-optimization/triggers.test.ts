@@ -30,7 +30,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       // Orphaned resources
       "Find orphaned resources in my subscription",
       "List unused Azure resources I can delete",
-      "Identify unattached disks and unused NICs",
+      "Identify orphaned resources for cost savings",
       "Find resources wasting money",
       "What resources can I safely delete to save costs?",
       
