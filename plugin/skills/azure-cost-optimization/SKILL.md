@@ -4,7 +4,7 @@ description: "Identify Azure cost savings from usage and spending data. USE FOR:
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Azure Cost Optimization Skill
@@ -94,7 +94,7 @@ mcp_azure_mcp_get_azure_bestpractices({
 4. **All My Subscriptions** - Scan all accessible subscriptions
 5. **Tenant-wide** - Analyze entire organization
 
-Wait for user response, then proceed to Step 2. If the user also mentions AKS, proceed to Step 1.7 first.
+Wait for user response, then proceed to Step 2.
 
 ### Step 1.7: AKS-Specific Analysis (Conditional)
 
@@ -104,6 +104,10 @@ Wait for user response, then proceed to Step 2. If the user also mentions AKS, p
 - User mentions "AKS", "Kubernetes", "cluster", "node pool", "pod", or "kubectl"
 - User wants to enable the AKS cost analysis add-on or namespace cost visibility
 - User reports a cost spike, unusual cluster utilization, or wants budget alerts
+
+**Tool Selection:**
+- **Prefer MCP first**: Use `mcp_azure_mcp_aks` for AKS operations (list clusters, get node pools, inspect configuration) — it provides richer metadata and is consistent with AKS skill conventions in this repo
+- **Fall back to CLI**: Use `az aks` and `kubectl` only when the specific operation cannot be performed via the MCP surface
 
 **Reference files (load only what is needed for the request):**
 - [Cost Analysis Add-on](./references/azure-aks-cost-addon.md) — enable namespace-level cost visibility
