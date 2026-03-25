@@ -3,7 +3,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { access, open, readFile } from "node:fs/promises";
+import { open } from "node:fs/promises";
 import testsCollector from "../../collectors/tests.js";
 import type { CollectorOptions } from "../../schema.js";
 
@@ -14,8 +14,6 @@ vi.mock("node:fs/promises", () => ({
   open: vi.fn()
 }));
 
-const mockAccess = access as unknown as ReturnType<typeof vi.fn>;
-const mockReadFile = readFile as unknown as ReturnType<typeof vi.fn>;
 const mockOpen = open as unknown as ReturnType<typeof vi.fn>;
 
 /** Create a mock file-descriptor whose readFile returns `content`. */
