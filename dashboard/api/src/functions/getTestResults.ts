@@ -13,7 +13,7 @@ interface TestCaseResult {
 /** The raw testResults.json file: test-name → result */
 type RawTestResults = Record<string, TestCaseResult>;
 
-interface FailedTestCase {
+interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
@@ -26,7 +26,8 @@ export interface SkillStats {
     worstSkillInvocationRate: number | null;
     otherTestsPassed: number;
     otherTestsFailed: number;
-    failedTests: FailedTestCase[];
+    failedTests: TestCase[];
+    passedTests: TestCase[];
 }
 
 export type SkillTestResults = Record<string, SkillStats>;
@@ -61,7 +62,8 @@ function computeSkillStats(allResults: RawTestResults[]): SkillStats {
     let worstRate: number | null = null;
     let otherPassed = 0;
     let otherFailed = 0;
-    const failedTests: FailedTestCase[] = [];
+    const failedTests: TestCase[] = [];
+    const passedTests: TestCase[] = [];
 
     for (const results of allResults) {
         for (const [testName, tc] of Object.entries(results)) {
@@ -91,6 +93,12 @@ function computeSkillStats(allResults: RawTestResults[]): SkillStats {
                     message: tc.message,
                     skillInvocationRate: tc.skillInvocationRate,
                 });
+            } else {
+                passedTests.push({
+                    testName,
+                    message: tc.message,
+                    skillInvocationRate: tc.skillInvocationRate,
+                });
             }
         }
     }
@@ -103,6 +111,7 @@ function computeSkillStats(allResults: RawTestResults[]): SkillStats {
         otherTestsPassed: otherPassed,
         otherTestsFailed: otherFailed,
         failedTests,
+        passedTests,
     };
 }
 

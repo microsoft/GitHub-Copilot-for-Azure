@@ -157,7 +157,7 @@ body:has(.it-dashboard) {
     border-bottom: 1px solid var(--color-border);
 }
 
-.it-show-failures-btn {
+.it-show-details-btn {
     padding: 4px 12px;
     font-size: 0.75rem;
     font-weight: 600;
@@ -171,14 +171,27 @@ body:has(.it-dashboard) {
     transition: background 0.15s, color 0.15s;
 }
 
-.it-show-failures-btn:hover {
+.it-show-details-btn.it-show-details-btn-pass {
+    color: var(--color-pass);
+    border-color: var(--color-pass);
+}
+
+.it-show-details-btn:hover {
     background: var(--color-fail);
     color: #fff;
 }
 
-.it-show-failures-btn.active {
+.it-show-details-btn.it-show-details-btn-pass:hover {
+    background: var(--color-pass);
+}
+
+.it-show-details-btn.active {
     background: var(--color-fail);
     color: #fff;
+}
+
+.it-show-details-btn.it-show-details-btn-pass.active {
+    background: var(--color-pass);
 }
 
 .it-stats-grid {
@@ -234,14 +247,14 @@ body:has(.it-dashboard) {
     font-weight: 600;
 }
 
-/* ── Failed tests (right panel) ──────────── */
+/* ── Test details panel ──────────── */
 
-.it-panel-failures {
+.it-panel-details {
     background: var(--color-surface);
     border-left: 1px solid var(--color-border);
 }
 
-.it-panel-failures-header {
+.it-panel-details-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -253,7 +266,7 @@ body:has(.it-dashboard) {
     border-bottom: 1px solid var(--color-border);
 }
 
-.it-panel-failures-header h2 {
+.it-panel-details-header h2 {
     font-size: 0.75rem !important;
     text-transform: uppercase !important;
     color: var(--color-fail) !important;
@@ -321,6 +334,51 @@ body:has(.it-dashboard) {
     word-break: break-word;
 }
 
+.it-panel-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.it-panel-section-fail {
+    color: var(--color-fail);
+}
+
+.it-panel-section-pass {
+    color: var(--color-pass);
+}
+
+.it-passed-list {
+    list-style: none;
+}
+
+.it-passed-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.8125rem;
+}
+
+.it-passed-item:last-child {
+    border-bottom: none;
+}
+
+.it-passed-name {
+    font-weight: 600;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.it-passed-rate {
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.75rem;
+    color: var(--color-pass);
+}
+
 /* ── Responsive ─────────────────────────── */
 
 @media (max-width: 768px) {
@@ -339,7 +397,7 @@ body:has(.it-dashboard) {
         border-bottom: 1px solid var(--color-border);
     }
 
-    .it-panel-failures {
+    .it-panel-details {
         border-left: none;
         border-top: 1px solid var(--color-border);
     }
