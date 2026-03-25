@@ -1,9 +1,8 @@
 name: Update Plugin Versions
 
+# Disabled: previously triggered on push to main
 on:
-  push:
-    branches: [ main ]
-    # This triggers when PRs are merged into main
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   update-version-on-merge:
