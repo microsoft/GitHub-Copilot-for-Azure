@@ -8,8 +8,8 @@
 | 401 | Unauthorized | Authentication failure — missing or expired token | Re-authenticate with `az login` or refresh the access token |
 | 403 | Forbidden | Insufficient permissions on the scope | Ensure the identity has **Cost Management Reader** role (or higher) on the target scope |
 | 404 | Not Found | Invalid scope URL — subscription, resource group, or billing account not found | Verify the scope URL path and resource IDs are correct |
-| 424 | Failed Dependency | Bad training data — forecast model cannot compute predictions | Falls back to actual costs if `includeActualCost=true`; otherwise suggest using **azure-cost-query** for historical data |
-| 429 | Too Many Requests | Rate limited — QPU quota exceeded | Read `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header and wait before retrying |
+| 424 | Failed Dependency | Bad training data — forecast model cannot compute predictions | Falls back to actual costs if `includeActualCost=true`; otherwise suggest using **the Cost Query workflow (Part 1)** for historical data |
+| 429| Too Many Requests | Rate limited — QPU quota exceeded | Read `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header and wait before retrying |
 | 503 | Service Unavailable | Temporary service issue | Check [Azure Status](https://status.azure.com) for service health. |
 
 ## Validation Error Reference
@@ -28,9 +28,9 @@
 
 | Scenario | Response | Action |
 |---|---|---|
-| "Forecast is unavailable for the specified time period" | Valid response with null/empty rows | Not an error — insufficient history (< 28 days). Suggest using **azure-cost-query** for available historical data. |
+| "Forecast is unavailable for the specified time period" | Valid response with null/empty rows | Not an error — insufficient history (< 28 days). Suggest using **the Cost Query workflow (Part 1)** for available historical data. |
 | "Can't forecast on the past" | 400 error with `CantForecastOnThePast` | Ensure the `to` date is in the future. |
-| Bad training data | 424 Failed Dependency | If `includeActualCost=true`, the response falls back to actual cost data only. Otherwise, suggest using **azure-cost-query** for historical data. |
+| Bad training data | 424 Failed Dependency | If `includeActualCost=true`, the response falls back to actual cost data only. Otherwise, suggest using **the Cost Query workflow (Part 1)** for historical data. |
 | Parsing exception | 400 Bad Request | Check JSON format — validate braces, quotes, commas, and field types. |
 
 ## Retry Strategy
@@ -42,7 +42,7 @@
 | 401 | ❌ No | Re-authenticate — the token is missing or expired |
 | 403 | ❌ No | Grant **Cost Management Reader** role on the target scope |
 | 404 | ❌ No | Fix the scope URL — verify subscription, resource group, or billing account IDs |
-| 424 | ❌ No | Training data issue — retrying will not help. Fall back to actual costs or use **azure-cost-query** |
+| 424 | ❌ No | Training data issue — retrying will not help. Fall back to actual costs or use **the Cost Query workflow (Part 1)** |
 | 503 | ❌ No | Do not retry. Check [Azure Status](https://status.azure.com) for service health. |
 
 > ⚠️ **Warning:** Do not retry any errors except 429. All other errors indicate issues that must be fixed before re-attempting the request.

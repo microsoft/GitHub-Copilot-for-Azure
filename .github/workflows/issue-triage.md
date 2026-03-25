@@ -56,7 +56,7 @@ Assign one or more skill labels if the issue is related to a specific Azure skil
 - `azure-prepare` — project setup, `azd init`, scaffolding, project preparation
 - `azure-validate` — validation, environment checking, pre-deployment checks
 - `azure-diagnostics` — diagnostics, troubleshooting, logs, error investigation
-- `azure-cost-optimization` — cost management, billing, resource optimization
+- `azure-cost` — cost management, billing, resource optimization
 - `azure-messaging` — Service Bus, Event Hubs, messaging services
 - `azure-observability` — monitoring, alerts, Azure Monitor, Application Insights
 

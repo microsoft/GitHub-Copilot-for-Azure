@@ -1,14 +1,15 @@
 /**
- * Trigger Tests for azure-cost-query
+ * Trigger Tests for azure-cost (forecast area)
  *
- * Tests that verify the skill triggers on appropriate prompts
+ * Tests that verify the skill triggers on appropriate forecast prompts
  * and does NOT trigger on unrelated prompts.
+ * Migrated from azure-cost-forecast to the unified azure-cost skill.
  */
 
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-cost-query";
+const SKILL_NAME = "azure-cost";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -21,14 +22,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      // Direct cost query requests
-      "What are my Azure costs this month?",
-      "Show me cost breakdown by service for my subscription",
-      "Query Azure spending for the last 30 days",
-      "How much did I spend on storage last month?",
-      "Show me a cost breakdown by resource group",
-      "Show me actual vs amortized cost for my subscription",
-      "What are my top cost drivers in Azure?",
+      "What will my Azure costs be next month?",
+      "Forecast my Azure spending for the rest of the quarter",
+      "Predict my subscription costs for the next 90 days",
+      "Show me projected costs for this billing period",
+      "Estimate my Azure bill for next month",
+      "How much will I spend on Azure by end of year?",
+      "Show my forecast for Azure costs going forward",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -42,19 +42,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
-      // Forecast skill (should not trigger cost-query)
-      "Predict the budget for next quarter",
-      "What will the projected budget look like next quarter?",
-      // Optimization skill (should not trigger cost-query)
-      "Find orphaned resources and rightsize VMs",
-      "Reduce waste and optimize cloud expenses",
-      // Deployment (different skill)
       "Deploy a new VM to Azure",
-      // Wrong cloud provider
       "Set up an AWS budget",
-      // Unrelated
       "Write a Python script",
-      "Help me write a poem",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -87,14 +77,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "Azure cost query breakdown ".repeat(500);
+      const longPrompt = "Azure cost forecast spending ".repeat(500);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("AZURE COST BREAKDOWN");
-      const result2 = triggerMatcher.shouldTrigger("azure cost breakdown");
+      const result1 = triggerMatcher.shouldTrigger("FORECAST AZURE COSTS");
+      const result2 = triggerMatcher.shouldTrigger("forecast azure costs");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

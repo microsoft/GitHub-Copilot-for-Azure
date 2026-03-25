@@ -23,7 +23,7 @@ Detailed guardrails derived from CCM-LUX getForecastData and CCM-UX-MIDDLEWARE F
 | Late arrival tolerance | 2 days for billing data to arrive |
 | New subscriptions (< 28 days) | Forecast unavailable |
 
-> ⚠️ **Warning:** New subscriptions with fewer than 28 days of cost history cannot generate forecasts. Suggest using **azure-cost-query** to retrieve available historical data instead.
+> ⚠️ **Warning:** New subscriptions with fewer than 28 days of cost history cannot generate forecasts. Suggest using **the Cost Query workflow (Part 1)** to retrieve available historical data instead.
 
 ## Grouping Restriction
 
@@ -31,9 +31,9 @@ Detailed guardrails derived from CCM-LUX getForecastData and CCM-UX-MIDDLEWARE F
 |---|---|
 | Grouping support | ❌ **Not supported** |
 | API limitation | This is a hard limitation of the Forecast API. The `grouping` field is not accepted in the request body. |
-| Workaround | If the user requests a grouped forecast (e.g., forecast by resource group or service), inform them that grouping is not supported for forecasts. Suggest querying historical data with grouping using **azure-cost-query** instead. |
+| Workaround | If the user requests a grouped forecast (e.g., forecast by resource group or service), inform them that grouping is not supported for forecasts. Suggest querying historical data with grouping using **the Cost Query workflow (Part 1)** instead. |
 
-> ⚠️ **Warning:** Even when using **azure-cost-query** for grouped historical data, `ResourceId` grouping is only supported at subscription scope and below. It is not supported at billing account, management group, or higher scopes.
+> ⚠️ **Warning:** Even when using **the Cost Query workflow (Part 1)** for grouped historical data, `ResourceId` grouping is only supported at subscription scope and below. It is not supported at billing account, management group, or higher scopes.
 
 ## Response Row Limit
 
@@ -65,7 +65,7 @@ The API returns "Forecast is unavailable for the specified time period" when:
 | Insufficient training data | Scope has fewer than 28 days of cost history |
 | No cost history | Scope has never had any cost data |
 
-> ⚠️ **Warning:** This is **not an error** — it is a valid response indicating the forecast model cannot generate predictions. Do not retry. Instead, suggest using **azure-cost-query** to retrieve whatever historical data is available.
+> ⚠️ **Warning:** This is **not an error** — it is a valid response indicating the forecast model cannot generate predictions. Do not retry. Instead, suggest using **the Cost Query workflow (Part 1)** to retrieve whatever historical data is available.
 
 ## Rate Limiting
 

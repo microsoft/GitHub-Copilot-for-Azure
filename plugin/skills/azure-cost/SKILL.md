@@ -100,7 +100,7 @@ Use a preset timeframe (e.g., `MonthToDate`, `TheLastMonth`, `TheLastYear`) or `
 > - `Custom` timeframe **requires** a `timePeriod` object with `from` and `to` dates
 > - Future dates are not allowed for historical queries
 >
-> See [guardrails.md](./cost-optimization/guardrails.md) for the complete set of validation rules.
+> See [guardrails.md](./cost-query/guardrails.md) for the complete set of validation rules.
 
 ### Step 4: Configure Dataset
 
@@ -112,9 +112,9 @@ Define granularity, aggregation, grouping, filtering, and sorting in the `datase
 - **Filtering**: Use `dimensions` filters with `In`, `Equal`, or `Contains` operators
 - **Sorting**: Order results by cost or dimension columns
 
-> **Tip:** Not all dimensions are available at every scope. See [dimensions-by-scope.md](./cost-optimization/dimensions-by-scope.md) for the availability matrix.
+> **Tip:** Not all dimensions are available at every scope. See [dimensions-by-scope.md](./cost-query/dimensions-by-scope.md) for the availability matrix.
 
-For the full request body schema, see [request-body-schema.md](./cost-optimization/request-body-schema.md).
+For the full request body schema, see [request-body-schema.md](./cost-query/request-body-schema.md).
 
 ### Step 5: Construct and Execute the API Call
 
@@ -162,7 +162,7 @@ az rest --method post `
 - If `nextLink` is present in the response, follow it to retrieve additional pages.
 - Handle rate limiting (HTTP 429) by respecting `Retry-After` headers.
 
-See [error-handling.md](./cost-optimization/error-handling.md) for the full error reference.
+See [error-handling.md](./cost-query/error-handling.md) for the full error reference.
 
 ### Cost Query Key Guardrails
 
@@ -199,7 +199,7 @@ az rest --method post `
   }'
 ```
 
-For more examples including daily trends, tag-based filtering, and multi-dimension queries, see [examples.md](./cost-optimization/examples.md).
+For more examples including daily trends, tag-based filtering, and multi-dimension queries, see [examples.md](./cost-query/examples.md).
 
 ---
 
@@ -324,7 +324,7 @@ Get actual cost data from Azure Cost Management API (last 30 days). Use the Part
 
 **Execute and save results to `output/cost-query-result<timestamp>.json`.**
 
-> **Tip:** Also run a cost-by-service query (grouping by `ServiceName`) to present the total bill breakdown alongside optimization recommendations. See [examples.md](./cost-optimization/examples.md).
+> **Tip:** Also run a cost-by-service query (grouping by `ServiceName`) to present the total bill breakdown alongside optimization recommendations. See [examples.md](./cost-query/examples.md).
 
 ### Step 5: Validate Pricing
 
@@ -559,7 +559,7 @@ For more forecast examples, see [forecast examples](./cost-forecast/examples.md)
 | 429 | Too many requests | Retry after `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header. **Max 3 retries.** |
 | 503 | Service unavailable | Check [Azure Status](https://status.azure.com). |
 
-See [error-handling.md](./cost-optimization/error-handling.md) for detailed error handling including rate limit headers and retry strategies.
+See [error-handling.md](./cost-query/error-handling.md) for detailed error handling including rate limit headers and retry strategies.
 
 ---
 

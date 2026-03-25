@@ -1,14 +1,15 @@
 /**
- * Unit Tests for azure-cost-optimization
+ * Unit Tests for azure-cost (cost optimization)
  * 
  * Tests isolated skill logic and validation rules.
+ * Migrated from azure-cost-optimization to the unified azure-cost skill.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-cost-optimization";
+const SKILL_NAME = "azure-cost";
 
-describe(`${SKILL_NAME} - Unit Tests`, () => {
+describe(`${SKILL_NAME} - Cost Optimization Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
@@ -35,14 +36,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description mentions key use cases", () => {
       const description = skill.metadata.description.toLowerCase();
-      expect(description).toContain("use for");
       expect(description).toMatch(/orphaned|rightsize|unused/);
-    });
-
-    test("description clarifies what NOT to use it for", () => {
-      const description = skill.metadata.description.toLowerCase();
-      expect(description).toMatch(/do not\s+use for/);
-      expect(description).toMatch(/deploying|diagnostics|security/);
     });
   });
 
@@ -52,12 +46,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content.length).toBeGreaterThan(1000);
     });
 
-    test("contains when to use section", () => {
-      expect(skill.content).toMatch(/## When to Use/i);
+    test("contains triggers section", () => {
+      expect(skill.content).toMatch(/## Triggers/i);
     });
 
     test("documents step-by-step instructions", () => {
-      expect(skill.content).toMatch(/## Instructions/i);
+      expect(skill.content).toMatch(/## Part 2: Cost Optimization Workflow/i);
       expect(skill.content).toMatch(/### Step \d+:/);
     });
 
@@ -91,14 +85,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("VALIDATED");
     });
 
-    test("includes safety and best practices", () => {
-      expect(skill.content).toMatch(/## Important Notes/i);
-      expect(skill.content).toMatch(/### Best Practices/i);
-      expect(skill.content).toMatch(/### Safety Requirements/i);
+    test("includes best practices section", () => {
+      expect(skill.content).toMatch(/## Best Practices/i);
+    });
+
+    test("includes safety requirements section", () => {
+      expect(skill.content).toMatch(/## Safety Requirements/i);
     });
 
     test("includes common pitfalls section", () => {
-      expect(skill.content).toMatch(/### Common Pitfalls/i);
+      expect(skill.content).toMatch(/## Common Pitfalls/i);
       expect(skill.content).toContain("free tier");
     });
 
@@ -109,7 +105,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("references Redis-specific optimization", () => {
       expect(skill.content).toContain("Redis");
-      expect(skill.content).toContain("azure-redis.md");
+      expect(skill.content).toContain("azure-cache-for-redis.md");
     });
   });
 
@@ -203,7 +199,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Azure Resource Graph Integration", () => {
     test("links to Azure Resource Graph reference", () => {
-      expect(skill.content).toContain("references/azure-resource-graph.md");
+      expect(skill.content).toContain("cost-optimization/azure-resource-graph.md");
     });
 
     test("mentions Resource Graph for resource discovery", () => {

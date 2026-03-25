@@ -1,13 +1,14 @@
 /**
- * Unit Tests for azure-cost-query
+ * Unit Tests for azure-cost (cost query area)
  *
  * Tests isolated skill logic and validation rules.
+ * Migrated from azure-cost-query to target the unified azure-cost skill.
  */
 
 import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-cost-query";
+const SKILL_NAME = "azure-cost";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -39,12 +40,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(description).toContain("when:");
       expect(description).toMatch(/query|breakdown|spending/);
     });
-
-    test("description clarifies what NOT to use it for", () => {
-      const description = skill.metadata.description.toLowerCase();
-      expect(description).toMatch(/do not\s+use for/);
-      expect(description).toMatch(/forecasting.*azure-cost-forecast|optimization.*azure-cost-optimization/);
-    });
   });
 
   describe("Skill Content", () => {
@@ -57,16 +52,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/## Quick Reference/i);
     });
 
-    test("contains When to Use section", () => {
-      expect(skill.content).toMatch(/## When to Use/i);
+    test("contains Triggers section", () => {
+      expect(skill.content).toMatch(/## Triggers/i);
     });
 
     test("contains MCP Tools section", () => {
       expect(skill.content).toMatch(/## MCP Tools/i);
     });
 
-    test("contains Workflow section", () => {
-      expect(skill.content).toMatch(/## Workflow/i);
+    test("contains Cost Query Workflow section", () => {
+      expect(skill.content).toMatch(/## Part 1: Cost Query Workflow/i);
     });
 
     test("contains Error Handling section", () => {
