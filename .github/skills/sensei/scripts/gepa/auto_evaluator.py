@@ -2,9 +2,17 @@
 """
 GEPA auto-evaluator for sensei.
 
-Discovers a skill's existing test harness at runtime and builds a GEPA-compatible
-evaluator. Zero manual configuration — reads triggers.test.ts, unit.test.ts, and
-integration.test.ts to construct the fitness function.
+Discovers a skill's existing Jest-based test harness at runtime and builds a
+GEPA-compatible evaluator with zero manual configuration.
+
+Currently, the evaluator:
+  - parses triggers.test.ts files to extract trigger prompt arrays
+  - detects the presence of unit.test.ts and integration.test.ts files
+  - uses this structural information plus content/keyword heuristics to
+    construct a fitness function
+
+It does not execute Jest or incorporate unit/integration test pass/fail
+results into the score.
 
 Usage:
     # Score a skill (no optimization, no LLM calls)

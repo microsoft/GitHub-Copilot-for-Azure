@@ -96,8 +96,10 @@ Run sensei on all skills --gepa
 ```
 
 When `--gepa` is used, Step 5 (IMPROVE) is replaced with GEPA evolutionary optimization.
-Instead of template-based improvements, GEPA uses the existing test harness as a fitness
-function and an LLM to propose and evaluate many candidate improvements automatically.
+Instead of template-based improvements, GEPA parses trigger prompt arrays from the existing
+test harness and combines them with content quality heuristics to build a fitness function.
+An LLM proposes and evaluates many candidate improvements automatically. Note: GEPA does not
+execute Jest tests directly — it uses the test data (prompts) as evaluation inputs.
 
 **GEPA score-only mode** (no LLM calls, just evaluate current quality):
 ```
