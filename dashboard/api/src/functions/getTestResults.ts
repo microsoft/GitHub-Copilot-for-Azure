@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
+import { logRequestIdentity } from "../requestIdentity";
 
 const TEST_RESULTS_FILENAME = "testResults.json";
 
@@ -111,6 +112,8 @@ function computeSkillStats(allResults: RawTestResults[]): SkillStats {
  * GET /api/test-results/{date}
  */
 async function getTestResults(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    logRequestIdentity(request, context, "getTestResults");
+
     const date = request.params.date;
     if (!date) {
         return { status: 400, body: "Missing date parameter" };

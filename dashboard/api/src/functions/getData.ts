@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs } from "../blobEnumerator";
+import { logRequestIdentity } from "../requestIdentity";
 
 /**
  * SWA Managed API endpoint that returns skill test report.
@@ -34,6 +35,8 @@ import { enumerateBlobs } from "../blobEnumerator";
  * All ${DATE} are in the format of yyyy-mm-dd.
  */
 async function getData(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    logRequestIdentity(request, context, "getData");
+
     const date = request.params.date;
     if (!date) {
         return { status: 400, body: "Missing date parameter" };

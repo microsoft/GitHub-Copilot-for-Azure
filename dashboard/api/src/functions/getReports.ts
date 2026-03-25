@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
+import { logRequestIdentity } from "../requestIdentity";
 
 const SKILL_REPORT_PATTERN = /^test-run-.*-SKILL-REPORT\.md$/;
 
@@ -24,6 +25,8 @@ function collectSkillReportPaths(node: BlobTreeNode): string[] {
  * GET /api/reports/{date}
  */
 async function getReports(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    logRequestIdentity(request, context, "getReports");
+
     const date = request.params.date;
     if (!date) {
         return { status: 400, body: "Missing date parameter" };
