@@ -54,4 +54,4 @@ graders:
       content_patterns:
         - path: ".azure/infrastructure-plan.json"
           must_match:
-            - "(?i)container.?app|containerapp"
+            - "(?i)container.?app"
