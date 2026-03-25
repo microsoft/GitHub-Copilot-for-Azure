@@ -75,10 +75,13 @@ npm run test:watch -- --testPathPatterns=your-skill-name
 
 ## Best Practices
 
-1. **Keep tests focused** - One assertion per test when possible
-2. **Use descriptive names** - `test('validates 24-char limit for storage names')`
-3. **Test edge cases** - Empty input, very long input, special characters
-4. **Update snapshots intentionally** - Review changes before committing
-5. **Add fixtures for complex data** - Don't hardcode large test data
+1. **Wrap every test with `withTestResult`** — This is required so pass/fail results and invocation rates are recorded to `testResults.json`.
+   - Skill invocation rate tests: `test("...", () => withTestResult(async ({ setSkillInvocationRate }) => { ... }));`
+   - Simple assertion tests: `test("...", () => withTestResult(async () => { ... }));`
+2. **Keep tests focused** - One assertion per test when possible
+3. **Use descriptive names** - `test('validates 24-char limit for storage names')`
+4. **Test edge cases** - Empty input, very long input, special characters
+5. **Update snapshots intentionally** - Review changes before committing
+6. **Add fixtures for complex data** - Don't hardcode large test data
 
 See `/tests/AGENTS.md` for complete testing patterns and guidelines.

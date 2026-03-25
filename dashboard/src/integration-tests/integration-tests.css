@@ -1,0 +1,352 @@
+/* ── Integration Tests ────────────────────────────────────────────────────── */
+/* All classes prefixed with it- to avoid collision with other view styles.   */
+/* Uses the same CSS custom properties defined in assets/style.css.          */
+
+/* ── Page-level overrides ───────────────── */
+body:has(.it-dashboard) {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── App shell ──────────────────────────── */
+
+.it-app {
+    padding: 24px 32px;
+}
+
+.it-loading {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.it-error {
+    color: var(--color-fail);
+    font-weight: 600;
+}
+
+.it-muted {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+/* ── Dashboard layout ───────────────────── */
+
+.it-dashboard {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 44px);
+}
+
+.it-header {
+    padding: 12px 24px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.it-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.it-body {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    flex: 1;
+    min-height: 0;
+}
+
+.it-body-with-panel {
+    grid-template-columns: 200px 1fr 320px;
+}
+
+/* ── Panels ─────────────────────────────── */
+
+.it-panel {
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.it-panel h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+}
+
+.it-panel-dates h2 {
+    position: sticky;
+    top: 0;
+    background: inherit;
+}
+
+/* Left panel – dates */
+.it-panel-dates {
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+}
+
+.it-date-list {
+    list-style: none;
+}
+
+.it-date-link {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    color: var(--color-text);
+    transition: background 0.15s;
+}
+
+.it-date-link:hover {
+    background: var(--color-border);
+}
+
+.it-date-link.active {
+    background: var(--color-focus);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Main panel – test results */
+.it-panel-content {
+    background: var(--color-bg);
+    padding: 1.5rem 2rem;
+}
+
+/* ── Test results ───────────────────────── */
+
+.it-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.it-skill-section {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.it-skill-name {
+    font-size: 1rem !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    color: var(--color-text) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.it-skill-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.it-show-failures-btn {
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--color-fail);
+    background: transparent;
+    border: 1px solid var(--color-fail);
+    border-radius: var(--radius);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.it-show-failures-btn:hover {
+    background: var(--color-fail);
+    color: #fff;
+}
+
+.it-show-failures-btn.active {
+    background: var(--color-fail);
+    color: #fff;
+}
+
+.it-stats-grid {
+    display: flex;
+    gap: 2rem;
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+}
+
+.it-stat-group h3 {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.it-stat-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+
+.it-stat {
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+}
+
+.it-stat-rate {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.it-stat-warn {
+    color: var(--color-fail);
+}
+
+.it-warn-icon {
+    color: var(--color-fail);
+    margin-right: 0.35em;
+}
+
+.it-stat-pass {
+    color: var(--color-pass);
+    font-weight: 600;
+}
+
+.it-stat-fail {
+    color: var(--color-fail);
+    font-weight: 600;
+}
+
+/* ── Failed tests (right panel) ──────────── */
+
+.it-panel-failures {
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+}
+
+.it-panel-failures-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: inherit;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.it-panel-failures-header h2 {
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    color: var(--color-fail) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.it-close-panel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    font-family: inherit;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.it-close-panel-btn:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+}
+
+.it-failed-list {
+    list-style: none;
+}
+
+.it-failed-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.8125rem;
+}
+
+.it-failed-item:last-child {
+    border-bottom: none;
+}
+
+.it-failed-name {
+    font-weight: 600;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.it-failed-rate {
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.75rem;
+    color: var(--color-warn);
+}
+
+.it-failed-message {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    word-break: break-word;
+}
+
+/* ── Responsive ─────────────────────────── */
+
+@media (max-width: 768px) {
+    .it-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+
+    .it-body-with-panel {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+    }
+
+    .it-panel-dates {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .it-panel-failures {
+        border-left: none;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .it-date-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+}

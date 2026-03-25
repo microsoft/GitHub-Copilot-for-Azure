@@ -220,6 +220,38 @@ export function getAllToolText(metadata: AgentMetadata): string {
  */
 const maxToolCallBeforeSkillInvocationTerminate = 3;
 
+/**
+ * Helper context passed to the test function inside `withTestResult`.
+ */
+interface WithTestResultContext {
+  setSkillInvocationRate: (rate: number) => void;
+}
+
+/**
+ * Wraps a test case function and automatically records the result via `global.addTestResult`.
+ * If the function completes without throwing, `isPass` is `true`; otherwise `false`.
+ * The test function receives a context object with `setSkillInvocationRate` to optionally
+ * report the skill invocation rate in the recorded test result data.
+ */
+export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise<void> | void): Promise<void> {
+  let skillInvocationRate: number | undefined;
+
+  const ctx: WithTestResultContext = {
+    setSkillInvocationRate: (rate: number) => {
+      skillInvocationRate = rate;
+    },
+  };
+
+  try {
+    await fn(ctx);
+    global.addTestResult({ isPass: true, skillInvocationRate });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    throw e;
+  }
+}
+
 export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
   if (shouldEarlyTerminateForInvokedSkill) {
