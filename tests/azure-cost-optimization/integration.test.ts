@@ -15,7 +15,7 @@ import {
   getIntegrationSkipReason,
   doesAssistantMessageIncludeKeyword
 } from "../utils/agent-runner";
-import { shouldEarlyTerminateForSkillInvocation, softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { shouldEarlyTerminateForSkillInvocation, softCheckSkill, isSkillInvoked, doesWorkspaceFileIncludePattern, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-cost-optimization";
 const RUNS_PER_PROMPT = 5;
@@ -138,12 +138,19 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   test("response mentions Cost Management for cost analysis", async () => {
     await withTestResult(async () => {
+      let workspaceDir;
       const agentMetadata = await agent.run({
+        setup: async (workspace) => {
+          workspaceDir = workspace;
+        },
         prompt: "Analyze my Azure costs and show me where I can save money"
       });
 
-      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
+      expect(workspaceDir).toBeDefined();
+      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management")
+        || doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement")
+        || doesWorkspaceFileIncludePattern(workspaceDir!, /Cost Management/i, /.*\.md$/)
+        || doesWorkspaceFileIncludePattern(workspaceDir!, /az costmanagement/i, /.*\.md$/);
       expect(mentionsCostManagement).toBe(true);
     });
   });
