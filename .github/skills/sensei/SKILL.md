@@ -88,6 +88,23 @@ Run sensei on all Low-adherence skills
 Run sensei on all skills
 ```
 
+### GEPA Mode (Deep Optimization)
+```
+Run sensei on my-skill --gepa
+Run sensei on my-skill --gepa --skip-integration
+Run sensei on all skills --gepa
+```
+
+When `--gepa` is used, Step 5 (IMPROVE) is replaced with GEPA evolutionary optimization.
+Instead of template-based improvements, GEPA uses the existing test harness as a fitness
+function and an LLM to propose and evaluate many candidate improvements automatically.
+
+**GEPA score-only mode** (no LLM calls, just evaluate current quality):
+```
+Run sensei score my-skill
+Run sensei score all skills
+```
+
 ## The Ralph Loop
 
 For each skill, execute this loop until score >= Medium-High AND tests pass:
@@ -102,6 +119,12 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
 5. **IMPROVE FRONTMATTER** - Add WHEN: triggers (stay under 60 words and 1024 chars)
+5b. **IMPROVE WITH GEPA** (when `--gepa` flag is set) — Replaces steps 5-6 with automated optimization:
+   - Auto-discovers `tests/{skill-name}/triggers.test.ts` and extracts prompt arrays
+   - Builds a GEPA evaluator scoring content quality + trigger accuracy
+   - Runs `python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill {skill-name} --skills-dir plugin/skills --tests-dir tests`
+   - Shows diff of optimized SKILL.md for user approval
+   - GEPA wraps existing tests — does NOT replace or modify them
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPatterns={skill-name}`
 8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
@@ -184,6 +207,7 @@ sensei: improve {skill-name} frontmatter
 | Flag | Description |
 |------|-------------|
 | `--skip-integration` | Skip integration tests for faster iteration. Only runs unit and trigger tests. |
+| `--gepa` | Use GEPA evolutionary optimization instead of template-based improvement. Auto-discovers tests and builds evaluator at runtime. |
 
 > ⚠️ Skipping integration tests speeds up the loop but may miss runtime issues. Consider running full tests before final commit.
 
