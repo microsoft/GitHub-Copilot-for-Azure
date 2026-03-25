@@ -138,7 +138,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   test("response mentions Cost Management for cost analysis", async () => {
     await withTestResult(async () => {
-      let workspaceDir;
+      let workspaceDir: string | undefined;
       const agentMetadata = await agent.run({
         setup: async (workspace) => {
           workspaceDir = workspace;
@@ -149,8 +149,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(workspaceDir).toBeDefined();
       const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management")
         || doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement")
-        || doesWorkspaceFileIncludePattern(workspaceDir!, /Cost Management/i, /.*\.md$/)
-        || doesWorkspaceFileIncludePattern(workspaceDir!, /az costmanagement/i, /.*\.md$/);
+        || doesWorkspaceFileIncludePattern(workspaceDir!, /Cost Management|az costmanagement/i, /.*\.md$/);
       expect(mentionsCostManagement).toBe(true);
     });
   });
