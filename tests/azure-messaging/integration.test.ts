@@ -15,10 +15,11 @@ import {
   getIntegrationSkipReason,
   AgentMetadata
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-messaging";
 const RUNS_PER_PROMPT = 3;
+const invocationRateThreshold = 0.8;
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -38,22 +39,23 @@ function defineInvocationTest(
   prompt: string
 ) {
   test(testLabel, async () => {
-    for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-      try {
+    await withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
           prompt,
           shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
-      } catch (e: unknown) {
-        if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-          console.log("⏭️  SDK not loadable, skipping test");
-          return;
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
-        throw e;
       }
-    }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    });
   });
 }
 
@@ -120,17 +122,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("response-content-validation", () => {
     test("session-lock-diagnosis", async () => {
-      const prompt =
-        "I'm using azure-servicebus Python SDK with session-enabled queues. After processing a few messages, I get 'SessionLockLostError: The session lock has expired on the session'. My processing takes about 2 minutes but the session lock duration is 30 seconds. How do I fix this?";
+      await withTestResult(async () => {
+        const prompt =
+          "I'm using azure-servicebus Python SDK with session-enabled queues. After processing a few messages, I get 'SessionLockLostError: The session lock has expired on the session'. My processing takes about 2 minutes but the session lock duration is 30 seconds. How do I fix this?";
 
-      let invoked = false;
-      let hasRelevantContent = false;
+        let invoked = false;
+        let hasRelevantContent = false;
 
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt,
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+            prompt
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -144,34 +145,28 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
                 doesAssistantMessageIncludeKeyword(agentMetadata, "auto_lock_renewer", { caseSensitive: false }));
             if (hasRelevantContent) break;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
 
-      expect(invoked).toBe(true);
-      expect(hasRelevantContent).toBe(true);
+        expect(invoked).toBe(true);
+        expect(hasRelevantContent).toBe(true);
+      });
     });
 
     test("sdk-configuration-guidance", async () => {
-      const prompt =
-        "How do I configure retry policy for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
+      await withTestResult(async () => {
+        const prompt =
+          "How do I configure retry policy for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load.";
 
-      let invoked = false;
-      let hasRelevantContent = false;
+        let invoked = false;
+        let hasRelevantContent = false;
 
-      const hasExpectedContent = (metadata: AgentMetadata) =>
-        doesAssistantMessageIncludeKeyword(metadata, "retry", { caseSensitive: false }) &&
-        (doesAssistantMessageIncludeKeyword(metadata, "EventHubConsumerClient", { caseSensitive: false }) ||
-          doesAssistantMessageIncludeKeyword(metadata, "retry_total", { caseSensitive: false }) ||
-          doesAssistantMessageIncludeKeyword(metadata, "retry_backoff", { caseSensitive: false }));
+        const hasExpectedContent = (metadata: AgentMetadata) =>
+          doesAssistantMessageIncludeKeyword(metadata, "retry", { caseSensitive: false }) &&
+          (doesAssistantMessageIncludeKeyword(metadata, "EventHubConsumerClient", { caseSensitive: false }) ||
+            doesAssistantMessageIncludeKeyword(metadata, "retry_total", { caseSensitive: false }) ||
+            doesAssistantMessageIncludeKeyword(metadata, "retry_backoff", { caseSensitive: false }));
 
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           // Terminate early once the skill is invoked AND the response
           // contains the expected SDK-specific retry keywords.
           const agentMetadata = await agent.run({
@@ -185,17 +180,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             hasRelevantContent = hasExpectedContent(agentMetadata);
             if (hasRelevantContent) break;
           }
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
         }
-      }
 
-      expect(invoked).toBe(true);
-      expect(hasRelevantContent).toBe(true);
+        expect(invoked).toBe(true);
+        expect(hasRelevantContent).toBe(true);
+      });
     });
   });
 });

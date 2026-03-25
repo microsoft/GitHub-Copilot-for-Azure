@@ -19,10 +19,11 @@ import {
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { matchesCommand, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
+import { matchesCommand, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-validate";
 const RUNS_PER_PROMPT = 1;
+const invocationRateThreshold = 0.8;
 const aspireEnvVarTestTimeoutMs = 2700000; // 45 minutes
 
 // Check if integration tests should be skipped at module level
@@ -40,88 +41,84 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
-    test("invokes azure-validate skill for deployment readiness check", async () => {
+    test("invokes azure-validate skill for deployment readiness check", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Check if my app is ready to deploy to Azure",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Check if my app is ready to deploy to Azure",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes azure-validate skill for azure.yaml validation prompt", async () => {
+    test("invokes azure-validate skill for azure.yaml validation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Validate my azure.yaml configuration before deploying",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Validate my azure.yaml configuration before deploying",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
     // Preflight validation tests (formerly azure-deployment-preflight)
-    test("invokes azure-validate skill for Bicep validation prompt", async () => {
+    test("invokes azure-validate skill for Bicep validation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Validate my Bicep template before deploying to Azure",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Validate my Bicep template before deploying to Azure",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
 
-    test("invokes azure-validate skill for what-if analysis prompt", async () => {
+    test("invokes azure-validate skill for what-if analysis prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
-          const agentMetadata = await agent.run({
-            prompt: "Run a what-if analysis to preview changes before deploying my infrastructure",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
+        const agentMetadata = await agent.run({
+          prompt: "Run a what-if analysis to preview changes before deploying my infrastructure",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
-          }
-          throw e;
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
         }
       }
-    });
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
   });
 
   describe("deployment-validation", () => {
     const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
-    test("terminates at validation for static whiteboard web app", async () => {
+    test("terminates at validation for static whiteboard web app", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         prompt: "Create a static whiteboard web app and deploy to Azure.",
         nonInteractive: true,
@@ -136,9 +133,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
       expect(validateInvoked || validationCommandRan).toBe(true);
-    });
+    }));
 
-    test("terminates at validation for static portfolio website", async () => {
+    test("terminates at validation for static portfolio website", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         prompt: "Create a static portfolio website and deploy to Azure.",
         nonInteractive: true,
@@ -153,9 +150,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
       expect(validateInvoked || validationCommandRan).toBe(true);
-    });
+    }));
 
-    test("terminates at validation for containerized web app on Container Apps", async () => {
+    test("terminates at validation for containerized web app on Container Apps", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         prompt: "Create a containerized web application and deploy to Azure Container Apps.",
         nonInteractive: true,
@@ -170,14 +167,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
       expect(validateInvoked || validationCommandRan).toBe(true);
-    });
+    }));
   });
 
   describe("brownfield-dotnet-validate", () => {
     const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
     const FOLLOW_UP_PROMPT = ["Go with recommended options."];
 
-    test("passes --environment on azd init and sets subscription before provision", async () => {
+    test("passes --environment on azd init and sets subscription before provision", () => withTestResult(async () => {
       const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
 
       const agentMetadata = await agent.run({
@@ -215,9 +212,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(setsSubscription).toBe(true);
 
       agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
-    }, aspireEnvVarTestTimeoutMs);
+    }), aspireEnvVarTestTimeoutMs);
 
-    test("sets AzureWebJobsSecretStorageType for aspire-with-azure-functions", async () => {
+    test("sets AzureWebJobsSecretStorageType for aspire-with-azure-functions", () => withTestResult(async () => {
       const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
 
       const agentMetadata = await agent.run({
@@ -250,6 +247,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(setsSecretStorageType).toBe(true);
 
       agentMetadata.testComments.push("⚠️ We do not expect this test to deploy.");
-    }, aspireEnvVarTestTimeoutMs);
+    }), aspireEnvVarTestTimeoutMs);
   });
 });

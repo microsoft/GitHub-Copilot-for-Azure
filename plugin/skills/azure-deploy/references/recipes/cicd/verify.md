@@ -20,4 +20,4 @@ curl -s https://<endpoint>/health | jq .
 
 > ⛔ **MANDATORY** — You **MUST** present the deployed endpoint URLs to the user in your response.
 
-Extract endpoints from the pipeline output or query them directly via `az` CLI. Present a summary including all service URLs. Do NOT end your response without including them.
+Extract endpoints from the pipeline output or query them directly via `az` CLI. Present a summary including all service URLs as fully-qualified `https://` links. If any command returns a bare hostname (e.g. `myapp.azurewebsites.net`), always prepend `https://`. Do NOT end your response without including them.
