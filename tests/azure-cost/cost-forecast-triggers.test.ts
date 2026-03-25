@@ -1,9 +1,8 @@
 /**
- * Trigger Tests for azure-cost (forecast area)
+ * Cost Forecast Trigger Tests for azure-cost
  *
- * Tests that verify the skill triggers on appropriate forecast prompts
- * and does NOT trigger on unrelated prompts.
- * Migrated from azure-cost-forecast to the unified azure-cost skill.
+ * Forecast-specific positive trigger prompts.
+ * Snapshots, edge cases, and negatives are in triggers.test.ts.
  */
 
 import { TriggerMatcher } from "../utils/trigger-matcher";
@@ -11,17 +10,16 @@ import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-cost";
 
-describe(`${SKILL_NAME} - Trigger Tests`, () => {
+describe(`${SKILL_NAME} - Cost Forecast Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
-  let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    const skill: LoadedSkill = await loadSkill(SKILL_NAME);
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe("Should Trigger", () => {
-    const shouldTriggerPrompts: string[] = [
+  describe("Should Trigger on Forecast Prompts", () => {
+    const forecastPrompts: string[] = [
       "What will my Azure costs be next month?",
       "Forecast my Azure spending for the rest of the quarter",
       "Predict my subscription costs for the next 90 days",
@@ -31,61 +29,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Show my forecast for Azure costs going forward",
     ];
 
-    test.each(shouldTriggerPrompts)(
+    test.each(forecastPrompts)(
       'triggers on: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(true);
       }
     );
-  });
-
-  describe("Should NOT Trigger", () => {
-    const shouldNotTriggerPrompts: string[] = [
-      "Deploy a new VM to Azure",
-      "Set up an AWS budget",
-      "Write a Python script",
-    ];
-
-    test.each(shouldNotTriggerPrompts)(
-      'does not trigger on: "%s"',
-      (prompt) => {
-        const result = triggerMatcher.shouldTrigger(prompt);
-        expect(result.triggered).toBe(false);
-      }
-    );
-  });
-
-  describe("Trigger Keywords Snapshot", () => {
-    test("skill keywords match snapshot", () => {
-      expect(triggerMatcher.getKeywords()).toMatchSnapshot();
-    });
-
-    test("skill description triggers match snapshot", () => {
-      expect({
-        name: skill.metadata.name,
-        description: skill.metadata.description,
-        extractedKeywords: triggerMatcher.getKeywords()
-      }).toMatchSnapshot();
-    });
-  });
-
-  describe("Edge Cases", () => {
-    test("handles empty prompt", () => {
-      const result = triggerMatcher.shouldTrigger("");
-      expect(result.triggered).toBe(false);
-    });
-
-    test("handles very long prompt", () => {
-      const longPrompt = "Azure cost forecast spending ".repeat(500);
-      const result = triggerMatcher.shouldTrigger(longPrompt);
-      expect(typeof result.triggered).toBe("boolean");
-    });
-
-    test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("FORECAST AZURE COSTS");
-      const result2 = triggerMatcher.shouldTrigger("forecast azure costs");
-      expect(result1.triggered).toBe(result2.triggered);
-    });
   });
 });

@@ -1,14 +1,14 @@
 /**
- * Integration Tests for azure-cost (cost optimization)
- * 
- * Migrated from azure-cost-optimization to the unified azure-cost skill.
+ * Cost Optimization Integration Tests for azure-cost
+ *
+ * Optimization-specific integration prompts.
+ * Generic integration tests are in integration.test.ts.
  */
 
 import {
   useAgentRunner,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  doesAssistantMessageIncludeKeyword
 } from "../utils/agent-runner";
 import { softCheckSkill } from "../utils/evaluate";
 
@@ -112,22 +112,5 @@ describeIntegration(`${SKILL_NAME} - Cost Optimization Integration Tests`, () =>
         }
       }
     });
-  });
-
-  test("response mentions Cost Management for cost analysis", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Analyze my Azure costs and show me where I can save money"
-      });
-      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
-      expect(mentionsCostManagement).toBe(true);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  SDK not loadable, skipping test");
-        return;
-      }
-      throw e;
-    }
   });
 });

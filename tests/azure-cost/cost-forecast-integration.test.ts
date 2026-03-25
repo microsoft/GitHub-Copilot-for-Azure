@@ -1,7 +1,8 @@
 /**
- * Integration Tests for azure-cost (forecast area)
+ * Cost Forecast Integration Tests for azure-cost
  *
- * Migrated from azure-cost-forecast to the unified azure-cost skill.
+ * Forecast-specific integration prompts.
+ * Generic integration tests are in integration.test.ts.
  */
 
 import {
@@ -24,7 +25,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Cost Forecast Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
@@ -89,23 +90,6 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         doesAssistantMessageIncludeKeyword(agentMetadata, "projected") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "estimate");
       expect(hasForecast).toBe(true);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  SDK not loadable, skipping test");
-        return;
-      }
-      throw e;
-    }
-  });
-
-  test("response mentions Cost Management for forecast", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "Forecast my Azure spending for next quarter"
-      });
-      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "az costmanagement");
-      expect(mentionsCostManagement).toBe(true);
     } catch (e: unknown) {
       if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
         console.log("⏭️  SDK not loadable, skipping test");

@@ -1,20 +1,14 @@
 /**
- * Integration Tests for azure-cost (cost query area)
+ * Cost Query Integration Tests for azure-cost
  *
- * Tests skill behavior with a real Copilot agent session.
- * Runs prompts multiple times to measure skill invocation rate.
- * Migrated from azure-cost-query to target the unified azure-cost skill.
- *
- * Prerequisites:
- * 1. npm install -g @github/copilot-cli
- * 2. Run `copilot` and authenticate
+ * Query-specific integration prompts.
+ * Generic integration tests are in integration.test.ts.
  */
 
 import {
   useAgentRunner,
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
-  doesAssistantMessageIncludeKeyword
 } from "../utils/agent-runner";
 import { softCheckSkill } from "../utils/evaluate";
 
@@ -30,7 +24,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Cost Query Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
@@ -84,23 +78,5 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
         }
       }
     });
-  });
-
-  test("response mentions Cost Management for cost query", async () => {
-    try {
-      const agentMetadata = await agent.run({
-        prompt: "What are my Azure costs this month?"
-      });
-      const mentionsCostManagement = doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Management") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "cost") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "query");
-      expect(mentionsCostManagement).toBe(true);
-    } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-        console.log("⏭️  SDK not loadable, skipping test");
-        return;
-      }
-      throw e;
-    }
   });
 });

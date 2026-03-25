@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`azure-cost - Cost Optimization Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`azure-cost - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Unified Azure cost management: query historical costs, forecast future spending, and optimize to reduce waste. WHEN: "Azure costs", "Azure spending", "Azure bill", "cost breakdown", "cost by service", "cost by resource", "how much am I spending", "show my bill", "monthly cost summary", "cost trends", "top cost drivers", "actual cost", "amortized cost", "forecast spending", "projected costs", "estimate bill", "future costs", "budget forecast", "end of month costs", "how much will I spend", "optimize costs", "reduce spending", "find cost savings", "orphaned resources", "rightsize VMs", "cost analysis", "reduce waste", "unused resources", "optimize Redis costs", "cost by tag", "cost by resource group".",
   "extractedKeywords": [
@@ -45,7 +45,6 @@ exports[`azure-cost - Cost Optimization Trigger Tests Trigger Keywords Snapshot 
     "show",
     "spend",
     "spending",
-    "storage",
     "summary",
     "trends",
     "unified",
@@ -59,7 +58,7 @@ exports[`azure-cost - Cost Optimization Trigger Tests Trigger Keywords Snapshot 
 }
 `;
 
-exports[`azure-cost - Cost Optimization Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`azure-cost - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "actual",
   "amortized",
@@ -102,7 +101,6 @@ exports[`azure-cost - Cost Optimization Trigger Tests Trigger Keywords Snapshot 
   "show",
   "spend",
   "spending",
-  "storage",
   "summary",
   "trends",
   "unified",

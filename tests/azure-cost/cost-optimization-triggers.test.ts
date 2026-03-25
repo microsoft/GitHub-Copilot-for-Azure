@@ -1,9 +1,8 @@
 /**
- * Trigger Tests for azure-cost (cost optimization)
- * 
- * Tests that verify the skill triggers on appropriate prompts
- * and does NOT trigger on unrelated prompts.
- * Migrated from azure-cost-optimization to the unified azure-cost skill.
+ * Cost Optimization Trigger Tests for azure-cost
+ *
+ * Optimization-specific positive trigger prompts and boundary cases.
+ * Snapshots, edge cases, and negatives are in triggers.test.ts.
  */
 
 import { TriggerMatcher } from "../utils/trigger-matcher";
@@ -13,15 +12,14 @@ const SKILL_NAME = "azure-cost";
 
 describe(`${SKILL_NAME} - Cost Optimization Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
-  let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    const skill: LoadedSkill = await loadSkill(SKILL_NAME);
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe("Should Trigger", () => {
-    const shouldTriggerPrompts: string[] = [
+  describe("Should Trigger on Optimization Prompts", () => {
+    const optimizationPrompts: string[] = [
       "How can I optimize my Azure costs?",
       "Reduce my Azure spending",
       "Find cost savings in my Azure subscription",
@@ -48,7 +46,7 @@ describe(`${SKILL_NAME} - Cost Optimization Trigger Tests`, () => {
       "Clean up unused Azure resources",
     ];
 
-    test.each(shouldTriggerPrompts)(
+    test.each(optimizationPrompts)(
       'triggers on: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
@@ -57,70 +55,7 @@ describe(`${SKILL_NAME} - Cost Optimization Trigger Tests`, () => {
     );
   });
 
-  describe("Should NOT Trigger", () => {
-    const shouldNotTriggerPrompts: string[] = [
-      "What is the weather today?",
-      "Help me write a poem",
-      "Explain quantum computing",
-      "What is machine learning?",
-      "Deploy my app to Azure",
-      "Help me set up a new virtual network",
-      "Create a new storage account",
-      "Provision infrastructure with Bicep",
-      "Why is my app crashing?",
-      "Troubleshoot connection issues",
-      "My Container App won't start",
-      "Set up RBAC for my subscription",
-      "Configure Key Vault",
-      "Audit security compliance",
-      "Set up Application Insights",
-      "Monitor my app performance",
-      "Configure alerts for errors",
-      "View logs for my Function App",
-    ];
-
-    test.each(shouldNotTriggerPrompts)(
-      'does not trigger on: "%s"',
-      (prompt) => {
-        const result = triggerMatcher.shouldTrigger(prompt);
-        expect(result.triggered).toBe(false);
-      }
-    );
-  });
-
-  describe("Trigger Keywords Snapshot", () => {
-    test("skill keywords match snapshot", () => {
-      expect(triggerMatcher.getKeywords()).toMatchSnapshot();
-    });
-
-    test("skill description triggers match snapshot", () => {
-      expect({
-        name: skill.metadata.name,
-        description: skill.metadata.description,
-        extractedKeywords: triggerMatcher.getKeywords()
-      }).toMatchSnapshot();
-    });
-  });
-
-  describe("Edge Cases", () => {
-    test("handles empty prompt", () => {
-      const result = triggerMatcher.shouldTrigger("");
-      expect(result.triggered).toBe(false);
-    });
-
-    test("handles very long prompt", () => {
-      const longPrompt = "Azure cost optimization savings ".repeat(500);
-      const result = triggerMatcher.shouldTrigger(longPrompt);
-      expect(typeof result.triggered).toBe("boolean");
-    });
-
-    test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("OPTIMIZE AZURE COSTS");
-      const result2 = triggerMatcher.shouldTrigger("optimize azure costs");
-      expect(result1.triggered).toBe(result2.triggered);
-      expect(result1.triggered).toBe(true);
-    });
-
+  describe("Mixed Terminology", () => {
     test("handles mixed terminology", () => {
       const prompts = [
         "reduce azure spending",

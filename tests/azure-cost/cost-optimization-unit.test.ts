@@ -1,8 +1,8 @@
 /**
- * Unit Tests for azure-cost (cost optimization)
- * 
- * Tests isolated skill logic and validation rules.
- * Migrated from azure-cost-optimization to the unified azure-cost skill.
+ * Cost Optimization Unit Tests for azure-cost
+ *
+ * Tests specific to the Cost Optimization (Part 2) workflow.
+ * Generic skill structure tests are in unit.test.ts.
  */
 
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
@@ -16,42 +16,24 @@ describe(`${SKILL_NAME} - Cost Optimization Unit Tests`, () => {
     skill = await loadSkill(SKILL_NAME);
   });
 
-  describe("Skill Metadata", () => {
-    test("has valid SKILL.md with required fields", () => {
-      expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe(SKILL_NAME);
-      expect(skill.metadata.description).toBeDefined();
-      expect(skill.metadata.description.length).toBeGreaterThan(10);
-    });
-
-    test("description is concise and actionable", () => {
-      expect(skill.metadata.description.length).toBeGreaterThan(50);
-      expect(skill.metadata.description.length).toBeLessThan(1000);
-    });
-
+  describe("Description Keywords", () => {
     test("description contains cost optimization triggers", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toMatch(/cost|spending|optimization|savings/);
     });
 
-    test("description mentions key use cases", () => {
+    test("description mentions optimization use cases", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toMatch(/orphaned|rightsize|unused/);
     });
   });
 
-  describe("Skill Content", () => {
-    test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(1000);
-    });
-
-    test("contains triggers section", () => {
-      expect(skill.content).toMatch(/## Triggers/i);
+  describe("Cost Optimization Workflow", () => {
+    test("contains Cost Optimization Workflow section", () => {
+      expect(skill.content).toMatch(/## Part 2: Cost Optimization Workflow/i);
     });
 
     test("documents step-by-step instructions", () => {
-      expect(skill.content).toMatch(/## Part 2: Cost Optimization Workflow/i);
       expect(skill.content).toMatch(/### Step \d+:/);
     });
 
@@ -72,40 +54,18 @@ describe(`${SKILL_NAME} - Cost Optimization Unit Tests`, () => {
       expect(skill.content).toContain("output/");
       expect(skill.content).toContain("costoptimizereport");
     });
+  });
 
+  describe("Azure Quick Review", () => {
     test("mentions Azure Quick Review (azqr)", () => {
       expect(skill.content).toContain("azqr");
       expect(skill.content).toContain("Azure Quick Review");
       expect(skill.content).toMatch(/orphaned resources/i);
     });
 
-    test("includes data classification guidance", () => {
-      expect(skill.content).toContain("ACTUAL DATA");
-      expect(skill.content).toContain("ESTIMATED");
-      expect(skill.content).toContain("VALIDATED");
-    });
-
-    test("includes best practices section", () => {
-      expect(skill.content).toMatch(/## Best Practices/i);
-    });
-
-    test("includes safety requirements section", () => {
-      expect(skill.content).toMatch(/## Safety Requirements/i);
-    });
-
-    test("includes common pitfalls section", () => {
-      expect(skill.content).toMatch(/## Common Pitfalls/i);
-      expect(skill.content).toContain("free tier");
-    });
-
-    test("mentions audit trail", () => {
-      expect(skill.content).toContain("audit trail");
-      expect(skill.content).toContain("cost-query-result");
-    });
-
-    test("references Redis-specific optimization", () => {
-      expect(skill.content).toContain("Redis");
-      expect(skill.content).toContain("azure-cache-for-redis.md");
+    test("documents azqr installation", () => {
+      expect(skill.content).toContain("azqr");
+      expect(skill.content).toMatch(/azqr version/i);
     });
   });
 
@@ -113,11 +73,6 @@ describe(`${SKILL_NAME} - Cost Optimization Unit Tests`, () => {
     test("documents Azure CLI requirement", () => {
       expect(skill.content).toContain("az login");
       expect(skill.content).toMatch(/Azure CLI/i);
-    });
-
-    test("documents azqr installation", () => {
-      expect(skill.content).toContain("azqr");
-      expect(skill.content).toMatch(/azqr version/i);
     });
 
     test("lists required Azure CLI extensions", () => {
@@ -155,45 +110,25 @@ describe(`${SKILL_NAME} - Cost Optimization Unit Tests`, () => {
     });
   });
 
-  describe("Output Structure", () => {
+  describe("Output and Reporting", () => {
     test("defines output folder convention", () => {
       expect(skill.content).toContain("output/");
       expect(skill.content).toMatch(/costoptimizereport.*\.md/);
     });
 
-    test("defines report structure", () => {
-      expect(skill.content).toContain("Executive Summary");
-      expect(skill.content).toContain("Cost Breakdown");
-      expect(skill.content).toContain("Optimization Recommendations");
-      expect(skill.content).toContain("Total Estimated Savings");
+    test("references report template", () => {
+      expect(skill.content).toContain("report-template.md");
     });
 
-    test("includes Azure Portal link format", () => {
-      expect(skill.content).toContain("portal.azure.com");
-      expect(skill.content).toMatch(/TENANT_ID|SUBSCRIPTION_ID|RESOURCE_GROUP/);
-    });
-
-    test("documents audit trail files", () => {
+    test("documents audit trail", () => {
+      expect(skill.content).toContain("audit trail");
       expect(skill.content).toContain("cost-query-result");
       expect(skill.content).toMatch(/\.json/);
     });
-  });
 
-  describe("Report Recommendations", () => {
-    test("includes priority-based recommendations", () => {
-      expect(skill.content).toContain("Priority 1");
-      expect(skill.content).toContain("Priority 2");
-      expect(skill.content).toContain("Priority 3");
-    });
-
-    test("includes risk assessment in priorities", () => {
-      expect(skill.content).toMatch(/High Impact.*Low Risk/);
-      expect(skill.content).toMatch(/Medium Impact.*Medium Risk/);
-    });
-
-    test("includes implementation commands", () => {
-      expect(skill.content).toContain("Implementation Commands");
-      expect(skill.content).toMatch(/Commands to execute/i);
+    test("references Redis-specific optimization", () => {
+      expect(skill.content).toContain("Redis");
+      expect(skill.content).toContain("azure-cache-for-redis.md");
     });
   });
 

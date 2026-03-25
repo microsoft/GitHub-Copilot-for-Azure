@@ -1,9 +1,8 @@
 /**
- * Trigger Tests for azure-cost (cost query area)
+ * Cost Query Trigger Tests for azure-cost
  *
- * Tests that verify the unified skill triggers on appropriate prompts
- * and does NOT trigger on unrelated prompts.
- * Migrated from azure-cost-query to target the unified azure-cost skill.
+ * Query-specific positive trigger prompts.
+ * Snapshots, edge cases, and negatives are in triggers.test.ts.
  */
 
 import { TriggerMatcher } from "../utils/trigger-matcher";
@@ -11,17 +10,16 @@ import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-cost";
 
-describe(`${SKILL_NAME} - Trigger Tests`, () => {
+describe(`${SKILL_NAME} - Cost Query Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
-  let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    const skill: LoadedSkill = await loadSkill(SKILL_NAME);
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe("Should Trigger", () => {
-    const shouldTriggerPrompts: string[] = [
+  describe("Should Trigger on Query Prompts", () => {
+    const queryPrompts: string[] = [
       "What are my Azure costs this month?",
       "Show me cost breakdown by service for my subscription",
       "Query Azure spending for the last 30 days",
@@ -31,62 +29,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What are my top cost drivers in Azure?",
     ];
 
-    test.each(shouldTriggerPrompts)(
+    test.each(queryPrompts)(
       'triggers on: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(true);
       }
     );
-  });
-
-  describe("Should NOT Trigger", () => {
-    const shouldNotTriggerPrompts: string[] = [
-      "Deploy a new VM to Azure",
-      "Set up an AWS budget",
-      "Write a Python script",
-      "Help me write a poem",
-    ];
-
-    test.each(shouldNotTriggerPrompts)(
-      'does not trigger on: "%s"',
-      (prompt) => {
-        const result = triggerMatcher.shouldTrigger(prompt);
-        expect(result.triggered).toBe(false);
-      }
-    );
-  });
-
-  describe("Trigger Keywords Snapshot", () => {
-    test("skill keywords match snapshot", () => {
-      expect(triggerMatcher.getKeywords()).toMatchSnapshot();
-    });
-
-    test("skill description triggers match snapshot", () => {
-      expect({
-        name: skill.metadata.name,
-        description: skill.metadata.description,
-        extractedKeywords: triggerMatcher.getKeywords()
-      }).toMatchSnapshot();
-    });
-  });
-
-  describe("Edge Cases", () => {
-    test("handles empty prompt", () => {
-      const result = triggerMatcher.shouldTrigger("");
-      expect(result.triggered).toBe(false);
-    });
-
-    test("handles very long prompt", () => {
-      const longPrompt = "Azure cost query breakdown ".repeat(500);
-      const result = triggerMatcher.shouldTrigger(longPrompt);
-      expect(typeof result.triggered).toBe("boolean");
-    });
-
-    test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("AZURE COST BREAKDOWN");
-      const result2 = triggerMatcher.shouldTrigger("azure cost breakdown");
-      expect(result1.triggered).toBe(result2.triggered);
-    });
   });
 });

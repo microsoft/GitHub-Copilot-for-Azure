@@ -1,84 +1,40 @@
 /**
- * Unit Tests for azure-cost (cost query area)
+ * Cost Query Unit Tests for azure-cost
  *
- * Tests isolated skill logic and validation rules.
- * Migrated from azure-cost-query to target the unified azure-cost skill.
+ * Tests specific to the Cost Query (Part 1) workflow.
+ * Generic skill structure tests are in unit.test.ts.
  */
 
-import { readFileSync } from "node:fs";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-cost";
 
-describe(`${SKILL_NAME} - Unit Tests`, () => {
+describe(`${SKILL_NAME} - Cost Query Unit Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
   });
 
-  describe("Skill Metadata", () => {
-    test("has valid SKILL.md with required fields", () => {
-      expect(skill.metadata).toBeDefined();
-      expect(skill.metadata.name).toBe(SKILL_NAME);
-      expect(skill.metadata.description).toBeDefined();
-      expect(skill.metadata.description.length).toBeGreaterThan(10);
-    });
-
-    test("description is concise and actionable", () => {
-      expect(skill.metadata.description.length).toBeGreaterThan(50);
-      expect(skill.metadata.description.length).toBeLessThan(1000);
-    });
-
+  describe("Description Keywords", () => {
     test("description contains cost-query-related keywords", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toMatch(/cost|query|spend|breakdown|actual|amortized/);
     });
 
-    test("description mentions key use cases", () => {
+    test("description mentions query use cases", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toContain("when:");
       expect(description).toMatch(/query|breakdown|spending/);
     });
   });
 
-  describe("Skill Content", () => {
-    test("has substantive content", () => {
-      expect(skill.content).toBeDefined();
-      expect(skill.content.length).toBeGreaterThan(100);
-    });
-
-    test("contains Quick Reference section", () => {
-      expect(skill.content).toMatch(/## Quick Reference/i);
-    });
-
-    test("contains Triggers section", () => {
-      expect(skill.content).toMatch(/## Triggers/i);
-    });
-
-    test("contains MCP Tools section", () => {
-      expect(skill.content).toMatch(/## MCP Tools/i);
-    });
-
+  describe("Cost Query Workflow", () => {
     test("contains Cost Query Workflow section", () => {
       expect(skill.content).toMatch(/## Part 1: Cost Query Workflow/i);
     });
 
-    test("contains Error Handling section", () => {
-      expect(skill.content).toMatch(/## Error Handling/i);
-    });
-
-    test("contains Guardrails section", () => {
-      expect(skill.content).toMatch(/Guardrails/i);
-    });
-
-    test("references MCP tools", () => {
-      expect(skill.content).toContain("azure__documentation");
-      expect(skill.content).toContain("azure__extension_cli_generate");
-      expect(skill.content).toContain("azure__get_azure_bestpractices");
-    });
-
-    test("references Cost Management API endpoint", () => {
+    test("references Cost Management Query API endpoint", () => {
       expect(skill.content).toMatch(/Microsoft\.CostManagement\/query/);
     });
 
@@ -87,39 +43,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(content).toMatch(/granularity/);
       expect(content).toMatch(/date range/);
       expect(content).toMatch(/groupby/i);
-    });
-
-    test("references scopes", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/subscription/);
-      expect(content).toMatch(/resource group/);
-      expect(content).toMatch(/billing account/);
-    });
-  });
-
-  describe("Frontmatter Formatting", () => {
-    test("frontmatter has no tabs", () => {
-      const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatter = raw.split("---")[1];
-      expect(frontmatter).not.toMatch(/\t/);
-    });
-
-    test("frontmatter keys are only supported attributes", () => {
-      const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatter = raw.split("---")[1];
-      const supported = ["name", "description", "compatibility", "license", "metadata",
-        "argument-hint", "disable-model-invocation", "user-invokable"];
-      const keys = frontmatter.split("\n")
-        .filter((l: string) => /^[a-z][\w-]*\s*:/.test(l))
-        .map((l: string) => l.split(":")[0].trim());
-      for (const key of keys) {
-        expect(supported).toContain(key);
-      }
-    });
-
-    test("WHEN clause is inside description", () => {
-      const description = skill.metadata.description;
-      expect(description).toContain("WHEN:");
     });
   });
 });
