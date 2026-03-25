@@ -321,6 +321,51 @@ body:has(.it-dashboard) {
     word-break: break-word;
 }
 
+.it-panel-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.it-panel-section-fail {
+    color: var(--color-fail);
+}
+
+.it-panel-section-pass {
+    color: var(--color-pass);
+}
+
+.it-passed-list {
+    list-style: none;
+}
+
+.it-passed-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.8125rem;
+}
+
+.it-passed-item:last-child {
+    border-bottom: none;
+}
+
+.it-passed-name {
+    font-weight: 600;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.it-passed-rate {
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.75rem;
+    color: var(--color-pass);
+}
+
 /* ── Responsive ─────────────────────────── */
 
 @media (max-width: 768px) {

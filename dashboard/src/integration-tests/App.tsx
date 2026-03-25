@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-interface FailedTestCase {
+interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
@@ -13,7 +13,8 @@ interface SkillStats {
     worstSkillInvocationRate: number | null;
     otherTestsPassed: number;
     otherTestsFailed: number;
-    failedTests: FailedTestCase[];
+    failedTests: TestCase[];
+    passedTests: TestCase[];
 }
 
 type SkillTestResults = Record<string, SkillStats>;
@@ -130,16 +131,14 @@ function App() {
                                                 )}
                                                 {skillName}
                                             </h2>
-                                            {totalFailed > 0 && (
-                                                <button
-                                                    className={`it-show-failures-btn${failurePanelSkill === skillName ? " active" : ""}`}
-                                                    onClick={() => setFailurePanelSkill(
-                                                        failurePanelSkill === skillName ? null : skillName
-                                                    )}
-                                                >
-                                                    {failurePanelSkill === skillName ? "Hide Failures" : `Show Failures (${totalFailed})`}
-                                                </button>
-                                            )}
+                                            <button
+                                                className={`it-show-failures-btn${failurePanelSkill === skillName ? " active" : ""}`}
+                                                onClick={() => setFailurePanelSkill(
+                                                    failurePanelSkill === skillName ? null : skillName
+                                                )}
+                                            >
+                                                {failurePanelSkill === skillName ? "Hide Details" : `Show Details${totalFailed > 0 ? ` (${totalFailed} failed)` : ""}`}
+                                            </button>
                                         </div>
                                         <div className="it-stats-grid">
                                             <div className="it-stat-group">
@@ -176,15 +175,18 @@ function App() {
                 {panelOpen && panelStats && (
                     <aside className="it-panel it-panel-failures">
                         <div className="it-panel-failures-header">
-                            <h2>Failed Tests &mdash; {failurePanelSkill}</h2>
+                            <h2>Test Details &mdash; {failurePanelSkill}</h2>
                             <button
                                 className="it-close-panel-btn"
                                 onClick={() => setFailurePanelSkill(null)}
-                                aria-label="Close failure panel"
+                                aria-label="Close panel"
                             >
                                 &times;
                             </button>
                         </div>
+
+                        {/* Failed Tests Section */}
+                        <h3 className="it-panel-section-title it-panel-section-fail">Failed Tests ({panelStats.failedTests.length})</h3>
                         {panelStats.failedTests.length === 0 ? (
                             <p className="it-muted">No failed tests.</p>
                         ) : (
@@ -206,6 +208,32 @@ function App() {
                                         )}
                                         {ft.message && (
                                             <span className="it-failed-message">{ft.message}</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {/* Passed Tests Section */}
+                        <h3 className="it-panel-section-title it-panel-section-pass">Passed Tests ({panelStats.passedTests.length})</h3>
+                        {panelStats.passedTests.length === 0 ? (
+                            <p className="it-muted">No passed tests.</p>
+                        ) : (
+                            <ul className="it-passed-list">
+                                {panelStats.passedTests.map((pt, idx) => (
+                                    <li key={idx} className="it-passed-item">
+                                        <a
+                                            className="it-passed-name"
+                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(pt.testName))}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {formatTestName(pt.testName)}
+                                        </a>
+                                        {pt.skillInvocationRate !== undefined && (
+                                            <span className="it-passed-rate">
+                                                rate: {formatRate(pt.skillInvocationRate)}
+                                            </span>
                                         )}
                                     </li>
                                 ))}

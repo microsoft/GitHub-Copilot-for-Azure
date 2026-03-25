@@ -246,8 +246,8 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     await fn(ctx);
     global.addTestResult({ isPass: true, skillInvocationRate });
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    const truncatedStack = e instanceof Error ? e.stack?.split("\n").slice(0, 3).join("\n") : "";
+    global.addTestResult({ isPass: false, message: truncatedStack, skillInvocationRate });
     throw e;
   }
 }
