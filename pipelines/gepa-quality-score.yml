@@ -15,6 +15,10 @@ on:
         required: false
         default: '0.5'
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   score:
     runs-on: ubuntu-latest
@@ -38,19 +42,25 @@ jobs:
               --skills-dir plugin/skills \
               --tests-dir tests \
               --json > score-results.json
+
+            # Display results for specific skill
+            python .github/skills/sensei/scripts/gepa/auto_evaluator.py score \
+              --skill "${{ github.event.inputs.skill }}" \
+              --skills-dir plugin/skills \
+              --tests-dir tests
           else
             python .github/skills/sensei/scripts/gepa/auto_evaluator.py score-all \
               --skills-dir plugin/skills \
               --tests-dir tests \
               --json > score-results.json
+
+            # Display results for all skills
+            python .github/skills/sensei/scripts/gepa/auto_evaluator.py score-all \
+              --skills-dir plugin/skills \
+              --tests-dir tests
           fi
 
-          # Display results
-          python .github/skills/sensei/scripts/gepa/auto_evaluator.py score-all \
-            --skills-dir plugin/skills \
-            --tests-dir tests
-
-      - name: Check quality gate
+      - name: Check quality gate (advisory)
         if: github.event_name == 'pull_request'
         run: |
           MIN_SCORE="${{ github.event.inputs.min_score || '0.5' }}"
@@ -61,7 +71,6 @@ jobs:
           if not isinstance(results, list):
               results = [results]
 
-          # Only check skills modified in this PR
           failed = []
           for r in results:
               if 'error' in r:
@@ -70,10 +79,9 @@ jobs:
                   failed.append(f\"{r['skill']}: {r['quality_score']:.2f} (need >= ${MIN_SCORE})\")
 
           if failed:
-              print('❌ Skills below quality threshold:')
+              print('⚠️ Skills below quality threshold (advisory — not blocking):')
               for f in failed:
                   print(f'  {f}')
-              # Warn but don't fail (advisory mode)
               print()
               print('💡 Run: python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill <name> --skills-dir plugin/skills --tests-dir tests')
           else:
@@ -95,7 +103,8 @@ jobs:
             const results = JSON.parse(fs.readFileSync('score-results.json', 'utf8'));
             const items = Array.isArray(results) ? results : [results];
 
-            let body = '## 📊 GEPA Skill Quality Scores\n\n';
+            const marker = '<!-- gepa-quality-score -->';
+            let body = marker + '\n## 📊 GEPA Skill Quality Scores\n\n';
             body += '| Skill | Quality | Triggers | Tests |\n';
             body += '|-------|---------|----------|-------|\n';
 
@@ -121,9 +130,26 @@ jobs:
             body += 'python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill <name> --skills-dir plugin/skills --tests-dir tests\n';
             body += '```\n</details>';
 
-            github.rest.issues.createComment({
+            // Find existing comment with marker to update (sticky comment pattern)
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
             });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            }

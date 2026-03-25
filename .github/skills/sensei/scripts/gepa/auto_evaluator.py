@@ -25,9 +25,7 @@ import json
 import os
 import re
 import subprocess
-import sys
 from pathlib import Path
-from dataclasses import dataclass, field
 
 
 # ── Keyword matching (mirrors trigger-matcher.ts) ──────────────────────────
@@ -48,6 +46,20 @@ STOP_WORDS = {
     "your", "its", "our", "their", "these", "those", "some", "any",
     "all", "each", "every", "both", "such", "than", "also", "only",
 }
+
+
+def strip_frontmatter(content: str) -> str:
+    """Strip YAML frontmatter from skill content, safely handling malformed files."""
+    lines = content.splitlines()
+    if lines and lines[0].strip() == "---":
+        closing_idx = None
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                closing_idx = i
+                break
+        if closing_idx is not None:
+            return "\n".join(lines[closing_idx + 1 :]).strip()
+    return content
 
 
 def stem(word: str) -> str:
@@ -317,12 +329,7 @@ def score_skill(
         return {"skill": skill_name, "error": f"SKILL.md not found at {skill_md}"}
 
     content = skill_md.read_text()
-    # Strip frontmatter
-    if content.startswith("---"):
-        end_idx = content.index("---", 3)
-        body = content[end_idx + 3 :].strip()
-    else:
-        body = content
+    body = strip_frontmatter(content)
 
     # Build evaluator and score
     harness = discover_test_harness(tests_dir, skill_name)
@@ -376,11 +383,7 @@ def optimize_skill(
         return {"skill": skill_name, "error": f"SKILL.md not found at {skill_md}"}
 
     content = skill_md.read_text()
-    if content.startswith("---"):
-        end_idx = content.index("---", 3)
-        body = content[end_idx + 3 :].strip()
-    else:
-        body = content
+    body = strip_frontmatter(content)
 
     # Auto-build evaluator from test harness
     evaluator, harness = build_evaluator(skill_name, tests_dir, fast=True)
