@@ -121,9 +121,40 @@ def parse_trigger_arrays(test_file: Path) -> dict:
     """Parse shouldTrigger/shouldNotTrigger arrays from a triggers.test.ts file.
 
     Uses regex to extract string arrays without needing a TS parser.
+    Resolves simple ...varName spread patterns by extracting strings from
+    the referenced arrays in the same file.
     """
     content = test_file.read_text()
     result = {"should_trigger": [], "should_not_trigger": []}
+
+    def _extract_array_text(text: str, start: int) -> str:
+        """Extract text between balanced brackets starting at position after '['."""
+        depth = 1
+        i = start
+        while i < len(text) and depth > 0:
+            if text[i] == "[":
+                depth += 1
+            elif text[i] == "]":
+                depth -= 1
+            i += 1
+        return text[start : i - 1]
+
+    def _extract_strings(array_text: str) -> list[str]:
+        """Extract quoted strings from array text, stripping comments."""
+        cleaned = re.sub(r"//.*", "", array_text)
+        cleaned = re.sub(r"/\*.*?\*/", "", cleaned, flags=re.DOTALL)
+        return re.findall(r'["\']([^"\']+)["\']', cleaned)
+
+    def _resolve_spreads(array_text: str) -> list[str]:
+        """Resolve ...varName spreads by finding the referenced arrays."""
+        extra = []
+        for spread_var in re.findall(r"\.\.\.\s*(\w+)", array_text):
+            var_pattern = rf"{spread_var}\s*(?::\s*\w+(?:\[\])?)?\s*=\s*\["
+            var_match = re.search(var_pattern, content)
+            if var_match:
+                var_array = _extract_array_text(content, var_match.end())
+                extra.extend(_extract_strings(var_array))
+        return extra
 
     # Match arrays like: shouldTrigger = ["...", "..."] or const shouldTriggerPrompts = [...]
     for var_pattern, key in [
@@ -132,23 +163,9 @@ def parse_trigger_arrays(test_file: Path) -> dict:
     ]:
         match = re.search(var_pattern, content, re.IGNORECASE)
         if match:
-            start = match.end()
-            # Find the closing bracket, handling nested strings
-            depth = 1
-            i = start
-            while i < len(content) and depth > 0:
-                if content[i] == "[":
-                    depth += 1
-                elif content[i] == "]":
-                    depth -= 1
-                i += 1
-            array_text = content[start : i - 1]
-            # Strip single-line comments to avoid extracting commented-out examples
-            array_text = re.sub(r"//.*", "", array_text)
-            # Strip multi-line comments
-            array_text = re.sub(r"/\*.*?\*/", "", array_text, flags=re.DOTALL)
-            # Extract strings from the array
-            strings = re.findall(r'["\']([^"\']+)["\']', array_text)
+            array_text = _extract_array_text(content, match.end())
+            strings = _extract_strings(array_text)
+            strings.extend(_resolve_spreads(array_text))
             result[key] = strings
 
     return result
@@ -223,11 +240,10 @@ def score_content_quality(skill_md_content: str) -> tuple[float, dict]:
             scores[f"has_{section}s"] = 0.0
             feedback.append(f"Missing '## {section.title()}s' section")
 
-    # Routing patterns
+    # Routing patterns (DO NOT USE FOR is optional — can cause keyword contamination)
     for pattern, label in [
         ("use for:", "has_use_for"),
         ("when:", "has_when"),
-        ("do not use for:", "has_do_not_use_for"),
     ]:
         if pattern in content_lower:
             scores[label] = 1.0
@@ -255,7 +271,7 @@ def score_content_quality(skill_md_content: str) -> tuple[float, dict]:
 
 # ── Composite evaluator builder ────────────────────────────────────────────
 
-def build_evaluator(skill_name: str, tests_dir: Path, fast: bool = True):
+def build_evaluator(skill_name: str, tests_dir: Path):
     """Auto-build a GEPA evaluator for a skill from its test harness.
 
     Returns a callable(candidate, example) -> (score, asi_dict).
@@ -333,7 +349,6 @@ def score_skill(
     skill_name: str,
     skills_dir: Path,
     tests_dir: Path,
-    as_json: bool = False,
 ) -> dict:
     """Score a single skill's SKILL.md content quality + trigger accuracy."""
     skill_md = skills_dir / skill_name / "SKILL.md"
@@ -350,6 +365,7 @@ def score_skill(
     result = {
         "skill": skill_name,
         "quality_score": round(quality_score, 2),
+        "quality_score_raw": quality_score,
         "quality_detail": quality_detail["scores"],
         "quality_feedback": quality_detail["feedback"],
         "has_triggers_test": harness["has_triggers"],
@@ -398,7 +414,7 @@ def optimize_skill(
     body = strip_frontmatter(content)
 
     # Auto-build evaluator from test harness
-    evaluator, harness = build_evaluator(skill_name, tests_dir, fast=True)
+    evaluator, harness = build_evaluator(skill_name, tests_dir)
 
     # Build dataset from discovered trigger prompts
     dataset = []

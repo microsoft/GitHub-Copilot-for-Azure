@@ -123,10 +123,10 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
 5. **IMPROVE FRONTMATTER** - Add WHEN: triggers (stay under 60 words and 1024 chars)
 5b. **IMPROVE WITH GEPA** (when `--gepa` flag is set) — Replaces step 5 (IMPROVE FRONTMATTER) with automated optimization; step 6 (IMPROVE TESTS) still runs normally:
    - Auto-discovers `tests/{skill-name}/triggers.test.ts` and extracts prompt arrays
-   - Builds a GEPA evaluator scoring content quality + trigger accuracy
+   - Builds a GEPA evaluator scoring content quality + trigger accuracy based on those trigger prompt arrays (not Jest test pass/fail results)
    - Runs `python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill {skill-name} --skills-dir plugin/skills --tests-dir tests`
    - Shows diff of optimized SKILL.md for user approval
-   - GEPA wraps existing tests — does NOT replace or modify them
+   - GEPA uses existing test trigger definitions as configuration — it does not execute, replace, or modify Jest tests
 6. **IMPROVE TESTS** - Update `shouldTriggerPrompts` and `shouldNotTriggerPrompts` to match the finalized frontmatter (including any GEPA changes)
 7. **VERIFY** - Run `cd tests && npm test -- --testPathPatterns={skill-name}`
 8. **VALIDATE REFERENCES** - Run `cd scripts && npm run references {skill-name}` to check markdown links
