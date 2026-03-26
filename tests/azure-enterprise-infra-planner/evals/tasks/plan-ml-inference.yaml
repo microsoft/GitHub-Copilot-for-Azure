@@ -1,0 +1,57 @@
+# Task: ML inference endpoint infrastructure planning
+# Tests ML serving workload with online endpoints and authentication
+id: plan-ml-inference-001
+name: ML Inference - Model Scoring Endpoint
+description: |
+  Plan Azure infrastructure for an ML model scoring endpoint.
+  Validates resource selection for online endpoints, authentication, and monitoring.
+
+tags:
+  - ml
+
+inputs:
+  prompt: |
+    Launch an ML model scoring endpoint using Azure ML online endpoint, load model from registry, enforce JWT authentication, and log predictions to Azure Monitor. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "endpoint"
+    - "model"
+    - "monitor"
+
+graders:
+  - name: identifies_ml_endpoint
+    type: text
+    config:
+      regex_match:
+        - "(?i)ml.?endpoint|online.?endpoint|scoring|inference|model"
+
+  - name: identifies_authentication
+    type: text
+    config:
+      regex_match:
+        - "(?i)jwt|auth|identity|token|secure"
+
+  - name: identifies_monitoring
+    type: text
+    config:
+      regex_match:
+        - "(?i)monitor|log|prediction|telemetry|insight"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+      content_patterns:
+        - path: ".azure/infrastructure-plan.json"
+          must_match:
+            - "(?i)ml|machinelearning|endpoint"
