@@ -47,9 +47,6 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
         "az cognitiveservices"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
-        "az rest"
-      ) || doesAssistantMessageIncludeKeyword(
-        agentMetadata,
         "quota"
       );
       expect(hasQuotaCommand).toBe(true);
@@ -293,7 +290,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
       // Agent should use either foundry MCP tools or az CLI to query deployments
       const usedMcpTool = isToolCalled(agentMetadata, "foundry-mcp-model_deployment_get", /./);
-      const usedCli = matchesCommand(agentMetadata, /az\s+(cognitiveservices|rest)/);
+      const usedCli = matchesCommand(agentMetadata, /az\s+(cognitiveservices|rest\s+.*?(deployments|cognitiveservices|models))/i);
       expect(usedMcpTool || usedCli).toBe(true);
     }));
   });
