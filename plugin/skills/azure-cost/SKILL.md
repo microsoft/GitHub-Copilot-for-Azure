@@ -268,11 +268,10 @@ Run azqr to find orphaned resources (immediate cost savings):
 
 **Reference**: [Azure Quick Review](./cost-optimization/azure-quick-review.md)
 
-```javascript
-azure__extension_azqr({
-  subscription: "<SUBSCRIPTION_ID>",
-  "resource-group": "<RESOURCE_GROUP>"  // optional
-})
+```
+mcp_azure_mcp_extension_azqr
+  subscription: "<SUBSCRIPTION_ID>"
+  resource-group: "<RESOURCE_GROUP>"  // optional
 ```
 
 **What to look for:**
