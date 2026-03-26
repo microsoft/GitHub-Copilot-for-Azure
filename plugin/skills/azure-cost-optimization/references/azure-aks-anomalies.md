@@ -26,10 +26,15 @@ az rest --method post \
 ## Step 3 - Pull Node Count and Scaling Events
 
 ```bash
-# Node count over the anomaly window
+# First, verify available metrics on your AKS resource
+az monitor metrics list-definitions \
+  --resource "<aks-resource-id>" \
+  --output table
+
+# Node count over the anomaly window (use metric name from list-definitions output)
 az monitor metrics list \
   --resource "<aks-resource-id>" \
-  --metric "kube_node_status_condition" \
+  --metrics "<verified-node-count-metric>" \
   --interval PT5M --aggregation Count \
   --start-time "<start-date>" --end-time "<end-date>"
 
