@@ -90,6 +90,21 @@ If the issue persists after following these steps, you may want to inspect the i
    - File an issue in this repo with the collected information.
 
 
+### Skills Not Showing in the VS Code Skill Dropdown
+
+**Issue**: After installing GitHub Copilot for Azure, skills such as `azure-observability` or `azure-postgres` do not appear in the VS Code skill picker (the "Select the skill to open" dropdown). The extension activates lazily—it does not activate until the first request is made—which means skills are not installed until after activation occurs. If you open the skill dropdown before the extension has activated, the skills will not yet be present.
+
+**Resolution**: Run one of the following commands in VS Code (<kbd>F1</kbd> or <kbd>Ctrl+Shift+P</kbd> / <kbd>Cmd+Shift+P</kbd>) to install skills:
+
+- **`@azure: Install Azure Skills Globally`** — Installs skills to your home directory, making them available across all workspaces.
+- **`@azure: Install Azure Skills Locally`** — Installs skills to your current working directory, making them available only in that workspace.
+
+After running one of these commands, the skills should appear in the skill dropdown. If you want to remove globally installed skills, run:
+
+- **`@azure: Uninstall Azure Skills Globally`** — Removes skills from your home directory.
+
+If the skills still do not appear after installation, try restarting VS Code and checking again.
+
 ### Foundry MCP Server Authorization Failure
 **Issue**: When launching Copilot CLI, you see an authorization failure in the browser with the message:
 
