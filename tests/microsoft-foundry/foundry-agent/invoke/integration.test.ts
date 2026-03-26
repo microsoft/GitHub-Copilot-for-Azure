@@ -14,7 +14,7 @@ import {
 import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
-const RUNS_PER_PROMPT = 3;
+const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
 
 const skipTests = shouldSkipIntegrationTests();
