@@ -48,6 +48,16 @@ brew install node
 
 ### Installation
 
+#### VS Code
+
+To manually install skills from the Command Palette the following commands are available:
+
+- `@azure: Install Azure Skills Globally` — installs to `~`, available in all workspaces
+- `@azure: Install Azure Skills Locally` — installs to CWD, workspace-scoped
+- `@azure: Uninstall Azure Skills Globally` — removes globally installed skills
+
+#### Copilot CLI
+
 To install the Azure plugin into Copilot CLI and Claude:
 
 1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`
