@@ -140,7 +140,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "How do I enable namespace-level cost visibility for my AKS cluster?",
+            prompt: "Show me cost breakdown by Kubernetes namespace in my AKS cluster",
             shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
@@ -160,7 +160,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "My AKS cluster costs spiked unexpectedly this week, help me investigate",
+            prompt: "Why did my AKS cluster spend suddenly increase this week? Help me find the cause",
             shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
