@@ -196,6 +196,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           prompt: "How do I enable namespace-level cost visibility for my AKS cluster?"
         });
 
+        softCheckSkill(agentMetadata, SKILL_NAME);
         const mentionsAddon = doesAssistantMessageIncludeKeyword(agentMetadata, "--enable-cost-analysis") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "costAnalysis") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "Cost Analysis");
@@ -209,6 +210,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           prompt: "My AKS cluster costs spiked unexpectedly this week, help me investigate"
         });
 
+        softCheckSkill(agentMetadata, SKILL_NAME);
         const mentionsMonitoring = doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl top") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "az monitor metrics") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "az consumption budget");
