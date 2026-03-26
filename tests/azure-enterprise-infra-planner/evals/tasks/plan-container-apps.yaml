@@ -1,0 +1,57 @@
+# Task: Container Apps REST API infrastructure planning
+# Tests serverless container workload with auto-scaling and storage
+id: plan-container-apps-001
+name: Container Apps - Stateless REST API
+description: |
+  Plan Azure infrastructure for a stateless REST API on Azure Container Apps.
+  Validates resource selection for container workloads with auto-scaling and blob storage.
+
+tags:
+  - container-apps
+
+inputs:
+  prompt: |
+    Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "container"
+    - "scale"
+    - "blob"
+
+graders:
+  - name: identifies_container_apps
+    type: text
+    config:
+      regex_match:
+        - "(?i)container.?app|aca|container"
+
+  - name: identifies_scaling
+    type: text
+    config:
+      regex_match:
+        - "(?i)scale|auto.?scale|http.?request|replica"
+
+  - name: identifies_storage
+    type: text
+    config:
+      regex_match:
+        - "(?i)blob|storage|upload|persist"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+      content_patterns:
+        - path: ".azure/infrastructure-plan.json"
+          must_match:
+            - "(?i)container.?app"
