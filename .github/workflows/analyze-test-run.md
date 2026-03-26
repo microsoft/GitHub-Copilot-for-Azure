@@ -23,8 +23,14 @@ permissions:
   actions: read
   issues: read
 
-network: {}
+network:
+  allowed:
+    - defaults
+    - github
+    - "*.blob.core.windows.net"
 
+sandbox:
+  agent: awf  # Firewall enabled (migrated from network.firewall)
 tools:
   github:
     toolsets: [actions, issues, labels]
