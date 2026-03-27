@@ -109,6 +109,13 @@ Add research findings to `.azure/plan.md` under a `## Research Summary` section 
 4. Invoke: `azure-observability` (monitoring setup)
 5. Invoke: `azure-security-hardening` (security baseline)
 
+### App Service + API + SQL Database
+
+1. Load: [services/app-service/README.md](services/app-service/README.md) → [bicep.md](services/app-service/bicep.md)
+2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
+4. Invoke: `azure-security` (Entra-only auth configuration)
+
 ### Serverless Event-Driven
 
 1. Load: [services/functions/README.md](services/functions/README.md) (contains mandatory composition workflow)
