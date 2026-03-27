@@ -60,9 +60,15 @@ kubectl top pods --all-namespaces --sort-by=cpu
 ## Historical Metrics (Azure Monitor — use when Prometheus or Container Insights is enabled)
 
 ```bash
+# First verify available metrics on your AKS resource
+az monitor metrics list-definitions \
+  --resource "<AKS_RESOURCE_ID>" \
+  --output table
+
+# Query CPU usage (use metric name from list-definitions output)
 az monitor metrics list \
   --resource "<AKS_RESOURCE_ID>" \
-  --metric "cpuUsagePercentage" \
+  --metrics "cpuUsagePercentage" \
   --interval PT1H --aggregation Average \
   --start-time "<YYYY-MM-DDTHH:mm:ssZ>" \
   --end-time "<YYYY-MM-DDTHH:mm:ssZ>"

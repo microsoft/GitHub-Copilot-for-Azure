@@ -18,9 +18,15 @@ az aks show \
 ## Check Node Utilization (7 days)
 
 ```bash
+# First verify available metrics on your AKS resource
+az monitor metrics list-definitions \
+  --resource "<AKS_RESOURCE_ID>" \
+  --output table
+
+# Node utilization over the anomaly window (use metric name from list-definitions output)
 az monitor metrics list \
   --resource "<AKS_RESOURCE_ID>" \
-  --metric "node_cpu_usage_percentage" \
+  --metrics "node_cpu_usage_percentage" \
   --interval PT1H --aggregation Average \
   --start-time "<YYYY-MM-DDTHH:mm:ssZ>" \
   --end-time "<YYYY-MM-DDTHH:mm:ssZ>"
