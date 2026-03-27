@@ -49,7 +49,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## When to Use This Skill");
       expect(skill.content).toContain("## Quick Reference");
       expect(skill.content).toContain("## Common Tasks");
       expect(skill.content).toContain("## Troubleshooting");
@@ -57,9 +56,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains AI Gateway governance categories", () => {
-      expect(skill.content).toContain("Model Governance");
-      expect(skill.content).toContain("Tool Governance");
-      expect(skill.content).toContain("Agent Governance");
+      expect(skill.content).toContain("Model Policies");
+      expect(skill.content).toContain("Tool Policies");
+      expect(skill.content).toContain("Agent Policies");
     });
 
     test("contains key policy names", () => {
@@ -71,7 +70,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("contains MCP tool governance", () => {
       expect(skill.content).toContain("MCP");
-      expect(skill.content).toContain("convert API to MCP");
+      expect(skill.content).toContain("rate-limit-by-key");
     });
 
     test("references azure-prepare for APIM deployment", () => {

@@ -2,10 +2,6 @@
 
 Analyze production traces for Foundry agents using Application Insights and GenAI OpenTelemetry semantic conventions. This skill provides structured KQL-powered workflows for a selected agent root and environment: searching conversations, diagnosing failures, and identifying latency bottlenecks.
 
-## When to Use This Skill
-
-USE FOR: analyze agent traces, search agent conversations, find failing traces, slow traces, latency analysis, trace search, conversation history, agent errors in production, debug agent responses, App Insights traces, GenAI telemetry, trace correlation, span tree, production trace analysis, evaluation results, evaluation scores, eval run results, find by response ID, get agent trace by conversation ID, agent evaluation scores from App Insights.
-
 > **USE THIS SKILL INSTEAD OF** `azure-monitor` or `azure-applicationinsights` when querying Foundry agent traces, evaluations, or GenAI telemetry. This skill has correct GenAI OTel attribute mappings and tested KQL templates that those general tools lack.
 
 > ⚠️ **DO NOT manually write KQL queries** for GenAI trace analysis **without reading this skill first.** This skill provides tested query templates with correct GenAI OTel attribute mappings, proper span correlation logic, environment-aware scoping, and conversation-level aggregation patterns.

@@ -13,15 +13,6 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 | Preferred query tool | `monitor_resource_log_query` (Azure MCP) — preferred over `azure-kusto` for App Insights |
 | CLI references | `az cognitiveservices agent logs`, `az cognitiveservices account connection` |
 
-## When to Use This Skill
-
-- Agent is not responding or returning errors
-- Hosted agent container is failing to start
-- Need to view container logs for a hosted agent
-- Diagnose latency or timeout issues
-- Query Application Insights for agent traces and exceptions
-- Investigate agent runtime failures
-
 ## MCP Tools
 
 | Tool | Description | Parameters |

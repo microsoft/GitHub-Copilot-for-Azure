@@ -20,7 +20,7 @@ This sub-skill orchestrates creation of Azure AI Services multi-service resource
 
 > **Note:** For monitoring resource usage and quotas, use the `microsoft-foundry:quota` skill.
 
-**Table of Contents:** [Quick Reference](#quick-reference) · [When to Use](#when-to-use) · [Prerequisites](#prerequisites) · [Core Workflows](#core-workflows) · [Important Notes](#important-notes) · [Additional Resources](#additional-resources)
+**Table of Contents:** [Quick Reference](#quick-reference) · [Prerequisites](#prerequisites) · [Core Workflows](#core-workflows) · [Important Notes](#important-notes) · [Additional Resources](#additional-resources)
 
 ## Quick Reference
 
@@ -31,21 +31,6 @@ This sub-skill orchestrates creation of Azure AI Services multi-service resource
 | **Primary Method** | Azure CLI: `az cognitiveservices account create` |
 | **Resource Type** | `Microsoft.CognitiveServices/accounts` (kind: `AIServices`) |
 | **Resource Kind** | `AIServices` (multi-service) |
-
-## When to Use
-
-Use this sub-skill when you need to:
-
-- **Create Foundry resource** - Provision new Azure AI Services multi-service account
-- **Create resource group** - Set up resource group before creating resources
-- **Register resource provider** - Enable Microsoft.CognitiveServices provider
-- **Manual resource creation** - CLI-based resource provisioning
-
-**Do NOT use for:**
-- Creating ML workspace hubs/projects (use `microsoft-foundry:project/create`)
-- Deploying AI models (use `microsoft-foundry:models/deploy`)
-- Managing RBAC permissions (use `microsoft-foundry:rbac`)
-- Monitoring resource usage (use `microsoft-foundry:quota`)
 
 ## Prerequisites
 

@@ -82,7 +82,7 @@ describe("customize (customize-deployment) - Unit Tests", () => {
     });
 
     test("contains comparison with preset mode", () => {
-      expect(nestedContent).toContain("## When to Use");
+      expect(nestedContent).toContain("Comparison: customize vs preset");
     });
   });
 });

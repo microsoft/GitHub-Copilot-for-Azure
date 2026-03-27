@@ -33,10 +33,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content.length).toBeGreaterThan(500);
     });
 
-    test("contains when to use section", () => {
-      expect(skill.content).toMatch(/## When to use/i);
-    });
-
     test("documents prerequisites", () => {
       expect(skill.content).toMatch(/## Prerequisites/i);
       expect(skill.content).toContain("ASP.NET Core");

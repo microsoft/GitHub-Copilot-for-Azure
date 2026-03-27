@@ -3,7 +3,7 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS."
 ---
 
@@ -20,19 +20,6 @@ description: "Plan, create, and configure production-ready Azure Kubernetes Serv
 | MCP Tools | `mcp_azure_mcp_aks` |
 | CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
 | Related skills | azure-diagnostics (troubleshooting AKS), azure-validate (readiness checks) |
-
-## When to Use This Skill
-Activate this skill when user wants to:
-- Create a new AKS cluster
-- Plan AKS cluster configuration for production workloads
-- Design AKS networking (API server access, pod IP model, egress)
-- Set up AKS identity and secrets management
-- Configure AKS governance (Azure Policy, Deployment Safeguards)
-- Enable AKS observability (Container Insights, Managed Prometheus, Grafana)
-- Define AKS upgrade and patching strategy
-- Enable AKS cost visibility and analysis
-- Understand AKS Automatic vs Standard SKU differences
-- Get a Day-0 checklist for AKS cluster setup and configuration
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.

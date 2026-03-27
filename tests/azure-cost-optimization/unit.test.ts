@@ -52,10 +52,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content.length).toBeGreaterThan(1000);
     });
 
-    test("contains when to use section", () => {
-      expect(skill.content).toMatch(/## When to Use/i);
-    });
-
     test("documents step-by-step instructions", () => {
       expect(skill.content).toMatch(/## Instructions/i);
       expect(skill.content).toMatch(/### Step \d+:/);

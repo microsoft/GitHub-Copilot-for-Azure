@@ -4,22 +4,12 @@ description: "Azure VM and VMSS router for recommendations, pricing, autoscale, 
 license: MIT
 metadata:
   author: Microsoft
-  version: "2.0.0"
+  version: "2.0.1"
 ---
 
 # Azure Compute Skill
 
 Routes Azure VM requests to the appropriate workflow based on user intent.
-
-## When to Use This Skill
-
-Activate this skill when the user:
-- Asks about Azure Virtual Machines (VMs) or VM Scale Sets (VMSS)
-- Asks about choosing a VM, VM sizing, pricing, or cost estimates
-- Needs a workload-based recommendation for scenarios like database, GPU, deep learning, HPC, web tier, or dev/test
-- Mentions VM families, autoscale, load balancing, or Flexible versus Uniform orchestration
-- Wants to troubleshoot Azure VM connectivity issues such as unreachable VMs, RDP/SSH failures, black screens, NSG/firewall issues, or credential resets
-- Uses prompts like "Help me choose a VM"
 
 ## Routing
 

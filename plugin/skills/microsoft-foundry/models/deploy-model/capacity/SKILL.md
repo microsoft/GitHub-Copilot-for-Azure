@@ -4,7 +4,7 @@ description: "Discovers available Azure OpenAI model capacity across regions and
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Capacity Discovery
@@ -20,16 +20,6 @@ Finds available Azure OpenAI model capacity across all accessible regions and pr
 | **Output** | Ranked table of regions/projects with available capacity |
 | **Action** | Read-only analysis — does NOT deploy. Hands off to preset or customize |
 | **Authentication** | Azure CLI (`az login`) |
-
-## When to Use This Skill
-
-- ✅ User asks "where can I deploy gpt-4o?"
-- ✅ User specifies a capacity target: "find a region with 10K TPM for gpt-4o"
-- ✅ User wants to compare availability: "which regions have gpt-4o available?"
-- ✅ User got a quota error and needs to find an alternative location
-- ✅ User asks "best region and project for deploying model X"
-
-**After discovery → hand off to [preset](../preset/SKILL.md) or [customize](../customize/SKILL.md) for actual deployment.**
 
 ## Scripts
 

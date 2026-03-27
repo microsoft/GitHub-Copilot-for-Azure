@@ -12,13 +12,6 @@ Create new hosted agent applications for Microsoft Foundry, or convert existing 
 | **Hosted Agents Docs** | https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents |
 | **Best For** | Creating new or converting existing agent projects for Foundry |
 
-## When to Use This Skill
-
-- Create a new hosted agent application from scratch (greenfield)
-- Start from an official sample and customize it
-- Convert an existing agent project to be Foundry-compatible (brownfield)
-- Help user choose a framework or sample for their agent
-
 ## Workflow
 
 ### Step 1: Determine Scenario
