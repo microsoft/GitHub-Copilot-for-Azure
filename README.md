@@ -54,7 +54,7 @@ The GitHub Copilot for Azure extension installs skills when the extension activa
 
 ![Toast notification asking "GitHub Copilot for Azure can install skills to enhance your experience. Would you like to install Azure skills?" with Install, Not Now, and Don't Ask Again buttons](https://github.com/user-attachments/assets/b2ac7a0d-1f72-4af5-8cb5-a38f344a9244)
 
-To manually install skills from the Command Palette the following commands are available:
+To manually install skills from the Command Palette, the following commands are available:
 
 - `@azure: Install Azure Skills Globally` — installs to `~`, available in all workspaces
 - `@azure: Install Azure Skills Locally` — installs to CWD, workspace-scoped
