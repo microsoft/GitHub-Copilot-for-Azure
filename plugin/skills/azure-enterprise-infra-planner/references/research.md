@@ -18,7 +18,7 @@ From the user's description, list the core Azure services (compute, data, networ
 
 ## Step 2 — WAF Tool Calls
 
-Call WAF MCP tools before reading local resource files. Complete this step before proceeding.
+> Mandatory: Call WAF MCP tools before reading local resource files. Complete this step before proceeding.
 
 1. Call `get_azure_bestpractices_get` with `resource: "general"`, `action: "all"` for baseline guidance.
 2. Call `wellarchitectedframework_serviceguide_get` with `service: "<name>"` for each core service (in parallel). Examples: `"Container Apps"`, `"Cosmos DB"`, `"App Service"`, `"Event Grid"`, `"Key Vault"`.
@@ -27,13 +27,13 @@ Call WAF MCP tools before reading local resource files. Complete this step befor
 
 ## Step 3 — Resource Refinement
 
-Walk through the WAF checklist and document what was added or intentionally omitted.
+> Mandatory: Walk through the WAF checklist and document what was added or intentionally omitted.
 
 Walk through every concern in the [WAF cross-cutting checklist](waf-checklist.md) and add missing resources or harden properties. For each checklist item, either add the resource/property or document the intentional omission in `overallReasoning.tradeoffs` and `inputs.subGoals`. Present the refinement summary to the user before proceeding to Step 4.
 
 ## Step 4 — Resource Lookup via Tools
 
-Complete this step for every resource before generating the plan. WAF tools (Step 2) provide architecture guidance but do not provide ARM types, naming rules, or pairing constraints. This step fills those gaps. Read [resources/README.md](resources/README.md) to identify which category files contain the resources you need, then load only those category files.
+> Mandatory: Complete this step for every resource before generating the plan. WAF tools (Step 2) provide architecture guidance but do not provide ARM types, naming rules, or pairing constraints. This step fills those gaps. Read [resources/README.md](resources/README.md) to identify which category files contain the resources you need, then load only those category files.
 
 For each resource identified in Steps 1-3:
 
@@ -43,7 +43,7 @@ For each resource identified in Steps 1-3:
 
    Use the [constraints/README.md](constraints/README.md) index to find the right category file for each resource name.
 
-Only load the category files you need. For a plan with AKS + Cosmos DB + VNet + Key Vault, you'd load 4 constraint files and 4 resource files (~5,500 tokens total) instead of the full catalog (~21,600 tokens).
+> Important: Only load the category files you need. For a plan with AKS + Cosmos DB + VNet + Key Vault, you'd load 4 constraint files and 4 resource files (~5,500 tokens total) instead of the full catalog (~21,600 tokens).
 
 From the tool results, verify:
 

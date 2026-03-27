@@ -25,9 +25,9 @@ infra/
 2. Read plan — load `<project-root>/.azure/infrastructure-plan.json`, verify `meta.status === "approved"`
 3. Fetch Bicep schemas — for each resource in the plan, use a sub-agent to call `bicepschema_get` with `resource-type` set to the ARM type from the relevant [resources/](resources/README.md) category file (e.g., `Microsoft.ContainerService/managedClusters`). Instruct the sub-agent: "Return the full property structure for {ARM type}: required properties, allowed values, child resources. ≤500 tokens." Use this output — not training data — to generate correct resource definitions.
 
-   The schema tool returns only the schema for the exact type requested. Sub-resource types (e.g., `Microsoft.Network/virtualNetworks/subnets`) return a smaller, focused schema but miss parent-level properties (e.g., VNet `encryption` lives on the parent, not the subnet sub-resource). Strategy:
-   - Start with sub-resource types when validating child resources — smaller responses (~25KB vs ~95KB), easier to summarize
-   - Fetch the parent type separately when you need parent-level properties (encryption, tags, SKU) — delegate to a sub-agent with specific property extraction instructions to manage the large response
+> The schema tool returns only the schema for the exact type requested. Sub-resource types (e.g., `Microsoft.Network/virtualNetworks/subnets`) return a smaller, focused schema but miss parent-level properties (e.g., VNet `encryption` lives on the parent, not the subnet sub-resource). Strategy:
+> - Start with sub-resource types when validating child resources — smaller responses (~25KB vs ~95KB), easier to summarize
+> - Fetch the parent type separately when you need parent-level properties (encryption, tags, SKU) — delegate to a sub-agent with specific property extraction instructions to manage the large response
 
 4. Generate modules — group resources by category; one `.bicep` file per group under `infra/modules/`. Use the schema from step 3 for property names, allowed values, and required fields.
 5. Generate main.bicep — write `infra/main.bicep` that imports all modules and passes parameters

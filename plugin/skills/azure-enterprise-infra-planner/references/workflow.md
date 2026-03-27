@@ -8,7 +8,7 @@
 4. User chooses IaC format — Bicep or Terraform; ask if not specified.
 5. Destructive actions require explicit confirmation.
 
-Complete each phase fully before starting the next. Phases are sequential, not parallel.
+> Complete each phase fully before starting the next. Phases are sequential, not parallel.
 
 ## Phase 1: Research — WAF Tools
 Call MCP tools to gather best practices and WAF guidance. See [research.md](research.md) Steps 1-2.
