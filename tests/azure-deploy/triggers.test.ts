@@ -30,6 +30,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Deploy my Azure Functions app to the cloud using azd",
       "Deploy my serverless function app to Azure",
       "Deploy Azure Functions to production",
+      // Live role verification
+      "Deploy my app and verify the RBAC roles are assigned correctly",
+      "Run deployment and check live role assignments on Azure",
     ];
 
     test.each(shouldTriggerPrompts)(

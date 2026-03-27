@@ -38,6 +38,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Validate my Azure Functions app before deploying",
       "Check if my function app is ready for Azure deployment",
       "Validate my serverless function deployment configuration",
+      // RBAC role verification
+      "Check the RBAC role assignments in my Bicep before deploying",
+      "Verify managed identity permissions in my infrastructure code",
+      "Review role assignments in my Terraform before Azure deployment",
     ];
 
     test.each(shouldTriggerPrompts)(
