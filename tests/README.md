@@ -356,7 +356,8 @@ This updates the Skills Coverage Grid in this README.
 | azure-cloud-migrate | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compute | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cost | ✅ | ✅ | ✅ | ✅ | - |
+
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
 | azure-enterprise-infra-planner | ✅ | ✅ | ✅ | ✅ | - |

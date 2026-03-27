@@ -33,12 +33,10 @@ When analyzing each cache, apply these prioritized rules:
 ## Report Templates
 
 ### Subscription-Level Summary
-Quick overview of costs and issues per subscription (use for multi-subscription scans).
-See [redis-subscription-level-report.md](../templates/redis-subscription-level-report.md) for template format.
+Quick overview of costs and issues per subscription (use for multi-subscription scans). Include: subscription name/ID, total monthly cost, number of caches, cache count by SKU tier, and top issues found.
 
 ### Detailed Cache Analysis
-Individual cache breakdown with specific recommendations.
-See [redis-detailed-cache-analysis.md](../templates/redis-detailed-cache-analysis.md) for template format.
+Individual cache breakdown with specific recommendations. Include: cache name, resource group, SKU tier, current cost, memory usage %, CPU usage %, connection count, and specific rightsizing recommendations.
 
 ## Tools & Commands
 
