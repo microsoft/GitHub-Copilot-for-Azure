@@ -3,8 +3,8 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
-description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS."
+  version: "1.0.3"
+description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security (workload identity, Azure Policy, Key Vault CSI driver, Deployment Safeguards), and operations (monitoring, upgrade strategy, autoscaling, cost analysis, node pools). WHEN: provision AKS cluster, design AKS networking, choose AKS SKU, secure AKS, set up AKS, pod rightsizing, pod over-provisioning, CPU requests, memory requests, enable CAS, Cluster Autoscaler, idle nodes, node utilization, CAS profile, scale-in, Spot VM, Spot node pool, batch workloads, eviction, cost analysis add-on, namespace cost, cost spike, anomaly."
 ---
 
 # Azure Kubernetes Service
@@ -122,6 +122,16 @@ If the user is unsure, use safe defaults.
 - Use **Spot node pools** for batch/interruptible workloads (up to 90% savings)
 - **Stop/Start** dev/test clusters: `az aks stop/start`
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
+
+### 10. Cost Optimization
+
+Load only the reference file relevant to the user's request:
+
+| Scenario | Trigger Keywords | Reference |
+|----------|-----------------|-----------|
+| Pod Rightsizing | over-provisioned pods, CPU requests, memory requests, rightsize workloads | [azure-aks-rightsizing.md](./references/azure-aks-rightsizing.md) |
+| Cluster Autoscaler | idle nodes, CAS off, enable autoscaler, scale-down profile, node utilization | [azure-aks-autoscaler.md](./references/azure-aks-autoscaler.md) |
+| Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
 
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
