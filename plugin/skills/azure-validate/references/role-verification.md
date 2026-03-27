@@ -4,7 +4,7 @@ Verify that all RBAC role assignments in the generated infrastructure are correc
 
 ## When to Verify
 
-After build verification (step 3) and **before** recording proof (step 5). Role issues surface as cryptic auth errors during deployment — catching them here saves debugging time.
+After build verification (step 4) and **before** recording proof (step 6). Role issues surface as cryptic auth errors during deployment — catching them here saves debugging time.
 
 ## Verification Checklist
 
