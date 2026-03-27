@@ -12,7 +12,7 @@
 
 ## Phase 1: Research — WAF Tools
 Call MCP tools to gather best practices and WAF guidance. See [research.md](research.md) Steps 1-2.
-- Call `get_azure_bestpractices_get` once (direct call — small response)
+- Call `get_azure_bestpractices` once (direct call — small response)
 - Call `wellarchitectedframework_serviceguide_get` for each core service (direct parallel calls — small responses, returns URLs only)
 - Use sub-agents to fetch and summarize each WAF guide URL (large responses — 20-60KB each)
 

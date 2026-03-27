@@ -2,7 +2,7 @@
 
 Generate Bicep IaC files from the approved infrastructure plan.
 
-All Bicep files go under `<project-root>/infra/`. Do not place `.bicep` files in the project root or in `.azure/`.
+> Important: All Bicep files must be created under `<project-root>/infra/`. Never place `.bicep` files in the project root or in `.azure/`.
 
 ## File Structure
 
