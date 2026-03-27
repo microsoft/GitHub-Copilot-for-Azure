@@ -357,7 +357,7 @@ This updates the Skills Coverage Grid in this README.
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compute | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost | ✅ | ✅ | ✅ | ✅ | - |
-| azure-create-app | ❌ | - | - | - | - |
+
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
 | azure-enterprise-infra-planner | ✅ | ✅ | ✅ | ✅ | - |

@@ -52,7 +52,7 @@ Use `create_file` with path `output/costoptimizereport<YYYYMMDD_HHMMSS>.md` and 
 
 Include Azure Portal links for all resources using this format:
 
-```
+```text
 https://portal.azure.com/#@<TENANT_ID>/resource/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/<RESOURCE_PROVIDER>/<RESOURCE_TYPE>/<RESOURCE_NAME>/overview
 ```
 

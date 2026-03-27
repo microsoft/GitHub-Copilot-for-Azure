@@ -40,6 +40,8 @@ Activate this skill when user wants to:
 | `azure__documentation` | Search Azure documentation | `query` (Required): search terms | Research Cost Management API parameters and options |
 | `azure__extension_cli_generate` | Generate Azure CLI commands | `intent` (Required): task description, `cli-type` (Required): `"az"` | Construct `az rest` commands for cost queries |
 | `azure__get_azure_bestpractices` | Get Azure best practices | `intent` (Required): optimization context | Inform query design with cost management best practices |
+| `azure__extension_azqr` | Run Azure Quick Review compliance scan | `subscription` (Required): subscription ID, `resource-group` (Optional): resource group name | Find orphaned resources and cost optimization opportunities |
+| `azure__aks` | Azure Kubernetes Service operations | varies by sub-command | AKS cost analysis: list clusters, get node pools, inspect configuration |
 
 > 💡 **Tip:** Prefer MCP tools over direct CLI commands. Use `az rest` only when MCP tools don't cover the specific operation.
 
@@ -299,7 +301,7 @@ Run azqr to find orphaned resources (immediate cost savings):
 
 **Reference**: [Azure Quick Review](./cost-optimization/azure-quick-review.md)
 
-```
+```yaml
 mcp_azure_mcp_extension_azqr
   subscription: "<SUBSCRIPTION_ID>"
   resource-group: "<RESOURCE_GROUP>"  // optional
