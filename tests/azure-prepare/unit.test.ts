@@ -72,6 +72,45 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("Functional Verification Step", () => {
+    test("includes functional verification step in workflow", () => {
+      expect(skill.content).toContain("Functional Verification");
+    });
+
+    test("references functional-verification.md", () => {
+      expect(skill.content).toContain("functional-verification.md");
+    });
+
+    test("functional verification comes before plan update", () => {
+      const funcVerifIndex = skill.content.indexOf("Functional Verification");
+      const updatePlanIndex = skill.content.indexOf("Update Plan");
+      expect(funcVerifIndex).toBeGreaterThan(-1);
+      expect(updatePlanIndex).toBeGreaterThan(-1);
+      expect(funcVerifIndex).toBeLessThan(updatePlanIndex);
+    });
+  });
+
+  describe("Subscription Policy Checks", () => {
+    test("references policy tool in requirements", () => {
+      const refsDir = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/requirements.md"
+      );
+      const content = fs.readFileSync(refsDir, "utf-8");
+      expect(content).toContain("mcp_azure_mcp_policy");
+    });
+
+    test("mentions subscription policies in requirements", () => {
+      const refsDir = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/requirements.md"
+      );
+      const content = fs.readFileSync(refsDir, "utf-8");
+      expect(content).toContain("Subscription Policies");
+      expect(content).toContain("policy_assignment_list");
+    });
+  });
+
   describe("Aspire Support", () => {
     test("aspire.md reference file exists", () => {
       const aspirePath = path.join(
