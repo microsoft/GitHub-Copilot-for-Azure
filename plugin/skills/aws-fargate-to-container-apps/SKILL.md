@@ -1,10 +1,10 @@
 ---
 name: aws-fargate-to-container-apps
-description: Migrate containerized workloads from AWS Fargate to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Fargate to Azure, migrate AWS containers to Azure, Fargate to Container Apps, assess AWS ECS migration, convert AWS Fargate to Azure, cross-cloud container migration from AWS, migrate ECS tasks to Azure Container Apps.
+description: "Migrate containerized workloads from AWS Fargate to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Fargate to Azure, migrate AWS containers to Azure, Fargate to Container Apps, assess AWS ECS migration, convert AWS Fargate to Azure, cross-cloud container migration from AWS, migrate ECS tasks to Azure Container Apps."
 license: MIT
 metadata:
-  version: 1.0.0
-  author: GitHub Copilot for Azure
+  version: "1.0.1"
+  author: Microsoft
 ---
 
 # AWS Fargate to Azure Container Apps Migration
