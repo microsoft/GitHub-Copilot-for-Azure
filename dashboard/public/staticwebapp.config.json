@@ -11,7 +11,8 @@
         {
             "route": "/*",
             "allowedRoles": [
-                "authenticated"
+                "authenticated",
+                "reader"
             ]
         }
     ],
