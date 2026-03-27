@@ -48,6 +48,20 @@ brew install node
 
 ### Installation
 
+#### VS Code
+
+The GitHub Copilot for Azure extension installs skills when the extension activates. At that point, you may see a toast notification like the following (if you don't see it, you can use the manual commands below):
+
+![Toast notification asking "GitHub Copilot for Azure can install skills to enhance your experience. Would you like to install Azure skills?" with Install, Not Now, and Don't Ask Again buttons](https://github.com/user-attachments/assets/b2ac7a0d-1f72-4af5-8cb5-a38f344a9244)
+
+To manually install skills from the Command Palette, the following commands are available:
+
+- `@azure: Install Azure Skills Globally` — installs to your home directory (for example `~` on macOS/Linux or `%UserProfile%` on Windows), available in all workspaces
+- `@azure: Install Azure Skills Locally` — installs to the current workspace folder, workspace-scoped
+- `@azure: Uninstall Azure Skills Globally` — removes globally installed skills
+
+#### Copilot CLI
+
 To install the Azure plugin into Copilot CLI and Claude:
 
 1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`

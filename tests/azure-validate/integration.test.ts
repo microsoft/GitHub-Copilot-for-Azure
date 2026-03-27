@@ -116,7 +116,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   });
 
   describe("deployment-validation", () => {
-    const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+    const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
 
     test("terminates at validation for static whiteboard web app", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
@@ -172,7 +172,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("brownfield-dotnet-validate", () => {
     const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
-    const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+    const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
 
     test("passes --environment on azd init and sets subscription before provision", () => withTestResult(async () => {
       const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";

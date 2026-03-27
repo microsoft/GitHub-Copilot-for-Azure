@@ -1,6 +1,6 @@
 ---
 name: azure-cost
-description: "Unified Azure cost management: query historical costs, forecast future spending, and optimize to reduce waste. WHEN: \"Azure costs\", \"Azure spending\", \"Azure bill\", \"cost breakdown\", \"cost by service\", \"cost by resource\", \"how much am I spending\", \"show my bill\", \"monthly cost summary\", \"cost trends\", \"top cost drivers\", \"actual cost\", \"amortized cost\", \"forecast spending\", \"projected costs\", \"estimate bill\", \"future costs\", \"budget forecast\", \"end of month costs\", \"how much will I spend\", \"optimize costs\", \"reduce spending\", \"find cost savings\", \"orphaned resources\", \"rightsize VMs\", \"cost analysis\", \"reduce waste\", \"unused resources\", \"optimize Redis costs\", \"cost by tag\", \"cost by resource group\"."
+description: "Unified Azure cost management: query historical costs, forecast future spending, and optimize to reduce waste. WHEN: \"Azure costs\", \"Azure spending\", \"Azure bill\", \"cost breakdown\", \"cost by service\", \"cost by resource\", \"how much am I spending\", \"show my bill\", \"monthly cost summary\", \"cost trends\", \"top cost drivers\", \"actual cost\", \"amortized cost\", \"forecast spending\", \"projected costs\", \"estimate bill\", \"future costs\", \"budget forecast\", \"end of month costs\", \"how much will I spend\", \"optimize costs\", \"reduce spending\", \"find cost savings\", \"orphaned resources\", \"rightsize VMs\", \"cost analysis\", \"reduce waste\", \"unused resources\", \"optimize Redis costs\", \"cost by tag\", \"cost by resource group\", \"AKS cost analysis add-on\", \"namespace cost\", \"cost spike\", \"anomaly\", \"budget alert\", \"AKS cost visibility\"."
 license: MIT
 metadata:
   author: Microsoft
@@ -261,6 +261,37 @@ azure__get_azure_bestpractices({
 5. **Tenant-wide**
 
 Wait for user response before proceeding.
+
+### Step 1.7: AKS-Specific Analysis (Conditional)
+
+**If the user specifically requests AKS cost optimization**, use the specialized AKS reference files:
+
+**When to use AKS-specific analysis:**
+- User mentions "AKS", "Kubernetes", "cluster", "node pool", "pod", or "kubectl"
+- User wants to enable the AKS cost analysis add-on or namespace cost visibility
+- User reports a cost spike, unusual cluster utilization, or wants budget alerts
+
+**Tool Selection:**
+- **Prefer MCP first**: Use `mcp_azure_mcp_aks` for AKS operations (list clusters, get node pools, inspect configuration) — it provides richer metadata and is consistent with AKS skill conventions in this repo
+- **Fall back to CLI**: Use `az aks` and `kubectl` only when the specific operation cannot be performed via the MCP surface
+
+**Reference files (load only what is needed for the request):**
+- [Cost Analysis Add-on](./cost-optimization/azure-aks-cost-addon.md) — enable namespace-level cost visibility
+- [Anomaly Investigation](./cost-optimization/azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
+
+> **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the relevant reference file above.
+
+### Step 1.8: Choose Analysis Scope (for AKS-specific analysis)
+
+**If performing AKS cost optimization**, ask the user to select their analysis scope:
+
+**Prompt the user with these options:**
+1. **Specific Cluster Name** - Analyze a single AKS cluster
+2. **Resource Group** - Analyze all clusters in a resource group
+3. **Subscription ID** - Analyze all clusters in a subscription
+4. **All My Clusters** - Scan all accessible clusters across subscriptions
+
+Wait for user response before proceeding to Step 2.
 
 ### Step 2: Run Azure Quick Review
 

@@ -21,7 +21,7 @@ import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyT
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
-const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
 const invocationRateThreshold = 0.8;
 
 /**
@@ -49,7 +49,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
-    const followUp = ["Go with recommended options."];
+    const followUp = ["Continue with recommended options until complete."];
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
