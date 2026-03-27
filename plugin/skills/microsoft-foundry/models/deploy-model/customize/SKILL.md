@@ -4,7 +4,7 @@ description: "Interactive guided deployment flow for Azure OpenAI models with fu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Customize Model Deployment
@@ -22,20 +22,7 @@ Interactive guided workflow for deploying Azure OpenAI models with full customiz
 | **Authentication** | Azure CLI (`az login`) |
 | **Tools** | Azure CLI, MCP tools (optional) |
 
-## When to Use This Skill
-
-Use this skill when you need **precise control** over deployment configuration:
-
-- ✅ **Choose specific model version** (not just latest)
-- ✅ **Select deployment SKU** (GlobalStandard vs Standard vs PTU)
-- ✅ **Set exact capacity** within available range
-- ✅ **Configure content filtering** (RAI policy selection)
-- ✅ **Enable advanced features** (dynamic quota, priority processing, spillover)
-- ✅ **PTU deployments** (Provisioned Throughput Units)
-
-**Alternative:** Use `preset` for quick deployment to the best available region with automatic configuration.
-
-### Comparison: customize vs preset
+## Comparison: customize vs preset
 
 | Feature | customize | preset |
 |---------|---------------------|----------------------------|

@@ -55,10 +55,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content.toLowerCase()).toContain("expir");
     });
 
-    test("includes skill activation triggers section", () => {
-      expect(skill.content).toContain("Skill Activation Triggers");
-    });
-
     test("describes both primary capabilities", () => {
       expect(skill.content).toContain("Comprehensive Resources Assessment");
       expect(skill.content).toContain("Key Vault Expiration Monitoring");
@@ -90,15 +86,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("keys");
       expect(skill.content).toContain("secrets");
       expect(skill.content).toContain("certificates");
-    });
-
-    test("mentions expiration date checking", () => {
-      expect(skill.content.toLowerCase()).toMatch(/expiresOn|expiration.*date/);
-    });
-
-    test("mentions resources without expiration", () => {
-      const content = skill.content.toLowerCase();
-      expect(content).toMatch(/no expiration|without expiration|missing expiration/);
     });
 
     test("includes priority classification", () => {

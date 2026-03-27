@@ -4,23 +4,12 @@ description: "Identify Azure cost savings from usage and spending data. USE FOR:
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Cost Optimization Skill
 
 Analyze Azure subscriptions to identify cost savings through orphaned resource cleanup, rightsizing, and optimization recommendations based on actual usage data.
-
-## When to Use This Skill
-
-Use this skill when the user asks to:
-- Optimize Azure costs or reduce spending
-- Analyze Azure subscription for cost savings
-- Generate cost optimization report
-- Find orphaned or unused resources
-- Rightsize Azure VMs, containers, or services
-- Identify where they're overspending in Azure
-- **Optimize Redis costs specifically** - See [Azure Redis Cost Optimization](./references/azure-redis.md) for Redis-specific analysis
 
 ## Instructions
 

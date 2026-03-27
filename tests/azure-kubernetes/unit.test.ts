@@ -38,7 +38,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Required Section Structure", () => {
     test("contains the standard skill sections", () => {
       expect(skill.content).toContain("## Quick Reference");
-      expect(skill.content).toContain("## When to Use This Skill");
       expect(skill.content).toContain("## MCP Tools");
       expect(skill.content).toContain("## Workflow");
       expect(skill.content).toContain("## Error Handling");

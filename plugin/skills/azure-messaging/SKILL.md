@@ -4,7 +4,7 @@ description: "Troubleshoot and resolve issues with Azure Messaging SDKs for Even
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "1.0.5"
 ---
 
 # Azure Messaging SDK Troubleshooting
@@ -16,17 +16,6 @@ metadata:
 | **Services** | Azure Event Hubs, Azure Service Bus |
 | **MCP Tools** | `mcp_azure_mcp_eventhubs`, `mcp_azure_mcp_servicebus` |
 | **Best For** | Diagnosing SDK connection, auth, and message processing issues |
-
-## When to Use This Skill
-
-- SDK connection failures, auth errors, or AMQP link errors
-- Idle timeout, connection inactivity, or slow reconnection after disconnect
-- AMQP link detach or detach-forced errors
-- Message lock lost, message lock expired, lock renewal failures, or batch lock timeouts
-- Session lock lost, session lock expired, or session receiver errors
-- Event processor or message handler stops processing
-- Duplicate events or checkpoint offset resets
-- SDK configuration questions (retry, prefetch, batch size, receive batch behavior)
 
 ## MCP Tools
 

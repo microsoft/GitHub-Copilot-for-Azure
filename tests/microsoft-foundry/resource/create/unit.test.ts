@@ -83,11 +83,6 @@ describe("microsoft-foundry:resource/create - Unit Tests", () => {
       expect(resourceCreateContent).toContain("AIServices");
     });
 
-    test("contains When to Use section", () => {
-      expect(resourceCreateContent).toContain("## When to Use");
-      expect(resourceCreateContent).toContain("Create Foundry resource");
-    });
-
     test("contains Prerequisites section", () => {
       expect(resourceCreateContent).toContain("## Prerequisites");
       expect(resourceCreateContent).toContain("Azure subscription");
@@ -199,8 +194,8 @@ describe("microsoft-foundry:resource/create - Unit Tests", () => {
     });
 
     test("provides routing clarity", () => {
-      expect(resourceCreateContent).toContain("When to Use");
-      expect(resourceCreateContent).toContain("Do NOT use for");
+      expect(resourceCreateContent).toContain("USE FOR:");
+      expect(resourceCreateContent).toContain("DO NOT USE FOR:");
     });
 
     test("follows references pattern for token optimization", () => {

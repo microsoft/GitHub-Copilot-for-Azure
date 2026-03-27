@@ -42,7 +42,6 @@ describe("create - Unit Tests", () => {
 
     test("contains expected sections", () => {
       expect(createContent).toContain("## Quick Reference");
-      expect(createContent).toContain("## When to Use This Skill");
       expect(createContent).toContain("## Workflow");
     });
 

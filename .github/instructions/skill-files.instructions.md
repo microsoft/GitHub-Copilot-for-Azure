@@ -34,10 +34,9 @@ Keep the main SKILL.md concise. Move detailed documentation to files under the `
 ## Required Sections
 
 1. **Quick Reference** - Summary table with key properties (MCP tools, CLI commands, best for)
-2. **When to Use This Skill** - Clear list of activation scenarios
-3. **MCP Tools** - Table of available MCP commands with parameters
-4. **Workflow/Steps** - Numbered or phased step-by-step processes
-5. **Error Handling** - Table of errors, messages, and remediation
+2. **MCP Tools** - Table of available MCP commands with parameters
+3. **Workflow/Steps** - Numbered or phased step-by-step processes
+4. **Error Handling** - Table of errors, messages, and remediation
 
 ## Formatting Standards
 

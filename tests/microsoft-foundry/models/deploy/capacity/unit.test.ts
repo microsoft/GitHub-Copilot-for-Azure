@@ -67,7 +67,6 @@ describe("capacity - Unit Tests", () => {
 
     test("contains expected sections", () => {
       expect(nestedContent).toContain("## Quick Reference");
-      expect(nestedContent).toContain("## When to Use This Skill");
       expect(nestedContent).toContain("## Workflow");
     });
 

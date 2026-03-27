@@ -63,10 +63,6 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain("| MCP server | `azure` |");
     });
 
-    test("contains When to Use section", () => {
-      expect(deployContent).toContain("## When to Use This Skill");
-    });
-
     test("documents MCP tools", () => {
       expect(deployContent).toContain("## MCP Tools");
       expect(deployContent).toContain("agent_update");
