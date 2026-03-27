@@ -80,6 +80,8 @@ If the user is unsure, provide safe defaults or guide discovery:
    - Recommended Azure services
    - Required changes and considerations
 
+📋 **See detailed assessment checklist**: [references/assessment-guide.md](references/assessment-guide.md)
+
 ### Phase 2: Service Mapping
 
 Map AWS Fargate components to Azure equivalents:
@@ -150,6 +152,8 @@ Map AWS Fargate components to Azure equivalents:
    - Scaling behavior
    - Logging and monitoring
    - Performance comparison
+
+🚀 **See detailed deployment instructions**: [references/deployment-guide.md](references/deployment-guide.md)
 
 ### Phase 6: Optimization
 
