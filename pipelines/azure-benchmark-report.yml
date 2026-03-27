@@ -9,18 +9,18 @@ parameters:
 - name: buildVersionDetail
   displayName: 'Build version detail (branch name or build ID)'
   type: string
-  default: 'main'
+  default: 'refs/heads/main'
 
 trigger: none
 pr: none
 
-# schedules:
-# - cron: '0 8 * * *'
-#   displayName: 'Daily 8am UTC'
-#   branches:
-#     include:
-#     - main
-#   always: true
+schedules:
+- cron: '0 11 * * *'
+  displayName: 'Daily 11am UTC'
+  branches:
+    include:
+    - main
+  always: true
 
 stages:
 - stage: ReportBenchmark
@@ -51,12 +51,37 @@ stages:
         artifactName: 'benchmark-run-ids'
         targetPath: '$(Pipeline.Workspace)/benchmark-run-ids'
 
-    - pwsh: |
-        $inputPath = '$(Pipeline.Workspace)/benchmark-run-ids'
-        ls $inputPath
+    - task: NodeTool@0
+      displayName: 'Setup Node.js'
+      inputs:
+        versionSpec: '22'
 
-        $runIdsPath = Join-Path $inputPath 'run_ids.json'
-        $runIds = Get-Content -Path $runIdsPath | ConvertFrom-Json
+    - script: npm install -g @github/copilot
+      displayName: 'Install GitHub Copilot CLI'
 
-        Write-Host "Run IDs: $($runIds -join ',')"
-      displayName: 'List downloaded artifacts'
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.12'
+      inputs:
+        versionSpec: '3.12'
+
+    - task: PipAuthenticate@1
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
+      inputs:
+        artifactFeeds: 'internal/MicrosoftSweBench'
+
+    - task: AzureCLI@2
+      name: GenerateBenchmarkReports
+      displayName: 'Generate benchmark reports for MSBench runs'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval'
+        addSpnToEnvironment: true
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-GenerateBenchmarkReport.ps1
+        scriptArguments: >
+          -InputPath "$(Pipeline.Workspace)/benchmark-run-ids"
+          -OutputPath "$(Build.ArtifactStagingDirectory)"
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-reports
+      displayName: 'Publish benchmark reports artifact'

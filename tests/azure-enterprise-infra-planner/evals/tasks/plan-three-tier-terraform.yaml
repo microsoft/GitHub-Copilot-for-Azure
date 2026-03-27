@@ -1,0 +1,57 @@
+# Task: Classic 3-tier application infrastructure planning with Terraform
+# Tests traditional multi-tier VM architecture with Terraform IaC
+id: plan-three-tier-terraform-001
+name: 3-Tier Architecture - Linux VMs + Terraform
+description: |
+  Plan Azure infrastructure for a classic 3-tier application using Terraform.
+  Validates resource selection for VM-based workloads with automation and compliance.
+
+tags:
+  - three-tier
+
+inputs:
+  prompt: |
+    Spin up Linux VMs for each tier, automate patch management via Azure Automation, and log traffic between subnets for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "vm"
+    - "subnet"
+    - "automation"
+
+graders:
+  - name: identifies_compute_resources
+    type: text
+    config:
+      regex_match:
+        - "(?i)vm|virtual.?machine|linux"
+
+  - name: identifies_networking
+    type: text
+    config:
+      regex_match:
+        - "(?i)subnet|vnet|network|traffic|compliance"
+
+  - name: identifies_automation
+    type: text
+    config:
+      regex_match:
+        - "(?i)automat|patch|update.?management"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+      content_patterns:
+        - path: ".azure/infrastructure-plan.json"
+          must_match:
+            - "(?i)virtual.?machine|vm"

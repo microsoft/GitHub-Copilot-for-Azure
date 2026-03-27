@@ -52,6 +52,7 @@ export default defineConfig(
       "**/__snapshots__/**",
       "swa-deployment-tests/**",
       "**/eval/fixtures/**",  // Test fixtures - not real TS projects
+      "**/evals/fixtures/**",  // Test fixtures - not real TS projects
     ],
   },
   // TypeScript files - use TypeScript parser with project
@@ -82,9 +83,7 @@ export default defineConfig(
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "error",
-      // A significant number of integration tests generate reports for human review.
-      // We don't have deterministic metrics for them yet.
-      "jest/expect-expect": "off",
+      "jest/expect-expect": "error",
       "import/no-unused-modules": [1, { "unusedExports": true }]
     },
   },

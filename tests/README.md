@@ -93,7 +93,7 @@ Run tests manually anytime during development (see [Running Tests Locally](#runn
 
 **Snapshots:** Trigger tests use Jest snapshots to detect keyword changes. If you intentionally change a skill's trigger behavior, update snapshots with:
 ```bash
-npm run update:snapshots -- --testPathPattern={skill-name}
+npm run update:snapshots -- --testPathPatterns={skill-name}
 ```
 
 ### 3. Integration Tests (`integration.test.ts`)
@@ -353,24 +353,23 @@ This updates the Skills Coverage Grid in this README.
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cloud-migrate | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
+| azure-compute | ✅ | ✅ | ✅ | ✅ | - |
 | azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
-| azure-create-app | ❌ | - | - | - | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
-| azure-deployment-preflight | ❌ | - | - | - | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
-| azure-functions | ✅ | - | - | ✅ | - |
+| azure-enterprise-infra-planner | ✅ | ✅ | ✅ | ✅ | - |
 | azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
-| azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
-| azure-observability | ✅ | - | - | ✅ | - |
-| azure-prepare | ✅ | - | - | ✅ | - |
-| azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
-| azure-resource-visualizer | ✅ | - | - | ✅ | - |
+| azure-messaging | ✅ | ✅ | ✅ | ✅ | - |
+| azure-prepare | ✅ | ✅ | ✅ | ✅ | - |
+| azure-quotas | ✅ | ✅ | ✅ | ✅ | - |
 | azure-rbac | ✅ | ✅ | ✅ | ✅ | - |
-| azure-security | ✅ | - | - | ✅ | - |
-| azure-security-hardening | ✅ | - | - | ✅ | - |
+| azure-resource-lookup | ✅ | ✅ | ✅ | ✅ | - |
+| azure-resource-visualizer | ✅ | ✅ | ✅ | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
+| azure-upgrade | ✅ | ✅ | ✅ | ✅ | - |
 | azure-validate | ✅ | ✅ | ✅ | ✅ | - |
 | entra-app-registration | ✅ | ✅ | ✅ | ✅ | - |
 | microsoft-foundry | ✅ | ✅ | ✅ | ✅ | - |
@@ -394,7 +393,7 @@ npm test
 
 If trigger keywords changed intentionally:
 ```bash
-npm run update:snapshots -- --testPathPattern={skill-name}
+npm run update:snapshots -- --testPathPatterns={skill-name}
 git diff  # Review changes before committing
 ```
 

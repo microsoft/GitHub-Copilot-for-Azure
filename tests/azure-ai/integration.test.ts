@@ -14,10 +14,11 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill } from "../utils/evaluate";
+import { isSkillInvoked, softCheckSkill, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-ai";
 const RUNS_PER_PROMPT = 5;
+const invocationRateThreshold = 0.8;
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -35,39 +36,41 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
     test("invokes azure-ai skill for AI Search query prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "How do I create a vector search index in Azure AI Search?"
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
-          throw e;
         }
-      }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
 
     test("invokes azure-ai skill for Azure Speech prompt", async () => {
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        try {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "How do I use Azure Speech to convert text to speech?"
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
-        } catch (e: unknown) {
-          if (e instanceof Error && e.message?.includes("Failed to load @github/copilot-sdk")) {
-            console.log("⏭️  SDK not loadable, skipping test");
-            return;
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
           }
-          throw e;
         }
-      }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
     });
   });
 });

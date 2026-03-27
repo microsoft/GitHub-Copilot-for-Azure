@@ -65,7 +65,7 @@ The Azure MCP Server provides tools for 40+ Azure services:
 - Azure AI Services Speech (speech-to-text, text-to-speech)
 
 ### Compute & Containers
-- Azure App Service, Container Apps, AKS
+- Azure App Service, Container Apps, Azure Kubernetes Service (AKS)
 - Azure Functions, Virtual Desktop
 
 ### Storage & Databases
@@ -98,7 +98,7 @@ Ask GitHub Copilot CLI or Claude Code to:
 - "List all secrets in my key vault 'my-vault'"
 - "Deploy a web app to Azure App Service"
 - "Query my Log Analytics workspace"
-- "List my AKS clusters"
+- "Deploy a best-practices Azure Kubernetes Service cluster"
 - "Send an SMS message to +1234567890 using Azure Communication Services"
 - "Generate an Azure CLI command to create a storage account"
 

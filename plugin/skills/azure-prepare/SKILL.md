@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.0.12"
 ---
 
 # Azure Prepare
@@ -28,14 +28,15 @@ Activate this skill when user wants to:
 
 ## Rules
 
-1. **Plan first** — Create `.azure/plan.md` before any code generation
+1. **Plan first** — Create `.azure/plan.md` **in the workspace root directory** (not the session-state folder) before any code generation
 2. **Get approval** — Present plan to user before execution
 3. **Research before generating** — Load references and invoke related skills
 4. **Update plan progressively** — Mark steps complete as you go
 5. **Validate before deploy** — Invoke azure-validate before azure-deploy
 6. **Confirm Azure context** — Use `ask_user` for subscription and location per [Azure Context](references/azure-context.md)
 7. ❌ **Destructive actions require `ask_user`** — [Global Rules](references/global-rules.md)
-8. **Scope: preparation only** — This skill generates infrastructure code and configuration files. Deployment execution (`azd up`, `azd deploy`, `terraform apply`) is handled by the **azure-deploy** skill, which provides built-in error recovery and deployment verification.
+8. ⛔ **NEVER delete user project or workspace directories** — When adding features to an existing project, MODIFY existing files. `azd init -t <template>` is for NEW projects only; do NOT run `azd init -t` in an existing workspace. Plain `azd init` (without a template argument) may be used in existing workspaces when appropriate. File deletions within a project (e.g., removing build artifacts or temp files) are permitted when appropriate, but NEVER delete the user's project or workspace directory itself. See [Global Rules](references/global-rules.md).
+9. **Scope: preparation only** — This skill generates infrastructure code and configuration files. Deployment execution (`azd up`, `azd deploy`, `terraform apply`) is handled by the **azure-deploy** skill, which provides built-in error recovery and deployment verification.
 
 ---
 
@@ -49,6 +50,10 @@ Activate this skill when user wants to:
 > 4. **EXECUTE** — Only after approval, execute the plan step by step
 >
 > The `.azure/plan.md` file is the **source of truth** for this workflow and for azure-validate and azure-deploy skills. Without it, those skills will fail.
+>
+> ⚠️ **CRITICAL: `.azure/plan.md` must be created inside the workspace root** (e.g., `/tmp/my-project/.azure/plan.md`). This is **NOT** the session-state `plan.md` used for internal workflow tracking. These are two different files:
+> - **`<workspace>/.azure/plan.md`** — The deployment plan artifact read by azure-validate and azure-deploy. **You must create this.**
+> - **`~/.copilot/session-state/<id>/plan.md`** — Internal session notes. This file is NOT visible to other skills.
 
 ---
 

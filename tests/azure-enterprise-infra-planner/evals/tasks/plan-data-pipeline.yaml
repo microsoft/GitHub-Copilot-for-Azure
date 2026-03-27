@@ -1,0 +1,10 @@
+id: plan-data-pipeline
+inputs:
+  prompt: "I need to set up a real-time data pipeline on Azure that ingests IoT sensor data from 10,000 devices, processes events in near real-time, stores raw and processed data for analytics, and triggers alerts when thresholds are exceeded. What Azure resources do I need? Please plan the infrastructure. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+graders:
+  - type: skill_invocation
+    name: skill_invoked
+    config:
+      required_skills:
+        - azure-enterprise-infra-planner
+      mode: any_order
