@@ -142,6 +142,8 @@ az containerapp env create \
 
 ### Step 3: Configure Virtual Network (Optional)
 
+**NOTE**: If you need VNet integration, create the VNet and subnet BEFORE Step 2, then use `--infrastructure-subnet-resource-id` when creating the Container Apps environment in Step 2. Alternatively, recreate the environment with VNet support.
+
 ```bash
 # Create VNet and subnet
 az network vnet create \
@@ -158,7 +160,10 @@ SUBNET_ID=$(az network vnet subnet show \
   --name container-apps-subnet \
   --query id -o tsv)
 
-# Create Container Apps environment with VNet
+# If you haven't created the environment yet, include --infrastructure-subnet-resource-id in Step 2
+# Otherwise, you'll need to delete and recreate the environment with VNet support:
+az containerapp env delete --name myapp-env --resource-group myapp-rg --yes
+
 az containerapp env create \
   --name myapp-env \
   --resource-group myapp-rg \
@@ -185,18 +190,22 @@ az keyvault create \
 # List secrets from AWS (for reference)
 aws secretsmanager list-secrets --region us-east-1
 
-# Get secret value from AWS
-SECRET_VALUE=$(aws secretsmanager get-secret-value \
+# Get secret value from AWS into a secure temporary file
+SECRET_FILE=$(mktemp)
+aws secretsmanager get-secret-value \
   --secret-id my-secret \
   --region us-east-1 \
   --query SecretString \
-  --output text)
+  --output text > "$SECRET_FILE"
 
-# Store in Azure Key Vault
+# Store in Azure Key Vault without putting the secret on the command line
 az keyvault secret set \
   --vault-name myapp-kv \
   --name my-secret \
-  --value "$SECRET_VALUE"
+  --file "$SECRET_FILE"
+
+# Securely clean up the temporary file
+shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
 ```
 
 ### Step 3: Create Managed Identity
@@ -584,12 +593,21 @@ az acr login --name myregistry --identity $IDENTITY_ID
 ### Secret Access Issues
 
 ```bash
-# Verify Key Vault access policy
-az keyvault show-policy \
+# Verify Key Vault access policy (for vaults using access policies)
+az keyvault show \
   --name myapp-kv \
-  --object-id $PRINCIPAL_ID
+  --query "properties.accessPolicies[?objectId=='$PRINCIPAL_ID']" \
+  -o table
 
-# Test secret access
+# If the vault uses RBAC instead of access policies, verify role assignments
+VAULT_ID=$(az keyvault show --name myapp-kv --query id -o tsv)
+az role assignment list \
+  --assignee $PRINCIPAL_ID \
+  --scope $VAULT_ID \
+  --query "[].{role:roleDefinitionName, scope:scope}" \
+  -o table
+
+# Test secret access (requires correct access policy or RBAC role)
 az keyvault secret show \
   --vault-name myapp-kv \
   --name db-password

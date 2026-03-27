@@ -110,30 +110,45 @@
 
 ### Resource Mapping
 
-```yaml
-# Example Task Definition to Container Apps mapping
+#### AWS ECS Task Definition (JSON)
 
-# AWS ECS Task Definition
+```json
 {
   "family": "my-app",
-  "cpu": "512",           # → 0.5 vCPU in Container Apps
-  "memory": "1024",       # → 1 GB in Container Apps
+  "cpu": "512",
+  "memory": "1024",
   "containerDefinitions": [
     {
       "name": "app",
       "image": "123456789.dkr.ecr.us-east-1.amazonaws.com/my-app:v1.0",
-      "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
       "environment": [
         { "name": "ENV", "value": "production" }
       ],
       "secrets": [
-        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:secretsmanager:..." }
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:123456789:secret:db-password"
+        }
       ]
     }
   ]
 }
+```
 
-# Azure Container Apps Equivalent
+**Mapping Notes:**
+- CPU: "512" (0.5 vCPU) → 0.5 in Container Apps
+- Memory: "1024" MB → 1Gi in Container Apps
+- Secrets Manager ARN → Azure Key Vault URL
+
+#### Azure Container Apps Equivalent (YAML)
+
+```yaml
 properties:
   configuration:
     ingress:
