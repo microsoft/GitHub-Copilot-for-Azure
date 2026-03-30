@@ -136,7 +136,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          prompt: "Check that my managed identity has the correct permissions in my Azure infrastructure code",
+          prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
 
