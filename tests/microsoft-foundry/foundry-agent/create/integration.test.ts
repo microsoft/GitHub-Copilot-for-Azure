@@ -18,6 +18,9 @@ import {
 import { softCheckSkill, isSkillInvoked, getToolCalls, withTestResult } from "../../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
+// These prompts trigger heavy agent work (file creation, scaffolding).
+// 3 runs keeps the test within the 20-minute Jest timeout while still
+// providing a meaningful invocation-rate signal.
 const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
 
