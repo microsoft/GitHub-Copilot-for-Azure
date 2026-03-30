@@ -30,15 +30,11 @@ metadata:
 
 ## Migration Workflow
 
-**Export** — Export Deployments, Services, ConfigMaps, Secrets
-
-**Assess** — Map to Container Apps ([assessment-guide.md](references/assessment-guide.md))
-
-**Images** — Push to ACR
-
-**IaC** — Convert to Bicep
-
-**Deploy** — Deploy & verify ([deployment-guide.md](references/deployment-guide.md))
+1. **Export** — Export Deployments, Services, ConfigMaps, Secrets using scripts
+2. **Assess** — Map to Container Apps, identify blockers ([assessment-guide.md](references/assessment-guide.md))
+3. **Migrate Images** — Push/import to ACR
+4. **Generate IaC** — Convert k8s YAML to Bicep templates
+5. **Deploy** — Deploy apps, verify, migrate traffic ([deployment-guide.md](references/deployment-guide.md))
 
 ## MCP Tools
 
