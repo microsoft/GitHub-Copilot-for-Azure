@@ -133,10 +133,16 @@ Before running `azd up`, verify no unresolved template variables exist in Terraf
 
 ```bash
 # Fail if Go-style template variables found in infra/
-grep -rn '{{ *\.Env\.' infra/ && echo "ERROR: Unresolved template variables found" && exit 1
+if grep -rn '{{ *.Env\.' infra/; then
+  echo "ERROR: Unresolved template variables found"
+  exit 1
+fi
 
 # Fail if main.tfvars.json exists (should not be used with azd)
-test -f infra/main.tfvars.json && echo "ERROR: Remove main.tfvars.json — use TF_VAR_* env vars instead" && exit 1
+if test -f infra/main.tfvars.json; then
+  echo "ERROR: Remove main.tfvars.json — use TF_VAR_* env vars instead"
+  exit 1
+fi
 ```
 
 **If either check fails:**

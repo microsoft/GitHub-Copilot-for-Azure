@@ -127,7 +127,7 @@ find infra/ -name "*.tfvars.json" -exec echo "WARNING: Found {}" \;
 **If `.tfvars.json` file is found:**
 - For azd+Terraform projects, variable passing is handled by azd environment → Terraform variable auto-mapping
 - Remove the `.tfvars.json` file and rely on `azd env set` or `TF_VAR_*` environment variables
-- Static defaults belong in `variables.tf` `default` values, not in a separate tfvars file
+- Prefer putting static defaults in `variables.tf` `default` values. Using `terraform.tfvars` (HCL) for static defaults is acceptable if your team prefers it; this restriction is specifically about avoiding `.tfvars.json` files and Go-style template expressions.
 
 ## References
 
