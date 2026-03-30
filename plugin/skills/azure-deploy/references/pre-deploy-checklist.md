@@ -133,7 +133,7 @@ Before running `azd up`, verify no unresolved template variables exist in Terraf
 
 ```bash
 # Fail if Go-style template variables found in infra/
-if grep -rn '{{ *.Env\.' infra/; then
+if grep -rn '{{ \.Env\.' infra/; then
   echo "ERROR: Unresolved template variables found"
   exit 1
 fi
