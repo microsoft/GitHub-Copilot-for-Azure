@@ -86,10 +86,12 @@ docker push "${ACR_NAME}.azurecr.io/spring-app:v1.0"
 ```bash
 #!/bin/bash
 set -euo pipefail
-az storage account create --name springstore --resource-group spring-rg --location eastus --sku Standard_LRS
-STORAGE_KEY=$(az storage account keys list --account-name springstore --resource-group spring-rg --query "[0].value" -o tsv)
-az storage share create --name spring-data --account-name springstore --account-key "$STORAGE_KEY"
-az containerapp env storage set --name spring-env --resource-group spring-rg --storage-name spring-storage --azure-file-account-name springstore --azure-file-account-key "$STORAGE_KEY" --azure-file-share-name spring-data --access-mode ReadWrite
+# Storage account name must be globally unique: 3-24 chars, lowercase letters/numbers only
+STORAGE_ACCOUNT="${STORAGE_ACCOUNT:-<storage-account>}"
+az storage account create --name "$STORAGE_ACCOUNT" --resource-group spring-rg --location eastus --sku Standard_LRS
+STORAGE_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT" --resource-group spring-rg --query "[0].value" -o tsv)
+az storage share create --name spring-data --account-name "$STORAGE_ACCOUNT" --account-key "$STORAGE_KEY"
+az containerapp env storage set --name spring-env --resource-group spring-rg --storage-name spring-storage --azure-file-account-name "$STORAGE_ACCOUNT" --azure-file-account-key "$STORAGE_KEY" --azure-file-share-name spring-data --access-mode ReadWrite
 ```
 
 ## Phase 5: Migrate Secrets to Key Vault
@@ -98,32 +100,40 @@ az containerapp env storage set --name spring-env --resource-group spring-rg --s
 ```bash
 #!/bin/bash
 set -euo pipefail
-az keyvault create --name spring-kv --resource-group spring-rg --location eastus
+# Key Vault name must be globally unique: 3-24 chars, letters/numbers/hyphens
+KEY_VAULT="${KEY_VAULT:-<keyvault-name>}"
+az keyvault create --name "$KEY_VAULT" --resource-group spring-rg --location eastus
 IDENTITY_ID=$(az identity create --name spring-id --resource-group spring-rg --location eastus --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --ids "$IDENTITY_ID" --query principalId -o tsv)
-az keyvault set-policy --name spring-kv --object-id "$PRINCIPAL_ID" --secret-permissions get list
+az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
 SECRET_FILE=$(mktemp)
 trap 'shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"' EXIT
-echo -n "your-db-password" > "$SECRET_FILE"
-az keyvault secret set --vault-name spring-kv --name db-password --file "$SECRET_FILE"
+echo -n "<your-db-password>" > "$SECRET_FILE"
+az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --file "$SECRET_FILE"
+# ACR name from Phase 3
+ACR_NAME="${ACR_NAME:-<acr>}"
 ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
 az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$ACR_ID"
 ```
 
 **PowerShell:**
 ```powershell
-az keyvault create --name spring-kv --resource-group spring-rg --location eastus
+# Key Vault name must be globally unique: 3-24 chars, letters/numbers/hyphens
+$KEY_VAULT = if ($env:KEY_VAULT) { $env:KEY_VAULT } else { "<keyvault-name>" }
+az keyvault create --name $KEY_VAULT --resource-group spring-rg --location eastus
 $identity = az identity create --name spring-id --resource-group spring-rg --location eastus | ConvertFrom-Json
 $IDENTITY_ID = $identity.id
 $PRINCIPAL_ID = $identity.principalId
-az keyvault set-policy --name spring-kv --object-id $PRINCIPAL_ID --secret-permissions get list
+az keyvault set-policy --name $KEY_VAULT --object-id $PRINCIPAL_ID --secret-permissions get list
 $secretFile = New-TemporaryFile
 try {
-  "your-db-password" | Out-File $secretFile.FullName -Encoding utf8 -NoNewline
-  az keyvault secret set --vault-name spring-kv --name db-password --file $secretFile.FullName
+  "<your-db-password>" | Out-File $secretFile.FullName -Encoding utf8 -NoNewline
+  az keyvault secret set --vault-name $KEY_VAULT --name db-password --file $secretFile.FullName
 } finally {
   Remove-Item $secretFile.FullName -Force -ErrorAction SilentlyContinue
 }
+# ACR name from Phase 3
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
 $acr = az acr show --name $ACR_NAME | ConvertFrom-Json
 $ACR_ID = $acr.id
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
@@ -135,7 +145,8 @@ az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_I
 ```bash
 #!/bin/bash
 set -euo pipefail
-SECRET_URI=$(az keyvault secret show --vault-name spring-kv --name db-password --query id -o tsv)
+KEY_VAULT="${KEY_VAULT:-<keyvault-name>}"
+SECRET_URI=$(az keyvault secret show --vault-name "$KEY_VAULT" --name db-password --query id -o tsv)
 az containerapp create --name spring-app --resource-group spring-rg --environment spring-env \
   --image "${ACR_NAME}.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external \
   --cpu 2.0 --memory 4Gi --min-replicas 2 --max-replicas 10 \
@@ -236,7 +247,7 @@ az containerapp update --name spring-app --resource-group spring-rg \
 | Image pull fails | Verify ACR role: `az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID` |
 | App won't start | Check logs: `az containerapp logs show --name spring-app -g spring-rg --tail 100` |
 | Health check fails | Verify port 8080 matches `server.port` in application.properties |
-| Secrets not accessible | Check Key Vault policy: `az keyvault show --name spring-kv --query properties.accessPolicies` |
+| Secrets not accessible | Check Key Vault policy: `az keyvault show --name $KEY_VAULT --query properties.accessPolicies` |
 | Storage mount fails | Verify storage configuration: `az containerapp env storage list --name spring-env -g spring-rg` |
 | High memory usage | Reduce max heap: add `--env-vars JAVA_OPTS="-Xmx2g"` to container app |
 
