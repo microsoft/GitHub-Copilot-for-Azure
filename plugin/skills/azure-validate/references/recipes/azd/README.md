@@ -112,18 +112,15 @@ Build the project and verify there are no errors. If the build fails, fix the is
 
 ### 9. Docker Build Context Validation
 
-**If any service in `azure.yaml` uses a Dockerfile** (check service `project` path for a `Dockerfile`), validate the build context before packaging:
+**If any service in `azure.yaml` uses a Dockerfile** (check the service's `project` path from `azure.yaml` for a `Dockerfile`), validate the build context before packaging:
 
 1. Read each service's `Dockerfile`
 2. If the Dockerfile contains `npm ci`, verify `package-lock.json` exists in the same directory
-3. If `package-lock.json` is missing, generate it before proceeding:
+3. If `package-lock.json` is missing, generate it in the service's `project` path directory before proceeding:
 
 ```bash
-cd ./src/<service>
+cd <service-project-path>
 npm install --package-lock-only
-```
-
-> ⚠️ **Warning:** `npm ci` will fail during Docker build if `package-lock.json` is missing. This check prevents Docker build failures during `azd package` and `azd up`.
 
 ### 10. Package Validation
 
