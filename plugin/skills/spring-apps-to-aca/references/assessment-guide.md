@@ -27,11 +27,12 @@
 ## Platform Compatibility
 
 ### Supported Java Versions
-- Java 8, 11, 17, 21 (verify with `java -version`)
+- **For Spring Boot 2.x source apps**: Java 8 or 11 supported for assessment
+- **For Spring Boot 3.x target apps**: Java 17 or 21 required (verify with `java -version`)
 
 ### Spring Boot Version Requirements
-- **Required**: Spring Boot 3.x
-- **Migration needed**: Spring Boot 2.x → follow [Spring Boot 3.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide)
+- **Recommended target**: Spring Boot 3.x (requires Java 17+)
+- **Supported source**: Spring Boot 2.x on Java 8/11 → plan upgrade to Java 17+ and follow [Spring Boot 3.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide)
 
 ### Spring Cloud Compatibility
 - Verify Spring Cloud version matches Spring Boot 3.x requirements
@@ -53,7 +54,7 @@
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/mydb
 spring.datasource.username=dbuser
-spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 ```
 
 **application.yml:**
@@ -76,7 +77,7 @@ spring:
 
 **application.properties:**
 ```properties
-spring.activemq.brokerurl=broker:(tcp://localhost:61616)
+spring.activemq.broker-url=broker:(tcp://localhost:61616)
 spring.activemq.user=admin
 ```
 
@@ -93,7 +94,7 @@ spring.activemq.user=admin
 |----------|---------------|
 | OAuth2 | Spring Security reference docs |
 | Auth0 | Auth0 Spring Security documentation |
-| PingFederate | Auth0 PingFederate instructions |
+| PingFederate | Spring Security SAML 2.0/OIDC docs, PingIdentity docs |
 | Microsoft Entra ID | No changes needed for Azure Container Apps |
 
 ## Scheduled Jobs Assessment

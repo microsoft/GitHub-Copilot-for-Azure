@@ -51,7 +51,7 @@ metadata:
 |-------|------------|
 | Local state issues | Migrate to Azure Cache, Cosmos DB, or Azure SQL |
 | File system writes | Use Azure Files storage mounts or Azure Blob Storage |
-| Platform incompatibility | Upgrade to Java 8/11/17/21, Spring Boot 3.x |
+| Platform incompatibility | Upgrade to Java 17/21, Spring Boot 3.x |
 
 ## Completion
 
