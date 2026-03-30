@@ -40,6 +40,7 @@ Load [assessment-guide.md](assessment-guide.md). Check: StatefulSets, DaemonSets
 
 ## Phase 3: Migrate Images
 
+**Bash:**
 ```bash
 #!/bin/bash
 set -euo pipefail
@@ -49,13 +50,31 @@ az acr login --name "$ACR_NAME"
 az acr import --name "$ACR_NAME" --source "${SOURCE_REGISTRY}/app:v1.0" --image app:v1.0
 ```
 
+**PowerShell:**
+```powershell
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+$SOURCE_REGISTRY = if ($env:SOURCE_REGISTRY) { $env:SOURCE_REGISTRY } else { "<registry>" }
+az acr login --name $ACR_NAME
+az acr import --name $ACR_NAME --source "$SOURCE_REGISTRY/app:v1.0" --image app:v1.0
+```
+
 ## Phase 4: Infrastructure
 
+**Bash:**
 ```bash
 az group create --name myapp-rg --location eastus
 az monitor log-analytics workspace create --resource-group myapp-rg --workspace-name myapp-logs --location eastus
 LOG_ID=$(az monitor log-analytics workspace show --resource-group myapp-rg --workspace-name myapp-logs --query customerId -o tsv)
 LOG_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group myapp-rg --workspace-name myapp-logs --query primarySharedKey -o tsv)
+az containerapp env create --name myapp-env --resource-group myapp-rg --location eastus --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY
+```
+
+**PowerShell:**
+```powershell
+az group create --name myapp-rg --location eastus
+az monitor log-analytics workspace create --resource-group myapp-rg --workspace-name myapp-logs --location eastus
+$LOG_ID = az monitor log-analytics workspace show --resource-group myapp-rg --workspace-name myapp-logs --query customerId -o tsv
+$LOG_KEY = az monitor log-analytics workspace get-shared-keys --resource-group myapp-rg --workspace-name myapp-logs --query primarySharedKey -o tsv
 az containerapp env create --name myapp-env --resource-group myapp-rg --location eastus --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY
 ```
 
@@ -81,6 +100,18 @@ az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_I
 **PowerShell:**
 ```powershell
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
+
+# Create managed identity and assign permissions
+$identity = az identity create --name myapp-id --resource-group myapp-rg --location eastus | ConvertFrom-Json
+$IDENTITY_ID = $identity.id
+$PRINCIPAL_ID = $identity.principalId
+az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list | Out-Null
+$ACR_NAME = "<acr>"
+$acr = az acr show --name $ACR_NAME | ConvertFrom-Json
+$ACR_ID = $acr.id
+az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID | Out-Null
+
+# Migrate Kubernetes secret to Key Vault
 $secretFile = New-TemporaryFile
 try {
   kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}' | ForEach-Object {
