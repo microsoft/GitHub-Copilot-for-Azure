@@ -25,31 +25,27 @@ metadata:
 
 ## Rules
 
-1. Export → assess → migrate → deploy; generate assessment before migration
-2. Never modify source k8s cluster; require confirmation for destructive actions
-
-## Required Inputs
-
-kubectl access, namespace(s), Azure subscription/RG/region, ACR name
+1. Export → assess → migrate → deploy
+2. Never modify source cluster
 
 ## Migration Workflow
 
-**Phase 1: Export** — Export Deployments, Services, Ingress, ConfigMaps, Secrets
+**Export** — Export Deployments, Services, ConfigMaps, Secrets
 
-**Phase 2: Assess** — Map k8s to Container Apps; identify blockers ([assessment-guide.md](references/assessment-guide.md))
+**Assess** — Map to Container Apps ([assessment-guide.md](references/assessment-guide.md))
 
-**Phase 3: Images** — Push to ACR or import
+**Images** — Push to ACR
 
-**Phase 4: IaC** — Convert YAML to Bicep (Deployment→App, Service→Ingress)
+**IaC** — Convert to Bicep
 
-**Phase 5: Deploy** — Deploy, verify, migrate traffic ([deployment-guide.md](references/deployment-guide.md))
+**Deploy** — Deploy & verify ([deployment-guide.md](references/deployment-guide.md))
 
 ## MCP Tools
 
-| Tool | Parameters | Example |
-|------|-----------|---------|
-| `mcp_azure_mcp_documentation` | `resource: "container-apps"` | `mcp_azure_mcp_documentation({resource: "container-apps"})` |
-| `mcp_azure_mcp_get_bestpractices` | `resource: "container-apps"`, `action: "deploy"` | `mcp_azure_mcp_get_bestpractices({resource: "container-apps", action: "deploy"})` |
+| Tool | Parameters |
+|------|-----------|
+| `mcp_azure_mcp_documentation` | `resource: "container-apps"` |
+| `mcp_azure_mcp_get_bestpractices` | `resource: "container-apps"`, `action: "deploy"` |
 
 ## Error Handling
 
@@ -58,7 +54,6 @@ kubectl access, namespace(s), Azure subscription/RG/region, ACR name
 | Image pull | `az containerapp registry set --identity system` |
 | Port mismatch | Verify `targetPort` matches app port |
 | OOM | Reduce to ≤4 vCPU, ≤8 GiB |
-| DNS | Use `APP.internal.ENV.REGION.azurecontainerapps.io` |
 
 ## Completion
 
