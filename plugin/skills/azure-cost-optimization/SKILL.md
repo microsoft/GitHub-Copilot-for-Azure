@@ -4,7 +4,7 @@ description: "Identify Azure cost savings from usage and spending data. USE FOR:
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Cost Optimization Skill
