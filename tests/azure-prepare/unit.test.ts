@@ -58,7 +58,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Plan-First Workflow", () => {
     test("mentions plan file requirement", () => {
-      expect(skill.content).toContain(".azure/plan.md");
+      expect(skill.content).toContain(".azure/deployment-plan.md");
     });
 
     test("requires user confirmation for subscription and location", () => {
