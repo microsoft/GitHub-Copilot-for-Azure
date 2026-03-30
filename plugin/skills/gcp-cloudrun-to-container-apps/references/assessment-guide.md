@@ -93,12 +93,16 @@ Generate `assessment-report.md` with:
    - Feature parity table
    - Code changes (SDK updates, connection strings, authentication, timeout handling)
    - Operational changes (pipelines, monitoring, runbooks)
+
+### Complexity Assessment Guidelines
+
+#### Medium Complexity
 - Internal ingress
 - Pub/Sub or Eventarc triggers
 - Custom service account with GCP service access
 - Cloud Scheduler integration
 
-### High Complexity
+#### High Complexity
 - Complex traffic management (multiple revisions)
 - Extensive VPC networking with Shared VPC
 - Numerous secrets and configurations

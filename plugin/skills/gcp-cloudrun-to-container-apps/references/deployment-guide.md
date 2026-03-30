@@ -7,6 +7,8 @@
 
 ## Phase 1: Image Migration
 
+### Bash
+
 ```bash
 #!/bin/bash
 set -euo pipefail
@@ -25,6 +27,27 @@ for img in "app:v1" "worker:v1"; do
   docker tag ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$img $ACR_NAME.azurecr.io/$img
   docker push $ACR_NAME.azurecr.io/$img
 done
+```
+
+### PowerShell
+
+```powershell
+$ErrorActionPreference = 'Stop'
+
+$GCP_PROJECT = if ($env:GCP_PROJECT) { $env:GCP_PROJECT } else { "<project>" }
+$GCP_REGION = if ($env:GCP_REGION) { $env:GCP_REGION } else { "<region>" }
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+
+# Auth
+gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev"
+az acr login --name $ACR_NAME
+
+# Migrate images
+@("app:v1", "worker:v1") | ForEach-Object {
+  docker pull "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$_"
+  docker tag "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$_" "${ACR_NAME}.azurecr.io/$_"
+  docker push "${ACR_NAME}.azurecr.io/$_"
+}
 ```
 
 ## Phase 2: Infrastructure
@@ -54,6 +77,8 @@ az containerapp env create \
 
 ### VNet Integration (if Cloud Run uses VPC Connector)
 
+> **Note**: Skip Phase 2 basic environment creation if using VNet. Choose one path: basic (above) OR VNet (below).
+
 ```bash
 # Create VNet
 az network vnet create \
@@ -64,7 +89,7 @@ az network vnet create \
 SUBNET_ID=$(az network vnet subnet show --resource-group myapp-rg \
   --vnet-name myapp-vnet --name aca-subnet --query id -o tsv)
 
-# Environment with VNet
+# Environment with VNet (replaces basic env creation above)
 az containerapp env create \
   --name myapp-env --resource-group myapp-rg --location eastus \
   --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY \
@@ -72,6 +97,8 @@ az containerapp env create \
 ```
 
 ## Phase 3: Secrets
+
+### Bash
 
 ```bash
 # Key Vault
@@ -82,6 +109,27 @@ SECRET_FILE=$(mktemp)
 gcloud secrets versions access latest --secret=db-pw --project=$GCP_PROJECT > "$SECRET_FILE"
 az keyvault secret set --vault-name myapp-kv --name db-pw --file "$SECRET_FILE"
 shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
+```
+
+### PowerShell
+
+```powershell
+# Key Vault
+az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
+
+# Migrate secrets securely
+$secretFile = New-TemporaryFile
+try {
+  gcloud secrets versions access latest --secret=db-pw --project=$env:GCP_PROJECT | Out-File -FilePath $secretFile.FullName -Encoding utf8
+  az keyvault secret set --vault-name myapp-kv --name db-pw --file $secretFile.FullName
+} finally {
+  Remove-Item $secretFile.FullName -Force -ErrorAction SilentlyContinue
+}
+```
+
+### Managed Identity
+
+```bash
 
 # Managed Identity
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
@@ -90,7 +138,7 @@ PRINCIPAL_ID=$(az identity show --name myapp-id --resource-group myapp-rg --quer
 
 # Grant permissions
 az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list
-ACR_ID=$(az acr show --name <acr> --query id -o tsv)
+ACR_ID=$(az acr show --name $ACR_NAME --query id -o tsv)
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
 ```
 
@@ -103,12 +151,12 @@ SECRET_URI=$(az keyvault secret show --vault-name myapp-kv --name db-pw --query 
 
 az containerapp create \
   --name my-app --resource-group myapp-rg --environment myapp-env \
-  --image <acr>.azurecr.io/app:v1 \
+  --image $ACR_NAME.azurecr.io/app:v1 \
   --target-port 8080 --ingress external \
   --cpu 1.0 --memory 1Gi \
   --min-replicas 0 --max-replicas 10 \
   --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID \
-  --registry-server <acr>.azurecr.io \
+  --registry-server $ACR_NAME.azurecr.io \
   --secrets db-pw=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID \
   --env-vars ENV=prod DB_PASSWORD=secretref:db-pw \
   --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
@@ -148,7 +196,7 @@ az containerapp replica list --name my-app --resource-group myapp-rg --revision 
 
 | Issue | Solution |
 |-------|----------|
-| Image pull fails | Verify ACR access: `az acr check-health --name <acr>` and managed identity ACRPull role |
+| Image pull fails | Verify ACR access: `az acr check-health --name $ACR_NAME` and managed identity ACRPull role |
 | Container won't start | Check logs: `az containerapp logs show --name <app> --resource-group <rg> --tail 100` |
 | Secrets not accessible | Verify Key Vault policy: `az keyvault set-policy --name <kv> --object-id <principal> --secret-permissions get list` |
 | Timeout issues (>30min) | Redesign as background job (Azure Functions Durable, Queue Storage, Container Instances) |
