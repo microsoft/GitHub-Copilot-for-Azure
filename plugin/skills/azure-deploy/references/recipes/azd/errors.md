@@ -15,6 +15,7 @@ These errors occur **during** `azd up` execution:
 | `map has no entry for key "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID"` | Missing managed identity env vars | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "MANAGED_IDENTITY_CLIENT_ID"` | Missing managed identity client ID | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `found '2' resources tagged with 'azd-service-name: <name>'` | Previous deployment left duplicate-tagged resources in same RG | **Preferred**: Create fresh env with `azd env new <new-name>`, set subscription/location, redeploy. **Alternative**: Delete conflicting resources (requires `ask_user`). |
+| Literal `{{ .Env.* }}` in Terraform errors | azd does not interpolate template variables in `.tfvars.json` | See [Unresolved Terraform Template Variables](#unresolved-terraform-template-variables) |
 
 > ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [Pre-Deploy Checklist](../../pre-deploy-checklist.md).
 
@@ -78,6 +79,46 @@ azd deploy --no-prompt
 ```
 
 > 💡 **Tip:** This issue is specific to Aspire limited mode. Manually setting these environment variables after `azd provision` is the recommended workaround.
+
+## Unresolved Terraform Template Variables
+
+**Symptom:** Terraform receives literal Go-style template strings instead of resolved values during `azd provision`:
+
+```
+Error: Invalid value for variable "environment_name"
+  The value "{{ .Env.AZURE_ENV_NAME }}" is not valid.
+```
+
+Or Terraform silently uses the literal string, causing resource naming failures, state conflicts, and cascading errors that lead to deployment timeouts.
+
+**Cause:** azd's template engine processes Go-style `{{ .Env.* }}` variables in `azure.yaml` and service manifests, but does **NOT** interpolate them in `.tfvars.json` or any Terraform variable files. If `azure-prepare` generated a `main.tfvars.json` with template expressions, those literal strings are passed to Terraform.
+
+**Solution:**
+
+1. **Remove** the `main.tfvars.json` file from `infra/`:
+   ```bash
+   rm infra/main.tfvars.json
+   ```
+
+2. **Use `TF_VAR_*` environment variables** to pass values to Terraform:
+   ```bash
+   azd env set TF_VAR_environment_name "$(azd env get-value AZURE_ENV_NAME)"
+   azd env set TF_VAR_location "$(azd env get-value AZURE_LOCATION)"
+   azd env set TF_VAR_subscription_id "$(azd env get-value AZURE_SUBSCRIPTION_ID)"
+   ```
+
+3. **Or rely on azd auto-mapping** — azd automatically passes `AZURE_ENV_NAME`, `AZURE_LOCATION`, and `AZURE_SUBSCRIPTION_ID` as Terraform variables when they match variable names in `variables.tf`. Ensure your `variables.tf` declares:
+   ```hcl
+   variable "environment_name" { type = string }
+   variable "location" { type = string }
+   ```
+
+4. **Re-run deployment:**
+   ```bash
+   azd up --no-prompt
+   ```
+
+> ⚠️ **Prevention:** This issue should be caught by `azure-validate` Step 10 (Template Variable Resolution Check) before deployment. If you encounter it, re-run validation after fixing.
 
 ## Retry
 

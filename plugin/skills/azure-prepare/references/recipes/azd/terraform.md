@@ -117,6 +117,20 @@ provider "azurerm" {
 
 ### 4. Variables and Outputs
 
+> ⚠️ **WARNING: Do NOT use Go-style template variables in `.tfvars.json` files**
+>
+> azd's template engine (`{{ .Env.* }}`) only processes `azure.yaml` — it does **NOT** interpolate
+> template variables in `.tfvars.json` or any Terraform variable files. Literal strings like
+> `{{ .Env.AZURE_ENV_NAME }}` will be passed directly to Terraform, causing deployment failures.
+>
+> **Do NOT generate `main.tfvars.json`** with template variables. Instead, pass variables to Terraform
+> using one of these methods (in order of preference):
+>
+> 1. **azd auto-mapping** — azd automatically passes `AZURE_ENV_NAME`, `AZURE_LOCATION`, and
+>    `AZURE_SUBSCRIPTION_ID` as Terraform variables when they match variable names in `variables.tf`
+> 2. **`TF_VAR_*` environment variables** — Set via `azd env set TF_VAR_myvar value`
+> 3. **`terraform.tfvars` (HCL format)** — Static defaults only; no template expressions
+
 **variables.tf:**
 ```hcl
 variable "environment_name" {
@@ -228,16 +242,30 @@ azd up
 
 **azd environment variables** → **Terraform variables**
 
+azd automatically maps its environment variables to Terraform variables. Define the variable
+in `variables.tf` and set it via `azd env set`:
+
 ```bash
 # Set azd variable
 azd env set DATABASE_NAME mydb
+```
 
-# Access in Terraform
+```hcl
+# In variables.tf — azd passes this automatically
 variable "database_name" {
   type    = string
-  default = env("DATABASE_NAME")
 }
 ```
+
+For custom variables not managed by azd, use `TF_VAR_*` environment variables:
+
+```bash
+azd env set TF_VAR_custom_setting "my-value"
+```
+
+> ⚠️ **Do NOT use `main.tfvars.json` with template expressions.** azd does not process Go-style
+> template variables (`{{ .Env.* }}`) in Terraform variable files. Use `azd env set` or `TF_VAR_*`
+> environment variables instead. See [Variables and Outputs](#4-variables-and-outputs) for details.
 
 **Remote state setup:**
 
@@ -426,6 +454,8 @@ resource "azurerm_cosmosdb_account" "cosmos" {
 | `terraform command not found` | Install Terraform CLI: `brew install terraform` or download from terraform.io |
 | State conflicts | Configure remote backend in provider.tf |
 | Variable not passed to Terraform | Ensure variable is set with `azd env set` and defined in variables.tf |
+| Literal `{{ .Env.* }}` in Terraform errors | Do NOT use Go-style templates in `.tfvars.json`. Use `azd env set` or `TF_VAR_*` env vars instead |
+| `main.tfvars.json` interpolation failure | azd does not process template variables in tfvars files. Remove the file and use `TF_VAR_*` env vars |
 
 ## References
 

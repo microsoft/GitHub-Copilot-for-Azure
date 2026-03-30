@@ -18,6 +18,7 @@ Validation steps for Terraform deployments.
 - [ ] 7. Plan Preview
 - [ ] 8. State Backend
 - [ ] 9. Azure Policy Validation
+- [ ] 10. Template Variable Resolution Check (AZD+Terraform)
 
 ## Validation Details
 
@@ -97,6 +98,36 @@ terraform state list
 ### 9. Azure Policy Validation
 
 See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+
+### 10. Template Variable Resolution Check (AZD+Terraform)
+
+> ⚠️ **CRITICAL for azd+Terraform projects.** azd does NOT interpolate Go-style template variables
+> (`{{ .Env.* }}`) in `.tfvars.json` files. Unresolved template strings passed to Terraform cause
+> cascading deployment failures, state conflicts, and timeouts.
+
+**Check for unresolved template variables:**
+
+```bash
+# Check for Go-style template variables in Terraform files
+grep -rn '{{ *\.Env\.' infra/ || echo "OK: No template variables found"
+
+# Check for any .tfvars.json files (should not exist in azd+Terraform projects)
+find infra/ -name "*.tfvars.json" -exec echo "WARNING: Found {}" \;
+```
+
+**If template variables are found:**
+1. **Remove** any `main.tfvars.json` file from `infra/`
+2. **Replace** template variable references with `TF_VAR_*` environment variables:
+   ```bash
+   azd env set TF_VAR_environment_name "$(azd env get-value AZURE_ENV_NAME)"
+   ```
+3. **Verify** that `variables.tf` declares all required variables so azd can auto-map them
+4. **Re-run** `terraform validate` and `terraform plan` to confirm
+
+**If `.tfvars.json` file is found:**
+- For azd+Terraform projects, variable passing is handled by azd environment → Terraform variable auto-mapping
+- Remove the `.tfvars.json` file and rely on `azd env set` or `TF_VAR_*` environment variables
+- Static defaults belong in `variables.tf` `default` values, not in a separate tfvars file
 
 ## References
 

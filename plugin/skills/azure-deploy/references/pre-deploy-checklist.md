@@ -125,6 +125,27 @@ azd up --no-prompt
 
 ---
 
+## Step 9: Verify Terraform Variable Resolution (AZD+Terraform Only)
+
+> ⚠️ **MANDATORY for azd+Terraform projects.** Skip this step for Bicep or pure Terraform deployments.
+
+Before running `azd up`, verify no unresolved template variables exist in Terraform files:
+
+```bash
+# Fail if Go-style template variables found in infra/
+grep -rn '{{ *\.Env\.' infra/ && echo "ERROR: Unresolved template variables found" && exit 1
+
+# Fail if main.tfvars.json exists (should not be used with azd)
+test -f infra/main.tfvars.json && echo "ERROR: Remove main.tfvars.json — use TF_VAR_* env vars instead" && exit 1
+```
+
+**If either check fails:**
+1. Remove `main.tfvars.json` from `infra/`
+2. Set variables via `azd env set` or `TF_VAR_*` environment variables
+3. Re-run `azure-validate` before proceeding
+
+---
+
 ## Quick Reference: Correct AZD Sequence
 
 ```bash
