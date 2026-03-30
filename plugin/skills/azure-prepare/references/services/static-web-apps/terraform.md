@@ -107,7 +107,7 @@ services:
 
 ## References
 
-- [AZD + Terraform](../../../recipes/azd/terraform.md) — Full azd+Terraform project setup
+- [AZD + Terraform](../../recipes/azd/terraform.md) — Full azd+Terraform project setup
 - [Region Availability](region-availability.md) — SWA is NOT available in all regions
 - [Routing and Auth](routing.md)
 - [Deployment](deployment.md)
