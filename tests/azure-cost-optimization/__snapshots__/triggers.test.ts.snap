@@ -2,7 +2,7 @@
 
 exports[`azure-cost-optimization - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Identify Azure cost savings from usage and spending data. USE FOR: optimize Azure costs, reduce Azure spending/expenses, analyze Azure costs, find cost savings, generate cost optimization report, identify orphaned resources to delete, rightsize VMs, reduce waste, optimize Redis costs, optimize storage costs, AKS cost analysis add-on, namespace cost, cost spike, anomaly, budget alert, AKS cost visibility. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues (use azure-security)",
+  "description": "Identify Azure cost savings from usage and spending data. USE FOR: optimize Azure costs, reduce Azure spending/expenses, analyze Azure costs, find cost savings, generate cost optimization report, identify orphaned resources to delete, rightsize VMs, reduce waste, optimize Redis costs, optimize storage costs, AKS cost analysis add-on, namespace cost, cost spike, anomaly, budget alert, AKS cost visibility. DO NOT USE FOR: deploying resources (use azure-deploy), general Azure diagnostics (use azure-diagnostics), security issues or hardening guidance",
   "extractedKeywords": [
     "add-on",
     "aks",
@@ -14,7 +14,6 @@ exports[`azure-cost-optimization - Trigger Tests Trigger Keywords Snapshot skill
     "azure",
     "azure-deploy",
     "azure-diagnostics",
-    "azure-security",
     "budget",
     "cli",
     "container",
@@ -31,6 +30,8 @@ exports[`azure-cost-optimization - Trigger Tests Trigger Keywords Snapshot skill
     "function",
     "general",
     "generate",
+    "guidance",
+    "hardening",
     "identify",
     "issues",
     "key vault",
@@ -73,7 +74,6 @@ exports[`azure-cost-optimization - Trigger Tests Trigger Keywords Snapshot skill
   "azure",
   "azure-deploy",
   "azure-diagnostics",
-  "azure-security",
   "budget",
   "cli",
   "container",
@@ -90,6 +90,8 @@ exports[`azure-cost-optimization - Trigger Tests Trigger Keywords Snapshot skill
   "function",
   "general",
   "generate",
+  "guidance",
+  "hardening",
   "identify",
   "issues",
   "key vault",
