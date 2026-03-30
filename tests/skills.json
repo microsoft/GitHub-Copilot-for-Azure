@@ -24,6 +24,7 @@
         "azure-upgrade",
         "azure-validate",
         "entra-app-registration",
+        "k8s-to-container-apps",
         "microsoft-foundry"
     ],
     "integrationTestSchedule": {
