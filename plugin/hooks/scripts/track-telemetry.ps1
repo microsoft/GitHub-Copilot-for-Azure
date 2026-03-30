@@ -1,5 +1,21 @@
 # Telemetry tracking hook for Azure Copilot Skills
 # Reads JSON input from stdin, tracks relevant events, and publishes via MCP
+#
+# === Client Format Reference ===
+#
+# Copilot CLI:
+#   - Field names:    camelCase (toolName, sessionId, toolArgs)
+#   - Tool names:     lowercase (skill, view)
+#   - MCP prefix:     azure-<command>  (e.g., azure-documentation)
+#   - Skill prefix:   none (skill name as-is)
+#   - Detection:      no "hook_event_name" field
+#
+# Claude Code:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     PascalCase (Skill, Read, Edit)
+#   - MCP prefix:     mcp__plugin_azure_azure__<command>  (e.g., mcp__plugin_azure_azure__documentation)
+#   - Skill prefix:   azure:<skill-name>  (e.g., azure:azure-prepare)
+#   - Detection:      has "hook_event_name" field (e.g., PostToolUse)
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -86,7 +102,7 @@ $skillName = $null
 $azureToolName = $null
 $filePath = $null
 
-# Check for skill invocation via 'skill'/'Skill' tool
+# Check for skill invocation via skill tool (Copilot CLI: "skill", Claude Code: "Skill")
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     $skillName = $toolInput.skill
     # Claude Code prefixes skill names with the plugin name: "plugin-name:skill-name"
@@ -108,9 +124,11 @@ if ($toolName -eq "view") {
         # Normalize path: convert to lowercase, replace backslashes, and squeeze consecutive slashes
         $pathLower = $pathToCheck.ToLower() -replace '\\', '/' -replace '/+', '/'
 
-        # Check for SKILL.md pattern (Copilot: .copilot/...skills/; Claude: .claude/...skills/)
-        if ($pathLower -match '\.copilot.*skills.*/skill\.md' -or $pathLower -match '\.claude.*skills.*/skill\.md') {
-            # Normalize path and extract skill name using regex
+        # Check for azure-skills SKILL.md pattern (exact folder structure)
+        # Copilot CLI: .copilot/installed-plugins/azure-skills/azure/skills/<name>/SKILL.md
+        # Claude Code: .claude/plugins/cache/azure-skills/azure/<version>/skills/<name>/SKILL.md
+        if ($pathLower -match '\.copilot/installed-plugins/azure-skills/azure/skills/[^/]+/skill\.md' -or
+            $pathLower -match '\.claude/plugins/cache/azure-skills/azure/[0-9.]+/skills/[^/]+/skill\.md') {
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
             if ($pathNormalized -match '/skills/([^/]+)/SKILL\.md$') {
                 $skillName = $Matches[1]
@@ -122,28 +140,30 @@ if ($toolName -eq "view") {
 }
 
 # Check for Azure MCP tool invocation
-# Copilot CLI: "mcp_azure_*" or "azure-*" prefixes
-# Claude Code: "mcp__plugin_azure_azure__*" prefix (double underscores)
+# Only match canonical prefixes per client:
+#   Copilot CLI:  azure-<command>
+#   Claude Code:  mcp__plugin_azure_azure__<command>
 if ($toolName) {
-    if ($toolName.StartsWith("mcp_azure_") -or $toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__")) {
+    if ($toolName -match '^azure-\w' -or
+        $toolName -match '^mcp__plugin_azure_azure__\w') {
         $azureToolName = $toolName
         $eventType = "tool_invocation"
         $shouldTrack = $true
     }
 }
 
-# Capture file path from any tool input (only track files in azure\skills folder)
-# Check both 'path' and 'filePath' properties
+# Capture file path from tool input (only track files in azure-skills folder)
 if (-not $filePath) {
     $pathToCheck = Get-ToolInputPath
     if ($pathToCheck) {
         # Normalize path for matching: replace backslashes and squeeze consecutive slashes
         $pathLower = $pathToCheck.ToLower() -replace '\\', '/' -replace '/+', '/'
 
-        # Check if path matches azure skills folder structure
-        # Copilot: .copilot/installed-plugins/azure-skills/azure/skills/...
-        # Claude:  .claude/plugins/cache/azure-skills/azure/<version>/skills/...
-        if ($pathLower -match '\.copilot.*installed-plugins.*azure-skills.*azure.*skills' -or $pathLower -match '\.claude.*plugins.*cache.*azure-skills.*azure.*skills') {
+        # Check if path matches azure-skills folder structure (exact paths)
+        # Copilot CLI: .copilot/installed-plugins/azure-skills/azure/skills/...
+        # Claude Code: .claude/plugins/cache/azure-skills/azure/<version>/skills/...
+        if ($pathLower -match '\.copilot/installed-plugins/azure-skills/azure/skills/' -or
+            $pathLower -match '\.claude/plugins/cache/azure-skills/azure/[0-9.]+/skills/') {
             # Extract relative path after 'azure/skills/' or 'azure/<version>/skills/'
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
 
@@ -171,6 +191,7 @@ if ($shouldTrack) {
 
     if ($eventType) { $mcpArgs += "--event-type"; $mcpArgs += $eventType }
     if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
+    $mcpArgs += "--plugin-name"; $mcpArgs += "azure-skills"
     if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
     if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
