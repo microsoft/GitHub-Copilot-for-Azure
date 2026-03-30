@@ -3,11 +3,11 @@
 > ⛔ **DO NOT COPY THIS CODE DIRECTLY**
 >
 > This file contains **reference patterns** for understanding Azure Static Web Apps Terraform structure.
-> **You MUST use the composition algorithm** to generate infrastructure:
+> Infrastructure for Static Web Apps must be composed using the Azure Prepare skill workflow, not copied directly from this reference.
 >
-> 1. Load `templates/selection.md` to choose the correct base template
-> 2. Follow `templates/recipes/composition.md` for the exact algorithm
-> 3. Use `azurerm_static_web_app` — **NEVER** use Storage Account `static_website` for static web app hosting
+> When composing infrastructure:
+> - Start from an approved base template for Static Web Apps defined by your platform or template team.
+> - Use `azurerm_static_web_app` — **NEVER** use Storage Account `static_website` for static web app hosting.
 >
 > Hand-writing Terraform from these patterns will result in missing tags, broken azd deploy, and policy violations.
 
