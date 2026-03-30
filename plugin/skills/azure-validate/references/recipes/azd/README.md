@@ -121,6 +121,9 @@ Build the project and verify there are no errors. If the build fails, fix the is
 ```bash
 cd <service-project-path>
 npm install --package-lock-only
+```
+
+> ⚠️ **Warning:** `npm ci` will fail during Docker build if `package-lock.json` is missing. This check prevents Docker build failures during `azd package` and `azd up`.
 
 ### 10. Package Validation
 
