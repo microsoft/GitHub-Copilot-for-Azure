@@ -202,6 +202,7 @@ properties:
     secrets:
       - name: db-password
         keyVaultUrl: https://myvault.vault.azure.net/secrets/db-password
+        identity: /subscriptions/<subscription-id>/resourceGroups/<rg-name>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<identity-name>
   template:
     scale:
       minReplicas: 0

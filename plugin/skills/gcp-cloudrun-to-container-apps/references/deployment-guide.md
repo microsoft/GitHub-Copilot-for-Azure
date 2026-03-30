@@ -63,16 +63,16 @@ docker push <registry-name>.azurecr.io/<image-name>:<tag>
 
 ```bash
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Configuration
-GCP_PROJECT_ID="my-project"
-GCP_REGION="us-central1"
-ACR_NAME="myregistry"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-<gcp-project-id>}"
+GCP_REGION="${GCP_REGION:-<gcp-region>}"
+ACR_NAME="${ACR_NAME:-<acr-name>}"
 ACR_REGISTRY="${ACR_NAME}.azurecr.io"
 
 # Artifact Registry format
-AR_REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/my-repo"
+AR_REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO:-<artifact-registry-repo>}"
 
 # Array of images to migrate
 IMAGES=(
@@ -197,26 +197,30 @@ az keyvault create \
 # List secrets from GCP (for reference)
 gcloud secrets list --project=$GCP_PROJECT_ID
 
-# Get secret value from GCP
-SECRET_VALUE=$(gcloud secrets versions access latest \
+# Get secret value from GCP into a secure temporary file
+SECRET_FILE=$(mktemp)
+gcloud secrets versions access latest \
   --secret=my-secret \
-  --project=$GCP_PROJECT_ID)
+  --project=$GCP_PROJECT_ID > "$SECRET_FILE"
 
-# Store in Azure Key Vault
+# Store in Azure Key Vault without putting the secret on the command line
 az keyvault secret set \
   --vault-name myapp-kv \
   --name my-secret \
-  --value "$SECRET_VALUE"
+  --file "$SECRET_FILE"
+
+# Securely clean up the temporary file
+shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
 ```
 
 ### Bulk Secret Migration Script
 
 ```bash
 #!/bin/bash
-set -e
+set -euo pipefail
 
-GCP_PROJECT_ID="my-project"
-VAULT_NAME="myapp-kv"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-<gcp-project-id>}"
+VAULT_NAME="${VAULT_NAME:-<keyvault-name>}"
 
 # Array of secret names to migrate
 SECRETS=(
@@ -228,17 +232,21 @@ SECRETS=(
 for secret in "${SECRETS[@]}"; do
   echo "Migrating secret: $secret"
   
-  # Get from GCP Secret Manager
-  value=$(gcloud secrets versions access latest \
+  # Get from GCP Secret Manager into secure temp file
+  SECRET_FILE=$(mktemp)
+  gcloud secrets versions access latest \
     --secret=$secret \
-    --project=$GCP_PROJECT_ID)
+    --project=$GCP_PROJECT_ID > "$SECRET_FILE"
   
-  # Store in Azure Key Vault
+  # Store in Azure Key Vault without exposing on command line
   az keyvault secret set \
     --vault-name $VAULT_NAME \
     --name $secret \
-    --value "$value" \
+    --file "$SECRET_FILE" \
     --output none
+  
+  # Securely clean up
+  shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
   
   echo "✓ Migrated $secret"
 done

@@ -1,10 +1,10 @@
 ---
 name: gcp-cloudrun-to-container-apps
-description: Migrate containerized workloads from Google Cloud Run to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Cloud Run to Azure, migrate GCP containers to Azure, Cloud Run to Container Apps, assess Google Cloud migration, convert Cloud Run to Azure, cross-cloud container migration from GCP, migrate serverless containers to Azure.
+description: "Migrate containerized workloads from Google Cloud Run to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Cloud Run to Azure, migrate GCP containers to Azure, Cloud Run to Container Apps, assess Google Cloud migration, convert Cloud Run to Azure, cross-cloud container migration from GCP, migrate serverless containers to Azure."
 license: MIT
 metadata:
-  version: 1.0.0
-  author: GitHub Copilot for Azure
+  version: "1.0.1"
+  author: Microsoft
 ---
 
 # Google Cloud Run to Azure Container Apps Migration
@@ -82,7 +82,7 @@ If the user is unsure, provide safe defaults or guide discovery:
    - Recommended Azure services
    - Required changes and considerations
 
-📋 **See detailed assessment checklist**: [references/assessment-guide.md](references/assessment-guide.md)
+**See detailed assessment checklist**: [references/assessment-guide.md](references/assessment-guide.md)
 
 ### Phase 2: Service Mapping
 
@@ -171,7 +171,7 @@ Map Google Cloud Run components to Azure equivalents:
    - Logging and monitoring
    - Performance comparison with Cloud Run
 
-🚀 **See detailed deployment instructions**: [references/deployment-guide.md](references/deployment-guide.md)
+**See detailed deployment instructions**: [references/deployment-guide.md](references/deployment-guide.md)
 
 ### Phase 6: Optimization
 

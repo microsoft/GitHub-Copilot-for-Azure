@@ -23,6 +23,7 @@
         "azure-upgrade",
         "azure-validate",
         "entra-app-registration",
+        "gcp-cloudrun-to-container-apps",
         "microsoft-foundry"
     ],
     "integrationTestSchedule": {
