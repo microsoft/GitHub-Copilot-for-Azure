@@ -15,12 +15,19 @@ metadata:
 |------|---------|
 | **Source** | Self-hosted or managed Kubernetes (GKE, EKS, on-premises) |
 | **Target** | Azure Container Apps |
+| **Best for** | Stateless microservices, APIs, background workers, event-driven apps |
 | **Key Steps** | Export k8s resources → Assess compatibility → Migrate images → Generate IaC → Deploy |
+| **MCP Tools** | `mcp_azure_mcp_documentation`, `mcp_azure_mcp_get_bestpractices` |
+| **CLI commands** | `kubectl`, `az containerapp`, `az acr` |
 | **Docs** | [assessment-guide.md](references/assessment-guide.md), [deployment-guide.md](references/deployment-guide.md) |
 
 ## When to Use This Skill
 
-Migrate Kubernetes workloads from self-hosted or third-party cloud providers to Azure Container Apps. Use when reducing k8s operational overhead for microservices, APIs, background workers, or event-driven apps that don't require custom CRDs, operators, or full k8s API access.
+- Migrating Kubernetes workloads from self-hosted clusters, GKE, EKS, or other cloud providers to Azure
+- Reducing Kubernetes operational overhead and complexity for containerized applications
+- Modernizing microservices, APIs, background workers, or event-driven applications
+- Workloads that don't require custom CRDs, operators, hostPath volumes, or direct Kubernetes API access
+- Teams seeking managed container hosting with built-in scaling, ingress, and observability
 
 ## Rules
 
