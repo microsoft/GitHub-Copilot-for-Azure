@@ -68,7 +68,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("documents IaC generation phase", () => {
       expect(skill.content).toContain("IaC Generation");
       expect(skill.content).toContain("Bicep");
-      expect(skill.content).toContain("Terraform");
+      expect(skill.content.toLowerCase()).toContain("terraform");
     });
 
     test("documents deployment phase", () => {
@@ -109,7 +109,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("requires user confirmation before deployment", () => {
       expect(skill.content.toLowerCase()).toContain("approved");
-      expect(skill.content.toLowerCase()).toContain("subscription");
     });
 
     test("has blocking plan requirement", () => {

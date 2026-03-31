@@ -4,7 +4,7 @@ description: "Check/manage Azure quotas and usage across providers. For deployme
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.0.7"
 ---
 
 
@@ -25,17 +25,6 @@ Azure quotas (also called service limits) are the maximum number of resources yo
 **Key Concept:** **Quotas = Resource Availability**
 
 If you don't have quota, you cannot deploy resources. Always check quotas when planning deployments or selecting regions.
-
-## When to Use This Skill
-
-Invoke this skill when:
-
-- **Planning a new deployment** - Validate capacity before deployment
-- **Selecting an Azure region** - Compare quota availability across regions
-- **Troubleshooting quota exceeded errors** - Check current usage vs limits
-- **Requesting quota increases** - Submit increase requests via CLI or Portal
-- **Comparing regional capacity** - Find regions with available quota
-- **Validating provisioning limits** - Ensure deployment won't exceed quotas
 
 ## Quick Reference
 

@@ -10,15 +10,6 @@ Reference for managing RBAC for Microsoft Foundry resources: user permissions, m
 | **Resource Type** | `Microsoft.CognitiveServices/accounts` |
 | **Best For** | Permission management, access auditing, CI/CD setup |
 
-## When to Use
-
-- Grant user access to Foundry resources or projects
-- Set up developer permissions (Project Manager, Owner roles)
-- Audit role assignments or validate permissions
-- Configure managed identity roles for connected resources
-- Create service principals for CI/CD pipeline automation
-- Troubleshoot permission errors
-
 ## Azure AI Foundry Built-in Roles
 
 | Role | Create Projects | Data Actions | Role Assignments |

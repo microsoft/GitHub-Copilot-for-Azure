@@ -2,17 +2,6 @@
 
 Recommend Azure VM sizes, VM Scale Sets (VMSS), and configurations by analyzing workload type, performance requirements, scaling needs, and budget. No Azure subscription required — all data comes from public Microsoft documentation and the unauthenticated Retail Prices API.
 
-## When to Use This Skill
-
-- User asks which Azure VM or VMSS to choose for a workload
-- User needs VM size recommendations for web, database, ML, batch, HPC, or other workloads
-- User wants to compare VM families, sizes, or pricing tiers
-- User asks about trade-offs between VM options (cost vs performance)
-- User needs a cost estimate for Azure VMs without an Azure account
-- User asks whether to use a single VM or a scale set
-- User needs autoscaling, high availability, or load-balanced VM recommendations
-- User asks about VMSS orchestration modes (Flexible vs Uniform)
-
 ## Workflow
 
 > Use reference files for initial filtering

@@ -12,14 +12,6 @@ Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-t
 | Conversation support | Single-turn and multi-turn (via `conversationId`) |
 | Session support | Sticky sessions for vNext hosted agents (via client-generated `sessionId`) |
 
-## When to Use This Skill
-
-- Send a test message to a deployed agent
-- Have multi-turn conversations with an agent
-- Test a prompt agent immediately after creation
-- Test a hosted agent after its container is running
-- Verify an agent responds correctly to specific inputs
-
 ## MCP Tools
 
 | Tool | Description | Parameters |

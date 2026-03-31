@@ -4,7 +4,7 @@ description: "Configure Azure API Management as an AI Gateway for AI models, MCP
 license: MIT
 metadata:
   author: Microsoft
-  version: "3.0.1"
+  version: "3.0.2"
 compatibility: Requires Azure CLI (az) for configuration and testing
 ---
 
@@ -13,16 +13,6 @@ compatibility: Requires Azure CLI (az) for configuration and testing
 Configure Azure API Management (APIM) as an AI Gateway for governing AI models, MCP tools, and agents.
 
 > **To deploy APIM**, use the **azure-prepare** skill. See [APIM deployment guide](https://learn.microsoft.com/azure/api-management/get-started-create-service-instance).
-
-## When to Use This Skill
-
-| Category | Triggers |
-|----------|----------|
-| **Model Governance** | "semantic caching", "token limits", "load balance AI", "track token usage" |
-| **Tool Governance** | "rate limit MCP", "protect my tools", "configure my tool", "convert API to MCP" |
-| **Agent Governance** | "content safety", "jailbreak detection", "filter harmful content" |
-| **Configuration** | "add Azure OpenAI backend", "configure my model", "add AI Foundry model" |
-| **Testing** | "test AI gateway", "call OpenAI through gateway" |
 
 ---
 

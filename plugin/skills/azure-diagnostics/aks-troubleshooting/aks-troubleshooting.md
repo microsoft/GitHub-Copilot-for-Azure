@@ -2,11 +2,6 @@
 
 Primary AKS troubleshooting guide for incidents routed from [../SKILL.md](../SKILL.md).
 
-## When to Use This Guide
-
-- lifecycle, access, node, `kube-system`, workload, ingress, DNS, or scaling issues
-- `kubectl` cannot connect, nodes are `NotReady`, or pods are unhealthy
-
 ## Scenario Playbooks
 
 | Scenario                                                      | Reference                                        |

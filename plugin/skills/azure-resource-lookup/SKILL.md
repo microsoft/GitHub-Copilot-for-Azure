@@ -4,26 +4,12 @@ description: "List, find, and show Azure resources across subscriptions or resou
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Azure Resource Lookup
 
 List, find, and discover Azure resources of any type across subscriptions and resource groups. Use Azure Resource Graph (ARG) for fast, cross-cutting queries when dedicated MCP tools don't cover the resource type.
-
-## When to Use This Skill
-
-Use this skill when the user wants to:
-- **List resources** of any type (VMs, web apps, storage accounts, container apps, databases, etc.)
-- **Show resources** in a specific subscription or resource group
-- Query resources **across multiple subscriptions** or resource types
-- Find **orphaned resources** (unattached disks, unused NICs, idle IPs)
-- Discover resources **missing required tags** or configurations
-- Get a **resource inventory** spanning multiple types
-- Find resources in a **specific state** (unhealthy, failed provisioning, stopped)
-- Answer "**what resources do I have?**" or "**show me my Azure resources**"
-
-> 💡 **Tip:** For single-resource-type queries, first check if a dedicated MCP tool can handle it (see routing table below). If none exists, use Azure Resource Graph.
 
 ## Quick Reference
 

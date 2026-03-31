@@ -78,10 +78,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("VM Troubleshooter");
     });
 
-    test("documents when to use this skill", () => {
-      expect(skill.content).toContain("## When to Use This Skill");
-    });
-
     test("includes decision tree for routing", () => {
       expect(skill.content).toMatch(/Recommend.*VM Recommender/s);
       expect(skill.content).toMatch(/connect.*VM Troubleshooter/is);
@@ -105,7 +101,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(recommenderContent).toContain("## When to Use This Skill");
       expect(recommenderContent).toContain("## Workflow");
       expect(recommenderContent).toContain("## Error Handling");
       expect(recommenderContent).toContain("## References");

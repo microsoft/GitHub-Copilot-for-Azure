@@ -4,7 +4,7 @@ description: "Guidance for instrumenting webapps with Azure Application Insights
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # AppInsights Instrumentation Guide
@@ -15,20 +15,6 @@ This skill provides **guidance and reference material** for instrumenting webapp
 >
 > If the user wants to **add App Insights to their app**, invoke **azure-prepare** instead.
 > This skill provides reference material—azure-prepare orchestrates the actual changes.
-
-## When to Use This Skill
-
-- User asks **how** to instrument (guidance, patterns, examples)
-- User needs SDK setup instructions
-- azure-prepare invokes this skill during research phase
-- User wants to understand App Insights concepts
-
-## When to Use azure-prepare Instead
-
-- User says "add telemetry to my app"
-- User says "add App Insights" 
-- User wants to modify their project
-- Any request to change/add components
 
 ## Prerequisites
 
