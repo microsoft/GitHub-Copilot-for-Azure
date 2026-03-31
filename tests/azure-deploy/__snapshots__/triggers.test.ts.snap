@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`azure-deploy - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
