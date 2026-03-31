@@ -68,7 +68,7 @@ Available dimensions vary by agreement type. Only dimensions listed for your agr
 | Dimension | Available |
 |-----------|-----------|
 | `ResourceGroupName` | ✅ |
-| `ResourceId` | ✅ |
+| `ResourceId` | ✅ ⚠️ |
 | `SubscriptionName` | ✅ |
 | `Product` | ✅ |
 | `ResourceLocation` | ✅ |
@@ -91,7 +91,7 @@ Available dimensions vary by agreement type. Only dimensions listed for your agr
 | Dimension | Available |
 |-----------|-----------|
 | `ResourceGroupName` | ✅ |
-| `ResourceId` | ✅ |
+| `ResourceId` | ✅ ⚠️ |
 | `SubscriptionName` | ✅ |
 | `Product` | ✅ |
 | `ResourceLocation` | ✅ |
@@ -112,7 +112,7 @@ Available dimensions vary by agreement type. Only dimensions listed for your agr
 | Dimension | Available |
 |-----------|-----------|
 | `ResourceGroupName` | ✅ |
-| `ResourceId` | ✅ |
+| `ResourceId` | ✅ ⚠️ |
 | `SubscriptionName` | ✅ |
 | `Product` | ✅ |
 | `ResourceLocation` | ✅ |
@@ -126,12 +126,14 @@ Available dimensions vary by agreement type. Only dimensions listed for your agr
 | `ServiceTier` | ✅ |
 | `BenefitName` | ✅ |
 
+> ⚠️ `ResourceId` is available as a dimension but **only works in GroupBy at subscription and resource group scopes**. At billing account or management group scopes, use `ServiceName` or `SubscriptionName` instead.
+
 ### Comparison Summary
 
 | Dimension | EA | MCA | MOSP |
 |-----------|----|----|------|
 | `ResourceGroupName` | ✅ | ✅ | ✅ |
-| `ResourceId` | ✅ | ✅ | ✅ |
+| `ResourceId` | ✅ ⚠️ | ✅ ⚠️ | ✅ ⚠️ |
 | `SubscriptionName` | ✅ | ✅ | ✅ |
 | `Product` | ✅ | ✅ | ✅ |
 | `ResourceLocation` | ✅ | ✅ | ✅ |

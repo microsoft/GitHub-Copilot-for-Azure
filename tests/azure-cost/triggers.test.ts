@@ -121,6 +121,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure alerts for errors",
       "View logs for my Function App",
       "Deploy my app to Azure",
+      "Estimate the cost of a new VM",
+      "How much will it cost to deploy a new App Service?",
+      "What would a new AKS cluster cost?",
+      "Price a new storage account for me",
     ];
 
     test.each(shouldNotTriggerPrompts)(

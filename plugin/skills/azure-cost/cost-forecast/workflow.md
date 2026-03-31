@@ -78,7 +78,7 @@ Use the same scope patterns from the Scope Reference table in the main [SKILL.md
 New-Item -ItemType Directory -Path "temp" -Force
 
 az rest --method post `
-  --url "https://management.azure.com/subscriptions/<subscription-id>/providers/Microsoft.CostManagement/forecast?api-version=2023-11-01" `
+  --url "/subscriptions/<subscription-id>/providers/Microsoft.CostManagement/forecast?api-version=2023-11-01" `
   --body '@temp/cost-forecast.json'
 ```
 

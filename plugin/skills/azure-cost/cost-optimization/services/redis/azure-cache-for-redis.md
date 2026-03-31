@@ -40,7 +40,7 @@ Individual cache breakdown with specific recommendations. Include: cache name, r
 
 ## Tools & Commands
 
-**MCP Tool:** `mcp_azure_mcp_redis` with command `redis_list` (parameter: `subscription`)
+**MCP Tool:** `azure__redis` with command `redis_list` (parameter: `subscription`)
 
 **Azure CLI Equivalents:**
 - `az account list` - List subscriptions

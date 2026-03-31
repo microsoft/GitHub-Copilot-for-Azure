@@ -67,7 +67,7 @@ Wait for user response before proceeding.
 - User reports a cost spike, unusual cluster utilization, or wants budget alerts
 
 **Tool Selection:**
-- **Prefer MCP first**: Use `mcp_azure_mcp_aks` for AKS operations (list clusters, get node pools, inspect configuration) — it provides richer metadata and is consistent with AKS skill conventions in this repo
+- **Prefer MCP first**: Use `azure__aks` for AKS operations (list clusters, get node pools, inspect configuration) — it provides richer metadata and is consistent with AKS skill conventions in this repo
 - **Fall back to CLI**: Use `az aks` and `kubectl` only when the specific operation cannot be performed via the MCP surface
 
 **Reference files (load only what is needed for the request):**
@@ -95,7 +95,7 @@ Run azqr to find orphaned resources (immediate cost savings):
 **Reference**: [Azure Quick Review](./azure-quick-review.md)
 
 ```yaml
-mcp_azure_mcp_extension_azqr
+azure__extension_azqr
   subscription: "<SUBSCRIPTION_ID>"
   resource-group: "<RESOURCE_GROUP>"  // optional
 ```
