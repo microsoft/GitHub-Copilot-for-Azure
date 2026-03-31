@@ -97,7 +97,7 @@ Run azqr to find orphaned resources (immediate cost savings):
 ```yaml
 azure__extension_azqr
   subscription: "<SUBSCRIPTION_ID>"
-  resource-group: "<RESOURCE_GROUP>"  // optional
+  resource-group: "<RESOURCE_GROUP>"  # optional
 ```
 
 **What to look for:**
