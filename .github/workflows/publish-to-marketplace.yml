@@ -59,7 +59,19 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 5. Bump version if content changed
+      # 5. Restore version in plugin.json files to CURRENT_VERSION
+      - name: Restore version in plugin.json files
+        run: |
+          CURRENT_VERSION="${{ steps.version.outputs.current }}"
+          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+          for f in "${TARGET_DIR}.claude-plugin/plugin.json" "${TARGET_DIR}.plugin/plugin.json"; do
+            if [ -f "$f" ]; then
+              jq --arg v "$CURRENT_VERSION" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+              echo "Restored $f to version $CURRENT_VERSION"
+            fi
+          done
+
+      # 6. Bump version if content changed
       - name: Bump version if content changed
         working-directory: target-repo
         run: |
@@ -115,7 +127,7 @@ jobs:
           # Reset staging so the commit step handles it cleanly
           git reset HEAD
 
-      # 6. Commit changes and create a PR
+      # 7. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
@@ -222,7 +234,19 @@ jobs:
             fi
           done
 
-      # 7. Bump version if content changed
+      # 7. Restore version in plugin.json files to CURRENT_VERSION
+      - name: Restore version in plugin.json files
+        run: |
+          CURRENT_VERSION="${{ steps.version.outputs.current }}"
+          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+          for f in "${TARGET_DIR}.claude-plugin/plugin.json" "${TARGET_DIR}.plugin/plugin.json" "target-repo/plugin.json"; do
+            if [ -f "$f" ]; then
+              jq --arg v "$CURRENT_VERSION" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+              echo "Restored $f to version $CURRENT_VERSION"
+            fi
+          done
+
+      # 8. Bump version if content changed
       - name: Bump version if content changed
         working-directory: target-repo
         run: |
@@ -279,7 +303,7 @@ jobs:
           # Reset staging so the commit step handles it cleanly
           git reset HEAD
 
-      # 8. Commit changes and create a PR
+      # 9. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
