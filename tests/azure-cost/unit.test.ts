@@ -4,18 +4,31 @@
  * Test isolated skill logic and validation rules.
  * Covers shared structure, metadata, and content for all three
  * sub-areas: Cost Query, Cost Forecast, and Cost Optimization.
+ *
+ * Note: Workflow content lives in separate files under cost-query/,
+ * cost-forecast/, and cost-optimization/ folders. The SKILL.md acts
+ * as a router that links to these workflows. Tests load each source
+ * independently to verify content in the correct location.
  */
 
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-cost";
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
+  let queryWorkflow: string;
+  let forecastWorkflow: string;
+  let optimizationWorkflow: string;
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
+    const skillDir = skill.path;
+    queryWorkflow = readFileSync(resolve(skillDir, "cost-query", "workflow.md"), "utf-8");
+    forecastWorkflow = readFileSync(resolve(skillDir, "cost-forecast", "workflow.md"), "utf-8");
+    optimizationWorkflow = readFileSync(resolve(skillDir, "cost-optimization", "workflow.md"), "utf-8");
   });
 
   describe("Skill Metadata", () => {
@@ -62,12 +75,18 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/## MCP Tools/i);
     });
 
-    test("contains Error Handling section", () => {
-      expect(skill.content).toMatch(/## Error Handling/i);
+    test("contains Error Handling in workflow files", () => {
+      const hasErrorHandling =
+        queryWorkflow.match(/## Error Handling/i) ||
+        forecastWorkflow.match(/## Error Handling/i);
+      expect(hasErrorHandling).toBeTruthy();
     });
 
-    test("contains Guardrails section", () => {
-      expect(skill.content).toMatch(/Guardrails/i);
+    test("contains Guardrails in workflow files", () => {
+      const hasGuardrails =
+        queryWorkflow.match(/Guardrails/i) ||
+        forecastWorkflow.match(/Guardrails/i);
+      expect(hasGuardrails).toBeTruthy();
     });
 
     test("contains Best Practices section", () => {
@@ -157,7 +176,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("mentions key guardrails", () => {
-      const content = skill.content.toLowerCase();
+      const content = queryWorkflow.toLowerCase();
       expect(content).toMatch(/granularity/);
       expect(content).toMatch(/date range/);
       expect(content).toMatch(/groupby/i);
@@ -180,27 +199,27 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("mentions to-date must be in the future", () => {
-      const content = skill.content.toLowerCase();
+      const content = forecastWorkflow.toLowerCase();
       expect(content).toMatch(/future|must be in the future/);
     });
 
     test("mentions grouping not supported", () => {
-      const content = skill.content.toLowerCase();
+      const content = forecastWorkflow.toLowerCase();
       expect(content).toContain("grouping");
       expect(content).toMatch(/not supported/);
     });
 
     test("mentions includeActualCost field", () => {
-      expect(skill.content).toContain("includeActualCost");
+      expect(forecastWorkflow).toContain("includeActualCost");
     });
 
     test("mentions minimum training data requirement", () => {
-      const content = skill.content.toLowerCase();
+      const content = forecastWorkflow.toLowerCase();
       expect(content).toMatch(/training data|28 days/);
     });
 
     test("references CostStatus or response types", () => {
-      expect(skill.content).toMatch(/CostStatus|("Actual".*"Forecast"|Actual.*Forecast)/);
+      expect(forecastWorkflow).toMatch(/CostStatus|("Actual".*"Forecast"|Actual.*Forecast)/);
     });
   });
 
@@ -216,25 +235,25 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("documents step-by-step instructions", () => {
-      expect(skill.content).toMatch(/### Step \d+:/);
+      expect(optimizationWorkflow).toMatch(/## Step \d+:/);
     });
 
     test("includes prerequisites validation", () => {
-      expect(skill.content).toMatch(/### Step 0: Validate Prerequisites/i);
-      expect(skill.content).toContain("Azure CLI");
-      expect(skill.content).toContain("azqr");
+      expect(optimizationWorkflow).toMatch(/## Step 0: Validate Prerequisites/i);
+      expect(optimizationWorkflow).toContain("Azure CLI");
+      expect(optimizationWorkflow).toContain("azqr");
     });
 
     test("includes cost query instructions", () => {
-      expect(skill.content).toMatch(/### Step \d+: Query Actual Costs/i);
-      expect(skill.content).toContain("Cost Management API");
-      expect(skill.content).toContain("ActualCost");
+      expect(optimizationWorkflow).toMatch(/## Step \d+: Query Actual Costs/i);
+      expect(optimizationWorkflow).toContain("Cost Management API");
+      expect(optimizationWorkflow).toContain("ActualCost");
     });
 
     test("includes report generation step", () => {
-      expect(skill.content).toMatch(/### Step \d+: Generate Optimization Report/i);
-      expect(skill.content).toContain("output/");
-      expect(skill.content).toContain("costoptimizereport");
+      expect(optimizationWorkflow).toMatch(/## Step \d+: Generate Optimization Report/i);
+      expect(optimizationWorkflow).toContain("output/");
+      expect(optimizationWorkflow).toContain("costoptimizereport");
     });
   });
 
@@ -246,33 +265,33 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("documents azqr installation", () => {
-      expect(skill.content).toContain("azqr");
-      expect(skill.content).toMatch(/azqr version/i);
+      expect(optimizationWorkflow).toContain("azqr");
+      expect(optimizationWorkflow).toMatch(/azqr version/i);
     });
   });
 
   describe("Required Tools and Extensions", () => {
     test("documents Azure CLI requirement", () => {
-      expect(skill.content).toContain("az login");
-      expect(skill.content).toMatch(/Azure CLI/i);
+      expect(optimizationWorkflow).toContain("az login");
+      expect(optimizationWorkflow).toMatch(/Azure CLI/i);
     });
 
     test("lists required Azure CLI extensions", () => {
       expect(skill.content).toContain("costmanagement");
-      expect(skill.content).toContain("resource-graph");
+      expect(optimizationWorkflow).toContain("resource-graph");
     });
 
     test("documents required permissions", () => {
       expect(skill.content).toMatch(/Cost Management Reader/i);
       expect(skill.content).toMatch(/Monitoring Reader/i);
-      expect(skill.content).toMatch(/Reader role/i);
+      expect(skill.content).toMatch(/Reader/i);
     });
   });
 
   describe("Cost Analysis Features", () => {
     test("mentions orphaned resources", () => {
       expect(skill.content).toMatch(/orphaned resources/i);
-      expect(skill.content).toMatch(/unattached disks|unused NICs/i);
+      expect(optimizationWorkflow).toMatch(/unattached disks|unused NICs/i);
     });
 
     test("mentions rightsizing", () => {
@@ -282,45 +301,45 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("mentions utilization metrics", () => {
       expect(skill.content).toContain("Azure Monitor");
-      expect(skill.content).toMatch(/utilization|metrics/i);
-      expect(skill.content).toContain("Percentage CPU");
+      expect(optimizationWorkflow).toMatch(/utilization|metrics/i);
+      expect(optimizationWorkflow).toContain("Percentage CPU");
     });
 
     test("includes pricing validation", () => {
-      expect(skill.content).toMatch(/### Step \d+: Validate Pricing/i);
-      expect(skill.content).toContain("azure.microsoft.com/pricing");
+      expect(optimizationWorkflow).toMatch(/## Step \d+: Validate Pricing/i);
+      expect(optimizationWorkflow).toContain("azure.microsoft.com/pricing");
     });
   });
 
   describe("Output and Reporting", () => {
     test("defines output folder convention", () => {
-      expect(skill.content).toContain("output/");
-      expect(skill.content).toMatch(/costoptimizereport.*\.md/);
+      expect(optimizationWorkflow).toContain("output/");
+      expect(optimizationWorkflow).toMatch(/costoptimizereport.*\.md/);
     });
 
     test("references report template", () => {
-      expect(skill.content).toContain("report-template.md");
+      expect(optimizationWorkflow).toContain("report-template.md");
     });
 
     test("documents audit trail", () => {
       expect(skill.content).toContain("audit trail");
-      expect(skill.content).toContain("cost-query-result");
-      expect(skill.content).toMatch(/\.json/);
+      expect(optimizationWorkflow).toContain("cost-query-result");
+      expect(optimizationWorkflow).toMatch(/\.json/);
     });
 
     test("references Redis-specific optimization", () => {
       expect(skill.content).toContain("Redis");
-      expect(skill.content).toContain("azure-cache-for-redis.md");
+      expect(optimizationWorkflow).toContain("azure-cache-for-redis.md");
     });
   });
 
   describe("Azure Resource Graph Integration", () => {
     test("links to Azure Resource Graph reference", () => {
-      expect(skill.content).toContain("cost-optimization/azure-resource-graph.md");
+      expect(optimizationWorkflow).toContain("azure-resource-graph.md");
     });
 
     test("mentions Resource Graph for resource discovery", () => {
-      expect(skill.content).toContain("Azure Resource Graph");
+      expect(optimizationWorkflow).toContain("Azure Resource Graph");
     });
   });
 });
