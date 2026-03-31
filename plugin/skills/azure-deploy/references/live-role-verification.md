@@ -22,7 +22,7 @@ After deployment verification (step 7). Resources are now provisioned, so live r
 
 ### 1. Identify App Identities
 
-Read `.azure/plan.md` to find all services with managed identities. Then query Azure for their principal IDs:
+Read `.azure/deployment-plan.md` to find all services with managed identities. Then query Azure for their principal IDs:
 
 ```bash
 # App Service
