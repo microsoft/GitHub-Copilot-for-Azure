@@ -2,14 +2,14 @@
 
 Use this workflow when the user wants to **reduce their costs** — find waste, orphaned resources, rightsizing opportunities.
 
-> **Important:** Always present the total bill and cost breakdown (from the [Cost Query Workflow](cost-query-workflow.md)) alongside optimization recommendations.
+> **Important:** Always present the total bill and cost breakdown (from the [Cost Query Workflow](../cost-query/workflow.md)) alongside optimization recommendations.
 
 ## Step 0: Validate Prerequisites
 
 **Required Tools:**
 - Azure CLI installed and authenticated (`az login`)
 - Azure CLI extensions: `costmanagement`, `resource-graph`
-- Azure Quick Review (azqr) installed — See [Azure Quick Review](../cost-optimization/azure-quick-review.md)
+- Azure Quick Review (azqr) installed — See [Azure Quick Review](./azure-quick-review.md)
 
 **Required Permissions:**
 - Cost Management Reader role
@@ -38,7 +38,7 @@ azure__get_azure_bestpractices({
 
 **If the user specifically requests Redis cost optimization**, use the specialized Redis reference:
 
-**Reference**: [Azure Redis Cost Optimization](../cost-optimization/services/redis/azure-cache-for-redis.md)
+**Reference**: [Azure Redis Cost Optimization](./services/redis/azure-cache-for-redis.md)
 
 **When to use:**
 - User mentions "Redis", "Azure Cache for Redis", or "Azure Managed Redis"
@@ -71,8 +71,8 @@ Wait for user response before proceeding.
 - **Fall back to CLI**: Use `az aks` and `kubectl` only when the specific operation cannot be performed via the MCP surface
 
 **Reference files (load only what is needed for the request):**
-- [Cost Analysis Add-on](../cost-optimization/azure-aks-cost-addon.md) — enable namespace-level cost visibility
-- [Anomaly Investigation](../cost-optimization/azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
+- [Cost Analysis Add-on](./azure-aks-cost-addon.md) — enable namespace-level cost visibility
+- [Anomaly Investigation](./azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
 
 > **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the relevant reference file above.
 
@@ -92,7 +92,7 @@ Wait for user response before proceeding to Step 2.
 
 Run azqr to find orphaned resources (immediate cost savings):
 
-**Reference**: [Azure Quick Review](../cost-optimization/azure-quick-review.md)
+**Reference**: [Azure Quick Review](./azure-quick-review.md)
 
 ```yaml
 mcp_azure_mcp_extension_azqr
@@ -107,7 +107,7 @@ mcp_azure_mcp_extension_azqr
 
 ## Step 3: Discover Resources
 
-Use Azure Resource Graph for efficient cross-subscription resource discovery. See [Azure Resource Graph Queries](../cost-optimization/azure-resource-graph.md) for orphaned resource detection patterns.
+Use Azure Resource Graph for efficient cross-subscription resource discovery. See [Azure Resource Graph Queries](./azure-resource-graph.md) for orphaned resource detection patterns.
 
 ```powershell
 az account show
@@ -116,7 +116,7 @@ az resource list --subscription "<SUBSCRIPTION_ID>" --resource-group "<RESOURCE_
 
 ## Step 4: Query Actual Costs
 
-Get actual cost data from Azure Cost Management API (last 30 days). Use the [Cost Query Workflow](cost-query-workflow.md) with this configuration:
+Get actual cost data from Azure Cost Management API (last 30 days). Use the [Cost Query Workflow](../cost-query/workflow.md) with this configuration:
 
 **Create `temp/cost-query.json`:**
 ```json
@@ -185,4 +185,4 @@ az monitor metrics list `
 
 Generate a report to `output/costoptimizereport<YYYYMMDD_HHMMSS>.md` that includes an executive summary, cost breakdown by service, free tier analysis, orphaned resources, prioritized optimization recommendations, and implementation commands. Save cost query results to `output/cost-query-result<YYYYMMDD_HHMMSS>.json` for audit trail, then clean up temporary files.
 
-For the complete report template, see [report-template.md](../cost-optimization/report-template.md).
+For the complete report template, see [report-template.md](./report-template.md).

@@ -2,7 +2,7 @@
 
 Use this workflow when the user wants to **project future costs**.
 
-> ⚠️ **Warning:** If the user wants **historical** cost data, use the [Cost Query Workflow](cost-query-workflow.md). If they want to **reduce** costs, use the [Cost Optimization Workflow](cost-optimization-workflow.md).
+> ⚠️ **Warning:** If the user wants **historical** cost data, use the [Cost Query Workflow](../cost-query/workflow.md). If they want to **reduce** costs, use the [Cost Optimization Workflow](../cost-optimization/workflow.md).
 
 ## Key Differences from Query API
 
@@ -33,15 +33,15 @@ Use the same scope patterns from the Scope Reference table in the main [SKILL.md
 - Minimum 28 days of historical cost data required
 - Maximum forecast period: 10 years
 
-> **Full rules:** [Forecast Guardrails](../cost-forecast/guardrails.md)
+> **Full rules:** [Forecast Guardrails](./guardrails.md)
 
 ## Step 4: Configure Dataset
 
 - **Granularity**: `Daily` or `Monthly` recommended
 - **Aggregation**: Typically `Sum` of `Cost`
-- See [Forecast Request Body Schema](../cost-forecast/request-body-schema.md) for full schema
+- See [Forecast Request Body Schema](./request-body-schema.md) for full schema
 
-> ⚠️ **Warning:** Grouping is **NOT supported** for forecast. Suggest using the [Cost Query Workflow](cost-query-workflow.md) for grouped historical data instead.
+> ⚠️ **Warning:** Grouping is **NOT supported** for forecast. Suggest using the [Cost Query Workflow](../cost-query/workflow.md) for grouped historical data instead.
 
 ## Step 5: Set Forecast-Specific Options
 
@@ -89,7 +89,7 @@ az rest --method post `
 | `Actual` | Historical actual cost (when `includeActualCost: true`) |
 | `Forecast` | Projected future cost |
 
-> 💡 **Tip:** "Forecast is unavailable for the specified time period" is not an error — it means the scope has insufficient historical data. Suggest using the [Cost Query Workflow](cost-query-workflow.md) for available data.
+> 💡 **Tip:** "Forecast is unavailable for the specified time period" is not an error — it means the scope has insufficient historical data. Suggest using the [Cost Query Workflow](../cost-query/workflow.md) for available data.
 
 ## Key Guardrails
 
@@ -103,7 +103,7 @@ az rest --method post `
 | `includeFreshPartialCost` | Requires `includeActualCost: true` |
 | Monthly + includeActualCost | Requires explicit `timePeriod` |
 
-> **Full details:** [Forecast Guardrails](../cost-forecast/guardrails.md)
+> **Full details:** [Forecast Guardrails](./guardrails.md)
 
 ## Error Handling
 
@@ -117,6 +117,6 @@ az rest --method post `
 | 429 | Rate limited | Retry after `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header. **Max 3 retries.** |
 | 503 | Service unavailable | Check [Azure Status](https://status.azure.com). |
 
-> **Full details:** [Forecast Error Handling](../cost-forecast/error-handling.md)
+> **Full details:** [Forecast Error Handling](./error-handling.md)
 
-For more forecast examples, see [forecast examples](../cost-forecast/examples.md).
+For more forecast examples, see [forecast examples](./examples.md).

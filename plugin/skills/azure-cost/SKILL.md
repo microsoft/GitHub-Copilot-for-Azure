@@ -4,7 +4,7 @@ description: "Unified Azure cost management: query historical costs, forecast fu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # Azure Cost Management Skill
@@ -53,9 +53,9 @@ Read the user's request and follow the appropriate workflow below.
 
 | User Intent | Workflow | Example Prompts |
 |-------------|----------|-----------------|
-| Understand current costs | [Cost Query Workflow](references/cost-query-workflow.md) | "how much am I spending", "cost by service", "show my bill" |
-| Reduce costs / find waste | [Cost Optimization Workflow](references/cost-optimization-workflow.md) | "optimize costs", "find orphaned resources", "reduce spending" |
-| Project future costs | [Cost Forecast Workflow](references/cost-forecast-workflow.md) | "forecast costs", "end of month estimate", "how much will I spend" |
+| Understand current costs | [Cost Query Workflow](cost-query/workflow.md) | "how much am I spending", "cost by service", "show my bill" |
+| Reduce costs / find waste | [Cost Optimization Workflow](cost-optimization/workflow.md) | "optimize costs", "find orphaned resources", "reduce spending" |
+| Project future costs | [Cost Forecast Workflow](cost-forecast/workflow.md) | "forecast costs", "end of month estimate", "how much will I spend" |
 | Full cost picture | All three workflows combined | "give me the full picture of my Azure costs" |
 
 > **Important:** When optimizing costs, always present the total bill and cost breakdown alongside optimization recommendations.
@@ -80,7 +80,7 @@ Read the user's request and follow the appropriate workflow below.
 
 For the full cost query workflow (scope selection, report types, timeframes, dataset configuration, API calls, pagination, guardrails, examples, and error handling), see:
 
-📄 **[Cost Query Workflow](references/cost-query-workflow.md)**
+📄 **[Cost Query Workflow](cost-query/workflow.md)**
 
 ---
 
@@ -88,7 +88,7 @@ For the full cost query workflow (scope selection, report types, timeframes, dat
 
 For the full cost optimization workflow (prerequisites, best practices, Redis/AKS-specific analysis, Azure Quick Review, resource discovery, cost queries, pricing validation, utilization metrics, and report generation), see:
 
-📄 **[Cost Optimization Workflow](references/cost-optimization-workflow.md)**
+📄 **[Cost Optimization Workflow](cost-optimization/workflow.md)**
 
 ---
 
@@ -96,7 +96,7 @@ For the full cost optimization workflow (prerequisites, best practices, Redis/AK
 
 For the full cost forecast workflow (scope selection, time period rules, dataset configuration, forecast-specific options, API calls, response interpretation, guardrails, and error handling), see:
 
-📄 **[Cost Forecast Workflow](references/cost-forecast-workflow.md)**
+📄 **[Cost Forecast Workflow](cost-forecast/workflow.md)**
 
 ---
 
