@@ -719,7 +719,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+          [/deployment-plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
           [/\.tf$/],
         );
       });
@@ -745,7 +745,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.tf$/],
+          [/deployment-plan\.md$/, /infra\/.*\.tf$/],
           [/\.bicep$/, /azure\.yaml$/],
         );
       });
@@ -771,7 +771,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/(.*\.bicepparam|(.*\.)?parameters\.json)$/],
+          [/deployment-plan\.md$/, /infra\/.*\.bicep$/, /infra\/(.*\.bicepparam|(.*\.)?parameters\.json)$/],
           [/azure\.yaml$/, /\.tf$/],
         );
       });
@@ -986,7 +986,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         // Workspace should contain orchestration/workflow code files
         expectFiles(workspacePath!,
-          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+          [/deployment-plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
           [/\.tf$/],
         );
       });
