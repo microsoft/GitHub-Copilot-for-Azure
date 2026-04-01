@@ -20,7 +20,7 @@
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
 #   - Tool names:     snake_case (read_file, replace_string_in_file)
-#   - MCP prefix:     mcp_azure_<command>  (single underscore, e.g., mcp_azure_documentation)
+#   - MCP prefix:     mcp_azure_mcp_<command>  (e.g., mcp_azure_mcp_documentation)
 #   - Skill paths:    .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/<name>/SKILL.md          (VS Code)
 #                     .vscode-insiders/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/<name>/SKILL.md (VS Code Insiders)
 #                     .agents/skills/<name>/SKILL.md
@@ -149,6 +149,11 @@ $filePath = $null
 # Check for skill invocation via 'skill'/'Skill' tool
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     $skillName = $toolInput.skill
+    # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
+    # Strip it to get the actual skill name for the allowlist
+    if ($skillName -and $skillName.StartsWith("azure:")) {
+        $skillName = $skillName.Substring(6)
+    }
     if ($skillName) {
         $eventType = "skill_invocation"
         $shouldTrack = $true
@@ -187,11 +192,11 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 }
 
 # Check for Azure MCP tool invocation
-# Copilot CLI: "azure-*" prefix (e.g., azure-documentation)
-# Claude Code: "mcp__plugin_azure_azure__*" prefix (double underscores)
-# VS Code:     "mcp_azure_*" prefix (single underscore, e.g., mcp_azure_documentation)
+# Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
+# Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
+# VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if ($toolName) {
-    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_")) {
+    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_")) {
         $azureToolName = $toolName
         $eventType = "tool_invocation"
         $shouldTrack = $true
