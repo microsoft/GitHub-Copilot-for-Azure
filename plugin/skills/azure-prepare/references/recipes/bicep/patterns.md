@@ -65,7 +65,7 @@ output resourceGroupName string = rg.name
 Use `azd env set` to supply values at deploy time:
 
 ```bash
-azd env set AZURE_ENV_NAME dev
+azd env set AZURE_ENV_NAME myapp-1234
 azd env set AZURE_LOCATION eastus2
 ```
 
