@@ -832,6 +832,23 @@ button.header-status-pill {
   display: none !important;
 }
 
+/* === Skill Invocation Rate Badge === */
+.sir-rate {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 48px;
+  text-align: right;
+}
+
+.sir-rate[data-status="pass"] {
+  color: var(--color-pass);
+}
+
+.sir-rate[data-status="fail"] {
+  color: var(--color-fail);
+}
+
 /* === Responsive === */
 @media (max-width: 480px) {
   .panel-grid {

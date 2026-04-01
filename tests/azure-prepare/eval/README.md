@@ -51,7 +51,7 @@ Python/Bicep   ✅      -          -        ✅       -       -
 | Grader | Type | What it checks |
 |--------|------|----------------|
 | `has_output` | code | Response is non-empty |
-| `plan_first` | regex | Mentions plan.md / planning phase |
+| `plan_first` | regex | Mentions deployment-plan.md / planning phase |
 | `security_posture` | regex | No connection strings or shared keys |
 | `efficiency` | behavior | ≤40 tool calls, ≤10min duration |
 

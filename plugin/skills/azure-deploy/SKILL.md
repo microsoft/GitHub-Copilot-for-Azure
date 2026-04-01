@@ -1,10 +1,10 @@
 ---
 name: azure-deploy
-description: "Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application — use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/plan.md from azure-prepare and validated status from azure-validate. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\". DO NOT USE WHEN: \"create and deploy\", \"build and deploy\", \"create a new app\", \"set up infrastructure\", \"create and deploy to Azure using Terraform\" — use azure-prepare for these."
+description: "Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/deployment-plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application — use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/deployment-plan.md from azure-prepare and validated status from azure-validate. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\". DO NOT USE WHEN: \"create and deploy\", \"build and deploy\", \"create a new app\", \"set up infrastructure\", \"create and deploy to Azure using Terraform\" — use azure-prepare for these."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.8"
+  version: "1.0.10"
 ---
 
 # Azure Deploy
@@ -16,7 +16,7 @@ metadata:
 > **⛔ STOP — PREREQUISITE CHECK REQUIRED**
 > Before proceeding, verify BOTH prerequisites are met:
 >
-> 1. **azure-prepare** was invoked and completed → `.azure/plan.md` exists
+> 1. **azure-prepare** was invoked and completed → `.azure/deployment-plan.md` exists
 > 2. **azure-validate** was invoked and passed → plan status = `Validated`
 >
 > If EITHER is missing, **STOP IMMEDIATELY**:
@@ -47,7 +47,7 @@ Activate this skill when user wants to:
 ## Rules
 
 1. Run after azure-prepare and azure-validate
-2. `.azure/plan.md` must exist with status `Validated`
+2. `.azure/deployment-plan.md` must exist with status `Validated`
 3. **Pre-deploy checklist required** — [Pre-Deploy Checklist](references/pre-deploy-checklist.md)
 4. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
 5. **Scope: deployment execution only** — This skill owns execution of `azd up`, `azd deploy`, `terraform apply`, and `az deployment` commands. These commands are run through this skill's error recovery and verification pipeline.
@@ -58,14 +58,15 @@ Activate this skill when user wants to:
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Check Plan** — Read `.azure/plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/plan.md` |
+| 1 | **Check Plan** — Read `.azure/deployment-plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/deployment-plan.md` |
 | 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
-| 3 | **Load Recipe** — Based on `recipe.type` in `.azure/plan.md` | [recipes/README.md](references/recipes/README.md) |
+| 3 | **Load Recipe** — Based on `recipe.type` in `.azure/deployment-plan.md` | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Execute Deploy** — Follow recipe steps | Recipe README |
 | 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
 | 6 | **Handle Errors** — See recipe's `errors.md` | — |
 | 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
-| 8 | **Report Results** — Present deployed endpoint URLs to the user as fully-qualified `https://` links | [Verification](references/recipes/azd/verify.md) |
+| 8 | **Live Role Verification** — Query Azure to confirm provisioned RBAC roles are correct and sufficient | [live-role-verification.md](references/live-role-verification.md) |
+| 9 | **Report Results** — Present deployed endpoint URLs to the user as fully-qualified `https://` links | [Verification](references/recipes/azd/verify.md) |
 
 > **⛔ URL FORMAT RULE**
 >
@@ -87,6 +88,7 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
 | `mcp_azure_mcp_azd` | Execute AZD commands |
+| `azure__role` | List role assignments for live RBAC verification (step 8) |
 
 ## References
 
