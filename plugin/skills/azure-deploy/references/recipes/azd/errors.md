@@ -11,6 +11,7 @@ These errors occur **during** `azd up` execution:
 | Deploy failed | Build or Docker errors | Check build logs |
 | Package failed | Missing Dockerfile or deps | Verify Dockerfile exists and dependencies |
 | Quota exceeded | Subscription limits | Request increase or change region |
+| `PrincipalId '...' has type 'ServicePrincipal', which is different from specified PrincipalType 'User'` | Base template RBAC assigns roles with `principalType: 'User'` but deploying identity is a service principal (CI/CD) | Set `allowUserIdentityPrincipal: false` in the `storageEndpointConfig` variable in `infra/main.bicep`. Do NOT try clearing `AZURE_PRINCIPAL_ID` — azd repopulates it. See [Principal Type Mismatch](#principal-type-mismatch). |
 | `could not determine container registry endpoint` | Missing `AZURE_CONTAINER_REGISTRY_ENDPOINT` | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID"` | Missing managed identity env vars | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "MANAGED_IDENTITY_CLIENT_ID"` | Missing managed identity client ID | See [Missing Container Registry Variables](#missing-container-registry-variables) |
@@ -126,6 +127,32 @@ After fixing the issue:
 ```bash
 azd up --no-prompt
 ```
+
+## Principal Type Mismatch
+
+**Symptom:** `azd up` fails during provisioning with:
+
+```
+PrincipalId '...' has type 'ServicePrincipal', which is different from specified PrincipalType 'User'
+```
+
+**Cause:** Many AZD templates (e.g., `functions-quickstart-python-http-azd`) include RBAC role assignments for the deploying user with hardcoded `principalType: 'User'`. This is controlled by an `allowUserIdentityPrincipal` flag in `main.bicep`'s `storageEndpointConfig` variable. When deploying from CI/CD with a service principal, `azd` sets `AZURE_PRINCIPAL_ID` to that service principal's object ID, but the Bicep still tries to create a role assignment with `principalType: 'User'`, causing ARM to reject it.
+
+**Solution:**
+
+In `infra/main.bicep`, find the `storageEndpointConfig` variable and set `allowUserIdentityPrincipal` to `false`:
+
+```bicep
+var storageEndpointConfig = {
+  enableBlob: true
+  enableQueue: false
+  enableTable: false
+  enableFiles: false
+  allowUserIdentityPrincipal: false  // Set to false for service principal deployments
+}
+```
+
+> ⚠️ **Do NOT** try to fix this by running `azd env set AZURE_PRINCIPAL_ID ""`. The `azd` CLI repopulates this value from the current auth context, so clearing it has no effect.
 
 ## Cleanup (DESTRUCTIVE)
 
