@@ -21,9 +21,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe("Should Trigger", () => {
-    // Prompts that SHOULD trigger this skill - cloud migration workflows
-    const shouldTriggerPrompts: string[] = [
+  describe("Should Trigger — Lambda to Functions", () => {
+    const lambdaPrompts: string[] = [
       "How do I migrate my AWS Lambda functions to Azure Functions?",
       "I want to migrate from AWS to Azure",
       "Can you do a Lambda migration assessment for my project?",
@@ -34,7 +33,57 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "I need to move my Lambda workloads to Azure Functions",
     ];
 
-    test.each(shouldTriggerPrompts)(
+    test.each(lambdaPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — Beanstalk to App Service", () => {
+    const beanstalkPrompts: string[] = [
+      "How do I migrate my Elastic Beanstalk app to Azure App Service?",
+      "Migrate my Beanstalk application to Azure",
+      "I need to move from AWS Beanstalk to Azure",
+      "Assess my Elastic Beanstalk project for Azure migration",
+    ];
+
+    test.each(beanstalkPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — Heroku to Azure", () => {
+    const herokuPrompts: string[] = [
+      "How do I migrate my Heroku app to Azure?",
+      "Migrate from Heroku to Azure App Service",
+      "I want to move my Heroku web app to Azure",
+      "Help me migrate my Heroku application to Azure",
+    ];
+
+    test.each(herokuPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — App Engine to App Service", () => {
+    const appEnginePrompts: string[] = [
+      "How do I migrate my Google App Engine app to Azure App Service?",
+      "Migrate from App Engine to Azure",
+      "Move my Google Cloud app to Azure App Service",
+    ];
+
+    test.each(appEnginePrompts)(
       'triggers on: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
