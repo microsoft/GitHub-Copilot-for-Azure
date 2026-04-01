@@ -116,6 +116,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
+      // ⚠️  Format-only check — passes silently when clause is absent.
+      //     Mandatory existence checks are below (regression guards for #1599).
       const description = skill.metadata.description;
       if (description.includes("USE FOR")) {
         expect(description).toContain("USE FOR:");

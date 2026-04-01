@@ -284,7 +284,7 @@ jobs:
           else
             npm run test:integration "$SKILL" "$SKILL_TEST_PATTERN"
           fi
-        continue-on-error: true
+        continue-on-error: false
       
       - name: Generate skill report
         if: always()
