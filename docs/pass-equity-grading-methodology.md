@@ -45,7 +45,66 @@ Each compute service is graded across seven phases of the developer lifecycle:
 
 ---
 
-## 3. Grading Scale (A–F)
+## 3. Scenario Discovery — How We Identified "What Good Looks Like"
+
+Grades are only meaningful if we know what scenarios *should* be covered. We used a three-layer approach to discover key scenarios for each service and each lifecycle phase:
+
+### 3.1 Azure Learn Documentation (Primary Source)
+
+For each compute service, we searched [Microsoft Learn](https://learn.microsoft.com) via the `microsoft_docs_search` MCP tool to identify the official key scenarios, common patterns, and recommended architectures.
+
+| Service | Key Learn Pages Consulted | Scenarios Discovered |
+|---|---|---|
+| **App Service** | [App Service overview](https://learn.microsoft.com/azure/app-service/overview), [WebJobs overview](https://learn.microsoft.com/azure/app-service/overview-webjobs), [Deployment best practices](https://learn.microsoft.com/azure/app-service/deploy-best-practices) | REST APIs (ASP.NET Core, Flask, Express, Spring Boot), full-stack web apps (MVC, Razor, SSR), background workers (WebJobs), multi-slot deployments, custom domains + TLS, SKU tier selection |
+| **Container Apps** | [Container Apps overview](https://learn.microsoft.com/azure/container-apps/overview), [Comparing container options](https://learn.microsoft.com/azure/container-apps/compare-options), [Jobs overview](https://learn.microsoft.com/azure/container-apps/jobs), [Dapr integration](https://learn.microsoft.com/azure/container-apps/dapr-overview) | High-scale serverless web apps (any stack), microservices with service discovery, Dapr-enabled apps (state/pub-sub/invocation), Container Apps Jobs, Functions on Container Apps for event-driven processing, KEDA autoscaling |
+| **Functions** | [Functions scenarios](https://learn.microsoft.com/azure/azure-functions/functions-scenarios), [Hosting plans comparison](https://learn.microsoft.com/azure/azure-functions/functions-scale), [Durable Functions](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-overview) | HTTP APIs, event-driven processing (queue/blob/timer/Cosmos triggers), durable orchestrations, MCP server hosting, AI agent backends, Flex Consumption migration |
+
+**Process:**
+1. Search Learn for `"<service> common scenarios"`, `"<service> overview"`, `"<service> best practices"`
+2. Extract the official scenario list and feature matrix
+3. Cross-reference with [Awesome AZD gallery](https://azure.github.io/awesome-azd/) for real-world template coverage
+4. Map each scenario to a lifecycle phase (Develop/Deploy/Operate/Diagnose/Migrate/Observe/Secure)
+
+### 3.2 Azure MCP Tools (Capability Discovery)
+
+We queried the Azure MCP server to discover what tooling actually exists per service — this reveals what operations Copilot can perform natively vs what requires reference documentation to guide.
+
+| MCP Tool Area | App Service | Container Apps | Functions |
+|---|---|---|---|
+| **Resource management** | `mcp_azure_mcp_appservice` (7 commands: get, list, settings, deploy history, diagnostics) | `mcp_azure_mcp_containerapps` (1 command: list) | `mcp_azure_mcp_functionapp` (1 command: get/list) |
+| **Code generation** | None | None | `mcp_azure_mcp_functions` (3 commands: project, function, template) |
+| **Diagnostics** | AppLens integration | AppLens integration | AppLens integration |
+| **Shared horizontal** | azd, deploy, validate, monitor, resource graph, bicep schema | Same | Same |
+
+> 💡 **Tip:** MCP tool counts directly impact grading. A service with rich MCP tooling (like App Service's 7 commands) can still grade poorly if there's no *guidance* on when to use each tool. Conversely, a service with few MCP tools but excellent reference docs (like Functions) can grade highly.
+
+### 3.3 Prior Art and Real-World Usage (Calibration)
+
+We recovered prior assessment sessions and real-world usage patterns to calibrate grades:
+
+- **Session `8fc96f69`** (March 25, 2026) — Original skill comparison grading App Service B+, Functions B+, Container Apps C based on MCP tool counts alone
+- **Session `86b13138`** — Real-world URL shortener deployment that exposed the `azure-functions` skill routing gap (Functions composition algorithm wasn't being followed → PR #1012)
+- **Session `0546ba28`** — Functions template coverage audit revealing Java and PowerShell gaps
+- **Competitive migration research** — Web search for Azure Migrate vs AWS Migration Hub vs GCP Migrate (2026 comparisons) confirming AI-assisted code-level migration is a unique Azure differentiator
+
+### 3.4 Scenario-to-Phase Mapping
+
+Each discovered scenario maps to one or more lifecycle phases. Here are representative examples:
+
+| Scenario | Service | Develop | Deploy | Operate | Diagnose | Migrate | Observe |
+|---|---|---|---|---|---|---|---|
+| REST API with SQL Database | App Service | Template + SQL recipe | Bicep + azd | SKU selection, scaling | Slow response diagnosis | Beanstalk→App Service | App Insights SDK |
+| Microservices with Dapr | Container Apps | Template + Dapr recipe | Bicep + azd | Revision traffic splitting | Image pull failures | Cloud Run→ACA | Distributed tracing |
+| Event-driven blob processing | Functions | Template + blob-eventgrid recipe | Bicep + azd | Hosting plan selection | Blob trigger delays | Lambda→Functions | FunctionAppLogs KQL |
+| Durable workflow orchestration | Functions | Template + durable recipe | Bicep + DTS | Cold start mitigation | Stuck orchestrations | — | Orchestration monitoring |
+| Scheduled batch job | Container Apps | Job template | Bicep + azd | Job scheduling, retries | Job failure logs | ECS→ACA Jobs | Container logs KQL |
+| Heroku migration | App Service | — | Bicep + azd | Custom domains | Deployment failures | Heroku→App Service | — |
+
+> ⚠️ **Warning:** The scenarios above are *representative*, not exhaustive. Domain experts should add scenarios specific to their service that aren't yet covered. The grading methodology accommodates new scenarios — they would increase the denominator for "what A looks like" and could lower current grades if uncovered.
+
+---
+
+## 4. Grading Scale (A–F)
 
 Each grade has concrete, measurable criteria:
 
@@ -94,9 +153,9 @@ Each grade has concrete, measurable criteria:
 
 ---
 
-## 4. Scoring Methodology
+## 5. Scoring Methodology
 
-### 4.1 Dimension Weights
+### 5.1 Dimension Weights
 
 Each phase grade is a weighted composite of five dimensions:
 
@@ -108,7 +167,7 @@ Each phase grade is a weighted composite of five dimensions:
 | Trigger phrase coverage | 15% | Dedicated phrases in SKILL.md, routing rules |
 | MCP tool integration | 15% | Service-specific MCP commands available |
 
-### 4.2 Phase Grade Formula
+### 5.2 Phase Grade Formula
 
 ```
 Phase Grade = Σ (dimension_score × dimension_weight)
@@ -116,7 +175,7 @@ Phase Grade = Σ (dimension_score × dimension_weight)
 
 Each dimension is scored 0–4 (mapping to F=0, D=1, C=2, B=3, B+=3.5, A=4), then the weighted average maps back to a letter grade.
 
-### 4.3 Service Grade Formula
+### 5.3 Service Grade Formula
 
 ```
 Service Grade = mean(phase_grades)
@@ -126,7 +185,7 @@ Service Grade = mean(phase_grades)
 
 ---
 
-## 5. Current Scorecard
+## 6. Current Scorecard
 
 ### 5.1 Summary Table
 
@@ -220,7 +279,7 @@ Excluding Deploy and Secure (equitable horizontal skills):
 
 ---
 
-## 6. How to Reproduce This Assessment
+## 7. How to Reproduce This Assessment
 
 Anyone can verify these grades by running the following commands from the repo root.
 
@@ -296,7 +355,7 @@ grep -r "mcp_azure_mcp_functions" plugin/skills/ --include='*.md' -l | wc -l
 
 ---
 
-## 7. How Domain Experts Should Contribute
+## 8. How Domain Experts Should Contribute
 
 ### Review Process
 
@@ -324,7 +383,7 @@ grep -r "mcp_azure_mcp_functions" plugin/skills/ --include='*.md' -l | wc -l
 
 ---
 
-## 8. Appendix: Raw Data Tables
+## 9. Appendix: Raw Data Tables
 
 ### A. Reference File Counts by Skill
 
