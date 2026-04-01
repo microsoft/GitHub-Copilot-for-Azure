@@ -264,7 +264,7 @@ jobs:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
       # Integration tests are broken down per skill for easy tracking of partially complete runs.
-      # Test failures now abort the step (continue-on-error: false).
+      # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
       - name: Run integration tests – ${{ matrix.skill }}

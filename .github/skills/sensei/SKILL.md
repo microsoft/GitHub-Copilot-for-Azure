@@ -50,7 +50,7 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║  TARGET SCORE: Medium-High                                       ║
 ║    ✓ Description > 150 chars, ≤ 60 words                         ║
 ║    ✓ Has "WHEN:" trigger phrases (preferred)                     ║
-║    ✓ No "DO NOT USE FOR:" (risky in multi-skill envs)             ║
+║    ✓ No "DO NOT USE FOR:" (unless disambiguation-critical)         ║
 ║    ✓ SKILL.md < 500 tokens (soft limit)                          ║
 ║                                                                  ║
 ║  MORE INFO:                                                      ║
