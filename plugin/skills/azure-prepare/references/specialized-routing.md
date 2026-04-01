@@ -11,7 +11,7 @@
 | **1 (highest)** | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** | Phase 1 Step 4 (Select Recipe) — azure-cloud-migrate does assessment + code conversion, then azure-prepare takes over for infrastructure, local testing, or deployment |
 | 2 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
 | 3 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
-| 4 (lowest) | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable | Stay in **azure-prepare** | Phase 1 Step 4 — select **durable** recipe. **MUST** load [durable.md](services/functions/durable.md) and [DTS reference](services/durable-task-scheduler/README.md). Generate `Microsoft.DurableTask/schedulers` + `taskHubs` Bicep resources. |
+| 4 (lowest) | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** | Phase 1 Step 4 — select **durable** recipe. **MUST** load [durable.md](services/functions/durable.md), [DTS reference](services/durable-task-scheduler/README.md), and [DTS Bicep patterns](services/durable-task-scheduler/bicep.md). |
 
 > ⚠️ This checks the user's **prompt text**, not just existing code. Essential for greenfield projects where there is no codebase to scan.
 
