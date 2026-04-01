@@ -17,7 +17,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   score:
@@ -93,66 +92,3 @@ jobs:
         with:
           name: gepa-quality-scores
           path: score-results.json
-
-      # NOTE: Ideally PR commenting should use a workflow_run-based pattern
-      # (score workflow uploads artifact, separate commenter on main downloads
-      # and posts) for better security. See .github/workflows/pr-comment.yml.
-      - name: Add PR comment with scores
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            const fs = require('fs');
-            const results = JSON.parse(fs.readFileSync('score-results.json', 'utf8'));
-            const items = Array.isArray(results) ? results : [results];
-
-            const marker = '<!-- gepa-quality-score -->';
-            let body = marker + '\n## 📊 GEPA Skill Quality Scores\n\n';
-            body += '| Skill | Quality | Triggers | Tests |\n';
-            body += '|-------|---------|----------|-------|\n';
-
-            for (const r of items) {
-              if (r.error) {
-                body += `| ${r.skill} | ❌ ERROR | - | - |\n`;
-                continue;
-              }
-              const q = r.quality_score.toFixed(2);
-              const t = r.trigger_accuracy !== null ? r.trigger_accuracy.toFixed(2) : 'N/A';
-              const tests = `${r.has_triggers_test ? 'T' : '-'}${r.has_integration_test ? 'I' : '-'}${r.has_unit_test ? 'U' : '-'}`;
-              const icon = r.quality_score >= 0.8 ? '✅' : r.quality_score >= 0.5 ? '⚠️' : '❌';
-              body += `| ${r.skill} | ${icon} ${q} | ${t} | ${tests} |\n`;
-            }
-
-            const passing = items.filter(r => (r.quality_score || 0) >= 0.8).length;
-            body += `\n**${passing}/${items.length}** skills at quality ≥ 0.80\n`;
-            body += '\n<details><summary>How to improve</summary>\n\n';
-            body += '```bash\n';
-            body += '# Score a specific skill\n';
-            body += 'python .github/skills/sensei/scripts/gepa/auto_evaluator.py score --skill <name> --skills-dir plugin/skills --tests-dir tests\n\n';
-            body += '# Optimize a skill with GEPA\n';
-            body += 'python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill <name> --skills-dir plugin/skills --tests-dir tests\n';
-            body += '```\n</details>';
-
-            // Find existing comment with marker to update (sticky comment pattern)
-            const { data: comments } = await github.rest.issues.listComments({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                comment_id: existing.id,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: body,
-              });
-            }

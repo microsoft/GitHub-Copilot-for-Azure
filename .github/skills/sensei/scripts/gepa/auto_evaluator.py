@@ -253,7 +253,7 @@ def score_content_quality(skill_md_content: str) -> tuple[float, dict]:
 
     # Bad patterns
     bad = [
-        (r"api[_-]?key\s*[:=]", "Contains API key pattern"),
+        (r"api(?:[\s_-]+)?key\s*[:=]", "Contains API key pattern"),
         (r"password\s*[:=]", "Contains password pattern"),
         (r"TODO|FIXME|HACK", "Contains TODO/FIXME markers"),
     ]
