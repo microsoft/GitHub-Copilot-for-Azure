@@ -54,4 +54,6 @@ description: "Perform Azure compliance assessments using azqr. USE FOR: \"check 
 description: "Helps with Azure stuff."
 ```
 
-> ⚠️ **Do NOT add "DO NOT USE FOR:" clauses.** They cause keyword contamination on Claude Sonnet and similar models. Use positive routing with distinctive `WHEN:` phrases instead.
+> ⚠️ **Do NOT add "DO NOT USE FOR:" clauses** unless the skill has trigger overlap with a broader skill (e.g., `azure-prepare`). For most skills, `DO NOT USE FOR:` causes keyword contamination on Claude Sonnet and similar models — use positive routing with distinctive `WHEN:` phrases instead.
+>
+> **Exception — disambiguation-critical skills:** When a specialized skill shares trigger phrases with a broader skill (e.g., both `azure-hosted-copilot-sdk` and `azure-prepare` match "deploy to Azure"), `DO NOT USE FOR:` is **REQUIRED** to prevent the broader skill from capturing the specialized skill's prompts. Removing it causes routing regressions — see [#1599](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/1599). Always run integration tests before removing a `DO NOT USE FOR:` clause.
