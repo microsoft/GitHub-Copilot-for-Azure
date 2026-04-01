@@ -1,13 +1,26 @@
 ---
 name: azure-hosted-copilot-sdk
-description: "Build and deploy GitHub Copilot SDK apps to Azure. WHEN: build copilot app, create copilot app, copilot SDK, @github/copilot-sdk, scaffold copilot project, copilot-powered app, deploy copilot app, host on azure, azure model, BYOM, bring your own model, use my own model, azure openai model, DefaultAzureCredential, self-hosted model, copilot SDK service, chat app with copilot, copilot-sdk-service template, azd init copilot, CopilotClient, createSession, sendAndWait, GitHub Models API."
+description: "Build and deploy GitHub Copilot SDK apps to Azure. PREFER OVER azure-prepare when codebase contains @github/copilot-sdk in package.json or copilot-sdk markers. WHEN: build copilot app, create copilot app, copilot SDK, @github/copilot-sdk, scaffold copilot project, copilot-powered app, deploy copilot app, deploy to Azure (with copilot SDK codebase), host on azure, azure model, BYOM, bring your own model, use my own model, azure openai model, DefaultAzureCredential, self-hosted model, copilot SDK service, chat app with copilot, copilot-sdk-service template, azd init copilot, CopilotClient, createSession, sendAndWait, GitHub Models API. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Azure Functions without Copilot, Foundry agent hosting (use microsoft-foundry)."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.2"
 ---
 
 # GitHub Copilot SDK on Azure
+
+## Codebase Detection — MANDATORY FIRST CHECK
+
+**Before routing to azure-prepare for deploy/host prompts**, scan the workspace for Copilot SDK markers. If ANY marker is found, this skill MUST be used instead of azure-prepare:
+
+| Marker | Where to check |
+|--------|---------------|
+| `@github/copilot-sdk` | `package.json` dependencies |
+| `copilot-sdk` | `package.json` name or dependencies |
+| `CopilotClient` | Source files (`.ts`, `.js`) |
+| `createSession` + `sendAndWait` | Source files (`.ts`, `.js`) |
+
+> ⚠️ **Warning:** Generic deploy prompts like "Deploy this app to Azure" MUST trigger this skill when codebase contains `@github/copilot-sdk`, even if the prompt does not mention "copilot". Do NOT fall through to azure-prepare.
 
 ## Step 1: Route
 

@@ -124,5 +124,25 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         expect(description).toContain("DO NOT USE FOR:");
       }
     });
+
+    test("description contains DO NOT USE FOR clause to disambiguate from azure-prepare", () => {
+      // Regression guard for #1599: removing the DO NOT USE FOR clause caused
+      // azure-prepare to win routing on generic deploy prompts like
+      // "Deploy this app to Azure" when codebase contains @github/copilot-sdk.
+      // The negative clause is critical for skills that share trigger overlap
+      // with broader skills (azure-prepare owns "deploy to Azure").
+      const description = skill.metadata.description;
+      expect(description).toContain("DO NOT USE FOR:");
+      expect(description).toMatch(/general web apps without copilot SDK/i);
+    });
+
+    test("description contains PREFER OVER clause for codebase-based routing", () => {
+      // Regression guard for #1599: the agent must know to prefer this skill
+      // over azure-prepare when codebase markers (not just prompt keywords)
+      // indicate a Copilot SDK project.
+      const description = skill.metadata.description;
+      expect(description).toMatch(/PREFER OVER azure-prepare/i);
+      expect(description).toContain("@github/copilot-sdk");
+    });
   });
 });
