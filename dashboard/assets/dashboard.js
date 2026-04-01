@@ -1129,6 +1129,153 @@ function applyItemFilter(section, status) {
   }
 }
 
+// ── Skill Invocation Rates Panel ────────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the skill invocation
+ * rate for every prompt on the main dashboard.
+ * A prompt is considered passing when its rate is >= 80%.
+ */
+async function loadSkillInvocationRates() {
+  const section = document.getElementById("panel-skill-invocation");
+  if (!section) return;
+
+  try {
+    const datesRes = await fetch("/api/dates");
+    if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
+    const dates = await datesRes.json();
+
+    if (!Array.isArray(dates) || dates.length === 0) {
+      renderSkillInvocationPanel(section, [], "skip", 0, 0, null);
+      return;
+    }
+
+    const latestDate = dates[0];
+    const resultsRes = await fetch(
+      "/api/test-results/" + encodeURIComponent(latestDate),
+    );
+    if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
+    const skillResults = await resultsRes.json();
+
+    // Flatten all test cases that carry a skillInvocationRate
+    const prompts = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const allTests = [
+        ...(stats.passedTests || []),
+        ...(stats.failedTests || []),
+      ];
+      for (const test of allTests) {
+        if (test.skillInvocationRate !== undefined) {
+          prompts.push({
+            skillName: skillName,
+            testName: test.testName,
+            rate: test.skillInvocationRate,
+          });
+        }
+      }
+    }
+
+    // Sort: below 80% first (worst first), then ascending by rate within each group
+    prompts.sort(function (a, b) {
+      const aPass = a.rate >= 0.8;
+      const bPass = b.rate >= 0.8;
+      if (aPass !== bPass) return aPass ? 1 : -1;
+      return a.rate - b.rate;
+    });
+
+    const passing = prompts.filter(function (p) { return p.rate >= 0.8; }).length;
+    const failing = prompts.length - passing;
+    const overallStatus =
+      prompts.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
+
+    renderSkillInvocationPanel(
+      section, prompts, overallStatus, passing, failing, latestDate,
+    );
+  } catch {
+    renderSkillInvocationPanel(section, [], "skip", 0, 0, null);
+  }
+}
+
+/**
+ * Populate and finalise the skill invocation rates panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, testName:string, rate:number}>} prompts
+ * @param {string} overallStatus - pass | fail | skip
+ * @param {number} passing
+ * @param {number} failing
+ * @param {string|null} dateLabel
+ */
+function renderSkillInvocationPanel(
+  section, prompts, overallStatus, passing, failing, dateLabel,
+) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  const total = prompts.length;
+
+  if (total > 0) {
+    const row = el("div", "stats-row");
+    row.appendChild(statBox(total, "Total"));
+    row.appendChild(filterableStatBox(passing, "Above 80%", "pass", itemsEl));
+    if (failing > 0) {
+      row.appendChild(filterableStatBox(failing, "Below 80%", "fail", itemsEl));
+    }
+    summaryEl.appendChild(row);
+  }
+
+  if (total === 0) {
+    itemsEl.appendChild(
+      el("p", "no-data-message", "No skill invocation rate data available."),
+    );
+  } else {
+    const list = el("ul", "items-list");
+    for (const prompt of prompts) {
+      const status = prompt.rate >= 0.8 ? "pass" : "fail";
+      const li = el("li");
+      li.setAttribute("data-item-status", status);
+      li.appendChild(statusBadge(status));
+      li.appendChild(el("span", "item-name", prompt.testName));
+      const rateSpan = el("span", "sir-rate");
+      rateSpan.setAttribute("data-status", status);
+      rateSpan.textContent = (prompt.rate * 100).toFixed(1) + "%";
+      li.appendChild(rateSpan);
+      list.appendChild(li);
+    }
+    itemsEl.appendChild(list);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", overallStatus);
+
+  var summaryText =
+    total === 0
+      ? "No data"
+      : passing + " above 80%" + (failing > 0 ? " / " + failing + " below 80%" : "");
+  if (dateLabel) summaryText += " \u2014 " + dateLabel;
+  section.setAttribute("data-summary-text", summaryText);
+
+  var fakeCategory = {
+    status: overallStatus,
+    summary: {
+      total: total,
+      passed: passing,
+      failed: failing,
+      warnings: 0,
+      skipped: 0,
+    },
+    items: prompts.map(function (p) {
+      return { name: p.testName, status: p.rate >= 0.8 ? "pass" : "fail" };
+    }),
+  };
+
+  setupCollapsible(section, fakeCategory, "skill-invocation");
+  createItemFilter(section);
+}
+
 // ── Initialization ──────────────────────────────────────────────────────────
 
 async function init() {
@@ -1170,4 +1317,7 @@ async function init() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", function () {
+  init();
+  loadSkillInvocationRates();
+});
