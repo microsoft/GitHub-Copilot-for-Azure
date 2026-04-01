@@ -166,7 +166,7 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 | Single skill or small set (1-5 skills) with clear domain boundaries | Low | Anti-triggers are low-risk — domain boundaries are obvious |
 | Medium skill set (5-15 skills) with some overlap | Moderate | Anti-trigger keywords start competing with other skills' triggers |
 | Large skill set (15+ skills) with overlapping domains | **High** | Keyword contamination is measurable — negative keywords become activation keywords on fast-pattern-matching models |
-| **Specialized skill with trigger overlap against a broader skill** | **REQUIRED** | Anti-triggers are the **only** disambiguation mechanism when a specialized skill (e.g., `azure-hosted-copilot-sdk`) competes with a broader skill (e.g., `azure-prepare`) on shared trigger phrases like "deploy to Azure". See [#1599](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/1599). |
+| **Specialized skill with trigger overlap against a broader skill** | **REQUIRED** | Anti-triggers are the **only** disambiguation mechanism when a specialized skill (e.g., `azure-hosted-copilot-sdk`) competes with a broader skill (e.g., `azure-prepare`) on shared trigger phrases like "deploy to Azure". Removing them causes routing regressions. |
 
 **Why large skill sets are risky:** On Claude Sonnet and similar models that use fast pattern matching (first ~20 words), `DO NOT USE FOR: Function apps` causes Sonnet to key on "Function apps" and **activate** the skill for Functions queries. This was empirically demonstrated across 24 Azure skills ([analysis](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). Anthropic's own published skills confirm this pattern — 4 of 5 skills in `anthropics/skills` use positive-only routing.
 
@@ -323,7 +323,7 @@ function scoreSkill(skill):
     # Warn on anti-triggers (keyword contamination risk)
     # Exception: DO NOT warn if skill has trigger overlap with a broader skill
     # (e.g., azure-hosted-copilot-sdk overlaps with azure-prepare on "deploy")
-    # In that case, DO NOT USE FOR is REQUIRED for disambiguation (#1599)
+    # In that case, DO NOT USE FOR is REQUIRED for disambiguation
     if containsAntiTriggers(skill.description):
         if hasOverlappingTriggersWithBroaderSkill(skill):
             pass  # anti-triggers required for disambiguation — no warning

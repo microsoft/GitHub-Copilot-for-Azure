@@ -101,7 +101,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       //     punctuation when the clause exists, but pass silently when it is absent.
       //     If this skill gains routing competition with a broader skill (e.g.
       //     azure-prepare) in the future, convert these to mandatory existence
-      //     checks like azure-hosted-copilot-sdk/unit.test.ts.  See #1599.
+      //     checks like azure-hosted-copilot-sdk/unit.test.ts.
       const description = skill.metadata.description;
       if (description.includes("USE FOR")) {
         expect(description).toContain("USE FOR:");

@@ -116,7 +116,7 @@ For each skill, execute this loop until score >= Medium-High AND tests pass:
    - Validate `name` per [agentskills.io spec](https://agentskills.io/specification) (no `--`, no start/end `-`, lowercase alphanumeric)
    - Check description length and word count (≤60 words)
    - Check triggers (WHEN: preferred, USE FOR: accepted)
-   - Warn on "DO NOT USE FOR:" (risky in multi-skill environments — **exception**: REQUIRED for skills that share trigger overlap with broader skills like `azure-prepare`; see #1599)
+   - Warn on "DO NOT USE FOR:" (risky in multi-skill environments — **exception**: REQUIRED for skills that share trigger overlap with broader skills like `azure-prepare`)
    - Preserve optional spec fields (`license`, `metadata`, `allowed-tools`) if present
 3. **CHECK** - If score >= Medium-High AND tests pass → go to TOKENS step
 4. **SCAFFOLD** - If `tests/{skill-name}/` doesn't exist, create from `tests/_template/`
@@ -151,7 +151,7 @@ Sensei validates skills against the [agentskills.io specification](https://agent
 
 > ⚠️ "DO NOT USE FOR:" is **risky in multi-skill environments** (15+ overlapping skills) — causes keyword contamination on fast-pattern-matching models. Safe for small, isolated skill sets. Use positive routing with `WHEN:` for cross-model safety.
 >
-> **Exception — disambiguation-critical skills:** When a skill's `USE FOR` triggers directly overlap with a broader skill (e.g., `azure-prepare` owns "deploy to Azure"), `DO NOT USE FOR:` is **REQUIRED** to prevent the broader skill from capturing prompts that belong to the specialized skill. Removing it causes routing regressions (see [#1599](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/1599)). Integration tests validate this routing — run them before removing any `DO NOT USE FOR:` clause.
+> **Exception — disambiguation-critical skills:** When a skill's `USE FOR` triggers directly overlap with a broader skill (e.g., `azure-prepare` owns "deploy to Azure"), `DO NOT USE FOR:` is **REQUIRED** to prevent the broader skill from capturing prompts that belong to the specialized skill. Removing it causes routing regressions. Integration tests validate this routing -- run them before removing any `DO NOT USE FOR:` clause.
 
 **Strongly recommended** (reported as suggestions if missing):
 - `license` — identifies the license applied to the skill
@@ -178,7 +178,7 @@ metadata:
 
 > ⚠️ **"DO NOT USE FOR:" carries context-dependent risk.** In multi-skill environments (10+ skills with overlapping domains), anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and fast-pattern-matching models ([evidence](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). For small, isolated skill sets (1-5 skills), the risk is low. When in doubt, use positive routing with `WHEN:` and distinctive quoted phrases.
 >
-> **Exception:** `DO NOT USE FOR:` is **REQUIRED** when a specialized skill's triggers overlap with a broader skill (e.g., `azure-hosted-copilot-sdk` vs. `azure-prepare` on "deploy to Azure"). Without the negative discriminator, the broader skill captures prompts that should route to the specialized one. See [#1599](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/1599) for the regression this caused. Always run integration tests before removing a `DO NOT USE FOR:` clause.
+> **Exception:** `DO NOT USE FOR:` is **REQUIRED** when a specialized skill's triggers overlap with a broader skill (e.g., `azure-hosted-copilot-sdk` vs. `azure-prepare` on "deploy to Azure"). Without the negative discriminator, the broader skill captures prompts that should route to the specialized one. Always run integration tests before removing a `DO NOT USE FOR:` clause.
 
 ## Test Scaffolding
 

@@ -117,7 +117,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
       // ⚠️  Format-only check — passes silently when clause is absent.
-      //     Mandatory existence checks are below (regression guards for #1599).
+      //     Mandatory existence checks are below (regression guards).
       const description = skill.metadata.description;
       if (description.includes("USE FOR")) {
         expect(description).toContain("USE FOR:");
@@ -128,7 +128,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("description contains DO NOT USE FOR clause to disambiguate from azure-prepare", () => {
-      // Regression guard for #1599: removing the DO NOT USE FOR clause caused
+      // Regression guard: removing the DO NOT USE FOR clause causes
       // azure-prepare to win routing on generic deploy prompts like
       // "Deploy this app to Azure" when codebase contains @github/copilot-sdk.
       // The negative clause is critical for skills that share trigger overlap
@@ -139,8 +139,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("description contains PREFER OVER clause for codebase-based routing", () => {
-      // Regression guard for #1599: the agent must know to prefer this skill
-      // over azure-prepare when codebase markers (not just prompt keywords)
+      // Regression guard: the agent must know to prefer this skill over
+      // azure-prepare when codebase markers (not just prompt keywords)
       // indicate a Copilot SDK project.
       const description = skill.metadata.description;
       expect(description).toMatch(/PREFER OVER azure-prepare/i);

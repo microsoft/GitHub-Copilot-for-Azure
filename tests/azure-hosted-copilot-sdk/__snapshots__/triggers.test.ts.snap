@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`azure-hosted-copilot-sdk - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {

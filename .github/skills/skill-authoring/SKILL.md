@@ -4,7 +4,7 @@ description: "Guidelines for writing Agent Skills that comply with the agentskil
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Skill Authoring Guide
