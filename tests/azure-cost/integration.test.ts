@@ -236,7 +236,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          prompt: "Why did my AKS cluster spend suddenly increase this week? Help me find the cause",
+          prompt: "My AKS cluster costs spiked unexpectedly last Sunday from 2am to 4pm EST, help me investigate",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -276,7 +276,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("response mentions monitoring commands for AKS cost anomaly prompt", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        prompt: "My AKS cluster costs spiked unexpectedly this week, help me investigate"
+        prompt: "My AKS cluster costs spiked unexpectedly last Sunday from 2am to 4pm EST, help me investigate"
       });
       softCheckSkill(agentMetadata, SKILL_NAME);
       const mentionsMonitoring = doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl top") ||
