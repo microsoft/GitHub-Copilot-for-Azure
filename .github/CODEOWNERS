@@ -29,5 +29,5 @@
 /plugin/skills/azure-resource-visualizer/ @tmeschter
 /plugin/skills/azure-storage/ @charris-msft
 /plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan
-/plugin/skills/entra-app-registration/ @JasonYeMSFT
+/plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan
 /plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst
