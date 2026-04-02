@@ -155,7 +155,22 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
   --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod
 ```
 
-**With storage mount:**
+**PowerShell:**
+```powershell
+$ErrorActionPreference = "Stop"
+$KEY_VAULT = if ($env:KEY_VAULT) { $env:KEY_VAULT } else { "<keyvault-name>" }
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+$IDENTITY_ID = if ($env:IDENTITY_ID) { $env:IDENTITY_ID } else { "<identity-id>" }
+$SECRET_URI = (az keyvault secret show --vault-name $KEY_VAULT --name db-password --query id -o tsv)
+az containerapp create --name spring-app --resource-group spring-rg --environment spring-env `
+  --image "$ACR_NAME.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external `
+  --cpu 2.0 --memory 4Gi --min-replicas 2 --max-replicas 10 `
+  --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID --registry-server "$ACR_NAME.azurecr.io" `
+  --secrets "db-password=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID" `
+  --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod
+```
+
+**Bash with storage mount:**
 ```bash
 az containerapp create --name spring-app --resource-group spring-rg --environment spring-env \
   --image "${ACR_NAME}.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external \
@@ -166,13 +181,32 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
   --bind-storage-name spring-storage --mount-path /mnt/data
 ```
 
+**PowerShell with storage mount:**
+```powershell
+az containerapp create --name spring-app --resource-group spring-rg --environment spring-env `
+  --image "$ACR_NAME.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external `
+  --cpu 2.0 --memory 4Gi --min-replicas 2 --max-replicas 10 `
+  --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID --registry-server "$ACR_NAME.azurecr.io" `
+  --secrets "db-password=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID" `
+  --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password `
+  --bind-storage-name spring-storage --mount-path /mnt/data
+```
+
 ## Phase 7: Validation
 
-**Check app status:**
+**Bash - Check app status:**
 ```bash
 FQDN=$(az containerapp show --name spring-app --resource-group spring-rg --query properties.configuration.ingress.fqdn -o tsv)
 echo "Application URL: https://${FQDN}"
 curl "https://${FQDN}/actuator/health"
+az containerapp logs show --name spring-app --resource-group spring-rg --tail 50
+```
+
+**PowerShell - Check app status:**
+```powershell
+$FQDN = (az containerapp show --name spring-app --resource-group spring-rg --query properties.configuration.ingress.fqdn -o tsv)
+Write-Host "Application URL: https://$FQDN"
+Invoke-RestMethod -Uri "https://$FQDN/actuator/health" -Method Get
 az containerapp logs show --name spring-app --resource-group spring-rg --tail 50
 ```
 
@@ -187,6 +221,16 @@ az containerapp env java-component config-server-for-spring create \
   --name config-server --min-replicas 1 --max-replicas 1 \
   --configuration spring.cloud.config.server.git.uri=https://github.com/your-org/config-repo
 az containerapp update --name spring-app --resource-group spring-rg \
+  --bind config-server
+```
+
+**PowerShell:**
+```powershell
+az containerapp env java-component config-server-for-spring create `
+  --environment spring-env --resource-group spring-rg `
+  --name config-server --min-replicas 1 --max-replicas 1 `
+  --configuration spring.cloud.config.server.git.uri=https://github.com/your-org/config-repo
+az containerapp update --name spring-app --resource-group spring-rg `
   --bind config-server
 ```
 
