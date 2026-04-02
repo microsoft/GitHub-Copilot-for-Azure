@@ -16,17 +16,17 @@ Choose the deployment recipe based on project needs and existing tooling.
 
 **Default: AZD** unless specific requirements indicate otherwise.
 
-> 💡 **Tip:** azd supports both Bicep and Terraform as IaC providers. When Terraform is mentioned for Azure deployment, **default to azd+Terraform** for the best developer experience.
+> 💡 **Tip:** azd supports both Bicep and Terraform as IaC providers. When the user asks for "azd with Terraform" or "azd+Terraform", use the AZD (Terraform) recipe. When the user explicitly requests "Terraform as the infrastructure provider" or "pure Terraform" **without mentioning azd**, use the pure **Terraform** recipe — do **NOT** default to azd+Terraform.
 
 ## Decision Criteria
 
 | Choose | When |
 |--------|------|
 | **AZD (Bicep)** | New projects, multi-service apps, want simplest deployment (`azd up`) |
-| **AZD (Terraform)** | **DEFAULT for Terraform** - Want Terraform IaC + azd simplicity, Azure deployment with Terraform |
+| **AZD (Terraform)** | User explicitly asks for "azd with Terraform" or "azd+Terraform"; want Terraform IaC + azd simplicity |
 | **AZCLI** | Existing az scripts, need imperative control, custom pipelines, AKS |
 | **Bicep** | IaC-first approach, no CLI wrapper needed, direct ARM deployment |
-| **Terraform** | Multi-cloud deployments (non-Azure-first), complex TF workflows incompatible with azd, explicitly requested |
+| **Terraform** | User explicitly specifies "Terraform as the infrastructure provider" or "Terraform" without mentioning azd; multi-cloud deployments (non-Azure-first); complex TF workflows incompatible with azd |
 
 ## Auto-Detection
 
@@ -34,7 +34,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 |--------------------|------------------|
 | `azure.yaml` with `infra.provider: terraform` | AZD (Terraform) |
 | `azure.yaml` (Bicep or no provider specified) | AZD (Bicep) |
-| `*.tf` files (no azure.yaml) | **AZD (Terraform) - DEFAULT** (unless multi-cloud) |
+| `*.tf` files (no azure.yaml) | Terraform (pure) — or AZD (Terraform) if user mentions azd |
 | `infra/*.bicep` (no azure.yaml) | Bicep or AZCLI |
 | Existing `az` scripts | AZCLI |
 | None | AZD (Bicep) - default |

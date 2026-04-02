@@ -2,9 +2,15 @@
 
 Terraform workflow for Azure deployments.
 
+> ⛔ **PURE TERRAFORM — Do NOT create `azure.yaml`**
+>
+> This recipe generates **only** Terraform (`.tf`) files. `azure.yaml` is an azd configuration file and **must NOT be created** for pure Terraform projects. If you create `azure.yaml`, you are using the wrong recipe.
+>
+> → If you want azd + Terraform (which produces `azure.yaml`), use the [AZD+Terraform recipe](../azd/terraform.md) instead.
+
 > **⚠️ IMPORTANT: Consider azd+Terraform First**
 >
-> If you're deploying to Azure, you should **default to [azd with Terraform](../azd/terraform.md)** instead of pure Terraform. azd+Terraform gives you:
+> If you're deploying to Azure and have not explicitly requested pure Terraform, you should consider **[azd with Terraform](../azd/terraform.md)** instead. azd+Terraform gives you:
 > - Terraform's IaC capabilities
 > - Simple `azd up` deployment workflow
 > - Built-in environment management
@@ -21,7 +27,7 @@ Only use pure Terraform workflow when you have specific requirements that preven
 - **Complex Terraform modules/workspaces** that are incompatible with azd conventions
 - **Existing Terraform CI/CD** pipelines that are hard to migrate
 - **Organization mandate** for pure Terraform workflow without any wrapper tools
-- **Explicitly requested** by the user to use Terraform without azd
+- **Explicitly requested** by the user to use "Terraform as the infrastructure provider" or "Terraform" without mentioning azd
 
 ## When to Use azd+Terraform Instead
 
@@ -82,6 +88,8 @@ Manual Dockerfile creation required.
 | Backend | `./infra/backend.tf` |
 | Modules | `./infra/modules/` |
 | Dockerfiles | `src/<service>/Dockerfile` |
+
+> ⛔ **`azure.yaml` must NOT exist** — Pure Terraform projects do not use azd and must not have an `azure.yaml` file. If you produced one, delete it and reconsider whether you should use the [AZD+Terraform recipe](../azd/terraform.md).
 
 ## References
 
