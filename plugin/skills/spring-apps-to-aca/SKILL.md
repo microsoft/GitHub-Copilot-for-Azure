@@ -1,6 +1,6 @@
 ---
 name: spring-apps-to-aca
-description: "Migrate Spring Boot applications from Azure Spring Apps or any Spring Boot deployment to Azure Container Apps with pre-migration assessment, deployment automation, and cloud-native optimization. WHEN: migrate Spring Boot to Container Apps, move Azure Spring Apps to ACA, Azure Spring Apps to Container Apps migration, Spring Boot migration to ACA, migrate Spring microservices to ACA, convert Spring Boot JAR to container on ACA, Spring Boot ACA migration assessment, move Spring Boot from VM to Container Apps, Spring Boot to ACA conversion, Azure Spring Apps migration assessment, migrate existing Spring Boot app, Spring Boot platform migration, replatform Spring Boot to ACA."
+description: "Migrate Spring Boot apps from Azure Spring Apps or any deployment to Azure Container Apps. WHEN: migrate Spring Boot to Container Apps, Azure Spring Apps to ACA migration, Spring Boot ACA migration assessment, convert Spring Boot JAR to container on ACA, move Spring Boot from VM to Container Apps, migrate existing Spring Boot app, Spring Boot platform migration, replatform Spring Boot to ACA."
 license: MIT
 metadata:
   version: "1.0.0"
