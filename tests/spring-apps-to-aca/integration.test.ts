@@ -9,7 +9,6 @@
 
 import {
   useAgentRunner,
-  areToolCallsSuccess,
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
