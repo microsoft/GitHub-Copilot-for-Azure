@@ -48,9 +48,6 @@ param (
     [switch] $DeleteArmDeployments,
 
     [Parameter()]
-    [Double] $DeleteAfterHours = 24,
-
-    [Parameter()]
     [string] $AllowListPath = "$PSScriptRoot/cleanup-allowlist.txt",
 
     [string] $GroupFilter = '*',
@@ -306,8 +303,7 @@ function HasException([object]$ResourceGroup) {
 function FindOrCreateDeleteAfterTag {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
-        [object]$ResourceGroup,
-        [Double]$HoursToDelete
+        [object]$ResourceGroup
     )
 
     if (!$DeleteNonCompliantGroups -or !$ResourceGroup) {
@@ -507,7 +503,7 @@ function DeleteOrUpdateResourceGroups() {
     }
 
     foreach ($rg in $toDeleteSoon) {
-        FindOrCreateDeleteAfterTag -ResourceGroup $rg -HoursToDelete $DeleteAfterHours
+        FindOrCreateDeleteAfterTag -ResourceGroup $rg
     }
 
 
