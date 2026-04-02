@@ -92,23 +92,27 @@ Error: Invalid value for variable "environment_name"
 
 Or Terraform silently uses the literal string, causing resource naming failures, state conflicts, and cascading errors that lead to deployment timeouts.
 
-**Cause:** azd's template engine processes Go-style `{{ .Env.* }}` variables in `azure.yaml` and service manifests, but does **NOT** interpolate them in `.tfvars.json` or any Terraform variable files. If `azure-prepare` generated a `main.tfvars.json` with template expressions, those literal strings are passed to Terraform.
+**Cause:** azd reads `infra/main.tfvars.json`, substitutes `${VAR}` references using its built-in envsubst, and passes the resolved file to Terraform via `-var-file=`. Go-style `{{ .Env.* }}` variables are only processed in `azure.yaml` and service manifests — they are **NOT** interpolated in `.tfvars.json` or any Terraform variable files. If `azure-prepare` generated a `main.tfvars.json` with Go-style template expressions, those literal strings are passed to Terraform.
 
 **Solution:**
 
-1. **Remove** the `main.tfvars.json` file from `infra/`:
-   ```bash
-   rm infra/main.tfvars.json
+1. **Fix the syntax** in `infra/main.tfvars.json` — replace Go-style `{{ .Env.* }}` with `${VAR}`:
+   ```json
+   {
+       "environment_name": "${AZURE_ENV_NAME}",
+       "location": "${AZURE_LOCATION}",
+       "subscription_id": "${AZURE_SUBSCRIPTION_ID}"
+   }
    ```
 
-2. **Use `TF_VAR_*` environment variables** to pass values to Terraform:
+2. **Or use `TF_VAR_*` environment variables** if you don't have `main.tfvars.json`:
    ```bash
    azd env set TF_VAR_environment_name "$(azd env get-value AZURE_ENV_NAME)"
    azd env set TF_VAR_location "$(azd env get-value AZURE_LOCATION)"
    azd env set TF_VAR_subscription_id "$(azd env get-value AZURE_SUBSCRIPTION_ID)"
    ```
 
-3. **Or rely on azd auto-mapping** — azd automatically passes `AZURE_ENV_NAME`, `AZURE_LOCATION`, and `AZURE_SUBSCRIPTION_ID` as Terraform variables when they match variable names in `variables.tf`. Ensure your `variables.tf` declares:
+3. **Ensure `variables.tf`** declares all required variables:
    ```hcl
    variable "environment_name" { type = string }
    variable "location" { type = string }

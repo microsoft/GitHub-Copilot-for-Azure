@@ -117,19 +117,26 @@ provider "azurerm" {
 
 ### 4. Variables and Outputs
 
-> ⚠️ **WARNING: Do NOT use Go-style template variables in `.tfvars.json` files**
+> ⚠️ **WARNING: Use `${VAR}` syntax in `main.tfvars.json`, NOT Go-style `{{ .Env.* }}`**
 >
-> azd's template engine (`{{ .Env.* }}`) only processes `azure.yaml` — it does **NOT** interpolate
-> template variables in `.tfvars.json` or any Terraform variable files. Literal strings like
-> `{{ .Env.AZURE_ENV_NAME }}` will be passed directly to Terraform, causing deployment failures.
+> azd's template engine processes `azure.yaml` and service manifests — it does **NOT** interpolate
+> Go-style `{{ .Env.* }}` template variables in `.tfvars.json` or any Terraform variable files.
+> Literal strings like `{{ .Env.AZURE_ENV_NAME }}` will be passed directly to Terraform, causing
+> deployment failures.
 >
-> **Do NOT generate `main.tfvars.json`** with template variables. Instead, pass variables to Terraform
-> using one of these methods (in order of preference):
+> azd reads `infra/main.tfvars.json`, substitutes `${VAR}` references using its built-in envsubst,
+> and passes the resolved file to Terraform via `-var-file=`. Use this pattern:
 >
-> 1. **azd auto-mapping** — azd automatically passes `AZURE_ENV_NAME`, `AZURE_LOCATION`, and
->    `AZURE_SUBSCRIPTION_ID` as Terraform variables when they match variable names in `variables.tf`
-> 2. **`TF_VAR_*` environment variables** — Set via `azd env set TF_VAR_myvar value`
-> 3. **`terraform.tfvars` (HCL format)** — Static defaults only; no template expressions
+> ```json
+> {
+>     "environment_name": "${AZURE_ENV_NAME}",
+>     "location": "${AZURE_LOCATION}",
+>     "subscription_id": "${AZURE_SUBSCRIPTION_ID}"
+> }
+> ```
+>
+> For additional variables not in `main.tfvars.json`, use **`TF_VAR_*` environment variables**:
+> `azd env set TF_VAR_myvar value`
 
 **variables.tf:**
 ```hcl
@@ -242,30 +249,35 @@ azd up
 
 **azd environment variables** → **Terraform variables**
 
-azd automatically maps its environment variables to Terraform variables. Define the variable
-in `variables.tf` and set it via `azd env set`:
+azd passes variables to Terraform through `main.tfvars.json` (with `${VAR}` substitution) or
+explicit `TF_VAR_*` environment variables. Define the variable in `variables.tf` and reference
+it in `main.tfvars.json`:
 
-```bash
-# Set azd variable
-azd env set DATABASE_NAME mydb
-```
-
-```hcl
-# In variables.tf — azd passes this automatically
-variable "database_name" {
-  type    = string
+```json
+// infra/main.tfvars.json — azd substitutes ${VAR} references via envsubst
+{
+    "environment_name": "${AZURE_ENV_NAME}",
+    "location": "${AZURE_LOCATION}",
+    "database_name": "${DATABASE_NAME}"
 }
 ```
 
-For custom variables not managed by azd, use `TF_VAR_*` environment variables:
+```hcl
+// variables.tf — value provided via main.tfvars.json or TF_VAR_database_name
+variable "database_name" {
+  type = string
+}
+```
+
+For variables not in `main.tfvars.json`, use `TF_VAR_*` environment variables:
 
 ```bash
 azd env set TF_VAR_custom_setting "my-value"
 ```
 
-> ⚠️ **Do NOT use `main.tfvars.json` with template expressions.** azd does not process Go-style
-> template variables (`{{ .Env.* }}`) in Terraform variable files. Use `azd env set` or `TF_VAR_*`
-> environment variables instead. See [Variables and Outputs](#4-variables-and-outputs) for details.
+> ⚠️ **Use `${VAR}` syntax in `main.tfvars.json`, NOT Go-style `{{ .Env.* }}`.** azd substitutes
+> `${VAR}` references using its built-in envsubst. Go-style template variables are only processed
+> in `azure.yaml` and service manifests. See [Variables and Outputs](#4-variables-and-outputs) for details.
 
 **Remote state setup:**
 
@@ -454,8 +466,8 @@ resource "azurerm_cosmosdb_account" "cosmos" {
 | `terraform command not found` | Install Terraform CLI: `brew install terraform` or download from terraform.io |
 | State conflicts | Configure remote backend in provider.tf |
 | Variable not passed to Terraform | Ensure variable is set with `azd env set` and defined in variables.tf |
-| Literal `{{ .Env.* }}` in Terraform errors | Do NOT use Go-style templates in `.tfvars.json`. Use `azd env set` or `TF_VAR_*` env vars instead |
-| `main.tfvars.json` interpolation failure | azd does not process template variables in tfvars files. Remove the file and use `TF_VAR_*` env vars |
+| Literal `{{ .Env.* }}` in Terraform errors | Use `${VAR}` syntax in `main.tfvars.json`, not Go-style `{{ .Env.* }}`. azd substitutes `${VAR}` references via envsubst |
+| `main.tfvars.json` interpolation failure | Ensure `main.tfvars.json` uses `${VAR}` syntax (e.g., `${AZURE_ENV_NAME}`), not Go-style `{{ .Env.* }}` templates |
 
 ## References
 

@@ -101,33 +101,41 @@ See [Policy Validation Guide](../../policy-validation.md) for instructions on re
 
 ### 10. Template Variable Resolution Check (AZD+Terraform)
 
-> ⚠️ **CRITICAL for azd+Terraform projects.** azd does NOT interpolate Go-style template variables
-> (`{{ .Env.* }}`) in `.tfvars.json` files. Unresolved template strings passed to Terraform cause
+> ⚠️ **CRITICAL for azd+Terraform projects.** azd substitutes `${VAR}` references in
+> `main.tfvars.json` via envsubst, but does NOT interpolate Go-style template variables
+> (`{{ .Env.* }}`). Unresolved Go-style template strings passed to Terraform cause
 > cascading deployment failures, state conflicts, and timeouts.
 
-**Check for unresolved template variables:**
+**Check for Go-style template variables:**
 
 ```bash
 # Check for Go-style template variables in Terraform files
-grep -rn '{{ *\.Env\.' infra/ || echo "OK: No template variables found"
+grep -rn '{{ *\.Env\.' infra/ --include='*.tf' --include='*.tfvars.json' || echo "OK: No Go-style template variables found"
 
-# Check for any .tfvars.json files (should not exist in azd+Terraform projects)
-find infra/ -name "*.tfvars.json" -exec echo "WARNING: Found {}" \;
+# Check main.tfvars.json uses correct ${VAR} syntax
+if test -f infra/main.tfvars.json; then
+  grep -n '{{ *\.Env\.' infra/main.tfvars.json && echo "WARNING: Use \${VAR} syntax instead of {{ .Env.* }}" || echo "OK: main.tfvars.json syntax is correct"
+fi
 ```
 
-**If template variables are found:**
-1. **Remove** any `main.tfvars.json` file from `infra/`
-2. **Replace** template variable references with `TF_VAR_*` environment variables:
+**If Go-style template variables are found:**
+1. **Fix the syntax** in `main.tfvars.json` — replace `{{ .Env.VAR }}` with `${VAR}`:
+   ```json
+   {
+       "environment_name": "${AZURE_ENV_NAME}",
+       "location": "${AZURE_LOCATION}"
+   }
+   ```
+2. For additional variables, use **`TF_VAR_*` environment variables**:
    ```bash
    azd env set TF_VAR_environment_name "$(azd env get-value AZURE_ENV_NAME)"
    ```
-3. **Verify** that `variables.tf` declares all required variables so azd can auto-map them
+3. **Verify** that `variables.tf` declares all required variables
 4. **Re-run** `terraform validate` and `terraform plan` to confirm
 
-**If `.tfvars.json` file is found:**
-- For azd+Terraform projects, variable passing is handled by azd environment → Terraform variable auto-mapping
-- Remove the `.tfvars.json` file and rely on `azd env set` or `TF_VAR_*` environment variables
-- Prefer putting static defaults in `variables.tf` `default` values. Using `terraform.tfvars` (HCL) for static defaults is acceptable if your team prefers it; this restriction is specifically about avoiding `.tfvars.json` files and Go-style template expressions.
+**If `.tfvars.json` uses wrong syntax:**
+- Replace Go-style `{{ .Env.* }}` with `${VAR}` (azd's envsubst format)
+- Prefer putting static defaults in `variables.tf` `default` values. Using `terraform.tfvars` (HCL) for static defaults is acceptable if your team prefers it; this restriction is specifically about avoiding Go-style template expressions in `.tfvars.json` files.
 
 ## References
 

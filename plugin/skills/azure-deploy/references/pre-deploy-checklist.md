@@ -129,25 +129,27 @@ azd up --no-prompt
 
 > ⚠️ **MANDATORY for azd+Terraform projects.** Skip this step for Bicep or pure Terraform deployments.
 
-Before running `azd up`, verify no unresolved template variables exist in Terraform files:
+Before running `azd up`, verify no Go-style template variables exist in Terraform files:
 
 ```bash
-# Fail if Go-style template variables found in infra/
-if grep -rn '{{ \.Env\.' infra/; then
-  echo "ERROR: Unresolved template variables found"
+# Fail if Go-style template variables found in Terraform files
+if grep -rn '{{ *\.Env\.' infra/ --include='*.tf' --include='*.tfvars.json'; then
+  echo "ERROR: Unresolved Go-style template variables found"
   exit 1
 fi
 
-# Fail if main.tfvars.json exists (should not be used with azd)
+# Check main.tfvars.json uses correct ${VAR} syntax (not Go-style templates)
 if test -f infra/main.tfvars.json; then
-  echo "ERROR: Remove main.tfvars.json — use TF_VAR_* env vars instead"
-  exit 1
+  if grep -q '{{ *\.Env\.' infra/main.tfvars.json; then
+    echo "ERROR: main.tfvars.json uses Go-style templates. Use \${VAR} syntax instead."
+    exit 1
+  fi
 fi
 ```
 
 **If either check fails:**
-1. Remove `main.tfvars.json` from `infra/`
-2. Set variables via `azd env set` or `TF_VAR_*` environment variables
+1. Fix `main.tfvars.json` syntax: replace `{{ .Env.VAR }}` with `${VAR}` (e.g., `${AZURE_ENV_NAME}`)
+2. For variables not in `main.tfvars.json`, use `TF_VAR_*` environment variables
 3. Re-run `azure-validate` before proceeding
 
 ---
