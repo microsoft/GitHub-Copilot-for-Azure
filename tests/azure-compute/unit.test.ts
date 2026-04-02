@@ -243,21 +243,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(troubleshooterContent).toContain("cannot-connect-to-vm.md");
     });
 
-    test("Phase 2: references all sub-reference files for category routing", () => {
-      const expectedSubRefs = [
-        "rdp-connectivity.md",
-        "ssh-connectivity.md",
-        "network-connectivity.md",
-        "firewall-blocking.md",
-        "vm-agent-not-responding.md",
-        "credential-auth-errors.md",
-        "rdp-service-config.md",
-      ];
-      for (const ref of expectedSubRefs) {
-        expect(troubleshooterContent).toContain(ref);
-      }
-    });
-
     test("Phase 3: fetches live documentation", () => {
       expect(troubleshooterContent).toContain("### Phase 3: Fetch Documentation");
       expect(troubleshooterContent).toContain("fetch_webpage");

@@ -17,7 +17,7 @@ User's VM is running but unreachable due to network-level issues (NSG, routing, 
 | Static IP misconfiguration inside guest    | Windows | Azure VMs should use DHCP; reset NIC to restore         | [Reset network interface](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/reset-network-interface)               |
 | Static IP misconfiguration inside guest    | Linux   | Restore DHCP config in `/etc/netplan/` or `/etc/sysconfig/network-scripts/` | [Troubleshoot SSH connection](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/linux/troubleshoot-ssh-connection) |
 | Ghost NIC after disk swap or resize        | Windows | Old NIC holds IP config, new NIC can't get IP           | [Reset network interface](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/reset-network-interface)               |
-| DNS resolution failure                     | Any     | Check DNS server config; Azure default is 168.63.129.16 | [DHCP troubleshooting](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/troubleshoot-dhcp-failed-to-configure)    |
+| DNS resolution failure                     | Any     | Check DNS server config; Azure default is 168.63.129.16 | [DHCP troubleshooting](https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/troubleshoot-rdp-dhcp-disabled)           |
 
 ## Quick Commands — Platform (Any OS)
 
