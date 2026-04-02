@@ -84,29 +84,50 @@ az containerapp env create --name myapp-env --resource-group myapp-rg --location
 
 **Bash:**
 ```bash
+ACR_NAME="${ACR_NAME:-<acr>}"  # Set this to your ACR name
+
+# Create Key Vault
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
+
+# Migrate Kubernetes secret to Key Vault
 SECRET_FILE=$(mktemp)
 kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}' | base64 -d > "$SECRET_FILE"
 az keyvault secret set --vault-name myapp-kv --name password --file "$SECRET_FILE"
 shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
+
+# Create managed identity
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
 IDENTITY_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query principalId -o tsv)
-az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list
+
+# Grant Key Vault access using RBAC (recommended)
+KV_ID=$(az keyvault show --name myapp-kv --resource-group myapp-rg --query id -o tsv)
+az role assignment create --assignee $PRINCIPAL_ID --role "Key Vault Secrets User" --scope $KV_ID
+
+# Grant ACR pull access
 ACR_ID=$(az acr show --name $ACR_NAME --query id -o tsv)
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
 ```
 
 **PowerShell:**
 ```powershell
+# Set ACR name (change <acr> to your ACR name)
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+
+# Create Key Vault
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
 
-# Create managed identity and assign permissions
+# Create managed identity
 $identity = az identity create --name myapp-id --resource-group myapp-rg --location eastus | ConvertFrom-Json
 $IDENTITY_ID = $identity.id
 $PRINCIPAL_ID = $identity.principalId
-az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list | Out-Null
-$ACR_NAME = "<acr>"
+
+# Grant Key Vault access using RBAC (recommended)
+$keyVault = az keyvault show --name myapp-kv --resource-group myapp-rg | ConvertFrom-Json
+$KV_ID = $keyVault.id
+az role assignment create --assignee $PRINCIPAL_ID --role "Key Vault Secrets User" --scope $KV_ID | Out-Null
+
+# Grant ACR pull access
 $acr = az acr show --name $ACR_NAME | ConvertFrom-Json
 $ACR_ID = $acr.id
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID | Out-Null
@@ -125,21 +146,59 @@ try {
 
 **Mapping:** `spec.containers[].image` → `template.containers[].image`; `spec.containers[].ports[].containerPort` → `ingress.targetPort`; `spec.replicas` → `scale.minReplicas`. Service types: ClusterIP → `external: false`; LoadBalancer/NodePort → `external: true`.
 
+**Bash:**
 ```bash
+# Get Key Vault secret URI
 SECRET_URI=$(az keyvault secret show --vault-name myapp-kv --name password --query id -o tsv)
+
+# Deploy Container App
 az containerapp create --name my-app --resource-group myapp-rg --environment myapp-env \
   --image $ACR_NAME.azurecr.io/app:v1.0 --target-port 8080 --ingress external \
   --cpu 1.0 --memory 2Gi --min-replicas 2 --max-replicas 10 \
   --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID --registry-server $ACR_NAME.azurecr.io \
   --secrets password=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID \
-  --env-vars ENV=prod DB_PASSWORD=secretref:password --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
+  --env-vars ENV=prod DB_PASSWORD=secretref:password \
+  --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
+```
+
+**PowerShell:**
+```powershell
+# Get Key Vault secret URI
+$secret = az keyvault secret show --vault-name myapp-kv --name password | ConvertFrom-Json
+$SECRET_URI = $secret.id
+
+# Deploy Container App
+az containerapp create --name my-app --resource-group myapp-rg --environment myapp-env `
+  --image "$ACR_NAME.azurecr.io/app:v1.0" --target-port 8080 --ingress external `
+  --cpu 1.0 --memory 2Gi --min-replicas 2 --max-replicas 10 `
+  --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID --registry-server "$ACR_NAME.azurecr.io" `
+  --secrets "password=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID" `
+  --env-vars ENV=prod DB_PASSWORD=secretref:password `
+  --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
 ```
 
 ## Phase 7: Validation
 
+**Bash:**
 ```bash
+# Get app FQDN and test
 FQDN=$(az containerapp show --name my-app --resource-group myapp-rg --query properties.configuration.ingress.fqdn -o tsv)
+echo "App URL: https://$FQDN"
 curl https://$FQDN/health
+
+# View logs
+az containerapp logs show --name my-app --resource-group myapp-rg --follow
+```
+
+**PowerShell:**
+```powershell
+# Get app FQDN and test
+$app = az containerapp show --name my-app --resource-group myapp-rg | ConvertFrom-Json
+$FQDN = $app.properties.configuration.ingress.fqdn
+Write-Host "App URL: https://$FQDN"
+Invoke-WebRequest -Uri "https://$FQDN/health" -UseBasicParsing
+
+# View logs
 az containerapp logs show --name my-app --resource-group myapp-rg --follow
 ```
 
