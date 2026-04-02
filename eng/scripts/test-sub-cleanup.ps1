@@ -6,7 +6,7 @@
 # This script implements the resource management guidelines documented at https://github.com/Azure/azure-sdk-tools/blob/main/doc/engsys_resource_management.md
 # Script based on this cleanup script from azure-sdk-tools: https://github.com/Azure/azure-sdk-tools/blob/main/eng/scripts/live-test-resource-cleanup.ps1
 
-#Requires -Version 6.0
+#Requires -Version 7.0
 #Requires -PSEdition Core
 #Requires -Modules @{ModuleName='Az.Accounts'; ModuleVersion='1.6.4'}
 #Requires -Modules @{ModuleName='Az.Resources'; ModuleVersion='1.8.0'}
@@ -49,9 +49,6 @@ param (
 
     [Parameter()]
     [Double] $DeleteAfterHours = 24,
-
-    [Parameter()]
-    [Double] $MaxLifespanDeleteAfterHours,
 
     [Parameter()]
     [string] $AllowListPath = "$PSScriptRoot/cleanup-allowlist.txt",
@@ -464,9 +461,7 @@ function DeleteOrUpdateResourceGroups() {
         return
     }
     $toDelete = @()
-    $toClean = @()
     $toDeleteSoon = @()
-    $toDeleteLater = @()
     Write-Host "Total Resource Groups: $($allGroups.Count)"
 
     foreach ($rg in $allGroups) {
@@ -508,13 +503,6 @@ function DeleteOrUpdateResourceGroups() {
         foreach ($rg in $toDeleteSoon) {
             Write-Host "  $($rg.ResourceGroupName)"
         }
-        if ($MaxLifespanDeleteAfterHours) {
-            $maxLifespanDate = [datetime]::UtcNow.AddHours($MaxLifespanDeleteAfterHours)
-            Write-Host "`nResource groups that would be TAGGED with max lifespan DeleteAfter '$maxLifespanDate' UTC ($($toDeleteLater.Count)):"
-            foreach ($rg in $toDeleteLater) {
-                Write-Host "  $($rg.ResourceGroupName)"
-            }
-        }
         return
     }
 
@@ -522,24 +510,8 @@ function DeleteOrUpdateResourceGroups() {
         FindOrCreateDeleteAfterTag -ResourceGroup $rg -HoursToDelete $DeleteAfterHours
     }
 
-    if ($MaxLifeSpanDeleteAfterHours) {
-        foreach ($rg in $toDeleteLater) {
-            FindOrCreateDeleteAfterTag -ResourceGroup $rg -HoursToDelete $MaxLifespanDeleteAfterHours
-        }
-    }
-
 
     $errors = @(DeleteAndPurgeGroups $toDelete)
-
-    foreach ($rg in $toClean) {
-        try {
-            DeleteArmDeployments $rg
-        }
-        catch {
-            Write-Warning "Error deleting deployments for group '$($rg.ResourceGroupName)'"
-            Write-Warning $_
-        }
-    }
 
     if ($errors.Count -ne 0) {
         Write-Host "Encountered errors removing some resource groups:"
