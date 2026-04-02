@@ -213,7 +213,7 @@ filter Remove-PurgeableResources {
             $content = $response.Content | ConvertFrom-Json
             if ($content.error) {
               $err = $content.error
-              Write-Warning "Failed to deleted Managed HSM '$($r.Name)': ($($err.code)) $($err.message)"
+              Write-Warning "Failed to delete Managed HSM '$($r.Name)': ($($err.code)) $($err.message)"
             }
           }
         }.GetNewClosure()
