@@ -285,7 +285,8 @@ function Wait-PurgeableResourceJob {
   }
   else {
     Write-Warning "Timed out waiting to purge $($Resource.AzsdkResourceType) '$($Resource.AzsdkName)'. Cancelling job."
-    $Job.Cancel()
+    Stop-Job -Job $Job -ErrorAction SilentlyContinue
+    Remove-Job -Job $Job -Force -ErrorAction SilentlyContinue
 
     if ($PassThru) {
       $Resource
