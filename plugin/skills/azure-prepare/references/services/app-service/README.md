@@ -58,6 +58,15 @@ siteConfig: {
 
 Endpoint should return 200 OK when healthy.
 
+## Common Data Backends
+
+When pairing App Service with a data layer, load the corresponding service references:
+
+| Data Service | Reference                                 |
+| ------------ | ----------------------------------------- |
+| Azure SQL    | [SQL Database](../sql-database/README.md) |
+| Cosmos DB    | [Cosmos DB](../cosmos-db/README.md)       |
+
 ## References
 
 - [Bicep Patterns](bicep.md)
