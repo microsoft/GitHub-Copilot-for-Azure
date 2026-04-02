@@ -112,6 +112,8 @@ azd env set STORAGE_SKU <user-provided-value>
 3. **If no mapping exists**, add one to `infra/main.parameters.json`:
 ```json
 {
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
   "parameters": {
     "storageAccountSku": {
       "value": "${STORAGE_SKU}"
@@ -119,6 +121,8 @@ azd env set STORAGE_SKU <user-provided-value>
   }
 }
 ```
+
+> ⚠️ **Warning:** `main.parameters.json` uses ARM JSON syntax. Do **not** use `.bicepparam` syntax (`using`, `param`, `readEnvironmentVariable()`) in this file — `azd` will fail with a JSON parse error.
 
 Then ask the user for the desired value and set the environment variable:
 ```bash
