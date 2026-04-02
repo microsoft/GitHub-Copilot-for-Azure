@@ -4,7 +4,7 @@ description: "Build and deploy GitHub Copilot SDK apps on Azure. PREFER OVER azu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.0.4"
 ---
 
 # GitHub Copilot SDK on Azure
@@ -56,6 +56,8 @@ Three model paths (layers on top of 2A/2B):
 | **GitHub specific** | `model: "<name>"` — use `listModels()` to discover |
 | **Azure BYOM** | `model` + `provider` with `bearerToken` via `DefaultAzureCredential` |
 
+> ⚠️ **BYOM Auth — MANDATORY**: Azure BYOM configurations MUST use `DefaultAzureCredential` (local dev) or `ManagedIdentityCredential` (production) to obtain a `bearerToken`. **NEVER** use static API keys (`apiKey`), `AZURE_OPENAI_API_KEY`, or `AZURE_OPENAI_KEY` environment variables in BYOM provider configuration. See [auth-best-practices.md](references/auth-best-practices.md) for the credential pattern and [model config ref](references/azure-model-config.md) for the full BYOM code example.
+
 See [model config ref](references/azure-model-config.md).
 
 ## Step 4: Deploy
@@ -66,3 +68,4 @@ Invoke **azure-prepare** (skip its Step 0 routing — scaffolding is done) → *
 
 - Read `AGENTS.md` in user's repo before changes
 - Docker required (`docker info`)
+- BYOM auth: always `bearerToken` via `DefaultAzureCredential` or `ManagedIdentityCredential` — never `apiKey` or `AZURE_OPENAI_API_KEY`/`AZURE_OPENAI_KEY`
