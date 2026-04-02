@@ -4,8 +4,8 @@
 # To make this agent available, merge this file into the default repository branch.
 # For format details, see: https://gh.io/customagents/config
 
-name:
-description:
+name: Skill Fixer
+description: This agent is responsible for fixing any issues with existing agent skills in the repository. It identifies problems based on user feedback, error reports, or test failures, and implements necessary changes to ensure the skills function correctly and efficiently.
 ---
 
 # My Agent
