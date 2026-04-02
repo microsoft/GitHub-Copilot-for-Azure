@@ -27,7 +27,7 @@ Only use pure Terraform workflow when you have specific requirements that preven
 - **Complex Terraform modules/workspaces** that are incompatible with azd conventions
 - **Existing Terraform CI/CD** pipelines that are hard to migrate
 - **Organization mandate** for pure Terraform workflow without any wrapper tools
-- **Explicitly requested** by the user to use "Terraform as the infrastructure provider" or "Terraform" without mentioning azd
+- **Explicitly requested** by the user to use "pure Terraform", "Terraform without azd", or "Terraform as the infrastructure provider"
 
 ## When to Use azd+Terraform Instead
 

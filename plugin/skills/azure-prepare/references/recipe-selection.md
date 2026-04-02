@@ -26,7 +26,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 | **AZD (Terraform)** | User explicitly asks for "azd with Terraform" or "azd+Terraform"; want Terraform IaC + azd simplicity |
 | **AZCLI** | Existing az scripts, need imperative control, custom pipelines, AKS |
 | **Bicep** | IaC-first approach, no CLI wrapper needed, direct ARM deployment |
-| **Terraform** | User explicitly specifies "Terraform as the infrastructure provider" or "Terraform" without mentioning azd; multi-cloud deployments (non-Azure-first); complex TF workflows incompatible with azd |
+| **Terraform** | User explicitly specifies "pure Terraform", "Terraform without azd", or "Terraform as the infrastructure provider"; multi-cloud deployments (non-Azure-first); complex TF workflows incompatible with azd |
 
 ## Auto-Detection
 
@@ -34,7 +34,7 @@ Choose the deployment recipe based on project needs and existing tooling.
 |--------------------|------------------|
 | `azure.yaml` with `infra.provider: terraform` | AZD (Terraform) |
 | `azure.yaml` (Bicep or no provider specified) | AZD (Bicep) |
-| `*.tf` files (no azure.yaml) | Terraform (pure) — or AZD (Terraform) if user mentions azd |
+| `*.tf` files (no azure.yaml) | Terraform (pure) |
 | `infra/*.bicep` (no azure.yaml) | Bicep or AZCLI |
 | Existing `az` scripts | AZCLI |
 | None | AZD (Bicep) - default |
