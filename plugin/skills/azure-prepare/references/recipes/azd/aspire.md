@@ -288,7 +288,7 @@ azd init --from-code -e "$ENV_NAME"
 ## Validation Steps
 
 1. Verify azure.yaml has services section
-2. **⛔ Verify `docker.context` for every `AddDockerfile()` service** — see [Post-Init: Verify and Fix Docker Context](#-post-init-verify-and-fix-docker-context-for-adddockerfile-services)
+2. **⛔ Verify `docker.context` for every `AddDockerfile()` service** — see [Post-Init: Verify and Fix Docker Context](#post-init-verify-and-fix-docker-context-for-adddockerfile-services)
 3. Check Dockerfile COPY paths are relative to the specified context
 4. Generate manifest to verify `build.context` matches azure.yaml
 5. Run `azd package` to validate Docker build succeeds
