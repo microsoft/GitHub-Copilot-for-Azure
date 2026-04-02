@@ -10,7 +10,7 @@ import {
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../utils/agent-runner";
-import { isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "k8s-to-container-apps";
 const RUNS_PER_PROMPT = 5;
@@ -31,6 +31,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
             nonInteractive: true,
             shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
+          softCheckSkill(agentMetadata, SKILL_NAME);
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount++;
           }
@@ -50,6 +51,7 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
             nonInteractive: true,
             shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
+          softCheckSkill(agentMetadata, SKILL_NAME);
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
             invocationCount++;
           }
