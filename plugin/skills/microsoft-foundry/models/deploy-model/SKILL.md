@@ -4,7 +4,7 @@ description: "Unified Azure OpenAI model deployment skill with intelligent inten
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Deploy Model

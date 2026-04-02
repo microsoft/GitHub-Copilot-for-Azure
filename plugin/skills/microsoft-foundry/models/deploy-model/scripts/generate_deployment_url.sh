@@ -70,6 +70,12 @@ if [ -z "$SUBSCRIPTION_ID" ] || [ -z "$RESOURCE_GROUP" ] || [ -z "$FOUNDRY_RESOU
     usage
 fi
 
+# Validate SUBSCRIPTION_ID is a valid GUID (8-4-4-4-12 hex format)
+if [[ ! "$SUBSCRIPTION_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+    echo "Error: SUBSCRIPTION_ID must be a valid GUID (e.g., d5320f9a-73da-4a74-b639-83efebc7bb6f)"
+    exit 1
+fi
+
 # Convert subscription GUID to bytes (big-endian/string order) and encode as base64url
 # Remove hyphens from GUID
 GUID_HEX=$(echo "$SUBSCRIPTION_ID" | tr -d '-')

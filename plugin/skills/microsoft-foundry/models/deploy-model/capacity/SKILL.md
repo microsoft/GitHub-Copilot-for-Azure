@@ -4,7 +4,7 @@ description: "Discovers available Azure OpenAI model capacity across regions and
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Capacity Discovery
