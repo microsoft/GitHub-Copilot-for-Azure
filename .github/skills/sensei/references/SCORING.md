@@ -121,7 +121,7 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 | Check | Pass | Fail |
 |-------|------|------|
 | Lowercase only | `azure-deploy` | `Azure-Deploy` |
-| Alphanumeric + hyphens | `azure-cost-optimization` | `azure_cost_optimization` |
+| Alphanumeric + hyphens | `azure-cost` | `azure_cost` |
 | No start/end hyphen | `azure-deploy` | `-azure-deploy`, `azure-deploy-` |
 | No consecutive hyphens | `azure-deploy` | `azure--deploy` |
 | Matches directory | `skill-name` = folder name | Mismatch |
@@ -390,7 +390,7 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 4. `azure-postgres`
 5. `azure-functions`
 6. `azure-quick-review`
-7. `azure-cost-optimization`
+7. `azure-cost`
 8. `azure-kusto`
 9. `azure-keyvault-expiration-audit`
 10. `azure-aigateway`
