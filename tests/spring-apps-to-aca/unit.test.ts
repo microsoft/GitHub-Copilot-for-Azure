@@ -40,11 +40,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("has version in metadata", () => {
       expect(skill.metadata.metadata).toBeDefined();
-      expect((skill.metadata.metadata as any).version).toBeDefined();
+      const metadata = skill.metadata.metadata as { version?: string };
+      expect(metadata.version).toBeDefined();
     });
 
     test("has author in metadata", () => {
-      expect((skill.metadata.metadata as any).author).toBe("Microsoft");
+      const metadata = skill.metadata.metadata as { author?: string };
+      expect(metadata.author).toBe("Microsoft");
     });
   });
 
