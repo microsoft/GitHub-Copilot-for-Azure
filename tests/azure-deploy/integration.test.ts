@@ -851,7 +851,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use standard SKUs. " +
             `The app can be found under ${CUSTOM_RESOURCES_SPARSE_PATH}.`,
           nonInteractive: true,
-          followUp: FOLLOW_UP_PROMPT,
+          followUp: ["Stop if there is no further work; otherwise go with recommended options."],
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
