@@ -63,6 +63,20 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe("Trigger Keywords Snapshot", () => {
+    test("skill keywords match snapshot", () => {
+      expect(triggerMatcher.getKeywords()).toMatchSnapshot();
+    });
+
+    test("skill description triggers match snapshot", () => {
+      expect({
+        name: skill.metadata.name,
+        description: skill.metadata.description,
+        extractedKeywords: triggerMatcher.getKeywords()
+      }).toMatchSnapshot();
+    });
+  });
+
   describe("Trigger Configuration", () => {
     test("has clear activation triggers in description", () => {
       const description = skill.metadata.description.toLowerCase();
