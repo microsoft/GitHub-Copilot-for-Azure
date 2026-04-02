@@ -145,7 +145,7 @@ Quota freed **immediately**. Re-run Workflow #1 to verify.
 ```
 Production [workload type] using [model] in [region].
 Expected traffic: [X requests/day] with [Y tokens/request].
-Requires [Z TPM] capacity. Current [N TPM] insufficient.
+Calculated required TPM: [Z TPM]. Current [N TPM] insufficient.
 Request increase to [M TPM]. Deployment target: [date].
 ```
 

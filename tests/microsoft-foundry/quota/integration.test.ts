@@ -92,7 +92,8 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
         prompt: "How much quota do I need for a production Foundry deployment?"
       });
 
-      const hasCapacityGuidance = doesAssistantMessageIncludeKeyword(
+      // Require at least one quota-specific term
+      const hasQuotaTerm = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "TPM"
       ) || doesAssistantMessageIncludeKeyword(
@@ -101,8 +102,27 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "capacity"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "tokens per minute"
       );
-      expect(hasCapacityGuidance).toBe(true);
+
+      // Require at least one calculation verb
+      const hasCalculationVerb = doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "estimate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculation"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quantify"
+      );
+
+      expect(hasQuotaTerm && hasCalculationVerb).toBe(true);
     }));
   });
 
@@ -253,14 +273,37 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
       expect(isSkillUsed).toBe(true);
 
-      const hasPlanning = doesAssistantMessageIncludeKeyword(
+      // Require at least one quota-specific term
+      const hasQuotaTerm = doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "TPM"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "PTU"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "capacity"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "tokens per minute"
+      );
+
+      // Require at least one calculation verb
+      const hasCalculationVerb = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "calculate"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
-        "TPM"
+        "estimate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculation"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quantify"
       );
-      expect(hasPlanning).toBe(true);
+
+      expect(hasQuotaTerm && hasCalculationVerb).toBe(true);
     }));
 
     test("provides best practices", () => withTestResult(async () => {
