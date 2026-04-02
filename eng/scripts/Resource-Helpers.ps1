@@ -1,7 +1,12 @@
+#Taken from https://github.com/Azure/azure-sdk-tools/blob/main/eng/common/scripts/Helpers/Resource-Helpers.ps1
+
 # Add 'AzsdkResourceType' member to outputs since actual output types have changed over the years.
 
 #Requires -Modules @{ModuleName='Az.KeyVault'; ModuleVersion='3.4.1'}
 
+# Collects all soft-delete-protected resources (Managed HSMs (Hardware Security Module https://learn.microsoft.com/en-us/azure/key-vault/managed-hsm/overview), Key Vaults, Cognitive Services)
+# within a specific resource group. Used to identify what needs an explicit purge call before
+# the resource group can be fully cleaned up after live tests.
 function Get-PurgeableGroupResources {
   param (
     [Parameter(Mandatory = $true, Position = 0)]
@@ -67,6 +72,9 @@ function Get-PurgeableGroupResources {
   return $purgeableResources
 }
 
+# Collects all soft-deleted resources (Managed HSMs, Key Vaults, Cognitive Services) across
+# the entire subscription. Used during subscription-wide cleanup to find orphaned soft-deleted
+# resources that were never explicitly purged and are accumulating against quota.
 function Get-PurgeableResources {
   $purgeableResources = @()
   $subscriptionId = (Get-AzContext).Subscription.Id
@@ -146,7 +154,10 @@ function Get-PurgeableResources {
   return $purgeableResources
 }
 
-# A filter differs from a function by teating body as -process {} instead of -end {}.
+# Purges each soft-deleted resource passed in (or piped), dispatching to the correct ARM API
+# per resource type. Without an explicit purge, soft-deleted resources continue to consume quota
+# and block re-creation with the same name during test reruns.
+# A filter differs from a function by treating body as -process {} instead of -end {}.
 # This allows you to pipe a collection and process each item in the collection.
 filter Remove-PurgeableResources {
   param (
@@ -231,11 +242,16 @@ filter Remove-PurgeableResources {
   }
 }
 
+# Writes a timestamped message to the host. Defined as a function (rather than Write-Host
+# inline) so callers that dot-source this file can override it with their own logger.
 # The Log function can be overridden by the sourcing script.
 function Log($Message) {
   Write-Host ('{0} - {1}' -f [DateTime]::Now.ToLongTimeString(), $Message)
 }
 
+# Waits for an async purge job (started with -AsJob) to finish within the given timeout,
+# then invokes an optional result-handling scriptblock. If the job times out it is cancelled
+# and the resource is surfaced to the caller so it can be reported as potentially still dirty.
 function Wait-PurgeableResourceJob {
   param (
     [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -277,8 +293,9 @@ function Wait-PurgeableResourceJob {
   }
 }
 
-# Helper function for removing storage accounts with WORM that sometimes get leaked from live tests not set up to clean
-# up their resource policies
+# Deletes storage accounts that have WORM (Write-Once Read-Many) immutability policies and
+# were leaked by live tests that didn't clean up after themselves. Normal resource-group
+# deletion fails on these accounts, so they must be unlocked and removed individually.
 function Remove-WormStorageAccounts() {
   [CmdletBinding(SupportsShouldProcess = $True)]
   param(
@@ -309,10 +326,10 @@ function Remove-WormStorageAccounts() {
   }
 }
 
-function SetResourceNetworkAccessRules([string]$ResourceGroupName, [array]$AllowIpRanges, [switch]$CI, [switch]$SetFirewall) {
-  SetStorageNetworkAccessRules -ResourceGroupName $ResourceGroupName -AllowIpRanges $AllowIpRanges -CI:$CI -SetFirewall:$SetFirewall
-}
-
+# Locks down storage account firewall rules after a test resource group is provisioned.
+# Denies public access by default and only allows traffic from the pipeline's VNet subnet,
+# a provided IP allowlist, or the developer's current IP — preventing data exfiltration
+# from test storage accounts while still allowing the test run to proceed.
 function SetStorageNetworkAccessRules([string]$ResourceGroupName, [array]$AllowIpRanges, [switch]$CI, [switch]$SetFirewall) {
   $clientIp = $null
   $storageAccounts = Retry { Get-AzResource -ResourceGroupName $ResourceGroupName -ResourceType "Microsoft.Storage/storageAccounts" }
@@ -333,7 +350,7 @@ function SetStorageNetworkAccessRules([string]$ResourceGroupName, [array]$AllowI
       # If the network rules are deny only without any vnet/ip allowances, then we can't ever purge the storage account
       # when immutable blobs need to be removed.
       if (!$rules -or !$SetFirewall -or $rules.DefaultAction -eq "Allow") {
-        return
+        continue
       }
 
       # Add firewall rules in cases where existing rules added were incomplete to enable blob removal
@@ -376,6 +393,9 @@ function SetStorageNetworkAccessRules([string]$ResourceGroupName, [array]$AllowI
   }
 }
 
+# Deletes a single storage account, first stripping any immutability policies, legal holds,
+# and leases from its blobs and containers. Azure will refuse to delete an account that still
+# has WORM-protected content, so the cleanup must happen in the correct order.
 function RemoveStorageAccount($Account) {
   Write-Host ($WhatIfPreference ? 'What if: ' : '') + "Readying $($Account.StorageAccountName) in $($Account.ResourceGroupName) for deletion"
   # If it doesn't have containers then we can skip the explicit clean-up of this storage account
@@ -406,7 +426,7 @@ function RemoveStorageAccount($Account) {
     try {
       $blobToDelete | Remove-AzStorageBlob -Force
     } catch {
-      Write-Host "Blob removal failed: $($Blob.Name), account: $($Account.storageAccountName), group: $($Account.ResourceGroupName)"
+      Write-Host "Blob removal failed: $($blobToDelete.Name), account: $($Account.StorageAccountName), group: $($Account.ResourceGroupName)"
       Write-Warning "Ignoring the error and trying to delete the storage account"
       Write-Warning $_
     }
@@ -423,7 +443,7 @@ function RemoveStorageAccount($Account) {
         # getting throttled by ARM/SRP if things are actually in a stuck state
         Retry -Attempts 1 -Action { Remove-AzRmStorageContainer -Name $container.Name -StorageAccountName $Account.StorageAccountName -ResourceGroupName $Account.ResourceGroupName -Force }
       } catch {
-        Write-Host "Container removal failed: $($container.Name), account: $($Account.storageAccountName), group: $($Account.ResourceGroupName)"
+        Write-Host "Container removal failed: $($container.Name), account: $($Account.StorageAccountName), group: $($Account.ResourceGroupName)"
         Write-Warning "Ignoring the error and trying to delete the storage account"
         Write-Warning $_
       }
@@ -435,6 +455,10 @@ function RemoveStorageAccount($Account) {
   }
 }
 
+# Removes any deletion-blocking settings (immutability policy, legal hold, active lease)
+# from a single blob so that it — and ultimately its container and storage account — can be
+# deleted during test cleanup. Returns $true when the blob must be explicitly deleted before
+# the container is removed.
 function EnableBlobDeletion($Blob, $Container, $StorageAccountName, $ResourceGroupName) {
   # Some properties like immutability policies require the blob to be
   # deleted before the container can be deleted
@@ -476,6 +500,9 @@ function EnableBlobDeletion($Blob, $Container, $StorageAccountName, $ResourceGro
   return $forceBlobDeletion
 }
 
+# Returns $true if the given IP address falls within the specified IP or CIDR range.
+# Used when configuring storage firewall rules to avoid adding a duplicate allow-entry
+# for the developer's current IP when one already covers it.
 function DoesSubnetOverlap([string]$ipOrCidr, [string]$overlapIp) {
   [System.Net.IPAddress]$overlapIpAddress = $overlapIp
   $parsed = $ipOrCidr -split '/'

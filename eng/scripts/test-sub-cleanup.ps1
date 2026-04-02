@@ -4,6 +4,7 @@
 # Licensed under the MIT License.
 
 # This script implements the resource management guidelines documented at https://github.com/Azure/azure-sdk-tools/blob/main/doc/engsys_resource_management.md
+# Script based on this cleanup script from azure-sdk-tools: https://github.com/Azure/azure-sdk-tools/blob/main/eng/scripts/live-test-resource-cleanup.ps1
 
 #Requires -Version 6.0
 #Requires -PSEdition Core
@@ -83,6 +84,9 @@ $OwnerAliasCache = @{}
 $IsProvisionerApp = $PSCmdlet.ParameterSetName -eq "Provisioner"
 $Exceptions = [System.Collections.Generic.HashSet[String]]@()
 
+# Runs a scriptblock up to $Attempts times, sleeping between failures.
+# Wraps every ARM/REST call in cleanup so transient throttling or service
+# hiccups don't abort the entire subscription sweep.
 function Retry([scriptblock] $Action, [int] $Attempts = 5) {
     $attempt = 0
     $sleep = 5
@@ -104,6 +108,9 @@ function Retry([scriptblock] $Action, [int] $Attempts = 5) {
     }
 }
 
+# Reads the allow-list file into the $Exceptions set so that resource groups
+# matching any pattern in that file are never touched. Allows permanent or
+# long-lived groups (e.g. shared infra) to coexist with the automated cleanup.
 function LoadAllowList() {
     if (!(Test-Path $AllowListPath)) {
         return
@@ -116,10 +123,17 @@ function LoadAllowList() {
     }
 }
 
+# Simple wrapper so callers have a stable Log surface. Overrides the Log
+# function from Resource-Helpers.ps1 with a version that omits the timestamp
+# (the transcript already records time).
 function Log($Message) {
     Write-Host $Message
 }
 
+# Returns $true if $Alias maps to a real Microsoft employee. Results are
+# cached in $OwnerAliasCache to avoid hammering MS Graph/AAD on every call.
+# Used to decide whether a resource group owner tag refers to someone still
+# at the company and therefore whether the group is compliant.
 function IsValidAlias([string]$Alias) {
     if (!$Alias) {
         return $false
@@ -159,6 +173,10 @@ function IsValidAlias([string]$Alias) {
     return $false;
 }
 
+# Pre-populates $OwnerAliasCache with every known GitHub-to-Microsoft alias
+# mapping from the 1ES open-source portal (or a local file cache). Called
+# once in provisioner mode so that IsValidAlias can work without making
+# per-alias MS Graph calls (which require admin consent for service principals).
 function AddGithubUsersToAliasCache() {
     if ($GithubAliasCachePath -and (Test-Path $GithubAliasCachePath)) {
         Write-Host "Loading github -> microsoft alias mappings from filesystem cache '$GithubAliasCachePath'."
@@ -195,6 +213,9 @@ function AddGithubUsersToAliasCache() {
     }
 }
 
+# Case-insensitive tag lookup for a resource group. Azure tag keys are
+# case-insensitive but PowerShell hashtable keys are not, so this helper
+# prevents missed matches due to casing differences.
 function GetTag([object]$ResourceGroup, [string]$Key) {
     if (!$ResourceGroup.Tags) {
         return $null
@@ -210,6 +231,9 @@ function GetTag([object]$ResourceGroup, [string]$Key) {
     return $null
 }
 
+# Returns $true when at least one alias in the 'Owners' tag resolves to a
+# current Microsoft employee. Groups with a recognised owner should not be
+# auto-deleted even when they lack a DeleteAfter tag.
 function HasValidOwnerTag([object]$ResourceGroup) {
     $ownerTag = GetTag $ResourceGroup "Owners"
     if (!$ownerTag) {
@@ -236,6 +260,9 @@ function HasValidOwnerTag([object]$ResourceGroup) {
     return $false
 }
 
+# Returns $true when the resource-group name follows the '<alias>-...' naming
+# convention and that alias belongs to a current employee. A compliant name is
+# treated as implicit ownership, protecting the group from automated deletion.
 function HasValidAliasInName([object]$ResourceGroup) {
     # check compliance (formatting first, then validate alias) and skip if compliant
     if ($ResourceGroup.ResourceGroupName `
@@ -247,10 +274,14 @@ function HasValidAliasInName([object]$ResourceGroup) {
     return $false
 }
 
+# Convenience wrapper that reads the 'DeleteAfter' tag from a resource group.
+# Centralised here so the tag key string is never duplicated across the script.
 function GetDeleteAfterTag([object]$ResourceGroup) {
     return GetTag $ResourceGroup "DeleteAfter"
 }
 
+# Returns $true when the DeleteAfter value parses as a date that is already
+# in the past. Used to gate actual deletion: only expired tags trigger removal.
 function HasExpiredDeleteAfterTag([string]$DeleteAfter) {
     if ($DeleteAfter) {
         $deleteDate = $deleteAfter -as [DateTime]
@@ -259,6 +290,9 @@ function HasExpiredDeleteAfterTag([string]$DeleteAfter) {
     return $false
 }
 
+# Returns $true if the resource group name matches any pattern in the
+# allow-list loaded by LoadAllowList. Matching groups are always skipped,
+# regardless of any other compliance checks.
 function HasException([object]$ResourceGroup) {
     foreach ($ex in $Exceptions) {
         if ($ResourceGroup.ResourceGroupName -like $ex) {
@@ -269,6 +303,9 @@ function HasException([object]$ResourceGroup) {
     return $false
 }
 
+# Ensures a non-compliant resource group has a DeleteAfter tag so it will be
+# cleaned up on a future run. Without this, groups that fail compliance checks
+# today but are never re-examined would accumulate indefinitely.
 function FindOrCreateDeleteAfterTag {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param(
@@ -320,6 +357,8 @@ function FindOrCreateDeleteAfterTag {
     }
 }
 
+# Returns $true when the group carries a 'DoNotDelete' tag, which signals
+# that a human has explicitly opted it out of automated cleanup.
 function HasDoNotDeleteTag([object]$ResourceGroup) {
     $doNotDelete = GetTag $ResourceGroup "DoNotDelete"
     if ($doNotDelete -ne $null) {
@@ -328,6 +367,9 @@ function HasDoNotDeleteTag([object]$ResourceGroup) {
     return $doNotDelete -ne $null
 }
 
+# Returns $true when the group carries a 'skipDelete' tag. Similar to
+# DoNotDelete but used by provisioning tooling to temporarily park a group
+# while an in-progress deployment is still running.
 function HasSkipDeleteTag([object]$ResourceGroup) {
     $skipDelete = GetTag $ResourceGroup "skipDelete"
     if ($skipDelete -ne $null) {
@@ -337,6 +379,9 @@ function HasSkipDeleteTag([object]$ResourceGroup) {
     return $false
 }
 
+# Returns $true when the resource group is managed by another Azure resource
+# (e.g. an AKS cluster creates its own node resource group). Deleting managed
+# groups directly can corrupt the parent resource, so they must be skipped.
 function IsChildResource([object]$ResourceGroup) {
     if ($ResourceGroup.ManagedBy) {
         Write-Host " Skipping resource group '$($ResourceGroup.ResourceGroupName)' because it is managed by '$($ResourceGroup.ManagedBy)'"
@@ -345,6 +390,8 @@ function IsChildResource([object]$ResourceGroup) {
     return $false
 }
 
+# Returns $true when the resource group has an ARM delete lock. Attempting
+# to delete a locked group would fail loudly, so it is skipped instead.
 function HasDeleteLock([object]$ResourceGroup) {
     $lock = Get-AzResourceLock -ResourceGroupName $ResourceGroup.ResourceGroupName
     if ($lock) {
@@ -354,6 +401,10 @@ function HasDeleteLock([object]$ResourceGroup) {
     return $false
 }
 
+# Removes ARM deployment records that contain output secrets or test
+# application secrets. Deployment history objects persist even after the
+# underlying resources are gone and can leak credentials, so they are
+# scrubbed as part of cleanup.
 function DeleteArmDeployments([object]$ResourceGroup) {
     if (!$DeleteArmDeployments -or !$ResourceGroup) {
         return
@@ -371,15 +422,21 @@ function DeleteArmDeployments([object]$ResourceGroup) {
     $null = $toDelete | Remove-AzResourceGroupDeployment
 }
 
+# Removes all subscription-scoped ARM deployments asynchronously.
+# Like resource-group deployments, subscription-scoped deployments can
+# store secrets in their output/parameter history and must be purged.
 function DeleteSubscriptionDeployments() {
     $subDeployments = @(Get-AzSubscriptionDeployment)
     if (!$subDeployments) {
         return
     }
     Write-Host "Removing $($subDeployments.Count) subscription scoped deployments async"
-    $subDeployments | Remove-AzSubscriptionDeployment -AsJob | Out-Null
+    $jobs = $subDeployments | Remove-AzSubscriptionDeployment -AsJob
+    if (!$jobs) {
+        return
+    }
     for ($i = 0; $i -lt 20; $i++) {
-        $notStarted = Get-Job | Where-Object { $_.State -eq 'NotStarted' }
+        $notStarted = Get-Job -Id $jobs.Id | Where-Object { $_.State -eq 'NotStarted' }
         if (!$notStarted) {
             break
         }
@@ -388,6 +445,10 @@ function DeleteSubscriptionDeployments() {
     }
 }
 
+# Main cleanup orchestrator. Iterates every resource group in the
+# subscription, applies all compliance checks, and either tags non-compliant
+# groups with a future DeleteAfter date or queues expired groups for deletion.
+# Separating tagging from deletion gives owners a grace period to react.
 function DeleteOrUpdateResourceGroups() {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
     param()
@@ -487,6 +548,10 @@ function DeleteOrUpdateResourceGroups() {
     }
 }
 
+# Deletes each resource group in $toDelete and then purges any soft-deleted
+# resources (Key Vaults, Managed HSMs, Cognitive Services) that were inside
+# them. Without an explicit purge, soft-deleted resources linger against
+# subscription quota and can block re-creation with the same name.
 function DeleteAndPurgeGroups([array]$toDelete) {
     $errors = @()
     # Get purgeable resources already in a deleted state.
@@ -545,6 +610,10 @@ function DeleteAndPurgeGroups([array]$toDelete) {
     return $errors
 }
 
+# Establishes an Azure session using whichever credential is available:
+# service-principal secret (CI), interactive browser login, or an existing
+# Az context. Centralised here so the rest of the script can assume it is
+# already authenticated before doing anything.
 function Login() {
     if ($UseExistingAzContext -and (Get-AzContext)) {
         Write-Verbose "Using existing account"
@@ -560,14 +629,14 @@ function Login() {
     }
     elseif ($Login) {
         Write-Verbose "Logging in with interactive user"
-        $cmd = "Connect-AzAccount"
+        $connectParams = @{}
         if ($TenantId) {
-            $cmd += " -TenantId $TenantId"
+            $connectParams.TenantId = $TenantId
         }
         if ($SubscriptionId) {
-            $cmd += " -SubscriptionId $SubscriptionId"
+            $connectParams.SubscriptionId = $SubscriptionId
         }
-        Invoke-Expression $cmd
+        Connect-AzAccount @connectParams
     }
     elseif (Get-AzContext) {
         Write-Verbose "Using existing account"
