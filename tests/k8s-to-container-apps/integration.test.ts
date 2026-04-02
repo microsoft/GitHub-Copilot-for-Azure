@@ -18,7 +18,7 @@ const invocationRateThreshold = 0.8;
 
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_skill-invocation - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
