@@ -189,7 +189,7 @@ filter Remove-PurgeableResources {
 
         Log "Attempting to purge $($r.AzsdkResourceType) '$($r.AzsdkName)'"
 
-        # Use `-AsJob` to start a lightweight, cancellable job and pass to `Wait-PurgeableResoruceJob` for consistent behavior.
+        # Use `-AsJob` to start a lightweight, cancellable job and pass to `Wait-PurgeableResourceJob` for consistent behavior.
         Remove-AzKeyVault -VaultName $r.VaultName -Location $r.Location -InRemovedState -Force -ErrorAction Continue -AsJob `
         | Wait-PurgeableResourceJob -Resource $r -Timeout $Timeout -PassThru:$PassThru
       }
