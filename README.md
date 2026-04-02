@@ -68,6 +68,49 @@ To install the Azure plugin into Copilot CLI and Claude:
 2. Install the plugin with `/plugin install azure@azure-skills`
 3. Update the plugin with `/plugin update azure@azure-skills`
 
+## Sovereign Cloud Configuration
+
+By default, the Azure MCP server connects to the Azure Public Cloud. If you use a sovereign cloud (Azure China Cloud or Azure US Government), you need to configure the MCP server to use the appropriate cloud environment.
+
+### Copilot CLI
+
+After installing the plugin, the skills are installed in `~/.copilot/installed-plugins/` on macOS/Linux (or `%USERPROFILE%\.copilot\installed-plugins\` on Windows). Edit the `.mcp.json` file in the installed plugin directory to add the `--cloud` argument:
+
+**Azure China Cloud:**
+
+```json
+{
+  "mcpServers": {
+    "azure": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start", "--cloud", "AzureChinaCloud"]
+    }
+  }
+}
+```
+
+**Azure US Government:**
+
+```json
+{
+  "mcpServers": {
+    "azure": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start", "--cloud", "AzureUSGovernment"]
+    }
+  }
+}
+```
+
+Before starting the MCP server, ensure your local CLI tools are authenticated against the correct cloud:
+
+| Cloud | Azure CLI | Azure PowerShell | Azure Developer CLI |
+|-------|-----------|-----------------|---------------------|
+| China | `az cloud set --name AzureChinaCloud && az login` | `Connect-AzAccount -Environment AzureChinaCloud` | `azd config set cloud.name AzureChinaCloud && azd auth login` |
+| US Gov | `az cloud set --name AzureUSGovernment && az login` | `Connect-AzAccount -Environment AzureUSGovernment` | `azd config set cloud.name AzureUSGovernment && azd auth login` |
+
+For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/azure/developer/azure-mcp-server/how-to/connect-sovereign-clouds) in the Azure MCP Server documentation.
+
 ## Contributing
 
 You can use this repository to:
