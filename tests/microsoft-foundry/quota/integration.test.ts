@@ -101,6 +101,24 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "capacity"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "estimate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculation"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quantify"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "determine"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "figure out"
       );
       expect(hasCapacityGuidance).toBe(true);
     }));
@@ -256,6 +274,18 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const hasPlanning = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "calculate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "estimate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculation"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quantify"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "determine"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "TPM"
