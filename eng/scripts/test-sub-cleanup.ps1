@@ -637,7 +637,9 @@ if ($SubscriptionId -and ($originalSubscription -ne $SubscriptionId)) {
 
 try {
     DeleteOrUpdateResourceGroups
-    DeleteSubscriptionDeployments
+    if (-not $DryRun) {
+        DeleteSubscriptionDeployments
+    }
 }
 finally {
     if ($SubscriptionId -and ($originalSubscription -ne $SubscriptionId)) {
