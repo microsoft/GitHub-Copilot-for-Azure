@@ -24,8 +24,8 @@ resource "azurerm_static_web_app" "web" {
   resource_group_name = azurerm_resource_group.main.name
   location            = var.location
 
+  # sku_tier defaults to "Free"; set to "Standard" for production features
   sku_tier = "Standard"
-  sku_size = "Standard"
 
   # Required for azd deploy to find this resource
   tags = merge(var.tags, {
@@ -34,7 +34,7 @@ resource "azurerm_static_web_app" "web" {
 }
 ```
 
-> ⚠️ **Region availability is limited.** Check [region-availability.md](region-availability.md) before selecting a location.
+> ⚠️ **Region availability is limited.** Check [region-availability.md](region-availability.md) before selecting a region.
 
 > 💡 **Key Points:**
 > - No Storage Account, Service Plan, or other supporting resources required
