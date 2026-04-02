@@ -134,12 +134,14 @@ timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if echo "$rawInput" | grep -q '"hook_event_name"'; then
     toolUseId=$(extract_json_field "$rawInput" "tool_use_id")
     transcriptPath=$(extract_json_field "$rawInput" "transcript_path")
+    # Normalize backslashes to forward slashes for consistent matching
+    transcriptPathNorm=$(echo "$transcriptPath" | tr '\\' '/')
     # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
-    if [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPath" == */Code/* ]] || [[ "$transcriptPath" == */Code\ -\ Insiders/* ]]; then
+    if [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
         # Detect VS Code variant from transcript_path
         # Insiders: ...AppData/Roaming/Code - Insiders/User/...
         # Stable:   ...AppData/Roaming/Code/User/...
-        if [[ "$transcriptPath" == */Code\ -\ Insiders/* ]]; then
+        if [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
             clientName="Visual Studio Code - Insiders"
         else
             clientName="Visual Studio Code"
