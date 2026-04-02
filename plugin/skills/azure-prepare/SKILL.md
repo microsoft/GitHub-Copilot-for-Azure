@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.2"
+  version: "1.1.4"
 ---
 
 # Azure Prepare
@@ -57,7 +57,9 @@ Activate this skill when user wants to:
 
 ## ❌ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
 
-**BEFORE starting Phase 1**, check if the user's prompt mentions a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
+**BEFORE starting Phase 1**, check if the user's prompt OR workspace codebase matches a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
+
+### Check 1: Prompt keywords
 
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
@@ -67,6 +69,15 @@ Activate this skill when user wants to:
 | APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
 | AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
 | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** — select **durable** recipe in Step 4. **MUST** load [durable.md](references/services/functions/durable.md), [DTS reference](references/services/durable-task-scheduler/README.md), and [DTS Bicep patterns](references/services/durable-task-scheduler/bicep.md). |
+
+### Check 2: Codebase markers (even if prompt is generic like "deploy to Azure")
+
+| Codebase marker | Where | Invoke FIRST |
+|----------------|-------|-------------|
+| `@github/copilot-sdk` in dependencies | `package.json` | **azure-hosted-copilot-sdk** |
+| `copilot-sdk` in name or dependencies | `package.json` | **azure-hosted-copilot-sdk** |
+| `CopilotClient` import | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
+| `createSession` + `sendAndWait` calls | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 
@@ -80,7 +91,7 @@ Create `.azure/deployment-plan.md` by completing these steps. Do NOT generate an
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 0 | **❌ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
+| 0 | **❌ Check Prompt AND Codebase for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., OR codebase contains `@github/copilot-sdk`, invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
