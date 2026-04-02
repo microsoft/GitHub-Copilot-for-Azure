@@ -11,7 +11,7 @@ function Generate-AadToken ($TenantId, $ClientId, $ClientSecret)
         "content-type" = "application/x-www-form-urlencoded"
     }
 
-    // This is aad scope of opensource rest API.
+    # This is aad scope of opensource rest API.
     $body = @{
         "grant_type" = "client_credentials"
         "client_id" = $ClientId

@@ -318,7 +318,7 @@ function Remove-WormStorageAccounts() {
   foreach ($group in $groups) {
     Write-Host "========================================="
     $accounts = Get-AzStorageAccount -ResourceGroupName $group.ResourceGroupName
-    if (!$accounts) { break }
+    if (!$accounts) { continue }
 
     foreach ($account in $accounts) {
       RemoveStorageAccount -Account $account

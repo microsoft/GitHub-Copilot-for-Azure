@@ -488,16 +488,21 @@ function DeleteOrUpdateResourceGroups() {
     }
 
     if ($DryRun) {
-        $tagDate = [datetime]::UtcNow.AddDays(14)
         Write-Host "`n[DRY RUN] The following changes would be made (no actual changes performed):"
         Write-Host "`nResource groups that would be DELETED ($($toDelete.Count)):"
         foreach ($rg in $toDelete) {
             $deleteAfter = GetDeleteAfterTag $rg
             Write-Host "  $($rg.ResourceGroupName) [DeleteAfter (UTC): $deleteAfter]"
         }
-        Write-Host "`nResource groups that would be TAGGED with DeleteAfter '$tagDate' UTC ($($toDeleteSoon.Count)):"
-        foreach ($rg in $toDeleteSoon) {
-            Write-Host "  $($rg.ResourceGroupName)"
+        if ($DeleteNonCompliantGroups) {
+            Write-Host "`nResource groups that would be TAGGED with DeleteAfter according to FindOrCreateDeleteAfterTag ($($toDeleteSoon.Count)):"
+            foreach ($rg in $toDeleteSoon) {
+                Write-Host "  $($rg.ResourceGroupName)"
+            }
+        }
+        else {
+            Write-Host "`nResource groups that would be TAGGED with DeleteAfter (0):"
+            Write-Host "  Tagging is skipped because -DeleteNonCompliantGroups was not specified."
         }
         return
     }
