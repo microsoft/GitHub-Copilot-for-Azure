@@ -54,7 +54,7 @@ Scenario: 1M requests/day, average 1,000 tokens per request
 
 ## Production Workload Examples
 
-Real-world production scenarios with capacity calculations for gpt-4, version 0613 (from Azure Foundry Portal calculator):
+To estimate quota requirements, use real-world production scenarios with capacity calculations for gpt-4, version 0613 (from Azure Foundry Portal calculator):
 
 | Workload Type | Calls/Min | Prompt Tokens | Response Tokens | Cache Hit % | Total Tokens/Min | PTU Required | TPM Equivalent |
 |---------------|-----------|---------------|-----------------|-------------|------------------|--------------|----------------|
@@ -63,7 +63,9 @@ Real-world production scenarios with capacity calculations for gpt-4, version 06
 | **Summarization** | 10 | 5,000 | 300 | 20% | 53,000 | 100 | 53K TPM |
 | **Classification** | 10 | 3,800 | 10 | 20% | 38,100 | 100 | 38K TPM |
 
-**How to Calculate Your Needs:**
+**How to Estimate Your Production Quota Requirements:**
+
+To calculate your quota needs for production deployments, follow these steps:
 
 1. **Determine your peak calls per minute**: Monitor or estimate maximum concurrent requests
 2. **Measure token usage**: Average prompt size + response size
@@ -115,7 +117,9 @@ For the combined workload (40 calls/min, 135K tokens/min total), use **200 PTU**
 
 **Capacity Planning Approach** (from [PTU onboarding guide](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/provisioned-throughput-onboarding)):
 
-1. **Understand your TPM requirements**: Calculate expected tokens per minute based on workload
+To calculate and estimate your capacity requirements:
+
+1. **Calculate your TPM requirements**: Determine required tokens per minute based on your expected workload
 2. **Use the built-in capacity planner**: Available in Azure AI Foundry portal (Microsoft Foundry → Operate → Quota → Provisioned Throughput Unit tab)
 3. **Input your metrics**: Enter input TPM and output TPM based on your workload characteristics
 4. **Get PTU recommendation**: The calculator provides PTU allocation recommendation
