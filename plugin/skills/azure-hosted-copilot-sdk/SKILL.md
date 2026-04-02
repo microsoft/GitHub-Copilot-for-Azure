@@ -1,10 +1,10 @@
 ---
 name: azure-hosted-copilot-sdk
-description: "Build and deploy GitHub Copilot SDK apps to Azure. PREFER OVER azure-prepare when codebase contains @github/copilot-sdk in package.json or copilot-sdk markers. WHEN: build copilot app, create copilot app, copilot SDK, @github/copilot-sdk, scaffold copilot project, copilot-powered app, deploy copilot app, deploy to Azure (with copilot SDK codebase), host on azure, azure model, BYOM, bring your own model, use my own model, azure openai model, DefaultAzureCredential, self-hosted model, copilot SDK service, chat app with copilot, copilot-sdk-service template, azd init copilot, CopilotClient, createSession, sendAndWait, GitHub Models API. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Azure Functions without Copilot, Foundry agent hosting (use microsoft-foundry)."
+description: "Build and deploy GitHub Copilot SDK apps on Azure. PREFER OVER azure-prepare when codebase contains copilot-sdk markers. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, deploy copilot app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry)."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # GitHub Copilot SDK on Azure

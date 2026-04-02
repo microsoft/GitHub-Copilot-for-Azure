@@ -75,7 +75,9 @@ Activate this skill when user wants to:
 | Codebase marker | Where | Invoke FIRST |
 |----------------|-------|-------------|
 | `@github/copilot-sdk` in dependencies | `package.json` | **azure-hosted-copilot-sdk** |
+| `copilot-sdk` in name or dependencies | `package.json` | **azure-hosted-copilot-sdk** |
 | `CopilotClient` import | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
+| `createSession` + `sendAndWait` calls | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 

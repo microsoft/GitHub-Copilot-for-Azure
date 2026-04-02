@@ -77,7 +77,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("description includes BYOM trigger phrases", () => {
       const description = skill.metadata.description;
       expect(description).toContain("BYOM");
-      expect(description).toContain("azure model");
       expect(description).toContain("bring your own model");
     });
 
