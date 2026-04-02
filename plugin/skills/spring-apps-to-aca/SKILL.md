@@ -1,6 +1,6 @@
 ---
 name: spring-apps-to-aca
-description: "Migrate Spring Boot applications from Azure Spring Apps or any Spring Boot deployment to Azure Container Apps with pre-migration assessment, deployment automation, and cloud-native optimization. WHEN: migrate Spring Boot to Container Apps, move Azure Spring Apps to ACA, modernize Spring applications, containerize Spring Boot, migrate microservices to Azure, Spring Boot migration, Azure Spring Apps to Container Apps, Spring Boot containerization, Spring Boot deployment to ACA, migrate Spring microservices, Spring Cloud migration, convert Spring Boot to containers, assess Spring Boot migration, Spring Boot container apps, move Spring Boot from VM, Spring Boot cloud native, Spring Boot to ACA, migrate Java application to Container Apps, Spring Boot modernization, Azure Spring Apps migration assessment, containerize Java Spring Boot, deploy Spring Boot containers."
+description: "Migrate Spring Boot applications from Azure Spring Apps or any Spring Boot deployment to Azure Container Apps with pre-migration assessment, deployment automation, and cloud-native optimization. WHEN: migrate Spring Boot to Container Apps, move Azure Spring Apps to ACA, Azure Spring Apps to Container Apps migration, Spring Boot migration to ACA, migrate Spring microservices to ACA, convert Spring Boot JAR to container on ACA, Spring Boot ACA migration assessment, move Spring Boot from VM to Container Apps, Spring Boot to ACA conversion, Azure Spring Apps migration assessment, migrate existing Spring Boot app, Spring Boot platform migration, replatform Spring Boot to ACA."
 license: MIT
 metadata:
   version: "1.0.0"
@@ -19,9 +19,18 @@ metadata:
 
 ## When to Use This Skill
 
-- Migrate Spring Boot from Azure Spring Apps to Container Apps
-- Modernize Spring applications with cloud-native patterns
-- Reduce operational overhead for Spring microservices
+- Migrate **existing** Spring Boot apps from Azure Spring Apps to Container Apps
+- Convert Spring Boot apps running on VMs or other platforms to Container Apps
+- Assess migration readiness for Spring Boot workloads moving to Container Apps
+- Replatform Spring Boot microservices to Azure Container Apps
+
+## DO NOT USE FOR
+
+- **New Spring Boot deployments** without migration → use `azure-prepare`
+- **General application modernization** without platform migration → use `azure-prepare`
+- **Cross-cloud migration assessment** (AWS/GCP to Azure) → use `azure-cloud-migrate`
+- **Creating new Spring Boot projects** from scratch → use `azure-prepare`
+- **AKS or Kubernetes deployments** → use `azure-kubernetes` or `k8s-to-container-apps`
 
 ## Rules
 
