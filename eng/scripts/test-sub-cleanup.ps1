@@ -559,7 +559,7 @@ function DeleteAndPurgeGroups([array]$toDelete) {
             }
         }
         catch {
-            $errorMsg = "ERROR: Failure deleting/purging group $($rg.ResourceGroupName): `n $_.ToString()"
+            $errorMsg = "ERROR: Failure deleting/purging group $($rg.ResourceGroupName): `n $($_.ToString())"
             Write-Warning $errorMsg
             $errors += $errorMsg
         }
