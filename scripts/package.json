@@ -33,7 +33,7 @@
     "micromatch": "^4.0.8",
     "sirv-cli": "^3.0.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.2",
     "vitest": "^4.0.18"
   },
