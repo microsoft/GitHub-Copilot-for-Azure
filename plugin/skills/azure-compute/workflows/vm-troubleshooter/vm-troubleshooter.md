@@ -52,9 +52,19 @@ If the user shares an Azure VM name or resource ID, attempt to use the azure-res
 
 ### Phase 2: Route to Solution
 
-Open [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) and find the **Symptoms → Solutions** table that matches the user's category. Narrow down to the specific row matching their symptom.
+Open [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) to identify the symptom category. Then open the matching sub-reference for the full **Symptoms → Solutions** table and Quick Commands:
 
-If additional details are needed to narrow to a specific solution row, ask the user. For example:
+| Category                 | Reference                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| Unable to RDP            | [references/rdp-connectivity.md](references/rdp-connectivity.md)                   |
+| Unable to SSH            | [references/ssh-connectivity.md](references/ssh-connectivity.md)                   |
+| Network Issues           | [references/network-connectivity.md](references/network-connectivity.md)           |
+| Firewall Blocking        | [references/firewall-blocking.md](references/firewall-blocking.md)                 |
+| VM Agent Not Responding  | [references/vm-agent-not-responding.md](references/vm-agent-not-responding.md)     |
+| Credential / Auth Errors | [references/credential-auth-errors.md](references/credential-auth-errors.md)       |
+| RDP Service / Config     | [references/rdp-service-config.md](references/rdp-service-config.md)               |
+
+Narrow down to the specific row matching their symptom. If additional details are needed, ask the user. For example:
 - "What error message do you see in the RDP dialog?"
 - "Does the connection time out, or do you get an error immediately?"
 - "Is this a Windows or Linux VM?"
