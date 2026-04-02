@@ -248,7 +248,7 @@ function HasValidOwnerTag([object]$ResourceGroup) {
         Write-Warning " Resource group '$($ResourceGroup.ResourceGroupName)' has invalid owner tags: $($invalidOwners -join ',')"
     }
     if ($hasValidOwner) {
-        Write-Host " Found tagged resource group '$($ResourceGroup.ResourceGroupName)' with owners '$owners'"
+        Write-Host " Found tagged resource group '$($ResourceGroup.ResourceGroupName)' with owners '$($owners -join ',')'"
         return $true
     }
     return $false
