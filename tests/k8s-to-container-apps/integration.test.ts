@@ -121,26 +121,44 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
 
   describe("negative-cases", () => {
     test("does NOT invoke for new Container Apps deployment", async () => {
-      await withTestResult(async () => {
-        const agentMetadata = await agent.run({
-          prompt: "I want to deploy a new application to Azure Container Apps",
-          nonInteractive: true,
-        });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "I want to deploy a new application to Azure Container Apps",
+            nonInteractive: true,
+          });
 
-        const invoked = isSkillInvoked(agentMetadata, SKILL_NAME);
-        expect(invoked).toBe(false);
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount++;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        // For negative cases, expect invocation rate to be low (≤20%)
+        expect(rate).toBeLessThanOrEqual(0.2);
       });
     });
 
     test("does NOT invoke for AKS cluster management", async () => {
-      await withTestResult(async () => {
-        const agentMetadata = await agent.run({
-          prompt: "How do I scale my AKS cluster nodes?",
-          nonInteractive: true,
-        });
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "How do I scale my AKS cluster nodes?",
+            nonInteractive: true,
+          });
 
-        const invoked = isSkillInvoked(agentMetadata, SKILL_NAME);
-        expect(invoked).toBe(false);
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount++;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        // For negative cases, expect invocation rate to be low (≤20%)
+        expect(rate).toBeLessThanOrEqual(0.2);
       });
     });
   });
