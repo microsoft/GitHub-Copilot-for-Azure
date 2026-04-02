@@ -66,8 +66,8 @@ services:
 Scan the AppHost source (e.g., `apphost.cs` or `Program.cs`) for `AddDockerfile` calls:
 
 ```csharp
-// Pattern: builder.AddDockerfile("<name>", "<context-path>")
-builder.AddDockerfile("ginapp", "./ginapp")
+// Pattern: builder.AddDockerfile("<name>", "<context-path>");
+builder.AddDockerfile("ginapp", "./ginapp");
 //                     ^^^^^^    ^^^^^^^^
 //                     service   context path (relative to AppHost dir)
 ```
