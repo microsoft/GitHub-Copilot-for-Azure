@@ -4,10 +4,10 @@ import { getToolCalls, listFilesRecursive } from "../utils/evaluate";
 
 /**
  * Check if the agent has set the plan status to "Ready for Validation"
- * by editing `.azure/plan.md` via the `edit` tool.
+ * by editing `.azure/deployment-plan.md` via the `edit` tool.
  *
  * Looks for edit tool calls where the arguments contain
- * "Ready for Validation" in `new_str`, targeting a `plan.md` file.
+ * "Ready for Validation" in `new_str`, targeting a `deployment-plan.md` file.
  */
 export function hasPlanReadyForValidation(metadata: AgentMetadata): boolean {
   const editCalls = getToolCalls(metadata, "edit");
@@ -16,7 +16,7 @@ export function hasPlanReadyForValidation(metadata: AgentMetadata): boolean {
     const args = data.arguments as { path?: string; new_str?: string } | undefined;
     const filePath = args?.path ?? "";
     const newStr = args?.new_str ?? "";
-    return filePath.includes("plan.md") && /ready\s+for\s+validation/i.test(newStr);
+    return filePath.includes("deployment-plan.md") && /ready\s+for\s+validation/i.test(newStr);
   });
 }
 
