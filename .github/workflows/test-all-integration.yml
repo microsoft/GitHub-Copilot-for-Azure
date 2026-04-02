@@ -263,10 +263,8 @@ jobs:
         with:
           token: ${{ secrets.COPILOT_CLI_TOKEN }}
 
-      # Manually break down the integration tests per skill for easy tracking progress of a partially complete run.
-      # Todo: Make test failure abort the workflow when we have baseline tests that must pass.
-      # As of today, each step won't abort even if the integration test fails.
-      # This is because many integration tests aren't polished enough and consistently fails.
+      # Integration tests are broken down per skill for easy tracking of partially complete runs.
+      # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
       - name: Run integration tests – ${{ matrix.skill }}
@@ -284,7 +282,7 @@ jobs:
           else
             npm run test:integration "$SKILL" "$SKILL_TEST_PATTERN"
           fi
-        continue-on-error: true
+        continue-on-error: false
       
       - name: Generate skill report
         if: always()
