@@ -85,13 +85,13 @@ resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 >
 > 1. **Preferred**: Use `azd provision` followed by `azd deploy` (separate steps) to allow propagation time
 > 2. **Alternative**: Use admin credentials for registry auth instead of managed identity (less secure but avoids propagation delay)
-> 3. **Alternative**: Configure the registry block with `identity` referencing the managed identity resource ID instead of admin credentials:
+> 3. **Alternative**: Configure the registry block with `identity` referencing the managed identity selector (`'system'`) for a system-assigned identity, or the user-assigned identity resource ID for a user-assigned identity, instead of admin credentials:
 >
 > ```bicep
 > registries: [
 >   {
 >     server: containerRegistry.properties.loginServer
->     identity: containerApp.identity.principalId
+>     identity: 'system'
 >   }
 > ]
 > ```
