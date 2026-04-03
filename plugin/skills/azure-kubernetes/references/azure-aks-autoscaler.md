@@ -17,10 +17,20 @@ az aks show \
 
 ## Check Node Utilization (7 days)
 
+First, discover available metric names for the cluster — metric names vary by configuration:
+
+```bash
+az monitor metrics list-definitions \
+  --resource "<AKS_RESOURCE_ID>" \
+  --query "[].name.value" -o tsv
+```
+
+Select the appropriate CPU utilization metric from the output (commonly `node_cpu_usage_percentage` or `cpuUsagePercentage`), then query it:
+
 ```bash
 az monitor metrics list \
   --resource "<AKS_RESOURCE_ID>" \
-  --metric "node_cpu_usage_percentage" \
+  --metric "<METRIC_NAME_FROM_ABOVE>" \
   --interval PT1H --aggregation Average \
   --start-time "<YYYY-MM-DDTHH:mm:ssZ>" \
   --end-time "<YYYY-MM-DDTHH:mm:ssZ>"
@@ -65,19 +75,32 @@ az aks update \
     scale-down-unneeded-time=10m \
     scale-down-utilization-threshold=0.5 \
     max-graceful-termination-sec=600 \
-    skip-nodes-with-system-pods=false
+    skip-nodes-with-system-pods=false  # WARNING: can evict system pods — ensure system pods have PDBs
+```
+
+To roll back to CAS defaults:
+
+```bash
+az aks update \
+  --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --cluster-autoscaler-profile ""
 ```
 
 ## Profile Comparison
 
-| Profile | scale-down-delay | utilization-threshold | Best For |
-|---------|------------------|-----------------------|----------|
-| Default | 10m | 0.5 | General workloads |
-| Cost-Optimized | 10m | 0.5 + shorter delays | Cost-sensitive |
-| Conservative | 30m | 0.7 | Stateful / production |
-| Aggressive | 5m | 0.4 | Dev/test, batch |
+| Profile | scale-down-delay-after-add | scale-down-unneeded-time | utilization-threshold | Best For |
+|---------|----------------------------|--------------------------|----------------------|----------|
+| Default | 10m | 10m | 0.5 | General workloads |
+| Cost-Optimized | 5m | 5m | 0.5 | Cost-sensitive, non-critical |
+| Conservative | 30m | 30m | 0.7 | Stateful / production |
+| Aggressive | 2m | 2m | 0.4 | Dev/test, batch |
 
-> Risk: High for aggressive tuning. Ensure PodDisruptionBudgets (PDBs) are set on critical workloads. Always confirm with user before applying.
+> Risk: High for aggressive tuning. Ensure PodDisruptionBudgets (PDBs) are set on critical workloads before tuning. Always confirm with user before applying.
+>
+> Check existing PDBs before tuning:
+> ```bash
+> kubectl get pdb --all-namespaces
+> ```
 
 ## Cost Impact Estimate
 

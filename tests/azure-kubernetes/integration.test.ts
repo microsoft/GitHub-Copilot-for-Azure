@@ -94,6 +94,26 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     });
 
+    test("invokes azure-kubernetes skill for CAS profile tuning prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
     test("invokes azure-kubernetes skill for spot node pool prompt", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
@@ -194,6 +214,21 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
                               doesAssistantMessageIncludeKeyword(agentMetadata, "min-count") ||
                               doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down");
         expect(hasCASContent).toBe(true);
+      });
+    });
+
+    test("response mentions autoscaler profile parameters for CAS tuning prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasTuneContent = doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-unneeded-time") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "utilization-threshold") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "cluster-autoscaler-profile") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-delay");
+        expect(hasTuneContent).toBe(true);
       });
     });
 

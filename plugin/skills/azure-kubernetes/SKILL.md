@@ -3,7 +3,7 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS."
 ---
 
@@ -135,6 +135,7 @@ Load only the reference file relevant to the user's request:
 
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
+- Do not ask the user to paste subscription IDs. Discover subscription and resource scope via MCP tools (e.g., list subscriptions, list resource groups) or `az account show` / `az account list` so the agent can resolve context without exposing identifiers.
 - If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
 - Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades along with best practices for reliability and performance.
 

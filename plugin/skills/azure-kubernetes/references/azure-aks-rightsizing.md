@@ -28,7 +28,6 @@ Based on the result, follow the appropriate path:
 | Azure Managed Prometheus enabled |  Yes | Prometheus metrics via Azure Monitor | Best — full P95/7-day history |
 | Container Insights (Log Analytics) enabled |  Yes | KQL queries on `Perf` / `KubePodInventory` | Good — 7-day trends |
 | Only Metrics Server (no Azure Monitor) |  Limited | `kubectl top pods` — live data only | Low — no historical trends |
-| Nothing enabled (Azure Monitor) |  Limited | Metrics Server pre-installed on AKS — use `kubectl top` for live data | Low — no historical trends |
 
 > If nothing is enabled, Metrics Server is pre-installed on AKS — confirm it is healthy and use it for live rightsizing data:
 > ```bash
@@ -45,24 +44,29 @@ Based on the result, follow the appropriate path:
 # Authenticate to cluster
 az aks get-credentials --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>"
 
-# List all pod requests/limits
+# List requests/limits for ALL containers per pod (includes sidecars)
+# Using [*] ensures multi-container pods are not misrepresented
 kubectl get pods --all-namespaces \
-  -o custom-columns="NAMESPACE:.metadata.namespace,NAME:.metadata.name,\
-CPU_REQ:.spec.containers[0].resources.requests.cpu,\
-MEM_REQ:.spec.containers[0].resources.requests.memory,\
-CPU_LIM:.spec.containers[0].resources.limits.cpu,\
-MEM_LIM:.spec.containers[0].resources.limits.memory"
+  -o custom-columns="NAMESPACE:.metadata.namespace,POD:.metadata.name,CONTAINERS:.spec.containers[*].name,CPU_REQ:.spec.containers[*].resources.requests.cpu,MEM_REQ:.spec.containers[*].resources.requests.memory,CPU_LIM:.spec.containers[*].resources.limits.cpu,MEM_LIM:.spec.containers[*].resources.limits.memory"
 
-# Live usage
-kubectl top pods --all-namespaces --sort-by=cpu
+# Live per-container usage (shows each container individually, including sidecars)
+kubectl top pods --all-namespaces --containers --sort-by=cpu
 ```
 
 ## Historical Metrics (Azure Monitor — use when Prometheus or Container Insights is enabled)
 
+First discover available metric names, then query:
+
+```bash
+az monitor metrics list-definitions \
+  --resource "<AKS_RESOURCE_ID>" \
+  --query "[].name.value" -o tsv
+```
+
 ```bash
 az monitor metrics list \
   --resource "<AKS_RESOURCE_ID>" \
-  --metric "cpuUsagePercentage" \
+  --metric "<METRIC_NAME_FROM_ABOVE>" \
   --interval PT1H --aggregation Average \
   --start-time "<YYYY-MM-DDTHH:mm:ssZ>" \
   --end-time "<YYYY-MM-DDTHH:mm:ssZ>"
@@ -77,6 +81,36 @@ az monitor metrics list \
 | CPU request >2x P95 actual | Recommend rightsizing with 20% buffer | Low |
 | No resource limits set | Add limits to prevent noisy-neighbor waste | Low |
 | No VPA/HPA configured | Suggest enabling Vertical Pod Autoscaler | Low |
+
+## Enable VPA (Recommendation Mode)
+
+Enable VPA in recommendation-only mode so it suggests rightsized values without auto-applying:
+
+```bash
+# Install VPA (if not present)
+kubectl apply -f https://github.com/kubernetes/autoscaler/releases/latest/download/vertical-pod-autoscaler.yaml
+
+# Create a VPA object in recommendation mode for a deployment
+kubectl apply -f - <<EOF
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: <DEPLOYMENT_NAME>-vpa
+  namespace: <NAMESPACE>
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: <DEPLOYMENT_NAME>
+  updatePolicy:
+    updateMode: "Off"   # Recommendation only — does not modify pods
+EOF
+
+# Read recommendations after 24+ hours of data collection
+kubectl describe vpa <DEPLOYMENT_NAME>-vpa -n <NAMESPACE>
+```
+
+> Risk: Low in "Off" mode. Do not use `updateMode: Auto` in production without thorough testing.
 
 ## YAML Patch Format
 
