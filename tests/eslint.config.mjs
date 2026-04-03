@@ -3,7 +3,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
 import integrationTestNameRule from "./eslint-rules/integration-test-name.mjs";
-import importPlugin from "eslint-plugin-import";
+import importPlugin from "eslint-plugin-import-x";
 
 const tsFiles = ["**/*.ts"];
 const jsFiles = ["**/*.js", "**/*.mjs"];
@@ -84,7 +84,7 @@ export default defineConfig(
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "error",
       "jest/expect-expect": "error",
-      "import/no-unused-modules": [1, { "unusedExports": true }]
+      "import-x/no-unused-modules": [1, { "unusedExports": true, "suppressMissingFileEnumeratorAPIWarning": true }]
     },
   },
   // JavaScript files - no TypeScript project needed
