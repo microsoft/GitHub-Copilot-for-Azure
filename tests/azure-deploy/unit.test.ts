@@ -56,7 +56,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Deployment Workflow", () => {
     test("mentions plan file requirement", () => {
-      expect(skill.content).toContain(".azure/plan.md");
+      expect(skill.content).toContain(".azure/deployment-plan.md");
     });
 
     test("references deployment recipes", () => {
@@ -69,6 +69,28 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("includes post-deployment step", () => {
       expect(skill.content.toLowerCase()).toContain("post-deploy");
+    });
+  });
+
+  describe("Live Role Verification Step", () => {
+    test("includes live role verification step in workflow", () => {
+      expect(skill.content).toContain("Live Role Verification");
+    });
+
+    test("references live-role-verification.md", () => {
+      expect(skill.content).toContain("live-role-verification.md");
+    });
+
+    test("documents azure__role MCP tool", () => {
+      expect(skill.content).toContain("azure__role");
+    });
+
+    test("live role verification comes before report results", () => {
+      const liveRoleIndex = skill.content.indexOf("Live Role Verification");
+      const reportIndex = skill.content.indexOf("Report Results");
+      expect(liveRoleIndex).toBeGreaterThan(-1);
+      expect(reportIndex).toBeGreaterThan(-1);
+      expect(liveRoleIndex).toBeLessThan(reportIndex);
     });
   });
 

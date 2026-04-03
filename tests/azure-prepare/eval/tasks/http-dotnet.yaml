@@ -26,7 +26,7 @@ expected:
     - type: task_completed
   output_contains:
     - "functions-quickstart-dotnet-azd"
-    - "plan.md"
+    - "deployment-plan.md"
   tool_calls:
     required:
       - pattern: "azd init|azd"

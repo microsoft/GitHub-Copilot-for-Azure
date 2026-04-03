@@ -121,7 +121,7 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 | Check | Pass | Fail |
 |-------|------|------|
 | Lowercase only | `azure-deploy` | `Azure-Deploy` |
-| Alphanumeric + hyphens | `azure-cost-optimization` | `azure_cost_optimization` |
+| Alphanumeric + hyphens | `azure-cost` | `azure_cost` |
 | No start/end hyphen | `azure-deploy` | `-azure-deploy`, `azure-deploy-` |
 | No consecutive hyphens | `azure-deploy` | `azure--deploy` |
 | Matches directory | `skill-name` = folder name | Mismatch |
@@ -166,6 +166,7 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 | Single skill or small set (1-5 skills) with clear domain boundaries | Low | Anti-triggers are low-risk — domain boundaries are obvious |
 | Medium skill set (5-15 skills) with some overlap | Moderate | Anti-trigger keywords start competing with other skills' triggers |
 | Large skill set (15+ skills) with overlapping domains | **High** | Keyword contamination is measurable — negative keywords become activation keywords on fast-pattern-matching models |
+| **Specialized skill with trigger overlap against a broader skill** | **REQUIRED** | Anti-triggers are the **only** disambiguation mechanism when a specialized skill (e.g., `azure-hosted-copilot-sdk`) competes with a broader skill (e.g., `azure-prepare`) on shared trigger phrases like "deploy to Azure". Removing them causes routing regressions. |
 
 **Why large skill sets are risky:** On Claude Sonnet and similar models that use fast pattern matching (first ~20 words), `DO NOT USE FOR: Function apps` causes Sonnet to key on "Function apps" and **activate** the skill for Functions queries. This was empirically demonstrated across 24 Azure skills ([analysis](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). Anthropic's own published skills confirm this pattern — 4 of 5 skills in `anthropics/skills` use positive-only routing.
 
@@ -179,9 +180,10 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 - `Defer to`
 
 **Scoring:**
-- Present in large skill sets → emits cross-model compatibility warning
+- Present in large skill sets without trigger overlap → emits cross-model compatibility warning
 - Present in small skill sets → informational note only
-- Absent → no penalty (preferred for cross-model compatibility)
+- **Present in skills with trigger overlap against broader skills → NO WARNING (required for disambiguation)**
+- Absent → no penalty (preferred for cross-model compatibility, **except** when disambiguation is required)
 
 ### 5. Compatibility Field
 
@@ -319,8 +321,14 @@ function scoreSkill(skill):
             score = "Medium-High"
     
     # Warn on anti-triggers (keyword contamination risk)
+    # Exception: DO NOT warn if skill has trigger overlap with a broader skill
+    # (e.g., azure-hosted-copilot-sdk overlaps with azure-prepare on "deploy")
+    # In that case, DO NOT USE FOR is REQUIRED for disambiguation
     if containsAntiTriggers(skill.description):
-        warn "DO NOT USE FOR: causes keyword contamination on Sonnet — remove"
+        if hasOverlappingTriggersWithBroaderSkill(skill):
+            pass  # anti-triggers required for disambiguation — no warning
+        else:
+            warn "DO NOT USE FOR: causes keyword contamination on Sonnet — consider removing"
     
     # Check for compatibility
     hasCompatibility = skill.compatibility != null
@@ -349,7 +357,10 @@ function collectSuggestions(skill):
     if usesBlockScalar(skill.rawDescription):
         suggestions.add("Use inline double-quoted string for description (>- incompatible with skills.sh)")
     if containsAntiTriggers(skill.description):
-        suggestions.add("Remove DO NOT USE FOR: — causes keyword contamination on Claude Sonnet")
+        if hasOverlappingTriggersWithBroaderSkill(skill):
+            pass  # anti-triggers required — do not suggest removal
+        else:
+            suggestions.add("Consider removing DO NOT USE FOR: — causes keyword contamination on Claude Sonnet. Run integration tests first to verify routing is unaffected.")
     if wordCount(skill.description) > 60:
         suggestions.add("Trim description to ≤60 words for cross-model reliability")
     return suggestions
@@ -390,7 +401,7 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 4. `azure-postgres`
 5. `azure-functions`
 6. `azure-quick-review`
-7. `azure-cost-optimization`
+7. `azure-cost`
 8. `azure-kusto`
 9. `azure-keyvault-expiration-audit`
 10. `azure-aigateway`

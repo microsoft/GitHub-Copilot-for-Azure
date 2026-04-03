@@ -49,7 +49,7 @@ The research step loads service-specific references and invokes related skills t
 1. ✅ Completed [Research Components](research.md) step
 2. ✅ Loaded all relevant `services/*.md` references
 3. ✅ Invoked related skills for specialized guidance
-4. ✅ Documented findings in `.azure/plan.md`
+4. ✅ Documented findings in `.azure/deployment-plan.md`
 
 ## Generation Order
 
@@ -79,7 +79,7 @@ Load the appropriate recipe for detailed generation steps:
 ```
 project-root/
 ├── .azure/
-│   └── plan.md
+│   └── deployment-plan.md
 ├── infra/
 │   ├── main.bicep (or main.tf)
 │   └── modules/
@@ -95,6 +95,7 @@ project-root/
 - Use Key Vault for sensitive values
 - Managed Identity for service auth
 - HTTPS only, TLS 1.2+
+- SQL Server Bicep must use Entra-only auth — omit `administratorLogin` and `administratorLoginPassword` entirely (see [services/sql-database/bicep.md](services/sql-database/bicep.md))
 
 ### Runtime Configuration
 
@@ -106,6 +107,6 @@ Apply language-specific production settings for containerized apps:
 
 ## After Generation
 
-1. Update `.azure/plan.md` with generated file list
+1. Update `.azure/deployment-plan.md` with generated file list
 2. Run validation checks
 3. Proceed to **azure-validate** skill
