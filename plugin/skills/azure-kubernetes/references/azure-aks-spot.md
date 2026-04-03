@@ -29,24 +29,28 @@ Use the suitability table below to decide which workloads to migrate.
 
 ## Estimate Savings (Azure Retail Prices API)
 
-Tighten the filter with `serviceName`, OS type, and `currencyCode` to get a deterministic single result. If `Items` is empty, the SKU name or region may be incorrect — check the spelling with `az vm list-skus`.
+The Retail Prices API is **unauthenticated** — use `curl` or `Invoke-RestMethod` directly. `az rest` adds an unnecessary Azure login requirement. Use `meterName` to distinguish Spot from regular and `isPrimaryMeterRegion eq true` to avoid duplicate meters.
 
 ```bash
 # Regular price (Linux, Pay-as-you-go)
-az rest --method get \
-  --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and serviceName eq 'Virtual Machines' and contains(skuName, 'Windows') eq false and contains(skuName, 'Spot') eq false" \
-  --query "Items[0].retailPrice"
+curl -s "https://prices.azure.com/api/retail/prices?\$filter=serviceName%20eq%20'Virtual%20Machines'%20and%20armSkuName%20eq%20'<VM_SIZE>'%20and%20armRegionName%20eq%20'<REGION>'%20and%20priceType%20eq%20'Consumption'%20and%20isPrimaryMeterRegion%20eq%20true"
 
-# Spot price (Linux)
-az rest --method get \
-  --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and serviceName eq 'Virtual Machines' and contains(skuName, 'Windows') eq false and contains(skuName, 'Spot')" \
-  --query "Items[0].retailPrice"
+# Spot price (Linux) — filter meterName directly in OData
+curl -s "https://prices.azure.com/api/retail/prices?\$filter=serviceName%20eq%20'Virtual%20Machines'%20and%20armSkuName%20eq%20'<VM_SIZE>'%20and%20armRegionName%20eq%20'<REGION>'%20and%20priceType%20eq%20'Consumption'%20and%20isPrimaryMeterRegion%20eq%20true%20and%20contains(meterName%2C%20'Spot')"
 ```
 
-> If the first page returns no match, check `NextPageLink` in the response and paginate:
-> ```bash
-> az rest --method get --url "<NextPageLink_value>" --query "Items[0].retailPrice"
-> ```
+```powershell
+$filter = "serviceName eq 'Virtual Machines' and armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and isPrimaryMeterRegion eq true"
+$r = Invoke-RestMethod "https://prices.azure.com/api/retail/prices?`$filter=$filter"
+
+# Regular Linux price
+$r.Items | Where-Object { $_.meterName -notmatch "Spot" -and $_.productName -notmatch "Windows" } | Select-Object -First 1 -ExpandProperty retailPrice
+
+# Spot Linux price
+$r.Items | Where-Object { $_.meterName -match "Spot" -and $_.productName -notmatch "Windows" } | Select-Object -First 1 -ExpandProperty retailPrice
+```
+
+> If `Items` is empty, verify the SKU name with `az vm list-skus --location <REGION> --output table`. If `NextPageLink` is present in the response, re-request that URL to paginate.
 
 ## Mixed Node Pool Pattern (Spot + Regular)
 
