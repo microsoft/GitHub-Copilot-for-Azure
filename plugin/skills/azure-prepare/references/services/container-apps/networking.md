@@ -7,7 +7,7 @@ VNet integration, ingress configuration, custom domains, and TLS for Container A
 | Mode | Visibility | Use Case |
 |------|-----------|----------|
 | External | Internet-accessible | Public APIs, web apps |
-| Internal | VNet-only | Microservices, back-end APIs |
+| Internal | Not internet-accessible; reachable within the environment and VNet (if VNet-injected) | Microservices, back-end APIs |
 | Disabled | No HTTP ingress | Background workers, queue processors |
 
 ### Bicep — External Ingress
@@ -34,7 +34,7 @@ configuration: {
 }
 ```
 
-> 💡 **Tip:** Internal apps get a `*.internal.<env-default-domain>` FQDN accessible only within the VNet.
+> 💡 **Tip:** Internal apps get a `*.internal.<env-default-domain>` FQDN. This is accessible from within the Container Apps environment and, when the environment is VNet-injected, also from the VNet.
 
 ## VNet Integration
 
@@ -42,11 +42,11 @@ Container Apps run inside an environment that can be injected into a VNet subnet
 
 ### Subnet Requirements
 
-| Requirement | Value |
-|------------|-------|
-| Minimum subnet size | `/23` (512 addresses) |
-| Delegation | `Microsoft.App/environments` |
-| Dedicated | Subnet must be exclusive to the Container Apps environment |
+| Requirement | Workload Profiles (default) | Consumption-only (legacy) |
+|------------|---------------------------|--------------------------|
+| Minimum subnet size | `/27` (32 addresses) | `/23` (512 addresses) |
+| Delegation | `Microsoft.App/environments` | None (do not delegate) |
+| Dedicated | Subnet must be exclusive to the Container Apps environment | Same |
 
 ### Bicep — VNet-Integrated Environment
 
@@ -55,7 +55,7 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
   parent: vnet
   name: 'container-apps-subnet'
   properties: {
-    addressPrefix: '10.0.16.0/23'
+    addressPrefix: '10.0.16.0/27'
     delegations: [
       {
         name: 'Microsoft.App.environments'
@@ -116,6 +116,10 @@ Azure automatically provisions and renews TLS certificates for custom domains �
 
 ## IP Restrictions
 
+> ⚠️ **Warning:** All IP restriction rules must be the **same action type** — you cannot mix Allow and Deny rules.
+
+Allow rules implicitly deny all traffic not matching any rule. Deny rules implicitly allow all other traffic.
+
 ```bicep
 configuration: {
   ingress: {
@@ -129,10 +133,10 @@ configuration: {
         description: 'Office network'
       }
       {
-        name: 'deny-all'
-        action: 'Deny'
-        ipAddressRange: '0.0.0.0/0'
-        description: 'Deny all other traffic'
+        name: 'allow-vpn'
+        action: 'Allow'
+        ipAddressRange: '198.51.100.0/24'
+        description: 'VPN gateway'
       }
     ]
   }

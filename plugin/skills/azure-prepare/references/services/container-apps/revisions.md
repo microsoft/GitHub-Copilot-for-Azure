@@ -22,14 +22,15 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         external: true
         targetPort: 8080
         traffic: [
-          { revisionName: '${appName}--v1', weight: 80 }
-          { revisionName: '${appName}--v2', weight: 20 }
+          { latestRevision: true, weight: 100 }
         ]
       }
     }
   }
 }
 ```
+
+> 💡 **Tip:** At deploy time only one revision exists. Use `latestRevision: true` in Bicep. Configure traffic splitting via CLI after deploying additional revisions.
 
 ## Traffic Splitting Patterns
 
@@ -38,15 +39,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 Route 100% to the current revision, deploy a new one, validate, then switch:
 
 ```bash
-# Deploy new revision (gets 0% traffic by default in Multiple mode)
+# Deploy new revision (existing traffic rules remain; new revision gets 0% unless configured)
 az containerapp update -n $APP -g $RG --image $NEW_IMAGE
 
-# Test the new revision directly via its URL
+# Get the new revision name
+NEW_REV=$(az containerapp revision list -n $APP -g $RG --query "[0].name" -o tsv)
+
+# Test the new revision directly via its revision-specific URL
 az containerapp revision list -n $APP -g $RG -o table
 
-# Switch 100% traffic to new revision
+# Switch 100% traffic to the new revision
 az containerapp ingress traffic set -n $APP -g $RG \
-  --revision-weight "$APP--new-rev=100"
+  --revision-weight "$NEW_REV=100"
 ```
 
 ### Canary Release
@@ -84,15 +88,19 @@ az containerapp ingress traffic set -n $APP -g $RG \
 
 ## Rollback
 
-Revert instantly by redirecting all traffic to the previous revision:
+Revert instantly by redirecting all traffic to a known-good revision (e.g., one labeled `stable`):
 
 ```bash
-# List active revisions
+# List active revisions and identify the known-good one
 az containerapp revision list -n $APP -g $RG -o table
 
-# Roll back to previous revision
+# Roll back using label-based routing (preferred)
 az containerapp ingress traffic set -n $APP -g $RG \
-  --revision-weight "$APP--previous-rev=100"
+  --label-weight stable=100
+
+# Or roll back to a specific revision by name
+az containerapp ingress traffic set -n $APP -g $RG \
+  --revision-weight "<known-good-revision-name>=100"
 ```
 
 ## Revision Lifecycle

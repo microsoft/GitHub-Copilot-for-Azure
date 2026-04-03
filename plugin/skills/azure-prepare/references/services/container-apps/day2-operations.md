@@ -7,8 +7,8 @@ Operational tasks for running Container Apps in production: restart, exec, logs,
 | Action | Command |
 |--------|---------|
 | Restart active revision | `az containerapp revision restart -n $APP -g $RG --revision $REV` |
-| Stop the app (all replicas) | `az containerapp stop -n $APP -g $RG` |
-| Start the app | `az containerapp start -n $APP -g $RG` |
+| Scale to zero (stop) | `az containerapp update -n $APP -g $RG --min-replicas 0 --max-replicas 0` |
+| Resume (restore scaling) | `az containerapp update -n $APP -g $RG --min-replicas 1 --max-replicas 10` |
 | List replicas | `az containerapp replica list -n $APP -g $RG --revision $REV` |
 
 > 💡 **Tip:** Restarting a revision replaces all running replicas gracefully. No new revision is created.
@@ -95,14 +95,16 @@ template: {
 ### Create and Update Secrets
 
 ```bash
-# Add a secret
+# Add a secret (use Key Vault references in production — avoid plaintext secrets)
 az containerapp secret set -n $APP -g $RG \
-  --secrets "db-password=S3cureP@ss"
+  --secrets "db-password=<secret-value>"
 
 # Reference a Key Vault secret (managed identity required)
 az containerapp secret set -n $APP -g $RG \
   --secrets "db-password=keyvaultref:https://myvault.vault.azure.net/secrets/db-pwd,identityref:/subscriptions/.../userAssignedIdentities/my-id"
 ```
+
+> ⚠️ **Warning:** Avoid passing plaintext secrets on the command line — they may appear in shell history and process listings. Prefer Key Vault references or `--file` based approaches.
 
 > 💡 **Tip:** Use Key Vault references instead of plain-text secrets. The Container App pulls the latest value on each new revision or replica start.
 
