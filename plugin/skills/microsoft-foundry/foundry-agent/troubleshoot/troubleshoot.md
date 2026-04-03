@@ -7,7 +7,7 @@ Troubleshoot and debug Foundry agents by collecting container logs, discovering 
 | Property | Value |
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (container-based) |
-| MCP servers | `foundry-mcp` |
+| MCP servers | `azure` |
 | Key MCP tools | `agent_get`, `agent_container_status_get` |
 | Related skills | `trace` (telemetry analysis) |
 | Preferred query tool | `monitor_resource_log_query` (Azure MCP) — preferred over `azure-kusto` for App Insights |
