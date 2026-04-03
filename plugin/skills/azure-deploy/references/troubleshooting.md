@@ -166,3 +166,22 @@ Then retry deployment:
 ```bash
 azd deploy --no-prompt
 ```
+
+## Container Apps — RBAC Propagation Timeout
+
+**Symptom:** During `azd up`, infrastructure provisions successfully but the Container App revision creation times out (~900s). Container App shows `provisioningState: Failed` with no active revision.
+
+**Cause:** The managed identity's `AcrPull` role assignment hasn't propagated before the Container App attempts to pull the image from ACR. Azure RBAC propagation can take 1–5 minutes.
+
+**Solution:**
+
+1. Verify the `AcrPull` role exists on the ACR for the Container App's managed identity (see [AZD Errors — Container App Revision Timeout](references/recipes/azd/errors.md#container-app-revision-timeout))
+2. If missing, assign it manually with `--assignee-principal-type ServicePrincipal`
+3. Wait 2 minutes for propagation
+4. Set `AZURE_CONTAINER_REGISTRY_ENDPOINT` env var
+5. Run `azd deploy --no-prompt`
+
+**Prevention:**
+
+- Include `AcrPull` role assignment in Bicep with `principalType: 'ServicePrincipal'`
+- Use `azd provision` + `azd deploy` (separate steps) instead of `azd up` to allow propagation time

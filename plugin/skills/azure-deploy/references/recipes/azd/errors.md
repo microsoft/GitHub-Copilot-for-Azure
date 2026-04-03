@@ -15,9 +15,54 @@ These errors occur **during** `azd up` execution:
 | `could not determine container registry endpoint` | Missing `AZURE_CONTAINER_REGISTRY_ENDPOINT` | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID"` | Missing managed identity env vars | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "MANAGED_IDENTITY_CLIENT_ID"` | Missing managed identity client ID | See [Missing Container Registry Variables](#missing-container-registry-variables) |
+| `Operation expired` / revision creation timeout (900s) | RBAC propagation delay — Container App's managed identity doesn't have `AcrPull` on ACR yet | See [Container App Revision Timeout](#container-app-revision-timeout) |
 | `found '2' resources tagged with 'azd-service-name: <name>'` | Previous deployment left duplicate-tagged resources in same RG | **Preferred**: Create fresh env with `azd env new <new-name>`, set subscription/location, redeploy. **Alternative**: Delete conflicting resources (requires `ask_user`). |
 
 > ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [Pre-Deploy Checklist](../../pre-deploy-checklist.md).
+
+## Container App Revision Timeout
+
+**Symptom:** `azd up` provisions infrastructure successfully but the Container App revision creation times out after ~900 seconds. The Container App enters a `Failed` provisioning state with no active revision. The `azd` output shows `Operation expired` or `The operation did not complete within the permitted time`.
+
+**Cause:** Azure RBAC propagation delay. When `azd up` runs both `azd provision` and `azd deploy` in a single step:
+1. Bicep creates the Container App with a system-assigned managed identity
+2. Bicep creates an `AcrPull` role assignment for that identity on the ACR
+3. `azd deploy` immediately pushes the image and creates a new Container App revision
+4. The revision tries to pull the image from ACR, but the `AcrPull` role assignment hasn't propagated yet (can take 1–5 minutes)
+5. The image pull fails repeatedly until the 900-second timeout is reached
+
+**Solution:**
+
+1. **Verify the Container App state:**
+```bash
+az containerapp show --name <app-name> --resource-group <resource-group> \
+  --query "{provisioningState:properties.provisioningState, latestRevision:properties.latestRevisionName}" -o json
+```
+
+2. **Confirm the AcrPull role exists (it may have propagated by now):**
+```bash
+PRINCIPAL_ID=$(az containerapp identity show --name <app-name> --resource-group <resource-group> --query principalId -o tsv)
+az role assignment list --scope $(az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv) \
+  --assignee-object-id "$PRINCIPAL_ID" --query "[].roleDefinitionName" -o tsv
+```
+
+3. **If AcrPull is missing, assign it:**
+```bash
+az role assignment create \
+  --assignee-object-id "$PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role AcrPull \
+  --scope $(az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv)
+```
+
+4. **Wait for propagation, then redeploy:**
+```bash
+sleep 120  # Wait 2 minutes for RBAC propagation
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr show --name <acr-name> --resource-group <resource-group> --query loginServer -o tsv)
+azd deploy --no-prompt
+```
+
+> 💡 **Prevention:** To avoid this in future deployments, ensure the Bicep template includes the `AcrPull` role assignment with `principalType: 'ServicePrincipal'`, and consider using `azd provision` + `azd deploy` as separate steps instead of `azd up` to allow RBAC propagation time between infrastructure creation and app deployment.
 
 ## Missing Container Registry Variables
 
