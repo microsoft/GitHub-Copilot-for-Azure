@@ -12,6 +12,8 @@ These errors occur **during** `azd up` execution:
 | Package failed | Missing Dockerfile or deps | Verify Dockerfile exists and dependencies |
 | Quota exceeded | Subscription limits | Request increase or change region |
 | `PrincipalId '...' has type 'ServicePrincipal', which is different from specified PrincipalType 'User'` | Base template RBAC assigns roles with `principalType: 'User'` but deploying identity is a service principal (CI/CD) | Set `allowUserIdentityPrincipal: false` in the `storageEndpointConfig` variable in `infra/main.bicep`. Do NOT try clearing `AZURE_PRINCIPAL_ID` — azd repopulates it. See [Principal Type Mismatch](#principal-type-mismatch). |
+| `ImagePullBackOff` or `azd up` hangs during provision for Container Apps | Container App references an image that doesn't exist in ACR yet | See [Container Apps Bootstrap Problem](#container-apps-bootstrap-problem) |
+| `unauthorized: authentication required` on `docker push` to ACR | ACR auth token expired or scoped incorrectly | See [ACR Authentication Failures](#acr-authentication-failures) |
 | `could not determine container registry endpoint` | Missing `AZURE_CONTAINER_REGISTRY_ENDPOINT` | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID"` | Missing managed identity env vars | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "MANAGED_IDENTITY_CLIENT_ID"` | Missing managed identity client ID | See [Missing Container Registry Variables](#missing-container-registry-variables) |
@@ -76,6 +78,46 @@ done
 ```
 
 > 💡 **Prevention:** To avoid this in future deployments, ensure the Bicep template includes the `AcrPull` role assignment with `principalType: 'ServicePrincipal'`, and consider using `azd provision` + `azd deploy` as separate steps instead of `azd up` to allow RBAC propagation time between infrastructure creation and app deployment.
+
+## Container Apps Bootstrap Problem
+
+**Symptom:** `azd up` hangs or fails during provisioning with `ImagePullBackOff`, or the Container App cannot start because the referenced image doesn't exist in ACR yet.
+
+**Cause:** The Bicep template creates the Container App referencing an ACR image, but that image doesn't exist until `azd deploy` builds and pushes it. This chicken-and-egg problem blocks provisioning.
+
+**Solution — use two-phase deployment:**
+
+```bash
+# Phase 1: Provision infrastructure (Container App uses placeholder image)
+azd provision --no-prompt
+
+# Phase 2: Build, push, and update Container App with real image
+azd deploy --no-prompt
+```
+
+> ⚠️ This requires the Bicep template to use a placeholder image parameter (e.g., `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`) so provisioning succeeds without the app image. If the Bicep hardcodes the ACR image reference, update it to accept a `containerImageName` parameter with a placeholder default before provisioning.
+
+> ⚠️ Do **NOT** repeatedly poll a hanging `azd up` — if there is no provisioning progress or you continue to see `ImagePullBackOff` events for several minutes during a Container Apps deployment, stop it and switch to the two-phase approach above.
+
+## ACR Authentication Failures
+
+**Symptom:** `docker push` fails with `unauthorized: authentication required` even after `az acr login` succeeds.
+
+**Solution — try these methods in order:**
+
+```bash
+# Method 1: AAD-based login (preferred)
+az acr login --name <acr-name>
+docker push <acr-name>.azurecr.io/<image>:<tag>
+
+# Method 2: Admin credentials (fallback)
+ACR_USER=$(az acr credential show --name <acr-name> --query username -o tsv)
+ACR_PASS=$(az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv)
+docker login <acr-name>.azurecr.io -u "$ACR_USER" -p "$ACR_PASS"
+docker push <acr-name>.azurecr.io/<image>:<tag>
+```
+
+> 💡 **Tip:** Prefer `azd deploy` over manual `docker push` — azd handles ACR authentication automatically.
 
 ## Missing Container Registry Variables
 
