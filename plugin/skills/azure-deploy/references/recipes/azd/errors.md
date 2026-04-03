@@ -57,9 +57,22 @@ az role assignment create \
 
 4. **Wait for propagation, then redeploy:**
 ```bash
-sleep 120  # Wait 2 minutes for RBAC propagation
 azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr show --name <acr-name> --resource-group <resource-group> --query loginServer -o tsv)
-azd deploy --no-prompt
+
+for attempt in 1 2 3 4 5; do
+  echo "Waiting for RBAC propagation (attempt $attempt/5)..."
+  sleep 60
+
+  if azd deploy --no-prompt; then
+    echo "Deployment succeeded after RBAC propagation."
+    break
+  fi
+
+  if [ "$attempt" -eq 5 ]; then
+    echo "Deployment still failing after 5 minutes. Re-check AcrPull assignment and Container App revision status."
+    exit 1
+  fi
+done
 ```
 
 > 💡 **Prevention:** To avoid this in future deployments, ensure the Bicep template includes the `AcrPull` role assignment with `principalType: 'ServicePrincipal'`, and consider using `azd provision` + `azd deploy` as separate steps instead of `azd up` to allow RBAC propagation time between infrastructure creation and app deployment.
