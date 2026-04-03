@@ -11,6 +11,22 @@ az aks nodepool list \
   -o table
 ```
 
+## Identify Spot-Suitable Workloads
+
+Before creating a Spot pool, identify which workloads can tolerate interruptions:
+
+```bash
+# List deployments without PodDisruptionBudgets (single-replica or no PDB = higher eviction risk)
+kubectl get deployments --all-namespaces -o json | \
+  jq -r '.items[] | select(.spec.replicas == 1) | "\(.metadata.namespace)/\(.metadata.name)"'
+
+# Check which pods already have spot tolerations
+kubectl get pods --all-namespaces -o json | \
+  jq -r '.items[] | select(.spec.tolerations[]?.key == "kubernetes.azure.com/scalesetpriority") | "\(.metadata.namespace)/\(.metadata.name)"'
+```
+
+Use the suitability table below to decide which workloads to migrate.
+
 ## Estimate Savings (Azure Retail Prices API)
 
 ```bash
@@ -24,6 +40,31 @@ az rest --method get \
   --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and skuName contains 'Spot'" \
   --query "Items[0].retailPrice"
 ```
+
+## Mixed Node Pool Pattern (Spot + Regular)
+
+For workloads that need resilience but want cost savings, use a mixed approach:
+
+```bash
+# Keep existing regular node pool as fallback (min 1-2 nodes)
+az aks nodepool update \
+  --cluster-name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<REGULAR_POOL>" \
+  --enable-cluster-autoscaler --min-count 1 --max-count 3
+
+# Add Spot pool for the majority of workload capacity
+az aks nodepool add \
+  --cluster-name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
+  --name "<SPOT_POOL_NAME>" \
+  --priority Spot --eviction-policy Delete --spot-max-price -1 \
+  --node-vm-size "<VM_SIZE>" \
+  --node-count 3 --min-count 0 --max-count 10 \
+  --enable-cluster-autoscaler \
+  --node-taints "kubernetes.azure.com/scalesetpriority=spot:NoSchedule" \
+  --labels "kubernetes.azure.com/scalesetpriority=spot"
+```
+
+Workloads without spot tolerations automatically fall back to the regular pool on eviction.
 
 ## Create Spot Node Pool
 
@@ -65,3 +106,38 @@ nodeSelector:
 | Single-replica critical services | No |
 
 > Risk: Low for batch/dev. High for production stateful workloads. Spot VMs evict with 30-second notice. Eviction policy Delete is recommended for AKS.
+
+## Handling Eviction Gracefully
+
+Configure workloads to handle the 30-second eviction notice:
+
+```yaml
+# Add to Deployment spec — terminationGracePeriodSeconds should be < 30s for Spot
+spec:
+  template:
+    spec:
+      terminationGracePeriodSeconds: 25
+      containers:
+      - name: <CONTAINER_NAME>
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]  # Drain in-flight requests
+```
+
+Set a PodDisruptionBudget to limit simultaneous evictions:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: <APP_NAME>-pdb
+  namespace: <NAMESPACE>
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: <APP_NAME>
+EOF
+```
