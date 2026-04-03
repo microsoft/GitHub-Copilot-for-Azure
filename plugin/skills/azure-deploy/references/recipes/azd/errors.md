@@ -48,6 +48,13 @@ az role assignment list --scope $(az acr show --name <acr-name> --resource-group
   --assignee-object-id "$PRINCIPAL_ID" --query "[].roleDefinitionName" -o tsv
 ```
 
+**PowerShell:**
+```powershell
+$PrincipalId = az containerapp identity show --name <app-name> --resource-group <resource-group> --query principalId -o tsv
+$AcrScope = az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv
+az role assignment list --scope $AcrScope --assignee-object-id $PrincipalId --query "[].roleDefinitionName" -o tsv
+```
+
 3. **If AcrPull is missing, assign it:**
 ```bash
 az role assignment create \
@@ -55,6 +62,16 @@ az role assignment create \
   --assignee-principal-type ServicePrincipal \
   --role AcrPull \
   --scope $(az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv)
+```
+
+**PowerShell:**
+```powershell
+$AcrScope = az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv
+az role assignment create `
+  --assignee-object-id $PrincipalId `
+  --assignee-principal-type ServicePrincipal `
+  --role AcrPull `
+  --scope $AcrScope
 ```
 
 4. **Wait for propagation, then redeploy:**
@@ -75,6 +92,27 @@ for attempt in 1 2 3 4 5; do
     exit 1
   fi
 done
+```
+
+**PowerShell:**
+```powershell
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr show --name <acr-name> --resource-group <resource-group> --query loginServer -o tsv)
+
+for ($attempt = 1; $attempt -le 5; $attempt++) {
+    Write-Output "Waiting for RBAC propagation (attempt $attempt/5)..."
+    Start-Sleep -Seconds 60
+
+    azd deploy --no-prompt
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output "Deployment succeeded after RBAC propagation."
+        break
+    }
+
+    if ($attempt -eq 5) {
+        Write-Output "Deployment still failing after 5 minutes. Re-check AcrPull assignment and Container App revision status."
+        exit 1
+    }
+}
 ```
 
 > 💡 **Prevention:** To avoid this in future deployments, ensure the Bicep template includes the `AcrPull` role assignment with `principalType: 'ServicePrincipal'`, and consider using `azd provision` + `azd deploy` as separate steps instead of `azd up` to allow RBAC propagation time between infrastructure creation and app deployment.
@@ -114,6 +152,14 @@ docker push <acr-name>.azurecr.io/<image>:<tag>
 ACR_USER=$(az acr credential show --name <acr-name> --query username -o tsv)
 ACR_PASS=$(az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv)
 docker login <acr-name>.azurecr.io -u "$ACR_USER" -p "$ACR_PASS"
+docker push <acr-name>.azurecr.io/<image>:<tag>
+```
+
+**PowerShell (Method 2):**
+```powershell
+$AcrUser = az acr credential show --name <acr-name> --query username -o tsv
+$AcrPass = az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv
+docker login <acr-name>.azurecr.io -u $AcrUser -p $AcrPass
 docker push <acr-name>.azurecr.io/<image>:<tag>
 ```
 
