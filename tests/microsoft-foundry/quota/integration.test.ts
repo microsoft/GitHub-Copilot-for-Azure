@@ -22,7 +22,8 @@ import {
   matchesCommand,
   withTestResult,
   doesAssistantOrToolsIncludeKeyword,
-  softCheckSkill
+  softCheckSkill,
+  isMcpToolCalled
 } from "../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
@@ -346,7 +347,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       softCheckSkill(agentMetadata, SKILL_NAME);
 
       // Check if agent used Azure MCP tool for deployments (model_deployment_get from azure server)
-      const usedAzureMcp = doesAssistantOrToolsIncludeKeyword(agentMetadata, "model_deployment");
+      const usedAzureMcp = isMcpToolCalled(agentMetadata, "azure", /model_deployment/);
 
       // Check if agent used Azure CLI commands for deployments
       const usedCli = matchesCommand(agentMetadata, /az\s+(cognitiveservices|rest|ai)\s+.*?(deployment|model|capacity|quota)/i);
