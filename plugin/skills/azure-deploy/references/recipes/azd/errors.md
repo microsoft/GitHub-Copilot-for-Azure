@@ -12,13 +12,159 @@ These errors occur **during** `azd up` execution:
 | Package failed | Missing Dockerfile or deps | Verify Dockerfile exists and dependencies |
 | Quota exceeded | Subscription limits | Request increase or change region |
 | `PrincipalId '...' has type 'ServicePrincipal', which is different from specified PrincipalType 'User'` | Base template RBAC assigns roles with `principalType: 'User'` but deploying identity is a service principal (CI/CD) | Set `allowUserIdentityPrincipal: false` in the `storageEndpointConfig` variable in `infra/main.bicep`. Do NOT try clearing `AZURE_PRINCIPAL_ID` — azd repopulates it. See [Principal Type Mismatch](#principal-type-mismatch). |
+| `ImagePullBackOff` or `azd up` hangs during provision for Container Apps | Container App references an image that doesn't exist in ACR yet | See [Container Apps Bootstrap Problem](#container-apps-bootstrap-problem) |
+| `unauthorized: authentication required` on `docker push` to ACR | ACR auth token expired or scoped incorrectly | See [ACR Authentication Failures](#acr-authentication-failures) |
 | `could not determine container registry endpoint` | Missing `AZURE_CONTAINER_REGISTRY_ENDPOINT` | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID"` | Missing managed identity env vars | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "MANAGED_IDENTITY_CLIENT_ID"` | Missing managed identity client ID | See [Missing Container Registry Variables](#missing-container-registry-variables) |
+| `Operation expired` / revision creation timeout (900s) | RBAC propagation delay — Container App's managed identity doesn't have `AcrPull` on ACR yet | See [Container App Revision Timeout](#container-app-revision-timeout) |
 | `found '2' resources tagged with 'azd-service-name: <name>'` | Previous deployment left duplicate-tagged resources in same RG | **Preferred**: Create fresh env with `azd env new <new-name>`, set subscription/location, redeploy. **Alternative**: Delete conflicting resources (requires `ask_user`). |
 | Literal `{{ .Env.* }}` in Terraform errors | azd does not interpolate template variables in `.tfvars.json` | See [Unresolved Terraform Template Variables](#unresolved-terraform-template-variables) |
 
 > ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [Pre-Deploy Checklist](../../pre-deploy-checklist.md).
+
+## Container App Revision Timeout
+
+**Symptom:** `azd up` provisions infrastructure successfully but the Container App revision creation times out after ~900 seconds. The Container App enters a `Failed` provisioning state with no active revision. The `azd` output shows `Operation expired` or `The operation did not complete within the permitted time`.
+
+**Cause:** Azure RBAC propagation delay. When `azd up` runs both `azd provision` and `azd deploy` in a single step:
+1. Bicep creates the Container App with a system-assigned managed identity
+2. Bicep creates an `AcrPull` role assignment for that identity on the ACR
+3. `azd deploy` immediately pushes the image and creates a new Container App revision
+4. The revision tries to pull the image from ACR, but the `AcrPull` role assignment hasn't propagated yet (can take 1–5 minutes)
+5. The image pull fails repeatedly until the 900-second timeout is reached
+
+**Solution:**
+
+1. **Verify the Container App state:**
+```bash
+az containerapp show --name <app-name> --resource-group <resource-group> \
+  --query "{provisioningState:properties.provisioningState, latestRevision:properties.latestRevisionName}" -o json
+```
+
+2. **Confirm the AcrPull role exists (it may have propagated by now):**
+```bash
+PRINCIPAL_ID=$(az containerapp identity show --name <app-name> --resource-group <resource-group> --query principalId -o tsv)
+az role assignment list --scope $(az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv) \
+  --assignee-object-id "$PRINCIPAL_ID" --query "[].roleDefinitionName" -o tsv
+```
+
+**PowerShell:**
+```powershell
+$PrincipalId = az containerapp identity show --name <app-name> --resource-group <resource-group> --query principalId -o tsv
+$AcrScope = az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv
+az role assignment list --scope $AcrScope --assignee-object-id $PrincipalId --query "[].roleDefinitionName" -o tsv
+```
+
+3. **If AcrPull is missing, assign it:**
+```bash
+az role assignment create \
+  --assignee-object-id "$PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role AcrPull \
+  --scope $(az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv)
+```
+
+**PowerShell:**
+```powershell
+$AcrScope = az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv
+az role assignment create `
+  --assignee-object-id $PrincipalId `
+  --assignee-principal-type ServicePrincipal `
+  --role AcrPull `
+  --scope $AcrScope
+```
+
+4. **Wait for propagation, then redeploy:**
+```bash
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr show --name <acr-name> --resource-group <resource-group> --query loginServer -o tsv)
+
+for attempt in 1 2 3 4 5; do
+  echo "Waiting for RBAC propagation (attempt $attempt/5)..."
+  sleep 60
+
+  if azd deploy --no-prompt; then
+    echo "Deployment succeeded after RBAC propagation."
+    break
+  fi
+
+  if [ "$attempt" -eq 5 ]; then
+    echo "Deployment still failing after 5 minutes. Re-check AcrPull assignment and Container App revision status."
+    exit 1
+  fi
+done
+```
+
+**PowerShell:**
+```powershell
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr show --name <acr-name> --resource-group <resource-group> --query loginServer -o tsv)
+
+for ($attempt = 1; $attempt -le 5; $attempt++) {
+    Write-Output "Waiting for RBAC propagation (attempt $attempt/5)..."
+    Start-Sleep -Seconds 60
+
+    azd deploy --no-prompt
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output "Deployment succeeded after RBAC propagation."
+        break
+    }
+
+    if ($attempt -eq 5) {
+        Write-Output "Deployment still failing after 5 minutes. Re-check AcrPull assignment and Container App revision status."
+        exit 1
+    }
+}
+```
+
+> 💡 **Prevention:** To avoid this in future deployments, ensure the Bicep template includes the `AcrPull` role assignment with `principalType: 'ServicePrincipal'`, and consider using `azd provision` + `azd deploy` as separate steps instead of `azd up` to allow RBAC propagation time between infrastructure creation and app deployment.
+
+## Container Apps Bootstrap Problem
+
+**Symptom:** `azd up` hangs or fails during provisioning with `ImagePullBackOff`, or the Container App cannot start because the referenced image doesn't exist in ACR yet.
+
+**Cause:** The Bicep template creates the Container App referencing an ACR image, but that image doesn't exist until `azd deploy` builds and pushes it. This chicken-and-egg problem blocks provisioning.
+
+**Solution — use two-phase deployment:**
+
+```bash
+# Phase 1: Provision infrastructure (Container App uses placeholder image)
+azd provision --no-prompt
+
+# Phase 2: Build, push, and update Container App with real image
+azd deploy --no-prompt
+```
+
+> ⚠️ This requires the Bicep template to use a placeholder image parameter (e.g., `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`) so provisioning succeeds without the app image. If the Bicep hardcodes the ACR image reference, update it to accept a `containerImageName` parameter with a placeholder default before provisioning.
+
+> ⚠️ Do **NOT** repeatedly poll a hanging `azd up` — if there is no provisioning progress or you continue to see `ImagePullBackOff` events for several minutes during a Container Apps deployment, stop it and switch to the two-phase approach above.
+
+## ACR Authentication Failures
+
+**Symptom:** `docker push` fails with `unauthorized: authentication required` even after `az acr login` succeeds.
+
+**Solution — try these methods in order:**
+
+```bash
+# Method 1: AAD-based login (preferred)
+az acr login --name <acr-name>
+docker push <acr-name>.azurecr.io/<image>:<tag>
+
+# Method 2: Admin credentials (fallback)
+ACR_USER=$(az acr credential show --name <acr-name> --query username -o tsv)
+ACR_PASS=$(az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv)
+docker login <acr-name>.azurecr.io -u "$ACR_USER" -p "$ACR_PASS"
+docker push <acr-name>.azurecr.io/<image>:<tag>
+```
+
+**PowerShell (Method 2):**
+```powershell
+$AcrUser = az acr credential show --name <acr-name> --query username -o tsv
+$AcrPass = az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv
+docker login <acr-name>.azurecr.io -u $AcrUser -p $AcrPass
+docker push <acr-name>.azurecr.io/<image>:<tag>
+```
+
+> 💡 **Tip:** Prefer `azd deploy` over manual `docker push` — azd handles ACR authentication automatically.
 
 ## Missing Container Registry Variables
 

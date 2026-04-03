@@ -42,6 +42,19 @@ APP_NAME=$SERVICE_API_NAME  # or SERVICE_WEB_NAME
 # See sql-managed-identity.md for connection patterns
 ```
 
+**PowerShell:**
+```powershell
+# Get the app identity name from azd
+azd env get-values | ForEach-Object {
+    $name, $value = $_.Split('=', 2)
+    Set-Item "env:$name" $value
+}
+$AppName = $env:SERVICE_API_NAME  # or SERVICE_WEB_NAME
+
+# Connect as Entra admin and grant permissions
+# See sql-managed-identity.md for connection patterns
+```
+
 ### Step 2: Apply EF Core Migrations
 
 Apply Entity Framework migrations to create database schema.
@@ -67,6 +80,19 @@ curl -f "$ENDPOINT/health" || echo "Health check failed"
 
 # Test database connectivity
 curl -f "$ENDPOINT/api/test-db" || echo "Database connection failed"
+```
+
+**PowerShell:**
+```powershell
+# Get app endpoint
+$Endpoint = azd env get-values | Select-String -Pattern 'SERVICE_.*_URI' |
+    Select-Object -First 1 | ForEach-Object { ($_ -split '=', 2)[1] }
+
+# Health check
+try { Invoke-WebRequest "$Endpoint/health" } catch { Write-Output "Health check failed" }
+
+# Test database connectivity
+try { Invoke-WebRequest "$Endpoint/api/test-db" } catch { Write-Output "Database connection failed" }
 ```
 
 **Expected Result:**
