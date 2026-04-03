@@ -101,13 +101,20 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 
 ## Common Research Patterns
 
-### Web Application + API + Database
+### Web Application + API + Database (Cosmos DB)
 
 1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
 2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
 3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
 5. Review service-specific security guidance directly before generation
+
+### Container Apps + API + SQL Database
+
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
+4. Review [auth.md](services/sql-database/auth.md) directly for Entra-only auth configuration
 
 ### App Service + API + SQL Database
 
