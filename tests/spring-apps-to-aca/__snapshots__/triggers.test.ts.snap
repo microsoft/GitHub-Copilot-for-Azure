@@ -1,0 +1,65 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`spring-apps-to-aca - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Migrate Spring Boot apps from Azure Spring Apps or any deployment to Azure Container Apps. WHEN: migrate Spring Boot to Container Apps, Azure Spring Apps to ACA migration, Spring Boot ACA migration assessment, convert Spring Boot JAR to container on ACA, move Spring Boot from VM to Container Apps, migrate existing Spring Boot app, Spring Boot platform migration, replatform Spring Boot to ACA.",
+  "extractedKeywords": [
+    "aca",
+    "aks",
+    "apps",
+    "assessment",
+    "azure",
+    "boot",
+    "container",
+    "convert",
+    "cosmos",
+    "deploy",
+    "deployment",
+    "existing",
+    "from",
+    "key vault",
+    "kubernetes",
+    "mcp",
+    "migrate",
+    "migration",
+    "move",
+    "platform",
+    "replatform",
+    "spring",
+    "sql",
+    "storage",
+    "when",
+  ],
+  "name": "spring-apps-to-aca",
+}
+`;
+
+exports[`spring-apps-to-aca - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "aca",
+  "aks",
+  "apps",
+  "assessment",
+  "azure",
+  "boot",
+  "container",
+  "convert",
+  "cosmos",
+  "deploy",
+  "deployment",
+  "existing",
+  "from",
+  "key vault",
+  "kubernetes",
+  "mcp",
+  "migrate",
+  "migration",
+  "move",
+  "platform",
+  "replatform",
+  "spring",
+  "sql",
+  "storage",
+  "when",
+]
+`;
