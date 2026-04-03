@@ -30,7 +30,7 @@ metadata:
 - **General application modernization** without platform migration → use `azure-prepare`
 - **Cross-cloud migration assessment** (AWS/GCP to Azure) → use `azure-cloud-migrate`
 - **Creating new Spring Boot projects** from scratch → use `azure-prepare`
-- **AKS or Kubernetes deployments** → use `azure-kubernetes` or `k8s-to-container-apps`
+- **AKS or Kubernetes deployments** → use `azure-kubernetes`
 
 ## Rules
 

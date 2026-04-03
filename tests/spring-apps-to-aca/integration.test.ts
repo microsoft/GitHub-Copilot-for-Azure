@@ -47,7 +47,7 @@ describeIntegration(`${SKILL_NAME}_skill-invocation - Integration Tests`, () => 
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          prompt: "Help me containerize my Spring Boot microservice and deploy it to Azure Container Apps",
+          prompt: "I want to migrate my Spring Boot microservice to Azure Container Apps. Help me containerize and deploy it.",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
 

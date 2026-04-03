@@ -94,6 +94,17 @@ az storage share create --name spring-data --account-name "$STORAGE_ACCOUNT" --a
 az containerapp env storage set --name spring-env --resource-group spring-rg --storage-name spring-storage --azure-file-account-name "$STORAGE_ACCOUNT" --azure-file-account-key "$STORAGE_KEY" --azure-file-share-name spring-data --access-mode ReadWrite
 ```
 
+**PowerShell:**
+```powershell
+$ErrorActionPreference = "Stop"
+# Storage account name must be globally unique: 3-24 chars, lowercase letters/numbers only
+$STORAGE_ACCOUNT = if ($env:STORAGE_ACCOUNT) { $env:STORAGE_ACCOUNT } else { "<storage-account>" }
+az storage account create --name $STORAGE_ACCOUNT --resource-group spring-rg --location eastus --sku Standard_LRS
+$STORAGE_KEY = (az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group spring-rg --query "[0].value" -o tsv)
+az storage share create --name spring-data --account-name $STORAGE_ACCOUNT --account-key $STORAGE_KEY
+az containerapp env storage set --name spring-env --resource-group spring-rg --storage-name spring-storage --azure-file-account-name $STORAGE_ACCOUNT --azure-file-account-key $STORAGE_KEY --azure-file-share-name spring-data --access-mode ReadWrite
+```
+
 ## Phase 5: Migrate Secrets to Key Vault
 
 **Bash:**
@@ -145,6 +156,9 @@ az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_I
 ```bash
 #!/bin/bash
 set -euo pipefail
+# Variables from previous phases
+ACR_NAME="${ACR_NAME:-<acr>}"
+IDENTITY_ID="${IDENTITY_ID:-<identity-id>}"
 KEY_VAULT="${KEY_VAULT:-<keyvault-name>}"
 SECRET_URI=$(az keyvault secret show --vault-name "$KEY_VAULT" --name db-password --query id -o tsv)
 az containerapp create --name spring-app --resource-group spring-rg --environment spring-env \
