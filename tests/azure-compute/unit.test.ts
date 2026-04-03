@@ -267,6 +267,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     let vmssGuideContent: string;
     let cannotConnectContent: string;
 
+    const troubleshooterRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/vm-troubleshooter/references"
+    );
+
+    const subReferenceFiles = [
+      "rdp-connectivity.md",
+      "ssh-connectivity.md",
+      "network-connectivity.md",
+      "firewall-blocking.md",
+      "vm-agent-not-responding.md",
+      "credential-auth-errors.md",
+      "rdp-service-config.md",
+    ];
+
     beforeAll(async () => {
       const refsDir = path.join(
         SKILLS_PATH,
@@ -286,10 +301,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         "utf-8"
       );
       cannotConnectContent = await fs.readFile(
-        path.join(
-          SKILLS_PATH,
-          "azure-compute/workflows/vm-troubleshooter/references/cannot-connect-to-vm.md"
-        ),
+        path.join(troubleshooterRefsDir, "cannot-connect-to-vm.md"),
         "utf-8"
       );
     });
@@ -312,6 +324,126 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("cannot-connect-to-vm reference file exists and has content", () => {
       expect(cannotConnectContent).toBeDefined();
       expect(cannotConnectContent.length).toBeGreaterThan(100);
+    });
+
+    test("cannot-connect-to-vm acts as index and links to all sub-references", () => {
+      for (const ref of subReferenceFiles) {
+        expect(cannotConnectContent).toContain(ref);
+      }
+    });
+
+    test("cannot-connect-to-vm includes OS detection guidance", () => {
+      expect(cannotConnectContent).toMatch(/Determine OS/i);
+      expect(cannotConnectContent).toContain("Windows");
+      expect(cannotConnectContent).toContain("Linux");
+    });
+
+    test.each(subReferenceFiles)(
+      "troubleshooter sub-reference %s exists and has content",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toBeDefined();
+        expect(content.length).toBeGreaterThan(100);
+      }
+    );
+
+    test.each(subReferenceFiles)(
+      "troubleshooter sub-reference %s contains Symptoms → Solutions table",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toMatch(/Symptoms?\s*→\s*Solutions?/i);
+      }
+    );
+
+    test.each(subReferenceFiles)(
+      "troubleshooter sub-reference %s contains Quick Commands",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toContain("Quick Commands");
+        expect(content).toContain("```bash");
+      }
+    );
+  });
+
+  describe("Troubleshooter OS Differentiation", () => {
+    const troubleshooterRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/vm-troubleshooter/references"
+    );
+
+    test("rdp-connectivity.md is Windows-specific", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "rdp-connectivity.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Windows/i);
+      expect(content).toContain("3389");
+    });
+
+    test("ssh-connectivity.md is Linux-specific", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "ssh-connectivity.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Linux/i);
+      expect(content).toContain("22");
+    });
+
+    test("rdp-service-config.md is Windows-specific", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "rdp-service-config.md"),
+        "utf-8"
+      );
+      expect(content).toContain("TermService");
+      expect(content).toContain("3389");
+    });
+
+    test("network-connectivity.md covers both Windows and Linux", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "network-connectivity.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Windows");
+      expect(content).toContain("Linux");
+    });
+
+    test("firewall-blocking.md covers both Windows and Linux", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "firewall-blocking.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Windows");
+      expect(content).toContain("Linux");
+      expect(content).toMatch(/iptables|firewalld|UFW/);
+    });
+
+    test("credential-auth-errors.md covers both Windows and Linux", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "credential-auth-errors.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Windows.*RDP/i);
+      expect(content).toMatch(/Linux.*SSH/i);
+    });
+
+    test("vm-agent-not-responding.md labels OS for each row", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "vm-agent-not-responding.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Windows");
+      expect(content).toContain("Linux");
+      expect(content).toMatch(/Serial Console.*Windows/is);
+      expect(content).toMatch(/Serial Console.*Linux/is);
     });
   });
 });
