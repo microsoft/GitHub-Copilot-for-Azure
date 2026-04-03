@@ -1,6 +1,6 @@
 ---
 name: gcp-cloudrun-to-container-apps
-description: "Migrate containerized workloads from Google Cloud Run to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Cloud Run to Azure, migrate GCP containers to Azure, Cloud Run to Container Apps, assess Google Cloud migration, convert Cloud Run to Azure, cross-cloud container migration from GCP, migrate serverless containers to Azure."
+description: "Migrate containerized workloads from Google Cloud Run to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Cloud Run to Container Apps, migrate Cloud Run to Azure, convert Cloud Run services to ACA, move from Cloud Run to Azure Container Apps, Cloud Run to ACA migration assessment, migrate GCP Cloud Run workloads to Azure, assess Cloud Run to Container Apps migration, Cloud Run migration planning. DO NOT USE FOR: general GCP-to-Azure migration (use azure-cloud-migrate), new Container Apps deployments without migration (use azure-prepare), GKE or Kubernetes migration (use k8s-to-container-apps)."
 license: MIT
 metadata:
   version: "1.0.0"
@@ -13,9 +13,12 @@ metadata:
 
 | Item | Details |
 |------|---------|
+| **Best for** | Migrating existing Cloud Run services to Azure Container Apps |
 | **Source** | Google Cloud Run services |
 | **Target** | Azure Container Apps |
 | **Key Steps** | Assess → Migrate images → Configure → Deploy |
+| **MCP Tools** | `mcp_azure_mcp_documentation`, `mcp_azure_mcp_get_bestpractices` |
+| **CLI Commands** | `gcloud run services list`, `az acr import`, `az containerapp create` |
 | **Docs** | [assessment-guide.md](references/assessment-guide.md), [deployment-guide.md](references/deployment-guide.md) |
 
 ## When to Use This Skill

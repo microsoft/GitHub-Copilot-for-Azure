@@ -52,6 +52,8 @@ az acr login --name $ACR_NAME
 
 ## Phase 2: Infrastructure
 
+### Bash
+
 ```bash
 # Resource group
 az group create --name myapp-rg --location eastus
@@ -75,9 +77,37 @@ az containerapp env create \
   --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY
 ```
 
+### PowerShell
+
+```powershell
+# Resource group
+az group create --name myapp-rg --location eastus
+
+# Log Analytics
+az monitor log-analytics workspace create `
+  --resource-group myapp-rg `
+  --workspace-name myapp-logs `
+  --location eastus
+
+$workspace = az monitor log-analytics workspace show `
+  --resource-group myapp-rg --workspace-name myapp-logs | ConvertFrom-Json
+$LOG_ID = $workspace.customerId
+
+$keys = az monitor log-analytics workspace get-shared-keys `
+  --resource-group myapp-rg --workspace-name myapp-logs | ConvertFrom-Json
+$LOG_KEY = $keys.primarySharedKey
+
+# Container Apps Environment
+az containerapp env create `
+  --name myapp-env --resource-group myapp-rg --location eastus `
+  --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY
+```
+
 ### VNet Integration (if Cloud Run uses VPC Connector)
 
 > **Note**: Skip Phase 2 basic environment creation if using VNet. Choose one path: basic (above) OR VNet (below).
+
+#### Bash
 
 ```bash
 # Create VNet
@@ -93,6 +123,26 @@ SUBNET_ID=$(az network vnet subnet show --resource-group myapp-rg \
 az containerapp env create \
   --name myapp-env --resource-group myapp-rg --location eastus \
   --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY \
+  --infrastructure-subnet-resource-id $SUBNET_ID
+```
+
+#### PowerShell
+
+```powershell
+# Create VNet
+az network vnet create `
+  --resource-group myapp-rg --name myapp-vnet `
+  --address-prefix 10.0.0.0/16 `
+  --subnet-name aca-subnet --subnet-prefix 10.0.0.0/23
+
+$subnet = az network vnet subnet show --resource-group myapp-rg `
+  --vnet-name myapp-vnet --name aca-subnet | ConvertFrom-Json
+$SUBNET_ID = $subnet.id
+
+# Environment with VNet (replaces basic env creation above)
+az containerapp env create `
+  --name myapp-env --resource-group myapp-rg --location eastus `
+  --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY `
   --infrastructure-subnet-resource-id $SUBNET_ID
 ```
 
@@ -129,8 +179,9 @@ try {
 
 ### Managed Identity
 
-```bash
+#### Bash
 
+```bash
 # Managed Identity
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
 IDENTITY_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query id -o tsv)
@@ -142,9 +193,29 @@ ACR_ID=$(az acr show --name $ACR_NAME --query id -o tsv)
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
 ```
 
+#### PowerShell
+
+```powershell
+# Managed Identity
+az identity create --name myapp-id --resource-group myapp-rg --location eastus
+
+$identity = az identity show --name myapp-id --resource-group myapp-rg | ConvertFrom-Json
+$IDENTITY_ID = $identity.id
+$PRINCIPAL_ID = $identity.principalId
+
+# Grant permissions
+az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list
+
+$acr = az acr show --name $ACR_NAME | ConvertFrom-Json
+$ACR_ID = $acr.id
+az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
+```
+
 ## Phase 4: Deploy Container App
 
 ### Basic Deployment
+
+#### Bash
 
 ```bash
 SECRET_URI=$(az keyvault secret show --vault-name myapp-kv --name db-pw --query id -o tsv)
@@ -159,6 +230,25 @@ az containerapp create \
   --registry-server $ACR_NAME.azurecr.io \
   --secrets db-pw=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID \
   --env-vars ENV=prod DB_PASSWORD=secretref:db-pw \
+  --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
+```
+
+#### PowerShell
+
+```powershell
+$secret = az keyvault secret show --vault-name myapp-kv --name db-pw | ConvertFrom-Json
+$SECRET_URI = $secret.id
+
+az containerapp create `
+  --name my-app --resource-group myapp-rg --environment myapp-env `
+  --image "$ACR_NAME.azurecr.io/app:v1" `
+  --target-port 8080 --ingress external `
+  --cpu 1.0 --memory 1Gi `
+  --min-replicas 0 --max-replicas 10 `
+  --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID `
+  --registry-server "$ACR_NAME.azurecr.io" `
+  --secrets "db-pw=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID" `
+  --env-vars "ENV=prod" "DB_PASSWORD=secretref:db-pw" `
   --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
 ```
 
@@ -177,6 +267,8 @@ az containerapp create \
 
 ## Phase 5: Validation
 
+### Bash
+
 ```bash
 # Get app URL
 FQDN=$(az containerapp show --name my-app --resource-group myapp-rg \
@@ -184,6 +276,23 @@ FQDN=$(az containerapp show --name my-app --resource-group myapp-rg \
 
 # Test endpoint
 curl https://$FQDN/
+
+# View logs
+az containerapp logs show --name my-app --resource-group myapp-rg --follow
+
+# Monitor replicas
+az containerapp replica list --name my-app --resource-group myapp-rg --revision latest
+```
+
+### PowerShell
+
+```powershell
+# Get app URL
+$app = az containerapp show --name my-app --resource-group myapp-rg | ConvertFrom-Json
+$FQDN = $app.properties.configuration.ingress.fqdn
+
+# Test endpoint
+Invoke-WebRequest -Uri "https://$FQDN/" -UseBasicParsing
 
 # View logs
 az containerapp logs show --name my-app --resource-group myapp-rg --follow
