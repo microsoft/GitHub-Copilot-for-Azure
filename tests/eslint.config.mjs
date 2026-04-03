@@ -84,6 +84,7 @@ export default defineConfig(
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "error",
       "jest/expect-expect": "error",
+      // ESLint 10 removed FileEnumerator API which this rule depends on; suppress the no-op warning
       "import-x/no-unused-modules": [1, { "unusedExports": true, "suppressMissingFileEnumeratorAPIWarning": true }]
     },
   },
