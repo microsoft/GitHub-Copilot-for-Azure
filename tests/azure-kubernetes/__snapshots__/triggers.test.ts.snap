@@ -21,7 +21,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill descri
     "create",
     "day-0",
     "deploy",
-    "deployment",
     "design",
     "diagnostic",
     "egress",
@@ -35,7 +34,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill descri
     "mcp",
     "monitor",
     "networking",
-    "node",
     "observability",
     "operations",
     "options",
@@ -53,7 +51,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill descri
     "strategy",
     "upgrade",
     "when",
-    "workload",
   ],
   "name": "azure-kubernetes",
 }
@@ -78,7 +75,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill keywor
   "create",
   "day-0",
   "deploy",
-  "deployment",
   "design",
   "diagnostic",
   "egress",
@@ -92,7 +88,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill keywor
   "mcp",
   "monitor",
   "networking",
-  "node",
   "observability",
   "operations",
   "options",
@@ -110,6 +105,5 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill keywor
   "strategy",
   "upgrade",
   "when",
-  "workload",
 ]
 `;

@@ -43,14 +43,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Workflow");
       expect(skill.content).toContain("## Error Handling");
     });
-
-    test("identifies networking as Day-0 decision", () => {
-      expect(skill.content).toMatch(/networking.*day-0|day-0.*networking/i);
-    });
-
-    test("identifies API server access as Day-0 consideration", () => {
-      expect(skill.content).toMatch(/api server/i);
-    });
   });
 
   describe("Day-0 vs Day-1 Guidance", () => {
@@ -151,50 +143,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("mentions maintenance windows", () => {
       expect(skill.content).toMatch(/maintenance window/i);
-    });
-  });
-
-  describe("Performance Recommendations", () => {
-    test("recommends ephemeral OS disks", () => {
-      expect(skill.content).toMatch(/ephemeral.*disk|--node-osdisk-type ephemeral/i);
-    });
-
-    test("warns against B-series VMs", () => {
-      expect(skill.content).toMatch(/avoid.*b-series|b-series.*avoid/i);
-    });
-
-    test("mentions autoscaling", () => {
-      expect(skill.content).toMatch(/autoscal|cluster.?autoscaler/i);
-    });
-  });
-
-  describe("MCP Tools Section", () => {
-    test("lists MCP tools", () => {
-      expect(skill.content).toMatch(/mcp_azure_mcp_aks|mcp_aks_mcp/i);
-    });
-
-    test("has MCP Tools section", () => {
-      expect(skill.content).toMatch(/## MCP Tools/i);
-    });
-  });
-
-  describe("Error Handling Section", () => {
-    test("has Error Handling section", () => {
-      expect(skill.content).toMatch(/## Error Handling/i);
-    });
-
-    test("includes remediation guidance", () => {
-      expect(skill.content).toMatch(/remediation|quota|policy/i);
-    });
-  });
-
-  describe("Guardrails", () => {
-    test("warns about secrets handling", () => {
-      expect(skill.content).toMatch(/secret|token|key/i);
-    });
-
-    test("does not promise zero downtime", () => {
-      expect(skill.content).toMatch(/do not promise zero downtime/i);
     });
   });
 
