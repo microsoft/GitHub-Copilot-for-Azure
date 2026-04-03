@@ -29,17 +29,24 @@ Use the suitability table below to decide which workloads to migrate.
 
 ## Estimate Savings (Azure Retail Prices API)
 
+Tighten the filter with `serviceName`, OS type, and `currencyCode` to get a deterministic single result. If `Items` is empty, the SKU name or region may be incorrect — check the spelling with `az vm list-skus`.
+
 ```bash
-# Regular price
+# Regular price (Linux, Pay-as-you-go)
 az rest --method get \
-  --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption'" \
+  --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and serviceName eq 'Virtual Machines' and contains(skuName, 'Windows') eq false and contains(skuName, 'Spot') eq false" \
   --query "Items[0].retailPrice"
 
-# Spot price
+# Spot price (Linux)
 az rest --method get \
-  --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and skuName contains 'Spot'" \
+  --url "https://prices.azure.com/api/retail/prices?\$filter=armSkuName eq '<VM_SIZE>' and armRegionName eq '<REGION>' and priceType eq 'Consumption' and serviceName eq 'Virtual Machines' and contains(skuName, 'Windows') eq false and contains(skuName, 'Spot')" \
   --query "Items[0].retailPrice"
 ```
+
+> If the first page returns no match, check `NextPageLink` in the response and paginate:
+> ```bash
+> az rest --method get --url "<NextPageLink_value>" --query "Items[0].retailPrice"
+> ```
 
 ## Mixed Node Pool Pattern (Spot + Regular)
 
