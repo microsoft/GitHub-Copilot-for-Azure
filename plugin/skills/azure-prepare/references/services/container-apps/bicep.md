@@ -2,9 +2,14 @@
 
 > **⚠️ Container Registry Naming:** If using Azure Container Registry, names must be alphanumeric only (5-50 characters). Use `replace()` to remove hyphens: `replace('cr${environmentName}${resourceSuffix}', '-', '')`
 
+> **⚠️ Placeholder Image (Bootstrap):** Container Apps cannot provision without a pullable image. Use a placeholder image so `azd provision` succeeds, then `azd deploy` replaces it with the real app image.
+
 ## Basic Resource
 
 ```bicep
+// Placeholder image allows provisioning before app image exists in ACR
+param containerImageName string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: '${resourcePrefix}-${serviceName}-${uniqueHash}'
   location: location
@@ -34,7 +39,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: serviceName
-          image: '${containerRegistry.properties.loginServer}/${serviceName}:latest'
+          image: containerImageName
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
