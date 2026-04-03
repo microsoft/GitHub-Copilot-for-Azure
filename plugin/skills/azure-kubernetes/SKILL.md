@@ -3,7 +3,7 @@ name: azure-kubernetes
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS."
 ---
 
@@ -123,8 +123,19 @@ If the user is unsure, use safe defaults.
 - **Stop/Start** dev/test clusters: `az aks stop/start`
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
+### 10. Cost Optimization
+
+Load only the reference file relevant to the user's request:
+
+| Scenario | Trigger Keywords | Reference |
+|----------|-----------------|-----------|
+| Pod Rightsizing | over-provisioned pods, CPU requests, memory requests, rightsize workloads | [azure-aks-rightsizing.md](./references/azure-aks-rightsizing.md) |
+| Cluster Autoscaler | idle nodes, CAS off, enable autoscaler, scale-down profile, node utilization | [azure-aks-autoscaler.md](./references/azure-aks-autoscaler.md) |
+| Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
+
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
+- Do not ask the user to paste subscription IDs. Discover subscription and resource scope via MCP tools (e.g., list subscriptions, list resource groups) or `az account show` / `az account list` so the agent can resolve context without exposing identifiers.
 - If requirements are ambiguous for day-0 critical decisions, ask the user clarifying questions. For day-1 enabled features, propose 2–3 safe options with tradeoffs and choose a conservative default.
 - Do not promise zero downtime; advise workload safeguards (PDBs, probes, replicas) and staged upgrades along with best practices for reliability and performance.
 

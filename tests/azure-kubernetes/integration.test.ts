@@ -30,7 +30,7 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
@@ -40,6 +40,86 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "Help me create a production-ready AKS cluster with best practices",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-kubernetes skill for pod rightsizing prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "My AKS pods are over-provisioned, how do I rightsize them to reduce costs?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-kubernetes skill for cluster autoscaler prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "How do I enable and configure Cluster Autoscaler on my AKS cluster to save costs?",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-kubernetes skill for CAS profile tuning prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down",
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-kubernetes skill for spot node pool prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "How do I add a Spot VM node pool to my AKS cluster to cut costs?",
             shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
@@ -105,6 +185,64 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
                                    doesAssistantMessageIncludeKeyword(agentMetadata, "workload") ||
                                    doesAssistantMessageIncludeKeyword(agentMetadata, "Key Vault");
         expect(hasSecurityContent).toBe(true);
+      });
+    });
+
+    test("response mentions resource requests and limits for pod rightsizing prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "My AKS pods are over-provisioned, how do I rightsize them to reduce costs?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasRightsizingContent = doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl top") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "requests") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "limits") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "VPA");
+        expect(hasRightsizingContent).toBe(true);
+      });
+    });
+
+    test("response mentions autoscaler commands for cluster autoscaler prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I enable and configure Cluster Autoscaler on my AKS cluster to save costs?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasCASContent = doesAssistantMessageIncludeKeyword(agentMetadata, "enable-cluster-autoscaler") ||
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "min-count") ||
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down");
+        expect(hasCASContent).toBe(true);
+      });
+    });
+
+    test("response mentions autoscaler profile parameters for CAS tuning prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasTuneContent = doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-unneeded-time") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "utilization-threshold") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "cluster-autoscaler-profile") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-delay");
+        expect(hasTuneContent).toBe(true);
+      });
+    });
+
+    test("response mentions spot priority and eviction for spot node pool prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I add a Spot VM node pool to my AKS cluster to cut costs?"
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        const hasSpotContent = doesAssistantMessageIncludeKeyword(agentMetadata, "Spot") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "eviction") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "priority");
+        expect(hasSpotContent).toBe(true);
       });
     });
   });
