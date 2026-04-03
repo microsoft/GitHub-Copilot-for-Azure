@@ -39,7 +39,7 @@ azd deploy --no-prompt
 
 > ⚠️ This requires the Bicep template to use a placeholder image parameter (e.g., `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`) so provisioning succeeds without the app image. If the Bicep hardcodes the ACR image reference, update it to accept a `containerImageName` parameter with a placeholder default before provisioning.
 
-> ⚠️ Do **NOT** repeatedly poll a hanging `azd up` — if provisioning hasn't completed within 5 minutes for a Container Apps deployment, stop it and switch to the two-phase approach above.
+> ⚠️ Do **NOT** repeatedly poll a hanging `azd up` — if there is no provisioning progress or you continue to see `ImagePullBackOff` events for several minutes during a Container Apps deployment, stop it and switch to the two-phase approach above.
 
 ## ACR Authentication Failures
 
