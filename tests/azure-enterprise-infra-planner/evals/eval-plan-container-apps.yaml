@@ -1,0 +1,57 @@
+name: azure-enterprise-infra-planner-eval-plan-container-apps
+description: |
+  Container Apps stateless REST API.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-container-apps
+    prompt: >
+      Deploy a stateless REST API in a container image, auto-scale based on HTTP
+      requests, and persist user uploads in Azure Blob Storage using Azure
+      Container Apps. Assume all defaults to create the preliminary resource list,
+      then approve the preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)container.?app|aca|container"
+      - type: output-matches
+        config:
+          pattern: "(?i)scale|auto.?scale|http.?request|replica"
+      - type: output-matches
+        config:
+          pattern: "(?i)blob|storage|upload|persist"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'container.?app' .azure/infrastructure-plan.json"
+
+  - name: trigger-should-container-apps
+    prompt: "Deploy container apps workloads with auto-scaling"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
