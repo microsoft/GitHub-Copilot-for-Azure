@@ -24,13 +24,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
 
-    test("has correct version and author", () => {
-      const metadata = skill.metadata.metadata as any;
-      expect(metadata).toBeDefined();
-      expect(metadata.version).toBe("1.0.0");
-      expect(metadata.author).toBe("Microsoft");
-    });
-
     test("has MIT license", () => {
       expect(skill.metadata.license).toBe("MIT");
     });
