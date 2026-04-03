@@ -1,0 +1,57 @@
+name: azure-enterprise-infra-planner-eval-plan-three-tier-terraform
+description: |
+  3-tier Linux VMs with Terraform.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-three-tier-terraform
+    prompt: >
+      Spin up Linux VMs for each tier, automate patch management via Azure
+      Automation, and log traffic between subnets for compliance. Assume all
+      defaults to create the preliminary resource list, then approve the
+      preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)vm|virtual.?machine|linux"
+      - type: output-matches
+        config:
+          pattern: "(?i)subnet|vnet|network|traffic|compliance"
+      - type: output-matches
+        config:
+          pattern: "(?i)automat|patch|update.?management"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'virtual.?machine|vm' .azure/infrastructure-plan.json"
+
+  - name: trigger-should-three-tier
+    prompt: "Plan a 3-tier architecture with VMs and SQL Server on Azure"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
