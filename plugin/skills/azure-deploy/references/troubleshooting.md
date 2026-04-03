@@ -177,9 +177,9 @@ azd deploy --no-prompt
 
 1. Verify the `AcrPull` role exists on the ACR for the Container App's managed identity (see [AZD Errors — Container App Revision Timeout](recipes/azd/errors.md#container-app-revision-timeout))
 2. If missing, assign it manually with `--assignee-principal-type ServicePrincipal`
-3. Wait 2 minutes for propagation
+3. Wait 2–5 minutes for RBAC propagation before retrying
 4. Set `AZURE_CONTAINER_REGISTRY_ENDPOINT` env var
-5. Run `azd deploy --no-prompt`
+5. Run `azd deploy --no-prompt`; if it still fails, wait a little longer and retry with backoff until propagation completes
 
 **Prevention:**
 
