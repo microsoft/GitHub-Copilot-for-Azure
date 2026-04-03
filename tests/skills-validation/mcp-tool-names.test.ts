@@ -60,7 +60,15 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
 
     const toolNames = new Set<string>();
     let stdoutBuffer = "";
+    let stderrLines: string[] = [];
     let initialized = false;
+    let settled = false;
+
+    serverProcess.stderr?.on("data", (chunk: Buffer) => {
+      // Keep a rolling window of the last 20 stderr lines for diagnostics
+      const newLines = chunk.toString().split("\n").filter(Boolean);
+      stderrLines = stderrLines.concat(newLines).slice(-20);
+    });
 
     serverProcess.stdout.on("data", (chunk: Buffer) => {
       stdoutBuffer += chunk.toString();
@@ -93,6 +101,7 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
             if (tool.name) toolNames.add(tool.name);
           }
           // Destroy stdio streams before killing to avoid open-handle warnings
+          settled = true;
           serverProcess.stdin.destroy();
           serverProcess.stdout.destroy();
           serverProcess.stderr?.destroy();
@@ -102,7 +111,10 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
       }
     });
 
-    serverProcess.on("error", (err) => reject(err));
+    serverProcess.on("error", (err) => {
+      settled = true;
+      reject(err);
+    });
 
     // Send the MCP initialize request
     serverProcess.stdin.write(
@@ -119,6 +131,8 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
     );
 
     const timeoutHandle = setTimeout(() => {
+      if (settled) return;
+      settled = true;
       serverProcess.kill();
       if (toolNames.size > 0) {
         resolve(toolNames);
@@ -130,7 +144,19 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
     // Unref the timeout so it doesn't keep the Node.js event loop alive
     timeoutHandle.unref();
 
-    serverProcess.on("close", () => clearTimeout(timeoutHandle));
+    serverProcess.on("close", (code, signal) => {
+      clearTimeout(timeoutHandle);
+      if (settled) return;
+      settled = true;
+      const stderrSummary = stderrLines.length
+        ? `\nLast stderr output:\n${stderrLines.join("\n")}`
+        : "";
+      reject(
+        new Error(
+          `Azure MCP server process exited unexpectedly (code=${code ?? "null"}, signal=${signal ?? "none"}) before tools/list response was received.${stderrSummary}`,
+        ),
+      );
+    });
 
     // Unref the child process so it doesn't prevent the Jest worker from exiting
     serverProcess.unref();
