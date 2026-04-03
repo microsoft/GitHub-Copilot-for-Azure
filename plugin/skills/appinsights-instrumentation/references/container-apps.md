@@ -4,13 +4,18 @@ Observability guide for apps running in Azure Container Apps.
 
 ## Environment-Level Log Analytics
 
-Every Container Apps environment requires a Log Analytics workspace. Configure it at environment creation:
+By default, Container Apps environments use a Log Analytics workspace. Configure it at environment creation:
 
 ```bash
+WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys \
+  --resource-group <rg> --workspace-name <workspace-name> \
+  --query primarySharedKey -o tsv)
+
 az containerapp env create \
   --name <env-name> \
   --resource-group <rg> \
   --logs-workspace-id <workspace-id> \
+  --logs-workspace-key $WORKSPACE_KEY \
   --logs-destination log-analytics
 ```
 
@@ -29,14 +34,14 @@ System logs capture events outside your code—replica scheduling, health probe 
 
 Container Apps exposes these metrics without any SDK:
 
-| Metric | Description | Dimension |
+| Metric | Description | Dimensions |
 |--------|-------------|-----------|
-| `Replicas` | Current replica count | `revisionName` |
-| `Requests` | HTTP request count | `statusCodeCategory`, `revisionName` |
-| `UsageNanoCores` | CPU usage per replica | `revisionName` |
-| `WorkingSetBytes` | Memory usage per replica | `revisionName` |
-| `RestartCount` | Container restart count | `revisionName` |
-| `RxBytes` / `TxBytes` | Network I/O | `revisionName` |
+| `Replicas` | Current replica count | `revision` |
+| `Requests` | HTTP request count | `statusCode`, `statusCodeCategory`, `revision`, `replica` |
+| `UsageNanoCores` | CPU usage per replica | `revision`, `replica` |
+| `WorkingSetBytes` | Memory usage per replica | `revision`, `replica` |
+| `RestartCount` | Container restart count | `revision`, `replica` |
+| `RxBytes` / `TxBytes` | Network I/O | `revision`, `replica` |
 
 > ⚠️ **Warning:** Built-in metrics cover infrastructure only. For request-level tracing, response times, and dependency tracking, add Application Insights SDK.
 
@@ -49,7 +54,7 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable on the co
 | Node.js | `@azure/monitor-opentelemetry` | Call `useAzureMonitor()` before app startup |
 | Python | `azure-monitor-opentelemetry` | Call `configure_azure_monitor()` at entry |
 | .NET | `Azure.Monitor.OpenTelemetry.AspNetCore` | `builder.Services.AddOpenTelemetry().UseAzureMonitor()` |
-| Java | Auto-agent JAR | Set `JAVA_TOOL_OPTIONS=-javaagent:/agent/applicationinsights-agent.jar` |
+| Java | Agent JAR (manual) | Set `JAVA_TOOL_OPTIONS=-javaagent:/agent/applicationinsights-agent.jar` |
 
 ```bash
 az containerapp update \
@@ -84,10 +89,12 @@ spec:
   tracing:
     samplingRate: "1"
     otel:
-      endpointAddress: "<app-insights-collector-endpoint>"
+      endpointAddress: "<otlp-collector-endpoint>"
       isSecure: true
       protocol: grpc
 ```
+
+> ⚠️ **Note:** `endpointAddress` should point to an OpenTelemetry Collector (not Application Insights directly). Configure the collector with the Azure Monitor exporter to forward traces to App Insights.
 
 Dapr generates spans for:
 - **Service invocation** — caller → Dapr sidecar → target sidecar → target app
@@ -99,11 +106,11 @@ Dapr generates spans for:
 Discover Container Apps and their monitoring configuration:
 
 ```kql
-// Container Apps without App Insights configured
+// Container Apps without App Insights configured (checks all containers)
 resources
 | where type == "microsoft.app/containerapps"
-| extend envVars = properties.template.containers[0].env
-| mv-expand envVar = envVars
+| mv-expand container = properties.template.containers
+| mv-expand envVar = container.env
 | summarize hasAppInsights = countif(envVar.name == "APPLICATIONINSIGHTS_CONNECTION_STRING") by name, resourceGroup
 | where hasAppInsights == 0
 ```
@@ -134,11 +141,11 @@ ContainerAppSystemLogs_CL
 ```kql
 ContainerAppSystemLogs_CL
 | where Reason_s in ("ScalingUp", "ScalingDown")
-| project TimeGenerated, ContainerAppName_s, Reason_s, ReplicaCount_d
+| project TimeGenerated, ContainerAppName_s, Reason_s, Log_s
 | order by TimeGenerated desc
 ```
 
-### Request latency by revision
+### Console log volume by revision
 
 ```kql
 ContainerAppConsoleLogs_CL
@@ -147,4 +154,13 @@ ContainerAppConsoleLogs_CL
 | render timechart
 ```
 
-> 💡 **Tip:** For request-level latency and dependency analysis, query the `requests` and `dependencies` tables from Application Insights instead of console logs.
+### Request latency by revision (requires Application Insights SDK)
+
+```kql
+requests
+| where cloud_RoleName has "<app-name>"
+| summarize avgDuration = avg(duration), p95 = percentile(duration, 95) by cloud_RoleInstance, bin(timestamp, 5m)
+| render timechart
+```
+
+> 💡 **Tip:** Console logs don't contain latency data. For request-level latency and dependency analysis, query the `requests` and `dependencies` tables from Application Insights.
