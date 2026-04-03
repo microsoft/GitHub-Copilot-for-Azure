@@ -17,7 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { expectFiles, doesWorkspaceFileIncludePattern, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -789,9 +789,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/deployment-plan\.md$/, /infra\/.*\.tf$/],
+          [/deployment-plan\.md$/, /azure\.yaml$/, /infra\/.*\.tf$/],
           [/\.bicep$/],
         );
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /provider:\s*terraform/i, /azure\.yaml$/)).toBe(true);
       });
     });
 
