@@ -276,10 +276,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("response mentions monitoring commands for AKS cost anomaly prompt", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        // Prompt explicitly asks for monitoring commands and names a specific cluster,
-        // preventing the agent from pivoting to subscription-wide analysis or skipping
-        // AKS commands because no active clusters were found in the user's subscription.
-        prompt: "My AKS cluster prod-cluster in eastus had a cost spike last Sunday from 2am to 4pm EST, which monitoring commands should I run to investigate?"
+        // Framed as guidance-seeking (not live investigation) so the agent always returns
+        // AKS monitoring commands without attempting a cluster lookup that could fail or
+        // cause it to pivot away from AKS-specific tooling.
+        prompt: "What monitoring commands should I run to investigate a cost spike on an AKS cluster?"
       });
       softCheckSkill(agentMetadata, SKILL_NAME);
       const mentionsMonitoring = doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl top") ||
