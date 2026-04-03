@@ -28,9 +28,9 @@
     "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "devDependencies": {
-    "@azure/identity": "^4.13.0",
+    "@azure/identity": "^4.13.1",
     "@eslint/js": "^10.0.0",
-    "@github/copilot-sdk": "^0.1.32",
+    "@github/copilot-sdk": "^0.2.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
     "cross-env": "^10.1.0",
