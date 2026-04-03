@@ -1,27 +1,20 @@
-# Google Cloud Run to Azure Container Apps - Deployment Guide
+# Cloud Run to Container Apps Deployment
 
 ## Prerequisites
 
-- Azure CLI 2.53.0+, gcloud CLI, Docker
-- Azure subscription, resource group, ACR, Key Vault, Log Analytics
+Azure CLI 2.53+, gcloud, Docker, ACR, Key Vault, Log Analytics
 
 ## Phase 1: Image Migration
 
 ### Bash
 
 ```bash
-#!/bin/bash
-set -euo pipefail
-
 GCP_PROJECT="${GCP_PROJECT:-<project>}"
 GCP_REGION="${GCP_REGION:-<region>}"
 ACR_NAME="${ACR_NAME:-<acr>}"
 
-# Auth
 gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev
 az acr login --name $ACR_NAME
-
-# Migrate images
 for img in "app:v1" "worker:v1"; do
   docker pull ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$img
   docker tag ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$img $ACR_NAME.azurecr.io/$img
@@ -32,17 +25,12 @@ done
 ### PowerShell
 
 ```powershell
-$ErrorActionPreference = 'Stop'
-
 $GCP_PROJECT = if ($env:GCP_PROJECT) { $env:GCP_PROJECT } else { "<project>" }
 $GCP_REGION = if ($env:GCP_REGION) { $env:GCP_REGION } else { "<region>" }
 $ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
 
-# Auth
 gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev"
 az acr login --name $ACR_NAME
-
-# Migrate images
 @("app:v1", "worker:v1") | ForEach-Object {
   docker pull "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$_"
   docker tag "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/<repo>/$_" "${ACR_NAME}.azurecr.io/$_"
@@ -55,21 +43,14 @@ az acr login --name $ACR_NAME
 ### Bash
 
 ```bash
-# Resource group
 az group create --name myapp-rg --location eastus
-
-# Log Analytics
 az monitor log-analytics workspace create \
-  --resource-group myapp-rg \
-  --workspace-name myapp-logs \
-  --location eastus
+  --resource-group myapp-rg --workspace-name myapp-logs --location eastus
 
-LOG_ID=$(az monitor log-analytics workspace show \
-  --resource-group myapp-rg --workspace-name myapp-logs \
-  --query customerId -o tsv)
-LOG_KEY=$(az monitor log-analytics workspace get-shared-keys \
-  --resource-group myapp-rg --workspace-name myapp-logs \
-  --query primarySharedKey -o tsv)
+LOG_ID=$(az monitor log-analytics workspace show --resource-group myapp-rg \
+  --workspace-name myapp-logs --query customerId -o tsv)
+LOG_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group myapp-rg \
+  --workspace-name myapp-logs --query primarySharedKey -o tsv)
 
 # Container Apps Environment
 az containerapp env create \
@@ -80,48 +61,32 @@ az containerapp env create \
 ### PowerShell
 
 ```powershell
-# Resource group
 az group create --name myapp-rg --location eastus
-
-# Log Analytics
 az monitor log-analytics workspace create `
-  --resource-group myapp-rg `
-  --workspace-name myapp-logs `
-  --location eastus
+  --resource-group myapp-rg --workspace-name myapp-logs --location eastus
 
 $workspace = az monitor log-analytics workspace show `
   --resource-group myapp-rg --workspace-name myapp-logs | ConvertFrom-Json
-$LOG_ID = $workspace.customerId
-
 $keys = az monitor log-analytics workspace get-shared-keys `
   --resource-group myapp-rg --workspace-name myapp-logs | ConvertFrom-Json
-$LOG_KEY = $keys.primarySharedKey
 
-# Container Apps Environment
 az containerapp env create `
   --name myapp-env --resource-group myapp-rg --location eastus `
-  --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY
+  --logs-workspace-id $workspace.customerId --logs-workspace-key $keys.primarySharedKey
 ```
 
-### VNet Integration (if Cloud Run uses VPC Connector)
-
-> **Note**: Skip Phase 2 basic environment creation if using VNet. Choose one path: basic (above) OR VNet (below).
+### VNet Integration
 
 #### Bash
 
 ```bash
-# Create VNet
-az network vnet create \
-  --resource-group myapp-rg --name myapp-vnet \
-  --address-prefix 10.0.0.0/16 \
-  --subnet-name aca-subnet --subnet-prefix 10.0.0.0/23
+az network vnet create --resource-group myapp-rg --name myapp-vnet \
+  --address-prefix 10.0.0.0/16 --subnet-name aca-subnet --subnet-prefix 10.0.0.0/23
 
 SUBNET_ID=$(az network vnet subnet show --resource-group myapp-rg \
   --vnet-name myapp-vnet --name aca-subnet --query id -o tsv)
 
-# Environment with VNet (replaces basic env creation above)
-az containerapp env create \
-  --name myapp-env --resource-group myapp-rg --location eastus \
+az containerapp env create --name myapp-env --resource-group myapp-rg --location eastus \
   --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY \
   --infrastructure-subnet-resource-id $SUBNET_ID
 ```
@@ -129,21 +94,17 @@ az containerapp env create \
 #### PowerShell
 
 ```powershell
-# Create VNet
 az network vnet create `
-  --resource-group myapp-rg --name myapp-vnet `
-  --address-prefix 10.0.0.0/16 `
+  --resource-group myapp-rg --name myapp-vnet --address-prefix 10.0.0.0/16 `
   --subnet-name aca-subnet --subnet-prefix 10.0.0.0/23
 
 $subnet = az network vnet subnet show --resource-group myapp-rg `
   --vnet-name myapp-vnet --name aca-subnet | ConvertFrom-Json
-$SUBNET_ID = $subnet.id
 
-# Environment with VNet (replaces basic env creation above)
 az containerapp env create `
   --name myapp-env --resource-group myapp-rg --location eastus `
-  --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY `
-  --infrastructure-subnet-resource-id $SUBNET_ID
+  --logs-workspace-id $workspace.customerId --logs-workspace-key $keys.primarySharedKey `
+  --infrastructure-subnet-resource-id $subnet.id
 ```
 
 ## Phase 3: Secrets
@@ -151,30 +112,23 @@ az containerapp env create `
 ### Bash
 
 ```bash
-# Key Vault
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
 
-# Migrate secrets securely
 SECRET_FILE=$(mktemp)
 gcloud secrets versions access latest --secret=db-pw --project=$GCP_PROJECT > "$SECRET_FILE"
 az keyvault secret set --vault-name myapp-kv --name db-pw --file "$SECRET_FILE"
-shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
+rm -f "$SECRET_FILE"
 ```
 
 ### PowerShell
 
 ```powershell
-# Key Vault
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
 
-# Migrate secrets securely
 $secretFile = New-TemporaryFile
-try {
-  gcloud secrets versions access latest --secret=db-pw --project=$env:GCP_PROJECT | Out-File -FilePath $secretFile.FullName -Encoding utf8
-  az keyvault secret set --vault-name myapp-kv --name db-pw --file $secretFile.FullName
-} finally {
-  Remove-Item $secretFile.FullName -Force -ErrorAction SilentlyContinue
-}
+gcloud secrets versions access latest --secret=db-pw --project=$env:GCP_PROJECT | Out-File -FilePath $secretFile.FullName -Encoding utf8
+az keyvault secret set --vault-name myapp-kv --name db-pw --file $secretFile.FullName
+Remove-Item $secretFile.FullName -Force
 ```
 
 ### Managed Identity
@@ -182,12 +136,10 @@ try {
 #### Bash
 
 ```bash
-# Managed Identity
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
 IDENTITY_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query principalId -o tsv)
 
-# Grant permissions
 az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list
 ACR_ID=$(az acr show --name $ACR_NAME --query id -o tsv)
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
@@ -196,19 +148,14 @@ az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_I
 #### PowerShell
 
 ```powershell
-# Managed Identity
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
 
 $identity = az identity show --name myapp-id --resource-group myapp-rg | ConvertFrom-Json
-$IDENTITY_ID = $identity.id
-$PRINCIPAL_ID = $identity.principalId
 
-# Grant permissions
-az keyvault set-policy --name myapp-kv --object-id $PRINCIPAL_ID --secret-permissions get list
+az keyvault set-policy --name myapp-kv --object-id $identity.principalId --secret-permissions get list
 
 $acr = az acr show --name $ACR_NAME | ConvertFrom-Json
-$ACR_ID = $acr.id
-az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
+az role assignment create --assignee $identity.principalId --role AcrPull --scope $acr.id
 ```
 
 ## Phase 4: Deploy Container App
@@ -222,10 +169,8 @@ SECRET_URI=$(az keyvault secret show --vault-name myapp-kv --name db-pw --query 
 
 az containerapp create \
   --name my-app --resource-group myapp-rg --environment myapp-env \
-  --image $ACR_NAME.azurecr.io/app:v1 \
-  --target-port 8080 --ingress external \
-  --cpu 1.0 --memory 1Gi \
-  --min-replicas 0 --max-replicas 10 \
+  --image $ACR_NAME.azurecr.io/app:v1 --target-port 8080 --ingress external \
+  --cpu 1.0 --memory 1Gi --min-replicas 0 --max-replicas 10 \
   --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID \
   --registry-server $ACR_NAME.azurecr.io \
   --secrets db-pw=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID \
@@ -237,76 +182,50 @@ az containerapp create \
 
 ```powershell
 $secret = az keyvault secret show --vault-name myapp-kv --name db-pw | ConvertFrom-Json
-$SECRET_URI = $secret.id
 
 az containerapp create `
   --name my-app --resource-group myapp-rg --environment myapp-env `
-  --image "$ACR_NAME.azurecr.io/app:v1" `
-  --target-port 8080 --ingress external `
-  --cpu 1.0 --memory 1Gi `
-  --min-replicas 0 --max-replicas 10 `
-  --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID `
+  --image "$ACR_NAME.azurecr.io/app:v1" --target-port 8080 --ingress external `
+  --cpu 1.0 --memory 1Gi --min-replicas 0 --max-replicas 10 `
+  --user-assigned $identity.id --registry-identity $identity.id `
   --registry-server "$ACR_NAME.azurecr.io" `
-  --secrets "db-pw=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID" `
+  --secrets "db-pw=keyvaultref:$($secret.id),identityref:$($identity.id)" `
   --env-vars "ENV=prod" "DB_PASSWORD=secretref:db-pw" `
   --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
 ```
 
-### Configuration Mapping
+###Configuration Mapping
 
-| Cloud Run | Container Apps | Notes |
-|-----------|----------------|-------|
-| `--min-instances 0` | `--min-replicas 0` | Scale to zero |
-| `--max-instances 10` | `--max-replicas 10` | Max 300 per revision |
-| `--concurrency 80` | `--scale-rule-http-concurrency 80` | Max 300 |
-| `--timeout 300` | Timeout 300s (max 1800s) | Cloud Run max 60min |
-| `--cpu 1` | `--cpu 1.0` | vCPU allocation |
-| `--memory 512Mi` | `--memory 1Gi` | Memory allocation |
-| `--allow-unauthenticated` | `--ingress external` | Public ingress |
-| `--ingress internal` | `--ingress internal` | VNet only |
+| Cloud Run | Container Apps |
+|-----------|----------------|
+| `--min-instances 0` | `--min-replicas 0` |
+| `--max-instances 10` | `--max-replicas 10` |
+| `--concurrency 80` | `--scale-rule-http-concurrency 80` |
+| `--cpu 1` | `--cpu 1.0` |
+| `--memory 512Mi` | `--memory 1Gi` |
 
 ## Phase 5: Validation
 
 ### Bash
 
 ```bash
-# Get app URL
 FQDN=$(az containerapp show --name my-app --resource-group myapp-rg \
   --query properties.configuration.ingress.fqdn -o tsv)
-
-# Test endpoint
 curl https://$FQDN/
-
-# View logs
 az containerapp logs show --name my-app --resource-group myapp-rg --follow
-
-# Monitor replicas
-az containerapp replica list --name my-app --resource-group myapp-rg --revision latest
 ```
 
 ### PowerShell
 
 ```powershell
-# Get app URL
 $app = az containerapp show --name my-app --resource-group myapp-rg | ConvertFrom-Json
-$FQDN = $app.properties.configuration.ingress.fqdn
-
-# Test endpoint
-Invoke-WebRequest -Uri "https://$FQDN/" -UseBasicParsing
-
-# View logs
+Invoke-WebRequest -Uri "https://$($app.properties.configuration.ingress.fqdn)/"
 az containerapp logs show --name my-app --resource-group myapp-rg --follow
-
-# Monitor replicas
-az containerapp replica list --name my-app --resource-group myapp-rg --revision latest
 ```
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Image pull fails | Verify ACR access: `az acr check-health --name $ACR_NAME` and managed identity ACRPull role |
-| Container won't start | Check logs: `az containerapp logs show --name <app> --resource-group <rg> --tail 100` |
-| Secrets not accessible | Verify Key Vault policy: `az keyvault set-policy --name <kv> --object-id <principal> --secret-permissions get list` |
-| Timeout issues (>30min) | Redesign as background job (Azure Functions Durable, Queue Storage, Container Instances) |
-| Scaling not working | Review scaling rules: `az containerapp show --name <app> --query properties.template.scale` |
+- **Image pull fails**: Verify ACR health and managed identity ACRPull role
+- **Container won't start**: Check logs with `--tail 100`
+- **Secrets not accessible**: Verify Key Vault policy
+- **Scaling not working**: Review `az containerapp show --name <app> --query properties.template.scale`

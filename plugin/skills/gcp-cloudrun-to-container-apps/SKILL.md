@@ -1,66 +1,60 @@
 ---
 name: gcp-cloudrun-to-container-apps
-description: "Migrate containerized workloads from Google Cloud Run to Azure Container Apps with assessment reports and deployment guidance. WHEN: migrate Cloud Run to Container Apps, migrate Cloud Run to Azure, convert Cloud Run services to ACA, move from Cloud Run to Azure Container Apps, Cloud Run to ACA migration assessment, migrate GCP Cloud Run workloads to Azure, assess Cloud Run to Container Apps migration, Cloud Run migration planning. DO NOT USE FOR: general GCP-to-Azure migration (use azure-cloud-migrate), new Container Apps deployments without migration (use azure-prepare), GKE or Kubernetes migration (use k8s-to-container-apps)."
+description: "Migrate Cloud Run to Azure Container Apps with assessment and deployment. WHEN: migrate Cloud Run to Container Apps, Cloud Run to Azure, convert Cloud Run to ACA, Cloud Run migration. DO NOT USE FOR: general GCP migration (use azure-cloud-migrate), new Container Apps (use azure-prepare), Kubernetes (use k8s-to-container-apps)."
 license: MIT
 metadata:
   version: "1.0.0"
   author: Microsoft
 ---
 
-# Google Cloud Run to Azure Container Apps Migration
+# Google Cloud Run to Azure Container Apps
 
 ## Quick Reference
 
 | Item | Details |
 |------|---------|
-| **Best for** | Migrating existing Cloud Run services to Azure Container Apps |
-| **Source** | Google Cloud Run services |
-| **Target** | Azure Container Apps |
-| **Key Steps** | Assess → Migrate images → Configure → Deploy |
-| **MCP Tools** | `mcp_azure_mcp_documentation`, `mcp_azure_mcp_get_bestpractices` |
-| **CLI Commands** | `gcloud run services list`, `az acr import`, `az containerapp create` |
+| **Source/Target** | Cloud Run → Container Apps |
+| **Steps** | Assess → Images → Config → Deploy |
+| **Tools** | `gcloud`, `az acr`, `az containerapp` |
 | **Docs** | [assessment-guide.md](references/assessment-guide.md), [deployment-guide.md](references/deployment-guide.md) |
 
 ## When to Use This Skill
 
-Migrate serverless container workloads from GCP Cloud Run to Azure Container Apps. Use when moving GCP projects to Azure or consolidating multi-cloud deployments.
+Migrate Cloud Run serverless containers to Azure Container Apps.
 
 ## Rules
 
-1. Follow phases: assessment → image migration → configuration → deployment
-2. Generate assessment report before changes; create `<source-folder>-azure/` output
-3. Never modify source GCP files; require confirmation for destructive actions
+1. Follow: assessment → images → config → deployment
+2. Create assessment report; output to `<source>-azure/`
+3. Never modify source GCP files
 
-## Required Inputs
+## Inputs
 
-Cloud Run config location, target subscription/resource group/region, networking (VNet yes/no), scaling (min/max replicas)
+Cloud Run location, target sub/RG/region, VNet (yes/no), scaling (min/max)
 
 ## Migration Workflow
 
-**Phase 1: Assessment** — Analyze config, dependencies ([assessment-guide.md](references/assessment-guide.md))
+**Phase 1: Assessment** — Analyze config ([assessment-guide.md](references/assessment-guide.md))
 
-**Phase 2: Image Migration** — Pull from GCR/Artifact Registry → push to ACR
+**Phase 2: Images** — GCR/Artifact Registry → ACR
 
-**Phase 3: Configuration** — Convert YAML, map secrets to Key Vault, create IaC
+**Phase 3: Config** — Convert YAML, secrets → Key Vault, IaC
 
-**Phase 4: Deployment** — Deploy Container Apps, configure ingress/scaling ([deployment-guide.md](references/deployment-guide.md))
+**Phase 4: Deploy** — Container Apps, ingress/scaling ([deployment-guide.md](references/deployment-guide.md))
 
 ## MCP Tools
 
-| Tool | Parameters | Required | Example |
-|------|-----------|----------|---------|
-| `mcp_azure_mcp_documentation` | `resource: "container-apps"` | Yes | `await mcp_azure_mcp_documentation({resource: "container-apps", topic: "ingress"})` |
-| `mcp_azure_mcp_get_bestpractices` | `resource: "container-apps"`, `action: "deploy"` | Yes | `await mcp_azure_mcp_get_bestpractices({resource: "container-apps", action: "deploy"})` |
+- `mcp_azure_mcp_documentation({resource: "container-apps"})`
+- `mcp_azure_mcp_get_bestpractices({resource: "container-apps"})`
 
 ## Error Handling
 
-| Error | Message Contains | Resolution |
-|-------|------------------|------------|
-| ACR auth | "unauthorized" | Run `az acr login --name <acr>` |
-| Key Vault access | "forbidden" | Grant managed identity Key Vault secrets permissions |
-| Env creation | "already exists" | Use existing env or choose new name |
-| Image pull | "manifest unknown" | Verify image tag and ACR credentials |
+| Error | Fix |
+|-------|-----|
+| ACR unauthorized | `az acr login` |
+| Key Vault forbidden | Grant managed identity access |
+| Env exists | Use existing or rename |
 
-## Completion
+## Done
 
-Ask: **"Migration complete. Test or optimize costs?"**
+Ask: **"Test or optimize costs?"**
