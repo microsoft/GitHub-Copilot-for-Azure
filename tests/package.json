@@ -24,6 +24,9 @@
     "waza": "node scripts/run-waza.js",
     "waza:live": "node scripts/run-waza.js --executor copilot-sdk"
   },
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
   "devDependencies": {
     "@azure/identity": "^4.13.0",
     "@eslint/js": "^10.0.0",
