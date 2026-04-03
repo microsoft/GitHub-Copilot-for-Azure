@@ -74,7 +74,7 @@ By default, the Azure MCP server connects to the Azure Public Cloud. If you use 
 
 ### Copilot CLI
 
-After installing the plugin, the skills are installed in `~/.copilot/installed-plugins/` on macOS/Linux (or `%USERPROFILE%\.copilot\installed-plugins\` on Windows). Edit the `.mcp.json` file in the installed plugin directory to add the `--cloud` argument:
+After installing the plugin, the skills are installed in `~/.copilot/installed-plugins/` on macOS/Linux (or `%USERPROFILE%\.copilot\installed-plugins\` on Windows). Edit the `<skill_installation_dir>/azure-skills/azure/.mcp.json` file in the installed plugin directory to add the `--cloud` argument:
 
 **Azure China Cloud:**
 
@@ -85,6 +85,7 @@ After installing the plugin, the skills are installed in `~/.copilot/installed-p
       "command": "npx",
       "args": ["-y", "@azure/mcp@latest", "server", "start", "--cloud", "AzureChinaCloud"]
     }
+    // Keep the other MCP server configurations in this file as they are.
   }
 }
 ```
@@ -98,6 +99,7 @@ After installing the plugin, the skills are installed in `~/.copilot/installed-p
       "command": "npx",
       "args": ["-y", "@azure/mcp@latest", "server", "start", "--cloud", "AzureUSGovernment"]
     }
+    // Keep the other MCP server configurations in this file as they are.
   }
 }
 ```
@@ -107,7 +109,7 @@ Before starting the MCP server, ensure your local CLI tools are authenticated ag
 | Cloud | Azure CLI | Azure PowerShell | Azure Developer CLI |
 |-------|-----------|-----------------|---------------------|
 | China | `az cloud set --name AzureChinaCloud && az login` | `Connect-AzAccount -Environment AzureChinaCloud` | `azd config set cloud.name AzureChinaCloud && azd auth login` |
-| US Gov | `az cloud set --name AzureUSGovernment && az login` | `Connect-AzAccount -Environment AzureUSGovernment` | `azd config set cloud.name AzureUSGovernment && azd auth login` |
+| US Government | `az cloud set --name AzureUSGovernment && az login` | `Connect-AzAccount -Environment AzureUSGovernment` | `azd config set cloud.name AzureUSGovernment && azd auth login` |
 
 For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/azure/developer/azure-mcp-server/how-to/connect-sovereign-clouds) in the Azure MCP Server documentation.
 
