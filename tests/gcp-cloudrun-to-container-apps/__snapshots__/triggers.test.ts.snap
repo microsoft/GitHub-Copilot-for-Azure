@@ -1,0 +1,59 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`gcp-cloudrun-to-container-apps - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Migrate Cloud Run to Azure Container Apps with assessment and deployment. WHEN: migrate Cloud Run to Container Apps, Cloud Run to Azure, convert Cloud Run to ACA, Cloud Run migration. DO NOT USE FOR: general GCP migration (use azure-cloud-migrate), new Container Apps (use azure-prepare), Kubernetes (use k8s-to-container-apps).",
+  "extractedKeywords": [
+    "apps",
+    "assessment",
+    "azure",
+    "azure-cloud-migrate",
+    "azure-prepare",
+    "cloud",
+    "cloudrun",
+    "container",
+    "convert",
+    "deploy",
+    "deployment",
+    "gcp",
+    "general",
+    "identity",
+    "k8s-to-container-apps",
+    "key vault",
+    "kubernetes",
+    "mcp",
+    "migrate",
+    "migration",
+    "when",
+    "with",
+  ],
+  "name": "gcp-cloudrun-to-container-apps",
+}
+`;
+
+exports[`gcp-cloudrun-to-container-apps - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "apps",
+  "assessment",
+  "azure",
+  "azure-cloud-migrate",
+  "azure-prepare",
+  "cloud",
+  "cloudrun",
+  "container",
+  "convert",
+  "deploy",
+  "deployment",
+  "gcp",
+  "general",
+  "identity",
+  "k8s-to-container-apps",
+  "key vault",
+  "kubernetes",
+  "mcp",
+  "migrate",
+  "migration",
+  "when",
+  "with",
+]
+`;
