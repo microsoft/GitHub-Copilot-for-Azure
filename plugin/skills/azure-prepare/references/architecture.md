@@ -68,13 +68,13 @@ Select hosting stack and map components to Azure services.
 
 ### Data
 
-| Need       | Primary      | Alternatives      |
-| ---------- | ------------ | ----------------- |
-| Relational | Azure SQL    | PostgreSQL, MySQL |
-| Document   | Cosmos DB    | MongoDB           |
-| Cache      | Redis Cache  |                   |
-| Files      | Blob Storage | Files Storage     |
-| Search     | AI Search    |                   |
+| Need       | Primary      | Reference                                       | Alternatives      |
+| ---------- | ------------ | ----------------------------------------------- | ----------------- |
+| Relational | Azure SQL    | [SQL Database](services/sql-database/README.md) | PostgreSQL, MySQL |
+| Document   | Cosmos DB    | [Cosmos DB](services/cosmos-db/README.md)       | MongoDB           |
+| Cache      | Redis Cache  |                                                 |                   |
+| Files      | Blob Storage | [Storage](services/storage/README.md)           | Files Storage     |
+| Search     | AI Search    |                                                 |                   |
 
 ### Integration
 
