@@ -1,10 +1,10 @@
 ---
 name: azure-deploy
-description: "Execute Azure deployments for ALREADY-PREPARED applications that have existing .azure/deployment-plan.md and infrastructure files. DO NOT use this skill when the user asks to CREATE a new application — use azure-prepare instead. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/deployment-plan.md from azure-prepare and validated status from azure-validate. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\". DO NOT USE WHEN: \"create and deploy\", \"build and deploy\", \"create a new app\", \"set up infrastructure\", \"create and deploy to Azure using Terraform\" — use azure-prepare for these."
+description: "Execute Azure deployments — the FINAL step in the skill chain after azure-prepare and azure-validate complete. Always invoked for create+deploy and build+deploy workflows as the last step. This skill runs azd up, azd deploy, terraform apply, and az deployment commands with built-in error recovery. Requires .azure/deployment-plan.md from azure-prepare and validated status from azure-validate. WHEN: \"run azd up\", \"run azd deploy\", \"execute deployment\", \"push to production\", \"push to cloud\", \"go live\", \"ship it\", \"bicep deploy\", \"terraform apply\", \"publish to Azure\", \"launch on Azure\", \"invoked by azure-validate after validation passes\". DO NOT invoke this skill FIRST without azure-prepare running first: \"create a new app\", \"set up infrastructure\" — start with azure-prepare, then azure-validate, then this skill."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.15"
+  version: "1.0.16"
 ---
 
 # Azure Deploy
