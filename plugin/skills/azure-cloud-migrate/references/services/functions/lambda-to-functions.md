@@ -89,7 +89,7 @@ scaleAndConcurrency: {
 
 ### 2. Queue Endpoint Required
 
-Blog extension uses queues for poison-message tracking. Enable queue endpoint and assign **Storage Queue Data Contributor** role:
+Blob extension uses queues for poison-message tracking. Enable queue endpoint and assign **Storage Queue Data Contributor** role:
 
 ```bicep
 AzureWebJobsStorage__queueServiceUri: storageAccount.properties.primaryEndpoints.queue
@@ -100,12 +100,29 @@ AzureWebJobsStorage__queueServiceUri: storageAccount.properties.primaryEndpoints
 Deploy Event Grid subscription as Bicep (CLI webhook validation fails on Flex). Assign **EventGrid EventSubscription Contributor** role:
 
 ```bicep
+resource systemTopic 'Microsoft.EventGrid/systemTopics@2024-06-01-preview' = {
+  name: 'evgt-${storageAccountName}'
+  location: location
+  properties: {
+    source: storageAccount.id
+    topicType: 'Microsoft.Storage.StorageAccounts'
+  }
+}
+
 resource eventSubscription 'Microsoft.EventGrid/systemTopics/eventSubscriptions@2024-06-01-preview' = {
   parent: systemTopic
   name: 'blob-trigger-sub'
   properties: {
-    destination: { endpointType: 'WebHook' }
-    filter: { includedEventTypes: [ 'Microsoft.Storage.BlobCreated' ] }
+    destination: {
+      endpointType: 'WebHook'
+      properties: {
+        endpointUrl: 'https://${functionApp.properties.defaultHostName}/runtime/webhooks/blobs?functionName=${functionName}&code=${listKeys...}'
+      }
+    }
+    filter: {
+      includedEventTypes: [ 'Microsoft.Storage.BlobCreated' ]
+      subjectBeginsWith: '/blobServices/default/containers/${sourceContainerName}/'
+    }
   }
 }
 ```

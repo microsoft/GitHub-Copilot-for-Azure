@@ -163,7 +163,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, migrationTestTimeoutMs);
   });
 
-  describe("k8s-to-container-apps", () => {
+  describe("Kubernetes to Container Apps migration scenario", () => {
     test("invokes skill for k8s to ACA migration prompt", async () => {
       await withTestResult(async () => {
         const agentMetadata = await agent.run({
