@@ -131,12 +131,14 @@ configuration: {
         action: 'Allow'
         ipAddressRange: '203.0.113.0/24'
         description: 'Office network'
+        priority: 100
       }
       {
         name: 'allow-vpn'
         action: 'Allow'
         ipAddressRange: '198.51.100.0/24'
         description: 'VPN gateway'
+        priority: 200
       }
     ]
   }
