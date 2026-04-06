@@ -203,7 +203,7 @@ $AcrId = az acr show `
 **Step C — Poll until the `AcrPull` role is visible (up to 5 minutes):**
 
 ```bash
-for attempt in 1 2 3 4 5 6; do
+for attempt in 1 2 3 4 5; do
   ROLE=$(az role assignment list \
     --scope "$ACR_ID" \
     --assignee-object-id "$PRINCIPAL_ID" \
@@ -215,7 +215,7 @@ for attempt in 1 2 3 4 5 6; do
     break
   fi
 
-  if [ "$attempt" -eq 6 ]; then
+  if [ "$attempt" -eq 5 ]; then
     echo "AcrPull role not found after 5 minutes. Assign it manually before retrying."
     exit 1
   fi
@@ -227,7 +227,7 @@ done
 
 **PowerShell:**
 ```powershell
-for ($attempt = 1; $attempt -le 6; $attempt++) {
+for ($attempt = 1; $attempt -le 5; $attempt++) {
     $Role = az role assignment list `
       --scope $AcrId `
       --assignee-object-id $PrincipalId `
@@ -239,7 +239,7 @@ for ($attempt = 1; $attempt -le 6; $attempt++) {
         break
     }
 
-    if ($attempt -eq 6) {
+    if ($attempt -eq 5) {
         Write-Output "AcrPull role not found after 5 minutes. Assign it manually before retrying."
         exit 1
     }
