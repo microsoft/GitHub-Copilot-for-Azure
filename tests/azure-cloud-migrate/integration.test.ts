@@ -160,4 +160,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, migrationTestTimeoutMs);
   });
+
+  describe("k8s-to-container-apps", () => {
+    test("invokes skill for k8s to ACA migration prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "I want to migrate my Kubernetes workloads from GKE to Azure Container Apps. Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, 300000); // 5 minutes timeout
+
+    test("invokes skill for k8s manifest conversion", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I convert my Kubernetes deployment manifests to Azure Container Apps configuration?",
+          nonInteractive: true,
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, 300000); // 5 minutes timeout
+  });
 });
