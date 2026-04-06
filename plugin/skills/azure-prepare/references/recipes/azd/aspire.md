@@ -57,6 +57,48 @@ services:
 - With: Auto-detects AppHost, no interaction needed
 - Essential for agents and CI/CD
 
+## ⛔ After `azd init`: Fix AddParameter Used with WithBuildArg Before Build/Deploy
+
+> **MANDATORY** — After running `azd init --from-code`, but before `azd package`, `azd up`, or any Docker image build/deploy step, scan the AppHost source for `AddParameter` calls that are passed to `WithBuildArg`. This pattern triggers an azd bug (`parameter infra.parameters.<name> not found`) that causes Docker builds to fail even when the parameter has a default value.
+
+### Scan for the pattern
+
+**Bash:**
+```bash
+grep -RIn --include="*.cs" -E "AddParameter|WithBuildArg" <path/to/AppHost>
+```
+
+**PowerShell:**
+```powershell
+Get-ChildItem -Path "<path/to/AppHost>" -Recurse -Filter "*.cs" |
+  Select-String -Pattern "AddParameter|WithBuildArg"
+```
+
+**Problematic pattern:**
+```csharp
+// ❌ azd cannot resolve AddParameter values during Docker builds
+var goVersion = builder.AddParameter("goversion", "1.25.4", publishValueAsDefault: true);
+builder.AddDockerfile("ginapp", "./ginapp")
+    .WithBuildArg("GO_VERSION", goVersion);
+```
+
+### Fix: Replace AddParameter with a constant
+
+For every `AddParameter(name, defaultValue, ...)` whose result is used **only** as a `WithBuildArg` argument, replace it with a `const string` (or `string`) constant:
+
+```csharp
+// ✅ Use a constant instead
+const string goVersion = "1.25.4";
+builder.AddDockerfile("ginapp", "./ginapp")
+    .WithBuildArg("GO_VERSION", goVersion);
+```
+
+**Why:** azd generates a Bicep parameter for every `AddParameter()` call and tries to resolve that parameter during Docker builds. In azd ≤1.23.14, this resolution fails during the container image build phase. Using a constant avoids the parameter lookup entirely.
+
+> ⚠️ **Do NOT skip this step for container-build projects.** If the AppHost passes an `AddParameter` result to `WithBuildArg`, apply this fix immediately before running `azd init` or `azd up`.
+
+---
+
 ## ⛔ Post-Init: Verify and Fix Docker Context for AddDockerfile Services
 
 > **MANDATORY** — After `azd init --from-code` completes, you **MUST** check the generated `azure.yaml` for correct `docker.context` on every `AddDockerfile()` service. `azd init` often omits or misconfigures the `docker.context` property, which causes build failures at deploy time.
@@ -263,6 +305,29 @@ services:
 azd init --from-code -e "$ENV_NAME"
 ```
 
+### Error: "parameter infra.parameters.<name> not found"
+
+**Cause:** The AppHost uses `AddParameter()` as a `WithBuildArg` argument, and azd ≤1.23.14 cannot resolve infrastructure parameters during Docker builds.
+
+**Example error:**
+```
+ERROR: building service 'ginapp': parameter infra.parameters.goversion not found
+```
+
+**Fix:** In the AppHost source, replace the `AddParameter(...)` call with a constant:
+
+```csharp
+// ❌ Before (causes the error)
+var goVersion = builder.AddParameter("goversion", "1.25.4", publishValueAsDefault: true);
+builder.AddDockerfile("ginapp", "./ginapp")
+    .WithBuildArg("GO_VERSION", goVersion);
+
+// ✅ After (fix)
+const string goVersion = "1.25.4";
+builder.AddDockerfile("ginapp", "./ginapp")
+    .WithBuildArg("GO_VERSION", goVersion);
+```
+
 ### AppHost Not Detected
 
 **Solutions:**
@@ -302,12 +367,13 @@ azd init --from-code -e "$ENV_NAME"
 
 ## Validation Steps
 
-1. Verify azure.yaml has services section
-2. **⛔ Verify `docker.context` for every `AddDockerfile()` service** — see [Post-Init: Verify and Fix Docker Context](#post-init-verify-and-fix-docker-context-for-adddockerfile-services)
-3. Check Dockerfile COPY paths are relative to the specified context
-4. Generate manifest to verify `build.context` matches azure.yaml
-5. Run `azd package` to validate Docker build succeeds
-6. Review generated infra/ (don't modify)
+1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#-post-init-fix-addparameter-used-with-withbuildarg)
+2. Verify azure.yaml has services section
+3. **⛔ Verify `docker.context` for every `AddDockerfile()` service** — see [Post-Init: Verify and Fix Docker Context](#post-init-verify-and-fix-docker-context-for-adddockerfile-services)
+4. Check Dockerfile COPY paths are relative to the specified context
+5. Generate manifest to verify `build.context` matches azure.yaml
+6. Run `azd package` to validate Docker build succeeds
+7. Review generated infra/ (don't modify)
 
 ## Next Steps
 
