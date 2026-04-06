@@ -95,6 +95,7 @@ Not all providers support quota API. If `az quota list` fails with BadRequest, u
 
 | Service | Hard Limits (examples) | Quota Check | Notes |
 |---------|------------------------|-------------|-------|
+| **App Service / App Service Plan** | Max apps per plan varies by tier | ✅ Quota: `standardBSFamily` cores for B/S/P SKUs. Use `az quota list --scope .../Microsoft.Compute/locations/{region}` to discover. | ⚠️ **B1, S1, P1 plans all consume `standardBSFamily` cores in the selected region.** Check this quota BEFORE provisioning to avoid mid-deployment region switch. |
 | **Cosmos DB** | Item: 2MB, Partition key: 2KB, Serverless storage: 50GB | ❌ Not supported. Use Resource Graph + [docs](https://learn.microsoft.com/en-us/azure/cosmos-db/concepts-limits). Default: 50 accounts/region | Query: `az graph query -q "resources \| where type == 'microsoft.documentdb/databaseaccounts' and location == 'eastus' \| count"` |
 | **AKS** | Pods/node (Azure CNI): 250, Node pools/cluster: 100 | ✅ `az quota` supported | Provider: Microsoft.ContainerService |
 | **Storage** | Block blob: 190.7 TiB, Page blob: 8 TiB | ✅ Quota: `StorageAccounts` (limit: 250/region) | Provider: Microsoft.Storage |
@@ -198,6 +199,7 @@ Common quotas to check:
 - AKS clusters: 5,000 per region (quota resource name: varies by configuration)
 - Container Apps environments: 50 per region (quota resource name: `ManagedEnvironmentCount`)
 - Function apps: 200 per region (Consumption)
+- App Service Plan cores: varies per region (quota resource name: `standardBSFamily` for B/S/P SKUs — check with `az quota list --scope .../Microsoft.Compute/locations/{region}` and filter for `standard*Family`)
 
 ### Resource Level
 - Cosmos DB containers per account: Unlimited (subject to storage)

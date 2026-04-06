@@ -35,7 +35,7 @@ These services are available in all major Azure regions — no special considera
 
 - Container Apps
 - Azure Functions
-- App Service
+- App Service (**⚠️ check compute quota**: B/S/P SKU plans consume `standardBSFamily` cores; verify regional quota before provisioning to avoid mid-deployment region switches — see [Resource Limits and Quotas](resources-limits-quotas.md))
 - Azure SQL Database
 - Cosmos DB
 - Key Vault
