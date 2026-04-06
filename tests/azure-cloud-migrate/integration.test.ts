@@ -172,7 +172,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         expect(isSkillUsed).toBe(true);
       });
-    }, 30000);
+    }, migrationTestTimeoutMs);
 
     test("invokes skill for Spring Boot containerization prompt", async () => {
       await withTestResult(async () => {
@@ -184,6 +184,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         expect(isSkillUsed).toBe(true);
       });
-    }, 30000);
+    }, migrationTestTimeoutMs);
   });
 });

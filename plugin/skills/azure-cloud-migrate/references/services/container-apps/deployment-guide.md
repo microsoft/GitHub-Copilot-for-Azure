@@ -66,7 +66,6 @@ az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --value "<yo
 ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
 az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$ACR_ID"
 ```
-```
 
 ## Phase 6: Deploy Container App
 
