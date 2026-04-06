@@ -83,35 +83,19 @@ const blobOutput = output.storageBlob({
 });
 ```
 
-> **⚠️ Flex Consumption + EventGrid Source Requirements:**
-> When using `source: 'EventGrid'` on a Flex Consumption plan, three infrastructure requirements MUST be met or the trigger will silently fail:
->
-> 1. **Always-ready instances**: Configure `alwaysReady: [{ name: 'blob', instanceCount: 1 }]` in Bicep. Without this, the trigger group never starts and the Event Grid webhook endpoint is never registered.
-> 2. **Queue endpoint**: Set `AzureWebJobsStorage__queueServiceUri` in app settings. The blob extension uses queues internally for poison-message tracking with EventGrid source, even though you're not using a queue trigger.
-> 3. **Event Grid subscription via Bicep/ARM**: Do NOT create event subscriptions via CLI — webhook validation times out on Flex Consumption. Deploy as a Bicep resource using `listKeys()` to obtain the `blobs_extension` system key.
->
-> See [lambda-to-functions.md](../lambda-to-functions.md#flex-consumption--blob-trigger-with-eventgrid-source) for full Bicep patterns.
+> **Flex + EventGrid:** Requires `alwaysReady` config, queue endpoint, and Bicep-deployed subscription. See [lambda-to-functions.md](../lambda-to-functions.md#flex-consumption--blob-trigger-with-eventgrid-source).
 
 ### Using Azure AI Services with UAMI
 
-When calling Azure AI services (Computer Vision, etc.) from a function, use `DefaultAzureCredential` with explicit UAMI client ID:
-
 ```javascript
 const { DefaultAzureCredential } = require('@azure/identity');
-const createClient = require('@azure-rest/ai-vision-image-analysis').default;
-
 const credential = new DefaultAzureCredential({
-  managedIdentityClientId: process.env.AZURE_CLIENT_ID  // Required for UAMI
+  managedIdentityClientId: process.env.AZURE_CLIENT_ID
 });
 const client = createClient(process.env.COMPUTER_VISION_ENDPOINT, credential);
-
-const result = await client.path('/imageanalysis:analyze').post({
-  body: { url: blobUrl },
-  queryParameters: { features: ['People'] }  // Use 'People' for face detection
-});
 ```
 
-> **Note**: `@azure-rest/ai-vision-image-analysis` is still in beta. Pin explicitly: `"1.0.0-beta.3"` — the `^1.0.0` semver range does NOT resolve.
+> Pin `@azure-rest/ai-vision-image-analysis` to `1.0.0-beta.3` (semver ^1.0.0 fails).
 
 ## Queue Storage
 

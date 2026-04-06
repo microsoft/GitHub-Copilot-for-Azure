@@ -56,39 +56,13 @@ For language-specific migration rules, correct/incorrect patterns, and code exam
 
 ## Project Structure
 
-```
-REQUIRED for Azure Functions:
-src/
-├── app.js (or function_app.py)   # Main entry point
-├── host.json                      # Function host configuration
-├── local.settings.json            # Local development settings
-├── package.json (or requirements.txt)
-├── [helper-modules]               # Business logic
-└── tests/                         # Test files
-
-❌ NEVER create:
-├── [functionName]/                # No individual function directories
-│   ├── function.json              # No function.json (JS v4, Python v2)
-│   └── index.js
-```
+**Required:** `src/app.js` (main entry), `host.json`, `local.settings.json`, `package.json`
+**Never:** Individual function directories or `function.json` files (v4 JS, v2 Python)
 
 ## Environment Variables
 
-```
-✅ Use managed identity connections for Azure Functions storage:
-   AzureWebJobsStorage__blobServiceUri
-   AzureWebJobsStorage__queueServiceUri
-   AzureWebJobsStorage__tableServiceUri
-
-✅ Use specific endpoint variables for other services:
-   COMPUTER_VISION_ENDPOINT
-   STORAGE_ACCOUNT_URL
-   SOURCE_CONTAINER_NAME
-
-❌ Avoid:
-   CONNECTION_STRING (use managed identity)
-   API_KEY (use managed identity)
-```
+**Use:** `AzureWebJobsStorage__blobServiceUri`, `AzureWebJobsStorage__queueServiceUri` with `__credential: 'managedidentity'`
+**Avoid:** Connection strings and API keys
 
 ## Reference Links
 
@@ -101,88 +75,40 @@ src/
 
 ## Flex Consumption + Blob Trigger with EventGrid Source
 
-> **⚠️ CRITICAL**: When deploying blob triggers with `source: 'EventGrid'` on Flex Consumption, there are three infrastructure requirements that are NOT automatically handled and will cause silent trigger failures if missed.
+**Critical requirements:**
 
-### 1. Always-Ready Instances (Bootstrap Problem)
+### 1. Always-Ready Instances
 
-On Flex Consumption, trigger groups only start when there's work to do. But the blob extension needs to be running to create the Event Grid subscription that would deliver work — a chicken-and-egg problem.
-
-**Solution**: Configure `alwaysReady` for the blob trigger group in the function app's `scaleAndConcurrency`:
+Configure `alwaysReady` for blob trigger group to solve bootstrap problem:
 
 ```bicep
-// In api.bicep — functionAppConfig section
 scaleAndConcurrency: {
-  alwaysReady: [
-    {
-      name: 'blob'
-      instanceCount: 1
-    }
-  ]
-  instanceMemoryMB: 2048
-  maximumInstanceCount: 100
+  alwaysReady: [{ name: 'blob', instanceCount: 1 }]
 }
 ```
-
-Without this, the trigger group never starts → Event Grid subscription never gets created → no events are delivered → function never triggers.
 
 ### 2. Queue Endpoint Required
 
-The blob extension internally uses Storage Queues for poison-message tracking when `source: 'EventGrid'` is configured. Without the queue endpoint, the function fails to index with:
-
-```
-Unable to find matching constructor while trying to create an instance of QueueServiceClient.
-Expected: serviceUri. Found: credential, clientId, blobServiceUri
-```
-
-**Solution**: Always enable the queue endpoint alongside blob when using EventGrid source:
+Blog extension uses queues for poison-message tracking. Enable queue endpoint and assign **Storage Queue Data Contributor** role:
 
 ```bicep
-// In identity-based storage configuration
-AzureWebJobsStorage__blobServiceUri: storageAccount.properties.primaryEndpoints.blob
-AzureWebJobsStorage__queueServiceUri: storageAccount.properties.primaryEndpoints.queue  // REQUIRED for EventGrid source
-AzureWebJobsStorage__credential: 'managedidentity'
-AzureWebJobsStorage__clientId: managedIdentityClientId
+AzureWebJobsStorage__queueServiceUri: storageAccount.properties.primaryEndpoints.queue
 ```
 
-Also assign **Storage Queue Data Contributor** RBAC role to the UAMI.
+### 3. Event Grid Subscription via Bicep
 
-### 3. Event Grid Subscription via Bicep (Not CLI)
-
-Do **NOT** create Event Grid event subscriptions via CLI. The `az eventgrid system-topic event-subscription create` command requires a webhook validation handshake that consistently fails on Flex Consumption with "response code Unknown" (timeout during cold start).
-
-**Solution**: Deploy the Event Grid system topic and event subscription as Bicep resources. ARM handles the webhook validation internally and reliably:
+Deploy Event Grid subscription as Bicep (CLI webhook validation fails on Flex). Assign **EventGrid EventSubscription Contributor** role:
 
 ```bicep
-// eventGrid.bicep
-resource systemTopic 'Microsoft.EventGrid/systemTopics@2024-06-01-preview' = {
-  name: 'evgt-${storageAccountName}'
-  location: location
-  properties: {
-    source: storageAccount.id
-    topicType: 'Microsoft.Storage.StorageAccounts'
-  }
-}
-
 resource eventSubscription 'Microsoft.EventGrid/systemTopics/eventSubscriptions@2024-06-01-preview' = {
   parent: systemTopic
   name: 'blob-trigger-sub'
   properties: {
-    destination: {
-      endpointType: 'WebHook'
-      properties: {
-        // ARM resolves system key and handles validation at deployment time
-        endpointUrl: 'https://${functionApp.properties.defaultHostName}/runtime/webhooks/blobs?functionName=${functionName}&code=${listKeys('${functionApp.id}/host/default', '2023-12-01').systemKeys.blobs_extension}'
-      }
-    }
-    filter: {
-      includedEventTypes: [ 'Microsoft.Storage.BlobCreated' ]
-      subjectBeginsWith: '/blobServices/default/containers/${sourceContainerName}/'
-    }
+    destination: { endpointType: 'WebHook' }
+    filter: { includedEventTypes: [ 'Microsoft.Storage.BlobCreated' ] }
   }
 }
 ```
-
-**RBAC requirement**: Assign **EventGrid EventSubscription Contributor** role to the UAMI.
 
 ## User Assigned Managed Identity (UAMI) Auth Patterns
 
