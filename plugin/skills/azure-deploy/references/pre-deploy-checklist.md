@@ -210,7 +210,7 @@ for attempt in 1 2 3 4 5; do
     --query "[?roleDefinitionName=='AcrPull'].roleDefinitionName" \
     -o tsv 2>/dev/null)
 
-  if [ "$ROLE" = "AcrPull" ]; then
+  if printf '%s\n' "$ROLE" | grep -qx 'AcrPull'; then
     echo "AcrPull role confirmed. Proceeding with azd deploy."
     break
   fi
