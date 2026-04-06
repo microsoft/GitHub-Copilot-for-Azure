@@ -150,7 +150,7 @@ configuration: {
 | Topology | Environment `internal` | Ingress `external` | Access |
 |----------|----------------------|-------------------|--------|
 | Public app | `false` | `true` | Internet + VNet |
-| Internal microservice | `false` | `false` | VNet + same environment |
+| Internal microservice | `false` | `false` | Same environment; VNet if environment is VNet-injected |
 | Fully private | `true` | `true` or `false` | VNet only (no public IP) |
 
 > ⚠️ **Warning:** An internal environment has no public IP. You need VPN, ExpressRoute, or a jump box to reach apps in an internal environment.

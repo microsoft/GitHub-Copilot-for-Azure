@@ -39,11 +39,9 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 Route 100% to the current revision, deploy a new one, validate, then switch:
 
 ```bash
-# Deploy new revision (existing traffic rules remain; new revision gets 0% unless configured)
-az containerapp update -n $APP -g $RG --image $NEW_IMAGE
-
-# Get the new revision name
-NEW_REV=$(az containerapp revision list -n $APP -g $RG --query "[0].name" -o tsv)
+# Deploy new revision and capture its name from the update output
+NEW_REV=$(az containerapp update -n $APP -g $RG --image $NEW_IMAGE \
+  --query properties.latestRevisionName -o tsv)
 
 # Test the new revision directly via its revision-specific URL
 az containerapp revision list -n $APP -g $RG -o table
@@ -64,8 +62,14 @@ Gradually shift traffic to validate the new revision under load:
 | 3 | 0% | 100% | — |
 
 ```bash
+# List revisions to identify current stable and new canary
+az containerapp revision list -n $APP -g $RG -o table
+
+STABLE_REV=<stable-revision-name>
+CANARY_REV=<canary-revision-name>
+
 az containerapp ingress traffic set -n $APP -g $RG \
-  --revision-weight "$APP--stable=90" "$APP--canary=10"
+  --revision-weight "$STABLE_REV=90" "$CANARY_REV=10"
 ```
 
 ### Label-Based Routing

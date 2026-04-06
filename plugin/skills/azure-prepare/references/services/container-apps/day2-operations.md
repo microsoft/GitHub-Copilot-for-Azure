@@ -8,7 +8,7 @@ Operational tasks for running Container Apps in production: restart, exec, logs,
 |--------|---------|
 | Restart active revision | `az containerapp revision restart -n $APP -g $RG --revision $REV` |
 | Scale to zero (stop) | `az containerapp update -n $APP -g $RG --min-replicas 0 --max-replicas 0` |
-| Resume (restore scaling) | `az containerapp update -n $APP -g $RG --min-replicas 1 --max-replicas 10` |
+| Resume (restore scaling) | `az containerapp update -n $APP -g $RG --min-replicas <previous-min> --max-replicas <previous-max>` |
 | List replicas | `az containerapp replica list -n $APP -g $RG --revision $REV` |
 
 > 💡 **Tip:** Restarting a revision replaces all running replicas gracefully. No new revision is created.
@@ -135,6 +135,6 @@ az containerapp secret set -n $APP -g $RG \
 |---------|-------------|-------------|
 | Replica crash loop | App startup failure | Check console logs; exec into container |
 | 0 replicas running | Scale-to-zero + no traffic | Set `minReplicas: 1` or send a request |
-| Env var not updating | Same revision serving | Force new revision with `revision copy` |
-| Secret value stale | Key Vault ref not refreshed | Create new revision to pull latest |
+| Env var not updating | Old revision still serving traffic | Verify the latest revision exists, then update ingress traffic weights or route to `latestRevision` |
+| Secret value stale | Key Vault ref not refreshed | Create or verify the refreshed revision, then shift traffic to that revision |
 | High memory/CPU | Resource limits too low | Update `resources.cpu` / `resources.memory` |
