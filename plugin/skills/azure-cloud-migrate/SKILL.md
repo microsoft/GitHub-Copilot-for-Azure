@@ -1,6 +1,6 @@
 ---
 name: azure-cloud-migrate
-description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions and GCP Cloud Run→Container Apps. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, Cloud Run to Container Apps, Cloud Run migration assessment."
+description: "Assess and migrate cross-cloud workloads to Azure: AWS Lambda→Functions, GCP Cloud Run→Container Apps, Spring Boot→Container Apps. WHEN: migrate Lambda to Functions, migrate AWS to Azure, Lambda assessment, migrate from GCP, Cloud Run to Container Apps, Cloud Run migration, migrate Spring Boot to Container Apps, Azure Spring Apps to ACA, Spring Boot ACA migration."
 license: MIT
 metadata:
   author: Microsoft
@@ -26,6 +26,7 @@ metadata:
 |--------|--------|-----------|
 | AWS Lambda | Azure Functions | [lambda-to-functions.md](references/services/functions/lambda-to-functions.md) ([assessment](references/services/functions/assessment.md), [code-migration](references/services/functions/code-migration.md)) |
 | GCP Cloud Run | Azure Container Apps | [cloudrun-to-container-apps.md](references/services/container-apps/cloudrun-to-container-apps.md) |
+| Spring Boot (Azure Spring Apps/VMs) | Azure Container Apps | [spring-apps-to-aca.md](references/services/container-apps/spring-apps-to-aca.md) |
 
 > No matching scenario? Use `mcp_azure_mcp_documentation` and `mcp_azure_mcp_get_bestpractices` tools.
 

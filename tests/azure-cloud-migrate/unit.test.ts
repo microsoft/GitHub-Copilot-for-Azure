@@ -94,4 +94,19 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("GCP Cloud Run");
     });
   });
+
+  describe("Spring Boot to Container Apps Scenario", () => {
+    test("includes Spring Apps migration scenario", () => {
+      expect(skill.content).toContain("Spring Boot");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references spring-apps-to-aca guide", () => {
+      expect(skill.content).toContain("spring-apps-to-aca.md");
+    });
+
+    test("includes Azure Spring Apps source in scenario table", () => {
+      expect(skill.content).toContain("Azure Spring Apps");
+    });
+  });
 });

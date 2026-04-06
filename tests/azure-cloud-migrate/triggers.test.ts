@@ -40,6 +40,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "assess Cloud Run to Container Apps migration",
       "I want to migrate my Cloud Run service to Azure",
       "help me move from Google Cloud Run to Container Apps",
+      "migrate Spring Boot to Container Apps",
+      "Azure Spring Apps to ACA migration",
+      "Spring Boot ACA migration assessment",
+      "replatform Spring Boot to Container Apps",
+      "move Spring Boot from Azure Spring Apps to ACA",
+      "Spring Boot platform migration to Container Apps",
+      "migrate existing Spring Boot app to Container Apps",
+      "convert Spring Boot JAR to container on ACA",
     ];
 
     test.each(shouldTriggerPrompts)(
