@@ -63,8 +63,15 @@ services:
 
 ### Scan for the pattern
 
+**Bash:**
 ```bash
-grep -nE "AddParameter|WithBuildArg" <path/to/AppHost/Program.cs>
+grep -RIn --include="*.cs" -E "AddParameter|WithBuildArg" <path/to/AppHost>
+```
+
+**PowerShell:**
+```powershell
+Get-ChildItem -Path "<path/to/AppHost>" -Recurse -Filter "*.cs" |
+  Select-String -Pattern "AddParameter|WithBuildArg"
 ```
 
 **Problematic pattern:**
