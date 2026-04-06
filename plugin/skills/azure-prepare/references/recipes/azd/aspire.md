@@ -57,9 +57,9 @@ services:
 - With: Auto-detects AppHost, no interaction needed
 - Essential for agents and CI/CD
 
-## ⛔ Post-Init: Fix AddParameter Used with WithBuildArg
+## ⛔ After `azd init`: Fix AddParameter Used with WithBuildArg Before Build/Deploy
 
-> **MANDATORY** — Before proceeding, scan the AppHost source for `AddParameter` calls that are passed to `WithBuildArg`. This pattern triggers an azd bug (`parameter infra.parameters.<name> not found`) that causes Docker builds to fail even when the parameter has a default value.
+> **MANDATORY** — After running `azd init --from-code`, but before `azd package`, `azd up`, or any Docker image build/deploy step, scan the AppHost source for `AddParameter` calls that are passed to `WithBuildArg`. This pattern triggers an azd bug (`parameter infra.parameters.<name> not found`) that causes Docker builds to fail even when the parameter has a default value.
 
 ### Scan for the pattern
 
