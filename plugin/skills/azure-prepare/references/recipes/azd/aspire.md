@@ -64,7 +64,7 @@ services:
 ### Scan for the pattern
 
 ```bash
-grep -n "AddParameter\|WithBuildArg" <path/to/AppHost/Program.cs>
+grep -nE "AddParameter|WithBuildArg" <path/to/AppHost/Program.cs>
 ```
 
 **Problematic pattern:**
