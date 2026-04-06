@@ -28,6 +28,8 @@ metadata:
 | GCP Cloud Run | Azure Container Apps | [cloudrun-to-container-apps.md](references/services/container-apps/cloudrun-to-container-apps.md) |
 | Spring Boot (Azure Spring Apps/VMs) | Azure Container Apps | [spring-apps-to-aca.md](references/services/container-apps/spring-apps-to-aca.md) |
 
+**Lambda migration guides:** [assessment](references/services/functions/assessment.md) • [code-migration](references/services/functions/code-migration.md)
+
 > No matching scenario? Use `mcp_azure_mcp_documentation` and `mcp_azure_mcp_get_bestpractices` tools.
 
 ## Output Directory
