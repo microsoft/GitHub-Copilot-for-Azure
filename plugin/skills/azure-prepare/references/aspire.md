@@ -61,6 +61,14 @@ APPHOST_DIR=$(dirname "$APPHOST_PROJECT")
 grep -r "ExcludeFromManifest" "$APPHOST_DIR" --include="*.cs" | head -20
 ```
 
+**PowerShell:**
+```powershell
+# Find the AppHost project and scan only its source directory
+$appHostProject = Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1
+$appHostDir = $appHostProject.DirectoryName
+Get-ChildItem -Path $appHostDir -Recurse -Filter "*.cs" | Select-String "ExcludeFromManifest" | Select-Object -First 20
+```
+
 This scan is informational. `.ExcludeFromManifest()` can appear alongside deployable resources, so a positive match does **not** immediately block deployment. What matters is the final `azure.yaml` output after `azd init --from-code` completes:
 
 - If `azd init` **fails** with `unsupported resource type` → see Step 2 error guidance below.
