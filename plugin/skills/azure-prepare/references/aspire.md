@@ -52,21 +52,21 @@ grep -r "Aspire.Hosting" . --include="*.csproj"
 
 ### ⛔ Step 1a: Pre-Check for Custom/Non-Deployable Resources (MANDATORY)
 
-**Before running `azd init --from-code`, scan the AppHost source code for patterns that indicate the application is designed for local development only and cannot be deployed to Azure.**
+**Before running `azd init --from-code`, scan the AppHost source code to understand whether the app may contain local-only custom resources.**
 
 ```bash
-# Scan AppHost for custom resource patterns that indicate non-deployable apps
-grep -r "ExcludeFromManifest" . --include="*.cs" | head -20
+# Find the AppHost project and scan only its source directory
+APPHOST_PROJECT=$(find . -name "*.AppHost.csproj" | head -1)
+APPHOST_DIR=$(dirname "$APPHOST_PROJECT")
+grep -r "ExcludeFromManifest" "$APPHOST_DIR" --include="*.cs" | head -20
 ```
 
-**If any `.ExcludeFromManifest()` calls are found**, the AppHost contains custom Aspire resources that are intentionally excluded from Azure deployment:
+This scan is informational. `.ExcludeFromManifest()` can appear alongside deployable resources, so a positive match does **not** immediately block deployment. What matters is the final `azure.yaml` output after `azd init --from-code` completes:
 
-1. ⛔ **Do NOT proceed with deployment** — these resources cannot be meaningfully deployed
-2. ⛔ **Do NOT modify source code** to remove or work around `.ExcludeFromManifest()` calls — they are intentional by design
-3. ✅ Record a blocker: "Application contains custom Aspire resources with `.ExcludeFromManifest()` — designed for local development only, not Azure deployment"
-4. ✅ Inform the user that this application demonstrates custom Aspire resource authoring patterns and is not intended for cloud deployment
+- If `azd init` **fails** with `unsupported resource type` → see Step 2 error guidance below.
+- If `azd init` **succeeds** but `azure.yaml` has an empty or missing `services` section → see Step 4a below.
 
-> 💡 **Why:** Custom Aspire resource types (e.g., local tooling wrappers, demo resources) that call `.ExcludeFromManifest()` are explicitly marked as non-deployable. Removing this marker or working around it violates the application's design intent.
+> 💡 **Why scan early:** Knowing that `.ExcludeFromManifest()` is present gives useful context when azd errors or generates an empty manifest — it confirms the app intentionally targets local development rather than Azure deployment.
 
 ### Step 2: Initialize with azd
 
