@@ -11,6 +11,12 @@ find . -type d -name "Migrations" 2>/dev/null
 find . -name "*.csproj" -exec grep -l "Microsoft.EntityFrameworkCore" {} \;
 ```
 
+**PowerShell:**
+```powershell
+Get-ChildItem -Recurse -Directory -Filter "Migrations" -ErrorAction SilentlyContinue
+Get-ChildItem -Recurse -Filter "*.csproj" | Select-String -List "Microsoft.EntityFrameworkCore" | Select-Object -ExpandProperty Path
+```
+
 ## Deployment Methods
 
 ### Method 1: azd Hook (Recommended)
@@ -35,7 +41,20 @@ cd src/api  # Adjust path
 dotnet ef database update --connection "$CONNECTION_STRING"
 ```
 
-> 💡 Make executable: `chmod +x scripts/*.sh`. For PowerShell: Use `azd env get-values | ForEach-Object` pattern.
+**scripts/apply-migrations.ps1:**
+
+```powershell
+$ErrorActionPreference = 'Stop'
+azd env get-values | ForEach-Object {
+    $name, $value = $_.Split('=', 2)
+    Set-Item "env:$name" $value
+}
+$ConnectionString = "Server=tcp:${env:SQL_SERVER}.database.windows.net,1433;Database=${env:SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
+Set-Location src/api  # Adjust path
+dotnet ef database update --connection $ConnectionString
+```
+
+> 💡 Make executable: `chmod +x scripts/*.sh`.
 
 ### Method 2: SQL Script (Production)
 
@@ -45,6 +64,14 @@ Generate idempotent script for review before applying:
 dotnet ef migrations script --idempotent --output migrations.sql
 az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
   --auth-mode ActiveDirectoryDefault --queries "$(cat migrations.sql)"
+```
+
+**PowerShell:**
+```powershell
+dotnet ef migrations script --idempotent --output migrations.sql
+$MigrationsSql = Get-Content migrations.sql -Raw
+az sql db query --server $env:SQL_SERVER --database $env:SQL_DATABASE `
+  --auth-mode ActiveDirectoryDefault --queries $MigrationsSql
 ```
 
 ### Method 3: Application Startup (Dev Only)
@@ -103,6 +130,53 @@ az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
 cd src/api
 CONNECTION_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Database=${SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
 dotnet ef database update --connection "$CONNECTION_STRING"
+```
+
+**PowerShell equivalent:**
+```powershell
+$ErrorActionPreference = 'Stop'
+azd env get-values | ForEach-Object {
+    $name, $value = $_.Split('=', 2)
+    Set-Item "env:$name" $value
+}
+
+# Grant SQL access
+$SqlQuery = @"
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$($env:SERVICE_API_NAME)')
+  CREATE USER [$($env:SERVICE_API_NAME)] FROM EXTERNAL PROVIDER;
+
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_datareader' AND m.name = '$($env:SERVICE_API_NAME)'
+)
+  ALTER ROLE db_datareader ADD MEMBER [$($env:SERVICE_API_NAME)];
+
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_datawriter' AND m.name = '$($env:SERVICE_API_NAME)'
+)
+  ALTER ROLE db_datawriter ADD MEMBER [$($env:SERVICE_API_NAME)];
+
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_ddladmin' AND m.name = '$($env:SERVICE_API_NAME)'
+)
+  ALTER ROLE db_ddladmin ADD MEMBER [$($env:SERVICE_API_NAME)];
+"@
+
+az sql db query --server $env:SQL_SERVER --database $env:SQL_DATABASE `
+  --auth-mode ActiveDirectoryDefault --queries $SqlQuery
+
+# Apply migrations
+Set-Location src/api
+$ConnectionString = "Server=tcp:$($env:SQL_SERVER).database.windows.net,1433;Database=$($env:SQL_DATABASE);Authentication=Active Directory Default;Encrypt=True;"
+dotnet ef database update --connection $ConnectionString
 ```
 
 ## Prerequisites
