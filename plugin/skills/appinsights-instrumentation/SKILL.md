@@ -4,7 +4,7 @@ description: "Guidance for instrumenting webapps with Azure Application Insights
 license: MIT
 metadata:
   author: Microsoft
-  version: "0.0.0-placeholder"
+  version: "1.0.3"
 ---
 
 # AppInsights Instrumentation Guide
@@ -70,3 +70,7 @@ No matter which option you choose, recommend the user to create the App Insights
 
 - **OpenTelemetry Distro**: [Python](references/sdk/azure-monitor-opentelemetry-py.md) | [TypeScript](references/sdk/azure-monitor-opentelemetry-ts.md)
 - **OpenTelemetry Exporter**: [Python](references/sdk/azure-monitor-opentelemetry-exporter-py.md) | [Java](references/sdk/azure-monitor-opentelemetry-exporter-java.md)
+
+## Platform-Specific Guides
+
+- **Container Apps**: [Observability Guide](references/container-apps.md)
