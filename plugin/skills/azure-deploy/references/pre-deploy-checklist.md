@@ -159,13 +159,17 @@ azd up --no-prompt
 
 ### Container Apps + ACR — Pre-Deploy RBAC Health Check
 
-> **⛔ MANDATORY**: If the plan includes Container Apps that pull images from ACR using a managed identity, you **MUST** confirm the `AcrPull` role assignment has propagated **before** running `azd deploy`. Skipping this check causes the Container App revision to time out (~900 seconds) waiting for image pull permission — a known Azure RBAC propagation delay.
+> **⛔ MANDATORY**: If the plan includes Container Apps that pull images from ACR using a managed identity, you **MUST** use this two-phase flow: `azd provision` → RBAC health check → `azd deploy`. **Do not use `azd up` for this scenario**, because `azd up` combines provisioning and deployment and can skip the required propagation gate. You must confirm the `AcrPull` role assignment has propagated **before** running `azd deploy`. Skipping this check causes the Container App revision to time out (~900 seconds) waiting for image pull permission — a known Azure RBAC propagation delay.
 
 This check is **required** when ALL of the following are true:
 - `azure.yaml` includes a Container App service
 - The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR
-- Infrastructure was just provisioned (fresh `azd provision` run)
+- Infrastructure was just provisioned with `azd provision` and application deployment has not yet started
 
+**Required flow for this scenario:**
+1. Run `azd provision`
+2. Complete the RBAC health check in this section
+3. Run `azd deploy`
 **Step A — Get the Container App's managed identity principal ID:**
 
 ```bash
