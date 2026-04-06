@@ -336,6 +336,21 @@ builder.AddDockerfile("ginapp", "./ginapp")
 3. Check package references in .csproj
 4. Run from solution root
 
+### Error: "unsupported resource type" — Custom Aspire Resources
+
+**Symptoms:** `azd init --from-code` fails with `unsupported resource type` for one or more resources in the AppHost (e.g., custom child resources, ClockHand, or other custom Aspire integration types).
+
+**Cause:** The AppHost contains custom Aspire resource types designed for local development tooling only. These resources have no Azure equivalent and are not deployable.
+
+**Resolution:**
+
+1. ⛔ **Stop — do NOT fix this error by modifying source code.** Do not add `.ExcludeFromManifest()` to suppress the error.
+2. ⛔ **Do NOT proceed with deployment.**
+3. ✅ Inform the user: the application uses custom Aspire resource authoring patterns intended for local tooling, not cloud deployment.
+4. ✅ Record a deployment blocker: "AppHost contains custom Aspire resource types (`unsupported resource type`) with no Azure deployment target."
+
+> ⚠️ Adding `.ExcludeFromManifest()` to work around this error violates the application's design intent and may produce an incomplete or incorrect deployment.
+
 ## Infrastructure Auto-Generation
 
 | Traditional | Aspire |
