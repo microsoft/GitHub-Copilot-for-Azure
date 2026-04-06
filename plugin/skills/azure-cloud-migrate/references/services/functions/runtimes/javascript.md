@@ -89,6 +89,8 @@ const blobOutput = output.storageBlob({
 
 ```javascript
 const { DefaultAzureCredential } = require('@azure/identity');
+const createClient = require('@azure-rest/ai-vision-image-analysis').default;
+
 const credential = new DefaultAzureCredential({
   managedIdentityClientId: process.env.AZURE_CLIENT_ID
 });
