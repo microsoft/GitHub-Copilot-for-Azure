@@ -19,7 +19,7 @@ This migration enables you to move existing Spring Boot applications from Azure 
 | Spring Apps Feature | Container Apps Equivalent |
 |-------------------|---------------------------|
 | App Deployment | Container App |
-| Service Registry (Eureka) | Azure Service Bus / Dapr service invocation |
+| Service Registry (Eureka) | Dapr service invocation + Container Apps internal DNS |
 | Config Server | Azure App Configuration + Key Vault |
 | Spring Cloud Gateway | Azure API Management / Container Apps ingress |
 | Distributed Tracing | Application Insights |

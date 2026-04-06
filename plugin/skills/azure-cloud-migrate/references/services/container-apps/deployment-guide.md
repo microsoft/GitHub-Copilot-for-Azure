@@ -1,5 +1,7 @@
 # Deployment Guide: Spring Boot to Azure Container Apps
 
+> **Note:** This guide provides Bash examples only. PowerShell equivalents were omitted to meet token limits.
+
 ## Phase 1: Create Container Apps Environment
 
 ```bash
@@ -79,9 +81,10 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
   --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod
 ```
 
-**With storage mount:**
+**With storage mount** (add these flags to the above command):
 ```bash
-az containerapp create ... --bind-storage-name spring-storage --mount-path /mnt/data
+  --bind-storage-name spring-storage \
+  --mount-path /mnt/data
 ```
 
 ## Phase 7: Validation
