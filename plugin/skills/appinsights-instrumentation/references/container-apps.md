@@ -75,7 +75,7 @@ Container Apps with multiple services need correlation. The OpenTelemetry SDK pr
 
 ## Dapr Observability
 
-For apps using Dapr sidecars, telemetry is collected automatically for service invocation, pub/sub, and state operations.
+For apps using Dapr sidecars, Dapr generates tracing spans for service invocation, pub/sub, and state operations when tracing is configured. Note that `samplingRate: "1"` means 100% sampling — consider lowering for production workloads.
 
 Configure Dapr tracing in the environment:
 
@@ -110,7 +110,7 @@ Discover Container Apps and their monitoring configuration:
 resources
 | where type == "microsoft.app/containerapps"
 | mv-expand container = properties.template.containers
-| mv-expand envVar = container.env
+| mv-expand kind=outer envVar = container.env
 | summarize hasAppInsights = countif(envVar.name == "APPLICATIONINSIGHTS_CONNECTION_STRING") by name, resourceGroup
 | where hasAppInsights == 0
 ```
