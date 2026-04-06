@@ -107,3 +107,4 @@ promptText: |
 | "Analyze production traces" / "Search conversations" / "Find errors in App Insights" | [trace skill](../trace/trace.md) |
 | "Debug container issues" / "Container logs" | [troubleshoot skill](../troubleshoot/troubleshoot.md) |
 | "Deploy or redeploy agent" | [deploy skill](../deploy/deploy.md) |
+| "Enable continuous evaluation" / "Set up ongoing monitoring" | [continuous-eval skill](../continuous-eval/continuous-eval.md) |
