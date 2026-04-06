@@ -25,10 +25,10 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.5.2",
     "@vitest/coverage-v8": "^4.1.2",
-    "eslint": "^10.1.0",
-    "fast-xml-parser": "^5.5.9",
+    "eslint": "^10.2.0",
+    "fast-xml-parser": "^5.5.10",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
     "sirv-cli": "^3.0.1",
