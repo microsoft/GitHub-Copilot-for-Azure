@@ -157,6 +157,108 @@ azd up --no-prompt
 
 ## Service-Specific Checks
 
+### Container Apps + ACR — Pre-Deploy RBAC Health Check
+
+> **⛔ MANDATORY**: If the plan includes Container Apps that pull images from ACR using a managed identity, you **MUST** use this two-phase flow: `azd provision` → RBAC health check → `azd deploy`. **Do not use `azd up` for this scenario**, because `azd up` combines provisioning and deployment and can skip the required propagation gate. You must confirm the `AcrPull` role assignment has propagated **before** running `azd deploy`. Skipping this check causes the Container App revision to time out (~900 seconds) waiting for image pull permission — a known Azure RBAC propagation delay.
+
+This check is **required** when ALL of the following are true:
+- `azure.yaml` includes a Container App service
+- The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR
+- Infrastructure was just provisioned with `azd provision` and application deployment has not yet started
+
+**Required flow for this scenario:**
+1. Run `azd provision`
+2. Complete the RBAC health check in this section
+3. Run `azd deploy`
+**Step A — Get the Container App's managed identity principal ID:**
+
+```bash
+PRINCIPAL_ID=$(az containerapp identity show \
+  --name <app-name> \
+  --resource-group rg-<environment-name> \
+  --query principalId -o tsv)
+```
+
+**PowerShell:**
+```powershell
+$PrincipalId = az containerapp identity show `
+  --name <app-name> `
+  --resource-group rg-<environment-name> `
+  --query principalId -o tsv
+```
+
+**Step B — Get the ACR resource ID:**
+
+```bash
+ACR_ID=$(az acr show \
+  --name <acr-name> \
+  --resource-group rg-<environment-name> \
+  --query id -o tsv)
+```
+
+**PowerShell:**
+```powershell
+$AcrId = az acr show `
+  --name <acr-name> `
+  --resource-group rg-<environment-name> `
+  --query id -o tsv
+```
+
+**Step C — Poll until the `AcrPull` role is visible (up to 5 minutes):**
+
+```bash
+for attempt in 1 2 3 4 5; do
+  ROLE=$(az role assignment list \
+    --scope "$ACR_ID" \
+    --assignee-object-id "$PRINCIPAL_ID" \
+    --query "[?roleDefinitionName=='AcrPull'].roleDefinitionName" \
+    -o tsv 2>/dev/null)
+
+  if printf '%s\n' "$ROLE" | grep -qx 'AcrPull'; then
+    echo "AcrPull role confirmed. Proceeding with azd deploy."
+    break
+  fi
+
+  if [ "$attempt" -eq 5 ]; then
+    echo "AcrPull role not found after 5 minutes. Assign it manually before retrying."
+    exit 1
+  fi
+
+  echo "Waiting for AcrPull RBAC propagation (attempt $attempt/5, waiting 60s)..."
+  sleep 60
+done
+```
+
+**PowerShell:**
+```powershell
+for ($attempt = 1; $attempt -le 5; $attempt++) {
+    $Role = az role assignment list `
+      --scope $AcrId `
+      --assignee-object-id $PrincipalId `
+      --query "[?roleDefinitionName=='AcrPull'].roleDefinitionName" `
+      -o tsv 2>$null
+
+    if ($Role -eq "AcrPull") {
+        Write-Output "AcrPull role confirmed. Proceeding with azd deploy."
+        break
+    }
+
+    if ($attempt -eq 5) {
+        Write-Output "AcrPull role not found after 5 minutes. Assign it manually before retrying."
+        exit 1
+    }
+
+    Write-Output "Waiting for AcrPull RBAC propagation (attempt $attempt/5, waiting 60s)..."
+    Start-Sleep -Seconds 60
+}
+```
+
+Only after this check confirms `AcrPull` has propagated should you run `azd deploy --no-prompt`.
+
+> 💡 **Tip:** If `AcrPull` is missing entirely, assign it manually using the steps in [Container App Revision Timeout](recipes/azd/errors.md#container-app-revision-timeout), then re-run the poll loop above.
+
+---
+
 ### Durable Functions — Verify DTS Backend
 
 > **⛔ MANDATORY**: If the plan includes Durable Functions, verify infrastructure uses **Durable Task Scheduler** (DTS), NOT Azure Storage.
