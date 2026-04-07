@@ -133,8 +133,18 @@ hooks:
 ```bash
 #!/bin/bash
 set -e
-eval $(azd env get-values)
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  key=${line%%=*}
+  value=${line#*=}
 
+  case "$value" in
+    \"*\") value=${value#\"}; value=${value%\"} ;;
+    \'*\') value=${value#\'}; value=${value%\'} ;;
+  esac
+
+  export "$key=$value"
+done < <(azd env get-values)
 # SERVICE_WEB_NAME is used for App Service; use SERVICE_API_NAME for API services
 APP_NAME=${SERVICE_WEB_NAME:-$SERVICE_API_NAME}
 
