@@ -54,9 +54,17 @@ azd env get-values | ForEach-Object {
     $name, $value = $_.Split('=', 2)
     Set-Item "env:$name" $value.Trim('"')
 }
-# Install dotnet-ef if not already installed (suppresses output when already present)
-dotnet tool install --global dotnet-ef 2>$null
-$LASTEXITCODE = 0  # exit code 1 means already installed, which is fine
+# Install dotnet-ef only when it is not already installed
+$globalTools = dotnet tool list --global 2>$null
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to list globally installed .NET tools."
+}
+if (-not ($globalTools | Select-String -Pattern '^\s*dotnet-ef\s')) {
+    dotnet tool install --global dotnet-ef
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install dotnet-ef."
+    }
+}
 $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
 $ConnectionString = "Server=tcp:${env:SQL_SERVER}.database.windows.net,1433;Database=${env:SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
 Set-Location src/api  # Adjust path
