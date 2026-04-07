@@ -138,7 +138,7 @@ Key behaviours of the scripts:
 
 > 💡 Make executable: `chmod +x scripts/*.sh`
 
-> 💡 If the app also uses EF Core migrations, combine this with the migration hook — see [azure-deploy sql-managed-identity.md](../../../../azure-deploy/references/recipes/azd/sql-managed-identity.md).
+> 💡 If the app also uses EF Core migrations, combine this with the migration hook — see the `azure-deploy` skill's `references/recipes/azd/sql-managed-identity.md`.
 
 ## Legacy SQL Authentication (⛔ DO NOT USE)
 
