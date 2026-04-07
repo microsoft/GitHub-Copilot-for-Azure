@@ -717,7 +717,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           },
           prompt:
             "Please deploy this application to Azure. " +
-            "Use the eastus2 region. " +
+            "Use the westus2 region. " +
             "Use my current subscription. " +
             "This is for a small scale production environment. " +
             "Use standard SKUs. " +
