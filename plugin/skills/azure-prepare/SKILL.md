@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.8"
+  version: "1.1.9"
 ---
 
 # Azure Prepare
@@ -28,7 +28,7 @@ Activate this skill when user wants to:
 
 ## Rules
 
-1. **Plan first** — Create `.azure/deployment-plan.md` **in the workspace root directory** (not the session-state folder) before any code generation
+1. **⛔ Plan first — MANDATORY** — You MUST physically write `.azure/deployment-plan.md` **in the workspace root directory** (not the session-state folder) **as your very first action** — before any code generation, analysis, or research begins. This file must exist on disk. azure-validate and azure-deploy depend on it and will fail without it. Do not skip or defer this step.
 2. **Get approval** — Present plan to user before execution
 3. **Research before generating** — Load references and invoke related skills
 4. **Update plan progressively** — Mark steps complete as you go
@@ -51,7 +51,9 @@ Activate this skill when user wants to:
 >
 > The `.azure/deployment-plan.md` file is the **source of truth** for this workflow and for azure-validate and azure-deploy skills. Without it, those skills will fail.
 >
-> ⚠️ **CRITICAL: `.azure/deployment-plan.md` must be created inside the workspace root** (e.g., `/tmp/my-project/.azure/deployment-plan.md`), not in the session-state folder. This is the deployment plan artifact read by azure-validate and azure-deploy. **You must create this.**
+> ⚠️ **CRITICAL: `.azure/deployment-plan.md` must be WRITTEN TO DISK inside the workspace root** (e.g., `/tmp/my-project/.azure/deployment-plan.md`), not in the session-state folder. Use a file-write tool to create this file. This is the deployment plan artifact read by azure-validate and azure-deploy. **You MUST create this file — do not proceed without it.**
+>
+> ⛔ **Critical:** Skipping the plan file creation will cause azure-validate and azure-deploy to fail. This requirement has no exceptions.
 
 ---
 
@@ -97,7 +99,7 @@ Create `.azure/deployment-plan.md` by completing these steps. Do NOT generate an
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
 | 4 | **Select Recipe** — Choose AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
 | 5 | **Plan Architecture** — Select stack + map components to Azure services | [architecture.md](references/architecture.md) |
-| 6 | **Write Plan** — Generate `.azure/deployment-plan.md` with all decisions | [plan-template.md](references/plan-template.md) |
+| 6 | **⛔ Write Plan (MANDATORY)** — Use a file-write tool to generate and save `.azure/deployment-plan.md` to disk with all decisions. This file must physically exist before you present the plan. | [plan-template.md](references/plan-template.md) |
 | 7 | **Present Plan** — Show plan to user and ask for approval | `.azure/deployment-plan.md` |
 | 8 | **Destructive actions require `ask_user`** | [Global Rules](references/global-rules.md) |
 
