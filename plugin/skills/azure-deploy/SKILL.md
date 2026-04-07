@@ -4,7 +4,7 @@ description: "Execute Azure deployments for ALREADY-PREPARED applications that h
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.15"
+  version: "1.0.16"
 ---
 
 # Azure Deploy
@@ -59,7 +59,7 @@ Activate this skill when user wants to:
 | # | Action | Reference |
 |---|--------|-----------|
 | 1 | **Check Plan** — Read `.azure/deployment-plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/deployment-plan.md` |
-| 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
+| 2 | **Pre-Deploy Checklist** — MUST complete ALL steps, including Step 5a (Container Apps environment conflict check) for Container Apps deployments | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
 | 3 | **Load Recipe** — Based on `recipe.type` in `.azure/deployment-plan.md` | [recipes/README.md](references/recipes/README.md) |
 | 4 | **RBAC Health Check** — For Container Apps + ACR with managed identity: run `azd provision --no-prompt`, then verify `AcrPull` role has propagated before proceeding (see checklist) | [Pre-Deploy Checklist — Container Apps RBAC](references/pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) |
 | 5 | **Execute Deploy** — Follow recipe steps | Recipe README |
