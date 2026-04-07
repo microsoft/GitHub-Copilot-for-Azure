@@ -81,11 +81,14 @@ function collectSkillReportPaths(
 
 /**
  * Extract the Average Confidence percentage from a SKILL-REPORT markdown string.
- * Looks for: | **Average Confidence** | **{value}%** |
+ * Looks for an `Average Confidence` markdown table row, tolerating case differences,
+ * optional bolding, and extra whitespace, for example:
+ * | **Average Confidence** | **{value}%** |
+ * | Average confidence | {value}% |
  * Returns a number 0–100, or null if not found.
  */
 function extractAverageConfidence(markdown: string): number | null {
-    const match = markdown.match(/\|\s*\*\*Average Confidence\*\*\s*\|\s*\*\*(\d+(?:\.\d+)?)%\*\*\s*\|/);
+    const match = markdown.match(/^\s*\|\s*(?:\*\*)?\s*Average Confidence\s*(?:\*\*)?\s*\|\s*(?:\*\*)?\s*(\d+(?:\.\d+)?)\s*%\s*(?:\*\*)?\s*\|\s*$/im);
     if (!match) return null;
     const value = parseFloat(match[1]);
     return isNaN(value) ? null : value;
