@@ -77,7 +77,7 @@ The Forecast API shares the same rate limits as the Cost Query API:
 |-------|-------|
 | Per User | 20 requests per minute |
 | Per Scope | 4 requests per minute |
-| Per Tenant | 12 per 10 seconds, 60 per minute, 600 per hour |
+| Per Tenant | 12 requests per 10 seconds, 60 requests per minute, 600 requests per hour |
 | Per Client Type | 2,000 requests per minute |
 
 > ⚠️ **Warning:** The **per-scope limit (4 requests/minute)** is the most restrictive. Sequential queries to the same subscription, resource group, or billing account share this limit.

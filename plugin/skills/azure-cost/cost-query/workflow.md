@@ -33,7 +33,7 @@ Define granularity, aggregation, grouping, filtering, and sorting in the `datase
 - **Granularity**: `None`, `Daily`, or `Monthly`
 - **Aggregation**: Use `Sum` on `Cost` or `PreTaxCost` for total cost
 - **Grouping**: Up to **2** `GroupBy` dimensions (e.g., `ServiceName`, `ResourceGroupName`)
-- **Filtering**: Use `Dimensions` or `Tags` filters with `Name`, `Operator` (`In`, `Equal`, `Contains`), and `Values` fields
+- **Filtering**: Use `dimensions` or `tags` filters with `name`, `operator` (`In`, `Equal`, `Contains`), and `values` fields
 - **Sorting**: Order results by cost or dimension columns
 
 > 💡 **Tip:** Not all dimensions are available at every scope. See [dimensions-by-scope.md](./dimensions-by-scope.md) for the availability matrix.
@@ -135,7 +135,7 @@ For more examples including daily trends, tag-based filtering, and multi-dimensi
 | 401 | Unauthorized | Verify authentication (`az login`). |
 | 403 | Forbidden | Ensure Cost Management Reader role on scope. |
 | 404 | Scope not found | Verify scope URL and resource IDs. |
-| 429 | Too many requests | Retry after `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header. **Max 3 retries.** |
+| 429 | Too many requests | Check all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers (`qpu`, `entity`, `tenant`). Wait for the **longest** value. **Max 3 retries.** |
 | 503 | Service unavailable | Check [Azure Status](https://status.azure.com). |
 
 See [error-handling.md](./error-handling.md) for detailed error handling including rate limit headers and retry strategies.
