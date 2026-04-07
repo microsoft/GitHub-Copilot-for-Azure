@@ -1276,6 +1276,162 @@ function renderSkillInvocationPanel(
   createItemFilter(section);
 }
 
+// ── E2E Pass Rate per Skill Panel ───────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the end-to-end pass
+ * rate for every skill on the main dashboard.
+ * A skill is considered passing when its e2e rate is >= 70%.
+ */
+async function loadE2EPassRates() {
+  const section = document.getElementById("panel-e2e-pass-rate");
+  if (!section) return;
+
+  try {
+    const datesRes = await fetch("/api/dates");
+    if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
+    const dates = await datesRes.json();
+
+    if (!Array.isArray(dates) || dates.length === 0) {
+      renderE2EPassRatePanel(section, [], "skip", 0, 0, null);
+      return;
+    }
+
+    const latestDate = dates[0];
+    const resultsRes = await fetch(
+      "/api/test-results/" + encodeURIComponent(latestDate),
+    );
+    if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
+    const skillResults = await resultsRes.json();
+
+    // Compute e2e pass rate per skill
+    const skills = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const total =
+        (stats.skillInvocationTestsPassed || 0) +
+        (stats.skillInvocationTestsFailed || 0) +
+        (stats.otherTestsPassed || 0) +
+        (stats.otherTestsFailed || 0);
+      if (total === 0) continue;
+      const passed =
+        (stats.skillInvocationTestsPassed || 0) + (stats.otherTestsPassed || 0);
+      skills.push({ skillName, rate: passed / total });
+    }
+
+    // Sort: below 70% first (worst first), then ascending within each group
+    skills.sort(function (a, b) {
+      const aPass = a.rate >= 0.7;
+      const bPass = b.rate >= 0.7;
+      if (aPass !== bPass) return aPass ? 1 : -1;
+      return a.rate - b.rate;
+    });
+
+    const passing = skills.filter(function (s) { return s.rate >= 0.7; }).length;
+    const failing = skills.length - passing;
+    const overallStatus =
+      skills.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
+
+    renderE2EPassRatePanel(
+      section, skills, overallStatus, passing, failing, latestDate,
+    );
+  } catch {
+    renderE2EPassRatePanel(section, [], "skip", 0, 0, null);
+  }
+}
+
+/**
+ * Populate and finalise the e2e pass rate panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, rate:number}>} skills
+ * @param {string} overallStatus - pass | fail | skip
+ * @param {number} passing
+ * @param {number} failing
+ * @param {string|null} dateLabel
+ */
+function renderE2EPassRatePanel(
+  section, skills, overallStatus, passing, failing, dateLabel,
+) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  const total = skills.length;
+
+  if (total > 0) {
+    const row = el("div", "stats-row");
+    row.appendChild(statBox(total, "Total"));
+    row.appendChild(filterableStatBox(passing, "Above 70%", "pass", itemsEl));
+    if (failing > 0) {
+      row.appendChild(filterableStatBox(failing, "Below 70%", "fail", itemsEl));
+    }
+    summaryEl.appendChild(row);
+  }
+
+  if (total === 0) {
+    itemsEl.appendChild(
+      el("p", "no-data-message", "No end-to-end pass rate data available."),
+    );
+  } else {
+    const list = el("ul", "items-list");
+    for (const skill of skills) {
+      const status = skill.rate >= 0.7 ? "pass" : "fail";
+      const pct = Math.round(skill.rate * 100);
+      const li = el("li");
+      li.setAttribute("data-item-status", status);
+
+      // Progress bar track
+      const barTrack = el("div", "e2e-rate-bar-track");
+      const barFill = el("div", "e2e-rate-bar-fill");
+      barFill.style.width = pct + "%";
+      barFill.setAttribute("data-status", status);
+      // Threshold marker at 70%
+      const marker = el("div", "e2e-rate-threshold-marker");
+      barTrack.appendChild(barFill);
+      barTrack.appendChild(marker);
+
+      li.appendChild(statusBadge(status));
+      li.appendChild(el("span", "item-name", skill.skillName));
+      li.appendChild(barTrack);
+      const rateSpan = el("span", "e2e-rate-value");
+      rateSpan.setAttribute("data-status", status);
+      rateSpan.textContent = pct + "%";
+      li.appendChild(rateSpan);
+      list.appendChild(li);
+    }
+    itemsEl.appendChild(list);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", overallStatus);
+
+  var summaryText =
+    total === 0
+      ? "No data"
+      : passing + " above 70%" + (failing > 0 ? " / " + failing + " below 70%" : "");
+  if (dateLabel) summaryText += " \u2014 " + dateLabel;
+  section.setAttribute("data-summary-text", summaryText);
+
+  var fakeCategory = {
+    status: overallStatus,
+    summary: {
+      total: total,
+      passed: passing,
+      failed: failing,
+      warnings: 0,
+      skipped: 0,
+    },
+    items: skills.map(function (s) {
+      return { name: s.skillName, status: s.rate >= 0.7 ? "pass" : "fail" };
+    }),
+  };
+
+  setupCollapsible(section, fakeCategory, "e2e-pass-rate");
+  createItemFilter(section);
+}
+
 // ── Initialization ──────────────────────────────────────────────────────────
 
 async function init() {
@@ -1320,4 +1476,5 @@ async function init() {
 document.addEventListener("DOMContentLoaded", function () {
   init();
   loadSkillInvocationRates();
+  loadE2EPassRates();
 });
