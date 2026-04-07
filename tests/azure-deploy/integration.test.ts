@@ -922,7 +922,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-        expect(containsDeployLinks).toBe(true);
+        // This app contains custom Aspire resource types that Azure Developer CLI cannot deploy to Azure.
+        expect(containsDeployLinks).toBe(false); //should not deploy
       });
     }, brownfieldTestTimeoutMs);
 
