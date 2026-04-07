@@ -9,9 +9,13 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    groups:
+      minor:
+        update-types:
+          - "minor"
     ignore:
       - dependency-name: "*"
-        update-types: 
+        update-types:
           - "version-update:semver-patch"
     open-pull-requests-limit: 10
 
@@ -21,9 +25,13 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    groups:
+      minor:
+        update-types:
+          - "minor"
     ignore:
       - dependency-name: "*"
-        update-types: 
+        update-types:
           - "version-update:semver-patch"
     open-pull-requests-limit: 5
 
@@ -33,9 +41,13 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    groups:
+      minor:
+        update-types:
+          - "minor"
     ignore:
       - dependency-name: "*"
-        update-types: 
+        update-types:
           - "version-update:semver-patch"
     open-pull-requests-limit: 5
 
@@ -47,6 +59,6 @@ updates:
       day: "monday"
     ignore:
       - dependency-name: "*"
-        update-types: 
+        update-types:
           - "version-update:semver-patch"
     open-pull-requests-limit: 10
