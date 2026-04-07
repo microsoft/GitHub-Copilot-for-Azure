@@ -163,8 +163,10 @@ azd up --no-prompt
 
 This check is **required** when ALL of the following are true:
 - `azure.yaml` includes a Container App service
-- The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR
+- The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR (see [two-phase deployment pattern](../../azure-prepare/references/services/container-apps/bicep.md))
 - Infrastructure was just provisioned with `azd provision` and application deployment has not yet started
+
+> 💡 **Two-phase Bicep pattern:** With the recommended two-phase deployment pattern, `azd provision` succeeds immediately because the Container App is provisioned with a public placeholder image (not an ACR image). The AcrPull role assignment is deployed in a separate module with no circular dependency. `azd deploy` then pushes the real image via the Azure API — but the AcrPull role still needs time to propagate before this succeeds.
 
 **Required flow for this scenario:**
 1. Run `azd provision`
