@@ -77,6 +77,7 @@ New-Item -ItemType Directory -Path "temp" -Force
 # Query using REST API (more reliable than az costmanagement query)
 az rest --method post `
   --url "<scope>/providers/Microsoft.CostManagement/query?api-version=2023-11-01" `
+  --headers "ClientType=GitHubCopilotForAzure" `
   --body '@temp/cost-query.json'
 ```
 
@@ -108,6 +109,7 @@ See [error-handling.md](./error-handling.md) for the full error reference.
 ```powershell
 az rest --method post `
   --url "/subscriptions/<subscription-id>/providers/Microsoft.CostManagement/query?api-version=2023-11-01" `
+  --headers "ClientType=GitHubCopilotForAzure" `
   --body '{
     "type": "ActualCost",
     "timeframe": "MonthToDate",

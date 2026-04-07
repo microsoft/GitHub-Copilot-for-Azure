@@ -113,6 +113,7 @@ For the full cost forecast workflow (scope selection, time period rules, dataset
 - Always present the total bill alongside optimization recommendations
 - Validate pricing from official sources — account for free tiers
 - Use REST API for cost queries (more reliable than `az costmanagement query`)
+- Always include the `ClientType: GitHubCopilotForAzure` header on all Cost Management API requests (`--headers "ClientType=GitHubCopilotForAzure"` in `az rest`)
 - Save audit trail — include all queries and responses
 - Include Azure Portal links for all resources
 - For costs < $10/month, emphasize operational improvements over financial savings

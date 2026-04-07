@@ -79,6 +79,7 @@ New-Item -ItemType Directory -Path "temp" -Force
 
 az rest --method post `
   --url "/subscriptions/<subscription-id>/providers/Microsoft.CostManagement/forecast?api-version=2023-11-01" `
+  --headers "ClientType=GitHubCopilotForAzure" `
   --body '@temp/cost-forecast.json'
 ```
 

@@ -84,11 +84,11 @@ When the user requests a cost breakdown by resource at a billing account or mana
 
 | Rule | Details |
 |------|---------|
-| `And` operator | Must have 2 or more child expressions. |
-| `Or` operator | Must have 2 or more child expressions. |
-| `Not` operator | Must have exactly 1 child expression. |
+| `and` operator | Must have 2 or more child expressions. |
+| `or` operator | Must have 2 or more child expressions. |
+| `not` operator | Must have exactly 1 child expression. |
 
-> ⚠️ **Warning:** A filter with a single child in `And` or `Or` will fail validation. Wrap single-condition filters directly without a logical operator, or use `Not` for negation.
+> ⚠️ **Warning:** A filter with a single child in `and` or `or` will fail validation. Wrap single-condition filters directly without a logical operator, or use `not` for negation.
 
 ## Scope & Dimension Compatibility
 
@@ -118,19 +118,19 @@ Dimensions must be valid for the intersection of the agreement type **and** scop
 
 ```json
 {
-  "And": [
+  "and": [
     {
-      "Dimensions": {
-        "Name": "SubscriptionId",
-        "Operator": "In",
-        "Values": ["<subscription-id>"]
+      "dimensions": {
+        "name": "SubscriptionId",
+        "operator": "In",
+        "values": ["<subscription-id>"]
       }
     },
     {
-      "Dimensions": {
-        "Name": "SubscriptionName",
-        "Operator": "In",
-        "Values": ["My Subscription"]
+      "dimensions": {
+        "name": "SubscriptionName",
+        "operator": "In",
+        "values": ["My Subscription"]
       }
     }
   ]

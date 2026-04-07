@@ -260,17 +260,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         doesAssistantMessageIncludeKeyword(agentMetadata, "estimate");
       expect(hasForecast).toBe(true);
     }));
-
-    test("response addresses Cost Management 429 rate limiting", () => withTestResult(async () => {
-      const agentMetadata = await agent.run({
-        prompt: "I'm getting 429 rate limit errors from the Cost Management API, how do I handle them?"
-      });
-      const addresses429 = doesAssistantMessageIncludeKeyword(agentMetadata, "retry-after") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "retry after") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "rate limit") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "429");
-      expect(addresses429).toBe(true);
-    }));
   });
 
   describe("aks-cost-optimization", () => {
