@@ -107,6 +107,125 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 }
 ```
 
+## ⛔ MANDATORY: SQL Data-Plane Access via postprovision Hook
+
+> **CRITICAL:** ARM/Bicep role assignments (`SQL DB Contributor`) only grant **control-plane** access. They do **not** grant the app **data-plane** access to the database. Without the T-SQL grant below, apps using `Authentication=Active Directory Default` will crash on startup with a login failure.
+>
+> **When you generate SQL + Managed Identity infrastructure you MUST also:**
+> 1. Add a `postprovision` hook to `azure.yaml` that runs the SQL grant script
+> 2. Generate the `scripts/grant-sql-access.sh` and `scripts/grant-sql-access.ps1` scripts
+
+**azure.yaml hooks section (add or merge):**
+
+```yaml
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: ./scripts/grant-sql-access.sh
+    windows:
+      shell: pwsh
+      run: ./scripts/grant-sql-access.ps1
+```
+
+**scripts/grant-sql-access.sh:**
+
+```bash
+#!/bin/bash
+set -e
+eval $(azd env get-values)
+
+# SERVICE_WEB_NAME is used for App Service; use SERVICE_API_NAME for API services
+APP_NAME=${SERVICE_WEB_NAME:-$SERVICE_API_NAME}
+
+az sql db query \
+  --server "$SQL_SERVER" \
+  --database "$SQL_DATABASE" \
+  --resource-group "$AZURE_RESOURCE_GROUP" \
+  --auth-mode ActiveDirectoryDefault \
+  --queries "
+    IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$APP_NAME')
+      CREATE USER [$APP_NAME] FROM EXTERNAL PROVIDER;
+
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_datareader' AND m.name = '$APP_NAME'
+    )
+      ALTER ROLE db_datareader ADD MEMBER [$APP_NAME];
+
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_datawriter' AND m.name = '$APP_NAME'
+    )
+      ALTER ROLE db_datawriter ADD MEMBER [$APP_NAME];
+
+    IF NOT EXISTS (
+      SELECT 1 FROM sys.database_role_members drm
+      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+      WHERE r.name = 'db_ddladmin' AND m.name = '$APP_NAME'
+    )
+      ALTER ROLE db_ddladmin ADD MEMBER [$APP_NAME];
+  "
+```
+
+**scripts/grant-sql-access.ps1:**
+
+```powershell
+$ErrorActionPreference = 'Stop'
+azd env get-values | ForEach-Object {
+    $name, $value = $_.Split('=', 2)
+    Set-Item "env:$name" $value.Trim('"')
+}
+
+# SERVICE_WEB_NAME is used for App Service; use SERVICE_API_NAME for API services
+$AppName = if ($env:SERVICE_WEB_NAME) { $env:SERVICE_WEB_NAME } else { $env:SERVICE_API_NAME }
+
+$SqlQuery = @"
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$AppName')
+  CREATE USER [$AppName] FROM EXTERNAL PROVIDER;
+
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_datareader' AND m.name = '$AppName'
+)
+  ALTER ROLE db_datareader ADD MEMBER [$AppName];
+
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_datawriter' AND m.name = '$AppName'
+)
+  ALTER ROLE db_datawriter ADD MEMBER [$AppName];
+
+IF NOT EXISTS (
+  SELECT 1 FROM sys.database_role_members drm
+  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+  WHERE r.name = 'db_ddladmin' AND m.name = '$AppName'
+)
+  ALTER ROLE db_ddladmin ADD MEMBER [$AppName];
+"@
+
+az sql db query `
+  --server $env:SQL_SERVER `
+  --database $env:SQL_DATABASE `
+  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --auth-mode ActiveDirectoryDefault `
+  --queries $SqlQuery
+```
+
+> 💡 Make executable: `chmod +x scripts/*.sh`
+
+> 💡 If the app also uses EF Core migrations, combine this with the migration hook — see [azure-deploy sql-managed-identity.md](../../../../azure-deploy/references/recipes/azd/sql-managed-identity.md).
+
 ## Legacy SQL Authentication (⛔ DO NOT USE)
 
 > ❌ **DEPRECATED — DO NOT generate `administratorLogin` or `administratorLoginPassword` properties.**
