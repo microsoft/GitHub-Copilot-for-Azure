@@ -4,7 +4,7 @@ description: "Unified Azure cost management: query historical costs, forecast fu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Azure Cost Management Skill
@@ -117,6 +117,7 @@ For the full cost forecast workflow (scope selection, time period rules, dataset
 - Include Azure Portal links for all resources
 - For costs < $10/month, emphasize operational improvements over financial savings
 - Never execute destructive operations without explicit approval
+- On 429 responses, check all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers (`qpu-retry-after`, `entity-retry-after`, `tenant-retry-after`), wait for the longest value, and do not retry until that duration has elapsed. The per-scope limit (4 requests/minute) is the most restrictive.
 
 ## Common Pitfalls
 

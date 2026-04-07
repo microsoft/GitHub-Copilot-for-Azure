@@ -37,7 +37,7 @@
 
 | Status | Retry? | Strategy |
 |---|---|---|
-| 429 | ✅ Yes | Wait for duration specified in `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` header. **Maximum 3 retries.** |
+| 429 | ✅ Yes | Check the response for all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers (`qpu-retry-after`, `entity-retry-after`, `tenant-retry-after`). Take the **longest** value and **do NOT retry until that duration has fully elapsed.** Maximum 3 retries. |
 | 400 | ❌ No | Fix the request body based on the validation error code |
 | 401 | ❌ No | Re-authenticate — the token is missing or expired |
 | 403 | ❌ No | Grant **Cost Management Reader** role on the target scope |

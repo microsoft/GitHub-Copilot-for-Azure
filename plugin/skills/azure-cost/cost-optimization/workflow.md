@@ -151,6 +151,8 @@ Get actual cost data from Azure Cost Management API (last 30 days). Use the [Cos
 
 > 💡 **Tip:** Also run a cost-by-service query (grouping by `ServiceName`) to present the total bill breakdown alongside optimization recommendations. See [examples.md](../cost-query/examples.md).
 
+> ⚠️ **Warning:** Sequential queries to the same scope share the per-scope rate limit (4 requests/minute). If a 429 response is received, check all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers and do not send further requests until the longest retry-after duration has elapsed.
+
 ## Step 5: Validate Pricing
 
 Fetch current pricing from official Azure pricing pages using `fetch_webpage`:

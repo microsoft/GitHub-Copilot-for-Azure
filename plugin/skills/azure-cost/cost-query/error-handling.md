@@ -31,7 +31,7 @@ Detailed error handling reference for the Cost Management Query API.
 
 | Status | Retry? | Strategy |
 |--------|--------|----------|
-| 429 | ✅ Yes | Wait for the duration specified in the `x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after` response header, then retry. **Maximum 3 retries.** |
+| 429 | ✅ Yes | Check the response for all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers (`qpu-retry-after`, `entity-retry-after`, `tenant-retry-after`). Take the **longest** value and **do NOT retry until that duration has fully elapsed.** Maximum 3 retries. |
 | 400 | ❌ No | Fix the request. Review error message for specific field or validation issue. |
 | 401 | ❌ No | Re-authenticate. Token has expired or is missing. |
 | 403 | ❌ No | Fix permissions. Request appropriate RBAC role assignment on the scope. |

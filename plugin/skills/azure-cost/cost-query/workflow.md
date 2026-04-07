@@ -84,7 +84,7 @@ az rest --method post `
 
 - The API returns a maximum of **5,000 rows** per page (default: 1,000).
 - If `nextLink` is present in the response, follow it to retrieve additional pages.
-- Handle rate limiting (HTTP 429) by respecting `Retry-After` headers.
+- Handle rate limiting (HTTP 429) by checking all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers in the response. Wait for the longest value before retrying. Do not send further requests to the same scope until the retry-after duration has elapsed.
 
 See [error-handling.md](./error-handling.md) for the full error reference.
 

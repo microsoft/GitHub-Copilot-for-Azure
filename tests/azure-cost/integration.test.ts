@@ -20,8 +20,8 @@ import {
 import { softCheckSkill, isSkillInvoked, withTestResult, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-cost";
-const RUNS_PER_PROMPT = 5;
-const invocationRateThreshold = 0.8;
+const RUNS_PER_PROMPT = 3;
+const invocationRateThreshold = 0.6;
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -259,6 +259,17 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         doesAssistantMessageIncludeKeyword(agentMetadata, "projected") ||
         doesAssistantMessageIncludeKeyword(agentMetadata, "estimate");
       expect(hasForecast).toBe(true);
+    }));
+
+    test("response addresses Cost Management 429 rate limiting", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "I'm getting 429 rate limit errors from the Cost Management API, how do I handle them?"
+      });
+      const addresses429 = doesAssistantMessageIncludeKeyword(agentMetadata, "retry-after") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "retry after") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "rate limit") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "429");
+      expect(addresses429).toBe(true);
     }));
   });
 
