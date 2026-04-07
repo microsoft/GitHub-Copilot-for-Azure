@@ -130,7 +130,7 @@ az containerapp env list `
 ```
 ask_user(
   question: "I found existing Container Apps environment(s) in rg-<env-name>:
-    <list environments with name and location>
+    <environment-list>
   Proceeding without resolving this conflict may cause azd to create an additional environment.
   How would you like to proceed?",
   choices: [
