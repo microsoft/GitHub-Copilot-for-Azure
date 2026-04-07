@@ -36,8 +36,10 @@ hooks:
 #!/bin/bash
 set -e
 eval $(azd env get-values)
-# Install dotnet-ef if not already installed (suppresses output when already present)
-dotnet tool install --global dotnet-ef 2>/dev/null || true
+# Ensure dotnet-ef is available without suppressing real installation errors
+if ! dotnet tool update --global dotnet-ef; then
+  dotnet tool install --global dotnet-ef
+fi
 export PATH="$PATH:$HOME/.dotnet/tools"
 CONNECTION_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Database=${SQL_DATABASE};Authentication=Active Directory Default;Encrypt=True;"
 cd src/api  # Adjust path
