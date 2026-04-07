@@ -28,7 +28,7 @@ These errors occur **during** `azd up` execution:
 
 **Cause:** Azure RBAC propagation delay. When `azd up` runs both `azd provision` and `azd deploy` in a single step:
 1. Bicep creates the Container App with a system-assigned managed identity and a public placeholder image
-2. Bicep creates an `AcrPull` role assignment for that identity on ACR (in a separate module — see [two-phase deployment pattern](../../../../azure-prepare/references/services/container-apps/bicep.md))
+2. Bicep creates an `AcrPull` role assignment for that identity on ACR in a separate module with two-phase deployment pattern
 3. `azd deploy` immediately pushes the real image and creates a new Container App revision
 4. The revision tries to pull the image from ACR, but the `AcrPull` role assignment hasn't propagated yet (can take 1–5 minutes)
 5. The image pull fails repeatedly until the 900-second timeout is reached
