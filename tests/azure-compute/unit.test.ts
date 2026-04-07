@@ -259,6 +259,65 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("references use local workflow reference path", () => {
       expect(troubleshooterContent).toContain("references/cannot-connect-to-vm.md");
     });
+
+    test("documents MCP tools (fetch_webpage) with parameters", () => {
+      expect(troubleshooterContent).toContain("## MCP Tools");
+      expect(troubleshooterContent).toContain("fetch_webpage");
+      expect(troubleshooterContent).toContain("urls");
+      expect(troubleshooterContent).toContain("query");
+    });
+
+    test("Phase 1: documents all 5 routing categories", () => {
+      expect(troubleshooterContent).toContain("Unable to RDP");
+      expect(troubleshooterContent).toContain("Unable to SSH");
+      expect(troubleshooterContent).toContain("Network / Firewall");
+      expect(troubleshooterContent).toContain("Credential / Auth");
+      expect(troubleshooterContent).toContain("VM Agent / Tools");
+    });
+
+    test("Phase 1: includes clarifying question for ambiguous intent", () => {
+      expect(troubleshooterContent).toMatch(/RDP.*Windows.*SSH.*Linux/is);
+    });
+
+    test("Phase 3: shows fetch_webpage example with URL and query params", () => {
+      expect(troubleshooterContent).toContain("fetch_webpage({");
+      expect(troubleshooterContent).toContain("<documentation-url-from-solution-row>");
+    });
+
+    test("Phase 5: documents escalation commands", () => {
+      expect(troubleshooterContent).toContain("az vm get-instance-view");
+      expect(troubleshooterContent).toContain("az vm restart");
+      expect(troubleshooterContent).toContain("az vm redeploy");
+    });
+
+    test("Phase 5: links to comprehensive troubleshooting guides", () => {
+      expect(troubleshooterContent).toContain("troubleshoot-rdp-connection");
+      expect(troubleshooterContent).toContain("troubleshoot-ssh-connection");
+    });
+
+    test("error handling covers fetch_webpage failure", () => {
+      expect(troubleshooterContent).toMatch(/fetch_webpage.*fails/i);
+    });
+
+    test("error handling covers CLI not found", () => {
+      expect(troubleshooterContent).toMatch(/CLI command fails/i);
+      expect(troubleshooterContent).toMatch(/VM name or resource group/i);
+    });
+
+    test("error handling covers Run Command timeout", () => {
+      expect(troubleshooterContent).toMatch(/Run Command times out/i);
+      expect(troubleshooterContent).toMatch(/VM agent/i);
+    });
+
+    test("error handling covers Serial Console unavailable", () => {
+      expect(troubleshooterContent).toMatch(/Serial Console not available/i);
+      expect(troubleshooterContent).toContain("boot-diagnostics enable");
+    });
+
+    test("error handling covers password reset failure", () => {
+      expect(troubleshooterContent).toMatch(/Password reset fails/i);
+      expect(troubleshooterContent).toMatch(/VMAccess/i);
+    });
   });
 
   describe("Reference Files", () => {
@@ -266,6 +325,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     let retailPricesApiContent: string;
     let vmssGuideContent: string;
     let cannotConnectContent: string;
+
+    const troubleshooterRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/vm-troubleshooter/references"
+    );
+
+    const subReferenceFiles = [
+      "rdp-connectivity.md",
+      "ssh-connectivity.md",
+      "network-connectivity.md",
+      "firewall-blocking.md",
+      "vm-agent-not-responding.md",
+      "credential-auth-errors.md",
+      "rdp-service-config.md",
+    ];
 
     beforeAll(async () => {
       const refsDir = path.join(
@@ -286,10 +360,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         "utf-8"
       );
       cannotConnectContent = await fs.readFile(
-        path.join(
-          SKILLS_PATH,
-          "azure-compute/workflows/vm-troubleshooter/references/cannot-connect-to-vm.md"
-        ),
+        path.join(troubleshooterRefsDir, "cannot-connect-to-vm.md"),
         "utf-8"
       );
     });
@@ -313,5 +384,621 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(cannotConnectContent).toBeDefined();
       expect(cannotConnectContent.length).toBeGreaterThan(100);
     });
+
+    test("cannot-connect-to-vm acts as index and links to all sub-references", () => {
+      for (const ref of subReferenceFiles) {
+        expect(cannotConnectContent).toContain(ref);
+      }
+    });
+
+    test("cannot-connect-to-vm includes OS detection guidance", () => {
+      expect(cannotConnectContent).toMatch(/Determine OS/i);
+      expect(cannotConnectContent).toContain("Windows");
+      expect(cannotConnectContent).toContain("Linux");
+    });
+
+    test.each(subReferenceFiles)(
+      "troubleshooter sub-reference %s exists and has content",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toBeDefined();
+        expect(content.length).toBeGreaterThan(100);
+      }
+    );
+
+    test.each(subReferenceFiles)(
+      "troubleshooter sub-reference %s contains Symptoms → Solutions table",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toMatch(/Symptoms?\s*→\s*Solutions?/i);
+      }
+    );
+
+    test.each(subReferenceFiles)(
+      "troubleshooter sub-reference %s contains Quick Commands",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toContain("Quick Commands");
+        expect(content).toContain("```bash");
+      }
+    );
+  });
+
+  describe("Troubleshooter OS Differentiation", () => {
+    const troubleshooterRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/vm-troubleshooter/references"
+    );
+
+    test("rdp-connectivity.md is Windows-specific", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "rdp-connectivity.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Windows/i);
+      expect(content).toContain("3389");
+    });
+
+    test("ssh-connectivity.md is Linux-specific", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "ssh-connectivity.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Linux/i);
+      expect(content).toContain("22");
+    });
+
+    test("rdp-service-config.md is Windows-specific", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "rdp-service-config.md"),
+        "utf-8"
+      );
+      expect(content).toContain("TermService");
+      expect(content).toContain("3389");
+    });
+
+    test("network-connectivity.md covers both Windows and Linux", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "network-connectivity.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Windows");
+      expect(content).toContain("Linux");
+    });
+
+    test("firewall-blocking.md covers both Windows and Linux", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "firewall-blocking.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Windows");
+      expect(content).toContain("Linux");
+      expect(content).toMatch(/iptables|firewalld|UFW/);
+    });
+
+    test("credential-auth-errors.md covers both Windows and Linux", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "credential-auth-errors.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Windows.*RDP/i);
+      expect(content).toMatch(/Linux.*SSH/i);
+    });
+
+    test("vm-agent-not-responding.md labels OS for each row", async () => {
+      const content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "vm-agent-not-responding.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Windows");
+      expect(content).toContain("Linux");
+      expect(content).toMatch(/Serial Console.*Windows/is);
+      expect(content).toMatch(/Serial Console.*Linux/is);
+    });
+  });
+
+  describe("Troubleshooter Routing Table Completeness", () => {
+    let cannotConnectContent: string;
+
+    const troubleshooterRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/vm-troubleshooter/references"
+    );
+
+    beforeAll(async () => {
+      cannotConnectContent = await fs.readFile(
+        path.join(troubleshooterRefsDir, "cannot-connect-to-vm.md"),
+        "utf-8"
+      );
+    });
+
+    test("routing table covers all 7 categories", () => {
+      const categories = [
+        "Unable to RDP",
+        "Unable to SSH",
+        "Network Issues",
+        "Firewall Blocking",
+        "VM Agent Not Responding",
+        "Credential / Auth Errors",
+        "RDP Service / Config",
+      ];
+      for (const category of categories) {
+        expect(cannotConnectContent).toContain(category);
+      }
+    });
+
+    test("routing table links to all 7 reference files", () => {
+      const expectedLinks = [
+        "rdp-connectivity.md",
+        "ssh-connectivity.md",
+        "network-connectivity.md",
+        "firewall-blocking.md",
+        "vm-agent-not-responding.md",
+        "credential-auth-errors.md",
+        "rdp-service-config.md",
+      ];
+      for (const link of expectedLinks) {
+        expect(cannotConnectContent).toContain(link);
+      }
+    });
+
+    test("includes escalation section with restart and redeploy", () => {
+      expect(cannotConnectContent).toContain("## Escalation");
+      expect(cannotConnectContent).toContain("az vm restart");
+      expect(cannotConnectContent).toContain("az vm redeploy");
+    });
+  });
+
+  describe("Sub-Reference: rdp-connectivity.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "rdp-connectivity.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers connection timeout symptom", () => {
+      expect(content).toMatch(/Connection times out/i);
+    });
+
+    test("covers credentials error symptom", () => {
+      expect(content).toMatch(/credentials did not work/i);
+    });
+
+    test("covers internal error symptom", () => {
+      expect(content).toMatch(/internal error/i);
+    });
+
+    test("covers black screen symptom", () => {
+      expect(content).toMatch(/Black screen/i);
+    });
+
+    test("covers licensing error symptom", () => {
+      expect(content).toMatch(/License Servers/i);
+    });
+
+    test("covers authentication/CredSSP error symptom", () => {
+      expect(content).toMatch(/authentication error|CredSSP/i);
+    });
+
+    test("covers NIC disabled symptom", () => {
+      expect(content).toMatch(/NIC.*disabled/i);
+    });
+
+    test("quick commands include NSG check and IP flow verify", () => {
+      expect(content).toContain("az network nsg rule list");
+      expect(content).toContain("test-ip-flow");
+    });
+
+    test("quick commands include RDP reset and password reset", () => {
+      expect(content).toContain("az vm user reset-remote-desktop");
+      expect(content).toContain("az vm user update");
+    });
+
+    test("every solution row links to Microsoft Learn documentation", () => {
+      expect(content).toContain("learn.microsoft.com");
+      // Count documentation links — should have at least one per symptom row
+      const docLinks = content.match(/https:\/\/learn\.microsoft\.com[^\s)]+/g) || [];
+      expect(docLinks.length).toBeGreaterThanOrEqual(10);
+    });
+  });
+
+  describe("Sub-Reference: ssh-connectivity.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "ssh-connectivity.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers connection refused symptom", () => {
+      expect(content).toMatch(/Connection refused/i);
+    });
+
+    test("covers connection timed out symptom", () => {
+      expect(content).toMatch(/Connection timed out/i);
+    });
+
+    test("covers permission denied publickey symptom", () => {
+      expect(content).toMatch(/Permission denied \(publickey\)/i);
+    });
+
+    test("covers permission denied password symptom", () => {
+      expect(content).toMatch(/Permission denied \(password\)/i);
+    });
+
+    test("covers host key verification failure", () => {
+      expect(content).toMatch(/Host key verification failed/i);
+    });
+
+    test("covers SSH hangs symptom", () => {
+      expect(content).toMatch(/SSH hangs/i);
+    });
+
+    test("covers SELinux blocking SSH", () => {
+      expect(content).toMatch(/SELinux/i);
+    });
+
+    test("covers Entra ID (AAD) SSH login", () => {
+      expect(content).toMatch(/Entra ID|AAD/i);
+    });
+
+    test("quick commands include SSH reset and key reset", () => {
+      expect(content).toContain("az vm user reset-ssh");
+      expect(content).toContain("ssh-key-value");
+    });
+
+    test("quick commands include sshd status check", () => {
+      expect(content).toContain("systemctl status sshd");
+    });
+
+    test("every solution row links to Microsoft Learn documentation", () => {
+      const docLinks = content.match(/https:\/\/learn\.microsoft\.com[^\s)]+/g) || [];
+      expect(docLinks.length).toBeGreaterThanOrEqual(8);
+    });
+  });
+
+  describe("Sub-Reference: network-connectivity.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "network-connectivity.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers NSG missing allow rule", () => {
+      expect(content).toMatch(/NSG.*no allow rule/i);
+    });
+
+    test("covers dual NSG (NIC and subnet) blocking", () => {
+      expect(content).toMatch(/NIC and subnet/i);
+    });
+
+    test("covers custom route (UDR) issues", () => {
+      expect(content).toMatch(/UDR|Custom route/i);
+    });
+
+    test("covers no public IP", () => {
+      expect(content).toMatch(/no public IP/i);
+    });
+
+    test("covers NIC disabled (Windows and Linux)", () => {
+      expect(content).toMatch(/NIC.*disabled/i);
+      expect(content).toMatch(/NIC.*down/i);
+    });
+
+    test("covers static IP misconfiguration", () => {
+      expect(content).toMatch(/Static IP/i);
+    });
+
+    test("covers DNS resolution failure", () => {
+      expect(content).toMatch(/DNS/i);
+    });
+
+    test("quick commands include effective NSG rules and routes", () => {
+      expect(content).toContain("list-effective-nsg");
+      expect(content).toContain("show-effective-route-table");
+    });
+
+    test("quick commands include public IP check", () => {
+      expect(content).toContain("az vm list-ip-addresses");
+    });
+
+    test("has OS-specific quick commands for Windows and Linux", () => {
+      expect(content).toContain("Quick Commands — Windows");
+      expect(content).toContain("Quick Commands — Linux");
+    });
+  });
+
+  describe("Sub-Reference: firewall-blocking.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "firewall-blocking.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers Windows Firewall blocking RDP", () => {
+      expect(content).toMatch(/Windows Firewall blocking RDP/i);
+    });
+
+    test("covers BlockInboundAlways policy", () => {
+      expect(content).toContain("BlockInboundAlways");
+    });
+
+    test("covers third-party AV/firewall", () => {
+      expect(content).toMatch(/Third-party/i);
+    });
+
+    test("covers iptables/nftables blocking SSH", () => {
+      expect(content).toMatch(/iptables|nftables/);
+    });
+
+    test("covers firewalld blocking SSH", () => {
+      expect(content).toContain("firewalld");
+    });
+
+    test("covers UFW blocking SSH", () => {
+      expect(content).toContain("UFW");
+    });
+
+    test("covers offline repair for unreachable Windows VM", () => {
+      expect(content).toMatch(/offline.*repair/i);
+    });
+
+    test("covers Serial Console fallback for unreachable Linux VM", () => {
+      expect(content).toMatch(/Serial Console|repair VM/i);
+    });
+
+    test("has OS-specific quick commands for Windows and Linux", () => {
+      expect(content).toContain("Quick Commands — Windows");
+      expect(content).toContain("Quick Commands — Linux");
+    });
+  });
+
+  describe("Sub-Reference: credential-auth-errors.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "credential-auth-errors.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers Windows 'credentials did not work' error", () => {
+      expect(content).toMatch(/credentials did not work/i);
+    });
+
+    test("covers account expired error", () => {
+      expect(content).toMatch(/account.*expired/i);
+    });
+
+    test("covers domain trust relationship failure", () => {
+      expect(content).toMatch(/Trust relationship/i);
+    });
+
+    test("covers CredSSP encryption oracle error", () => {
+      expect(content).toContain("CredSSP");
+      expect(content).toContain("AllowEncryptionOracle");
+    });
+
+    test("covers Linux permission denied publickey", () => {
+      expect(content).toMatch(/Permission denied \(publickey\)/i);
+    });
+
+    test("covers Linux permission denied password", () => {
+      expect(content).toMatch(/Permission denied \(password\)/i);
+    });
+
+    test("covers account locked after failed attempts", () => {
+      expect(content).toMatch(/locked/i);
+    });
+
+    test("covers Entra ID (AAD) missing role assignment", () => {
+      expect(content).toMatch(/Entra ID|AAD/i);
+      expect(content).toMatch(/Virtual Machine.*Login/i);
+    });
+
+    test("has separate Quick Commands for Windows and Linux", () => {
+      expect(content).toContain("Quick Commands — Windows");
+      expect(content).toContain("Quick Commands — Linux");
+    });
+
+    test("quick commands include password reset for both OSes", () => {
+      expect(content).toContain("az vm user update");
+      expect(content).toContain("az vm user reset-remote-desktop");
+      expect(content).toContain("ssh-key-value");
+    });
+  });
+
+  describe("Sub-Reference: vm-agent-not-responding.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "vm-agent-not-responding.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers Run Command timeout for both OSes", () => {
+      expect(content).toMatch(/Run Command times out/i);
+    });
+
+    test("covers password reset failure when agent is down", () => {
+      expect(content).toMatch(/Password.*reset fails/i);
+    });
+
+    test("covers BSOD / boot failure (Windows)", () => {
+      expect(content).toMatch(/BSOD/i);
+    });
+
+    test("covers kernel panic / boot failure (Linux)", () => {
+      expect(content).toMatch(/kernel panic/i);
+    });
+
+    test("covers VMAccess limitation on domain controllers", () => {
+      expect(content).toMatch(/domain controller/i);
+    });
+
+    test("quick commands include Serial Console connect", () => {
+      expect(content).toContain("az serial-console connect");
+    });
+
+    test("quick commands include boot diagnostics enable", () => {
+      expect(content).toContain("az vm boot-diagnostics enable");
+    });
+
+    test("quick commands include repair VM create and restore", () => {
+      expect(content).toContain("az vm repair create");
+      expect(content).toContain("az vm repair restore");
+    });
+  });
+
+  describe("Sub-Reference: rdp-service-config.md — Symptom Coverage", () => {
+    let content: string;
+
+    beforeAll(async () => {
+      const troubleshooterRefsDir = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/vm-troubleshooter/references"
+      );
+      content = await fs.readFile(
+        path.join(troubleshooterRefsDir, "rdp-service-config.md"),
+        "utf-8"
+      );
+    });
+
+    test("covers TermService not running", () => {
+      expect(content).toContain("TermService not running");
+    });
+
+    test("covers RDP port changed from 3389", () => {
+      expect(content).toMatch(/port changed/i);
+      expect(content).toContain("3389");
+    });
+
+    test("covers RDP disabled (fDenyTSConnections)", () => {
+      expect(content).toContain("fDenyTSConnections");
+    });
+
+    test("covers TLS/SSL certificate issues", () => {
+      expect(content).toMatch(/TLS|SSL/);
+      expect(content).toMatch(/certificate/i);
+    });
+
+    test("covers NLA/Security Layer mismatch", () => {
+      expect(content).toMatch(/NLA/i);
+    });
+
+    test("covers GPO overriding RDP settings", () => {
+      expect(content).toContain("GPO");
+      expect(content).toContain("Terminal Services");
+    });
+
+    test("covers RDS licensing expired", () => {
+      expect(content).toMatch(/licensing/i);
+    });
+
+    test("quick commands include RDP reset and TermService check", () => {
+      expect(content).toContain("az vm user reset-remote-desktop");
+      expect(content).toContain("Get-Service TermService");
+    });
+
+    test("quick commands include restart and redeploy as last resort", () => {
+      expect(content).toContain("az vm restart");
+      expect(content).toContain("az vm redeploy");
+    });
+  });
+
+  describe("Sub-Reference Documentation URL Integrity", () => {
+    const troubleshooterRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/vm-troubleshooter/references"
+    );
+
+    const subReferenceFiles = [
+      "rdp-connectivity.md",
+      "ssh-connectivity.md",
+      "network-connectivity.md",
+      "firewall-blocking.md",
+      "vm-agent-not-responding.md",
+      "credential-auth-errors.md",
+      "rdp-service-config.md",
+    ];
+
+    test.each(subReferenceFiles)(
+      "%s contains only learn.microsoft.com documentation links",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        const docLinks = content.match(/https:\/\/[^\s)]+/g) || [];
+        expect(docLinks.length).toBeGreaterThan(0);
+        for (const link of docLinks) {
+          expect(link).toMatch(/^https:\/\/learn\.microsoft\.com\//);
+        }
+      }
+    );
+
+    test.each(subReferenceFiles)(
+      "%s has at least one documentation link per solution row",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(troubleshooterRefsDir, file),
+          "utf-8"
+        );
+        // Count table rows (lines starting with |) excluding header/separator
+        const tableRows = content.split("\n").filter(
+          (line) => line.startsWith("|") && !line.includes("---") && !line.includes("Symptom")
+        );
+        const docLinks = content.match(/https:\/\/learn\.microsoft\.com[^\s)]+/g) || [];
+        // At least half the rows should have doc links (some rows share the same URL)
+        expect(docLinks.length).toBeGreaterThanOrEqual(Math.floor(tableRows.length / 2));
+      }
+    );
   });
 });
