@@ -878,7 +878,7 @@ button.header-status-pill {
 .e2e-rate-threshold-marker {
   position: absolute;
   top: -3px;
-  left: 70%;
+  left: calc(var(--e2e-threshold-pct, 70) * 1%);
   width: 2px;
   height: 16px;
   background: var(--color-warn);

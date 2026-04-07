@@ -7,6 +7,16 @@
 /** @type {Record<string, (section: HTMLElement, category: object) => void>} */
 const panelRenderers = {};
 
+// ── Thresholds ──────────────────────────────────────────────────────────────
+
+/** Minimum passing rate for skill invocation tests (0–1). */
+const SIR_THRESHOLD = 0.8;
+const SIR_THRESHOLD_PCT = Math.round(SIR_THRESHOLD * 100);
+
+/** Minimum passing rate for end-to-end tests per skill (0–1). */
+const E2E_THRESHOLD = 0.7;
+const E2E_THRESHOLD_PCT = Math.round(E2E_THRESHOLD * 100);
+
 /**
  * Register a renderer function for a named category.
  * @param {string} name - Category key from the report.
@@ -1129,33 +1139,58 @@ function applyItemFilter(section, status) {
   }
 }
 
-// ── Skill Invocation Rates Panel ────────────────────────────────────────────
+// ── Shared Test Results Loader ──────────────────────────────────────────────
 
 /**
- * Fetch the latest integration test results and render the skill invocation
- * rate for every prompt on the main dashboard.
- * A prompt is considered passing when its rate is >= 80%.
+ * In-flight promise for the latest test results, shared across both panels
+ * so that /api/dates and /api/test-results are only fetched once per page load.
+ * @type {Promise<{latestDate: string|null, skillResults: object}> | null}
  */
-async function loadSkillInvocationRates() {
-  const section = document.getElementById("panel-skill-invocation");
-  if (!section) return;
+let _latestTestResultsPromise = null;
 
-  try {
+/**
+ * Returns a memoized promise that resolves to { latestDate, skillResults }.
+ * Both panels call this so the network requests are deduplicated.
+ * @returns {Promise<{latestDate: string|null, skillResults: object}>}
+ */
+function fetchLatestTestResults() {
+  if (_latestTestResultsPromise) return _latestTestResultsPromise;
+  _latestTestResultsPromise = (async () => {
     const datesRes = await fetch("/api/dates");
     if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
     const dates = await datesRes.json();
-
     if (!Array.isArray(dates) || dates.length === 0) {
-      renderSkillInvocationPanel(section, [], "skip", 0, 0, null);
-      return;
+      return { latestDate: null, skillResults: {} };
     }
-
     const latestDate = dates[0];
     const resultsRes = await fetch(
       "/api/test-results/" + encodeURIComponent(latestDate),
     );
     if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
     const skillResults = await resultsRes.json();
+    return { latestDate, skillResults };
+  })();
+  return _latestTestResultsPromise;
+}
+
+// ── Skill Invocation Rates Panel ────────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the skill invocation
+ * rate for every prompt on the main dashboard.
+ * A prompt is considered passing when its rate is >= SIR_THRESHOLD.
+ */
+async function loadSkillInvocationRates() {
+  const section = document.getElementById("panel-skill-invocation");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderSkillInvocationPanel(section, [], "skip", 0, 0, null);
+      return;
+    }
 
     // Flatten all test cases that carry a skillInvocationRate
     const prompts = [];
@@ -1175,15 +1210,15 @@ async function loadSkillInvocationRates() {
       }
     }
 
-    // Sort: below 80% first (worst first), then ascending by rate within each group
+    // Sort: below threshold first (worst first), then ascending by rate within each group
     prompts.sort(function (a, b) {
-      const aPass = a.rate >= 0.8;
-      const bPass = b.rate >= 0.8;
+      const aPass = a.rate >= SIR_THRESHOLD;
+      const bPass = b.rate >= SIR_THRESHOLD;
       if (aPass !== bPass) return aPass ? 1 : -1;
       return a.rate - b.rate;
     });
 
-    const passing = prompts.filter(function (p) { return p.rate >= 0.8; }).length;
+    const passing = prompts.filter(function (p) { return p.rate >= SIR_THRESHOLD; }).length;
     const failing = prompts.length - passing;
     const overallStatus =
       prompts.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
@@ -1220,9 +1255,9 @@ function renderSkillInvocationPanel(
   if (total > 0) {
     const row = el("div", "stats-row");
     row.appendChild(statBox(total, "Total"));
-    row.appendChild(filterableStatBox(passing, "Above 80%", "pass", itemsEl));
+    row.appendChild(filterableStatBox(passing, "Above " + SIR_THRESHOLD_PCT + "%", "pass", itemsEl));
     if (failing > 0) {
-      row.appendChild(filterableStatBox(failing, "Below 80%", "fail", itemsEl));
+      row.appendChild(filterableStatBox(failing, "Below " + SIR_THRESHOLD_PCT + "%", "fail", itemsEl));
     }
     summaryEl.appendChild(row);
   }
@@ -1234,7 +1269,7 @@ function renderSkillInvocationPanel(
   } else {
     const list = el("ul", "items-list");
     for (const prompt of prompts) {
-      const status = prompt.rate >= 0.8 ? "pass" : "fail";
+      const status = prompt.rate >= SIR_THRESHOLD ? "pass" : "fail";
       const li = el("li");
       li.setAttribute("data-item-status", status);
       li.appendChild(statusBadge(status));
@@ -1254,7 +1289,7 @@ function renderSkillInvocationPanel(
   var summaryText =
     total === 0
       ? "No data"
-      : passing + " above 80%" + (failing > 0 ? " / " + failing + " below 80%" : "");
+      : passing + " above " + SIR_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + SIR_THRESHOLD_PCT + "%" : "");
   if (dateLabel) summaryText += " \u2014 " + dateLabel;
   section.setAttribute("data-summary-text", summaryText);
 
@@ -1268,7 +1303,7 @@ function renderSkillInvocationPanel(
       skipped: 0,
     },
     items: prompts.map(function (p) {
-      return { name: p.testName, status: p.rate >= 0.8 ? "pass" : "fail" };
+      return { name: p.testName, status: p.rate >= SIR_THRESHOLD ? "pass" : "fail" };
     }),
   };
 
@@ -1281,28 +1316,19 @@ function renderSkillInvocationPanel(
 /**
  * Fetch the latest integration test results and render the end-to-end pass
  * rate for every skill on the main dashboard.
- * A skill is considered passing when its e2e rate is >= 70%.
+ * A skill is considered passing when its e2e rate is >= E2E_THRESHOLD.
  */
 async function loadE2EPassRates() {
   const section = document.getElementById("panel-e2e-pass-rate");
   if (!section) return;
 
   try {
-    const datesRes = await fetch("/api/dates");
-    if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
-    const dates = await datesRes.json();
+    const { latestDate, skillResults } = await fetchLatestTestResults();
 
-    if (!Array.isArray(dates) || dates.length === 0) {
+    if (!latestDate) {
       renderE2EPassRatePanel(section, [], "skip", 0, 0, null);
       return;
     }
-
-    const latestDate = dates[0];
-    const resultsRes = await fetch(
-      "/api/test-results/" + encodeURIComponent(latestDate),
-    );
-    if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
-    const skillResults = await resultsRes.json();
 
     // Compute e2e pass rate per skill
     const skills = [];
@@ -1318,15 +1344,15 @@ async function loadE2EPassRates() {
       skills.push({ skillName, rate: passed / total });
     }
 
-    // Sort: below 70% first (worst first), then ascending within each group
+    // Sort: below threshold first (worst first), then ascending within each group
     skills.sort(function (a, b) {
-      const aPass = a.rate >= 0.7;
-      const bPass = b.rate >= 0.7;
+      const aPass = a.rate >= E2E_THRESHOLD;
+      const bPass = b.rate >= E2E_THRESHOLD;
       if (aPass !== bPass) return aPass ? 1 : -1;
       return a.rate - b.rate;
     });
 
-    const passing = skills.filter(function (s) { return s.rate >= 0.7; }).length;
+    const passing = skills.filter(function (s) { return s.rate >= E2E_THRESHOLD; }).length;
     const failing = skills.length - passing;
     const overallStatus =
       skills.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
@@ -1363,9 +1389,9 @@ function renderE2EPassRatePanel(
   if (total > 0) {
     const row = el("div", "stats-row");
     row.appendChild(statBox(total, "Total"));
-    row.appendChild(filterableStatBox(passing, "Above 70%", "pass", itemsEl));
+    row.appendChild(filterableStatBox(passing, "Above " + E2E_THRESHOLD_PCT + "%", "pass", itemsEl));
     if (failing > 0) {
-      row.appendChild(filterableStatBox(failing, "Below 70%", "fail", itemsEl));
+      row.appendChild(filterableStatBox(failing, "Below " + E2E_THRESHOLD_PCT + "%", "fail", itemsEl));
     }
     summaryEl.appendChild(row);
   }
@@ -1377,20 +1403,36 @@ function renderE2EPassRatePanel(
   } else {
     const list = el("ul", "items-list");
     for (const skill of skills) {
-      const status = skill.rate >= 0.7 ? "pass" : "fail";
+      const status = skill.rate >= E2E_THRESHOLD ? "pass" : "fail";
       const pct = Math.round(skill.rate * 100);
       const li = el("li");
       li.setAttribute("data-item-status", status);
 
-      // Progress bar track
+      // Progress bar track — CSS custom property keeps the threshold marker
+      // position in sync with the JS threshold constant.
       const barTrack = el("div", "e2e-rate-bar-track");
+      barTrack.style.setProperty("--e2e-threshold-pct", String(E2E_THRESHOLD_PCT));
+
       const barFill = el("div", "e2e-rate-bar-fill");
       barFill.style.width = pct + "%";
       barFill.setAttribute("data-status", status);
-      // Threshold marker at 70%
+      barFill.setAttribute("role", "progressbar");
+      barFill.setAttribute("aria-valuemin", "0");
+      barFill.setAttribute("aria-valuemax", "100");
+      barFill.setAttribute("aria-valuenow", String(pct));
+      barFill.setAttribute(
+        "aria-label",
+        skill.skillName + ": " + pct + "% e2e pass rate (" +
+          (status === "pass" ? "above" : "below") + " " + E2E_THRESHOLD_PCT + "% threshold)",
+      );
+
+      // Threshold marker — hidden from AT; sr-only sibling communicates the threshold
       const marker = el("div", "e2e-rate-threshold-marker");
+      marker.setAttribute("aria-hidden", "true");
+      const markerSrText = el("span", "sr-only", E2E_THRESHOLD_PCT + "% pass threshold");
       barTrack.appendChild(barFill);
       barTrack.appendChild(marker);
+      barTrack.appendChild(markerSrText);
 
       li.appendChild(statusBadge(status));
       li.appendChild(el("span", "item-name", skill.skillName));
@@ -1410,7 +1452,7 @@ function renderE2EPassRatePanel(
   var summaryText =
     total === 0
       ? "No data"
-      : passing + " above 70%" + (failing > 0 ? " / " + failing + " below 70%" : "");
+      : passing + " above " + E2E_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + E2E_THRESHOLD_PCT + "%" : "");
   if (dateLabel) summaryText += " \u2014 " + dateLabel;
   section.setAttribute("data-summary-text", summaryText);
 
@@ -1424,7 +1466,7 @@ function renderE2EPassRatePanel(
       skipped: 0,
     },
     items: skills.map(function (s) {
-      return { name: s.skillName, status: s.rate >= 0.7 ? "pass" : "fail" };
+      return { name: s.skillName, status: s.rate >= E2E_THRESHOLD ? "pass" : "fail" };
     }),
   };
 
