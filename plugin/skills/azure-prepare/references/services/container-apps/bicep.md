@@ -6,13 +6,15 @@
 > - **Phase 1:** Deploy ACR and Container App with a public placeholder image and **no** `registries` block.
 > - **Phase 2:** Deploy the AcrPull role assignment as a **separate module** using outputs from Phase 1.
 >
-> AZD handles the real image update via the Azure Container Apps API directly — the Bicep template does **not** need a `registries` block.
+> The Bicep template does **not** need a `registries` block. `azd deploy` handles the registry/identity link by calling `az containerapp registry set --server <acr-server> --identity system` via the Azure API before updating the container image. If you are not using AZD, you must run this command manually before switching the image to an ACR-hosted image; otherwise the app will hit image pull failures.
 
 ## Phase 1: Container App Module (No Registry Link)
 
 ```bicep
 // Placeholder image allows provisioning before app image exists in ACR.
-// No registries block needed — AZD updates the image after provisioning via Azure API.
+// No registries block in Bicep — azd deploy configures the registry/identity link
+// (az containerapp registry set --identity system) and updates the image via the Azure API.
+// If not using AZD, run that command manually before switching to an ACR-hosted image.
 param containerImageName string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
@@ -29,8 +31,9 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 8080
         transport: 'auto'
       }
-      // No registries block — AZD pushes the real image and updates the container app
-      // image reference via the Azure API; a registries block is not required.
+      // No registries block in Bicep. azd deploy sets the registry/identity link via
+      // 'az containerapp registry set --identity system' before pushing the real image.
+      // Without this step (or its manual equivalent), the app will fail to pull from ACR.
     }
     template: {
       containers: [
@@ -94,7 +97,8 @@ module api './modules/container-app.bicep' = {
   scope: rg
   params: {
     containerImageName: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-    // No registries param — AZD handles image update after provisioning
+    // No registries param in Bicep — azd deploy configures the registry/identity link
+    // and updates the image via the Azure API after provisioning.
     /* ... */
   }
 }
