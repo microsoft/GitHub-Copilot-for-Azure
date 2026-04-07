@@ -95,7 +95,7 @@ project-root/
 - Use Key Vault for sensitive values
 - Managed Identity for service auth
 - HTTPS only, TLS 1.2+
-- SQL Server Bicep must use Entra-only auth — omit `administratorLogin` and `administratorLoginPassword` entirely (see [services/sql-database/bicep.md](services/sql-database/bicep.md))
+- SQL Server Bicep MUST use Entra-only auth — omit `administratorLogin` and `administratorLoginPassword` entirely, including from conditional/ternary branches (see [services/sql-database/bicep.md](services/sql-database/bicep.md)). These property names must not appear anywhere in a generated `.bicep` file.
 
 ### Runtime Configuration
 

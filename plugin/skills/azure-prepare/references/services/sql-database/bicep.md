@@ -1,8 +1,10 @@
 # SQL Database - Bicep Patterns
 
+> ⛔ **CRITICAL — SQL Server Bicep MUST use Entra-only authentication. NEVER include `administratorLogin` or `administratorLoginPassword` anywhere in a Bicep file — not even inside a conditional (`condition ? { ... } : { administratorLoginPassword: ... }`) branch. If either property name appears anywhere in the file, the deployment will be rejected. Always use the pattern below.**
+
 ## Basic Setup (Entra-Only Authentication)
 
-**Recommended approach** — Uses Microsoft Entra ID authentication only. Required for subscriptions with policies enforcing Entra-only authentication.
+**Required approach** — Uses Microsoft Entra ID authentication only. Required for all subscriptions; SQL admin authentication is disabled by policy.
 
 ```bicep
 param principalId string
@@ -107,8 +109,20 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 }
 ```
 
-## Legacy SQL Authentication (⛔ DO NOT USE)
+## Legacy SQL Authentication (⛔ DO NOT USE — EVER)
 
-> ❌ **DEPRECATED — DO NOT generate `administratorLogin` or `administratorLoginPassword` properties.**
-> SQL admin authentication is disabled in subscriptions with Entra-only policies and violates Azure security best practices.
+> ❌ **PROHIBITED — NEVER generate `administratorLogin` or `administratorLoginPassword` properties.**
+> This applies unconditionally: do NOT include them in direct assignments, conditional expressions, ternary branches, parameter defaults, or any other construct. The **text** of these property names must not appear anywhere in a generated `.bicep` file.
+> SQL admin authentication is disabled in all subscriptions with Entra-only policies and violates Azure security best practices.
 > Always use the Entra-only authentication pattern at the top of this file.
+>
+> ❌ **DO NOT generate conditional patterns like:**
+> ```bicep
+> properties: useEntraAuth ? {
+>   administrators: { azureADOnlyAuthentication: true ... }
+> } : {
+>   administratorLogin: sqlAdminLogin          // ❌ PROHIBITED
+>   administratorLoginPassword: sqlAdminPassword  // ❌ PROHIBITED
+> }
+> ```
+> Use only the unconditional Entra-only pattern. No fallback. No toggle. No conditional.
