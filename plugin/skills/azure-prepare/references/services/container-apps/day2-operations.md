@@ -7,8 +7,8 @@ Operational tasks for running Container Apps in production: restart, exec, logs,
 | Action | Command |
 |--------|---------|
 | Restart active revision | `az containerapp revision restart -n $APP -g $RG --revision $REV` |
-| Scale to zero (stop) | `az containerapp update -n $APP -g $RG --min-replicas 0 --max-replicas 0` |
-| Resume (restore scaling) | `az containerapp update -n $APP -g $RG --min-replicas <previous-min> --max-replicas <previous-max>` |
+| Scale to zero (stop) | `az containerapp update -n $APP -g $RG --min-replicas 0 --max-replicas <current-max>` |
+| Resume (restore scaling) | `az containerapp update -n $APP -g $RG --min-replicas <previous-min> --max-replicas <current-max>` |
 | List replicas | `az containerapp replica list -n $APP -g $RG --revision $REV` |
 
 > 💡 **Tip:** Restarting a revision replaces all running replicas gracefully. No new revision is created.
