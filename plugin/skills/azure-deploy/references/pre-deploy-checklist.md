@@ -104,7 +104,9 @@ Check for each service in `azure.yaml`. If duplicates exist **in the target RG**
 
 > ⛔ **MANDATORY for Container Apps deployments** — Skip this and `azd up` may silently create a new Container Apps environment with an unexpected name (e.g. `"deployment-prod"`), causing a much longer deployment and environment drift.
 
-If `azure.yaml` includes a Container Apps service, check for existing Container Apps environments in the target resource group **before** running `azd up`:
+**Only run this step if the resource group `rg-<env-name>` already exists (confirmed in Step 4).** If the resource group does not exist yet, skip to Step 6.
+
+If `azure.yaml` includes a Container Apps service and the resource group exists, check for existing Container Apps environments **before** running `azd up`:
 
 ```bash
 az containerapp env list \
@@ -113,7 +115,15 @@ az containerapp env list \
   -o table
 ```
 
-**If the resource group does not exist yet:** No action needed — proceed to Step 6.
+**PowerShell:**
+```powershell
+az containerapp env list `
+  --resource-group rg-<env-name> `
+  --query "[].{name:name, location:location, provisioningState:properties.provisioningState}" `
+  -o table
+```
+
+**If no existing environments are found:** No action needed — proceed to Step 6.
 
 **If existing environments are found:** Use `ask_user` to present the conflict and offer choices:
 
@@ -124,7 +134,7 @@ ask_user(
   Proceeding without resolving this conflict may cause azd to create an additional environment.
   How would you like to proceed?",
   choices: [
-    "Use the existing environment — I will rename the AZD environment to match (Recommended)",
+    "Use the existing environment — select the matching AZD environment (Recommended)",
     "Choose a different AZD environment name to deploy to a new resource group",
     "Delete the existing Container Apps environment and start fresh (DESTRUCTIVE)"
   ]
@@ -133,9 +143,8 @@ ask_user(
 
 **Resolution per choice:**
 
-1. **Use existing environment** — Update the AZD environment name to match:
+1. **Use existing environment** — Select the matching AZD environment so `rg-<env-name>` targets the correct resource group:
    ```bash
-   # Select or rename the AZD env so rg-<env-name> targets the same RG
    azd env select <matching-env-name>
    ```
 
@@ -151,6 +160,14 @@ ask_user(
    az containerapp env delete \
      --name <environment-name> \
      --resource-group rg-<env-name> \
+     --yes
+   ```
+
+   **PowerShell:**
+   ```powershell
+   az containerapp env delete `
+     --name <environment-name> `
+     --resource-group rg-<env-name> `
      --yes
    ```
 
