@@ -1477,8 +1477,7 @@ function renderE2EPassRatePanel(
 // ── Confidence Level per Skill Panel ────────────────────────────────────────
 
 /**
- * Fetch the latest integration test results and render the average skill
- * invocation rate (confidence level) per skill on the main dashboard.
+ * Fetch the latest integration test results and render the confidence level per skill on the main dashboard.
  * A skill is considered passing when its average rate is >= SIR_THRESHOLD (80%).
  */
 async function loadConfidenceLevelPerSkill() {
@@ -1561,7 +1560,7 @@ function renderConfidenceLevelPanel(
     const list = el("ul", "items-list");
     for (const skill of skills) {
       const status = skill.rate >= SIR_THRESHOLD ? "pass" : "fail";
-      const pct = Math.round(skill.rate * 100);
+      const pct = Math.min(100, Math.max(0, Math.round(skill.rate * 100)));
       const li = el("li");
       li.setAttribute("data-item-status", status);
 
