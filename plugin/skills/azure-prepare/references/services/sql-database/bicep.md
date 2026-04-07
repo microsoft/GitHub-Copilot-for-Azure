@@ -138,39 +138,47 @@ eval $(azd env get-values)
 # SERVICE_WEB_NAME is used for App Service; use SERVICE_API_NAME for API services
 APP_NAME=${SERVICE_WEB_NAME:-$SERVICE_API_NAME}
 
+SQL_GRANT_DDLADMIN="${SQL_GRANT_DDLADMIN:-false}"
+
+SQL_QUERIES="
+  IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$APP_NAME')
+    CREATE USER [$APP_NAME] FROM EXTERNAL PROVIDER;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM sys.database_role_members drm
+    JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+    JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+    WHERE r.name = 'db_datareader' AND m.name = '$APP_NAME'
+  )
+    ALTER ROLE db_datareader ADD MEMBER [$APP_NAME];
+
+  IF NOT EXISTS (
+    SELECT 1 FROM sys.database_role_members drm
+    JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+    JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+    WHERE r.name = 'db_datawriter' AND m.name = '$APP_NAME'
+  )
+    ALTER ROLE db_datawriter ADD MEMBER [$APP_NAME];
+"
+
+if [ "$SQL_GRANT_DDLADMIN" = "true" ]; then
+  SQL_QUERIES="$SQL_QUERIES
+  IF NOT EXISTS (
+    SELECT 1 FROM sys.database_role_members drm
+    JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
+    JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
+    WHERE r.name = 'db_ddladmin' AND m.name = '$APP_NAME'
+  )
+    ALTER ROLE db_ddladmin ADD MEMBER [$APP_NAME];
+"
+fi
+
 az sql db query \
   --server "$SQL_SERVER" \
   --database "$SQL_DATABASE" \
   --resource-group "$AZURE_RESOURCE_GROUP" \
   --auth-mode ActiveDirectoryDefault \
-  --queries "
-    IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$APP_NAME')
-      CREATE USER [$APP_NAME] FROM EXTERNAL PROVIDER;
-
-    IF NOT EXISTS (
-      SELECT 1 FROM sys.database_role_members drm
-      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-      WHERE r.name = 'db_datareader' AND m.name = '$APP_NAME'
-    )
-      ALTER ROLE db_datareader ADD MEMBER [$APP_NAME];
-
-    IF NOT EXISTS (
-      SELECT 1 FROM sys.database_role_members drm
-      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-      WHERE r.name = 'db_datawriter' AND m.name = '$APP_NAME'
-    )
-      ALTER ROLE db_datawriter ADD MEMBER [$APP_NAME];
-
-    IF NOT EXISTS (
-      SELECT 1 FROM sys.database_role_members drm
-      JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-      JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-      WHERE r.name = 'db_ddladmin' AND m.name = '$APP_NAME'
-    )
-      ALTER ROLE db_ddladmin ADD MEMBER [$APP_NAME];
-  "
+  --queries "$SQL_QUERIES"
 ```
 
 **scripts/grant-sql-access.ps1:**
