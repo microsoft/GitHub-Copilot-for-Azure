@@ -113,14 +113,6 @@ az containerapp env list \
   -o table
 ```
 
-**PowerShell:**
-```powershell
-az containerapp env list `
-  --resource-group rg-<env-name> `
-  --query "[].{name:name, location:location, provisioningState:properties.provisioningState}" `
-  -o table
-```
-
 **If the resource group does not exist yet:** No action needed — proceed to Step 6.
 
 **If existing environments are found:** Use `ask_user` to present the conflict and offer choices:
@@ -159,14 +151,6 @@ ask_user(
    az containerapp env delete \
      --name <environment-name> \
      --resource-group rg-<env-name> \
-     --yes
-   ```
-
-   **PowerShell:**
-   ```powershell
-   az containerapp env delete `
-     --name <environment-name> `
-     --resource-group rg-<env-name> `
      --yes
    ```
 
