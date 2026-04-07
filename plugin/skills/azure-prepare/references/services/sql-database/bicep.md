@@ -113,7 +113,7 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 >
 > **When you generate SQL + Managed Identity infrastructure you MUST also:**
 > 1. Add a `postprovision` hook to `azure.yaml` that runs the SQL grant script
-> 2. Generate the `scripts/grant-sql-access.sh` and `scripts/grant-sql-access.ps1` scripts
+> 2. Copy the pre-built scripts from [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) to `scripts/` in the user's project root
 
 **azure.yaml hooks section (add or merge):**
 
@@ -128,117 +128,13 @@ hooks:
       run: ./scripts/grant-sql-access.ps1
 ```
 
-**scripts/grant-sql-access.sh:**
+**Copy the pre-built scripts** — Read [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) and write them verbatim to the project's `scripts/` folder. Do not regenerate them from scratch.
 
-```bash
-#!/bin/bash
-set -e
-while IFS= read -r line; do
-  [ -n "$line" ] || continue
-  key=${line%%=*}
-  value=${line#*=}
-
-  case "$value" in
-    \"*\") value=${value#\"}; value=${value%\"} ;;
-    \'*\') value=${value#\'}; value=${value%\'} ;;
-  esac
-
-  export "$key=$value"
-done < <(azd env get-values)
-# SERVICE_WEB_NAME is used for App Service; use SERVICE_API_NAME for API services
-APP_NAME=${SERVICE_WEB_NAME:-$SERVICE_API_NAME}
-
-SQL_GRANT_DDLADMIN="${SQL_GRANT_DDLADMIN:-false}"
-
-SQL_QUERIES="
-  IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$APP_NAME')
-    CREATE USER [$APP_NAME] FROM EXTERNAL PROVIDER;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM sys.database_role_members drm
-    JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-    JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-    WHERE r.name = 'db_datareader' AND m.name = '$APP_NAME'
-  )
-    ALTER ROLE db_datareader ADD MEMBER [$APP_NAME];
-
-  IF NOT EXISTS (
-    SELECT 1 FROM sys.database_role_members drm
-    JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-    JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-    WHERE r.name = 'db_datawriter' AND m.name = '$APP_NAME'
-  )
-    ALTER ROLE db_datawriter ADD MEMBER [$APP_NAME];
-"
-
-if [ "$SQL_GRANT_DDLADMIN" = "true" ]; then
-  SQL_QUERIES="$SQL_QUERIES
-  IF NOT EXISTS (
-    SELECT 1 FROM sys.database_role_members drm
-    JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-    JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-    WHERE r.name = 'db_ddladmin' AND m.name = '$APP_NAME'
-  )
-    ALTER ROLE db_ddladmin ADD MEMBER [$APP_NAME];
-"
-fi
-
-az sql db query \
-  --server "$SQL_SERVER" \
-  --database "$SQL_DATABASE" \
-  --resource-group "$AZURE_RESOURCE_GROUP" \
-  --auth-mode ActiveDirectoryDefault \
-  --queries "$SQL_QUERIES"
-```
-
-**scripts/grant-sql-access.ps1:**
-
-```powershell
-$ErrorActionPreference = 'Stop'
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value.Trim('"')
-}
-
-# SERVICE_WEB_NAME is used for App Service; use SERVICE_API_NAME for API services
-$AppName = if ($env:SERVICE_WEB_NAME) { $env:SERVICE_WEB_NAME } else { $env:SERVICE_API_NAME }
-
-$SqlQuery = @"
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$AppName')
-  CREATE USER [$AppName] FROM EXTERNAL PROVIDER;
-
-IF NOT EXISTS (
-  SELECT 1 FROM sys.database_role_members drm
-  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_datareader' AND m.name = '$AppName'
-)
-  ALTER ROLE db_datareader ADD MEMBER [$AppName];
-
-IF NOT EXISTS (
-  SELECT 1 FROM sys.database_role_members drm
-  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_datawriter' AND m.name = '$AppName'
-)
-  ALTER ROLE db_datawriter ADD MEMBER [$AppName];
-
-IF NOT EXISTS (
-  SELECT 1 FROM sys.database_role_members drm
-  JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
-  JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_ddladmin' AND m.name = '$AppName'
-)
-  ALTER ROLE db_ddladmin ADD MEMBER [$AppName];
-"@
-
-az sql db query `
-  --server $env:SQL_SERVER `
-  --database $env:SQL_DATABASE `
-  --resource-group $env:AZURE_RESOURCE_GROUP `
-  --auth-mode ActiveDirectoryDefault `
-  --queries $SqlQuery
-```
+Key behaviours of the scripts:
+- Loads `azd env get-values` safely (no `eval`)
+- Grants `db_datareader` + `db_datawriter` by default (idempotent)
+- Set `SQL_GRANT_DDLADMIN=true` in the azd env to also grant `db_ddladmin` (needed for EF Core migrations)
+- `SERVICE_WEB_NAME` takes priority over `SERVICE_API_NAME` when resolving the app identity
 
 > 💡 Make executable: `chmod +x scripts/*.sh`
 
