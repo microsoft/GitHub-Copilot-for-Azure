@@ -72,11 +72,11 @@ mcp_azure_mcp_group_list
   subscription: <subscription-id>
 ```
 
-Then check if `rg-<environment-name>` exists in the results.
+Then check if `rg-<env-name>` exists in the results.
 
 **CLI fallback:**
 ```bash
-az group show --name rg-<environment-name> --query "{location:location}" -o json 2>&1
+az group show --name rg-<env-name> --query "{location:location}" -o json 2>&1
 ```
 
 **If RG exists:**
@@ -222,8 +222,8 @@ azd up --no-prompt
 | `azd up --location eastus2` | `azd env set AZURE_LOCATION eastus2` then `azd up` |
 | Running `azd up` without environment | `azd env new <name>` first |
 | Assuming location without checking RG | Check `az group show` before choosing |
-| Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env>` before deploy |
-| Skipping Container Apps environment check | Run `az containerapp env list --resource-group rg-<env>` before deploy (Step 5a) |
+| Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env-name>` before deploy |
+| Skipping Container Apps environment check | Run `az containerapp env list --resource-group rg-<env-name>` before deploy (Step 5a) |
 
 ---
 
@@ -247,7 +247,7 @@ This check is **required** when ALL of the following are true:
 ```bash
 PRINCIPAL_ID=$(az containerapp identity show \
   --name <app-name> \
-  --resource-group rg-<environment-name> \
+  --resource-group rg-<env-name> \
   --query principalId -o tsv)
 ```
 
@@ -255,7 +255,7 @@ PRINCIPAL_ID=$(az containerapp identity show \
 ```powershell
 $PrincipalId = az containerapp identity show `
   --name <app-name> `
-  --resource-group rg-<environment-name> `
+  --resource-group rg-<env-name> `
   --query principalId -o tsv
 ```
 
@@ -264,7 +264,7 @@ $PrincipalId = az containerapp identity show `
 ```bash
 ACR_ID=$(az acr show \
   --name <acr-name> \
-  --resource-group rg-<environment-name> \
+  --resource-group rg-<env-name> \
   --query id -o tsv)
 ```
 
@@ -272,7 +272,7 @@ ACR_ID=$(az acr show \
 ```powershell
 $AcrId = az acr show `
   --name <acr-name> `
-  --resource-group rg-<environment-name> `
+  --resource-group rg-<env-name> `
   --query id -o tsv
 ```
 
