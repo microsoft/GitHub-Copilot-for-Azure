@@ -4,7 +4,7 @@
 
 ## Basic Setup (Entra-Only Authentication)
 
-**Required approach** — Uses Microsoft Entra ID authentication only. Required for all subscriptions; SQL admin authentication is disabled by policy.
+**Required approach** — Uses Microsoft Entra ID authentication only. Required for subscriptions with Entra-only policies; SQL admin authentication is disabled by policy in those environments.
 
 ```bicep
 param principalId string
