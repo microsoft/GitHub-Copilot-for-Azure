@@ -45,7 +45,7 @@ Activate this skill when user wants to:
 > **YOU MUST CREATE A PLAN BEFORE DOING ANY WORK**
 >
 > 1. **STOP** — Do not generate any code, infrastructure, or configuration yet
-> 2. **CREATE SKELETON** — Write an initial `.azure/deployment-plan.md` skeleton to disk **immediately** (before any analysis or research begins), then populate it progressively as Phase 1 steps 1–5 reveal details; finalize it at Step 6
+> 2. **CREATE SKELETON** - Write an initial `.azure/deployment-plan.md` skeleton to disk **immediately** (before any code generation or execution begins), then populate it progressively as Phase 1 steps 1-5 reveal details; finalize it at Step 6
 > 3. **CONFIRM** — Present the completed plan to the user and get approval
 > 4. **EXECUTE** — Only after approval, execute the plan step by step
 >
