@@ -48,6 +48,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Spring Boot platform migration to Container Apps",
       "migrate existing Spring Boot app to Container Apps",
       "convert Spring Boot JAR to container on ACA",
+      "migrate SpringBoot to ContainerApps",
+      "replatform SpringBoot to ContainerApps",
     ];
 
     test.each(shouldTriggerPrompts)(
