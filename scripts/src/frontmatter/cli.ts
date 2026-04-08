@@ -379,6 +379,7 @@ const TRIGGER_SECTION_RE = new RegExp(
   "gi",
 );
 const DO_NOT_USE_FOR_RE = /\bDO NOT USE FOR:/i;
+const DISAMBIGUATION_CLAUSE_MARKER_RE = /(?:DO_NOT_USE_FOR:|PREFER OVER\b)/i;
 const PREFER_OVER_RE = /\bPREFER OVER\b/i;
 const BROAD_SKILL_NAMES = new Set(["azure-prepare", "azure-deploy"]);
 const MIN_TRIGGER_PHRASE_LENGTH = 4;
@@ -403,7 +404,7 @@ export function extractTriggerPhrases(description: string | null): string[] {
   let match: RegExpExecArray | null;
   while ((match = TRIGGER_SECTION_RE.exec(sanitizedDescription)) !== null) {
     const section = match[1];
-    const disambiguationStart = section.search(/\b(?:DO NOT USE FOR:|DO_NOT_USE_FOR:|PREFER OVER\b)/i);
+    const disambiguationStart = section.search(DISAMBIGUATION_CLAUSE_MARKER_RE);
     const triggerSection = disambiguationStart >= 0 ? section.slice(0, disambiguationStart) : section;
     for (const rawPhrase of triggerSection.split(/[;,]/)) {
       const normalized = normalizeTriggerPhrase(rawPhrase);
@@ -570,11 +571,11 @@ export function buildDisambiguationRemovalIssues(
   if (previousDescription === null) return [];
   if (!isDisambiguationClauseRemoved(previousDescription, currentDescription)) return [];
   const removedClauses = getRemovedDisambiguationClauses(previousDescription, currentDescription);
-  const clauseLabel = removedClauses.length > 0 ? removedClauses.join(" + ") : "DO NOT USE FOR/PREFER OVER";
+  const clauseLabel = removedClauses.join(" + ");
   return [{
     check: "disambiguation-removal",
     severity: "warning",
-    message: `Removed disambiguation clause (${clauseLabel}) compared to base ref. Re-add a DO NOT USE FOR or PREFER OVER clause if trigger overlap still exists.`,
+    message: `Removed disambiguation clause(s): ${clauseLabel}. Re-add a DO NOT USE FOR or PREFER OVER clause if trigger overlap still exists.`,
   }];
 }
 
