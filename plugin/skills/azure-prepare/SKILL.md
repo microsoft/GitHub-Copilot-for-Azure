@@ -99,7 +99,7 @@ Create `.azure/deployment-plan.md` by completing these steps. Do NOT generate an
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
 | 4 | **Select Recipe** — Choose AZD (default), AZCLI, Bicep, or Terraform | [recipe-selection.md](references/recipe-selection.md) |
 | 5 | **Plan Architecture** — Select stack + map components to Azure services | [architecture.md](references/architecture.md) |
-| 6 | **⛔ Finalize Plan (MANDATORY)** — Use a file-write tool to finalize `.azure/deployment-plan.md` with all decisions from steps 1–5. If the initial skeleton was already written at the start of Phase 1, update it now with the complete content. The file must be fully populated before you present the plan to the user. | [plan-template.md](references/plan-template.md) |
+| 6 | **Finalize Plan (MANDATORY)** - Use a file-write tool to finalize `.azure/deployment-plan.md` with all decisions from steps 1-5. Update the skeleton written at the start of Phase 1 with the complete content. The file must be fully populated before you present the plan to the user. | [plan-template.md](references/plan-template.md) |
 | 7 | **Present Plan** — Show plan to user and ask for approval | `.azure/deployment-plan.md` |
 | 8 | **Destructive actions require `ask_user`** | [Global Rules](references/global-rules.md) |
 
