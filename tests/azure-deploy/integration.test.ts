@@ -894,7 +894,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys aspire health-checks-ui", async () => {
+    test("does not deploy aspire health-checks-ui", async () => {
       await withTestResult(async () => {
         const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
 
@@ -922,7 +922,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-        expect(containsDeployLinks).toBe(true);
+        // This app contains custom Aspire resource types that Azure Developer CLI cannot deploy to Azure.
+        expect(containsDeployLinks).toBe(false); //should not deploy
       });
     }, brownfieldTestTimeoutMs);
 
