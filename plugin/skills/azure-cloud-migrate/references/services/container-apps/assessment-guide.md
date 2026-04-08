@@ -22,7 +22,7 @@
 ### 4. IAM & Security
 - Task role policies → Managed Identity + Azure RBAC
 - ECR pull permissions → ACR role assignment (AcrPull)
-- Secrets Manager access → Key Vault access policies
+- Secrets Manager access → Key Vault RBAC (recommended) or access policies for vaults still using access-policy mode
 
 ### 5. Dependencies
 - **Databases**: RDS → Azure Database for PostgreSQL/MySQL/SQL

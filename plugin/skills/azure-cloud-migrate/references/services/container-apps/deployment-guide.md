@@ -40,12 +40,12 @@ az role assignment create --assignee "$PRINCIPAL_ID" \
 # Option B: Access policies (if vault uses access policy mode)
 # az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
 
-# Migrate secrets securely via temp file
-SECRET_FILE=$(mktemp)
-trap 'shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"' EXIT
-aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> \
-  --query SecretString --output text > "$SECRET_FILE"
-az keyvault secret set --vault-name "$KEY_VAULT" --name <secret-name> --file "$SECRET_FILE"
+# Migrate secrets without writing them to disk
+az keyvault secret set --vault-name "$KEY_VAULT" --name <secret-name> \
+  --value "$(
+    aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> \
+      --query SecretString --output text
+  )"
 
 # ACR pull access
 ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
