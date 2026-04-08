@@ -381,6 +381,9 @@ const BROAD_SKILL_NAMES = new Set(["azure-prepare", "azure-deploy"]);
 // Skills that match at least two broad routing triggers are considered "broad"
 // so overlap checks can require explicit disambiguation for specialized skills.
 const BROAD_TRIGGER_MATCH_THRESHOLD = 2;
+const MIN_TRIGGER_PHRASE_LENGTH = 4;
+const OVERLAP_PREVIEW_LIMIT = 3;
+const DEFAULT_REMOTE_BASE_REF = "origin/main";
 const BROAD_TRIGGER_PHRASES = new Set([
   "deploy to azure",
   "host on azure",
@@ -412,7 +415,7 @@ export function extractTriggerPhrases(description: string | null): string[] {
     const section = match[1];
     for (const rawPhrase of section.split(/[;,]/)) {
       const normalized = normalizeTriggerPhrase(rawPhrase);
-      if (normalized.length >= 4) {
+      if (normalized.length >= MIN_TRIGGER_PHRASE_LENGTH) {
         phrases.push(normalized);
       }
     }
@@ -458,22 +461,27 @@ function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] 
 }
 
 function getMergeBaseRef(): string | null {
-  try {
-    return execFileSync("git", ["merge-base", "HEAD", "origin/main"], {
-      cwd: REPO_ROOT,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
+  const baseRefCandidates = [DEFAULT_REMOTE_BASE_REF, "origin/master", "main", "master"];
+  for (const baseRef of baseRefCandidates) {
     try {
-      return execFileSync("git", ["rev-parse", "HEAD~1"], {
+      return execFileSync("git", ["merge-base", "HEAD", baseRef], {
         cwd: REPO_ROOT,
         encoding: "utf-8",
         stdio: ["ignore", "pipe", "ignore"],
       }).trim();
     } catch {
-      return null;
+      // Try next candidate base ref.
     }
+  }
+
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD~1"], {
+      cwd: REPO_ROOT,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return null;
   }
 }
 
@@ -514,8 +522,8 @@ export function validateTriggerOverlapDisambiguation(
     if (overlaps.length === 0) continue;
 
     if (!hasAnyDisambiguationClause(skill.description, competitor.name)) {
-      const overlapPreview = overlaps.slice(0, 3).join(", ");
-      const overlapSuffix = overlaps.length > 3 ? ", ..." : "";
+      const overlapPreview = overlaps.slice(0, OVERLAP_PREVIEW_LIMIT).join(", ");
+      const overlapSuffix = overlaps.length > OVERLAP_PREVIEW_LIMIT ? ", ..." : "";
       issues.push({
         check: "trigger-overlap-disambiguation",
         severity: "warning",
