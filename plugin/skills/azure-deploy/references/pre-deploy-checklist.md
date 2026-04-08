@@ -125,7 +125,9 @@ az containerapp env list `
 
 **If no existing environments are found:** No action needed — proceed to Step 6.
 
-**If existing environments are found:** Use `ask_user` to present the conflict and offer choices:
+**If existing environments are found:** Check the `provisioningState` column in the output. Environments with a state of `Failed` or `Deleting` are not usable — treat them the same as no conflict (proceed to Step 6), or use option 3 below to delete the stuck environment first.
+
+For environments with a `provisioningState` of `Succeeded`, use `ask_user` to present the conflict and offer choices:
 
 ```
 ask_user(
@@ -143,10 +145,20 @@ ask_user(
 
 **Resolution per choice:**
 
-1. **Use existing environment** — Select the matching AZD environment so `rg-<env-name>` targets the correct resource group:
+1. **Use existing environment** — First check if the matching AZD environment exists locally:
    ```bash
-   azd env select <matching-env-name>
+   azd env list
    ```
+   - **If the environment exists locally**, select it:
+     ```bash
+     azd env select <matching-env-name>
+     ```
+   - **If the environment does NOT exist locally** (e.g., it was provisioned on a different machine or has been cleaned up), create it and configure it to target the existing resource group:
+     ```bash
+     azd env new <matching-env-name>
+     azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
+     azd env set AZURE_LOCATION <location-of-existing-rg>
+     ```
 
 2. **Choose a different name** — Create a new AZD environment:
    ```bash
