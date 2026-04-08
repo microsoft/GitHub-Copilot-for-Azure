@@ -12,6 +12,16 @@ docker tag "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE}" "${A
 docker push "${ACR_NAME}.azurecr.io/${IMAGE}"
 ```
 
+```powershell
+$ErrorActionPreference = 'Stop'
+$ecrPassword = aws ecr get-login-password --region $env:AWS_REGION
+$ecrPassword | docker login --username AWS --password-stdin "$($env:AWS_ACCOUNT_ID).dkr.ecr.$($env:AWS_REGION).amazonaws.com"
+az acr login --name $env:ACR_NAME
+docker pull "$($env:AWS_ACCOUNT_ID).dkr.ecr.$($env:AWS_REGION).amazonaws.com/$($env:IMAGE)"
+docker tag "$($env:AWS_ACCOUNT_ID).dkr.ecr.$($env:AWS_REGION).amazonaws.com/$($env:IMAGE)" "$($env:ACR_NAME).azurecr.io/$($env:IMAGE)"
+docker push "$($env:ACR_NAME).azurecr.io/$($env:IMAGE)"
+```
+
 ## Phase 2: Infrastructure
 
 ```bash
@@ -22,6 +32,16 @@ LOG_ID=$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-logs" --quer
 LOG_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "${RG}-logs" --query primarySharedKey -o tsv)
 az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
   --logs-workspace-id "$LOG_ID" --logs-workspace-key "$LOG_KEY"
+```
+
+```powershell
+$ErrorActionPreference = 'Stop'
+az group create --name $env:RG --location $env:LOCATION
+az monitor log-analytics workspace create -g $env:RG -n "$($env:RG)-logs" -l $env:LOCATION
+$logId = az monitor log-analytics workspace show -g $env:RG -n "$($env:RG)-logs" --query customerId -o tsv
+$logKey = az monitor log-analytics workspace get-shared-keys -g $env:RG -n "$($env:RG)-logs" --query primarySharedKey -o tsv
+az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
+  --logs-workspace-id $logId --logs-workspace-key $logKey
 ```
 
 ## Phase 3: Secrets & Identity
@@ -52,6 +72,30 @@ ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
 az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$ACR_ID"
 ```
 
+```powershell
+$ErrorActionPreference = 'Stop'
+az keyvault create --name $env:KEY_VAULT -g $env:RG -l $env:LOCATION
+$identityId = az identity create -n "$($env:RG)-id" -g $env:RG -l $env:LOCATION --query id -o tsv
+$principalId = az identity show --ids $identityId --query principalId -o tsv
+
+# Grant Key Vault access — use RBAC (recommended) or access policies
+# Option A: RBAC (default for new vaults)
+$kvId = az keyvault show --name $env:KEY_VAULT --query id -o tsv
+az role assignment create --assignee $principalId `
+  --role "Key Vault Secrets User" --scope $kvId
+# Option B: Access policies (if vault uses access policy mode)
+# az keyvault set-policy --name $env:KEY_VAULT --object-id $principalId --secret-permissions get list
+
+# Migrate secrets without writing them to disk
+$secretValue = aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> `
+  --query SecretString --output text
+az keyvault secret set --vault-name $env:KEY_VAULT --name <secret-name> --value $secretValue
+
+# ACR pull access
+$acrId = az acr show --name $env:ACR_NAME --query id -o tsv
+az role assignment create --assignee $principalId --role AcrPull --scope $acrId
+```
+
 ## Phase 4: Deploy
 
 ```bash
@@ -66,12 +110,30 @@ az containerapp create --name <app-name> -g "$RG" --environment "${RG}-env" \
   --env-vars ENV=production DB_PASSWORD=secretref:db-pass
 ```
 
+```powershell
+$ErrorActionPreference = 'Stop'
+$secretUri = az keyvault secret show --vault-name $env:KEY_VAULT --name db-password --query id -o tsv
+az containerapp create --name <app-name> -g $env:RG --environment "$($env:RG)-env" `
+  --image "$($env:ACR_NAME).azurecr.io/<image>:<tag>" --target-port 8080 --ingress external `
+  --cpu 0.5 --memory 1Gi --min-replicas 1 --max-replicas 10 `
+  --user-assigned $identityId --registry-identity $identityId `
+  --registry-server "$($env:ACR_NAME).azurecr.io" `
+  --secrets "db-pass=keyvaultref:$secretUri,identityref:$identityId" `
+  --env-vars ENV=production DB_PASSWORD=secretref:db-pass
+```
+
 ## Phase 5: Validate
 
 ```bash
 FQDN=$(az containerapp show --name <app-name> -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
 curl -I "https://$FQDN/health"
 az containerapp logs show --name <app-name> -g "$RG" --tail 100
+```
+
+```powershell
+$fqdn = az containerapp show --name <app-name> -g $env:RG --query properties.configuration.ingress.fqdn -o tsv
+Invoke-WebRequest -Uri "https://$fqdn/health" -Method Head
+az containerapp logs show --name <app-name> -g $env:RG --tail 100
 ```
 
 ## Troubleshooting
