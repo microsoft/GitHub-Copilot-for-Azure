@@ -17,7 +17,8 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { expectFiles, getToolCalls, listFilesRecursive, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import * as fs from "fs";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -991,20 +992,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        // Collect all file contents the agent wrote via create tool calls
-        const createCalls = getToolCalls(agentMetadata, "create");
-
-        // Gather all Bicep file contents
-        const bicepContents = createCalls
-          .filter(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
-            return args?.path?.endsWith(".bicep");
-          })
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          });
-        const bicepContent = bicepContents.join("\n");
+        // Read Bicep file contents from the workspace filesystem.
+        // The agent may create files via the `create` tool or bash heredocs,
+        // so reading from disk is more reliable than inspecting tool calls.
+        const allFiles = listFilesRecursive(workspacePath!);
+        const bicepFiles = allFiles.filter(f => f.endsWith(".bicep"));
+        const bicepContent = bicepFiles.map(f => fs.readFileSync(f, "utf-8")).join("\n");
         expect(bicepContent.length).toBeGreaterThan(0);
 
         // Must provision a Durable Task Scheduler resource
@@ -1017,11 +1010,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(/0ad04412-c4d5-4796-b79c-f76d14c8d402/i.test(bicepContent)).toBe(true);
 
         // Must include the scheduler connection string app setting
-        const allFileContents = createCalls
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          })
+        const allFileContents = allFiles
+          .filter(f => !fs.statSync(f).isDirectory())
+          .map(f => fs.readFileSync(f, "utf-8"))
           .join("\n");
         expect(/DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i.test(allFileContents)).toBe(true);
 
