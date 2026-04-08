@@ -17,7 +17,7 @@
 // If not using AZD, run that command manually before switching to an ACR-hosted image.
 param containerImageName string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
-resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
+resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
   location: location
   identity: {
