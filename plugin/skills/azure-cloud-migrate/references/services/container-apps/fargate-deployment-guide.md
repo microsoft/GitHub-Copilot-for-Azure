@@ -27,6 +27,7 @@ docker push "$($env:ACR_NAME).azurecr.io/$($env:IMAGE)"
 ```bash
 set -euo pipefail
 az group create --name "$RG" --location "$LOCATION"
+# WARNING: The shared key below is sensitive. Avoid logging or echoing it.
 az monitor log-analytics workspace create -g "$RG" -n "${RG}-logs" -l "$LOCATION"
 LOG_ID=$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-logs" --query customerId -o tsv)
 LOG_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "${RG}-logs" --query primarySharedKey -o tsv)
@@ -37,6 +38,7 @@ az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
 ```powershell
 $ErrorActionPreference = 'Stop'
 az group create --name $env:RG --location $env:LOCATION
+# WARNING: The shared key below is sensitive. Avoid logging or echoing it.
 az monitor log-analytics workspace create -g $env:RG -n "$($env:RG)-logs" -l $env:LOCATION
 $logId = az monitor log-analytics workspace show -g $env:RG -n "$($env:RG)-logs" --query customerId -o tsv
 $logKey = az monitor log-analytics workspace get-shared-keys -g $env:RG -n "$($env:RG)-logs" --query primarySharedKey -o tsv

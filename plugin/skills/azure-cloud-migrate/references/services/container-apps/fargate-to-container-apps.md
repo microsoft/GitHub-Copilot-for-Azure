@@ -11,7 +11,7 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 | Application Load Balancer | Container Apps Ingress | Built-in HTTPS |
 | AWS Secrets Manager | Azure Key Vault | Managed identity integration |
 | CloudWatch Logs | Azure Monitor/Log Analytics | Requires Log Analytics workspace on environment |
-| CloudWatch Metrics | Azure Monitor Metrics | Requires Log Analytics workspace on environment |
+| CloudWatch Metrics | Azure Monitor Metrics | Available without Log Analytics workspace |
 | IAM Roles (tasks) | Managed Identity | Azure AD integration |
 | VPC | Virtual Network | VNet integration |
 | Security Groups | NSG + Container Apps rules | Network security |
@@ -38,11 +38,11 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 
 ## Migration Workflow
 
-1. **Assess** — Analyze ECS task definitions, IAM roles, VPC config → [assessment-guide.md](assessment-guide.md)
+1. **Assess** — Analyze ECS task definitions, IAM roles, VPC config → [fargate-assessment-guide.md](fargate-assessment-guide.md)
 2. **Migrate Images** — Pull from ECR, push to ACR
 3. **Map Services** — Convert AWS dependencies to Azure equivalents
-4. **Convert Config** — Transform task definitions to Container Apps YAML/Bicep
-5. **Deploy** — Create Container Apps environment and deploy → [deployment-guide.md](deployment-guide.md)
+4. **Convert Config** — Transform task definitions to Container Apps YAML
+5. **Deploy** — Create Container Apps environment and deploy → [fargate-deployment-guide.md](fargate-deployment-guide.md)
 6. **Validate** — Health checks, scaling, monitoring
 
 ## Reference Links
