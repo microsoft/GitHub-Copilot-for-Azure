@@ -10,8 +10,8 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 | ECR | Azure Container Registry | Private container registry |
 | Application Load Balancer | Container Apps Ingress | Built-in HTTPS |
 | AWS Secrets Manager | Azure Key Vault | Managed identity integration |
-| CloudWatch Logs | Azure Monitor/Log Analytics | Auto-configured |
-| CloudWatch Metrics | Azure Monitor Metrics | Auto-configured |
+| CloudWatch Logs | Azure Monitor/Log Analytics | Requires Log Analytics workspace on environment |
+| CloudWatch Metrics | Azure Monitor Metrics | Requires Log Analytics workspace on environment |
 | IAM Roles (tasks) | Managed Identity | Azure AD integration |
 | VPC | Virtual Network | VNet integration |
 | Security Groups | NSG + Container Apps rules | Network security |
@@ -33,7 +33,7 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 | `containerPort` | `ingress.targetPort` |
 | `environment` | `env` array |
 | `secrets` (Secrets Manager ARN) | `secrets` (Key Vault URL + identity) |
-| `logConfiguration` (awslogs) | Auto-configured (Log Analytics) |
+| `logConfiguration` (awslogs) | Log Analytics (requires workspace on environment) |
 | Service Auto Scaling | `scale.rules` (HTTP/CPU/memory/custom) |
 
 ## Migration Workflow

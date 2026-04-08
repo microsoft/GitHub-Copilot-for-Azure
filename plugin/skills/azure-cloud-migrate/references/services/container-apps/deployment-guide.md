@@ -48,12 +48,13 @@ az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
 
 ```bash
 set -euo pipefail
-az keyvault create --name "$KEY_VAULT" -g "$RG" -l "$LOCATION"
+az keyvault create --name "$KEY_VAULT" -g "$RG" -l "$LOCATION" \
+  --enable-rbac-authorization true
 IDENTITY_ID=$(az identity create -n "${RG}-id" -g "$RG" -l "$LOCATION" --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --ids "$IDENTITY_ID" --query principalId -o tsv)
 
 # Grant Key Vault access — use RBAC (recommended) or access policies
-# Option A: RBAC (default for new vaults)
+# Option A: RBAC (enabled on the vault created above)
 KV_ID=$(az keyvault show --name "$KEY_VAULT" --query id -o tsv)
 az role assignment create --assignee "$PRINCIPAL_ID" \
   --role "Key Vault Secrets User" --scope "$KV_ID"
@@ -61,6 +62,8 @@ az role assignment create --assignee "$PRINCIPAL_ID" \
 # az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
 
 # Migrate secrets without writing them to disk
+# WARNING: Secret value is passed as a CLI argument, which may appear in shell
+# history or process listings. Run in a secure environment with history disabled.
 az keyvault secret set --vault-name "$KEY_VAULT" --name <secret-name> \
   --value "$(
     aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> \
@@ -74,12 +77,12 @@ az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$AC
 
 ```powershell
 $ErrorActionPreference = 'Stop'
-az keyvault create --name $env:KEY_VAULT -g $env:RG -l $env:LOCATION
+az keyvault create --name $env:KEY_VAULT -g $env:RG -l $env:LOCATION --enable-rbac-authorization true
 $identityId = az identity create -n "$($env:RG)-id" -g $env:RG -l $env:LOCATION --query id -o tsv
 $principalId = az identity show --ids $identityId --query principalId -o tsv
 
 # Grant Key Vault access — use RBAC (recommended) or access policies
-# Option A: RBAC (default for new vaults)
+# Option A: RBAC (enabled on the vault created above)
 $kvId = az keyvault show --name $env:KEY_VAULT --query id -o tsv
 az role assignment create --assignee $principalId `
   --role "Key Vault Secrets User" --scope $kvId
@@ -87,6 +90,8 @@ az role assignment create --assignee $principalId `
 # az keyvault set-policy --name $env:KEY_VAULT --object-id $principalId --secret-permissions get list
 
 # Migrate secrets without writing them to disk
+# WARNING: Secret value is passed as a CLI argument, which may appear in
+# transcripts, history, or CI/CD logs. Run in a secure environment.
 $secretValue = aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> `
   --query SecretString --output text
 az keyvault secret set --vault-name $env:KEY_VAULT --name <secret-name> --value $secretValue

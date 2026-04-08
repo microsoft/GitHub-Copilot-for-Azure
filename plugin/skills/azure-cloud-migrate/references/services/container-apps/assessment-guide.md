@@ -3,7 +3,7 @@
 ## Checklist
 
 ### 1. Container Configuration
-- **CPU/Memory**: Extract from task definition (Fargate 0.25-4 vCPU maps directly to Container Apps 0.25-4 vCPU)
+- **CPU/Memory**: Extract from task definition and verify the requested CPU/memory fits within Azure Container Apps limits for the target environment/region
 - **Container Images**: Registry location (ECR), image size, base image
 - **Port Mappings**: Exposed ports and protocols
 
@@ -29,7 +29,7 @@
 - **Cache**: ElastiCache → Azure Cache for Redis
 - **Storage**: S3 → Azure Blob Storage (SDK: boto3 → azure-storage-blob)
 - **Messaging**: SQS/SNS → Service Bus / Event Grid
-- **Monitoring**: CloudWatch → Azure Monitor / Log Analytics (auto-configured)
+- **Monitoring**: CloudWatch → Azure Monitor / Log Analytics (requires Log Analytics workspace on Container Apps environment)
 
 ### 6. Scaling & Performance
 - Auto scaling policies (target tracking, min/max tasks)
@@ -45,7 +45,7 @@
 | `containerPort` | `ingress.targetPort` |
 | `environment` | `env` array |
 | `secrets` (Secrets Manager ARN) | `secrets` with `keyVaultUrl` + `identity` |
-| `logConfiguration` (awslogs) | Auto-configured (Log Analytics) |
+| `logConfiguration` (awslogs) | Log Analytics (requires workspace on environment) |
 | Service Auto Scaling | `scale.rules` (HTTP/CPU/memory/custom) |
 
 ## Complexity Rating
