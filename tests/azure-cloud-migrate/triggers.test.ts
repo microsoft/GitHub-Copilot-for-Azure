@@ -40,6 +40,15 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "assess Cloud Run to Container Apps migration",
       "I want to migrate my Cloud Run service to Azure",
       "help me move from Google Cloud Run to Container Apps",
+      // Fargate to Container Apps triggers
+      "migrate Fargate to Azure Container Apps",
+      "migrate AWS ECS tasks to Container Apps",
+      "Fargate to ContainerApps migration assessment",
+      "convert AWS Fargate workloads to Azure",
+      "move ECS Fargate containers to Azure Container Apps",
+      "migrate ECS to ContainerApps",
+      "assess AWS Fargate for Azure migration",
+      "replatform Fargate to ContainerApps",
     ];
 
     test.each(shouldTriggerPrompts)(

@@ -1,7 +1,6 @@
 {
     "skills": [
         "appinsights-instrumentation",
-        "aws-fargate-to-container-apps",
         "azure-ai",
         "azure-aigateway",
         "azure-cloud-migrate",
