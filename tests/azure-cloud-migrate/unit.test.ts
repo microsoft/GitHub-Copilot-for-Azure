@@ -79,4 +79,19 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("workflow-details.md");
     });
   });
+
+  describe("GCP Cloud Run to Container Apps Scenario", () => {
+    test("includes Cloud Run migration scenario", () => {
+      expect(skill.content).toContain("Cloud Run");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references cloudrun-to-container-apps guide", () => {
+      expect(skill.content).toContain("cloudrun-to-container-apps.md");
+    });
+
+    test("includes GCP Cloud Run source in scenario table", () => {
+      expect(skill.content).toContain("GCP Cloud Run");
+    });
+  });
 });
