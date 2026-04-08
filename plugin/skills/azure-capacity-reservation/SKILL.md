@@ -1,6 +1,6 @@
 ---
 name: azure-capacity-reservation
-description: "Create and manage Azure Capacity Reservation Groups (CRGs) to guarantee compute capacity in a region. WHEN: capacity reservation, reserve VMs, guarantee capacity, capacity reservation group, CRG, reserve compute, ensure VM availability, pre-provision capacity, capacity planning, reserved instances capacity, associate VM with CRG, attach VM to capacity reservation, disassociate VM from CRG, remove VM from capacity reservation, find CRG for VM."
+description: "Create and manage Azure Capacity Reservation Groups (CRGs) to guarantee VM compute capacity. WHEN: capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, associate VM with CRG, disassociate VM from CRG, find CRG for VM, list capacity reservations, capacity reservation cost, capacity reservation pricing."
 license: MIT
 metadata:
   author: Microsoft
@@ -94,7 +94,7 @@ For operations beyond creation, see the relevant section in the [Capacity Reserv
 
 - **Associate a VM or VMSS** with a CRG — see [Association Model](references/capacity-reservation-overview.md#association-model)
 - **Disassociate a VM or VMSS** from a CRG — see [Disassociating from a CRG](references/capacity-reservation-overview.md#disassociating-from-a-capacity-reservation-group)
-- **Find a matching CRG** for a VM — see [Finding Valid CRGs](references/capacity-reservation-overview.md#finding-valid-crgs-for-a-vm)
+- **Find a matching CRG** for a VM, or enumerate all reservations/groups — see [Finding Valid CRGs](references/capacity-reservation-overview.md#finding-valid-crgs-for-a-vm)
 - **Estimate cost** — see [Estimating Reservation Cost](references/capacity-reservation-overview.md#estimating-reservation-cost)
 
 ## Error Handling
