@@ -849,6 +849,58 @@ button.header-status-pill {
   color: var(--color-fail);
 }
 
+/* === End-to-End Pass Rate Bar === */
+.e2e-rate-bar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: visible;
+  position: relative;
+  margin: 0 8px;
+}
+
+.e2e-rate-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.e2e-rate-bar-fill[data-status="pass"] {
+  background: var(--color-pass);
+}
+
+.e2e-rate-bar-fill[data-status="fail"] {
+  background: var(--color-fail);
+}
+
+/* Vertical line marking the 70% threshold */
+.e2e-rate-threshold-marker {
+  position: absolute;
+  top: -3px;
+  left: calc(var(--e2e-threshold-pct, 70) * 1%);
+  width: 2px;
+  height: 16px;
+  background: var(--color-warn);
+  border-radius: 1px;
+}
+
+.e2e-rate-value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: right;
+}
+
+.e2e-rate-value[data-status="pass"] {
+  color: var(--color-pass);
+}
+
+.e2e-rate-value[data-status="fail"] {
+  color: var(--color-fail);
+}
+
 /* === Responsive === */
 @media (max-width: 480px) {
   .panel-grid {

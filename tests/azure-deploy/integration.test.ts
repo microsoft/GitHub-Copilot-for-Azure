@@ -479,7 +479,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
           },
-          prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+          prompt: "Create a discussion board application and deploy to Azure App Service, prefer Terraform over Bicep, in my current subscription in eastus2 region.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
@@ -717,7 +717,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           },
           prompt:
             "Please deploy this application to Azure. " +
-            "Use the eastus2 region. " +
+            "Use the westus2 region. " +
             "Use my current subscription. " +
             "This is for a small scale production environment. " +
             "Use standard SKUs. " +
@@ -894,7 +894,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys aspire health-checks-ui", async () => {
+    test("does not deploy aspire health-checks-ui", async () => {
       await withTestResult(async () => {
         const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
 
@@ -922,7 +922,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
 
-        expect(containsDeployLinks).toBe(true);
+        // This app contains custom Aspire resource types that Azure Developer CLI cannot deploy to Azure.
+        expect(containsDeployLinks).toBe(false); //should not deploy
       });
     }, brownfieldTestTimeoutMs);
 

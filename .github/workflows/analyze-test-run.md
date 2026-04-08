@@ -41,6 +41,7 @@ safe-outputs:
     labels: [bug, integration-test]
 
 engine: copilot
+timeout-minutes: 30
 ---
 
 Run ID or URL: `${{ inputs.run-id-or-url || github.event.workflow_run.id }}`
