@@ -31,7 +31,14 @@ set -euo pipefail
 az keyvault create --name "$KEY_VAULT" -g "$RG" -l "$LOCATION"
 IDENTITY_ID=$(az identity create -n "${RG}-id" -g "$RG" -l "$LOCATION" --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --ids "$IDENTITY_ID" --query principalId -o tsv)
-az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
+
+# Grant Key Vault access — use RBAC (recommended) or access policies
+# Option A: RBAC (default for new vaults)
+KV_ID=$(az keyvault show --name "$KEY_VAULT" --query id -o tsv)
+az role assignment create --assignee "$PRINCIPAL_ID" \
+  --role "Key Vault Secrets User" --scope "$KV_ID"
+# Option B: Access policies (if vault uses access policy mode)
+# az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
 
 # Migrate secrets securely via temp file
 SECRET_FILE=$(mktemp)
@@ -73,4 +80,4 @@ az containerapp logs show --name <app-name> -g "$RG" --tail 100
 |-------|----------|
 | Image pull fails | Verify ACR role: `az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID -o table` |
 | App won't start | Check logs: `az containerapp logs show --name <app> -g $RG --tail 100` |
-| Secret not accessible | Verify policy: `az keyvault show --name $KEY_VAULT --query "properties.accessPolicies"` |
+| Secret not accessible | Verify access: `az role assignment list --assignee $PRINCIPAL_ID --scope $KV_ID -o table` or check access policies |
