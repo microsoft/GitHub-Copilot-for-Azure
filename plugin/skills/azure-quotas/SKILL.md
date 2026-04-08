@@ -242,6 +242,7 @@ az quota list \
 | `MissingRegistration` | Microsoft.Quota provider not registered | `az provider register --namespace Microsoft.Quota` |
 | `QuotaExceeded` | Deployment would exceed quota | Request increase or choose different region |
 | `InvalidScope` | Incorrect scope format | Use pattern: `/subscriptions/<id>/providers/<namespace>/locations/<region>` |
+| CLI commands fail entirely | Auth, extension, or environment issue | Fallback: use `azure-quota` MCP server — `quota_usage_check` (params: `region`, `resource-types`, `subscription`) or `quota_region_availability_list` |
 
 ### Unsupported Resource Providers
 
