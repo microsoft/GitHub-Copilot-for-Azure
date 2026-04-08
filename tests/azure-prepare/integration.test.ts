@@ -17,7 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, listFilesRecursive, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { doesWorkspaceFileIncludePattern, expectFiles, getToolCalls, listFilesRecursive, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 import * as fs from "fs";
 
 const SKILL_NAME = "azure-prepare";
@@ -1010,11 +1010,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(/0ad04412-c4d5-4796-b79c-f76d14c8d402/i.test(bicepContent)).toBe(true);
 
         // Must include the scheduler connection string app setting
-        const allFileContents = allFiles
-          .filter(f => !fs.statSync(f).isDirectory())
-          .map(f => fs.readFileSync(f, "utf-8"))
-          .join("\n");
-        expect(/DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i.test(allFileContents)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i)).toBe(true);
 
         // Must include ipAllowlist to avoid 403 errors (empty list denies all traffic)
         expect(/ipAllowlist/i.test(bicepContent)).toBe(true);
