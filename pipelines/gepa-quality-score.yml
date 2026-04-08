@@ -1,0 +1,94 @@
+name: GEPA Skill Quality Score
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/skills/**/SKILL.md'
+      - 'tests/**'
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Specific skill to score (blank = all)'
+        required: false
+      min_score:
+        description: 'Minimum quality score (0.0-1.0)'
+        required: false
+        default: '0.5'
+
+permissions:
+  contents: read
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Install GEPA evaluator deps
+        run: pip install "gepa==0.7.0"
+
+      - name: Score skills
+        id: score
+        run: |
+          if [ -n "${{ github.event.inputs.skill }}" ]; then
+            python .github/skills/sensei/scripts/gepa/auto_evaluator.py score \
+              --skill "${{ github.event.inputs.skill }}" \
+              --skills-dir plugin/skills \
+              --tests-dir tests \
+              --json > score-results.json
+
+            # Display results for specific skill
+            python .github/skills/sensei/scripts/gepa/auto_evaluator.py score \
+              --skill "${{ github.event.inputs.skill }}" \
+              --skills-dir plugin/skills \
+              --tests-dir tests
+          else
+            python .github/skills/sensei/scripts/gepa/auto_evaluator.py score-all \
+              --skills-dir plugin/skills \
+              --tests-dir tests \
+              --json > score-results.json
+
+            # Display results for all skills
+            python .github/skills/sensei/scripts/gepa/auto_evaluator.py score-all \
+              --skills-dir plugin/skills \
+              --tests-dir tests
+          fi
+
+      - name: Check quality gate (advisory)
+        if: github.event_name == 'pull_request'
+        run: |
+          MIN_SCORE="${{ github.event.inputs.min_score || '0.5' }}"
+          python -c "
+          import json, sys
+          with open('score-results.json') as f:
+              results = json.load(f)
+          if not isinstance(results, list):
+              results = [results]
+
+          failed = []
+          for r in results:
+              if 'error' in r:
+                  continue
+              if r.get('quality_score', 0) < float('${MIN_SCORE}'):
+                  failed.append(f\"{r['skill']}: {r['quality_score']:.2f} (need >= ${MIN_SCORE})\")
+
+          if failed:
+              print('⚠️ Skills below quality threshold (advisory — not blocking):')
+              for f in failed:
+                  print(f'  {f}')
+              print()
+              print('💡 Run: python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill <name> --skills-dir plugin/skills --tests-dir tests')
+          else:
+              print('✅ All skills meet quality threshold')
+          "
+
+      - name: Upload score results
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: gepa-quality-scores
+          path: score-results.json

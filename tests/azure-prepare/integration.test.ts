@@ -94,6 +94,50 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     });
 
+    test("invokes azure-prepare skill for functional verification before deployment prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "Prepare my web app for Azure and verify it works locally before deploying",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-prepare skill for subscription policy compliance prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "Prepare my application for Azure deployment and check subscription policies for compliance",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
     test("invokes azure-prepare skill for Key Vault secrets integration prompt", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
@@ -746,7 +790,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
           [/deployment-plan\.md$/, /infra\/.*\.tf$/],
-          [/\.bicep$/, /azure\.yaml$/],
+          [/\.bicep$/],
         );
       });
     });

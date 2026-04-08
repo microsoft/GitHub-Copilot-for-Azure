@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.1.9"
 ---
 
 # Azure Prepare
@@ -57,7 +57,9 @@ Activate this skill when user wants to:
 
 ## ❌ STEP 0: Specialized Technology Check — MANDATORY FIRST ACTION
 
-**BEFORE starting Phase 1**, check if the user's prompt mentions a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
+**BEFORE starting Phase 1**, check if the user's prompt OR workspace codebase matches a specialized technology that has a dedicated skill with tested templates. If matched, **invoke that skill FIRST** — then resume azure-prepare for validation and deployment.
+
+### Check 1: Prompt keywords
 
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
@@ -66,7 +68,16 @@ Activate this skill when user wants to:
 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
 | APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
 | AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
-| workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable | Stay in **azure-prepare** — select **durable** recipe in Step 4. **MUST** load [durable.md](references/services/functions/durable.md) and [DTS reference](references/services/durable-task-scheduler/README.md). Generate `Microsoft.DurableTask/schedulers` + `taskHubs` Bicep resources. |
+| workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** — select **durable** recipe in Step 4. **MUST** load [durable.md](references/services/functions/durable.md), [DTS reference](references/services/durable-task-scheduler/README.md), and [DTS Bicep patterns](references/services/durable-task-scheduler/bicep.md). |
+
+### Check 2: Codebase markers (even if prompt is generic like "deploy to Azure")
+
+| Codebase marker | Where | Invoke FIRST |
+|----------------|-------|-------------|
+| `@github/copilot-sdk` in dependencies | `package.json` | **azure-hosted-copilot-sdk** |
+| `copilot-sdk` in name or dependencies | `package.json` | **azure-hosted-copilot-sdk** |
+| `CopilotClient` import | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
+| `createSession` + `sendAndWait` calls | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 
@@ -80,7 +91,7 @@ Create `.azure/deployment-plan.md` by completing these steps. Do NOT generate an
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 0 | **❌ Check Prompt for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
+| 0 | **❌ Check Prompt AND Codebase for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., OR codebase contains `@github/copilot-sdk`, invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |
@@ -106,8 +117,9 @@ Execute the approved plan. Update `.azure/deployment-plan.md` status after each 
 | 2 | **Confirm Azure Context** — Detect and confirm subscription + location and check the resource provisioning limit | [Azure Context](references/azure-context.md) |
 | 3 | **Generate Artifacts** — Create infrastructure and configuration files | [generate.md](references/generate.md) |
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
-| 5 | **⛔ Update Plan (MANDATORY before hand-off)** — Use the `edit` tool to change the Status in `.azure/deployment-plan.md` to `Ready for Validation`. You **MUST** complete this edit **BEFORE** invoking azure-validate. Do NOT skip this step. | `.azure/deployment-plan.md` |
-| 6 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. **PREREQUISITE:** Step 5 must be completed first — `.azure/deployment-plan.md` status must say `Ready for Validation`. | — |
+| 5 | **Functional Verification** — Verify the app works (UI + backend), locally if possible | [functional-verification.md](references/functional-verification.md) |
+| 6 | **⛔ Update Plan (MANDATORY before hand-off)** — Use the `edit` tool to change the Status in `.azure/deployment-plan.md` to `Ready for Validation`. You **MUST** complete this edit **BEFORE** invoking azure-validate. Do NOT skip this step. | `.azure/deployment-plan.md` |
+| 7 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. **PREREQUISITE:** Step 6 must be completed first — `.azure/deployment-plan.md` status must say `Ready for Validation`. | — |
 
 ---
 

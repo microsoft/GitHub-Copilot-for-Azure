@@ -60,6 +60,7 @@ az identity list --output table
 - [ ] Enable MFA for all users
 - [ ] Apply least privilege RBAC
 - [ ] Use Microsoft Entra ID for authentication
+- [ ] SQL Server: Entra-only auth — do NOT generate `administratorLogin` or `administratorLoginPassword` (see [sql-database/auth.md](services/sql-database/auth.md))
 - [ ] Review access regularly
 
 ### Managed Identity

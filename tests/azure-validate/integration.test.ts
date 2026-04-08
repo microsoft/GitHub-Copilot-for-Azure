@@ -113,6 +113,42 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       setSkillInvocationRate(rate);
       expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
     }));
+
+    test("invokes azure-validate skill for RBAC role verification prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Verify the RBAC role assignments in my Bicep templates before deploying to Azure",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+
+    test("invokes azure-validate skill for managed identity permissions check prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
   });
 
   describe("deployment-validation", () => {
