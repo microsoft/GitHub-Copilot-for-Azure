@@ -1,9 +1,9 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
+import { SKILL_REPORT_PATTERN } from "../skillReport";
 
 const TEST_RESULTS_FILENAME = "testResults.json";
-const SKILL_REPORT_PATTERN = /^test-run-.*-SKILL-REPORT\.md$/;
 
 /** Shape of a single test case entry inside testResults.json */
 interface TestCaseResult {
