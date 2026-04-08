@@ -13,6 +13,10 @@ const panelRenderers = {};
 const SIR_THRESHOLD = 0.8;
 const SIR_THRESHOLD_PCT = Math.round(SIR_THRESHOLD * 100);
 
+/** Minimum passing confidence level for skill confidence panels (0–1). */
+const CONFIDENCE_THRESHOLD = 0.8;
+const CONFIDENCE_THRESHOLD_PCT = Math.round(CONFIDENCE_THRESHOLD * 100);
+
 /** Minimum passing rate for end-to-end tests per skill (0–1). */
 const E2E_THRESHOLD = 0.7;
 const E2E_THRESHOLD_PCT = Math.round(E2E_THRESHOLD * 100);
@@ -1478,7 +1482,7 @@ function renderE2EPassRatePanel(
 
 /**
  * Fetch the latest integration test results and render the confidence level per skill on the main dashboard.
- * A skill is considered passing when its average rate is >= SIR_THRESHOLD (80%).
+ * A skill is considered passing when its average confidence is >= CONFIDENCE_THRESHOLD (80%).
  */
 async function loadConfidenceLevelPerSkill() {
   const section = document.getElementById("panel-confidence-level");
@@ -1502,13 +1506,13 @@ async function loadConfidenceLevelPerSkill() {
 
     // Sort: below threshold first (worst first), then ascending within each group
     skills.sort(function (a, b) {
-      const aPass = a.rate >= SIR_THRESHOLD;
-      const bPass = b.rate >= SIR_THRESHOLD;
+      const aPass = a.rate >= CONFIDENCE_THRESHOLD;
+      const bPass = b.rate >= CONFIDENCE_THRESHOLD;
       if (aPass !== bPass) return aPass ? 1 : -1;
       return a.rate - b.rate;
     });
 
-    const passing = skills.filter(function (s) { return s.rate >= SIR_THRESHOLD; }).length;
+    const passing = skills.filter(function (s) { return s.rate >= CONFIDENCE_THRESHOLD; }).length;
     const failing = skills.length - passing;
     const overallStatus =
       skills.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
@@ -1545,9 +1549,9 @@ function renderConfidenceLevelPanel(
   if (total > 0) {
     const row = el("div", "stats-row");
     row.appendChild(statBox(total, "Total"));
-    row.appendChild(filterableStatBox(passing, "Above " + SIR_THRESHOLD_PCT + "%", "pass", itemsEl));
+    row.appendChild(filterableStatBox(passing, "Above " + CONFIDENCE_THRESHOLD_PCT + "%", "pass", itemsEl));
     if (failing > 0) {
-      row.appendChild(filterableStatBox(failing, "Below " + SIR_THRESHOLD_PCT + "%", "fail", itemsEl));
+      row.appendChild(filterableStatBox(failing, "Below " + CONFIDENCE_THRESHOLD_PCT + "%", "fail", itemsEl));
     }
     summaryEl.appendChild(row);
   }
@@ -1559,14 +1563,14 @@ function renderConfidenceLevelPanel(
   } else {
     const list = el("ul", "items-list");
     for (const skill of skills) {
-      const status = skill.rate >= SIR_THRESHOLD ? "pass" : "fail";
+      const status = skill.rate >= CONFIDENCE_THRESHOLD ? "pass" : "fail";
       const pct = Math.min(100, Math.max(0, Math.round(skill.rate * 100)));
       const li = el("li");
       li.setAttribute("data-item-status", status);
 
       // Reuse e2e bar styles; CSS custom property drives the threshold marker
       const barTrack = el("div", "e2e-rate-bar-track");
-      barTrack.style.setProperty("--e2e-threshold-pct", String(SIR_THRESHOLD_PCT));
+      barTrack.style.setProperty("--e2e-threshold-pct", String(CONFIDENCE_THRESHOLD_PCT));
 
       const barFill = el("div", "e2e-rate-bar-fill");
       barFill.style.width = pct + "%";
@@ -1578,12 +1582,12 @@ function renderConfidenceLevelPanel(
       barFill.setAttribute(
         "aria-label",
         skill.skillName + ": " + pct + "% confidence level (" +
-          (status === "pass" ? "above" : "below") + " " + SIR_THRESHOLD_PCT + "% threshold)",
+          (status === "pass" ? "above" : "below") + " " + CONFIDENCE_THRESHOLD_PCT + "% threshold)",
       );
 
       const marker = el("div", "e2e-rate-threshold-marker");
       marker.setAttribute("aria-hidden", "true");
-      const markerSrText = el("span", "sr-only", SIR_THRESHOLD_PCT + "% confidence threshold");
+      const markerSrText = el("span", "sr-only", CONFIDENCE_THRESHOLD_PCT + "% confidence threshold");
       barTrack.appendChild(barFill);
       barTrack.appendChild(marker);
       barTrack.appendChild(markerSrText);
@@ -1608,7 +1612,7 @@ function renderConfidenceLevelPanel(
   var summaryText =
     total === 0
       ? "No data"
-      : passing + " above " + SIR_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + SIR_THRESHOLD_PCT + "%" : "");
+      : passing + " above " + CONFIDENCE_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + CONFIDENCE_THRESHOLD_PCT + "%" : "");
   if (dateLabel) summaryText += " \u2014 " + dateLabel;
   section.setAttribute("data-summary-text", summaryText);
 
@@ -1622,7 +1626,7 @@ function renderConfidenceLevelPanel(
       skipped: 0,
     },
     items: skills.map(function (s) {
-      return { name: s.skillName, status: s.rate >= SIR_THRESHOLD ? "pass" : "fail" };
+      return { name: s.skillName, status: s.rate >= CONFIDENCE_THRESHOLD ? "pass" : "fail" };
     }),
   };
 
