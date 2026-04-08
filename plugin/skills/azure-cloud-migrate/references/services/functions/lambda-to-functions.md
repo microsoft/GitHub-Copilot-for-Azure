@@ -2,11 +2,6 @@
 
 Detailed guidance for migrating AWS Lambda functions to Azure Functions.
 
-## Phases
-
-- [Assessment Phase](assessment.md) — Generate assessment report before any code changes
-- [Code Migration Phase](code-migration.md) — Migrate Lambda function code to Azure Functions
-
 ## Overview
 
 | AWS Service | Azure Equivalent |
