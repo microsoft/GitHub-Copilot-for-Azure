@@ -62,7 +62,7 @@ Place this in a **separate module file** so neither the ACR module nor the Conta
 param acrName string
 param principalId string
 
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
   name: acrName
 }
 
