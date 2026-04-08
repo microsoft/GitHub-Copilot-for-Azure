@@ -2,13 +2,15 @@
 
 exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion guidance. Supports AWS, GCP, and other providers. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert AWS serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, cross-cloud migration.",
+  "description": "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions and GCP Cloud Run→Container Apps. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, Cloud Run to Container Apps, Cloud Run migration assessment.",
   "extractedKeywords": [
+    "apps",
     "assess",
     "assessment",
     "azure",
     "cloud",
     "code",
+    "container",
     "conversion",
     "convert",
     "cross-cloud",
@@ -16,13 +18,10 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill des
     "from",
     "function",
     "functions",
-    "guidance",
     "lambda",
     "mcp",
     "migrate",
     "migration",
-    "other",
-    "providers",
     "readiness",
     "report",
     "reports",
@@ -38,11 +37,13 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill des
 
 exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
+  "apps",
   "assess",
   "assessment",
   "azure",
   "cloud",
   "code",
+  "container",
   "conversion",
   "convert",
   "cross-cloud",
@@ -50,13 +51,10 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill key
   "from",
   "function",
   "functions",
-  "guidance",
   "lambda",
   "mcp",
   "migrate",
   "migration",
-  "other",
-  "providers",
   "readiness",
   "report",
   "reports",
