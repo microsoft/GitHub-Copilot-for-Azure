@@ -162,4 +162,38 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, migrationTestTimeoutMs);
   });
+
+  describe("AWS Fargate to Container Apps migration scenario", () => {
+    test("invokes skill for Fargate to Container Apps migration", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt:
+            "I want to migrate my AWS Fargate ECS tasks to Azure Container Apps. " +
+            "Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) =>
+            isSkillInvoked(metadata, SKILL_NAME),
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+    test("invokes skill for ECS to Azure Container Apps migration", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt:
+            "Migrate my ECS Fargate containers to Azure Container Apps. " +
+            "I need to move from AWS to Azure.",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) =>
+            isSkillInvoked(metadata, SKILL_NAME),
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+  });
 });
