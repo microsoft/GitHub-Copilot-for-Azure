@@ -20,6 +20,7 @@
 import { dirname, resolve, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { parseSkillContent } from "../shared/skill-helper.js";
 
@@ -46,6 +47,14 @@ export interface ValidationResult {
   skill: string;
   file: string;
   issues: ValidationIssue[];
+}
+
+export interface SkillRoutingContext {
+  name: string;
+  file: string;
+  description: string;
+  triggerPhrases: string[];
+  broad: boolean;
 }
 
 // ── Validation checks ────────────────────────────────────────────────────────
@@ -361,6 +370,176 @@ export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
   return issues;
 }
 
+const TRIGGER_SECTION_RE = /\b(?:WHEN|USE FOR|TRIGGERS):\s*([^]*?)(?=(?:\bDO NOT USE FOR:|\bPREFER OVER\b|\bWHEN:|\bUSE FOR:|\bTRIGGERS:|$))/gi;
+const DO_NOT_USE_FOR_RE = /\bDO NOT USE FOR:/i;
+const BROAD_SKILL_NAMES = new Set(["azure-prepare", "azure-deploy"]);
+const BROAD_TRIGGER_PHRASES = new Set([
+  "deploy to azure",
+  "host on azure",
+  "create and deploy",
+  "create app",
+  "build web app",
+  "create api",
+  "create frontend",
+  "create back end",
+  "modernize application",
+  "update application",
+]);
+
+function normalizeTriggerPhrase(phrase: string): string {
+  return phrase
+    .toLowerCase()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function extractTriggerPhrases(description: string | null): string[] {
+  if (!description) return [];
+
+  const phrases: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = TRIGGER_SECTION_RE.exec(description)) !== null) {
+    const section = match[1];
+    for (const rawPhrase of section.split(/[;,]/)) {
+      const normalized = normalizeTriggerPhrase(rawPhrase);
+      if (normalized.length >= 4) {
+        phrases.push(normalized);
+      }
+    }
+  }
+
+  return [...new Set(phrases)];
+}
+
+export function hasDoNotUseForClause(description: string | null): boolean {
+  if (!description) return false;
+  return DO_NOT_USE_FOR_RE.test(description);
+}
+
+export function hasPreferOverClause(description: string | null, competingSkillName: string): boolean {
+  if (!description) return false;
+  const escapedName = competingSkillName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i").test(description);
+}
+
+function hasAnyDisambiguationClause(description: string | null, competingSkillName: string): boolean {
+  return hasDoNotUseForClause(description) || hasPreferOverClause(description, competingSkillName);
+}
+
+function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] {
+  const contexts: SkillRoutingContext[] = [];
+  for (const file of skillFiles) {
+    const content = readFileSync(file, "utf-8");
+    const parsed = parseSkillContent(content);
+    if (parsed === null) continue;
+    const name = typeof parsed.data.name === "string" ? parsed.data.name : basename(dirname(file));
+    const description = typeof parsed.data.description === "string" ? parsed.data.description : "";
+    const triggerPhrases = extractTriggerPhrases(description);
+    contexts.push({
+      name,
+      file,
+      description,
+      triggerPhrases,
+      broad: BROAD_SKILL_NAMES.has(name)
+        || triggerPhrases.filter((trigger) => BROAD_TRIGGER_PHRASES.has(trigger)).length >= 2,
+    });
+  }
+  return contexts;
+}
+
+function getMergeBaseRef(): string | null {
+  try {
+    return execFileSync("git", ["merge-base", "HEAD", "origin/main"], {
+      cwd: REPO_ROOT,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    try {
+      return execFileSync("git", ["rev-parse", "HEAD~1"], {
+        cwd: REPO_ROOT,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {
+      return null;
+    }
+  }
+}
+
+function getDescriptionFromGitRef(filePath: string, ref: string): string | null {
+  const relativeFilePath = relative(REPO_ROOT, filePath).replace(/\\/g, "/");
+  try {
+    const previousContent = execFileSync("git", ["show", `${ref}:${relativeFilePath}`], {
+      cwd: REPO_ROOT,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const parsed = parseSkillContent(previousContent);
+    if (parsed === null || typeof parsed.data.description !== "string") {
+      return null;
+    }
+    return parsed.data.description;
+  } catch {
+    return null;
+  }
+}
+
+export function validateTriggerOverlapDisambiguation(
+  skill: SkillRoutingContext,
+  allSkills: SkillRoutingContext[],
+): ValidationIssue[] {
+  if (skill.broad || skill.triggerPhrases.length === 0) return [];
+
+  const issues: ValidationIssue[] = [];
+  const skillTriggerSet = new Set(skill.triggerPhrases);
+
+  for (const competitor of allSkills) {
+    if (competitor.name === skill.name || !competitor.broad) continue;
+    if (competitor.triggerPhrases.length === 0) continue;
+
+    const overlaps = competitor.triggerPhrases.filter(
+      (trigger) => skillTriggerSet.has(trigger) && BROAD_TRIGGER_PHRASES.has(trigger),
+    );
+    if (overlaps.length === 0) continue;
+
+    if (!hasAnyDisambiguationClause(skill.description, competitor.name)) {
+      issues.push({
+        check: "trigger-overlap-disambiguation",
+        severity: "warning",
+        message: `Trigger overlap with broad skill "${competitor.name}" (${overlaps.slice(0, 3).join(", ")}). Add DO NOT USE FOR: or PREFER OVER ${competitor.name}.`,
+      });
+    }
+  }
+
+  return issues;
+}
+
+function validateDisambiguationRemoval(skill: SkillRoutingContext, mergeBaseRef: string | null): ValidationIssue[] {
+  if (mergeBaseRef === null) return [];
+
+  const previousDescription = getDescriptionFromGitRef(skill.file, mergeBaseRef);
+  if (previousDescription === null) return [];
+
+  if (isDisambiguationClauseRemoved(previousDescription, skill.description)) {
+    return [{
+      check: "disambiguation-removal",
+      severity: "warning",
+      message: "Removed DO NOT USE FOR/PREFER OVER clause compared to base ref. Potential routing regression.",
+    }];
+  }
+
+  return [];
+}
+
+export function isDisambiguationClauseRemoved(previousDescription: string | null, currentDescription: string | null): boolean {
+  const previousHasDisambiguation = hasDoNotUseForClause(previousDescription) || /\bPREFER OVER\b/i.test(previousDescription ?? "");
+  const currentHasDisambiguation = hasDoNotUseForClause(currentDescription) || /\bPREFER OVER\b/i.test(currentDescription ?? "");
+  return previousHasDisambiguation && !currentHasDisambiguation;
+}
+
 // ── Validate a single SKILL.md ──────────────────────────────────────────────
 
 export function validateSkillFile(filePath: string): ValidationResult {
@@ -450,6 +629,8 @@ const ALL_CHECKS = [
   "metadata-version",
   "compatibility",
   "allowed-tools",
+  "trigger-overlap-disambiguation",
+  "disambiguation-removal",
 ] as const;
 
 export interface FrontmatterSkillResult {
@@ -565,8 +746,18 @@ function main(): void {
 
   // Validate all skill files
   const results: ValidationResult[] = [];
+  const routingContexts = buildSkillRoutingContexts(getAllSkillFiles());
+  const routingContextByName = new Map(routingContexts.map((context) => [context.name, context]));
+  const mergeBaseRef = getMergeBaseRef();
+
   for (const file of skillFiles) {
-    results.push(validateSkillFile(file));
+    const result = validateSkillFile(file);
+    const routingContext = routingContextByName.get(result.skill);
+    if (routingContext) {
+      result.issues.push(...validateTriggerOverlapDisambiguation(routingContext, routingContexts));
+      result.issues.push(...validateDisambiguationRemoval(routingContext, mergeBaseRef));
+    }
+    results.push(result);
   }
 
   // ── JSON output mode ────────────────────────────────────────────────────

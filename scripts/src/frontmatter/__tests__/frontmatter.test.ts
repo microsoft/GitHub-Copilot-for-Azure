@@ -16,6 +16,11 @@ import {
   validateMetadataVersion,
   validateCompatibility,
   validateAllowedTools,
+  extractTriggerPhrases,
+  hasDoNotUseForClause,
+  hasPreferOverClause,
+  isDisambiguationClauseRemoved,
+  validateTriggerOverlapDisambiguation,
   validateSkillFile,
 } from "../cli.js";
 import { parseSkillContent } from "../../shared/skill-helper.js";
@@ -485,6 +490,107 @@ describe("Frontmatter Spec Validator", () => {
       const issues = validateAllowedTools("");
       expect(issues).toHaveLength(1);
       expect(issues[0].message).toContain("must not be empty");
+    });
+  });
+
+  // ── trigger overlap disambiguation checks ────────────────────────────────
+
+  describe("trigger overlap disambiguation", () => {
+    it("extracts trigger phrases from WHEN/USE FOR sections", () => {
+      const description = "Deploy workloads. WHEN: deploy to Azure, host on Azure. USE FOR: modernize app, create API.";
+      expect(extractTriggerPhrases(description)).toEqual([
+        "deploy to azure",
+        "host on azure",
+        "modernize app",
+        "create api",
+      ]);
+    });
+
+    it("detects DO NOT USE FOR clause", () => {
+      expect(hasDoNotUseForClause("WHEN: deploy. DO NOT USE FOR: generic apps.")).toBe(true);
+      expect(hasDoNotUseForClause("WHEN: deploy")).toBe(false);
+    });
+
+    it("detects PREFER OVER clause for a competing skill", () => {
+      expect(hasPreferOverClause("PREFER OVER azure-prepare when Copilot SDK markers exist.", "azure-prepare")).toBe(true);
+      expect(hasPreferOverClause("PREFER OVER azure-deploy when publishing.", "azure-prepare")).toBe(false);
+    });
+
+    it("warns when a non-broad skill overlaps broad triggers without disambiguation", () => {
+      const issues = validateTriggerOverlapDisambiguation(
+        {
+          name: "specialized-skill",
+          file: "/tmp/specialized/SKILL.md",
+          description: "WHEN: deploy to Azure, host on Azure, copilot sdk",
+          triggerPhrases: ["deploy to azure", "host on azure", "copilot sdk"],
+          broad: false,
+        },
+        [
+          {
+            name: "specialized-skill",
+            file: "/tmp/specialized/SKILL.md",
+            description: "WHEN: deploy to Azure, host on Azure, copilot sdk",
+            triggerPhrases: ["deploy to azure", "host on azure", "copilot sdk"],
+            broad: false,
+          },
+          {
+            name: "azure-prepare",
+            file: "/tmp/azure-prepare/SKILL.md",
+            description: "WHEN: deploy to Azure, host on Azure, modernize app, create API",
+            triggerPhrases: ["deploy to azure", "host on azure", "modernize app", "create api"],
+            broad: true,
+          },
+        ],
+      );
+
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("trigger-overlap-disambiguation");
+    });
+
+    it("does not warn when overlap includes disambiguation", () => {
+      const issues = validateTriggerOverlapDisambiguation(
+        {
+          name: "specialized-skill",
+          file: "/tmp/specialized/SKILL.md",
+          description: "PREFER OVER azure-prepare. WHEN: deploy to Azure, host on Azure",
+          triggerPhrases: ["deploy to azure", "host on azure"],
+          broad: false,
+        },
+        [
+          {
+            name: "specialized-skill",
+            file: "/tmp/specialized/SKILL.md",
+            description: "PREFER OVER azure-prepare. WHEN: deploy to Azure, host on Azure",
+            triggerPhrases: ["deploy to azure", "host on azure"],
+            broad: false,
+          },
+          {
+            name: "azure-prepare",
+            file: "/tmp/azure-prepare/SKILL.md",
+            description: "WHEN: deploy to Azure, host on Azure",
+            triggerPhrases: ["deploy to azure", "host on azure"],
+            broad: true,
+          },
+        ],
+      );
+
+      expect(issues).toEqual([]);
+    });
+
+    it("detects disambiguation clause removal", () => {
+      expect(
+        isDisambiguationClauseRemoved(
+          "PREFER OVER azure-prepare when copilot sdk markers exist.",
+          "WHEN: deploy to Azure, copilot sdk",
+        ),
+      ).toBe(true);
+
+      expect(
+        isDisambiguationClauseRemoved(
+          "DO NOT USE FOR: generic web apps",
+          "DO NOT USE FOR: generic web apps",
+        ),
+      ).toBe(false);
     });
   });
 
