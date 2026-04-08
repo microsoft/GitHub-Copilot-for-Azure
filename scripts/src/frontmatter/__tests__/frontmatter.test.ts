@@ -20,6 +20,7 @@ import {
   hasDoNotUseForClause,
   hasPreferOverClause,
   isDisambiguationClauseRemoved,
+  buildDisambiguationRemovalIssues,
   validateTriggerOverlapDisambiguation,
   validateSkillFile,
 } from "../cli.js";
@@ -591,6 +592,21 @@ describe("Frontmatter Spec Validator", () => {
           "DO NOT USE FOR: generic web apps",
         ),
       ).toBe(false);
+    });
+
+    it("emits warning issue when disambiguation clause is removed", () => {
+      const issues = buildDisambiguationRemovalIssues(
+        "DO NOT USE FOR: generic web apps",
+        "WHEN: deploy to Azure",
+      );
+      expect(issues).toHaveLength(1);
+      expect(issues[0].check).toBe("disambiguation-removal");
+      expect(issues[0].severity).toBe("warning");
+    });
+
+    it("emits no warning issue when previous description is unavailable", () => {
+      const issues = buildDisambiguationRemovalIssues(null, "WHEN: deploy to Azure");
+      expect(issues).toEqual([]);
     });
   });
 

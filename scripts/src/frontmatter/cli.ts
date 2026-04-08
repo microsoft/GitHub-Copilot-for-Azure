@@ -400,6 +400,7 @@ const BROAD_TRIGGER_PHRASES = new Set([
   "modernize application",
   "update application",
 ]);
+const PREFER_OVER_REGEX_CACHE = new Map<string, RegExp>();
 
 function normalizeTriggerPhrase(phrase: string): string {
   return phrase
@@ -435,8 +436,13 @@ export function hasDoNotUseForClause(description: string | null): boolean {
 
 export function hasPreferOverClause(description: string | null, competingSkillName: string): boolean {
   if (!description) return false;
+  const existing = PREFER_OVER_REGEX_CACHE.get(competingSkillName);
+  if (existing) return existing.test(description);
+
   const escapedName = competingSkillName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i").test(description);
+  const compiled = new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i");
+  PREFER_OVER_REGEX_CACHE.set(competingSkillName, compiled);
+  return compiled.test(description);
 }
 
 function hasAnyPreferOverClause(description: string | null): boolean {
@@ -462,11 +468,15 @@ function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] 
       file,
       description,
       triggerPhrases,
-      broad: BROAD_SKILL_NAMES.has(name)
-        || triggerPhrases.filter((trigger) => BROAD_TRIGGER_PHRASES.has(trigger)).length >= BROAD_TRIGGER_MATCH_THRESHOLD,
+      broad: isBroadRoutingSkill(name, triggerPhrases),
     });
   }
   return contexts;
+}
+
+function isBroadRoutingSkill(name: string, triggerPhrases: string[]): boolean {
+  if (BROAD_SKILL_NAMES.has(name)) return true;
+  return triggerPhrases.filter((trigger) => BROAD_TRIGGER_PHRASES.has(trigger)).length >= BROAD_TRIGGER_MATCH_THRESHOLD;
 }
 
 function getMergeBaseRef(): string | null {
@@ -550,23 +560,26 @@ function validateDisambiguationRemoval(skill: SkillRoutingContext, mergeBaseRef:
   if (mergeBaseRef === null) return [];
 
   const previousDescription = getDescriptionFromGitRef(skill.file, mergeBaseRef);
-  if (previousDescription === null) return [];
-
-  if (isDisambiguationClauseRemoved(previousDescription, skill.description)) {
-    return [{
-      check: "disambiguation-removal",
-      severity: "warning",
-      message: "Removed DO NOT USE FOR/PREFER OVER clause compared to base ref. Potential routing regression.",
-    }];
-  }
-
-  return [];
+  return buildDisambiguationRemovalIssues(previousDescription, skill.description);
 }
 
 export function isDisambiguationClauseRemoved(previousDescription: string | null, currentDescription: string | null): boolean {
   const previousHasDisambiguation = hasDoNotUseForClause(previousDescription) || hasAnyPreferOverClause(previousDescription);
   const currentHasDisambiguation = hasDoNotUseForClause(currentDescription) || hasAnyPreferOverClause(currentDescription);
   return previousHasDisambiguation && !currentHasDisambiguation;
+}
+
+export function buildDisambiguationRemovalIssues(
+  previousDescription: string | null,
+  currentDescription: string | null,
+): ValidationIssue[] {
+  if (previousDescription === null) return [];
+  if (!isDisambiguationClauseRemoved(previousDescription, currentDescription)) return [];
+  return [{
+    check: "disambiguation-removal",
+    severity: "warning",
+    message: "Removed DO NOT USE FOR/PREFER OVER clause compared to base ref. Potential routing regression.",
+  }];
 }
 
 // ── Validate a single SKILL.md ──────────────────────────────────────────────
