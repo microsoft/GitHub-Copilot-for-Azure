@@ -170,6 +170,14 @@ az capacity reservation list \
 
 > This approach requires knowing (or iterating over) the resource groups that contain CRGs.
 
+## Estimating Reservation Cost
+
+Capacity reservations are billed at the same pay-as-you-go rate as the underlying VM size, whether or not VMs are running against them. Use the [Retail Prices API guide](../azure-compute/references/retail-prices-api.md) (unauthenticated) to look up hourly rates.
+
+**Estimated monthly cost:** `quantity × hourly rate × 730`
+
+> ⚠️ Prices returned are **estimates based on current retail pay-as-you-go rates**, not a final cost or contractual commitment. Actual charges may vary due to taxes, discounts (Reserved Instances, Savings Plans), or price changes.
+
 ## Important Notes
 
 - **Deletion is blocked until prerequisites are met:** Azure rejects a CRG delete unless all VMs/VMSS are disassociated and all capacity reservations are deleted. Order: disassociate VMs/VMSS → delete reservations → delete group.
