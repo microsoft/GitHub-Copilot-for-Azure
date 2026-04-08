@@ -82,37 +82,7 @@ az monitor metrics list \
 | No resource limits set | Add limits to prevent noisy-neighbor waste | Low |
 | No VPA/HPA configured | Suggest enabling Vertical Pod Autoscaler | Low |
 
-## Enable VPA (Recommendation Mode)
-
-Enable VPA in recommendation-only mode so it suggests rightsized values without auto-applying:
-
-```bash
-# Install VPA (if not present)
-kubectl apply -f https://github.com/kubernetes/autoscaler/releases/latest/download/vertical-pod-autoscaler.yaml
-
-# Create a VPA object in recommendation mode for a deployment
-kubectl apply -f - <<EOF
-apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  name: <DEPLOYMENT_NAME>-vpa
-  namespace: <NAMESPACE>
-spec:
-  targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: <DEPLOYMENT_NAME>
-  updatePolicy:
-    updateMode: "Off"   # Recommendation only — does not modify pods
-EOF
-
-# Read recommendations after 24+ hours of data collection
-kubectl describe vpa <DEPLOYMENT_NAME>-vpa -n <NAMESPACE>
-```
-
-> Risk: Low in "Off" mode. Do not use `updateMode: Auto` in production without thorough testing.
-
-## YAML Patch Format
+> For VPA setup and configuration, see [azure-aks-vpa.md](./azure-aks-vpa.md).## YAML Patch Format
 
 ```yaml
 # Rightsizing patch for <NAMESPACE>/<DEPLOYMENT_NAME>
@@ -133,8 +103,8 @@ spec:
             cpu: "<NEW_CPU>"
             memory: "<NEW_MEM>"
           limits:
-            cpu: "<NEW_CPU_LIMIT>"
-            memory: "<NEW_MEM_LIMIT>"
+            cpu: "<NEW_CPU_LIMIT>"     # e.g. CPU limit = 1.5x CPU request, or preserve existing limit-to-request ratio
+            memory: "<NEW_MEM_LIMIT>"  # e.g. memory limit = 1.25x memory request, or preserve existing limit-to-request ratio
 ```
 
 > Risk: Medium-High. Always review patches before applying. Test in non-production first. Get explicit user confirmation before applying to production.

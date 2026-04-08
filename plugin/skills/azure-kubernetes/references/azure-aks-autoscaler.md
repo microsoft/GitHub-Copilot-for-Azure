@@ -17,24 +17,7 @@ az aks show \
 
 ## Check Node Utilization (7 days)
 
-First, discover available metric names for the cluster — metric names vary by configuration:
-
-```bash
-az monitor metrics list-definitions \
-  --resource "<AKS_RESOURCE_ID>" \
-  --query "[].name.value" -o tsv
-```
-
-Select the appropriate CPU utilization metric from the output (commonly `node_cpu_usage_percentage` or `cpuUsagePercentage`), then query it:
-
-```bash
-az monitor metrics list \
-  --resource "<AKS_RESOURCE_ID>" \
-  --metric "<METRIC_NAME_FROM_ABOVE>" \
-  --interval PT1H --aggregation Average \
-  --start-time "<YYYY-MM-DDTHH:mm:ssZ>" \
-  --end-time "<YYYY-MM-DDTHH:mm:ssZ>"
-```
+Follow the metrics discovery steps in [azure-aks-rightsizing.md](./azure-aks-rightsizing.md#historical-metrics-azure-monitor--use-when-prometheus-or-container-insights-is-enabled) to list available metric definitions and query node CPU utilization. Use metric names such as `node_cpu_usage_percentage` or `cpuUsagePercentage` depending on what's available on the cluster.
 
 ## Enable CAS
 
@@ -67,6 +50,8 @@ az aks nodepool update \
 
 Apply when CAS is already on but idle nodes persist:
 
+> ⚠️ **Warning:** Setting `skip-nodes-with-system-pods=false` allows CAS to evict system pods. Ensure all system pods in `kube-system` have PodDisruptionBudgets before enabling this.
+
 ```bash
 az aks update \
   --name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
@@ -75,7 +60,7 @@ az aks update \
     scale-down-unneeded-time=10m \
     scale-down-utilization-threshold=0.5 \
     max-graceful-termination-sec=600 \
-    skip-nodes-with-system-pods=false  # WARNING: can evict system pods — ensure system pods have PDBs
+    skip-nodes-with-system-pods=false
 ```
 
 To roll back to CAS defaults:
@@ -102,7 +87,4 @@ az aks update \
 > kubectl get pdb --all-namespaces
 > ```
 
-## Cost Impact Estimate
 
-- Count idle nodes (utilization < 20% for 7+ days)
-- Multiply: idle nodes x VM hourly price (Azure Retail Prices API) x 720 hrs/month
