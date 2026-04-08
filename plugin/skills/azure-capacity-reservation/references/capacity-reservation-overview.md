@@ -114,16 +114,6 @@ To associate a VM with a CRG, the CRG must contain a capacity reservation that m
 
 ARG can query all capacity reservations across resource groups in a single call, filtering by location, VM size, and zone. This is the most efficient approach.
 
-**MCP tool:**
-
-```yaml
-azure_resources-query_azure_resource_graph
-  arg_intent: "find all capacity reservations matching VM size <size> in location <region>"
-  useDefaultSubscriptionFilter: true
-```
-
-**CLI fallback:**
-
 ```bash
 az graph query -q "
   Resources
