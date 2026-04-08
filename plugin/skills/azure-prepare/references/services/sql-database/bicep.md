@@ -152,7 +152,10 @@ Key behaviours of the scripts:
 > ❌ **DO NOT generate conditional patterns like:**
 > ```bicep
 > properties: useEntraAuth ? {
->   administrators: { azureADOnlyAuthentication: true ... }
+>   administrators: {
+>     azureADOnlyAuthentication: true
+>     // ...
+>   }
 > } : {
 >   administratorLogin: sqlAdminLogin          // ❌ PROHIBITED
 >   administratorLoginPassword: sqlAdminPassword  // ❌ PROHIBITED
