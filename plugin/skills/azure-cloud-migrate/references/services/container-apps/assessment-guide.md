@@ -77,7 +77,7 @@ spring:
 
 **application.properties:**
 ```properties
-spring.activemq.broker-url=broker:(tcp://localhost:61616)
+spring.activemq.broker-url=tcp://localhost:61616
 spring.activemq.user=admin
 ```
 

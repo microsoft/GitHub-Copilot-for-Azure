@@ -86,26 +86,49 @@ az containerapp env storage set --name spring-env --resource-group spring-rg --s
 
 ## Phase 5: Migrate Secrets to Key Vault
 
+> **Security Note:** Avoid passing secrets via `--value` on the command line (leaks via shell history). Use `--file` with a protected temp file or prompt securely instead.
+
 **Bash:**
 ```bash
+ACR_NAME="${ACR_NAME:-<acr>}"  # From Phase 3
 KEY_VAULT="${KEY_VAULT:-<keyvault>}"
 az keyvault create --name "$KEY_VAULT" --resource-group spring-rg --location eastus
 IDENTITY_ID=$(az identity create --name spring-id --resource-group spring-rg --location eastus --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --ids "$IDENTITY_ID" --query principalId -o tsv)
 az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
-az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --value "<your-password>"
+
+# Secure approach using temp file
+SECRET_FILE=$(mktemp)
+trap 'shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"' EXIT
+read -s -p "Enter database password: " DB_PASSWORD
+echo -n "$DB_PASSWORD" > "$SECRET_FILE"
+az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --file "$SECRET_FILE"
+
 ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
 az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$ACR_ID"
 ```
 
 **PowerShell:**
 ```powershell
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }  # From Phase 3
 $KEY_VAULT = if ($env:KEY_VAULT) { $env:KEY_VAULT } else { "<keyvault>" }
 az keyvault create --name "$KEY_VAULT" --resource-group spring-rg --location eastus
 $IDENTITY_ID = az identity create --name spring-id --resource-group spring-rg --location eastus --query id -o tsv
 $PRINCIPAL_ID = az identity show --ids "$IDENTITY_ID" --query principalId -o tsv
 az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
-az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --value "<your-password>"
+
+# Secure approach using temp file
+$SECRET_FILE = [System.IO.Path]::GetTempFileName()
+try {
+  $SecurePassword = Read-Host "Enter database password" -AsSecureString
+  $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
+  $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+  [System.IO.File]::WriteAllText($SECRET_FILE, $PlainPassword)
+  az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --file "$SECRET_FILE"
+} finally {
+  Remove-Item $SECRET_FILE -Force -ErrorAction SilentlyContinue
+}
+
 $ACR_ID = az acr show --name "$ACR_NAME" --query id -o tsv
 az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$ACR_ID"
 ```
