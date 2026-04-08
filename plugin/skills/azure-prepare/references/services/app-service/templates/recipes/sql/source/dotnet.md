@@ -54,6 +54,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Add health check for SQL
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>();
+
+// After app build — map health checks so App Service probes reflect SQL connectivity
+app.MapHealthChecks("/health");
 ```
 
 ### API Endpoints

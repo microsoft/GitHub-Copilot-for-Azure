@@ -24,10 +24,10 @@ Base Template (per language/scenario, from AZD gallery)
 
 | Recipe | IaC Delta? | Source Delta? | Status |
 |--------|-----------|--------------|--------|
-| [sql](sql/README.md) | ✅ SQL Server + DB + firewall + RBAC | ✅ EF Core / Prisma / SQLAlchemy | ✅ Available |
-| [cosmos](cosmos/README.md) | ✅ Cosmos account + DB + container + RBAC + PE | ✅ Cosmos SDK client | ✅ Available |
-| [auth](auth/README.md) | ✅ App registration + Easy Auth config | ✅ MSAL / Identity middleware | ✅ Available |
-| [redis](redis/README.md) | ✅ Redis cache + RBAC + PE | ✅ Distributed cache client | ✅ Available |
+| [sql](sql/README.md) | ✅ SQL Server + DB + firewall + RBAC | ✅ EF Core (.NET), SQLAlchemy (Python), Prisma (Node.js) · ⏳ Spring Data JPA (Java): planned | ✅ Available |
+| [cosmos](cosmos/README.md) | ✅ Cosmos account + DB + container + RBAC + PE | ✅ Cosmos SDK (.NET, Python, Node.js) · ⏳ Spring Data Cosmos (Java): planned | ✅ Available |
+| [auth](auth/README.md) | ✅ App registration + Easy Auth config | ✅ MSAL / Identity middleware (.NET, Python, Node.js) · ⏳ Spring Security (Java): planned | ✅ Available |
+| [redis](redis/README.md) | ✅ Redis cache + RBAC + PE | ✅ Distributed cache client (.NET, Python, Node.js) · ⏳ Spring Session (Java): planned | ✅ Available |
 
 ## How It Works
 

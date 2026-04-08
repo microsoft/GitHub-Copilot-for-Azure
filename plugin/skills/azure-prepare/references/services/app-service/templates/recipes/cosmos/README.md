@@ -76,43 +76,11 @@ appSettings: [
 
 ## Source Code Examples
 
-### C# (.NET)
-
-```csharp
-using Azure.Identity;
-using Microsoft.Azure.Cosmos;
-
-builder.Services.AddSingleton(_ =>
-{
-    var endpoint = builder.Configuration["COSMOS_ENDPOINT"];
-    return new CosmosClient(endpoint, new DefaultAzureCredential());
-});
-```
-
-### Python
-
-```python
-from azure.cosmos import CosmosClient
-from azure.identity import DefaultAzureCredential
-import os
-
-credential = DefaultAzureCredential()
-client = CosmosClient(os.environ["COSMOS_ENDPOINT"], credential)
-database = client.get_database_client(os.environ["COSMOS_DATABASE_NAME"])
-container = database.get_container_client(os.environ["COSMOS_CONTAINER_NAME"])
-```
-
-### Node.js
-
-```javascript
-const { CosmosClient } = require("@azure/cosmos");
-const { DefaultAzureCredential } = require("@azure/identity");
-
-const client = new CosmosClient({
-  endpoint: process.env.COSMOS_ENDPOINT,
-  aadCredentials: new DefaultAzureCredential(),
-});
-```
+| Language | Source File |
+|----------|-------------|
+| C# (.NET) | [source/dotnet.md](source/dotnet.md) |
+| Python | [source/python.md](source/python.md) |
+| Node.js | [source/nodejs.md](source/nodejs.md) |
 
 ## References
 

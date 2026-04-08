@@ -28,6 +28,7 @@ ELSE IF scenario == 'web-app':
 
 # Non-interactive init
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+# PowerShell: $ENV_NAME = "$(Split-Path -Leaf (Get-Location) | ForEach-Object { $_.ToLower() -replace '[ _]','-' })-dev"
 azd init -t $TEMPLATE -e "$ENV_NAME" --no-prompt
 ```
 
@@ -37,11 +38,8 @@ azd init -t $TEMPLATE -e "$ENV_NAME" --no-prompt
 IF integration IN [none]:
   → DONE. Base template is complete.
 
-IF integration IN [sql, cosmos, redis]:
+IF integration IN [sql, cosmos, redis, auth]:
   → Full recipe. Continue to Step 3.
-
-IF integration IN [auth]:
-  → Config recipe. Skip to Step 4.
 ```
 
 ### Step 3: Add IaC Module (for full recipes only)

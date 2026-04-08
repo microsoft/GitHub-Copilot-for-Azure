@@ -21,6 +21,8 @@ Zero-code authentication built into App Service. Handles login, token management
 
 ### Bicep Configuration
 
+> 💡 Call `mcp_bicep_get_az_resource_type_schema` with resource type `Microsoft.Web/sites/config` to validate properties before generating this resource.
+
 ```bicep
 resource authSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   parent: webApp
@@ -34,8 +36,8 @@ resource authSettings 'Microsoft.Web/sites/config@2023-12-01' = {
       azureActiveDirectory: {
         enabled: true
         registration: {
-          openIdIssuer: 'https://sts.windows.net/${tenant().tenantId}/v2.0'
-          clientId: appRegistration.outputs.clientId
+          openIdIssuer: 'https://login.microsoftonline.com/${tenant().tenantId}/v2.0'
+          clientId: appRegistration.properties.appId
         }
         validation: {
           defaultAuthorizationPolicy: {
@@ -55,7 +57,11 @@ resource authSettings 'Microsoft.Web/sites/config@2023-12-01' = {
 
 ### App Registration
 
+> 💡 Call `mcp_bicep_get_az_resource_type_schema` with resource type `Microsoft.Graph/applications` to validate properties before generating this resource. The `microsoftGraphV1_0` extension is required — declare it at the top of the Bicep file.
+
 ```bicep
+extension microsoftGraphV1_0
+
 resource appRegistration 'Microsoft.Graph/applications@v1.0' = {
   displayName: '${name}-app'
   web: {
@@ -70,98 +76,11 @@ resource appRegistration 'Microsoft.Graph/applications@v1.0' = {
 
 Use when you need custom token validation, API-only auth, or multi-tenant support.
 
-### C# (ASP.NET Core)
-
-```csharp
-// Program.cs — add authentication
-using Microsoft.Identity.Web;
-
-builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
-builder.Services.AddAuthorization();
-
-// After app build
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Protected endpoint
-app.MapGet("/api/me", [Authorize] (HttpContext ctx) =>
-{
-    var name = ctx.User.FindFirst("name")?.Value;
-    return Results.Ok(new { name });
-});
-```
-
-**appsettings.json:**
-```json
-{
-  "AzureAd": {
-    "Instance": "https://login.microsoftonline.com/",
-    "TenantId": "<tenant-id>",
-    "ClientId": "<client-id>",
-    "Audience": "api://<client-id>"
-  }
-}
-```
-
-### Python (FastAPI)
-
-```python
-import os
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
-from jwt import PyJWKClient
-
-security = HTTPBearer()
-TENANT_ID = os.environ["AZURE_TENANT_ID"]
-CLIENT_ID = os.environ["AZURE_CLIENT_ID"]
-JWKS_URL = f"https://login.microsoftonline.com/{TENANT_ID}/discovery/v2.0/keys"
-
-jwks_client = PyJWKClient(JWKS_URL)
-
-async def validate_token(creds: HTTPAuthorizationCredentials = Depends(security)):
-    try:
-        signing_key = jwks_client.get_signing_key_from_jwt(creds.credentials)
-        payload = jwt.decode(
-            creds.credentials,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience=CLIENT_ID,
-            issuer=f"https://login.microsoftonline.com/{TENANT_ID}/v2.0",
-        )
-        return payload
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-```
-
-### Node.js (Express)
-
-```javascript
-const { ConfidentialClientApplication } = require("@azure/msal-node");
-const jwt = require("jsonwebtoken");
-const jwksClient = require("jwks-rsa");
-
-const client = jwksClient({
-  jwksUri: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/discovery/v2.0/keys`,
-});
-
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "No token" });
-
-  const decoded = jwt.decode(token, { complete: true });
-  client.getSigningKey(decoded.header.kid, (err, key) => {
-    jwt.verify(token, key.getPublicKey(), {
-      audience: process.env.AZURE_CLIENT_ID,
-      issuer: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
-    }, (err, payload) => {
-      if (err) return res.status(401).json({ error: "Invalid token" });
-      req.user = payload;
-      next();
-    });
-  });
-}
-```
+| Language | Source File |
+|----------|-------------|
+| C# (ASP.NET Core) | [source/dotnet.md](source/dotnet.md) |
+| Python (FastAPI) | [source/python.md](source/python.md) |
+| Node.js (Express) | [source/nodejs.md](source/nodejs.md) |
 
 ## App Settings
 

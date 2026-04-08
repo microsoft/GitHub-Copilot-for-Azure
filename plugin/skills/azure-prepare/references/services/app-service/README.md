@@ -58,6 +58,10 @@ siteConfig: {
 
 Endpoint should return 200 OK when healthy.
 
+## Templates
+
+For App Service templates with composable recipes (SQL, Cosmos DB, Auth, Redis), see [Template Selection](templates/selection.md).
+
 ## References
 
 - [Bicep Patterns](bicep.md)

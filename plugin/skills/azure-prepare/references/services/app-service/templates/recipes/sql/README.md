@@ -14,7 +14,7 @@ This recipe composes with a Web API or Web App base template to add Azure SQL Da
 | **Auth** | Managed identity (passwordless) |
 | **ORM** | EF Core (.NET), Prisma (Node.js), SQLAlchemy (Python) |
 | **Hosting** | App Service (from base template) |
-| **Local Auth** | Disabled — Entra ID only |
+| **Local Auth** | Disabled in Azure (Entra ID only); local dev may use SQL auth |
 
 ## Composition Steps
 
@@ -72,6 +72,7 @@ appSettings: [
 |------|-------------|
 | [source/dotnet.md](source/dotnet.md) | C# EF Core integration |
 | [source/python.md](source/python.md) | Python SQLAlchemy integration |
+| [source/nodejs.md](source/nodejs.md) | Node.js Prisma integration |
 
 ## References
 

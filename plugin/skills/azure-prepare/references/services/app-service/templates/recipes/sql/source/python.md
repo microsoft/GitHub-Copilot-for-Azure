@@ -27,12 +27,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from azure.identity import ManagedIdentityCredential
 
-def get_connection_string():
-    """Build ODBC connection string with managed identity token."""
+
+class Base(DeclarativeBase):
+    pass
+
+
+def create_db_engine():
+    """Create SQLAlchemy engine using managed identity or connection string."""
     conn_str = os.environ.get("AZURE_SQL_CONNECTION_STRING")
     if conn_str:
-        return conn_str
+        # Local dev: AZURE_SQL_CONNECTION_STRING is a SQLAlchemy URL
+        # e.g. mssql+pyodbc://sa:password@localhost/myapp?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+        return create_engine(conn_str)
 
+    # Azure: use managed identity token
     server = os.environ["AZURE_SQL_SERVER"]
     database = os.environ["AZURE_SQL_DATABASE"]
     client_id = os.environ.get("AZURE_CLIENT_ID", "")
@@ -42,27 +50,20 @@ def get_connection_string():
     token_bytes = token.token.encode("utf-16-le")
     token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
 
-    conn_str = (
+    odbc_conn = (
         f"DRIVER={{ODBC Driver 18 for SQL Server}};"
         f"SERVER={server};"
         f"DATABASE={database};"
         f"Encrypt=yes;TrustServerCertificate=no;"
     )
-    return conn_str, token_struct
-
-class Base(DeclarativeBase):
-    pass
-
-def create_db_engine():
-    conn_str, token_struct = get_connection_string()
-    engine = create_engine(
+    return create_engine(
         "mssql+pyodbc://",
         connect_args={
-            "odbc_connect": conn_str,
+            "odbc_connect": odbc_conn,
             "attrs_before": {1256: token_struct},  # SQL_COPT_SS_ACCESS_TOKEN
         },
     )
-    return engine
+
 
 engine = create_db_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -134,7 +135,7 @@ For local development without managed identity, use SQL authentication:
 
 ```python
 # .env (local only — never commit)
-AZURE_SQL_CONNECTION_STRING=mssql+pyodbc://sa:password@localhost/myapp?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+AZURE_SQL_CONNECTION_STRING=mssql+pyodbc://<username>:<password>@localhost/myapp?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
 ```
 
 ## Files to Add

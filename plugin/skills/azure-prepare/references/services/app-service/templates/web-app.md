@@ -166,6 +166,14 @@ azd env set AZURE_LOCATION eastus2
 azd up --no-prompt
 ```
 
+**PowerShell:**
+```powershell
+$ENV_NAME = "$(Split-Path -Leaf (Get-Location) | ForEach-Object { $_.ToLower() -replace '[ _]','-' })-dev"
+azd init -t <template> -e $ENV_NAME --no-prompt
+azd env set AZURE_LOCATION eastus2
+azd up --no-prompt
+```
+
 ## References
 
 - [Deploy to App Service](https://learn.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore)

@@ -64,70 +64,13 @@ appSettings: [
 
 ## Source Code Examples
 
-### C# (ASP.NET Core)
+| Language | Source File |
+|----------|-------------|
+| C# (ASP.NET Core) | [source/dotnet.md](source/dotnet.md) |
+| Python | [source/python.md](source/python.md) |
+| Node.js | [source/nodejs.md](source/nodejs.md) |
 
-```csharp
-// NuGet: Microsoft.Extensions.Caching.StackExchangeRedis, Azure.Identity
-
-using Azure.Identity;
-using StackExchange.Redis;
-
-var redisHost = builder.Configuration["REDIS_HOST"];
-var configOptions = ConfigurationOptions.Parse($"{redisHost}:6380");
-configOptions.Ssl = true;
-configOptions.AbortOnConnectFail = false;
-
-await configOptions.ConfigureForAzureWithTokenCredentialAsync(
-    new DefaultAzureCredential());
-
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.ConfigurationOptions = configOptions;
-    options.InstanceName = "app:";
-});
-```
-
-### Python (FastAPI)
-
-```python
-# pip: redis, azure-identity
-
-import os
-import redis
-from azure.identity import DefaultAzureCredential
-
-credential = DefaultAzureCredential()
-token = credential.get_token("https://redis.azure.com/.default")
-
-cache = redis.StrictRedis(
-    host=os.environ["REDIS_HOST"],
-    port=int(os.environ.get("REDIS_PORT", 6380)),
-    ssl=True,
-    password=token.token,
-    decode_responses=True,
-)
-```
-
-### Node.js
-
-```javascript
-// npm: ioredis, @azure/identity
-
-const Redis = require("ioredis");
-const { DefaultAzureCredential } = require("@azure/identity");
-
-async function createRedisClient() {
-  const credential = new DefaultAzureCredential();
-  const token = await credential.getToken("https://redis.azure.com/.default");
-
-  return new Redis({
-    host: process.env.REDIS_HOST,
-    port: parseInt(process.env.REDIS_PORT || "6380"),
-    tls: { servername: process.env.REDIS_HOST },
-    password: token.token,
-  });
-}
-```
+> ⚠️ **Token expiry:** Entra ID access tokens expire in ~1 hour. The C# example uses `ConfigureForAzureWithTokenCredentialAsync` which handles automatic token renewal. Python and Node.js examples require a connection factory pattern — see the source files for a refresh-capable implementation.
 
 ## Networking (when VNET_ENABLED=true)
 

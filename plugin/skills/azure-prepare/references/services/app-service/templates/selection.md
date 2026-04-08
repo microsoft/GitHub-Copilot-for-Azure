@@ -10,7 +10,7 @@ Cross-reference with [App Service overview](https://learn.microsoft.com/en-us/az
 1. Is this a full-stack web app with server-side rendering?
    Indicators: Razor Pages, MVC views, Next.js SSR, Nuxt, Django templates,
                server-rendered HTML, .cshtml, EJS/Pug, Jinja2
-   └─► YES → web-app base template (see web-app.md)
+   └─► YES → web-app base template (see [web-app.md](web-app.md))
 
 2. Is this a background worker or WebJob?
    Indicators: WebJob, IHostedService, BackgroundService, worker,
@@ -41,22 +41,16 @@ Cross-reference with [App Service overview](https://learn.microsoft.com/en-us/az
    └─► YES → base + redis recipe (IaC + RBAC + source)
    Recipe: recipes/redis/ ✅ Available
 
-7. DEFAULT → Web API base template by runtime (see web-api.md)
+7. DEFAULT → Web API base template by runtime (see [web-api.md](web-api.md))
 ```
 
 ## Recipe Types
 
 | Type | IaC Delta? | Examples |
 |------|-----------|----------|
-| **Full recipe** | Yes — Bicep module + RBAC + networking | sql, cosmos, redis |
-| **Config recipe** | Yes — App settings + auth config | auth |
+| **Full recipe** | Yes — Bicep module + RBAC + networking | sql, cosmos, redis, auth |
 | **Source-only** | No — only application code patterns | health checks |
 
 ## Critical Rules
 
-1. **NEVER synthesize Bicep or Terraform from scratch** — always start from base template IaC
-2. **Do not restructure or replace base IaC files** — only ADD recipe modules alongside them
-3. **ALWAYS use recipe RBAC role GUIDs** — never let the LLM guess role IDs
-4. **ALWAYS use `--no-prompt`** — the agent must never elicit user input during azd commands
-5. **ALWAYS use managed identity** — no connection strings with passwords
-6. **ALWAYS include health check endpoint** — required for App Service health monitoring
+> See [Critical Rules](recipes/composition.md#critical-rules) in composition.md (canonical).

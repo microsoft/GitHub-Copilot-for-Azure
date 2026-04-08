@@ -14,7 +14,12 @@ Default template for REST API workloads on Azure App Service. Use when no specif
 
 **Browse all:** [Awesome AZD App Service](https://azure.github.io/awesome-azd/?tags=appservice)
 
-> ⚠️ The AZD templates above include Mongo/Cosmos by default. When using as a pure Web API base, strip the database layer and apply the appropriate [recipe](recipes/README.md) for your data store.
+> ⚠️ The AZD templates above include Mongo/Cosmos by default. When using as a pure Web API base, strip the database layer before applying a recipe:
+> - Remove `infra/app/db.bicep` (or equivalent database module)
+> - Remove Cosmos/Mongo module references from `infra/main.bicep`
+> - Remove Cosmos/Mongo packages from the application source
+>
+> Then apply the appropriate [recipe](recipes/README.md) for your data store.
 
 ## Project Structure
 
@@ -123,6 +128,8 @@ CMD ["node", "src/index.js"]
 
 ## App Settings (Managed Identity)
 
+> 💡 Call `mcp_bicep_get_az_resource_type_schema` with resource type `Microsoft.Web/sites` to validate properties before generating this resource.
+
 ```bicep
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
@@ -140,19 +147,29 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     }
   }
   tags: {
-    'azd-service-name': 'web'
+    'azd-service-name': 'api'
   }
 }
 ```
 
 > ⚠️ **Without `azd-service-name` tag, `azd deploy` fails with:**
-> `resource not found: unable to find a resource tagged with 'azd-service-name: web'`
+> `resource not found: unable to find a resource tagged with 'azd-service-name: api'`
+>
+> The tag value must match the `services.<name>` key in `azure.yaml`. Use `api` for Web API services.
 
 ## Deployment
 
 ```bash
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init -t <template> -e "$ENV_NAME" --no-prompt
+azd env set AZURE_LOCATION eastus2
+azd up --no-prompt
+```
+
+**PowerShell:**
+```powershell
+$ENV_NAME = "$(Split-Path -Leaf (Get-Location) | ForEach-Object { $_.ToLower() -replace '[ _]','-' })-dev"
+azd init -t <template> -e $ENV_NAME --no-prompt
 azd env set AZURE_LOCATION eastus2
 azd up --no-prompt
 ```
