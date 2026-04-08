@@ -894,7 +894,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys aspire health-checks-ui", async () => {
+    test("does not deploy aspire health-checks-ui", async () => {
       await withTestResult(async () => {
         const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
 
