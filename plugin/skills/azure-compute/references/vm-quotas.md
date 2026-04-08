@@ -15,13 +15,7 @@ VM quotas are tracked at **two levels** under `Microsoft.Compute`:
 
 ### Common Quota Resource Names
 
-| VM Family | Quota Resource Name | Use |
-|---|---|---|
-| D-series v3/v5 | `standardDSv3Family` / `standardDDSv5Family` | General purpose |
-| B-series | `standardBSFamily` | Burstable/dev-test |
-| E-series v5 | `standardESv5Family` | Memory optimized |
-| F-series v2 | `standardFSv2Family` | Compute optimized |
-| NC-series | `standardNCFamily` | GPU compute |
+See [vm-families.md](./vm-families.md) for quota resource names per VM family. Use `az quota list` to discover names not listed there.
 
 > ⚠️ **Do NOT guess quota names from SKU names.** Use `az quota list` to discover correct resource names.
 
