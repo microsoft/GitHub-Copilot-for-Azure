@@ -379,28 +379,11 @@ const TRIGGER_SECTION_RE = new RegExp(
   "gi",
 );
 const DO_NOT_USE_FOR_RE = /\bDO NOT USE FOR:/i;
+const PREFER_OVER_RE = /\bPREFER OVER\b/i;
 const BROAD_SKILL_NAMES = new Set(["azure-prepare", "azure-deploy"]);
-// Skills that match at least two broad routing triggers are considered "broad"
-// so overlap checks can require explicit disambiguation for specialized skills.
-const BROAD_TRIGGER_MATCH_THRESHOLD = 2;
 const MIN_TRIGGER_PHRASE_LENGTH = 4;
 const OVERLAP_PREVIEW_LIMIT = 3;
 const DEFAULT_REMOTE_BASE_REF = "origin/main";
-// These are intentionally generic app-lifecycle phrases that commonly appear in
-// broad routing skills. Overlap on these phrases is what tends to cause routing conflicts.
-const BROAD_TRIGGER_PHRASES = new Set([
-  "deploy to azure",
-  "host on azure",
-  "create and deploy",
-  "create app",
-  "build web app",
-  "create api",
-  "create frontend",
-  "create back end",
-  "modernize application",
-  "update application",
-]);
-const PREFER_OVER_REGEX_CACHE = new Map<string, RegExp>();
 
 function normalizeTriggerPhrase(phrase: string): string {
   return phrase
@@ -414,11 +397,15 @@ function normalizeTriggerPhrase(phrase: string): string {
 export function extractTriggerPhrases(description: string | null): string[] {
   if (!description) return [];
 
+  // Prevent `USE FOR:` inside `DO NOT USE FOR:` from being treated as a trigger section.
+  const sanitizedDescription = description.replace(/\bDO NOT USE FOR:/gi, "DO_NOT_USE_FOR:");
   const phrases: string[] = [];
   let match: RegExpExecArray | null;
-  while ((match = TRIGGER_SECTION_RE.exec(description)) !== null) {
+  while ((match = TRIGGER_SECTION_RE.exec(sanitizedDescription)) !== null) {
     const section = match[1];
-    for (const rawPhrase of section.split(/[;,]/)) {
+    const disambiguationStart = section.search(/\b(?:DO NOT USE FOR:|DO_NOT_USE_FOR:|PREFER OVER\b)/i);
+    const triggerSection = disambiguationStart >= 0 ? section.slice(0, disambiguationStart) : section;
+    for (const rawPhrase of triggerSection.split(/[;,]/)) {
       const normalized = normalizeTriggerPhrase(rawPhrase);
       if (normalized.length >= MIN_TRIGGER_PHRASE_LENGTH) {
         phrases.push(normalized);
@@ -436,18 +423,13 @@ export function hasDoNotUseForClause(description: string | null): boolean {
 
 export function hasPreferOverClause(description: string | null, competingSkillName: string): boolean {
   if (!description) return false;
-  const existing = PREFER_OVER_REGEX_CACHE.get(competingSkillName);
-  if (existing) return existing.test(description);
-
   const escapedName = competingSkillName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const compiled = new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i");
-  PREFER_OVER_REGEX_CACHE.set(competingSkillName, compiled);
-  return compiled.test(description);
+  return new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i").test(description);
 }
 
 function hasAnyPreferOverClause(description: string | null): boolean {
   if (!description) return false;
-  return /\bPREFER OVER\b/i.test(description);
+  return PREFER_OVER_RE.test(description);
 }
 
 function hasAnyDisambiguationClause(description: string | null, competingSkillName: string): boolean {
@@ -468,15 +450,16 @@ function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] 
       file,
       description,
       triggerPhrases,
-      broad: isBroadRoutingSkill(name, triggerPhrases),
+      broad: isBroadRoutingSkill(name),
     });
   }
   return contexts;
 }
 
-function isBroadRoutingSkill(name: string, triggerPhrases: string[]): boolean {
-  if (BROAD_SKILL_NAMES.has(name)) return true;
-  return triggerPhrases.filter((trigger) => BROAD_TRIGGER_PHRASES.has(trigger)).length >= BROAD_TRIGGER_MATCH_THRESHOLD;
+function isBroadRoutingSkill(name: string): boolean {
+  // Restrict "broad" classification to an explicit allowlist to avoid
+  // specialized skills being accidentally reclassified as broad.
+  return BROAD_SKILL_NAMES.has(name);
 }
 
 function getMergeBaseRef(): string | null {
@@ -538,7 +521,7 @@ export function validateTriggerOverlapDisambiguation(
     if (competitor.triggerPhrases.length === 0) continue;
 
     const overlaps = competitor.triggerPhrases.filter(
-      (trigger) => skillTriggerSet.has(trigger) && BROAD_TRIGGER_PHRASES.has(trigger),
+      (trigger) => skillTriggerSet.has(trigger),
     );
     if (overlaps.length === 0) continue;
 
@@ -569,16 +552,29 @@ export function isDisambiguationClauseRemoved(previousDescription: string | null
   return previousHasDisambiguation && !currentHasDisambiguation;
 }
 
+function getRemovedDisambiguationClauses(previousDescription: string | null, currentDescription: string | null): string[] {
+  const removed: string[] = [];
+  if (hasDoNotUseForClause(previousDescription) && !hasDoNotUseForClause(currentDescription)) {
+    removed.push("DO NOT USE FOR");
+  }
+  if (hasAnyPreferOverClause(previousDescription) && !hasAnyPreferOverClause(currentDescription)) {
+    removed.push("PREFER OVER");
+  }
+  return removed;
+}
+
 export function buildDisambiguationRemovalIssues(
   previousDescription: string | null,
   currentDescription: string | null,
 ): ValidationIssue[] {
   if (previousDescription === null) return [];
   if (!isDisambiguationClauseRemoved(previousDescription, currentDescription)) return [];
+  const removedClauses = getRemovedDisambiguationClauses(previousDescription, currentDescription);
+  const clauseLabel = removedClauses.length > 0 ? removedClauses.join(" + ") : "DO NOT USE FOR/PREFER OVER";
   return [{
     check: "disambiguation-removal",
     severity: "warning",
-    message: "Removed DO NOT USE FOR/PREFER OVER clause compared to base ref. Potential routing regression.",
+    message: `Removed disambiguation clause (${clauseLabel}) compared to base ref. Re-add a DO NOT USE FOR or PREFER OVER clause if trigger overlap still exists.`,
   }];
 }
 

@@ -507,6 +507,11 @@ describe("Frontmatter Spec Validator", () => {
       ]);
     });
 
+    it("does not extract anti-triggers from DO NOT USE FOR section", () => {
+      const description = "WHEN: deploy to Azure. DO NOT USE FOR: generic apps, static websites.";
+      expect(extractTriggerPhrases(description)).toEqual(["deploy to azure"]);
+    });
+
     it("detects DO NOT USE FOR clause", () => {
       expect(hasDoNotUseForClause("WHEN: deploy. DO NOT USE FOR: generic apps.")).toBe(true);
       expect(hasDoNotUseForClause("WHEN: deploy")).toBe(false);
@@ -602,6 +607,8 @@ describe("Frontmatter Spec Validator", () => {
       expect(issues).toHaveLength(1);
       expect(issues[0].check).toBe("disambiguation-removal");
       expect(issues[0].severity).toBe("warning");
+      expect(issues[0].message).toContain("DO NOT USE FOR");
+      expect(issues[0].message).toContain("Re-add");
     });
 
     it("emits no warning issue when previous description is unavailable", () => {
