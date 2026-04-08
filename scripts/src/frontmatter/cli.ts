@@ -372,6 +372,8 @@ export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
 
 const TRIGGER_SECTION_KEYWORDS = ["WHEN", "USE FOR", "TRIGGERS"] as const;
 const TRIGGER_SECTION_STOP_KEYWORDS = ["DO NOT USE FOR", "PREFER OVER", ...TRIGGER_SECTION_KEYWORDS] as const;
+// Extracts only explicit trigger sections and stops before disambiguation/next trigger section
+// so overlap checks do not accidentally treat anti-triggers as positive triggers.
 const TRIGGER_SECTION_RE = new RegExp(
   `\\b(?:${TRIGGER_SECTION_KEYWORDS.join("|")}):\\s*([^]*?)(?=(?:\\b(?:${TRIGGER_SECTION_STOP_KEYWORDS.join("|")})(?::|\\b)|$))`,
   "gi",
@@ -384,6 +386,8 @@ const BROAD_TRIGGER_MATCH_THRESHOLD = 2;
 const MIN_TRIGGER_PHRASE_LENGTH = 4;
 const OVERLAP_PREVIEW_LIMIT = 3;
 const DEFAULT_REMOTE_BASE_REF = "origin/main";
+// These are intentionally generic app-lifecycle phrases that commonly appear in
+// broad routing skills. Overlap on these phrases is what tends to cause routing conflicts.
 const BROAD_TRIGGER_PHRASES = new Set([
   "deploy to azure",
   "host on azure",
@@ -435,6 +439,11 @@ export function hasPreferOverClause(description: string | null, competingSkillNa
   return new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i").test(description);
 }
 
+function hasAnyPreferOverClause(description: string | null): boolean {
+  if (!description) return false;
+  return /\bPREFER OVER\b/i.test(description);
+}
+
 function hasAnyDisambiguationClause(description: string | null, competingSkillName: string): boolean {
   return hasDoNotUseForClause(description) || hasPreferOverClause(description, competingSkillName);
 }
@@ -461,6 +470,8 @@ function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] 
 }
 
 function getMergeBaseRef(): string | null {
+  // Prefer merge-base with common default branches first (remote then local), then
+  // fall back to HEAD~1 for environments where base branches are unavailable.
   const baseRefCandidates = [DEFAULT_REMOTE_BASE_REF, "origin/master", "main", "master"];
   for (const baseRef of baseRefCandidates) {
     try {
@@ -553,8 +564,8 @@ function validateDisambiguationRemoval(skill: SkillRoutingContext, mergeBaseRef:
 }
 
 export function isDisambiguationClauseRemoved(previousDescription: string | null, currentDescription: string | null): boolean {
-  const previousHasDisambiguation = hasDoNotUseForClause(previousDescription) || /\bPREFER OVER\b/i.test(previousDescription ?? "");
-  const currentHasDisambiguation = hasDoNotUseForClause(currentDescription) || /\bPREFER OVER\b/i.test(currentDescription ?? "");
+  const previousHasDisambiguation = hasDoNotUseForClause(previousDescription) || hasAnyPreferOverClause(previousDescription);
+  const currentHasDisambiguation = hasDoNotUseForClause(currentDescription) || hasAnyPreferOverClause(currentDescription);
   return previousHasDisambiguation && !currentHasDisambiguation;
 }
 
