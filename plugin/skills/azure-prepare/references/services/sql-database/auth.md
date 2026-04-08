@@ -92,7 +92,7 @@ Server=tcp:{server}.database.windows.net,1433;Database={database};Authentication
 - `Microsoft.Data.SqlClient` (v5.1.0+)
 - `Azure.Identity` (for local development)
 
-### Legacy SQL Authentication (⛔ DO NOT USE — EVER)
+### Legacy SQL Authentication (⛔ DO NOT USE - EVER)
 
 > ❌ **PROHIBITED — NEVER generate connection strings with `User ID` and `Password` parameters, and NEVER generate `administratorLogin` or `administratorLoginPassword` Bicep properties.**
 > This applies unconditionally — do not include them in any conditional, ternary, or optional branch.
