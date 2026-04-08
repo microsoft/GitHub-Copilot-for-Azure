@@ -370,9 +370,17 @@ export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
   return issues;
 }
 
-const TRIGGER_SECTION_RE = /\b(?:WHEN|USE FOR|TRIGGERS):\s*([^]*?)(?=(?:\bDO NOT USE FOR:|\bPREFER OVER\b|\bWHEN:|\bUSE FOR:|\bTRIGGERS:|$))/gi;
+const TRIGGER_SECTION_KEYWORDS = ["WHEN", "USE FOR", "TRIGGERS"] as const;
+const TRIGGER_SECTION_STOP_KEYWORDS = ["DO NOT USE FOR", "PREFER OVER", ...TRIGGER_SECTION_KEYWORDS] as const;
+const TRIGGER_SECTION_RE = new RegExp(
+  `\\b(?:${TRIGGER_SECTION_KEYWORDS.join("|")}):\\s*([^]*?)(?=(?:\\b(?:${TRIGGER_SECTION_STOP_KEYWORDS.join("|")})(?::|\\b)|$))`,
+  "gi",
+);
 const DO_NOT_USE_FOR_RE = /\bDO NOT USE FOR:/i;
 const BROAD_SKILL_NAMES = new Set(["azure-prepare", "azure-deploy"]);
+// Skills that match at least two broad routing triggers are considered "broad"
+// so overlap checks can require explicit disambiguation for specialized skills.
+const BROAD_TRIGGER_MATCH_THRESHOLD = 2;
 const BROAD_TRIGGER_PHRASES = new Set([
   "deploy to azure",
   "host on azure",
@@ -443,7 +451,7 @@ function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] 
       description,
       triggerPhrases,
       broad: BROAD_SKILL_NAMES.has(name)
-        || triggerPhrases.filter((trigger) => BROAD_TRIGGER_PHRASES.has(trigger)).length >= 2,
+        || triggerPhrases.filter((trigger) => BROAD_TRIGGER_PHRASES.has(trigger)).length >= BROAD_TRIGGER_MATCH_THRESHOLD,
     });
   }
   return contexts;
@@ -506,10 +514,12 @@ export function validateTriggerOverlapDisambiguation(
     if (overlaps.length === 0) continue;
 
     if (!hasAnyDisambiguationClause(skill.description, competitor.name)) {
+      const overlapPreview = overlaps.slice(0, 3).join(", ");
+      const overlapSuffix = overlaps.length > 3 ? ", ..." : "";
       issues.push({
         check: "trigger-overlap-disambiguation",
         severity: "warning",
-        message: `Trigger overlap with broad skill "${competitor.name}" (${overlaps.slice(0, 3).join(", ")}). Add DO NOT USE FOR: or PREFER OVER ${competitor.name}.`,
+        message: `Trigger overlap with broad skill "${competitor.name}" (${overlapPreview}${overlapSuffix}). Add DO NOT USE FOR: or PREFER OVER ${competitor.name}.`,
       });
     }
   }
