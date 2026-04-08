@@ -43,12 +43,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       // Fargate to Container Apps triggers
       "migrate Fargate to Azure Container Apps",
       "migrate AWS ECS tasks to Container Apps",
-      "Fargate to ContainerApps migration assessment",
+      "Fargate to Container Apps migration assessment",
       "convert AWS Fargate workloads to Azure",
       "move ECS Fargate containers to Azure Container Apps",
-      "migrate ECS to ContainerApps",
+      "migrate ECS to Container Apps",
       "assess AWS Fargate for Azure migration",
-      "replatform Fargate to ContainerApps",
+      "replatform Fargate to Container Apps",
     ];
 
     test.each(shouldTriggerPrompts)(
