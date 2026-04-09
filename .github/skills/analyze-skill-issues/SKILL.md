@@ -41,7 +41,7 @@ MCP tools are used exclusively for **blob discovery** — finding which blob pat
 
 | Tool | Purpose | Key parameters |
 |------|---------|----------------|
-| `mcp_azure_mcp_storage_blob_get` | List blobs to discover available paths | `account`, `container`, `blob` omitted to list all |
+| `mcp_azure_mcp_storage_blob_get` | List blob names and metadata (does **not** return file content) | `account`, `container`; omit `blob` to list all |
 | `mcp_azure_mcp_storage_blob_container_get` | Verify the container exists | `account`, `container` |
 
 ## Output Requirements
@@ -58,15 +58,13 @@ Every response **MUST** include all of the following. Do not omit any item:
 
 ## Workflow
 
-> **TOOL RESPONSIBILITIES:** `mcp_azure_mcp_storage_blob_get` is used exclusively for **blob discovery** (listing available paths). `az storage blob download` is used exclusively for **reading blob content**. Both are always required — load the MCP tool first via `tool_search_tool_regex({ pattern: "mcp_azure_mcp_storage" })` before starting.
+> **TOOL RESPONSIBILITIES:** `mcp_azure_mcp_storage_blob_get` is used exclusively for **blob discovery** (listing available paths). `az storage blob download` is used exclusively for **reading blob content**. Both are always required.
 
 ### Phase 1 — Enumerate Recent Blobs for the Skill
 
-1. Load the MCP tool: `tool_search_tool_regex({ pattern: "mcp_azure_mcp_storage" })`
+1. Resolve the skill name using the [Skill Name Mapping](references/blob-structure.md#skill-name-mapping).
 
-2. Resolve the skill name using the mapping table above.
-
-3. List all blobs in the container to discover available date/run paths:
+2. List all blobs in the container to discover available date/run paths:
    ```javascript
    mcp_azure_mcp_storage_blob_get({ account: "strdashboardcejwwk", container: "integration-reports" })
    ```
@@ -75,9 +73,9 @@ Every response **MUST** include all of the following. Do not omit any item:
    - Contain `/{skill_name}/` in the path
    - Do **not** end with `token-usage.json` or `agent-metadata.json`
 
-4. Group the matching blobs by date (descending) and by run ID (the second path segment).
+3. Group the matching blobs by date (descending) and by run ID (the second path segment).
 
-5. **Limit scope:** If the user specified a date in their prompt, use only that date. Otherwise, take the **3 most recent dates** from the filtered results and discard the rest. Do not process more than 3 dates.
+4. **Limit scope:** If the user specified a date in their prompt, use only that date. Otherwise, take the **3 most recent dates** from the filtered results and discard the rest. Do not process more than 3 dates.
 
 ### Phase 2 — Read Test Result Files
 
