@@ -806,7 +806,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           },
           prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates.",
           nonInteractive: true,
-          followUp: ["The plan looks good. Please approve it and generate all the Bicep infrastructure files.", ...FOLLOW_UP_PROMPT],
+          followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
