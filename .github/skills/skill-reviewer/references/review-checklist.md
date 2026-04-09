@@ -9,7 +9,7 @@ Run every check against the changed files. Each failed check becomes a finding.
 | `name` | 1-64 chars, lowercase + hyphens, matches directory name |
 | `description` | 1-1024 chars, ≤60 words, includes WHAT + WHEN triggers |
 | `license` | Must be `MIT` |
-| `metadata.author` | Must be `Microsoft` |
+| `metadata.author` | Recommended: `Microsoft`; warn if missing or not `Microsoft` |
 | `metadata.version` | Semver (`X.Y.Z`), `"1.0.0"` for new skills, bumped if skill modified |
 | Trigger format | Uses `WHEN:` with quoted phrases (preferred over `USE FOR:`) |
 | `DO NOT USE FOR` | Only present if disambiguation-critical (overlaps broader skill) |
