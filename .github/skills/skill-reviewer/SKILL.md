@@ -4,7 +4,7 @@ description: "Review skill PRs with structured severity-rated feedback covering 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "1.0.0"
 ---
 
 # Skill PR Reviewer
