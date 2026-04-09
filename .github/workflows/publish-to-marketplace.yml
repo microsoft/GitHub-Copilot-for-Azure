@@ -211,7 +211,7 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 5. Copy plugin.json, .mcp.json, .claude-plugin/plugin.json, skills/, hooks/, and copilot-hooks.json to the repo root
+      # 5. Copy plugin.json, .mcp.json, .claude-plugin/plugin.json, skills/, hooks/, copilot-hooks.json, and gemini-extension.json to the repo root
       - name: Copy plugin files to repo root
         run: |
           cp "source-repo/plugin/.plugin/plugin.json" "target-repo/plugin.json"
@@ -223,11 +223,12 @@ jobs:
           rsync --archive --delete --verbose "source-repo/plugin/skills/" "target-repo/skills/"
           mkdir -p "target-repo/hooks/"
           rsync --archive --delete --verbose "source-repo/plugin/hooks/" "target-repo/hooks/"
+          cp "source-repo/plugin/gemini-extension.json" "target-repo/gemini-extension.json"
 
       # 6. Replace repository URLs in synced files
       - name: Replace repository URLs
         run: |
-          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/copilot-hooks.json" "target-repo/.claude-plugin/plugin.json")
+          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/copilot-hooks.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
               if matches=$(grep -rli --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
