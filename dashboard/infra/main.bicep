@@ -9,7 +9,11 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
-var tags = { 'azd-env-name': environmentName }
+var tags = {
+  'azd-env-name': environmentName
+  skipDelete: true
+  DoNotDelete: true
+}
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: 'rg-${environmentName}'
