@@ -27,13 +27,23 @@ Flag files that exceed limits. For large files, recommend splitting by category 
 
 ## 3. Required SKILL.md Sections
 
-Every SKILL.md must contain:
+### Service skills (`plugin/skills/`)
+
+Every service skill SKILL.md must contain:
 
 1. **Quick Reference** — Summary table (Best for, Primary capabilities, MCP tools)
 2. **When to Use This Skill** — Activation scenarios list
 3. **MCP Tools** — Table with tool names and purposes
 4. **Workflow/Steps** — Numbered or phased steps
 5. **Error Handling** — Table with Error, Message, Remediation columns
+
+### Meta-skills (`.github/skills/`)
+
+Meta-skills require only:
+
+1. **When to Use** — Activation scenarios list
+2. **Workflow/Steps** — Numbered or phased steps
+3. **Error Handling** — Table with Error, Message, Remediation columns
 
 ## 4. Progressive Disclosure
 

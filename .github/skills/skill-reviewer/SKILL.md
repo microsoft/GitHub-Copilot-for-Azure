@@ -4,7 +4,7 @@ description: "Review skill PRs with structured severity-rated feedback covering 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.2"
 ---
 
 # Skill PR Reviewer
@@ -13,9 +13,13 @@ Performs thorough, structured code reviews of skill PRs — severity-classified 
 
 ## When to Use
 
-- Reviewing a PR that adds or modifies a skill under `plugin/skills/`
+- Reviewing a PR that adds or modifies a skill under `plugin/skills/` or `.github/skills/`
 - Checking skill compliance before submitting a PR
 - Auditing an existing skill for quality issues
+
+> 💡 **Note:** Skills under `.github/skills/` are meta-skills (tooling, authoring guides, reviewers).
+> Sections 8-9 of the review checklist (MCP tools, skills.json registration, trigger tests) apply
+> only to `plugin/skills/` service skills.
 
 ## Review Workflow
 
