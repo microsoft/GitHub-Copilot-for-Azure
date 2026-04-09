@@ -188,7 +188,7 @@ Per the [agentskills.io spec](https://agentskills.io/specification), the `name` 
 **Automated routing-regression guard (Sensei rule):**
 - Detect trigger overlap between specialized skills and broad skills (for example `azure-prepare`)
 - Require disambiguation when overlap exists: either `DO NOT USE FOR:` or `PREFER OVER <competing-skill>`
-- Warn when a PR removes an existing `DO NOT USE FOR:` or `PREFER OVER` clause from a skill (potential routing regression)
+- Report an error when a PR removes an existing `DO NOT USE FOR:` or `PREFER OVER` clause from a skill (potential routing regression)
 
 ### 5. Compatibility Field
 

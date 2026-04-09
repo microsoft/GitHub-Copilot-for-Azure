@@ -533,7 +533,7 @@ export function validateTriggerOverlapDisambiguation(
       const overlapSuffix = overlaps.length > OVERLAP_PREVIEW_LIMIT ? ", ..." : "";
       issues.push({
         check: "trigger-overlap-disambiguation",
-        severity: "warning",
+        severity: "error",
         message: `Trigger overlap with broad skill "${competitor.name}" (${overlapPreview}${overlapSuffix}). Add DO NOT USE FOR: or PREFER OVER ${competitor.name}.`,
       });
     }
@@ -577,7 +577,7 @@ export function buildDisambiguationRemovalIssues(
   const clauseWord = removedClauses.length === 1 ? "clause" : "clauses";
   return [{
     check: "disambiguation-removal",
-    severity: "warning",
+    severity: "error",
     message: `Removed disambiguation ${clauseWord}: ${clauseLabel}. Re-add a DO NOT USE FOR or PREFER OVER clause if trigger overlap still exists.`,
   }];
 }

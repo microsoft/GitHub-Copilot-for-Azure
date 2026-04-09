@@ -551,6 +551,7 @@ describe("Frontmatter Spec Validator", () => {
 
       expect(issues).toHaveLength(1);
       expect(issues[0].check).toBe("trigger-overlap-disambiguation");
+      expect(issues[0].severity).toBe("error");
     });
 
     it("does not warn when overlap includes disambiguation", () => {
@@ -599,14 +600,14 @@ describe("Frontmatter Spec Validator", () => {
       ).toBe(false);
     });
 
-    it("emits warning issue when disambiguation clause is removed", () => {
+    it("emits error issue when disambiguation clause is removed", () => {
       const issues = buildDisambiguationRemovalIssues(
         "DO NOT USE FOR: generic web apps",
         "WHEN: deploy to Azure",
       );
       expect(issues).toHaveLength(1);
       expect(issues[0].check).toBe("disambiguation-removal");
-      expect(issues[0].severity).toBe("warning");
+      expect(issues[0].severity).toBe("error");
       expect(issues[0].message).toContain("DO NOT USE FOR");
       expect(issues[0].message).toContain("Re-add");
     });
