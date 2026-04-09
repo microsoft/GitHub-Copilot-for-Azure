@@ -371,11 +371,12 @@ export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
 }
 
 const TRIGGER_SECTION_KEYWORDS = ["WHEN", "USE FOR", "TRIGGERS"] as const;
-const TRIGGER_SECTION_STOP_KEYWORDS = ["DO NOT USE FOR", "PREFER OVER", ...TRIGGER_SECTION_KEYWORDS] as const;
-// Extracts only explicit trigger sections and stops before disambiguation/next trigger section
-// so overlap checks do not accidentally treat anti-triggers as positive triggers.
+const TRIGGER_SECTION_STOP_HEADERS = ["DO NOT USE FOR", ...TRIGGER_SECTION_KEYWORDS] as const;
+// Extracts only explicit trigger sections and stops before disambiguation/next trigger section.
+// Section headers must include a trailing colon; `PREFER OVER` is handled separately
+// because it may appear without one.
 const TRIGGER_SECTION_RE = new RegExp(
-  `\\b(?:${TRIGGER_SECTION_KEYWORDS.join("|")}):\\s*([^]*?)(?=(?:\\b(?:${TRIGGER_SECTION_STOP_KEYWORDS.join("|")})(?::|\\b)|$))`,
+  `\\b(?:${TRIGGER_SECTION_KEYWORDS.join("|")}):\\s*([^]*?)(?=(?:\\b(?:${TRIGGER_SECTION_STOP_HEADERS.join("|")}):|\\bPREFER OVER\\b|$))`,
   "gi",
 );
 const DO_NOT_USE_FOR_RE = /\bDO NOT USE FOR:/i;
