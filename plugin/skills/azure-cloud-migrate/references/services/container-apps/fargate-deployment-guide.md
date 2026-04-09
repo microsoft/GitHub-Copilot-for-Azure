@@ -33,6 +33,9 @@ LOG_ID=$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-logs" --quer
 LOG_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "${RG}-logs" --query primarySharedKey -o tsv)
 az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
   --logs-workspace-id "$LOG_ID" --logs-workspace-key "$LOG_KEY"
+# Alternative: use --logs-destination azure-monitor to avoid fetching the workspace key:
+# az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
+#   --logs-destination azure-monitor --logs-workspace-id "$LOG_ID"
 ```
 
 ```powershell
@@ -44,6 +47,9 @@ $logId = az monitor log-analytics workspace show -g $env:RG -n "$($env:RG)-logs"
 $logKey = az monitor log-analytics workspace get-shared-keys -g $env:RG -n "$($env:RG)-logs" --query primarySharedKey -o tsv
 az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
   --logs-workspace-id $logId --logs-workspace-key $logKey
+# Alternative: use --logs-destination azure-monitor to avoid fetching the workspace key:
+# az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
+#   --logs-destination azure-monitor --logs-workspace-id $logId
 ```
 
 ## Phase 3: Secrets & Identity
@@ -94,9 +100,12 @@ az role assignment create --assignee $principalId `
 # Migrate secrets without writing them to disk
 # WARNING: Secret value is passed as a CLI argument, which may appear in
 # transcripts, history, or CI/CD logs. Run in a secure environment.
-$secretValue = aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> `
-  --query SecretString --output text
-az keyvault secret set --vault-name $env:KEY_VAULT --name <secret-name> --value $secretValue
+# Wrapped in a script block so $secretValue does not persist in session scope.
+& {
+    $secretValue = aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> `
+      --query SecretString --output text
+    az keyvault secret set --vault-name $env:KEY_VAULT --name <secret-name> --value $secretValue
+}
 
 # ACR pull access
 $acrId = az acr show --name $env:ACR_NAME --query id -o tsv

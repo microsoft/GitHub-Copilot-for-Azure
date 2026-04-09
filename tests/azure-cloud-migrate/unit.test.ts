@@ -109,3 +109,4 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("AWS Fargate");
     });
   });
+});
