@@ -39,10 +39,11 @@ az aks nodepool update \
   --enable-cluster-autoscaler --min-count 1 --max-count 3
 
 # Add Spot pool for the majority of workload capacity
+# -1 means pay up to on-demand price (no cap); set e.g. 0.05 to cap hourly spend
 az aks nodepool add \
   --cluster-name "<CLUSTER_NAME>" --resource-group "<RESOURCE_GROUP>" \
   --name "<SPOT_POOL_NAME>" \
-  --priority Spot --eviction-policy Delete --spot-max-price -1 \  # -1 means pay up to on-demand price (no cap); set e.g. 0.05 to cap hourly spend
+  --priority Spot --eviction-policy Delete --spot-max-price -1 \
   --node-vm-size "<VM_SIZE>" \
   --node-count 3 --min-count 0 --max-count 10 \
   --enable-cluster-autoscaler \
