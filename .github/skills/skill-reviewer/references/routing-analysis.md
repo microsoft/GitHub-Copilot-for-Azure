@@ -1,20 +1,20 @@
 # Routing Analysis
 
-Skill routing depends on the TriggerMatcher, which extracts keywords from a skill's `name` + `description` and fires when a user prompt matches ≥2 keywords or ≥20% keyword confidence. This makes trigger phrase specificity critical.
+Skill routing depends on the TriggerMatcher. It extracts keywords from a skill's `name` and `description`, may add Azure service keywords when those services appear anywhere in SKILL content, and fires when a user prompt matches ≥2 keywords or ≥20% keyword confidence. This makes trigger phrase specificity critical.
 
 ## How TriggerMatcher Works
 
-1. Extracts words from skill `name` and `description`
-2. Keeps words with length > 3 characters, plus the word `ai`
+1. Extracts words from skill `name` (keeps words with length > 2) and `description` (keeps words with length > 3), plus the word `ai`
+2. Adds Azure service keywords when those services appear anywhere in SKILL content (not just name/description)
 3. Matches are substring-based against the user prompt
-4. Triggers if: ≥2 keyword matches OR ≥20% of keywords match
+4. Triggers if: ≥2 keyword matches OR ≥20% of keywords match (`matchedKeywords.length / keywords.length`)
 
 ## Conflict Detection Steps
 
 For each trigger phrase in the new/modified skill:
 
 1. **Load existing skills** — Read `tests/skills.json` for the full skill list
-2. **Compare descriptions** — Check each existing skill's description for overlapping keywords
+2. **Compare keyword sources** — Check overlaps from skill names, descriptions, and content-derived Azure service keywords
 3. **Flag conflicts** where the new skill's trigger phrases appear in another skill's description
 
 ### Common Conflict Patterns
