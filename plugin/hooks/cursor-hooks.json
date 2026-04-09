@@ -3,7 +3,8 @@
   "hooks": {
     "PostToolUse": [
       {
-        "command": "./scripts/track-telemetry.sh"
+        "type": "command",
+        "command": "hooks/scripts/track-telemetry.sh"
       }
     ]
   }
