@@ -13,7 +13,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update`, `continuous_eval_create`, `continuous_eval_get` |
+| Key MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update`, `continuous_eval_create`, `continuous_eval_get`, `continuous_eval_delete` |
 | Prerequisite | Agent deployed and running (use [deploy skill](../deploy/deploy.md)) |
 | Local cache | `.foundry/agent-metadata.yaml`, `.foundry/evaluators/`, `.foundry/datasets/`, `.foundry/results/` |
 

@@ -40,68 +40,7 @@ Use the [continuous evaluation reference](continuous-eval.md) to configure monit
 
 Monitoring is only complete when score drops trigger investigation and remediation.
 
-#### Reading Evaluation Scores
-
-The `continuous_eval_get` response includes an `evalId` linking to the evaluation group. Use this to pull actual scores:
-
-```text
-Step 1: Get the continuous eval config
-Tool: continuous_eval_get
-Arguments:
-  projectEndpoint: <project endpoint>
-  agentName: <agent name>
-→ Note the evalId from the response
-
-Step 2: Read evaluation run results
-Tool: evaluation_get
-Arguments:
-  projectEndpoint: <project endpoint>
-  evalId: <evalId from step 1>
-  isRequestForRuns: true
-→ Returns evaluation runs with per-evaluator scores and timestamps
-```
-
-Review the returned runs for:
-- **Scores below threshold** — any evaluator consistently scoring below your acceptable baseline
-- **Score degradation over time** — scores trending downward across recent runs
-- **Safety flags** — any non-zero safety evaluator scores (violence, indirect_attack, etc.)
-
-#### Responding to Score Drops
-
-When continuous evaluation detects a regression:
-
-```text
-Continuous eval detects score drop
-  → Read scores: evaluation_get with evalId from continuous_eval_get
-  → Triage: identify failing evaluators, correlate with traces
-  → Diagnose: route into observe loop (Steps 3-4)
-  → Fix: optimize prompt or agent config
-  → Deploy: push fix via deploy skill
-  → Verify: read scores from next continuous eval cycle
-```
-
-**Triage steps:**
-
-1. Use `evaluation_get` with the `evalId` and `isRequestForRuns: true` to get the actual scores per evaluator per run. Identify which evaluators are below threshold and when the drop started.
-2. Use the [trace skill](../../trace/trace.md) to find conversations that triggered low scores — look for patterns in query types, tool-call failures, or grounding gaps.
-3. Compare against the last batch eval baseline in `.foundry/results/` to determine if this is a new regression or a pre-existing gap.
-
-**Remediation routing:**
-
-| Symptom | Route To |
-|---------|----------|
-| Quality scores dropping | [Step 3: Analyze](analyze-results.md) → [Step 4: Optimize](optimize-deploy.md) |
-| Safety evaluators flagging | [trace skill](../../trace/trace.md) → update agent instructions |
-| Scores regressed after deploy | [Step 5: Compare](compare-iterate.md) current vs. previous version |
-| Grounding failures | Check data source health, update knowledge index or tool config |
-
-**Verification after fix:**
-
-After deploying a fix, close the loop:
-
-1. Re-run a batch eval ([Step 2](evaluate-step.md)) against the same test cases to confirm the improvement immediately.
-2. Read continuous eval scores from the next cycle using `evaluation_get` with the `evalId` to verify production recovery.
-3. If the regression exposed a gap in evaluator coverage, use `continuous_eval_create` to update the monitoring configuration with additional evaluators.
+For instructions on how to read evaluation scores, triage regressions, and verify fixes, see [Acting on Results](continuous-eval.md#acting-on-results).
 
 The observe loop does not end at deployment. Continuous monitoring closes the loop: **observe → optimize → deploy → monitor → observe**. Always offer to set up monitoring after completing an optimization cycle.
 
