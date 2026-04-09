@@ -1,12 +1,12 @@
 # Continuous Evaluation
 
-Enable, configure, disable, or remove continuous evaluation for a Foundry agent. Continuous evaluation automatically assesses agent responses on an ongoing basis using configured evaluators (e.g., groundedness, coherence, violence detection). This is typically the final step after deploying and batch-evaluating an agent — it enables ongoing production monitoring.
+Enable, configure, disable, or remove continuous evaluation for a Foundry agent. Continuous evaluation automatically assesses agent responses on an ongoing basis using configured evaluators (e.g., groundedness, coherence, violence detection). This is typically the final step in the [observe loop](../observe.md) after deploying and batch-evaluating an agent — it keeps production quality visible without manual intervention.
 
 ## When to Use This Skill
 
-USE FOR: enable continuous evaluation, disable continuous evaluation, configure continuous eval, set up monitoring evaluators, check continuous eval status, delete continuous eval, update evaluators, change sampling rate, change eval interval.
+USE FOR: enable continuous evaluation, disable continuous evaluation, configure continuous eval, set up monitoring evaluators, check continuous eval status, delete continuous eval, update evaluators, change sampling rate, change eval interval, production monitoring, ongoing agent quality.
 
-DO NOT USE FOR: running a one-off batch evaluation (use [observe](../observe/observe.md)), querying traces (use [trace](../trace/trace.md)), creating evaluator definitions (use [observe](../observe/observe.md) Step 1).
+DO NOT USE FOR: running a one-off batch evaluation (use [observe](../observe.md)), querying traces (use [trace](../../trace/trace.md)), creating evaluator definitions (use [observe](../observe.md) Step 1).
 
 ## Quick Reference
 
@@ -26,12 +26,13 @@ DO NOT USE FOR: running a one-off batch evaluation (use [observe](../observe/obs
 | "Change evaluators" / "Update sampling rate" | [Before Starting](#before-starting--detect-current-state) → [Check Current State](#check-current-state) → [Enable or Update](#enable-or-update) |
 | "Pause evaluations" / "Disable continuous eval" | [Before Starting](#before-starting--detect-current-state) → [Disable](#disable) |
 | "Stop evaluating this agent" / "Delete continuous eval" | [Before Starting](#before-starting--detect-current-state) → [Delete](#delete) |
+| "Scores are dropping" / "Act on monitoring results" | [Before Starting](#before-starting--detect-current-state) → [Acting on Results](#acting-on-results) |
 
 > ⚠️ **Important:** Always run [Before Starting](#before-starting--detect-current-state) to resolve the project endpoint and agent name before calling any MCP tools.
 
 ## Before Starting — Detect Current State
 
-1. Resolve the target agent root and environment from `.foundry/agent-metadata.yaml` using the [Project Context Resolution](../../SKILL.md#agent-project-context-resolution) workflow.
+1. Resolve the target agent root and environment from `.foundry/agent-metadata.yaml` using the [Project Context Resolution](../../../SKILL.md#agent-project-context-resolution) workflow.
 2. Extract `projectEndpoint` and `agentName` from the selected environment. If not available in metadata, use `ask_user` to collect them.
 3. Use `agent_get` to verify the agent exists and note its kind (prompt, workflow, hosted).
 4. Use `continuous_eval_get` to check for existing continuous evaluation configuration.
@@ -54,6 +55,7 @@ The user does not need to choose between these — the tool handles it based on 
 4. **Prompt for next steps.** After each operation, present options. Never assume the path forward (e.g., after enabling, offer to check status or adjust parameters).
 5. **Keep context visible.** Include the project endpoint, agent name, and environment in operation summaries.
 6. **Use `continuous_eval_get` for IDs.** The `delete` tool requires a `configId` — always retrieve it from the `get` response rather than asking the user to provide it.
+7. **Surface the remediation path.** When presenting continuous eval results that show score degradation, always offer to route into the [observe skill](../observe.md) for diagnosis and optimization. Monitoring without action is incomplete.
 
 ## Operations
 
@@ -128,6 +130,63 @@ Arguments:
 
 Always call `continuous_eval_get` first to retrieve the `id` field of the configuration to delete.
 
+## Acting on Results
+
+Continuous evaluation generates ongoing scores — but monitoring is only useful when you **act** on what it reveals. This section covers how to consume evaluation results and the remediation loop when scores degrade.
+
+### Step 1: Read Evaluation Scores
+
+The `continuous_eval_get` response includes an `evalId` that links to the evaluation group. Use this to retrieve actual run results:
+
+```
+Tool: continuous_eval_get
+Arguments:
+  projectEndpoint: <project endpoint>
+  agentName: <agent name>
+→ Note the evalId from the response
+```
+
+```
+Tool: evaluation_get
+Arguments:
+  projectEndpoint: <project endpoint>
+  evalId: <evalId from continuous_eval_get>
+  isRequestForRuns: true
+→ Returns evaluation runs with per-evaluator scores
+```
+
+Review the run results for score trends. Each run contains scores for every configured evaluator. Look for:
+- **Scores below threshold** — any evaluator consistently scoring below your acceptable baseline
+- **Score degradation over time** — scores that were previously healthy but are trending downward
+- **Safety flags** — any non-zero safety evaluator scores that indicate harmful content
+
+### Step 2: Triage the Regression
+
+1. **Identify the failing evaluators.** From the evaluation runs, note which specific evaluators are scoring low (e.g., `groundedness` dropping from 4.2 to 2.8).
+2. **Correlate with traces.** Use the [trace skill](../../trace/trace.md) to search App Insights for the conversations that triggered low scores. Look for patterns: specific query types, tool-call failures, or grounding gaps.
+3. **Compare to baseline.** If batch eval results exist in `.foundry/results/`, compare continuous eval scores against the last known-good batch run to determine whether this is a new regression or a pre-existing gap.
+
+### Step 3: Remediate via the Observe Loop
+
+Once you understand the failure pattern, use the [observe skill](../observe.md) to fix it:
+
+| Symptom | Action |
+|---------|--------|
+| Quality scores dropping (coherence, relevance, task_adherence) | Run [Step 3: Analyze](analyze-results.md) to cluster failures, then [Step 4: Optimize](optimize-deploy.md) to improve the prompt |
+| Safety evaluators flagging (violence, indirect_attack) | Review flagged traces via [trace skill](../../trace/trace.md), then update agent instructions or tool definitions to address the pattern |
+| Grounding failures | Check whether the agent's data sources are still accessible and returning expected results; update knowledge index or tool configuration |
+| Scores fluctuating after a deploy | Run [Step 5: Compare](compare-iterate.md) between the current and previous agent version to isolate the regression |
+
+### Step 4: Verify the Fix
+
+After deploying a fix through the observe loop:
+
+1. **Re-run a batch eval** via [observe](../observe.md) Step 2 against the same test cases to confirm the fix.
+2. **Read continuous eval scores** from the next evaluation cycle using `evaluation_get` with the `evalId` — verify scores have recovered.
+3. **Adjust evaluators if needed.** If the regression exposed a gap in evaluator coverage, use `continuous_eval_create` to update the configuration with additional or refined evaluators.
+
+> 💡 **Tip:** The continuous eval → observe → deploy → continuous eval cycle is the core production quality loop. Continuous eval detects; observe diagnoses and fixes; continuous eval verifies.
+
 ## Response Format
 
 All tools return a unified `ContinuousEvalConfig` shape. The `get` tool returns a list; `create` returns a single object.
@@ -152,6 +211,7 @@ All tools return a unified `ContinuousEvalConfig` shape. The `get` tool returns 
 
 | User Intent | Skill |
 |-------------|-------|
-| "Evaluate my agent" / "Run a batch eval" | [observe skill](../observe/observe.md) |
-| "Analyze production traces" | [trace skill](../trace/trace.md) |
-| "Deploy my agent" | [deploy skill](../deploy/deploy.md) |
+| "Evaluate my agent" / "Run a batch eval" | [observe skill](../observe.md) |
+| "Scores are dropping" / "Diagnose and fix quality regression" | [observe skill](../observe.md) (Steps 3–5) |
+| "Analyze production traces" / "Find flagged conversations" | [trace skill](../../trace/trace.md) |
+| "Deploy my agent" / "Redeploy after fix" | [deploy skill](../../deploy/deploy.md) |
