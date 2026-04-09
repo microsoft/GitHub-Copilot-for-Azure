@@ -17,7 +17,7 @@ Queries the `strdashboardcejwwk` Azure Storage account that stores all integrati
 |----------|-------|
 | Storage account | `strdashboardcejwwk` |
 | Container | `integration-reports` |
-| Blob path pattern | `{yyyy-mm-dd}/{run_id}/{skill_name}/{test_name}/*.json` |
+| Blob path pattern | `{date}/{run_id}/{skill_name}/[{test_name}/]<file>` — see [Blob Path Layout](references/blob-structure.md#blob-path-layout) |
 | **Blob discovery** | `mcp_azure_mcp_storage_blob_get` — list blobs to find the right paths |
 | **Blob content download** | `az storage blob download ... --file "$env:TEMP\<filename>"` — local path reported in summary |
 | Best for | Diagnosing why a skill's integration tests are failing |
