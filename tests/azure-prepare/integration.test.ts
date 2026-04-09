@@ -918,7 +918,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("entra-sql-auth", () => {
     test("generates Entra-only SQL auth for ASP.NET Core EF Core app (not SQL admin password)", async () => {
       await withTestResult(async () => {
+        let workspacePath: string | undefined;
+
         const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
           prompt:
             "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. " +
             "Then prepare it for Azure deployment. " +
@@ -926,6 +931,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
+          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasPlanReadyForValidation(metadata) ||
             hasValidationCommand(metadata) ||
@@ -933,20 +939,15 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         // Preconditions
+        expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        // Collect all file contents the agent wrote via create tool calls
-        const createCalls = getToolCalls(agentMetadata, "create");
-        const bicepContents = createCalls
-          .filter(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
-            return args?.path?.endsWith(".bicep");
-          })
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          });
-        const bicepContent = bicepContents.join("\n");
+        // Read Bicep file contents from the workspace filesystem.
+        // The agent may create files via the `create` tool or bash heredocs,
+        // so reading from disk is more reliable than inspecting tool calls.
+        const allFiles = listFilesRecursive(workspacePath!);
+        const bicepFiles = allFiles.filter(f => f.endsWith(".bicep"));
+        const bicepContent = bicepFiles.map(f => fs.readFileSync(f, "utf-8")).join("\n");
         expect(bicepContent.length).toBeGreaterThan(0);
 
         // Must NOT use legacy SQL admin login/password auth
@@ -956,13 +957,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(/azureADOnlyAuthentication\s*:\s*true/i.test(bicepContent)).toBe(true);
 
         // Connection string should use Active Directory auth (Default or Managed Identity)
-        const allFileContents = createCalls
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          })
-          .join("\n");
-        expect(/Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i.test(allFileContents)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i)).toBe(true);
       });
     });
   });
