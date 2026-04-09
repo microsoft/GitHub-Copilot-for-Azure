@@ -1,6 +1,6 @@
 ---
 name: azure-capacity-reservation
-description: "Create and manage Azure Capacity Reservation Groups (CRGs) to guarantee VM compute capacity. WHEN: capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, associate VM with CRG, disassociate VM from CRG, find CRG for VM, list capacity reservations, capacity reservation cost, capacity reservation pricing."
+description: "Create and manage Azure Capacity Reservation Groups (CRGs) to guarantee VM compute capacity. WHEN: capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, associate VM with CRG, disassociate VM from CRG, find CRG for VM, list capacity reservations."
 license: MIT
 metadata:
   author: Microsoft
@@ -10,6 +10,15 @@ metadata:
 # Azure Capacity Reservation Skill
 
 Helps users create and configure Azure Capacity Reservation Groups (CRGs) to guarantee VM compute capacity in a specific region without deploying VMs.
+
+## Reference Files
+
+Read these before responding to the user:
+
+| Signal                                           | Reference                                                                    |
+|--------------------------------------------------|------------------------------------------------------------------------------|
+| General CRG concepts, CLI commands, finding CRGs | [Capacity Reservation Overview](references/capacity-reservation-overview.md) |
+| Associate/disassociate VM or VMSS with a CRG     | [Association & Disassociation](references/association-disassociation.md)     |
 
 ## When to Use This Skill
 
@@ -81,21 +90,15 @@ az capacity reservation show \
 ### Step 4: Offer Next Steps
 
 - Associate VMs or VMSS with the Capacity Reservation Group at deployment time
-- Estimate monthly cost — **quantity × hourly rate × 730 hours/month** (estimate only, not a contractual commitment):
-  ```bash
-  curl -s "https://prices.azure.com/api/retail/prices?\$filter=serviceName%20eq%20'Virtual%20Machines'%20and%20armRegionName%20eq%20'<region>'%20and%20armSkuName%20eq%20'<vm-size>'%20and%20priceType%20eq%20'Consumption'" \
-    | jq '.Items[] | {sku: .armSkuName, hourly: .retailPrice, meter: .meterName}'
-  ```
 - See [Capacity Reservation Overview](references/capacity-reservation-overview.md) for detailed guidance
 
 ## Managing Existing Reservations
 
 For operations beyond creation, see the relevant section in the [Capacity Reservation Overview](references/capacity-reservation-overview.md):
 
-- **Associate a VM or VMSS** with a CRG — see [Association Model](references/capacity-reservation-overview.md#association-model)
-- **Disassociate a VM or VMSS** from a CRG — see [Disassociating from a CRG](references/capacity-reservation-overview.md#disassociating-from-a-capacity-reservation-group)
+- **Associate a VM or VMSS** with a CRG — see [Association & Disassociation](references/association-disassociation.md)
+- **Disassociate a VM or VMSS** from a CRG — see [Association & Disassociation](references/association-disassociation.md)
 - **Find a matching CRG** for a VM, or enumerate all reservations/groups — see [Finding Valid CRGs](references/capacity-reservation-overview.md#finding-valid-crgs-for-a-vm)
-- **Estimate cost** — see [Estimating Reservation Cost](references/capacity-reservation-overview.md#estimating-reservation-cost)
 
 ## Error Handling
 
@@ -105,7 +108,3 @@ For operations beyond creation, see the relevant section in the [Capacity Reserv
 | Quota exceeded                       | Use the [azure-quotas](../azure-quotas/SKILL.md) skill to check usage and request an increase                                                                                                 |
 | Insufficient platform capacity       | Azure lacks physical hardware in the region/zone. Suggest a different zone, region, or VM size                                                                                                |
 | Duplicate SKU + zone in CRG          | Only one reservation per VM size per zone (or per size if non-zonal) is allowed in a CRG. Update the existing reservation's capacity instead                                                  |
-
-## References
-
-- [Capacity Reservation Overview](references/capacity-reservation-overview.md) — Concepts, constraints, and association patterns
