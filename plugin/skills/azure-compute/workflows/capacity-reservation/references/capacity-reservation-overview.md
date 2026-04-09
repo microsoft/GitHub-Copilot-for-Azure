@@ -86,7 +86,7 @@ az capacity reservation list \
 
 ## Estimating Reservation Cost
 
-Capacity reservations are billed at the same pay-as-you-go rate as the underlying VM size, whether or not VMs are running against them. Use the [Retail Prices API guide](../azure-compute/references/retail-prices-api.md) (unauthenticated) to look up hourly rates.
+Capacity reservations are billed at the same pay-as-you-go rate as the underlying VM size, whether or not VMs are running against them. Use the [Retail Prices API guide](../../../references/retail-prices-api.md) (unauthenticated) to look up hourly rates.
 
 **Estimated monthly cost:** `quantity × hourly rate × 730`
 

@@ -1,13 +1,4 @@
----
-name: azure-capacity-reservation
-description: "Create and manage Azure Capacity Reservation Groups (CRGs) to guarantee VM compute capacity. WHEN: capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, associate VM with CRG, disassociate VM from CRG, find CRG for VM, list capacity reservations."
-license: MIT
-metadata:
-  author: Microsoft
-  version: "1.0.0"
----
-
-# Azure Capacity Reservation Skill
+# Azure Capacity Reservation
 
 Helps users create and configure Azure Capacity Reservation Groups (CRGs) to guarantee VM compute capacity in a specific region without deploying VMs.
 
@@ -20,9 +11,9 @@ Read these before responding to the user:
 | General CRG concepts, CLI commands, finding CRGs | [Capacity Reservation Overview](references/capacity-reservation-overview.md) |
 | Associate/disassociate VM or VMSS with a CRG     | [Association & Disassociation](references/association-disassociation.md)     |
 
-## When to Use This Skill
+## When to Use This Workflow
 
-Activate this skill when the user explicitly asks about Capacity Reservation Groups (CRGs) or capacity reservations.
+Activate this workflow when the user explicitly asks about Capacity Reservation Groups (CRGs) or capacity reservations.
 
 Also **proactively suggest** CRG when the user's scenario matches any of these patterns:
 
@@ -105,6 +96,6 @@ For operations beyond creation, see the relevant section in the [Capacity Reserv
 | Scenario                             | Action                                                                                                                                                                                        |
 |--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | SKU not available in region/zone     | Run `az vm list-skus --location <region> --size <vm-size> --resource-type virtualMachines -o table`. Suggest alternatives from output                                                         |
-| Quota exceeded                       | Use the [azure-quotas](../azure-quotas/SKILL.md) skill to check usage and request an increase                                                                                                 |
+| Quota exceeded                       | Use the [azure-quotas](../../../azure-quotas/SKILL.md) skill to check usage and request an increase                                                                                           |
 | Insufficient platform capacity       | Azure lacks physical hardware in the region/zone. Suggest a different zone, region, or VM size                                                                                                |
 | Duplicate SKU + zone in CRG          | Only one reservation per VM size per zone (or per size if non-zonal) is allowed in a CRG. Update the existing reservation's capacity instead                                                  |
