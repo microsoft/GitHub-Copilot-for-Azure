@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { expectFiles, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 /**
  * Find the -azure output directory. The skill may create it as a sibling
@@ -167,6 +167,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const agentMetadata = await agent.run({
           prompt: "I want to migrate my Kubernetes workloads from GKE to Azure Container Apps. Can you help me assess compatibility and create a migration plan?",
           nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
         });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -179,6 +180,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const agentMetadata = await agent.run({
           prompt: "How do I convert my Kubernetes deployment manifests to Azure Container Apps configuration?",
           nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
         });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);

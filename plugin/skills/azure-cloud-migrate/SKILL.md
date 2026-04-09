@@ -4,7 +4,7 @@ description: "Assess and migrate workloads to Azure with migration reports and c
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Cloud Migrate

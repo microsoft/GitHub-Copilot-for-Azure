@@ -31,6 +31,8 @@ Load [assessment-guide.md](assessment-guide.md). Check: StatefulSets, DaemonSets
 
 ## Phase 3: Migrate Images
 
+### Bash
+
 ```bash
 #!/bin/bash
 set -euo pipefail
@@ -40,19 +42,44 @@ az acr login --name "$ACR_NAME"
 az acr import --name "$ACR_NAME" --source "${SOURCE_REGISTRY}/app:v1.0" --image app:v1.0
 ```
 
+### PowerShell
+
+```powershell
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+$SOURCE_REGISTRY = if ($env:SOURCE_REGISTRY) { $env:SOURCE_REGISTRY } else { "<registry>" }
+az acr login --name $ACR_NAME
+az acr import --name $ACR_NAME --source "${SOURCE_REGISTRY}/app:v1.0" --image app:v1.0
+```
+
 ## Phase 4: Infrastructure
+
+### Bash
 
 ```bash
 az group create --name myapp-rg --location eastus
 az monitor log-analytics workspace create --resource-group myapp-rg --workspace-name myapp-logs --location eastus
 LOG_ID=$(az monitor log-analytics workspace show --resource-group myapp-rg --workspace-name myapp-logs --query customerId -o tsv)
 LOG_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group myapp-rg --workspace-name myapp-logs --query primarySharedKey -o tsv)
+az containerapp env create --name myapp-env --resource-group myapp-rg --location eastus --logs-workspace-id "$LOG_ID" --logs-workspace-key "$LOG_KEY"
+```
+
+### PowerShell
+
+```powershell
+az group create --name myapp-rg --location eastus
+az monitor log-analytics workspace create --resource-group myapp-rg --workspace-name myapp-logs --location eastus
+$LOG_ID = az monitor log-analytics workspace show --resource-group myapp-rg --workspace-name myapp-logs --query customerId -o tsv
+$LOG_KEY = az monitor log-analytics workspace get-shared-keys --resource-group myapp-rg --workspace-name myapp-logs --query primarySharedKey -o tsv
 az containerapp env create --name myapp-env --resource-group myapp-rg --location eastus --logs-workspace-id $LOG_ID --logs-workspace-key $LOG_KEY
 ```
 
 **VNet:** For VNet integration, create VNet first, get subnet ID, then use `--infrastructure-subnet-resource-id` with env create.
 
 ## Phase 5: Secrets
+
+> **Warning**: The export step writes decoded secrets to a temporary file on disk. Ensure the file is securely deleted after upload (the scripts below handle this automatically via `shred`/`Remove-Item`).
+
+### Bash
 
 ```bash
 ACR_NAME="${ACR_NAME:-<acr>}"
@@ -69,8 +96,31 @@ az identity create --name myapp-id --resource-group myapp-rg --location eastus
 IDENTITY_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query id -o tsv)
 PRINCIPAL_ID=$(az identity show --name myapp-id --resource-group myapp-rg --query principalId -o tsv)
 KV_ID=$(az keyvault show --name myapp-kv --resource-group myapp-rg --query id -o tsv)
+az role assignment create --assignee "$PRINCIPAL_ID" --role "Key Vault Secrets User" --scope "$KV_ID"
+ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
+az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$ACR_ID"
+```
+
+### PowerShell
+
+```powershell
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+
+# Create Key Vault and migrate secrets
+az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
+$SECRET_FILE = [System.IO.Path]::GetTempFileName()
+$secretValue = kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}'
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($secretValue)) | Out-File -FilePath $SECRET_FILE -Encoding utf8 -NoNewline
+az keyvault secret set --vault-name myapp-kv --name password --file $SECRET_FILE
+Remove-Item -Path $SECRET_FILE -Force
+
+# Create managed identity and grant permissions
+az identity create --name myapp-id --resource-group myapp-rg --location eastus
+$IDENTITY_ID = az identity show --name myapp-id --resource-group myapp-rg --query id -o tsv
+$PRINCIPAL_ID = az identity show --name myapp-id --resource-group myapp-rg --query principalId -o tsv
+$KV_ID = az keyvault show --name myapp-kv --resource-group myapp-rg --query id -o tsv
 az role assignment create --assignee $PRINCIPAL_ID --role "Key Vault Secrets User" --scope $KV_ID
-ACR_ID=$(az acr show --name $ACR_NAME --query id -o tsv)
+$ACR_ID = az acr show --name $ACR_NAME --query id -o tsv
 az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_ID
 ```
 
@@ -108,5 +158,5 @@ az containerapp logs show --name my-app --resource-group myapp-rg --follow
 |-------|----------|
 | Image pull | Verify ACR: `az acr check-health --name $ACR_NAME`; check ACRPull role |
 | Port mismatch | Verify `targetPort` matches app port |
-| OOM | Reduce to ≤4 vCPU, ≤8 GiB |
+| OOM | Increase memory limit (up to 4 vCPU / 8 GiB max per container) |
 | DNS | Use `APP.internal.ENV.REGION.azurecontainerapps.io` |
