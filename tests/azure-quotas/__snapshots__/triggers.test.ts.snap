@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`azure-quotas - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
@@ -23,6 +23,7 @@ exports[`azure-quotas - Trigger Tests Trigger Keywords Snapshot skill descriptio
     "limits",
     "manage",
     "many",
+    "mcp",
     "monitor",
     "planning",
     "providers",
@@ -68,6 +69,7 @@ exports[`azure-quotas - Trigger Tests Trigger Keywords Snapshot skill keywords m
   "limits",
   "manage",
   "many",
+  "mcp",
   "monitor",
   "planning",
   "providers",
