@@ -1,11 +1,11 @@
 # Routing Analysis
 
-Skill routing depends on the TriggerMatcher. It extracts keywords from a skill's `name` and `description`, may add Azure service keywords when those services appear anywhere in SKILL content, and fires when a user prompt matches ≥2 keywords or ≥20% keyword confidence. This makes trigger phrase specificity critical.
+Skill routing depends on the TriggerMatcher. It extracts keywords from a skill's `name` and `description`, may add Azure service keywords when those services appear anywhere in the SKILL.md body content, and fires when a user prompt matches ≥2 keywords or ≥20% keyword confidence. This makes trigger phrase specificity critical.
 
 ## How TriggerMatcher Works
 
-1. Extracts words from skill `name` (minimum 3 characters) and `description` (minimum 4 characters), plus the word `ai`
-2. Adds Azure service keywords when those services appear anywhere in SKILL content (not just name/description)
+1. Extracts words with ≥3 characters from skill `name` and words with ≥4 characters from `description`, plus the word `ai`
+2. Adds Azure service keywords when those services appear anywhere in the SKILL.md body content (not just name/description)
 3. Matches are substring-based against the user prompt
 4. Triggers if: ≥2 keyword matches OR ≥20% of keywords match (`matchedKeywords.length / keywords.length`)
 
