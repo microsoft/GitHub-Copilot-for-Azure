@@ -77,7 +77,7 @@ Every response **MUST** include all of the following. Do not omit any item:
 
 4. Group the matching blobs by date (descending) and by run ID (the second path segment).
 
-> 💡 **Tip:** If the full blob list is too large, focus only on the most recent 2–3 dates (e.g. today and yesterday) based on the blob names returned.
+5. **Limit scope:** If the user specified a date in their prompt, use only that date. Otherwise, take the **3 most recent dates** from the filtered results and discard the rest. Do not process more than 3 dates.
 
 ### Phase 2 — Read Test Result Files
 
@@ -146,7 +146,7 @@ Include:
 - Most recent run date analyzed
 - Common error patterns across multiple tests (e.g., all failing due to auth, quota, timeout)
 
-> 💡 **Tip:** If multiple dates are found, start with the most recent. Only go further back if the most recent blobs show no failures.
+**Date iteration rule:** Process the most recent date first. Only proceed to the next date if the current date yields zero failures. Stop as soon as failures are found — do not process all 3 dates if the first one has results.
 
 See [Blob Path Layout](references/blob-structure.md#blob-path-layout) for the full container tree structure.
 
