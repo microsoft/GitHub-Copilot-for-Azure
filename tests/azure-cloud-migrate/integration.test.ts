@@ -161,6 +161,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, migrationTestTimeoutMs);
   });
 
+  // Fargate tests only validate skill invocation (isSkillInvoked), not output files.
+  // Unlike the Lambda tests above, there is no public sample repo to clone and
+  // produce migration artifacts, so output-quality assertions are omitted.
   describe("AWS Fargate to Container Apps migration scenario", () => {
     test("invokes skill for Fargate to Container Apps migration", async () => {
       await withTestResult(async () => {

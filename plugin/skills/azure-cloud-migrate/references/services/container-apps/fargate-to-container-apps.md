@@ -12,7 +12,7 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 | AWS Secrets Manager | Azure Key Vault | Managed identity integration |
 | CloudWatch Logs | Azure Monitor/Log Analytics | Requires Log Analytics workspace on environment |
 | CloudWatch Metrics | Azure Monitor Metrics | Available without Log Analytics workspace |
-| IAM Roles (tasks) | Managed Identity | Azure AD integration |
+| IAM Roles (tasks) | Managed Identity | Microsoft Entra ID integration |
 | VPC | Virtual Network | VNet integration |
 | Security Groups | NSG + Container Apps rules | Network security |
 | Auto Scaling | Container Apps scaling rules | HTTP, CPU, memory, custom |
@@ -26,15 +26,7 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 
 ## Resource Mapping
 
-| ECS Task Definition | Container Apps Equivalent |
-|---------------------|--------------------------|
-| `cpu: "512"` (0.5 vCPU) | `cpu: 0.5` |
-| `memory: "1024"` (MB) | `memory: 1Gi` |
-| `containerPort` | `ingress.targetPort` |
-| `environment` | `env` array |
-| `secrets` (Secrets Manager ARN) | `secrets` (Key Vault URL + identity) |
-| `logConfiguration` (awslogs) | Log Analytics (requires workspace on environment) |
-| Service Auto Scaling | `scale.rules` (HTTP/CPU/memory/custom) |
+See [Resource Mapping](fargate-assessment-guide.md#resource-mapping) in the assessment guide for the canonical ECS-to-Container-Apps resource mapping table.
 
 ## Migration Workflow
 
