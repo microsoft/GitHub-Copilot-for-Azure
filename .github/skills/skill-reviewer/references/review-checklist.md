@@ -86,7 +86,7 @@ See [routing-analysis.md](routing-analysis.md) for detailed checks.
 
 Always identify 3-5 genuine strengths before listing findings. Examples:
 - Well-designed workflow with clear phase gates
-- Comprehensive error handling
+- Thorough error handling
 - Good use of selective reference loading
 - Strong trigger phrase specificity
 - Follows established repo conventions
