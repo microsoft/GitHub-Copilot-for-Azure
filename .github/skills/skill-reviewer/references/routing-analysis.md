@@ -4,7 +4,7 @@ Skill routing depends on the TriggerMatcher. It extracts keywords from a skill's
 
 ## How TriggerMatcher Works
 
-1. Extracts words from skill `name` (keeps words with length > 2) and `description` (keeps words with length > 3), plus the word `ai`
+1. Extracts words from skill `name` (minimum 3 characters) and `description` (minimum 4 characters), plus the word `ai`
 2. Adds Azure service keywords when those services appear anywhere in SKILL content (not just name/description)
 3. Matches are substring-based against the user prompt
 4. Triggers if: ≥2 keyword matches OR ≥20% of keywords match (`matchedKeywords.length / keywords.length`)
