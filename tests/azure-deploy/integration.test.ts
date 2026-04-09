@@ -216,7 +216,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
           },
-          prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region.",
+          prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in westus2 region.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
@@ -240,7 +240,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
           },
-          prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region.",
+          prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in westus2 region.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
@@ -479,7 +479,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
           },
-          prompt: "Create a discussion board application and deploy to Azure App Service, prefer Terraform over Bicep, in my current subscription in eastus2 region.",
+          prompt: "Create a discussion board application and deploy to Azure App Service, prefer Terraform over Bicep, in my current subscription in westus2 region.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
@@ -503,7 +503,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
           },
-          prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region.",
+          prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in westus2 region.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
