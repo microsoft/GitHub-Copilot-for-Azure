@@ -366,8 +366,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
   });
 
-  // Azure Container Apps (ACA)
-  describe("azure-container-apps-deploy", () => {
+  // Azure Container Apps (ACA) - not custom IaC specification
+  describe("vanilla-azure-container-apps-deploy", () => {
     test("creates containerized web application", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
