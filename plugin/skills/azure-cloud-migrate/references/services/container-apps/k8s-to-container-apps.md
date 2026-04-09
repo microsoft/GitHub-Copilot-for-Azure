@@ -53,7 +53,8 @@ Follow these phases sequentially:
 
 ### Phase 2: Assess Compatibility
 - Verify workloads are stateless (Container Apps doesn't support StatefulSets)
-- Check for unsupported features (DaemonSets, Jobs, CronJobs)
+- Check for unsupported features (DaemonSets, custom CRDs, Operators)
+- Plan Jobs/CronJobs migration to Container Apps Jobs
 - Identify ConfigMaps/Secrets requiring Key Vault migration
 - Review persistent storage needs (migrate to Azure Files/Blob)
 
