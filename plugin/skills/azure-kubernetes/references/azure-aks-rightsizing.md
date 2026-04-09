@@ -82,8 +82,9 @@ az monitor metrics list \
 | No resource limits set | Add limits to prevent noisy-neighbor waste | Low |
 | No VPA/HPA configured | Suggest enabling Vertical Pod Autoscaler | Low |
 
-> For VPA setup and configuration, see [azure-aks-vpa.md](./azure-aks-vpa.md).## YAML Patch Format
+> For VPA setup and configuration, see [azure-aks-vpa.md](./azure-aks-vpa.md).
 
+## YAML Patch Format
 ```yaml
 # Rightsizing patch for <NAMESPACE>/<DEPLOYMENT_NAME>
 # Current: CPU request=<CURRENT>, P95 actual=<ACTUAL>
