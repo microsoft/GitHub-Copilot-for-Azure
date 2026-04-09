@@ -461,6 +461,10 @@ function DeleteOrUpdateResourceGroups() {
     Write-Host "Total Resource Groups: $($allGroups.Count)"
 
     foreach ($rg in $allGroups) {
+        if ($rg -ieq "rg-dashboard") {
+            Write-Host "Skipping resource group '$($rg.ResourceGroupName)' because it is the resource group that supports dashboard application"
+            continue
+        }
         if (HasException $rg) {
             continue
         }
