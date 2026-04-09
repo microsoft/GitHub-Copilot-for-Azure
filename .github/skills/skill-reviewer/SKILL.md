@@ -1,10 +1,10 @@
 ---
 name: skill-reviewer
-description: "Review skill PRs with structured severity-rated feedback covering token budgets, routing conflicts, required sections, and repo conventions. WHEN: \"review skill\", \"review skill PR\", \"review this PR\", \"check skill quality\", \"skill PR feedback\"."
+description: "Review skill PRs with structured severity-rated feedback covering token budgets, routing conflicts, required sections, and repo conventions. WHEN: \"review skill\", \"review skill PR\", \"review skill changes\", \"check skill quality\", \"skill PR feedback\"."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Skill PR Reviewer
@@ -17,9 +17,7 @@ Performs thorough, structured code reviews of skill PRs — severity-classified 
 - Checking skill compliance before submitting a PR
 - Auditing an existing skill for quality issues
 
-> 💡 **Note:** Skills under `.github/skills/` are meta-skills (tooling, authoring guides, reviewers).
-> Sections 8-9 of the review checklist (MCP tools, skills.json registration, trigger tests) apply
-> only to `plugin/skills/` service skills.
+> 💡 **Note:** `.github/skills/` meta-skills have different conventions — checklist sections 8-9 apply only to `plugin/skills/` service skills.
 
 ## Review Workflow
 
@@ -36,11 +34,10 @@ Performs thorough, structured code reviews of skill PRs — severity-classified 
 |-------|-------------|
 | Cannot determine changed files | Ask user for the file list or PR number |
 | Token counting unavailable | Estimate at ~4 chars per token |
-| Skill not in skills.json | Flag as a High finding |
 
 ## References
 
-- [Output Format](references/output-format.md) — Expected review structure
-- [Review Checklist](references/review-checklist.md) — Full checklist of what to verify
-- [Severity Classification](references/severity-classification.md) — How to assign severity levels
-- [Routing Analysis](references/routing-analysis.md) — Trigger overlap and routing conflict detection
+- [Review Checklist](references/review-checklist.md)
+- [Severity Classification](references/severity-classification.md)
+- [Routing Analysis](references/routing-analysis.md)
+- [Output Format](references/output-format.md)
