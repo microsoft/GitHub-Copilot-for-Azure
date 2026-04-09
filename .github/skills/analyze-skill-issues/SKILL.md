@@ -1,6 +1,6 @@
 ---
 name: analyze-skill-issues
-description: "Query the integration-test storage account to find why a specific skill's tests are failing. Reads blob-stored test result files and surfaces error details. TRIGGERS: why is skill failing, skill test failures, debug skill tests, skill failing tests, analyze skill failures, why are tests failing for skill, skill test errors, investigate skill issues"
+description: "Query the integration-test storage account to find why a specific skill's tests are failing. Reads blob-stored test result files and surfaces error details. TRIGGERS: why is skill failing, skill test failures, debug skill tests, skill failing tests, analyze skill failures, why are tests failing for skill, skill test errors, investigate skill issues. DO NOT USE FOR: analyzing a GitHub Actions run report or comparing test runs across runs (use analyze-test-run)."
 license: MIT
 metadata:
   author: Microsoft
@@ -33,23 +33,7 @@ Queries the `strdashboardcejwwk` Azure Storage account that stores all integrati
 
 ## Skill Name Mapping
 
-Map user-friendly names to the canonical skill directory names used in blob paths:
-
-| User says | Skill directory name |
-|-----------|----------------------|
-| azure-foundry, foundry, microsoft-foundry | `microsoft-foundry` |
-| azure-deploy, deploy | `azure-deploy` |
-| azure-prepare, prepare | `azure-prepare` |
-| azure-validate, validate | `azure-validate` |
-| azure-ai, ai | `azure-ai` |
-| azure-compute, compute | `azure-compute` |
-| azure-cost, cost | `azure-cost` |
-| azure-diagnostics, diagnostics | `azure-diagnostics` |
-| azure-kubernetes, kubernetes, aks | `azure-kubernetes` |
-| azure-kusto, kusto | `azure-kusto` |
-| azure-storage, storage | `azure-storage` |
-| azure-rbac, rbac | `azure-rbac` |
-| (any other name) | use as-is |
+Resolve the user's skill name to its canonical directory name using the [Skill Name Mapping](references/blob-structure.md#skill-name-mapping).
 
 ## MCP Tools
 
@@ -91,7 +75,7 @@ Every response **MUST** include all of the following. Do not omit any item:
    - Contain `/{skill_name}/` in the path
    - Do **not** end with `token-usage.json` or `agent-metadata.json`
 
-3. Group the matching blobs by date (descending) and by run ID (the second path segment).
+4. Group the matching blobs by date (descending) and by run ID (the second path segment).
 
 > 💡 **Tip:** If the full blob list is too large, focus only on the most recent 2–3 dates (e.g. today and yesterday) based on the blob names returned.
 
@@ -99,8 +83,8 @@ Every response **MUST** include all of the following. Do not omit any item:
 
 For each matching blob path identified in Phase 1, download it to a local temp file and read its content:
 
-```bash
-az storage blob download --account-name strdashboardcejwwk --container-name integration-reports \
+```powershell
+az storage blob download --account-name strdashboardcejwwk --container-name integration-reports `
   --name "<full-blob-path>" --file "$env:TEMP\<filename>" --auth-mode login --no-progress
 ```
 
@@ -164,22 +148,7 @@ Include:
 
 > 💡 **Tip:** If multiple dates are found, start with the most recent. Only go further back if the most recent blobs show no failures.
 
-## Blob Path Reference
-
-```
-integration-reports/
-└── {yyyy-mm-dd}/
-    └── {run_id}/
-        └── {skill_name}/             ← non-azure-deploy skills
-            ├── <file>.json            ← top-level test files
-            └── {test_name}/
-                └── <file>.json        ← per-test result files
-        └── azure-deploy/              ← azure-deploy only
-            └── {group_name}/
-                ├── <file>.json
-                └── {test_name}/
-                    └── <file>.json
-```
+See [Blob Path Layout](references/blob-structure.md#blob-path-layout) for the full container tree structure.
 
 ## Error Handling
 
