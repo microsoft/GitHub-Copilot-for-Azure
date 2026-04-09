@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "command": "./scripts/track-telemetry.sh"
+      }
+    ]
+  }
+}

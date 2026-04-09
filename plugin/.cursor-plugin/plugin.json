@@ -1,6 +1,6 @@
 {
   "name": "azure",
-  "description": "Microsoft Azure MCP integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from your development environment.",
+  "description": "Microsoft Azure MCP integration for cloud resource management, deployments, and Azure services. Manage your Azure infrastructure, monitor applications, and deploy resources directly from Cursor.",
   "version": "1.0.1",
   "author": {
     "name": "Microsoft",
@@ -21,5 +21,5 @@
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
-  "hooks": "./hooks/copilot-hooks.json"
+  "hooks": "./hooks/cursor-hooks.json"
 }
