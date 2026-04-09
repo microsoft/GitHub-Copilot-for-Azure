@@ -34,7 +34,7 @@ DO NOT USE FOR: running a one-off batch evaluation (use [observe](../observe.md)
 
 1. Resolve the target agent root and environment from `.foundry/agent-metadata.yaml` using the [Project Context Resolution](../../../SKILL.md#agent-project-context-resolution) workflow.
 2. Extract `projectEndpoint` and `agentName` from the selected environment. If not available in metadata, use `ask_user` to collect them.
-3. Use `agent_get` to verify the agent exists and note its kind (prompt, workflow, hosted).
+3. Use `agent_get` to verify the agent exists and note its kind (prompt or hosted).
 4. Use `continuous_eval_get` to check for existing continuous evaluation configuration.
 5. Jump to the appropriate entry point based on user intent.
 
@@ -42,7 +42,7 @@ DO NOT USE FOR: running a one-off batch evaluation (use [observe](../observe.md)
 
 The tool auto-detects the agent's kind and uses the appropriate backend:
 
-- **Prompt and workflow agents** — evaluation runs are triggered automatically each time the agent produces a response. Parameters: `samplingRate` (percentage of responses to evaluate), `maxHourlyRuns`.
+- **Prompt agents** — evaluation runs are triggered automatically each time the agent produces a response. Parameters: `samplingRate` (percentage of responses to evaluate), `maxHourlyRuns`.
 - **Hosted agents** — evaluation runs are triggered on an hourly schedule, pulling recent traces from App Insights. Parameters: `intervalHours` (hours between runs), `maxTraces` (max data points per run).
 
 The user does not need to choose between these — the tool handles it based on agent kind.
@@ -63,19 +63,19 @@ The user does not need to choose between these — the tool handles it based on 
 
 Before enabling or modifying, check what's already configured:
 
-```
+```yaml
 Tool: continuous_eval_get
 Arguments:
   projectEndpoint: <project endpoint>
   agentName: <agent name>
 ```
 
-- Empty list → no continuous eval configured. Proceed to [Enable or Update](#enable-or-update).
+- Empty list→ no continuous eval configured. Proceed to [Enable or Update](#enable-or-update).
 - Non-empty list → agent already has continuous eval. Present the configuration and ask what the user wants to change.
 
 ### Enable or Update
 
-```
+```yaml
 Tool: continuous_eval_create
 Arguments:
   projectEndpoint: <project endpoint>
@@ -96,17 +96,17 @@ If continuous eval already exists, `continuous_eval_create` updates the existing
 
 | Parameter | Applies To | Description | Default |
 |-----------|-----------|-------------|---------|
-| `samplingRate` | Prompt/workflow | Percentage of responses to evaluate (1-100) | All responses |
-| `maxHourlyRuns` | Prompt/workflow | Cap on evaluation runs per hour | No limit |
+| `samplingRate` | Prompt | Percentage of responses to evaluate (1-100) | All responses |
+| `maxHourlyRuns` | Prompt | Cap on evaluation runs per hour | No limit |
 | `intervalHours` | Hosted | Hours between evaluation runs | 1 |
 | `maxTraces` | Hosted | Max data points per evaluation run | 1000 |
-| `scenario` | Prompt/workflow | Evaluation scenario (`standard` or `business`) | `standard` |
+| `scenario` | Prompt | Evaluation scenario (`standard` or `business`) | `standard` |
 
 ### Disable
 
 To temporarily disable without removing configuration:
 
-```
+```yaml
 Tool: continuous_eval_create
 Arguments:
   projectEndpoint: <project endpoint>
@@ -120,7 +120,7 @@ Arguments:
 
 To permanently remove continuous evaluation configuration:
 
-```
+```yaml
 Tool: continuous_eval_delete
 Arguments:
   projectEndpoint: <project endpoint>
@@ -138,7 +138,7 @@ Continuous evaluation generates ongoing scores — but monitoring is only useful
 
 The `continuous_eval_get` response includes an `evalId` that links to the evaluation group. Use this to retrieve actual run results:
 
-```
+```yaml
 Tool: continuous_eval_get
 Arguments:
   projectEndpoint: <project endpoint>
@@ -146,7 +146,7 @@ Arguments:
 → Note the evalId from the response
 ```
 
-```
+```yaml
 Tool: evaluation_get
 Arguments:
   projectEndpoint: <project endpoint>
@@ -199,9 +199,9 @@ All tools return a unified `ContinuousEvalConfig` shape. The `get` tool returns 
 | `evalId` | Linked evaluation group containing evaluator definitions | All |
 | `agentName` | Target agent name | All |
 | `status` | Provisioning status | Hosted only |
-| `scenario` | Evaluation scenario (`standard` or `business`) | Prompt/workflow only |
-| `samplingRate` | Percentage of responses evaluated | Prompt/workflow only |
-| `maxHourlyRuns` | Cap on runs per hour | Prompt/workflow only |
+| `scenario` | Evaluation scenario (`standard` or `business`) | Prompt only |
+| `samplingRate` | Percentage of responses evaluated | Prompt only |
+| `maxHourlyRuns` | Cap on runs per hour | Prompt only |
 | `intervalHours` | Hours between scheduled runs | Hosted only |
 | `maxTraces` | Max data points per run | Hosted only |
 | `createdAt` | Creation timestamp | All |

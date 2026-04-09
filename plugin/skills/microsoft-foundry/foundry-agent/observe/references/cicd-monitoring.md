@@ -44,7 +44,7 @@ Monitoring is only complete when score drops trigger investigation and remediati
 
 The `continuous_eval_get` response includes an `evalId` linking to the evaluation group. Use this to pull actual scores:
 
-```
+```text
 Step 1: Get the continuous eval config
 Tool: continuous_eval_get
 Arguments:
