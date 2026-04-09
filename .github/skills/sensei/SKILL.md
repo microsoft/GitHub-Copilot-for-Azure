@@ -4,7 +4,7 @@ description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compl
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "1.0.5"
 ---
 
 # Sensei

@@ -810,7 +810,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         expect(workspacePath).toBeDefined();
@@ -927,7 +927,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) ||
             hasValidationCommand(metadata) ||
             isSkillInvoked(metadata, "azure-validate"),
         });
