@@ -100,7 +100,7 @@ See [error-handling.md](./error-handling.md) for the full error reference.
 | ResourceId grouping scope | Subscription and resource group only — not supported at billing account, management group, or higher scopes |
 | Max rows per page | 5,000 |
 | Custom timeframe | Requires `timePeriod` with `from`/`to` |
-| Filter AND/OR | Must have at least 2 expressions |
+| Filter and/or | Must have at least 2 expressions |
 
 ## Examples
 
