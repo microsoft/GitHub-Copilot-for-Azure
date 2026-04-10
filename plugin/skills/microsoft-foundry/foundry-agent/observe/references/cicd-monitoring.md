@@ -30,9 +30,9 @@ Continuous evaluation uses Foundry-native MCP tools to automatically assess agen
 Use the [continuous evaluation reference](continuous-eval.md) to configure monitoring. The workflow:
 
 1. **Check existing config** — call `continuous_eval_get` to see if monitoring is already active.
-2. **Select evaluators** — recommend starting with the same evaluators used in batch evals for consistency:
-   - **Quality evaluators** (require `deploymentName`): groundedness, coherence, relevance, task_adherence
-   - **Safety evaluators**: violence, indirect_attack, hate_unfairness
+2. **Select evaluators** — recommend starting with the same evaluators used in batch evals for consistent comparison:
+   - **Quality evaluators** (require `deploymentName`): e.g., groundedness, coherence, relevance, task_adherence
+   - **Safety evaluators**: e.g., violence, indirect_attack, hate_unfairness
 3. **Enable** — call `continuous_eval_create` with the selected evaluators. The tool auto-detects agent kind and configures the appropriate backend (real-time for prompt agents, scheduled for hosted agents).
 4. **Confirm** — present the returned configuration to the user.
 

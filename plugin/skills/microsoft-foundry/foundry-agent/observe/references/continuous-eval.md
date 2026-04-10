@@ -13,7 +13,7 @@ DO NOT USE FOR: running a one-off batch evaluation (use [observe](../observe.md)
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key MCP tools | `continuous_eval_create`, `continuous_eval_get`, `continuous_eval_delete`, `agent_get` |
+| Key MCP tools | `continuous_eval_create`, `continuous_eval_get`, `continuous_eval_delete`, `agent_get`, `evaluation_get` |
 | Prerequisite | Agent must exist in the project |
 | Local cache | `.foundry/agent-metadata.yaml` |
 
@@ -70,22 +70,22 @@ Arguments:
   agentName: <agent name>
 ```
 
-- Empty list→ no continuous eval configured. Proceed to [Enable or Update](#enable-or-update).
+- Empty list → no continuous eval configured. Proceed to [Enable or Update](#enable-or-update).
 - Non-empty list → agent already has continuous eval. Present the configuration and ask what the user wants to change.
 
 ### Enable or Update
+
+**Replace Semantics**: `continuous_eval_create` always creates a new evaluation group with the provided evaluators and points the evaluation rule at it. Always pass the complete desired configuration on every call — omitted evaluators are dropped, not preserved.
 
 ```yaml
 Tool: continuous_eval_create
 Arguments:
   projectEndpoint: <project endpoint>
   agentName: <agent name>
-  evaluatorNames: ["groundedness", "coherence", "fluency"]
+  evaluatorNames: ["groundedness", "coherence", "fluency"]  # Illustrative — align with your batch eval evaluators
   deploymentName: "gpt-4o"          # Required for quality evaluators
   enabled: true                      # Set false to disable without deleting
 ```
-
-If continuous eval already exists, `continuous_eval_create` updates the existing configuration in place.
 
 **Evaluator selection guidance:**
 - **Quality evaluators** (require `deploymentName`): coherence, fluency, relevance, groundedness, intent_resolution, task_adherence, tool_call_accuracy
@@ -104,14 +104,28 @@ If continuous eval already exists, `continuous_eval_create` updates the existing
 
 ### Disable
 
-To temporarily disable without removing configuration:
+To temporarily disable without changing configuration, pass the configuration currently in use along with `enabled: false`. Because `continuous_eval_create` has replace semantics, omitting parameters will change the configuration when re-enabled. The `continuous_eval_get` response does not include evaluator names directly — they are stored in the linked evaluation group — so retrieve them via `evaluation_get` first.
 
 ```yaml
+# Step 1: Get the evalId, then retrieve current evaluators from the eval group
+Tool: continuous_eval_get
+Arguments:
+  projectEndpoint: <project endpoint>
+  agentName: <agent name>
+→ Note the evalId from the response
+
+Tool: evaluation_get
+Arguments:
+  projectEndpoint: <project endpoint>
+  evalId: <evalId from above>
+→ Note the evaluator names from the evaluation group's testing criteria
+
+# Step 2: Disable with the same evaluators
 Tool: continuous_eval_create
 Arguments:
   projectEndpoint: <project endpoint>
   agentName: <agent name>
-  evaluatorNames: ["groundedness"]   # Required but preserves existing config
+  evaluatorNames: ["groundedness", "coherence", "fluency"]  # Must match current config
   deploymentName: "gpt-4o"
   enabled: false
 ```
