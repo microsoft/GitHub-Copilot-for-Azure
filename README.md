@@ -113,6 +113,10 @@ Before starting the MCP server, ensure your local CLI tools are authenticated ag
 
 For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/azure/developer/azure-mcp-server/how-to/connect-sovereign-clouds) in the Azure MCP Server documentation.
 
+## Codex (OpenAI)
+
+OpenAI does not have a formal plugin publishing mechanism at this time, so the `.codex-plugin` folder in this repository is a placeholder and will not impact anything. Codex hooks is currently in preview. We are working with the OpenAI team to publish our azure-skills in their [plugins repository](https://github.com/openai/plugins/tree/main/plugins).
+
 ## Contributing
 
 You can use this repository to:
