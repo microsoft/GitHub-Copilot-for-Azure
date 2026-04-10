@@ -17,8 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { doesWorkspaceFileIncludePattern, expectFiles, getToolCalls, listFilesRecursive, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
-import * as fs from "fs";
+import { doesWorkspaceFileIncludePattern, expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -991,28 +990,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        // Read Bicep file contents from the workspace filesystem.
-        // The agent may create files via the `create` tool or bash heredocs,
-        // so reading from disk is more reliable than inspecting tool calls.
-        const allFiles = listFilesRecursive(workspacePath!);
-        const bicepFiles = allFiles.filter(f => f.endsWith(".bicep"));
-        const bicepContent = bicepFiles.map(f => fs.readFileSync(f, "utf-8")).join("\n");
-        expect(bicepContent.length).toBeGreaterThan(0);
-
-        // Must provision a Durable Task Scheduler resource
-        expect(/Microsoft\.DurableTask\/schedulers/i.test(bicepContent)).toBe(true);
-
-        // Must provision a task hub child resource
-        expect(/Microsoft\.DurableTask\/schedulers\/taskHubs/i.test(bicepContent)).toBe(true);
-
-        // Must assign the Durable Task Data Contributor RBAC role (role ID: 0ad04412-c4d5-4796-b79c-f76d14c8d402)
-        expect(/0ad04412-c4d5-4796-b79c-f76d14c8d402/i.test(bicepContent)).toBe(true);
-
-        // Must include the scheduler connection string app setting
+        // Verify DTS-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers\/taskHubs/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /0ad04412-c4d5-4796-b79c-f76d14c8d402/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ipAllowlist/i, bicepPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i)).toBe(true);
-
-        // Must include ipAllowlist to avoid 403 errors (empty list denies all traffic)
-        expect(/ipAllowlist/i.test(bicepContent)).toBe(true);
 
         // Workspace should contain orchestration/workflow code files
         expectFiles(workspacePath!,
