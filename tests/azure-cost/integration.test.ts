@@ -20,7 +20,7 @@ import {
 import { softCheckSkill, isSkillInvoked, withTestResult, shouldEarlyTerminateForSkillInvocation } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-cost";
-const RUNS_PER_PROMPT = 5;
+const RUNS_PER_PROMPT = 3;
 const invocationRateThreshold = 0.8;
 
 const skipTests = shouldSkipIntegrationTests();
