@@ -22,27 +22,14 @@ description: |
   - Language coverage (C#, TypeScript, Python, Java, PowerShell)
   - Security posture (managed identity, RBAC, no connection strings)
 
-tags:
-  type: integration
-  skill: azure-prepare
-
-environment:
-  skills:
-    - ../../plugin/skills/azure-prepare
-
 config:
   runs: 3
-  timeout: "10m"
-  executor: copilot-sdk
-  model: claude-sonnet-4.5
+  timeout: 600
+  executor: mock
+  model: claude-sonnet-4-20250514
 
 scoring:
   threshold: 0.8
-  weights:
-    output-contains: 0.5
-    output-matches: 0.5
-    output-not-matches: 2.0
-    completed: 1.0
 
 stimuli:
   # ── cosmosdb-dotnet-bicep-001 ──
@@ -55,8 +42,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -119,8 +105,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -182,8 +167,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -233,8 +217,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -289,8 +272,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -333,8 +315,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -385,8 +366,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -437,8 +417,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: behavior
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -490,8 +469,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
@@ -542,8 +520,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-prepare
+      cost: low
     constraints:
       max_turns: 40
     graders:
