@@ -1,45 +1,226 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
+# Vally eval config — migrated from Waza
+# Source: evals/azure-hosted-copilot-sdk/eval.yaml + tasks/*.yaml
+# Migration: Waza → Vally (issue #1817, Phase 1)
+#
+# Global graders (evaluate#125 workaround): no_fatal_errors is duplicated
+# into every stimulus block below.
+
 name: azure-hosted-copilot-sdk-eval
 description: >
   Evaluation suite for the azure-hosted-copilot-sdk skill.
   Validates routing logic (scaffold, add-alongside, deploy-existing),
   model configuration paths (GitHub default, Azure BYOM),
   and negative-match behavior (skill should not activate for unrelated prompts).
-skill: azure-hosted-copilot-sdk
-version: "1.0"
 
 config:
-  trials_per_task: 1
-  timeout_seconds: 600
-  parallel: false
+  runs: 1
+  timeout: 600
   executor: mock
   model: claude-sonnet-4-20250514
 
-metrics:
-  - name: task_completion
-    weight: 0.4
-    threshold: 0.8
-    description: Did the skill produce the expected output for the task?
-  - name: trigger_accuracy
-    weight: 0.3
-    threshold: 0.9
-    description: Does the skill trigger on appropriate prompts and not on unrelated ones?
-  - name: behavior_quality
-    weight: 0.3
-    threshold: 0.7
-    description: Tool call limits, no fatal errors, clean execution
+scoring:
+  threshold: 0.8
 
-graders:
-  # Global grader: ensure no fatal errors appear in any task output
-  - type: regex
-    name: no_fatal_errors
-    config:
-      must_not_match:
-        - "(?i)fatal error|unhandled exception|stack trace"
+stimuli:
+  # ── scaffold-new-001 ──
+  # Waza source: tasks/scaffold-new.yaml
+  # Verifies routing to Step 2A for greenfield scaffold
+  - name: "Scaffold New — Greenfield Copilot SDK App"
+    prompt: "Build a new Copilot SDK app"
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 10
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "azd init --template azure-samples/copilot-sdk-service"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
+      # Global: no_fatal_errors
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-# Task files use expected.output_contains, expected.output_not_contains,
-# and expected.behavior for mock-mode validation. Task-level graders
-# should be added when switching executor to copilot-sdk.
+  # ── scaffold-alongside-001 ──
+  # Waza source: tasks/scaffold-alongside.yaml
+  # Verifies routing to Step 2B (scaffold alongside existing repo)
+  - name: "Scaffold Alongside — Add SDK Service to Existing Repo"
+    prompt: "Add a Copilot SDK service to my existing Node.js app"
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 10
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "azure.yaml"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
+      # Global: no_fatal_errors
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-tasks:
-  - "tasks/*.yaml"
+  # ── deploy-existing-001 ──
+  # Waza source: tasks/deploy-existing.yaml
+  # Verifies routing to Step 2C (azure-prepare → azure-validate → azure-deploy)
+  - name: "Deploy Existing — Route to Azure Prepare/Validate/Deploy"
+    prompt: "Deploy my existing copilot SDK app to Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 15
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "azure-prepare"
+      - type: output-contains
+        config:
+          substring: "azure-validate"
+      - type: output-contains
+        config:
+          substring: "azure-deploy"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
+      # Global: no_fatal_errors
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── github-default-model-001 ──
+  # Waza source: tasks/github-default-model.yaml
+  # Verifies default model path does NOT emit BYOM configuration
+  - name: "GitHub Default Model — No BYOM Configuration"
+    prompt: "Create a copilot app with the default model"
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 10
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "createSession"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "wireApi"
+      - type: output-not-contains
+        config:
+          substring: "bearerToken"
+      - type: output-not-contains
+        config:
+          substring: "DefaultAzureCredential"
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
+      # Global: no_fatal_errors
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── byom-config-001 ──
+  # Waza source: tasks/byom-config.yaml
+  # Verifies Azure BYOM path (wireApi, completions, DefaultAzureCredential)
+  - name: "BYOM Config — Azure OpenAI Bring Your Own Model"
+    prompt: "Use my Azure OpenAI model with the Copilot SDK"
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 10
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "wireApi"
+      - type: output-contains
+        config:
+          substring: "completions"
+      - type: output-contains
+        config:
+          substring: "DefaultAzureCredential"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
+      - type: output-not-contains
+        config:
+          substring: "apiKey"
+      - type: output-not-contains
+        config:
+          substring: "AZURE_OPENAI_API_KEY"
+      - type: output-not-contains
+        config:
+          substring: "AZURE_OPENAI_KEY"
+      # Global: no_fatal_errors
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── negative-not-copilot-001 ──
+  # Waza source: tasks/negative-not-copilot.yaml
+  # Verifies skill does NOT activate for unrelated prompts
+  - name: "Negative — Should Not Activate for Unrelated Prompt"
+    prompt: "Create an Azure Function with timer trigger"
+    tags:
+      type: trigger
+      tier: smoke
+      cost: free
+    constraints:
+      max_turns: 10
+    graders:
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "copilot-sdk-service"
+      - type: output-not-contains
+        config:
+          substring: "CopilotClient"
+      - type: output-not-contains
+        config:
+          substring: "createSession"
+      - type: output-not-contains
+        config:
+          substring: "azd init --template azure-samples/copilot-sdk-service"
+      - type: output-not-contains
+        config:
+          substring: "wireApi"
+      # Global: no_fatal_errors
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

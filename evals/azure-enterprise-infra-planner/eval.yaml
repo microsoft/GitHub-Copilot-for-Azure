@@ -1,0 +1,630 @@
+# Vally eval config — migrated from Waza
+# Source: tests/azure-enterprise-infra-planner/evals/eval.yaml + tasks/*.yaml
+# Migration: Waza → Vally (issue #1817, Phase 1)
+#
+# Global graders (evaluate#125 workaround): has_output, no_runtime_failure,
+# and security_posture are duplicated into every stimulus block below.
+# Global efficiency constraint (max_tool_calls: 50) → constraints.max_turns: 50.
+
+name: azure-enterprise-infra-planner-eval
+description: |
+  Evaluation suite for the azure-enterprise-infra-planner skill.
+  Tests across dimensions:
+  - Infrastructure plan quality (resource selection, plan schema, plan-first workflow)
+  - Anti-trigger accuracy (redirects to azure-prepare, azure-deploy, azure-validate)
+  - IaC format awareness (Bicep and Terraform)
+  - Security posture (managed identity, RBAC, no connection strings)
+  - Workload coverage (GenAI, AKS, Container Apps, 3-tier, serverless, data pipeline, ML, IoT, backup/DR)
+
+config:
+  runs: 1
+  timeout: 600
+  executor: mock
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── invoke-simple-plan ──
+  # Waza source: tasks/invoke-simple-plan.yaml
+  # Basic plan invocation — web app + database + Redis
+  - name: "Invoke Simple Plan"
+    prompt: "Plan Azure infrastructure for a web app with a database and a Redis cache. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task grader: skill_invoked (skill_invocation → completed in Vally;
+      # skill targeting is implicit in the eval config)
+      # Task grader: plan_generated (file must_exist)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-aks-microservices ──
+  # Waza source: tasks/plan-aks-microservices.yaml
+  # E-commerce platform migration to AKS — 5 microservices
+  - name: "Plan AKS Microservices"
+    prompt: "We're migrating our e-commerce platform to Azure. It consists of 5 microservices: product catalog, order management, user authentication, payment processing, and notifications. We want to deploy on AKS with proper networking, monitoring, and a managed database. Plan the Azure infrastructure for this system. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task grader: skill_invoked (skill_invocation → completed; implicit)
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-backup-dr-001 ──
+  # Waza source: tasks/plan-backup-dr.yaml
+  # Disaster recovery with cross-region failover
+  - name: "Backup/DR - Site Recovery Cross-Region"
+    prompt: |
+      Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "site recovery"
+      - type: output-contains
+        config:
+          substring: "failover"
+      - type: output-contains
+        config:
+          substring: "region"
+      # Task grader: identifies_site_recovery
+      - type: output-matches
+        config:
+          pattern: "(?i)site.?recovery|disaster.?recovery|dr|failover|replicate"
+      # Task grader: identifies_cross_region
+      - type: output-matches
+        config:
+          pattern: "(?i)region|east|west|geo|cross.?region|failback"
+      # Task grader: identifies_vm_workloads
+      - type: output-matches
+        config:
+          pattern: "(?i)vm|virtual.?machine|workload|replicate"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)recovery|replicate|failover"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-container-apps-001 ──
+  # Waza source: tasks/plan-container-apps.yaml
+  # Stateless REST API on Azure Container Apps with auto-scaling
+  - name: "Container Apps - Stateless REST API"
+    prompt: |
+      Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "container"
+      - type: output-contains
+        config:
+          substring: "scale"
+      - type: output-contains
+        config:
+          substring: "blob"
+      # Task grader: identifies_container_apps
+      - type: output-matches
+        config:
+          pattern: "(?i)container.?app|aca|container"
+      # Task grader: identifies_scaling
+      - type: output-matches
+        config:
+          pattern: "(?i)scale|auto.?scale|http.?request|replica"
+      # Task grader: identifies_storage
+      - type: output-matches
+        config:
+          pattern: "(?i)blob|storage|upload|persist"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)container.?app"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-data-pipeline ──
+  # Waza source: tasks/plan-data-pipeline.yaml
+  # Real-time data pipeline — IoT sensor ingestion + analytics
+  - name: "Plan Data Pipeline"
+    prompt: "I need to set up a real-time data pipeline on Azure that ingests IoT sensor data from 10,000 devices, processes events in near real-time, stores raw and processed data for analytics, and triggers alerts when thresholds are exceeded. What Azure resources do I need? Please plan the infrastructure. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task grader: skill_invoked (skill_invocation → completed; implicit)
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-genai-chatbot ──
+  # Waza source: tasks/plan-genai-chatbot.yaml
+  # GPT-4 customer support chatbot on Azure OpenAI
+  - name: "Plan GenAI Chatbot"
+    prompt: "I need to build a customer support chatbot powered by GPT-4. It should use Azure OpenAI Service for the LLM, store conversation history in a database, and have a REST API frontend. The system needs to handle about 1000 concurrent users. Can you plan the Azure infrastructure for this? Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task grader: skill_invoked (skill_invocation → completed; implicit)
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-iot-telemetry-001 ──
+  # Waza source: tasks/plan-iot-telemetry.yaml
+  # IoT solution — 1000+ edge devices + Event Hub streaming
+  - name: "IoT Telemetry - Edge Devices + Event Hub"
+    prompt: |
+      Provision an IoT solution that collects data from 1000+ edge devices, processes data with Azure IoT Edge, and forwards alerts in real time to Azure Event Hub. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "iot"
+      - type: output-contains
+        config:
+          substring: "edge"
+      - type: output-contains
+        config:
+          substring: "event hub"
+      # Task grader: identifies_iot_resources
+      - type: output-matches
+        config:
+          pattern: "(?i)iot.?hub|iot.?edge|iot.?central|device"
+      # Task grader: identifies_event_streaming
+      - type: output-matches
+        config:
+          pattern: "(?i)event.?hub|stream|alert|real.?time"
+      # Task grader: includes_edge_computing
+      - type: output-matches
+        config:
+          pattern: "(?i)edge|device|gateway|process"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)iot|iothub"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-ml-inference-001 ──
+  # Waza source: tasks/plan-ml-inference.yaml
+  # ML model scoring endpoint with JWT auth and monitoring
+  - name: "ML Inference - Model Scoring Endpoint"
+    prompt: |
+      Launch an ML model scoring endpoint using Azure ML online endpoint, load model from registry, enforce JWT authentication, and log predictions to Azure Monitor. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "endpoint"
+      - type: output-contains
+        config:
+          substring: "model"
+      - type: output-contains
+        config:
+          substring: "monitor"
+      # Task grader: identifies_ml_endpoint
+      - type: output-matches
+        config:
+          pattern: "(?i)ml.?endpoint|online.?endpoint|scoring|inference|model"
+      # Task grader: identifies_authentication
+      - type: output-matches
+        config:
+          pattern: "(?i)jwt|auth|identity|token|secure"
+      # Task grader: identifies_monitoring
+      - type: output-matches
+        config:
+          pattern: "(?i)monitor|log|prediction|telemetry|insight"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)ml|machinelearning|endpoint"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-ml-training-pipeline-001 ──
+  # Waza source: tasks/plan-ml-training-pipeline.yaml
+  # Distributed deep learning training with GPU compute
+  - name: "ML Training - Distributed Deep Learning"
+    prompt: |
+      Provision an Azure ML workspace for distributed deep learning, scale GPU clusters dynamically, and version datasets with Azure ML Data. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "ml"
+      - type: output-contains
+        config:
+          substring: "gpu"
+      - type: output-contains
+        config:
+          substring: "dataset"
+      # Task grader: identifies_ml_workspace
+      - type: output-matches
+        config:
+          pattern: "(?i)ml.?workspace|machine.?learning|azure.?ml"
+      # Task grader: identifies_gpu_compute
+      - type: output-matches
+        config:
+          pattern: "(?i)gpu|compute|cluster|training|deep.?learning"
+      # Task grader: identifies_data_management
+      - type: output-matches
+        config:
+          pattern: "(?i)data|dataset|version|storage"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)ml|machinelearning|workspace"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-serverless-workflow-001 ──
+  # Waza source: tasks/plan-serverless-workflow.yaml
+  # Serverless order processing — Event Grid + Functions + Table Storage
+  - name: "Serverless Workflow - Order Processing"
+    prompt: |
+      Deploy a serverless workflow for order processing, trigger via Azure Event Grid from incoming messages, and archive completed order data in Azure Table Storage. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "function"
+      - type: output-contains
+        config:
+          substring: "event grid"
+      - type: output-contains
+        config:
+          substring: "table storage"
+      # Task grader: identifies_serverless_compute
+      - type: output-matches
+        config:
+          pattern: "(?i)function|serverless|logic.?app|workflow"
+      # Task grader: identifies_event_trigger
+      - type: output-matches
+        config:
+          pattern: "(?i)event.?grid|trigger|event.?driven|message"
+      # Task grader: identifies_storage
+      - type: output-matches
+        config:
+          pattern: "(?i)table.?storage|storage|archive|persist"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)function|eventgrid|serverless"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-three-tier-bicep ──
+  # Waza source: tasks/plan-three-tier-bicep.yaml
+  # 3-tier web app — React SWA + Node.js App Service + PostgreSQL
+  - name: "Plan Three-Tier Bicep"
+    prompt: "Plan a 3-tier web application architecture on Azure with a React frontend hosted on Static Web Apps, a Node.js API layer on App Service, and Azure Database for PostgreSQL. Include a CDN for static assets and Application Gateway for load balancing across the API tier. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task grader: skill_invoked (skill_invocation → completed; implicit)
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+
+  # ── plan-three-tier-terraform-001 ──
+  # Waza source: tasks/plan-three-tier-terraform.yaml
+  # Classic 3-tier with Linux VMs + Terraform IaC
+  - name: "3-Tier Architecture - Linux VMs + Terraform"
+    prompt: |
+      Spin up Linux VMs for each tier, automate patch management via Azure Automation, and log traffic between subnets for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "vm"
+      - type: output-contains
+        config:
+          substring: "subnet"
+      - type: output-contains
+        config:
+          substring: "automation"
+      # Task grader: identifies_compute_resources
+      - type: output-matches
+        config:
+          pattern: "(?i)vm|virtual.?machine|linux"
+      # Task grader: identifies_networking
+      - type: output-matches
+        config:
+          pattern: "(?i)subnet|vnet|network|traffic|compliance"
+      # Task grader: identifies_automation
+      - type: output-matches
+        config:
+          pattern: "(?i)automat|patch|update.?management"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: ".azure/infrastructure-plan.json"
+          pattern: "(?i)virtual.?machine|vm"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
