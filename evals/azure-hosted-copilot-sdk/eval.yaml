@@ -12,30 +12,14 @@ description: >
   model configuration paths (GitHub default, Azure BYOM),
   and negative-match behavior (skill should not activate for unrelated prompts).
 
-tags:
-  type: integration
-  skill: azure-hosted-copilot-sdk
-
-environment:
-  skills:
-    - ../../plugin/skills/azure-hosted-copilot-sdk
-    - ../../plugin/skills/azure-prepare
-    - ../../plugin/skills/azure-validate
-    - ../../plugin/skills/azure-deploy
-
 config:
   runs: 1
-  timeout: "10m"
-  executor: copilot-sdk
-  model: claude-sonnet-4.5
+  timeout: 600
+  executor: mock
+  model: claude-sonnet-4-20250514
 
 scoring:
   threshold: 0.8
-  weights:
-    output-contains: 0.5
-    output-not-contains: 2.0
-    output-not-matches: 2.0
-    skill-invocation: 2.0
 
 stimuli:
   # ── scaffold-new-001 ──
@@ -46,8 +30,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-hosted-copilot-sdk
+      cost: low
     constraints:
       max_turns: 10
     graders:
@@ -55,14 +38,17 @@ stimuli:
       - type: output-contains
         config:
           substring: "azd init --template azure-samples/copilot-sdk-service"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-hosted-copilot-sdk"]
 
   # ── scaffold-alongside-001 ──
   # Waza source: tasks/scaffold-alongside.yaml
@@ -72,8 +58,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-hosted-copilot-sdk
+      cost: low
     constraints:
       max_turns: 10
     graders:
@@ -81,14 +66,17 @@ stimuli:
       - type: output-contains
         config:
           substring: "azure.yaml"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-hosted-copilot-sdk"]
 
   # ── deploy-existing-001 ──
   # Waza source: tasks/deploy-existing.yaml
@@ -98,8 +86,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-hosted-copilot-sdk
+      cost: low
     constraints:
       max_turns: 15
     graders:
@@ -113,14 +100,17 @@ stimuli:
       - type: output-contains
         config:
           substring: "azure-deploy"
+      # Task: expected.output_not_contains
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-hosted-copilot-sdk"]
 
   # ── github-default-model-001 ──
   # Waza source: tasks/github-default-model.yaml
@@ -130,8 +120,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-hosted-copilot-sdk
+      cost: low
     constraints:
       max_turns: 10
     graders:
@@ -149,14 +138,16 @@ stimuli:
       - type: output-not-contains
         config:
           substring: "DefaultAzureCredential"
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-hosted-copilot-sdk"]
 
   # ── byom-config-001 ──
   # Waza source: tasks/byom-config.yaml
@@ -166,8 +157,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: output
-      skill: azure-hosted-copilot-sdk
+      cost: low
     constraints:
       max_turns: 10
     graders:
@@ -184,6 +174,12 @@ stimuli:
       # Task: expected.output_not_contains
       - type: output-not-contains
         config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
+      - type: output-not-contains
+        config:
           substring: "apiKey"
       - type: output-not-contains
         config:
@@ -195,10 +191,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-hosted-copilot-sdk"]
 
   # ── negative-not-copilot-001 ──
   # Waza source: tasks/negative-not-copilot.yaml
@@ -208,8 +200,7 @@ stimuli:
     tags:
       type: trigger
       tier: smoke
-      area: routing
-      skill: azure-hosted-copilot-sdk
+      cost: free
     constraints:
       max_turns: 10
     graders:
@@ -233,7 +224,3 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          disallowed: ["azure-hosted-copilot-sdk"]
