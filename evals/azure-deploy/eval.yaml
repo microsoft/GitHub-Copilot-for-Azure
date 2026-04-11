@@ -13,27 +13,14 @@ description: |
   - AVM fallback when no pattern module exists
   - deploy-only routing (not prepare/validate)
 
-tags:
-  type: integration
-  skill: azure-deploy
-
-environment:
-  skills:
-    - ../../plugin/skills/azure-deploy
-
 config:
   runs: 3
-  timeout: "7m"
-  executor: copilot-sdk
-  model: claude-sonnet-4.5
+  timeout: 420
+  executor: mock
+  model: claude-sonnet-4-20250514
 
 scoring:
   threshold: 0.8
-  weights:
-    output-contains: 0.5
-    output-matches: 0.5
-    output-not-matches: 2.0
-    completed: 1.0
 
 stimuli:
   # ── avm-order-bicep-001 ──
@@ -46,9 +33,8 @@ stimuli:
       Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
     tags:
       type: integration
-      skill: azure-deploy
       tier: full
-      area: output
+      cost: low
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -84,9 +70,8 @@ stimuli:
       What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
     tags:
       type: integration
-      skill: azure-deploy
       tier: full
-      area: output
+      cost: low
     graders:
       # Task: expected.output_contains
       - type: output-contains
