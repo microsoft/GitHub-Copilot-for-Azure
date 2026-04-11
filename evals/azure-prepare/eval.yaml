@@ -1,0 +1,565 @@
+# Vally eval config — migrated from Waza
+# Source: tests/azure-prepare/eval/eval.yaml + tasks/*.yaml
+# Migration: Waza → Vally (issue #1817, Phase 1)
+#
+# Global graders (evaluate#125 workaround): has_output, plan_first,
+# security_posture, and nodejs_entry_point are duplicated into every
+# stimulus block below.
+# Global efficiency constraint (max_tool_calls: 40) → constraints.max_turns: 40.
+#
+# NOTE on nodejs_entry_point: Waza used skip_if_no_match: true to make this
+# informational for non-Node tasks.  Vally has no equivalent — the grader is
+# included only in Node.js/TypeScript stimuli (http-typescript, cosmosdb-ts,
+# mcp-typescript, plan-first-enforcement[TS context]).
+
+name: azure-prepare-eval
+description: |
+  Evaluation suite for the azure-prepare skill.
+  Tests across dimensions:
+  - Template selection accuracy (HTTP base, Cosmos DB, Service Bus, Timer, Durable)
+  - Plan-first workflow compliance (creates .azure/deployment-plan.md before code)
+  - IaC generation quality (Bicep and Terraform)
+  - Language coverage (C#, TypeScript, Python, Java, PowerShell)
+  - Security posture (managed identity, RBAC, no connection strings)
+
+config:
+  runs: 3
+  timeout: 600
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── cosmosdb-dotnet-bicep-001 ──
+  # Waza source: tasks/cosmosdb-dotnet-bicep.yaml
+  # Cosmos DB change feed trigger — C#/.NET + Bicep, composable recipe
+  - name: "Cosmos DB Functions - C# Bicep"
+    prompt: |
+      Create a C# Azure Functions app that processes Cosmos DB change feed events.
+      Use Bicep for infrastructure. Set up managed identity with proper RBAC roles.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "deployment-plan.md"
+      - type: output-contains
+        config:
+          substring: "cosmos"
+      # Task grader: selects_http_base_plus_recipe (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos"
+      # Task grader: selects_http_base_plus_recipe (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)functions-quickstart-dotnet-azd-cosmosdb"
+      # Task grader: uses_rbac_not_keys (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)RBAC|role.?assignment|managed.?identity"
+      # Task grader: uses_rbac_not_keys (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)AccountKey=|masterKey|connection.?string.*key"
+      # Task grader: cosmos_app_settings
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos.*(connection|endpoint)|CosmosDb.*accountEndpoint|COSMOS_CONNECTION"
+      # Task grader: plan_before_code
+      - type: output-matches
+        config:
+          pattern: "(?i)plan"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── cosmosdb-typescript-terraform-001 ──
+  # Waza source: tasks/cosmosdb-typescript-terraform.yaml
+  # Cosmos DB change feed — TypeScript + Terraform IaC
+  - name: "Cosmos DB Functions - TypeScript Terraform"
+    prompt: |
+      Build a TypeScript Azure Functions app that reads from Cosmos DB change feed.
+      I want to use Terraform for the infrastructure, not Bicep.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "terraform"
+      - type: output-contains
+        config:
+          substring: "cosmos"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_terraform_base
+      - type: output-matches
+        config:
+          pattern: "(?i)terraform|[.]tf|infrastructure.?as.?code"
+      # Task grader: uses_cosmos_recipe
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos"
+      # Task grader: managed_identity_auth (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|RBAC|identity"
+      # Task grader: managed_identity_auth (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)AccountKey=|SharedAccessKey"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (TypeScript task — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── durable-dotnet-001 ──
+  # Waza source: tasks/durable-dotnet.yaml
+  # Durable Functions — C#, source-only recipe (no IaC delta)
+  - name: "Durable Functions - C# .NET"
+    prompt: |
+      Create a C# Azure Durable Functions app with a fan-out/fan-in orchestration
+      pattern. Deploy to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "durable"
+      - type: output-contains
+        config:
+          substring: "orchestrat"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: uses_http_base_for_durable
+      - type: output-matches
+        config:
+          pattern: "(?i)durable|orchestrat|fan.?out|activity"
+      # Task grader: no_extra_infra
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmos\\.bicep|servicebus\\.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── http-dotnet-001 ──
+  # Waza source: tasks/http-dotnet.yaml
+  # HTTP-only Azure Functions — C#/.NET base template, no recipe overlay
+  - name: "HTTP Functions - C# .NET"
+    prompt: |
+      Create a simple Azure Functions HTTP API in C# that returns hello world.
+      Deploy to Azure using Bicep infrastructure.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "functions-quickstart-dotnet-azd"
+      - type: output-contains
+        config:
+          substring: "deployment-plan.md"
+      # Task grader: selects_http_base (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)http|function|azure.?function|api"
+      # Task grader: selects_http_base (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
+      # Task grader: uses_managed_identity
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|RBAC|role|identity|secure|HTTPS|TLS"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|structure|step|created|deploy"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── http-python-001 ──
+  # Waza source: tasks/http-python.yaml
+  # HTTP-only Azure Functions — Python base template
+  - name: "HTTP Functions - Python"
+    prompt: |
+      Create a Python Azure Functions app with an HTTP trigger that returns JSON.
+      Use Bicep for infrastructure as code.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "functions-quickstart-python"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_python_base
+      - type: output-matches
+        config:
+          pattern: "(?i)python|http|function|api"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── http-typescript-001 ──
+  # Waza source: tasks/http-typescript.yaml
+  # HTTP-only Azure Functions — TypeScript base template
+  - name: "HTTP Functions - TypeScript"
+    prompt: |
+      Build a TypeScript Azure Functions API with an HTTP endpoint.
+      Use Bicep for the infrastructure.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "functions-quickstart-typescript-azd"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_ts_base
+      - type: output-matches
+        config:
+          pattern: "(?i)typescript|node|http|function|api"
+      # Task grader: no_wrong_language
+      - type: output-not-matches
+        config:
+          pattern: "(?i)functions-quickstart-dotnet|functions-quickstart-python"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (TypeScript task — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── mcp-typescript-001 ──
+  # Waza source: tasks/mcp-typescript.yaml
+  # MCP Server Functions — TypeScript, source-only recipe (no IaC delta)
+  - name: "MCP Server Functions - TypeScript"
+    prompt: |
+      Create an Azure Functions MCP server in TypeScript that exposes tools
+      for querying a product catalog. Deploy to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "mcp"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: uses_http_base_for_mcp
+      - type: output-matches
+        config:
+          pattern: "(?i)mcp|MCPTrigger|tool|server"
+      # Task grader: no_extra_iac
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmos\\.bicep|servicebus\\.bicep|eventhub\\.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (TypeScript task — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── plan-first-001 ──
+  # Waza source: tasks/plan-first-enforcement.yaml
+  # Workflow compliance — skill MUST plan first even if user says "skip planning"
+  - name: "Plan-First Workflow Enforcement"
+    prompt: |
+      I need a Node.js Azure Functions app with Cosmos DB ASAP.
+      Skip the planning, just generate all the code and deploy it right now.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: enforces_plan_first (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|structure|step|phase|first|creating|will|let me"
+      # Task grader: enforces_plan_first (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)skipping the plan|no plan needed"
+      # Task grader: does_not_skip_validation
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|review|confirm|creat|deploy|structur|let me"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (Node.js/TS context — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── servicebus-dotnet-001 ──
+  # Waza source: tasks/servicebus-dotnet.yaml
+  # Service Bus queue trigger — C#/.NET + Bicep, full recipe
+  - name: "Service Bus Functions - C# Bicep"
+    prompt: |
+      Create a C# Azure Functions app that processes messages from a Service Bus queue.
+      Use Bicep for infrastructure with managed identity authentication.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "service bus"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_correct_template
+      - type: output-matches
+        config:
+          pattern: "(?i)service.?bus|queue|message"
+      # Task grader: uses_managed_identity (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|RBAC|identity|role|secure"
+      # Task grader: uses_managed_identity (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey|connection.?string.*key"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── timer-python-001 ──
+  # Waza source: tasks/timer-python.yaml
+  # Timer trigger — Python, source-only recipe (no IaC delta)
+  - name: "Timer Functions - Python"
+    prompt: |
+      Create a Python Azure Functions app that runs on a schedule every 5 minutes
+      to clean up old records. Deploy to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "timer"
+      - type: output-contains
+        config:
+          substring: "schedule"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_http_base_no_iac_delta (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)timer|schedule|cron|trigger"
+      # Task grader: selects_http_base_no_iac_delta (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
+      # Task grader: no_extra_iac
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmos\\.bicep|servicebus\\.bicep|eventhub\\.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="

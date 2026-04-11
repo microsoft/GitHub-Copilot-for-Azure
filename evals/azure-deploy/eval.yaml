@@ -1,0 +1,99 @@
+# Vally eval config — migrated from Waza
+# Source: tests/azure-deploy/eval/eval.yaml + tasks/*.yaml
+# Migration: Waza → Vally (issue #1817, Phase 1)
+#
+# Global graders (evaluate#125 workaround): has_output and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-deploy-eval
+description: |
+  Evaluation suite for the azure-deploy skill.
+  Tests deployment guidance quality with emphasis on:
+  - AVM+AZD pattern-module preference
+  - AVM fallback when no pattern module exists
+  - deploy-only routing (not prepare/validate)
+
+config:
+  runs: 3
+  timeout: 420
+  executor: mock
+  model: claude-sonnet-4-20250514
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── avm-order-bicep-001 ──
+  # Waza source: tasks/avm-order-bicep.yaml
+  # Validates deploy guidance prefers AVM+AZD pattern modules first
+  - name: "AVM+AZD Priority - Bicep Deploy"
+    prompt: |
+      My app is already prepared and validated.
+      Give me deploy guidance and module preference order for Bicep.
+      Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "AVM"
+      - type: output-contains
+        config:
+          substring: "deploy"
+      - type: output-contains
+        config:
+          substring: "pattern"
+      # Task grader: avm_pattern_first
+      - type: output-matches
+        config:
+          pattern: "(?i)AVM\\+AZD|AZD pattern|pattern modules"
+      # Task grader: includes_resource_and_utility_fallback
+      - type: output-matches
+        config:
+          pattern: "(?is)(AVM\\+AZD|AZD pattern|pattern modules).*resource modules.*utility modules"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|exception occurred|crashed"
+
+  # ── avm-fallback-no-pattern-001 ──
+  # Waza source: tasks/avm-fallback-no-pattern.yaml
+  # Validates fallback order when no AVM+AZD pattern module exists
+  - name: "AVM Fallback When No AZD Pattern"
+    prompt: |
+      I'm deploying with Bicep and there is no AVM+AZD pattern module for my scenario.
+      What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
+    tags:
+      type: integration
+      tier: full
+      cost: low
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "AVM"
+      - type: output-contains
+        config:
+          substring: "resource"
+      - type: output-contains
+        config:
+          substring: "utility"
+      # Task grader: explicit_no_pattern_fallback
+      - type: output-matches
+        config:
+          pattern: "(?is)(no .*pattern module|if no .*pattern).*AVM.*resource.*AVM.*utility"
+      # Task grader: avoids_non_avm_fallback
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fallback to non-AVM|use non-AVM modules"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|exception occurred|crashed"
