@@ -1,10 +1,11 @@
 ---
 name: azure-validate
-description: "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment."
+description: "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, Azure Policy compliance and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment, bicep policy check, check policy compliance, azure policy bicep, check policy restrictions."
+
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "1.1.0"
 ---
 
 # Azure Validate
@@ -29,6 +30,8 @@ metadata:
 - Validate azure.yaml or Bicep
 - Run preflight checks
 - Troubleshoot deployment errors
+- Check Bicep against Azure Policy
+- Run policy compliance check before deployment
 
 ## Rules
 
@@ -45,6 +48,7 @@ metadata:
 | 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
 | 5 | **Static Role Verification** — Review Bicep/Terraform for correct RBAC role assignments in code | [role-verification.md](references/role-verification.md) |
+| 5a | **Policy Compliance Check** *(optional)* — If user requests policy check or Bicep targets a policy-governed subscription, check against Azure Policy | [bicep-policy-check-workflow.md](references/bicep-policy-check-workflow.md) |
 | 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
 | 7 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
 | 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
