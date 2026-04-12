@@ -1,0 +1,194 @@
+{
+  "description": "Azure resource type to Draw.io stencil mappings. ALWAYS look up a resource type here before constructing any icon path. For resource types NOT listed here, derive the path from the azure2 convention: img/lib/azure2/<category>/<PascalCase_Resource_Name>.svg — but ONLY after confirming the file exists. Never guess the category from the ARM namespace: Microsoft.Web resources live in app_services/, not web/ or compute/. This file lists all known exceptions (wrong category, singular/plural surprises, non-existent files, fallback icons) and container styles.",
+  "criticalWarnings": [
+    "Microsoft.Web/* resources (App Services, App Service Plans, Function Apps) live in app_services/ — NOT in compute/ or web/",
+    "App_Service_Plans.svg is in app_services/, NOT compute/. compute/ does not contain this file.",
+    "There is no generic Event_Grid.svg. Use System_Topic.svg, Event_Grid_Topics.svg, or Event_Grid_Domains.svg depending on the sub-type.",
+    "Microsoft.AppConfiguration/configurationStores uses img/lib/mscae/App_Configuration.svg — this icon does NOT exist in the azure2 library. Using any azure2 path (e.g. management_governance/Management_Groups.svg or management_governance/App_Configurations.svg) produces an empty/broken icon.",
+    "Always verify a path exists before using it. When in doubt, check https://github.com/jgraph/drawio/tree/dev/src/main/webapp/img/lib/azure2"
+  ],
+  "stencilLibrary": "azure2",
+  "styleTemplate": "aspect=fixed;html=1;points=[];align=center;image;resizable=0;image={imagePath};",
+  "iconNamingNotes": "Most icons use plural names (e.g., Virtual_Networks.svg, Load_Balancers.svg). The exceptions below use SINGULAR names — do not pluralize them. When unsure, check the draw.io azure2 stencil source at https://github.com/jgraph/drawio/tree/dev/src/main/webapp/img/lib/azure2",
+  "iconSizingNotes": "defaultWidth and defaultHeight define the mxCell bounding box. Do NOT add imageAspect=0 — it stretches non-square SVGs and distorts icons. For icons marked requiresImageAspect1=true (e.g. Application Insights), you MUST add imageAspect=1 to the style string to preserve the SVG's native non-square proportions. For all other icons, omit imageAspect entirely. Always use the exact defaultWidth and defaultHeight from this mapping; never calculate or approximate icon dimensions yourself. Most azure2 icons are square; non-square entries list an explicit defaultHeight.",
+  "resourceTypes": {
+    "_comment_singularExceptions": "These icons use SINGULAR names, breaking the usual plural pattern",
+    "Microsoft.Compute/virtualMachines": {
+      "imagePath": "img/lib/azure2/compute/Virtual_Machine.svg",
+      "label": "VM",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/privateEndpoints": {
+      "imagePath": "img/lib/azure2/networking/Private_Endpoint.svg",
+      "label": "Private Endpoint",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/virtualNetworks/subnets": {
+      "imagePath": "img/lib/azure2/networking/Subnet.svg",
+      "label": "Subnet",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "isContainer": true,
+      "containerStyle": "rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=2 2;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontStyle=1;"
+    },
+    "Microsoft.Sql/servers": {
+      "imagePath": "img/lib/azure2/databases/SQL_Server.svg",
+      "label": "SQL Server",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Sql/servers/databases": {
+      "imagePath": "img/lib/azure2/databases/SQL_Database.svg",
+      "label": "SQL Database",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Sql/managedInstances": {
+      "imagePath": "img/lib/azure2/databases/SQL_Managed_Instance.svg",
+      "label": "SQL Managed Instance",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+
+    "_comment_wrongCategory": "These icons are in unexpected categories — the LLM would guess wrong",
+    "Microsoft.Web/serverFarms": {
+      "imagePath": "img/lib/azure2/app_services/App_Service_Plans.svg",
+      "label": "App Service Plan",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "CATEGORY: app_services — distinct icon from App_Services.svg. Do NOT use compute/ (file does not exist there)."
+    },
+    "Microsoft.Web/sites": {
+      "imagePath": "img/lib/azure2/app_services/App_Services.svg",
+      "label": "App Service",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "CATEGORY: app_services — NOT compute, NOT web. The Microsoft.Web ARM namespace is misleading on both counts. For Function Apps (kind contains 'functionapp'), use the Function_Apps.svg entry below instead."
+    },
+    "Microsoft.Web/sites[functionapp]": {
+      "imagePath": "img/lib/azure2/compute/Function_Apps.svg",
+      "label": "Function App",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "Use this entry when Microsoft.Web/sites has kind containing 'functionapp' (e.g. 'functionapp,linux', 'functionapp'). CATEGORY: compute — Function_Apps.svg lives in compute/, unlike App_Services.svg which is in app_services/. Always check the resource 'kind' field to distinguish Function Apps from regular App Services."
+    },
+    "Microsoft.EventGrid/systemTopics": {
+      "imagePath": "img/lib/azure2/integration/System_Topic.svg",
+      "label": "Event Grid System Topic",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "Use System_Topic.svg for systemTopics. There is no generic Event_Grid.svg — use Event_Grid_Topics.svg for custom topics, Event_Grid_Domains.svg for domains."
+    },
+    "Microsoft.EventGrid/topics": {
+      "imagePath": "img/lib/azure2/integration/Event_Grid_Topics.svg",
+      "label": "Event Grid Topic",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.EventGrid/domains": {
+      "imagePath": "img/lib/azure2/integration/Event_Grid_Domains.svg",
+      "label": "Event Grid Domain",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Communication/communicationServices": {
+      "imagePath": "img/lib/azure2/other/Azure_Communication_Services.svg",
+      "label": "Communication Services",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Communication/emailServices": {
+      "imagePath": "img/lib/azure2/other/Azure_Communication_Services.svg",
+      "label": "Email Communication Services",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "No distinct email icon exists in azure2 — shares ACS icon. Differentiate from communicationServices by label text (e.g., italicize or append ' (Email)' to the mxCell value)."
+    },
+    "Microsoft.App/containerApps": {
+      "imagePath": "img/lib/azure2/other/Container_App_Environments.svg",
+      "label": "Container App",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.App/managedEnvironments": {
+      "imagePath": "img/lib/azure2/other/Container_App_Environments.svg",
+      "label": "Container App Environment",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.ManagedIdentity/userAssignedIdentities": {
+      "imagePath": "img/lib/azure2/identity/Managed_Identities.svg",
+      "label": "Managed Identity",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Insights/components": {
+      "imagePath": "img/lib/azure2/devops/Application_Insights.svg",
+      "label": "Application Insights",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "requiresImageAspect1": true,
+      "note": "The Application_Insights.svg has a non-square native ratio. You MUST include imageAspect=1 in the style string. Omitting it or using imageAspect=0 will stretch/distort the icon into a malformed square shape."
+    },
+    "Microsoft.OperationalInsights/workspaces": {
+      "imagePath": "img/lib/azure2/management_governance/Log_Analytics_Workspaces.svg",
+      "label": "Log Analytics Workspace",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.EventHub/namespaces": {
+      "imagePath": "img/lib/azure2/analytics/Event_Hubs.svg",
+      "label": "Event Hub",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/natGateways": {
+      "imagePath": "img/lib/azure2/networking/NAT.svg",
+      "label": "NAT Gateway",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/privateDnsZones": {
+      "imagePath": "img/lib/azure2/networking/DNS_Zones.svg",
+      "label": "Private DNS Zone",
+      "note": "No dedicated Private DNS icon exists — uses DNS_Zones.svg as fallback",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+
+    "Microsoft.AppConfiguration/configurationStores": {
+      "imagePath": "img/lib/mscae/App_Configuration.svg",
+      "label": "App Configuration",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "LIBRARY: mscae — NOT azure2. This icon does not exist anywhere in the azure2 library. Using any azure2 path produces a broken/empty icon. The correct path is img/lib/mscae/App_Configuration.svg (singular, not plural)."
+    },
+
+    "_comment_containers": "Container elements with special rendering styles",
+    "Microsoft.Network/virtualNetworks": {
+      "imagePath": "img/lib/azure2/networking/Virtual_Networks.svg",
+      "label": "VNet",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "isContainer": true,
+      "containerStyle": "rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=5 5;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;fontSize=14;"
+    },
+    "Microsoft.Resources/resourceGroups": {
+      "imagePath": "img/lib/azure2/general/Resource_Groups.svg",
+      "label": "Resource Group",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "isContainer": true,
+      "containerStyle": "rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontStyle=1;fontSize=14;"
+    }
+  },
+  "connectionStyles": {
+    "default": "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;strokeWidth=2;",
+    "dataFlow": "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0078D4;strokeWidth=2;endArrow=block;endFill=1;",
+    "networkLink": "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#00A4EF;strokeWidth=2;dashed=1;",
+    "dependency": "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#999999;strokeWidth=1;dashed=1;endArrow=open;endFill=0;",
+    "securityLink": "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#E81123;strokeWidth=2;endArrow=block;endFill=1;"
+  }
+}

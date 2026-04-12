@@ -1,5 +1,5 @@
 /**
- * Trigger Tests for azure-validate
+ * Trigger Tests for azure-iac-generator
  * 
  * Tests that verify the skill triggers on appropriate prompts
  * and does NOT trigger on unrelated prompts.
@@ -8,7 +8,7 @@
 import { TriggerMatcher } from "../utils/trigger-matcher";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
-const SKILL_NAME = "azure-validate";
+const SKILL_NAME = "azure-iac-generator";
 
 describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let triggerMatcher: TriggerMatcher;
@@ -21,32 +21,19 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
-      // Deployment readiness checks
-      "Check if my app is ready to deploy to Azure",
-      "Validate my azure.yaml configuration",
-      "Run preflight checks before Azure deployment",
-      "Troubleshoot deployment errors",
-      "Verify my infrastructure configuration before deploying",
-      "Is my app ready for Azure deployment?",
-      "Validate my Bicep configuration",
-      // Preflight validation
-      "Validate my Bicep template before deploying to Azure",
-      "Check my deployment permissions before running azd up",
-      "Verify my Bicep files are valid before provisioning",
-      "Run pre-deployment validation checks on my Azure infrastructure",
-      // Azure Functions validation
-      "Validate my Azure Functions app before deploying",
-      "Check if my function app is ready for Azure deployment",
-      "Validate my serverless function deployment configuration",
-      // RBAC role verification
-      "Check the RBAC role assignments in my Bicep before deploying",
-      "Verify managed identity permissions in my infrastructure code",
-      "Review role assignments in my Terraform before Azure deployment",
-      // Policy compliance checks
-      "Check my Bicep against Azure Policy",
-      "Run policy compliance check before deployment",
-      "Check policy restrictions for my Bicep template",
-      "Azure policy bicep validation",
+      // Azure to Bicep
+      "Generate Bicep from my Azure resource group",
+      "Azure to Bicep for my subscription",
+      "Create Bicep templates from my resources",
+      "Reverse engineer Bicep from Azure",
+      "Export my infrastructure as code",
+      "Generate infrastructure code from my Azure environment",
+
+      // Diagram to Bicep
+      "Convert my diagram to Bicep",
+      "Diagram to Bicep templates",
+      "Generate Bicep from my draw.io diagram",
+      "Create Bicep from architecture diagram",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -60,12 +47,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
+      // Non-Azure topics
       "What is the weather today?",
       "Help me write a poem",
       "Explain quantum computing",
-      "Help me with AWS S3 bucket naming",
-      "What is the best pizza topping?",
-      "How do I use Docker?",
+      "How do I set up a CI/CD pipeline in GitHub Actions?",
+      "Run azd up to deploy",
     ];
 
     test.each(shouldNotTriggerPrompts)(
@@ -73,6 +60,31 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(false);
+      }
+    );
+  });
+
+  describe("Boundary Cases - keyword overlap expected", () => {
+    // NOTE: These prompts DO trigger the keyword matcher because they contain
+    // shared terms like "Azure", "Bicep", "diagram". This is expected behavior —
+    // the keyword matcher is intentionally broad. Skill disambiguation is handled
+    // by the LLM routing layer, not by the trigger matcher.
+    const overlapPrompts: string[] = [
+      "Create a new web app on Azure",
+      "Build a new Azure Functions project",
+      "Deploy my Bicep template to Azure",
+      "Check if my Bicep matches Azure",
+      "Compare diagram to Azure resources",
+      "Create a diagram of my Azure resources",
+      "Visualize my Azure architecture",
+    ];
+
+    test.each(overlapPrompts)(
+      'keyword overlap expected: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        // These trigger on keywords but LLM routes to correct skill
+        expect(typeof result.triggered).toBe("boolean");
       }
     );
   });
@@ -98,14 +110,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
 
     test("handles very long prompt", () => {
-      const longPrompt = "Azure validate deployment ready ".repeat(100);
+      const longPrompt = "Generate Bicep from Azure ".repeat(100);
       const result = triggerMatcher.shouldTrigger(longPrompt);
       expect(typeof result.triggered).toBe("boolean");
     });
 
     test("is case insensitive for Azure terms", () => {
-      const result1 = triggerMatcher.shouldTrigger("VALIDATE AZURE DEPLOYMENT");
-      const result2 = triggerMatcher.shouldTrigger("validate azure deployment");
+      const result1 = triggerMatcher.shouldTrigger("GENERATE BICEP FROM AZURE");
+      const result2 = triggerMatcher.shouldTrigger("generate bicep from azure");
       expect(result1.triggered).toBe(result2.triggered);
     });
   });

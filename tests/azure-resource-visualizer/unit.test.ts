@@ -42,17 +42,26 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Core Responsibilities");
-      expect(skill.content).toContain("## Workflow Process");
+      expect(skill.content).toContain("## Prerequisites");
+      expect(skill.content).toContain("## When to Use This Skill");
+      expect(skill.content).toContain("## Routing");
+      expect(skill.content).toContain("## Mermaid Diagram Workflow");
       expect(skill.content).toContain("Resource Group Selection");
       expect(skill.content).toContain("Resource Discovery & Analysis");
       expect(skill.content).toContain("Diagram Construction");
     });
 
-    test("includes Mermaid diagram examples", () => {
+    test("includes Mermaid diagram references", () => {
       expect(skill.content).toContain("Mermaid");
       expect(skill.content).toContain("graph TB");
       expect(skill.content).toContain("graph LR");
+    });
+
+    test("includes Draw.io diagram references", () => {
+      expect(skill.content).toContain("Draw.io");
+      expect(skill.content).toContain("sketch-to-diagram-workflow.md");
+      expect(skill.content).toContain("azure-to-diagram-workflow.md");
+      expect(skill.content).toContain("drawio-diagram-conventions.md");
     });
 
     test("defines quality standards", () => {
@@ -65,12 +74,12 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Diagram Generation Guidelines", () => {
     test("provides diagram structure guidelines", () => {
       expect(skill.content).toContain("Key Diagram Requirements");
-      expect(skill.content).toContain("subgraph");
+      expect(skill.content).toContain("Subgraphs");
       expect(skill.content).toContain("Resource Group");
     });
 
     test("includes relationship mapping guidance", () => {
-      expect(skill.content).toContain("Relationship Mapping");
+      expect(skill.content).toContain("Map relationships");
       expect(skill.content).toContain("Network connections");
       expect(skill.content).toContain("Data flow");
     });
@@ -83,6 +92,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("mentions Resource Graph for resource discovery", () => {
       expect(skill.content).toContain("Azure Resource Graph");
+    });
+  });
+
+  describe("Error Handling", () => {
+    test("includes error handling table", () => {
+      expect(skill.content).toContain("## Error Handling");
+      expect(skill.content).toContain("Draw.io MCP tool not found");
     });
   });
 });
