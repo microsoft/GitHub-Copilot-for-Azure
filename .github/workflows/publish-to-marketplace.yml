@@ -226,6 +226,9 @@ jobs:
           rsync --archive --delete --verbose "source-repo/plugin/hooks/" "target-repo/hooks/"
           cp "source-repo/plugin/gemini-extension.json" "target-repo/gemini-extension.json"
 
+          # Clean up stale copilot-hooks.json from repo root (previously copied there, now lives under hooks/)
+          rm -f "target-repo/copilot-hooks.json"
+
       # 6. Replace repository URLs in synced files
       - name: Replace repository URLs
         run: |
