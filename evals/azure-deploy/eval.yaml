@@ -13,11 +13,15 @@ description: |
   - AVM fallback when no pattern module exists
   - deploy-only routing (not prepare/validate)
 
+tags:
+  type: integration
+  skill: azure-deploy
+
 config:
   runs: 3
   timeout: 420
-  executor: mock
-  model: claude-sonnet-4-20250514
+  executor: copilot-sdk
+  model: claude-sonnet-4
 
 scoring:
   threshold: 0.8
@@ -34,7 +38,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -71,7 +76,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     graders:
       # Task: expected.output_contains
       - type: output-contains

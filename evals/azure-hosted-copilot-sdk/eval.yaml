@@ -12,11 +12,15 @@ description: >
   model configuration paths (GitHub default, Azure BYOM),
   and negative-match behavior (skill should not activate for unrelated prompts).
 
+tags:
+  type: integration
+  skill: azure-hosted-copilot-sdk
+
 config:
   runs: 1
   timeout: 600
-  executor: mock
-  model: claude-sonnet-4-20250514
+  executor: copilot-sdk
+  model: claude-sonnet-4
 
 scoring:
   threshold: 0.8
@@ -30,7 +34,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     constraints:
       max_turns: 10
     graders:
@@ -58,7 +63,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     constraints:
       max_turns: 10
     graders:
@@ -86,7 +92,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     constraints:
       max_turns: 15
     graders:
@@ -120,7 +127,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     constraints:
       max_turns: 10
     graders:
@@ -157,7 +165,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: output
     constraints:
       max_turns: 10
     graders:
@@ -201,6 +210,7 @@ stimuli:
       type: trigger
       tier: smoke
       cost: free
+      area: routing
     constraints:
       max_turns: 10
     graders:
