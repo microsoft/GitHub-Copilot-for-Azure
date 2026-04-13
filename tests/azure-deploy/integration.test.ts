@@ -36,11 +36,8 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const deployTestTimeoutMs = 1800000;
 const brownfieldTestTimeoutMs = 2700000;
 
-const pseudoRandomResourceGroupNameSystemPromptModifier: {
-  mode: "append",
-  content: string
-} = {
-  mode: "append",
+const pseudoRandomResourceGroupNameSystemPromptModifier = {
+  mode: "append" as const,
   content: "Use pseudo random name resource group name such that it is less likely to have collision with existing ones."
 };
 
