@@ -251,8 +251,6 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | File | When to load |
 |------|--------------|
 | `references/constraint-spec-v1.yaml` | Always load for offline validation — all constraint IDs, severities, and fix patterns |
-| `references/safeguards-policies.md` | When user asks about specific Deployment Safeguards policies |
-| `references/cluster-config-checks.md` | When assessing cluster-level configuration requirements |
 | `references/common-fixes.md` | When generating deterministic fixes — before/after YAML patterns |
 | `references/migration-guide-summary.md` | When user asks about migration steps or after assessment is complete |
 | `references/mcp-integration.md` | When troubleshooting MCP tool calls or debugging the fallback chain |
