@@ -16,10 +16,14 @@ description: |
   - Security posture (managed identity, RBAC, no connection strings)
   - Workload coverage (GenAI, AKS, Container Apps, 3-tier, serverless, data pipeline, ML, IoT, backup/DR)
 
+tags:
+  type: integration
+  skill: azure-enterprise-infra-planner
+
 config:
   runs: 1
   timeout: 600
-  executor: mock
+  executor: copilot-sdk
   model: claude-sonnet-4.6
 
 scoring:
@@ -34,7 +38,8 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      cost: low
+      cost: free
+      area: files
     constraints:
       max_turns: 50
     graders:
@@ -69,7 +74,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: behavior
     constraints:
       max_turns: 50
     graders:
@@ -100,7 +106,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
@@ -164,7 +171,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
@@ -227,7 +235,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: behavior
     constraints:
       max_turns: 50
     graders:
@@ -257,7 +266,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: behavior
     constraints:
       max_turns: 50
     graders:
@@ -288,7 +298,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
@@ -352,7 +363,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
@@ -416,7 +428,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
@@ -480,7 +493,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
@@ -543,7 +557,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: behavior
     constraints:
       max_turns: 50
     graders:
@@ -574,7 +589,8 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: low
+      cost: free
+      area: [output, files]
     constraints:
       max_turns: 50
     graders:
