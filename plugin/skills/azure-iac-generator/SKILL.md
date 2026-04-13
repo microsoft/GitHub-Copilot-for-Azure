@@ -4,12 +4,25 @@ description: "Generate deployment-ready Bicep templates from existing Azure envi
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.0.0"
 ---
 
 # Azure IaC Generator
 
 Reverse-engineer live Azure resources or Draw.io diagrams into deployment-ready, modular Bicep. The goal is an **environment-identical** redeployment — every runtime version, SKU, and setting must match the Azure source.
+
+## Prerequisites
+
+- Authenticated Azure CLI session (`az login`)
+- Azure MCP and Bicep MCP servers available
+- For diagram source: a `.drawio` file in the workspace
+
+## When to Use This Skill
+
+- Generate Bicep from existing Azure resources or resource groups
+- Reverse-engineer live infrastructure into Infrastructure as Code
+- Convert Draw.io architecture diagrams to Bicep templates
+- Export Azure infrastructure as code
 
 ## Quick Reference
 
@@ -43,7 +56,7 @@ User request
 <scope-name>/
 ├── README.md                  # Original request, resource summary, verification, deploy commands
 ├── main.bicep                 # Orchestrator — module refs only, no inline resources
-├── <scope-name>.bicepparam    # All param values with comments (alternatives, EOL dates)
+├── main.bicepparam            # All param values with comments (alternatives, EOL dates)
 ├── modules/                   # One file per resource category (only if resources exist)
 │   ├── networking.bicep       # VNets, subnets, NSGs, private endpoints
 │   ├── compute.bicep          # VMs, App Services, Functions, Container Apps
