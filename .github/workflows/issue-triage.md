@@ -26,7 +26,9 @@ safe-outputs:
   add-comment:
     max: 1
 
-engine: copilot
+engine:
+  id: copilot
+  version: v1.0.20
 ---
 
 # Issue Triage
