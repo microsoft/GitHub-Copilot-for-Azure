@@ -207,7 +207,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   });
 
   // App Service
-  describe("app-service-deploy", () => {
+  describe("vanilla-app-service-deploy", () => {
     test("creates discussion board", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
