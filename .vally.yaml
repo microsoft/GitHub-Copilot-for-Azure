@@ -4,3 +4,29 @@ paths:
   evals:
     - evals
   results: results
+
+suites:
+  smoke:
+    description: "Fast static checks — no LLM calls, <60s"
+    filter:
+      tier: smoke
+      cost: free
+
+  pr:
+    description: "All free-tier evals for PR gate, <2min"
+    filter:
+      cost: free
+
+  triggers:
+    description: "All routing/trigger evals"
+    filter:
+      type: trigger
+
+  integration:
+    description: "All behavior/integration evals"
+    filter:
+      type: integration
+
+  full:
+    description: "All evals including LLM graders — nightly"
+    filter: {}
