@@ -19,6 +19,7 @@
     "foundry",
     "diagnostics"
   ],
+  "logo": "./assets/azure-logo.svg",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "hooks": "./hooks/cursor-hooks.json"
