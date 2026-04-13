@@ -15,7 +15,7 @@ import {
   getIntegrationSkipReason,
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
+import { hasPlanReadyForValidation, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
 import { doesWorkspaceFileIncludePattern, expectFiles, getToolCalls, listFilesRecursive, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 import * as fs from "fs";
@@ -906,11 +906,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!, [/azure\.yaml$/], []);
 
-        // The AppHost defines: builder.AddDockerfile("ginapp", "./ginapp")
-        // So azure.yaml should have docker.context: ginapp (not "." or the project root)
-        const dockerContext = getDockerContext(workspacePath!, "ginapp");
-        expect(dockerContext).toBeDefined();
-        expect(dockerContext).toMatch(/ginapp/);
+        // For Aspire projects, azd init --from-code generates a single "app" service
+        // pointing to the AppHost. Aspire handles AddDockerfile container builds
+        // (including ginapp) at runtime — they do NOT appear as separate services
+        // in azure.yaml.
+        expect(hasServicesSection(workspacePath!)).toBe(true);
+        const serviceProject = getServiceProject(workspacePath!, "app");
+        expect(serviceProject).toBeDefined();
       });
     });
   });
