@@ -4,7 +4,7 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.12"
+  version: "1.1.13"
 ---
 
 # Azure Prepare
@@ -52,7 +52,8 @@ Activate this skill when user wants to:
 >
 > The `.azure/deployment-plan.md` file is the **source of truth** for this workflow and for azure-validate and azure-deploy skills. Without it, those skills will fail.
 >
-> ⚠️ **CRITICAL: `.azure/deployment-plan.md` must be WRITTEN TO DISK inside the workspace root** (e.g., `/tmp/my-project/.azure/deployment-plan.md`), not in the session-state folder. Use a file-write tool to create this file. This is the deployment plan artifact read by azure-validate and azure-deploy. **You MUST create this file — do not proceed without it.**
+> ⚠️ **CRITICAL: `.azure/deployment-plan.md` must be WRITTEN TO DISK inside the workspace root** (e.g., `/tmp/my-project/.azure/deployment-plan.md`), not in the session-state folder. Use a file-write tool to create this file. This is the deployment plan artifact read by azure-validate and azure-deploy. **You MUST create this file — do not proceed without it.** 
+> ⚠️ **CRITICAL: You must create the file with the name `.azure/deployment-plan.md` as is**. You must not use other names such as `.azure/plan.md`.
 >
 > ⛔ **Critical:** Skipping the plan file creation will cause azure-validate and azure-deploy to fail. This requirement has no exceptions.
 
@@ -122,7 +123,7 @@ Execute the approved plan. Update `.azure/deployment-plan.md` status after each 
 | 4 | **Harden Security** — Apply security best practices | [security.md](references/security.md) |
 | 5 | **Functional Verification** — Verify the app works (UI + backend), locally if possible | [functional-verification.md](references/functional-verification.md) |
 | 6 | **⛔ Update Plan (MANDATORY before hand-off)** — Use the `edit` tool to change the Status in `.azure/deployment-plan.md` to `Ready for Validation`. You **MUST** complete this edit **BEFORE** invoking azure-validate. Do NOT skip this step. | `.azure/deployment-plan.md` |
-| 7 | **⚠️ Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Deployment execution is handled by azure-deploy. **PREREQUISITE:** Step 6 must be completed first — `.azure/deployment-plan.md` status must say `Ready for Validation`. | — |
+| 7 | **⛔ MANDATORY Hand Off** — Invoke **azure-validate** skill. Your preparation work is done. Do NOT run `azd up`, `azd deploy`, or any deployment command directly — all deployment execution is handled by azure-deploy after azure-validate completes. **PREREQUISITE:** Step 6 must be completed first — `.azure/deployment-plan.md` status must say `Ready for Validation`. | — |
 
 ---
 
@@ -147,13 +148,15 @@ Execute the approved plan. Update `.azure/deployment-plan.md` status after each 
 
 ## Next
 
-> **⚠️ MANDATORY NEXT STEP — DO NOT SKIP**
+> **⛔ MANDATORY NEXT STEP — DO NOT SKIP**
 >
-> After completing preparation, you **MUST** invoke **azure-validate** before any deployment attempt. Do NOT skip validation. Do NOT go directly to azure-deploy. The workflow is:
+> After completing preparation, you **MUST** invoke **azure-validate** before any deployment attempt. Do NOT skip validation. Do NOT go directly to azure-deploy. Do NOT run `azd up` or any deployment command directly. The workflow is:
 >
 > `azure-prepare` → `azure-validate` → `azure-deploy`
 >
 > **⛔ BEFORE invoking azure-validate**, you MUST use the `edit` tool to update `.azure/deployment-plan.md` status to `Ready for Validation`. If the plan status has not been updated, the validation will fail.
+>
+> This applies to ALL deployment scenarios including containerized apps, Container Apps, App Service, Azure Functions, static sites, and any other Azure target. No exceptions.
 >
 > Skipping validation leads to deployment failures. Be patient and follow the complete workflow for the highest success outcome.
 
