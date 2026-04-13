@@ -6,8 +6,8 @@ Guidelines for writing Agent Skills that comply with the [agentskills.io specifi
 
 ```yaml
 ---
-name: skill-name
-description: "[ACTION VERB] [UNIQUE_DOMAIN]. [One clarifying sentence]. WHEN: \"trigger 1\", \"trigger 2\", \"trigger 3\"."
+name: <skill-name>
+description: "<Action verb> <unique domain>. <One clarifying sentence>. WHEN: \"<trigger 1>\", \"<trigger 2>\", \"<trigger 3>\"."
 license: MIT
 metadata:
   author: Microsoft

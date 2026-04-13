@@ -1,6 +1,6 @@
 ---
 name: sensei
-description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compliance using the Ralph loop pattern. WHEN: \"run sensei\", \"sensei help\", \"improve skill\", \"fix frontmatter\", \"skill compliance\", \"frontmatter audit\", \"score skill\", \"check skill tokens\", \"review skill PR\", \"review skill changes\", \"check skill quality\", \"optimize markdown\", \"reduce tokens\", \"create a skill\", \"new skill\", \"write a skill\". INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly."
+description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter, review skill PRs, and scaffold new skills using the Ralph loop. WHEN: \"run sensei\", \"improve skill\", \"fix frontmatter\", \"score skill\", \"review skill PR\", \"check skill quality\", \"optimize markdown\", \"reduce tokens\", \"create a skill\", \"new skill\", \"write a skill\"."
 license: MIT
 metadata:
   author: Microsoft
