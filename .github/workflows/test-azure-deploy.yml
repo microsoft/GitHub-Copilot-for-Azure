@@ -20,7 +20,7 @@ on:
           - claude-sonnet-4.5
           - claude-opus-4.5
       test-pattern:
-        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
+        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "vanilla-static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
         required: false
         type: string
         default: ''
