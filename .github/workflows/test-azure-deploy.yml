@@ -67,7 +67,7 @@ jobs:
           INPUT: ${{ inputs.test-pattern }}
         run: |
           # Default test groups if input is empty
-          DEFAULT='["skill-invocation","static-web-apps-deploy","app-service-deploy","azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
+          DEFAULT='["skill-invocation","vanilla-static-web-apps-deploy","vanilla-app-service-deploy","vanilla-azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
           
           if [ -z "$INPUT" ]; then
             echo "matrix=$DEFAULT" >> "$GITHUB_OUTPUT"

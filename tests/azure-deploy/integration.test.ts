@@ -259,7 +259,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   });
 
   // Azure Functions
-  describe("azure-functions-deploy", () => {
+  describe("vanilla-azure-functions-deploy", () => {
     test("creates serverless HTTP API", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
