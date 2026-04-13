@@ -17,7 +17,7 @@ This reference is used by the `airunway-aks-setup` skill during **Step 3 — GPU
 | A100 (80 GB) | 80 | Yes | Yes | FLASH_ATTN, TRITON_ATTN, XFORMERS | 8.0 | Recommended for large models (70B+). |
 | H100 | 80 | Yes | Yes | FLASH_ATTN, TRITON_ATTN, XFORMERS | 9.0 | Highest single-GPU performance. |
 | H200 (SXM) | 141 | Yes | Yes | FLASH_ATTN, TRITON_ATTN, XFORMERS | 9.0 | Maximum memory (HBM3e). |
-| H200 (PCIe) | 96 | Yes | Yes | FLASH_ATTN, TRITON_ATTN, XFORMERS | 9.0 | PCIe variant with 96 GB HBM3e. |
+| H20 | 96 | Yes | Yes | FLASH_ATTN, TRITON_ATTN, XFORMERS | 9.0 | China-market H100 derivative. 96 GB HBM3. |
 
 ### Attention Backends
 

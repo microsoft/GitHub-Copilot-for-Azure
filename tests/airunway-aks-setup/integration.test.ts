@@ -150,5 +150,21 @@ users:
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
       });
     });
+
+    test("resumes from a specific step when skip-to-step is provided", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "skip-to-step 4 — I already have the AI Runway controller installed. Help me set up an inference provider."
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        // Response should focus on provider setup (step 4 content)
+        const hasProviderContent = doesAssistantMessageIncludeKeyword(agentMetadata, "provider") ||
+                                   doesAssistantMessageIncludeKeyword(agentMetadata, "KAITO") ||
+                                   doesAssistantMessageIncludeKeyword(agentMetadata, "Dynamo") ||
+                                   doesAssistantMessageIncludeKeyword(agentMetadata, "KubeRay");
+        expect(hasProviderContent).toBe(true);
+      });
+    });
   });
 });

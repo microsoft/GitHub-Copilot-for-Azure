@@ -30,7 +30,10 @@ fi
 > **If the endpoint is a cluster-internal URL** (e.g., `http://svc-name.namespace:port`), set up port-forwarding first:
 >
 > ```bash
-> kubectl port-forward svc/<service-name> 8080:80 -n <namespace> &
+> # Discover the service port (vLLM: 8000, llama.cpp: 8080)
+> SERVICE_PORT=$(kubectl get svc <service-name> -n <namespace> -o jsonpath='{.spec.ports[0].port}')
+>
+> kubectl port-forward svc/<service-name> 8080:${SERVICE_PORT} -n <namespace> &
 > # Then use http://localhost:8080 as the endpoint
 > ```
 

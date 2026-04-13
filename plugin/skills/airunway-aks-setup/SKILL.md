@@ -66,8 +66,8 @@ This skill uses no MCP tools. All cluster operations are performed directly via 
 |-----------------|--------------|-------------|
 | No kubeconfig context | Not connected to a cluster | Run `az aks get-credentials` or equivalent |
 | Controller in CrashLoopBackOff | Config or RBAC issue | `kubectl logs -n airunway-system -l control-plane=controller-manager --previous` |
-| Provider not ready | Image pull or RBAC issue | `kubectl logs <pod-name>` for the provider pod |
-| ModelDeployment stuck in Pending | GPU scheduling failure or provider not ready | `kubectl describe modeldeployment` events |
+| Provider not ready | Image pull or RBAC issue | `kubectl logs <pod-name> -n <namespace>` for the provider pod |
+| ModelDeployment stuck in Pending | GPU scheduling failure or provider not ready | `kubectl describe modeldeployment <name> -n <namespace>` events |
 | `bfloat16` errors at inference | T4 or V100 lacks bfloat16 support | Add `--dtype float16` to serving args |
 
 For full error handling and rollback procedures, see [troubleshooting.md](references/troubleshooting.md).

@@ -22,7 +22,7 @@ Estimate how much VRAM a model requires. Values are **weights only** — add 20�
 | CPU-only | `google/gemma-3-1b-it-qat-q8_0-gguf` | KAITO (llama.cpp) | GGUF Q8; runs on CPU |
 | 1× T4 (16 GB) | `microsoft/Phi-3-mini-4k-instruct` | KAITO (vLLM) | ~8 GB float16; fits with headroom |
 | 1× A10G/L4 (24 GB) | `meta-llama/Llama-3.1-8B-Instruct` | KAITO (vLLM) | ~16 GB bfloat16; gated — needs HF token |
-| 1× A100 40 GB | `meta-llama/Llama-3.1-13B-Instruct` | KAITO (vLLM) | ~26 GB bfloat16; gated — needs HF token |
+| 1× A100 40 GB | `microsoft/Phi-3-medium-128k-instruct` | KAITO (vLLM) | ~28 GB float16; non-gated; MIT license |
 | 1× A100 80 GB / H100 | `meta-llama/Llama-3.1-8B-Instruct` | KAITO (vLLM) | Oversized; upgrade to 70B if more GPUs available |
 | 4× A100 80 GB | `meta-llama/Llama-3.1-70B-Instruct` | KAITO (vLLM, TP) | ~168 GB; tensor parallelism; gated |
 
@@ -30,9 +30,9 @@ Estimate how much VRAM a model requires. Values are **weights only** — add 20�
 
 These models are **gated on HuggingFace** and require an access token:
 - `meta-llama/Llama-3.1-8B-Instruct`
-- `meta-llama/Llama-3.1-13B-Instruct`
 - `meta-llama/Llama-3.1-70B-Instruct`
 
 **Non-gated alternatives** (no token required):
 - `microsoft/Phi-3-mini-4k-instruct` (MIT license)
+- `microsoft/Phi-3-medium-128k-instruct` (MIT license)
 - `google/gemma-3-1b-it-qat-q8_0-gguf` (Gemma license)

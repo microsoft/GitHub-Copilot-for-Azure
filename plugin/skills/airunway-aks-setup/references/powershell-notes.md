@@ -14,6 +14,20 @@ This reference provides PowerShell equivalents for commands in steps 1, 4, 5, an
 }
 ```
 
+## GPU Detection (Step 1)
+
+```powershell
+# Extract GPU count and model per node (requires NVIDIA device plugin labels)
+# PowerShell does not need the bash single-quote escaping — pass the jsonpath directly
+kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.status.allocatable.nvidia\.com/gpu}{"\t"}{.metadata.labels.nvidia\.com/gpu\.product}{"\n"}{end}'
+```
+
+> **Note:** If the output shows empty GPU fields, use the fallback:
+
+```powershell
+kubectl describe nodes | Select-String -Pattern "nvidia" -Context 0,2
+```
+
 ## Provider Check (Step 4)
 
 ```powershell
@@ -38,7 +52,7 @@ $token = Read-Host -Prompt "HuggingFace token" -AsSecureString
 $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($token)
 try {
   [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr) |
-    Set-Content -NoNewline -Path "$env:TEMP\hf-token.txt"
+    Set-Content -NoNewline -Encoding UTF8 -Path "$env:TEMP\hf-token.txt"
 } finally {
   [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
 }

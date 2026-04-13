@@ -19,7 +19,7 @@ If a step fails and you need to undo a partial setup, work backwards through the
 
 | What to undo | Command |
 |--------------|---------|
-| Model deployment | `kubectl delete modeldeployment <model-name> -n default` |
-| HuggingFace token secret | `kubectl delete secret hf-token -n default` |
+| Model deployment | `kubectl delete modeldeployment <model-name> -n <namespace>` |
+| HuggingFace token secret | `kubectl delete secret hf-token -n <namespace>` |
 | Provider | `cd providers/<provider> && make undeploy` (from repo root) |
 | Controller | `make controller-undeploy && make controller-uninstall` (from repo root) |
