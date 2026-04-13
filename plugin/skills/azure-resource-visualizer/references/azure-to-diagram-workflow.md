@@ -4,6 +4,8 @@ Discover live Azure resources and generate a Draw.io architecture diagram with A
 
 ---
 
+> ⚠️ **Output rule:** Always save the diagram to a file — never dump raw XML in chat.
+
 ## Steps
 
 | # | Action | Details |
@@ -16,7 +18,7 @@ Discover live Azure resources and generate a Draw.io architecture diagram with A
 | 6 | **Enrich Properties** | For key resources (VMs, App Services, databases), retrieve additional properties (SKU, tier, runtime) using MCP tools or `az resource show`. |
 | 7 | **Infer Relationships** | Map connections: VNet containment, subnet membership, private endpoints, App Service → database connections, identity assignments. Build the resource model per [azure-resource-model.md](azure-resource-model.md). |
 | 8 | **Generate Draw.io Diagram** | Build Draw.io XML following [drawio-diagram-conventions.md](drawio-diagram-conventions.md). Look up every icon in [azure-stencil-mapping.json](azure-stencil-mapping.json). |
-| 9 | **Save Output** | Create a folder and save as `<resource-group>-architecture.drawio`. If Draw.io MCP is available, use it for programmatic creation. Present resource summary in chat. |
+| 9 | **Save Output** | **HARD GATE** — Create a subdirectory named `<resource-group>-architecture/` and save `<resource-group>-architecture.drawio` inside it. Never save directly in the current directory. Do not present the diagram as complete until the file is confirmed saved. |
 
 ## Output Budget Rules
 
