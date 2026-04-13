@@ -124,6 +124,7 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 | **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | `gemini-extension.json` | ✅ Onboarded|
 | **Cursor** | 🔜 | 🔜 | 🔜 | `.cursor-plugin/marketplace.json` | 🔜 WIP |
 | **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | TBD | 🔜 WIP |
+| **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | ⚠️ MCP only |
 
 ## Contributing
 
