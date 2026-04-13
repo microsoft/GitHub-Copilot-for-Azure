@@ -118,22 +118,12 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 | Client | Skills | MCP Servers | Hooks | Manifest | Status |
 |--------|:------:|:-----------:|:-----:|----------|--------|
 | **Copilot CLI** | ✅ | ✅ | ✅ Custom (`copilot-hooks.json`) | `.plugin/plugin.json` | ✅ Onboarded |
-| **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/plugin.json` | ✅ Onboarded |
+| **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/marketplace.json` | ✅ Onboarded |
 | **VS Code Extension** | ✅ (`.agents` folder) | ✅ | ✅ `hooks/hooks.json` (`.agents` folder) | Extension-based | ✅ Onboarded |
-| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | 🔜 ETA end of April 2026 |
-| **Gemini CLI** | ❌ | ✅ | ❌ Not supported by us | `gemini-extension.json` | ⚠️ MCP only |
-| **Cursor** | 🔜 | 🔜 | 🔜 | `.cursor-plugin/plugin.json` | 🔜 WIP |
+| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | 🔜 Hooks Support ETA - End of April 2026 |
+| **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | `gemini-extension.json` | ✅ Onboarded|
+| **Cursor** | 🔜 | 🔜 | 🔜 | `.cursor-plugin/marketplace.json` | 🔜 WIP |
 | **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | TBD | 🔜 WIP |
-
-### Notes
-
-- **Copilot CLI** supports custom hooks via `copilot-hooks.json` with `${PLUGIN_ROOT}` variable expansion.
-- **Claude Code** uses `hooks/hooks.json` with `${CLAUDE_PLUGIN_ROOT}` — does not support a custom hooks file path in the manifest.
-- **VS Code Extension** installs skills and hooks into a `.agents` folder; uses `hooks/hooks.json`.
-- **IntelliJ** supports skills via the `.agents` folder but the client does not yet support hooks. ETA for hooks support is end of April 2026.
-- **Gemini CLI** only supports MCP servers today. Gemini requires `hooks/hooks.json` (same file as Claude), but the hook attribute names differ between the two clients. Since we cannot ship a single `hooks/hooks.json` that satisfies both formats, we do not support hooks for Gemini at this time.
-- **Cursor** onboarding is in progress (see PR [#1807](https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/1807)).
-- **Codex** skills onboarding is in progress in collaboration with the OpenAI team. Hooks are not supported.
 
 ## Contributing
 
