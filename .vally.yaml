@@ -7,14 +7,15 @@ paths:
 
 suites:
   smoke:
-    description: "Quick routing checks — 1 stimulus per skill, runs: 1"
+    description: "Fast static checks — no LLM calls, <60s"
     filter:
       tier: smoke
+      cost: free
 
   pr:
-    description: "PR gate — smoke routing checks"
+    description: "All free-tier evals for PR gate, <2min"
     filter:
-      tier: smoke
+      cost: free
 
   triggers:
     description: "All routing/trigger evals"
@@ -22,7 +23,7 @@ suites:
       type: trigger
 
   integration:
-    description: "All behavior/integration evals (LLM-backed)"
+    description: "All behavior/integration evals"
     filter:
       type: integration
 
