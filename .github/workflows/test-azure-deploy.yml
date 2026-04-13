@@ -102,6 +102,9 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@c495e71ba59e44bfaaac10a32c8ee90d191ca4a3 # v2
 
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v4
+
       - name: Log in with Azure (Federated Credentials)
         run: |
           azd auth login `
