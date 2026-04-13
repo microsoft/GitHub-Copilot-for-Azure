@@ -12,7 +12,32 @@ const VALIDATION_COMMAND_PATTERNS = [
   /terraform\s+validate/,
 ];
 
+/**
+ * Deployment command patterns that indicate the agent is executing
+ * a deployment rather than stopping at validation. Tests that expect
+ * the agent to terminate at validation can use {@link hasDeploymentCommand}
+ * in `shouldEarlyTerminate` to abort immediately instead of waiting
+ * for a 20-minute timeout.
+ */
+const DEPLOYMENT_COMMAND_PATTERNS = [
+  /azd\s+up\b/,
+  /azd\s+deploy\b/,
+];
+
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
+
+/**
+ * Return all shell commands from agent metadata.
+ */
+function getShellCommands(metadata: AgentMetadata): string[] {
+  return getToolCalls(metadata)
+    .filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName))
+    .map(event => {
+      const data = event.data as Record<string, unknown>;
+      const args = data.arguments as { command?: string } | undefined;
+      return args?.command ?? "";
+    });
+}
 
 /**
  * Check if any shell tool call (powershell or bash) contains a validation command
@@ -22,13 +47,23 @@ const SHELL_TOOL_NAMES = ["powershell", "bash"];
  * once a validation command has been issued, without waiting for deployment.
  */
 export function hasValidationCommand(metadata: AgentMetadata): boolean {
-  const shellCalls = getToolCalls(metadata).filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName));
-  return shellCalls.some(event => {
-    const data = event.data as Record<string, unknown>;
-    const args = data.arguments as { command?: string } | undefined;
-    const cmd = args?.command ?? "";
-    return VALIDATION_COMMAND_PATTERNS.some(pattern => pattern.test(cmd));
-  });
+  return getShellCommands(metadata).some(cmd =>
+    VALIDATION_COMMAND_PATTERNS.some(pattern => pattern.test(cmd)),
+  );
+}
+
+/**
+ * Check if any shell tool call contains a deployment command
+ * (`azd up` or `azd deploy`).
+ *
+ * Use in `shouldEarlyTerminate` alongside {@link hasValidationCommand}
+ * so that tests fail fast when the agent skips validation and jumps
+ * straight to deployment.
+ */
+export function hasDeploymentCommand(metadata: AgentMetadata): boolean {
+  return getShellCommands(metadata).some(cmd =>
+    DEPLOYMENT_COMMAND_PATTERNS.some(pattern => pattern.test(cmd)),
+  );
 }
 
 /**

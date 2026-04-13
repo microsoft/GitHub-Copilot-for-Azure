@@ -16,6 +16,7 @@ import {
 } from "../utils/agent-runner";
 import {
   hasValidationCommand,
+  hasDeploymentCommand,
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
@@ -160,11 +161,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
+
+      const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
+      expect(deploymentCommandRan).toBe(false);
 
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
@@ -177,11 +181,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
+
+      const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
+      expect(deploymentCommandRan).toBe(false);
 
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
@@ -194,11 +201,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
+
+      const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
+      expect(deploymentCommandRan).toBe(false);
 
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
