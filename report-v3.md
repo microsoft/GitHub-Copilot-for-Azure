@@ -2,7 +2,7 @@
 
 ## Background
 
-Earlier this year, our team experimented with adding an insights feature to the Deployment Agent with the goal of generating infra plans that align more closely with how users already build and operate within Azure. Internal results show that insights can provide actionable guidance for the infra planning process, helping to reduce manual editing and align new plans with users' existing Azure environments.
+Earlier this year, our team experimented with adding an insights feature to the Deployment Agent with the goal of generating infra plans that align more closely with how users already build and operate within Azure. In our evaluation, insights modified an average of 7.8 pre-existing resources and 26 properties based on patterns observed in existing infrastructure, with 82.9% of the generated insights being applied to the final plan. An additional 4.6 new resources and 38 properties were added on average. These results show that insights can meaningfully reduce manual editing and align new plans with the user's existing Azure environment.
 
 Now that the infra planning experience has been brought to GitHub Copilot as an agent skill, we're integrating insights into the skill's plan generation process. This document covers the architecture for collecting and deriving insights from Azure Resource Graph data, the key design decisions around implementation approach, and how we plan to test and evaluate the feature's impact on plan quality.
 
@@ -44,6 +44,10 @@ There are no existing MCP tools or APIs that provide ready-to-use insights suita
 
 ARG is the ideal data source because it aggregates resource metadata from all resource providers into a centralized, queryable data store. ARG supports querying resources with complex filtering, grouping and sorting via KQL, and is available across multiple subscriptions, resource groups and tenants. ARG data also removes PII and secrets like keys, which makes it safer for LLMs to handle.
 
+The utility script queries all subscriptions accessible via the user's credential, since ARG natively supports cross-subscription queries in a single request. This gives the broadest view of the user's environment without requiring them to specify which subscriptions to include.
+
+For large environments with many resource groups, the volume of ARG data may exceed what can fit in the subagent's context window. The script will need to truncate or prioritize data in these cases — the specific strategy for this is an open design question that will be explored during implementation.
+
 ### Deriving the Insights
 
 We need to preprocess the ARG data before passing it to the subagent for two reasons. First is to save tokens and reduce context by removing empty configurations and instance-specific configuration. The second is to make it easier for the LLM to comprehend the data by adding things such as property aggregations.
@@ -57,7 +61,7 @@ I recommend the grounded guidance approach as it constrains the output to known-
 
 A few additional grounding constraints worth considering:
 
-- **Scope by resource group**, not subscription. Resource groups represent logical workloads, so insights derived at this level are more relevant and less noisy.
+- **Scope by resource group**, not subscription. Resource groups typically represent logical workloads, so insights derived at this level are more relevant and less noisy. That said, some organisations structure resource groups by resource type or environment rather than by workload — the subagent should account for this when deriving patterns.
 - **Skip instance-specific and generic insights.** The subagent should focus on correlatable patterns — for example, prefer *"Use of managed identities + Key Vault is the recommended pattern for secretless access from Functions/Static Web Apps and for securing model/endpoint credentials"* over something like *"Managed identity used frequently"*.
 
 ### Where Should Insights Live?
@@ -102,7 +106,7 @@ Utility script is the clear winner for several reasons. First, it is a first-cla
 
 ### Invocation & Parallelism
 
-The insights collection process is designed to be independent. Since it only needs the initial user requirement, we can instruct the main agent to spawn the insights subagent in parallel at the start of Phase 1 (research and resource discovery). This means we can generate the insights while the skill completes the remaining research. At the end of Phase 1, the main agent should combine the insights and research to create the list of preliminary resources.
+The insights collection process is designed to be independent. The skill's execution is structured in phases — Phase 1 is the research and resource discovery phase where the agent gathers documentation, WAF guidelines, and Azure best practices. Since insights only need the initial user requirement, we can instruct the main agent to spawn the insights subagent in parallel at the start of Phase 1. This means we can generate the insights while the skill completes the remaining research. At the end of Phase 1, the main agent should combine the insights and research to create the list of preliminary resources.
 
 The insights subagent should also save the insights to a JSON file in the `.azure/` folder so that it can be reused if the user needs to iterate on the infra plan.
 
@@ -180,7 +184,7 @@ The baseline plans and evals only need to be generated once — we can cache the
 
 #### Designing the Rubric to Account for Insights
 
-The current rubric measures plan quality based on best practices and logical correctness. When insights conform to best practices and WAF principles, the plan quality stays the same at best — the rubric won't show an improvement because the plan was already correct without insights. For this reason, the rubric for plan correctness should be kept separate from insights evaluation.
+The current rubric measures plan quality based on best practices and logical correctness. Insights are not intended to make plans objectively better — they make plans more personalised and reduce manual editing by aligning with the user's existing environment. When insights conform to best practices and WAF principles, the plan quality stays the same at best — the rubric won't show an improvement because the plan was already correct without insights. For this reason, the rubric for plan correctness should be kept separate from insights evaluation.
 
 To actually measure the impact of insights, we need a different set of criteria. There are two main areas to evaluate:
 
