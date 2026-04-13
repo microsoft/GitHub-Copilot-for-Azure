@@ -1,10 +1,10 @@
 ---
 name: sensei
-description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compliance using the Ralph loop pattern. WHEN: \"run sensei\", \"sensei help\", \"improve skill\", \"fix frontmatter\", \"skill compliance\", \"frontmatter audit\", \"score skill\", \"check skill tokens\". INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly for counts/checks."
+description: "**WORKFLOW SKILL** — Iteratively improve skill frontmatter compliance using the Ralph loop pattern. WHEN: \"run sensei\", \"sensei help\", \"improve skill\", \"fix frontmatter\", \"skill compliance\", \"frontmatter audit\", \"score skill\", \"check skill tokens\", \"review skill PR\", \"review skill changes\", \"check skill quality\", \"optimize markdown\", \"reduce tokens\", \"create a skill\", \"new skill\", \"write a skill\". INVOKES: token counting tools, test runners, git commands. FOR SINGLE OPERATIONS: use token CLI directly."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.5"
+  version: "1.0.6"
 ---
 
 # Sensei
@@ -27,13 +27,17 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║    Run sensei on <skill-name> --skip-integration  # Fast mode    ║
 ║    Run sensei on <skill1>, <skill2>, ...   # Multiple skills     ║
 ║    Run sensei on all Low-adherence skills  # Batch by score      ║
-║    Run sensei on all skills                # All skills       ║
+║    Run sensei on all skills                # All skills          ║
+║    Review skill <skill-name>               # PR review mode      ║
+║    Create new skill <skill-name>           # Scaffold new skill  ║
 ║                                                                  ║
 ║  EXAMPLES:                                                       ║
 ║    Run sensei on appinsights-instrumentation                     ║
 ║    Run sensei on azure-security --skip-integration               ║
 ║    Run sensei on azure-security, azure-observability             ║
 ║    Run sensei on all Low-adherence skills                        ║
+║    Review skill my-new-skill                                     ║
+║    Create new skill my-azure-feature                             ║
 ║                                                                  ║
 ║  WHAT IT DOES:                                                   ║
 ║    1. READ      - Load skill's SKILL.md, tests, and token count  ║
@@ -94,6 +98,37 @@ Run sensei on my-skill --gepa
 Run sensei on my-skill --gepa --skip-integration
 Run sensei on all skills --gepa
 ```
+
+### Review Mode (PR Review)
+
+When user says "review skill <skill-name>" or "review skill PR" or "check skill quality":
+
+```
+Review skill my-new-skill
+Review skill PR #123
+```
+
+Follow the review workflow from [review-checklist.md](references/review-checklist.md):
+1. **Collect** — Identify changed skill files (SKILL.md, references, tests, scripts)
+2. **Check** — Run each category from the review checklist
+3. **Classify** — Assign severity per [severity-classification.md](references/severity-classification.md)
+4. **Analyze Routing** — Check triggers for conflicts per [routing-analysis.md](references/routing-analysis.md)
+5. **Draft** — Write the review per [output-format.md](references/output-format.md)
+6. **Validate** — Verify suggested fixes are actionable
+
+### Create Mode (New Skill)
+
+When user says "create a skill", "new skill", "write a skill", or "scaffold skill":
+
+```
+Create new skill my-azure-feature
+```
+
+Follow the creation guidelines in [CREATE.md](references/CREATE.md):
+1. Create the directory: `.github/skills/{skill-name}/` or `plugin/skills/{skill-name}/`
+2. Write `SKILL.md` with frontmatter + body using the template in [CREATE.md](references/CREATE.md)
+3. Add `references/` files for detailed content
+4. Run validation: `cd scripts && npm run frontmatter && npm run tokens -- check`
 
 When `--gepa` is used, Step 5 (IMPROVE) is replaced with GEPA evolutionary optimization.
 Instead of template-based improvements, GEPA parses trigger prompt arrays from the existing
@@ -223,8 +258,8 @@ sensei: improve {skill-name} frontmatter
 - [LOOP.md](references/LOOP.md) - Ralph loop workflow details
 - [EXAMPLES.md](references/EXAMPLES.md) - Before/after examples
 - [TOKEN-INTEGRATION.md](references/TOKEN-INTEGRATION.md) - Token budget integration
-
-## Related Skills
-
-- [markdown-token-optimizer](/.github/skills/markdown-token-optimizer) - Token analysis and optimization
-- [skill-authoring](/.github/skills/skill-authoring) - Skill writing guidelines
+- [review-checklist.md](references/review-checklist.md) - PR review checklist
+- [severity-classification.md](references/severity-classification.md) - Finding severity guide
+- [routing-analysis.md](references/routing-analysis.md) - Trigger conflict detection
+- [output-format.md](references/output-format.md) - Review output structure
+- [CREATE.md](references/CREATE.md) - New skill creation guidelines

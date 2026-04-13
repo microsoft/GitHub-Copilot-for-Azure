@@ -256,7 +256,7 @@ _NOTE:_ You can use the "Azure Skill Brainstormer", "Azure Skill Creator", or "S
 - Reference official Microsoft documentation
 - Test your skill thoroughly before submitting
 - **Follow the [Agent Skills Specification](https://agentskills.io/specification)**
-- See [.github/skills/skill-authoring/SKILL.md](.github/skills/skill-authoring/SKILL.md) for detailed guidelines
+- See [.github/skills/sensei/SKILL.md](.github/skills/sensei/SKILL.md) for detailed guidelines
 
 ### Token Management
 
@@ -363,7 +363,7 @@ The bot will comment on your PR with a combined report. Address warnings by:
 3. Removing decorative elements (excessive emojis, redundant headers)
 4. Linking to external documentation instead of duplicating it
 
-See [markdown-token-optimizer](.github/skills/markdown-token-optimizer/SKILL.md) skill for optimization techniques.
+See [sensei](.github/skills/sensei/SKILL.md) for token optimization techniques and skill improvement workflow.
 
 ---
 
