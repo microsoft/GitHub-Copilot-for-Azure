@@ -4,7 +4,7 @@
 # Customize the following before use:
 #   - PROJECT_NAME: Replace "MyApp" with your .csproj name (without extension)
 #   - PORT:         Change EXPOSE port if not 8080
-#   - ASSEMBLY:     Adjust the DLL name in CMD if it differs from the project
+#   - ASSEMBLY:     Adjust the DLL name in ENTRYPOINT if it differs from the project
 #
 # Notes:
 #   - .NET 8+ defaults to port 8080 (ASPNETCORE_HTTP_PORTS), not 80

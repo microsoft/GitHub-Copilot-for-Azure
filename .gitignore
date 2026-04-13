@@ -347,4 +347,4 @@ x86/
 dashboard/.azure/
 dashboard/dist/
 dashboard/**/dist/
-.claude/settings.local.json
+

@@ -96,6 +96,7 @@ The Managed Identity needs the `<db-name> Admin` or a custom PostgreSQL role.
 
 ```python
 # Python — psycopg2 + DefaultAzureCredential
+import psycopg2
 from azure.identity import DefaultAzureCredential
 
 credential = DefaultAzureCredential()
@@ -174,6 +175,7 @@ Role assignment: `Redis Cache Contributor` or custom data-plane role.
 
 ```python
 # Python — redis-py with Azure AD token
+import os
 from azure.identity import DefaultAzureCredential
 import redis
 

@@ -8,7 +8,9 @@ metadata:
   labels:
     app: <app-name>
 spec:
-  # DS010: Minimum 2 replicas for high availability
+  # DS010: Minimum 2 replicas for high availability.
+  # If HPA is enabled, remove this field or set it to the HPA minReplicas value
+  # to prevent kubectl apply from resetting the replica count on each deploy.
   replicas: 2
   selector:
     matchLabels:

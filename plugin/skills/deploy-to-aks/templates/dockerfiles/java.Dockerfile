@@ -3,7 +3,7 @@
 # =============================================================================
 # Customize the following before use:
 #   - JAR_FILE:    Adjust the glob pattern if your build output differs
-#   - PORT:        Change EXPOSE and HEALTHCHECK port if not 8080
+#   - PORT:        Change EXPOSE port if not 8080
 #   - JVM_OPTS:    Tune -Xmx, -Xms, GC flags, etc. via JAVA_OPTS env var
 #
 # Gradle users:

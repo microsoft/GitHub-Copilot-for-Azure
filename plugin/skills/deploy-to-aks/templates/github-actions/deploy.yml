@@ -57,8 +57,9 @@ jobs:
       # -----------------------------------------------------------
       # Validate that no placeholders remain unreplaced
       #
-      #    Checks for __PLACEHOLDER__ patterns in env vars and k8s/
-      #    directory. Fails fast with clear error if any found.
+      #    Checks for __PLACEHOLDER__ and <placeholder> patterns in
+      #    env vars and k8s/ directory. Fails fast with clear error
+      #    if any found.
       # -----------------------------------------------------------
       - name: Validate — no unreplaced placeholders
         run: |
@@ -75,9 +76,16 @@ jobs:
 
           # Check k8s/ directory if it exists
           if [ -d k8s ]; then
+            # __PLACEHOLDER__ style (env var style used in this workflow)
             if grep -rq '__[A-Z_]\+__' k8s/; then
               echo "❌ Placeholders found in k8s/ manifests:"
               grep -rn '__[A-Z_]\+__' k8s/ || true
+              PLACEHOLDERS_FOUND=1
+            fi
+            # <placeholder> style (angle-bracket style used in K8s manifest templates)
+            if grep -rqP '<[a-z][a-z0-9-]*>' k8s/; then
+              echo "❌ Angle-bracket placeholders found in k8s/ manifests:"
+              grep -rnP '<[a-z][a-z0-9-]*>' k8s/ || true
               PLACEHOLDERS_FOUND=1
             fi
           fi

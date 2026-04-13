@@ -14,7 +14,7 @@ Scan for signal files at the project root (and one level deep for monorepos). Ma
 | `Pipfile` | Python | Parse `[packages]` section for the same libraries as above |
 | `pom.xml` | Java | Search for `<artifactId>spring-boot-starter-web</artifactId>` → **Spring Boot**; `<artifactId>quarkus-resteasy</artifactId>` → **Quarkus**; `<artifactId>micronaut-http-server-netty</artifactId>` → **Micronaut** |
 | `build.gradle` / `build.gradle.kts` | Java / Kotlin | Search for `org.springframework.boot` → **Spring Boot**; `io.quarkus` → **Quarkus**; `io.micronaut` → **Micronaut** |
-| `go.mod` | Go | Parse `require` block for: `github.com/gin-gonic/gin` → **Gin**; `github.com/labstack/echo` → **Echo**; `github.com/gofiber/fiber` → **Fiber**; `net/http` (stdlib) → **net/http** |
+| `go.mod` | Go | Parse `require` block for: `github.com/gin-gonic/gin` → **Gin**; `github.com/labstack/echo` → **Echo**; `github.com/gofiber/fiber` → **Fiber**. For `net/http` (stdlib): search `.go` source files for `"net/http"` import — stdlib packages never appear in the `require` block |
 | `*.csproj` | .NET | Search for `<PackageReference Include="Microsoft.AspNetCore.*"` → **ASP.NET Core**; check `<TargetFramework>` for version (e.g. `net8.0`) |
 | `Cargo.toml` | Rust | Parse `[dependencies]` for: `actix-web` → **Actix**; `axum` → **Axum**; `rocket` → **Rocket**; `warp` → **Warp** |
 

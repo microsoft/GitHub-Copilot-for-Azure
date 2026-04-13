@@ -23,8 +23,21 @@ spec:
       app: <app-name>
   policyTypes:
     - Ingress
+    # Uncomment to also restrict egress (recommended for production):
+    # - Egress
   ingress:
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: <ingress-namespace>
+  # Uncomment and customize to restrict egress (e.g., allow only DNS + database):
+  # egress:
+  #   - ports:
+  #       - port: 53
+  #         protocol: UDP
+  #       - port: 53
+  #         protocol: TCP
+  #   - to:
+  #       - namespaceSelector:
+  #           matchLabels:
+  #             kubernetes.io/metadata.name: <database-namespace>
