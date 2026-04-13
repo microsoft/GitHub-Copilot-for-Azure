@@ -1,14 +1,20 @@
-# Skill Insights Integration
+# Skill Insights Integration — Design Document
 
-## Executive Summary
+## Background
 
-Earlier this year, our team experimented with adding insights feature to the Deployment Agent with the goal of generating infra plans that align more closely with how users already build and operate within Azure. Internal results show that insights can provide actionable guidance for the infra planning process, helping to reduce manual editing and align new plans with users' existing Azure environments.
+Earlier this year, our team experimented with adding an insights feature to the Deployment Agent with the goal of generating infra plans that align more closely with how users already build and operate within Azure. Internal results show that insights can provide actionable guidance for the infra planning process, helping to reduce manual editing and align new plans with users' existing Azure environments.
 
-Now that the infra planning experience has been brought to GitHub Copilot as an agent skill, we propose integrating insights into the plan generation process to deliver a more seamless and complete experience.
+Now that the infra planning experience has been brought to GitHub Copilot as an agent skill, we're integrating insights into the skill's plan generation process. This document covers the architecture for collecting and deriving insights from Azure Resource Graph data, the key design decisions around implementation approach, and how we plan to test and evaluate the feature's impact on plan quality.
 
 ## Problem Statement
 
 The current version of the skill generates infra plans based on the user's initial prompt and uses the Azure MCP tools to get resources when necessary. Without information about the user's existing Azure environment, the skill needs to make assumptions and will use default values that align with Azure best practices. This means plans generated will likely require manual editing, as it doesn't consider naming conventions, policies etc.
+
+## What's in Scope
+
+- Collecting and deriving insights from the user's Azure environment
+- Integrating insights into the skill's plan generation process
+- Testing and evaluating the insights feature's impact on plan quality
 
 ## High Level Design
 
@@ -47,7 +53,7 @@ There are two ways we can prompt the subagent:
 1. **Minimal guidance** — Describe the infra planning task and user requirement but give the subagent minimal guidance on what types of insights to generate and how to generate them.
 2. **Grounded guidance** — Provide a list of the types of insights that are important to infra planning, and tips on how it can derive those insights.
 
-I am leaning towards the latter as it constrains the output to known-useful insight categories, and we can focus on generating insights that are most impactful. This is something we should test to measure any quality/time/token differences.
+I recommend the grounded guidance approach as it constrains the output to known-useful insight categories, letting us focus on generating insights that are most impactful. We can compare the two in the evaluation stage.
 
 A few additional grounding constraints worth considering:
 
@@ -111,6 +117,10 @@ If the user is not logged in anywhere, the skill should prompt the user to sign 
 #### Conflicting Insights
 
 When the user's existing environment has bad practices, we don't want to inherit them. We can add an extra validation step to check insights against WAF principles and Azure best practices to identify any hard conflicts. If conflicts are found, we should present them to the user and let them decide whether to follow the existing pattern or the recommended best practice.
+
+#### Sparse Data
+
+When the user's Azure environment has very few resources, the ARG data may not contain enough signal to derive meaningful insights. Rather than setting a hard threshold on resource count, the subagent should only emit insights it has sufficient evidence for. If it can't produce anything useful, it returns empty and the skill proceeds with normal plan generation without insights.
 
 ### User Interaction Flow
 
