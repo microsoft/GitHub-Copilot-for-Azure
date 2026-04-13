@@ -27,29 +27,29 @@ docker push "$($env:ACR_NAME).azurecr.io/$($env:IMAGE)"
 ```bash
 set -euo pipefail
 az group create --name "$RG" --location "$LOCATION"
-# WARNING: The shared key below is sensitive. Avoid logging or echoing it.
 az monitor log-analytics workspace create -g "$RG" -n "${RG}-logs" -l "$LOCATION"
 LOG_ID=$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-logs" --query customerId -o tsv)
-LOG_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "${RG}-logs" --query primarySharedKey -o tsv)
+# Keyless (recommended): avoids handling the shared key entirely
 az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
-  --logs-workspace-id "$LOG_ID" --logs-workspace-key "$LOG_KEY"
-# Alternative: use --logs-destination azure-monitor to avoid fetching the workspace key:
+  --logs-destination azure-monitor --logs-workspace-id "$LOG_ID"
+# Fallback: use shared key if azure-monitor destination is not available
+# LOG_KEY=$(az monitor log-analytics workspace get-shared-keys -g "$RG" -n "${RG}-logs" --query primarySharedKey -o tsv)
 # az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
-#   --logs-destination azure-monitor --logs-workspace-id "$LOG_ID"
+#   --logs-workspace-id "$LOG_ID" --logs-workspace-key "$LOG_KEY"
 ```
 
 ```powershell
 $ErrorActionPreference = 'Stop'
 az group create --name $env:RG --location $env:LOCATION
-# WARNING: The shared key below is sensitive. Avoid logging or echoing it.
 az monitor log-analytics workspace create -g $env:RG -n "$($env:RG)-logs" -l $env:LOCATION
 $logId = az monitor log-analytics workspace show -g $env:RG -n "$($env:RG)-logs" --query customerId -o tsv
-$logKey = az monitor log-analytics workspace get-shared-keys -g $env:RG -n "$($env:RG)-logs" --query primarySharedKey -o tsv
+# Keyless (recommended): avoids handling the shared key entirely
 az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
-  --logs-workspace-id $logId --logs-workspace-key $logKey
-# Alternative: use --logs-destination azure-monitor to avoid fetching the workspace key:
+  --logs-destination azure-monitor --logs-workspace-id $logId
+# Fallback: use shared key if azure-monitor destination is not available
+# $logKey = az monitor log-analytics workspace get-shared-keys -g $env:RG -n "$($env:RG)-logs" --query primarySharedKey -o tsv
 # az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
-#   --logs-destination azure-monitor --logs-workspace-id $logId
+#   --logs-workspace-id $logId --logs-workspace-key $logKey
 ```
 
 ## Phase 3: Secrets & Identity
@@ -141,6 +141,7 @@ az containerapp create --name <app-name> -g $env:RG --environment "$($env:RG)-en
 ## Phase 5: Validate
 
 ```bash
+set -euo pipefail
 FQDN=$(az containerapp show --name <app-name> -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
 curl -I "https://$FQDN/health"
 az containerapp logs show --name <app-name> -g "$RG" --tail 100
