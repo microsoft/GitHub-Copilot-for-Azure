@@ -9,6 +9,9 @@
  * 2. Run `copilot` and authenticate
  */
 
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   useAgentRunner,
   shouldSkipIntegrationTests,
@@ -209,18 +212,32 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("brownfield-dotnet-validate", () => {
     const ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git";
     const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
+    const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
+    const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
+
+    // Clone once and reuse across brownfield tests
+    let cachedCloneDir: string;
+
+    beforeAll(async () => {
+      cachedCloneDir = fs.mkdtempSync(path.join(os.tmpdir(), "aspire-samples-cache-"));
+      await cloneRepo({
+        repoUrl: ASPIRE_SAMPLES_REPO,
+        targetDir: cachedCloneDir,
+        depth: 1,
+        sparseCheckoutPath: [CLIENT_APPS_SPARSE_PATH, ASPIRE_FUNCTIONS_SPARSE_PATH],
+      });
+    });
+
+    afterAll(() => {
+      if (cachedCloneDir) {
+        fs.rmSync(cachedCloneDir, { recursive: true, force: true });
+      }
+    });
 
     test("passes --environment on azd init and sets subscription before provision", () => withTestResult(async () => {
-      const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
-
       const agentMetadata = await agent.run({
         setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: CLIENT_APPS_SPARSE_PATH,
-          });
+          fs.cpSync(cachedCloneDir, workspace, { recursive: true });
         },
         prompt:
           "Please deploy this application to Azure. " +
@@ -251,16 +268,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }), aspireEnvVarTestTimeoutMs);
 
     test("sets AzureWebJobsSecretStorageType for aspire-with-azure-functions", () => withTestResult(async () => {
-      const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
-
       const agentMetadata = await agent.run({
         setup: async (workspace: string) => {
-          await cloneRepo({
-            repoUrl: ASPIRE_SAMPLES_REPO,
-            targetDir: workspace,
-            depth: 1,
-            sparseCheckoutPath: ASPIRE_FUNCTIONS_SPARSE_PATH,
-          });
+          fs.cpSync(cachedCloneDir, workspace, { recursive: true });
         },
         prompt:
           "Please deploy this application to Azure. " +
