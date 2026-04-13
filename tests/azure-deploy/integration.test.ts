@@ -155,7 +155,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // azd auth login
   const FOLLOW_UP_PROMPT = ["Go with recommended options and proceed with Azure deployment."];
   // Static Web Apps (SWA)
-  describe("static-web-apps-deploy", () => {
+  describe("vanilla-static-web-apps-deploy", () => {
     test("creates whiteboard application", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
