@@ -45,6 +45,8 @@ User intent?
 | "can't connect", "RDP", "SSH", "NSG blocking", "reset password", "black screen" | [VM Troubleshooter](workflows/vm-troubleshooter/vm-troubleshooter.md)                   |
 | "capacity reservation", "CRG", "reserve capacity", "guarantee capacity", "associate VM with CRG" | [Capacity Reservation](workflows/capacity-reservation/capacity-reservation.md) |
 
+> **Routing rule:** Always read the matched workflow file before accessing any reference files. The workflow file contains the step-by-step guidance and the reference routing table for the user's request.
+
 ## Workflows
 
 | Workflow                  | Purpose                                                  | References                                                                   |

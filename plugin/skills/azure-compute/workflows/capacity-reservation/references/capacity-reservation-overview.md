@@ -8,13 +8,13 @@ A Capacity Reservation Group (CRG) is a logical container for one or more capaci
 
 ## Constraints
 
-| Constraint                     | Detail                                                                          |
-|--------------------------------|---------------------------------------------------------------------------------|
-| **Region-scoped**              | A CRG and all its reservations must be in the same Azure region                 |
-| **Zone-specific**              | Each reservation targets a specific Availability Zone (or is non-zonal)         |
-| **Subscription-bound**         | CRGs cannot span subscriptions                                                  |
-| **VM size per reservation**    | Each capacity reservation covers exactly one VM size                            |
-| **Billing starts immediately** | You are charged for reserved capacity whether or not VMs are running against it |
+| Constraint                     | Detail                                                                                                     |
+|--------------------------------|------------------------------------------------------------------------------------------------------------|
+| **Region-scoped**              | A CRG and all its reservations must be in the same Azure region                                            |
+| **Zone-specific**              | Each reservation targets a specific Availability Zone (or is non-zonal)                                    |
+| **Subscription-scoped**        | A CRG lives in a single subscription but can be shared with other subscriptions via the `sharing` property |
+| **VM size per reservation**    | Each capacity reservation covers exactly one VM size                                                       |
+| **Billing starts immediately** | You are charged for reserved capacity whether or not VMs are running against it                            |
 
 ## Association and Disassociation
 

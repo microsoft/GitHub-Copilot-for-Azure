@@ -50,6 +50,8 @@ Ask the user for (infer when possible, except where noted):
 
 ### Step 2: Create Capacity Reservation Group and Reservation
 
+> ⚠️ **PowerShell users:** Replace `\` line continuations with backticks (`` ` ``) or collapse commands to a single line.
+
 ```bash
 # Create the CRG
 az capacity reservation group create \
@@ -96,6 +98,6 @@ For operations beyond creation, see the relevant section in the [Capacity Reserv
 | Scenario                             | Action                                                                                                                                                                                        |
 |--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | SKU not available in region/zone     | Run `az vm list-skus --location <region> --size <vm-size> --resource-type virtualMachines -o table`. Suggest alternatives from output                                                         |
-| Quota exceeded                       | Use the [azure-quotas](../../../azure-quotas/SKILL.md) skill to check usage and request an increase                                                                                           |
+| Quota exceeded                       | Use the **azure-quotas** skill to check usage and request an increase                                                                                                                         |
 | Insufficient platform capacity       | Azure lacks physical hardware in the region/zone. Suggest a different zone, region, or VM size                                                                                                |
 | Duplicate SKU + zone in CRG          | Only one reservation per VM size per zone (or per size if non-zonal) is allowed in a CRG. Update the existing reservation's capacity instead                                                  |
