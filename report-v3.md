@@ -36,7 +36,7 @@ Insights are derived from the user's existing Azure environment data. There are 
 
 **Qualitative insights** are architectural patterns such as resource co-occurrence within workloads (e.g., "App Service deployments are consistently paired with Key Vault, VNet, and App Insights"), security posture conventions (e.g., "production workloads use private endpoints and managed identity"), and organizational standards inferred from recurring configurations across resource groups. These need to be derived using an LLM.
 
-For infra planning, there are many more useful qualitative insights compared to quantitative insights.
+For infra planning, there are more applicable qualitative insights compared to quantitative insights.
 
 ### Fetching Data from ARG
 
