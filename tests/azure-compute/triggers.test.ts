@@ -85,20 +85,138 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
-  describe("Should Trigger - VM Troubleshooting", () => {
-    const vmTroubleshootingPrompts: string[] = [
+  describe("Should Trigger - VM Troubleshooting: Unable to RDP", () => {
+    const rdpPrompts: string[] = [
       "I can't connect to my Azure VM via RDP",
-      "SSH connection to my Azure VM is refused",
-      "My Azure VM is unreachable after updating NSG rules",
-      "How do I reset the password on my Azure VM?",
       "RDP to my Azure VM shows a black screen",
-      "I can't SSH into my Azure Linux VM anymore",
-      "Azure VM connectivity issue after reboot",
-      "Troubleshoot why I can't reach my VM on port 3389",
+      "Azure VM RDP connection times out on port 3389",
+      "I get an internal error when trying to RDP to my Azure VM",
     ];
 
-    test.each(vmTroubleshootingPrompts)(
-      'triggers on troubleshooting prompt: "%s"',
+    test.each(rdpPrompts)(
+      'triggers on RDP prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: Unable to SSH", () => {
+    const sshPrompts: string[] = [
+      "SSH connection to my Azure VM is refused",
+      "I can't SSH into my Azure Linux VM anymore",
+      "Permission denied publickey when connecting to Azure VM via SSH",
+      "SSH to my Azure VM hangs, troubleshoot connectivity issue",
+    ];
+
+    test.each(sshPrompts)(
+      'triggers on SSH prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: Network / Firewall", () => {
+    const networkPrompts: string[] = [
+      "My Azure VM is unreachable after updating NSG rules",
+      "Troubleshoot why I can't reach my VM on port 3389",
+      "Azure VM has no public IP and I can't connect",
+      "NSG is blocking connectivity to my Azure VM, troubleshoot port access",
+    ];
+
+    test.each(networkPrompts)(
+      'triggers on network/firewall prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: Firewall Blocking (Guest OS)", () => {
+    const firewallPrompts: string[] = [
+      "Windows Firewall blocking RDP, can't connect to my Azure VM",
+      "iptables is blocking SSH on my Azure Linux VM",
+      "Guest OS firewall blocking, can't connect to my Azure VM",
+    ];
+
+    test.each(firewallPrompts)(
+      'triggers on guest firewall prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: Credential / Auth", () => {
+    const credentialPrompts: string[] = [
+      "How do I reset the password on my Azure VM?",
+      "Credentials did not work, need to reset password on Azure VM",
+      "Permission denied password, troubleshoot Azure VM connectivity",
+      "Azure VM access denied, need to reset password",
+    ];
+
+    test.each(credentialPrompts)(
+      'triggers on credential/auth prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: VM Agent / Tools", () => {
+    const vmAgentPrompts: string[] = [
+      "I need to troubleshoot my Azure VM agent, Run Command is not working",
+      "How do I access Azure Serial Console to troubleshoot connectivity on my VM?",
+      "Azure VM agent not responding, I can't connect via Run Command",
+    ];
+
+    test.each(vmAgentPrompts)(
+      'triggers on VM agent/tools prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: RDP Service / Config", () => {
+    const rdpServicePrompts: string[] = [
+      "Remote Desktop service stopped, can't connect to my Azure VM",
+      "RDP disabled on my Azure VM, troubleshoot connectivity",
+      "RDP port changed from 3389 on my Azure VM, can't connect",
+      "Azure VM RDP certificate expired, troubleshoot connectivity error",
+      "Azure VM licensing error, can't connect via Remote Desktop",
+    ];
+
+    test.each(rdpServicePrompts)(
+      'triggers on RDP service/config prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
+  describe("Should Trigger - VM Troubleshooting: General", () => {
+    const generalPrompts: string[] = [
+      "Azure VM connectivity issue after reboot",
+    ];
+
+    test.each(generalPrompts)(
+      'triggers on general troubleshooting prompt: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
         expect(result.triggered).toBe(true);

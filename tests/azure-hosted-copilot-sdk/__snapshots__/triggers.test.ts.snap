@@ -2,7 +2,7 @@
 
 exports[`azure-hosted-copilot-sdk - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Build, deploy, modify GitHub Copilot SDK apps on Azure. PREFER OVER azure-prepare when codebase contains copilot-sdk markers. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, deploy copilot app, add feature, modify copilot app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry).",
+  "description": "Build, deploy, modify GitHub Copilot SDK apps on Azure. MANDATORY when codebase contains @github/copilot-sdk or CopilotClient — use this skill instead of azure-prepare. PREFER OVER azure-prepare when codebase contains copilot-sdk markers. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, deploy copilot app, add feature, modify copilot app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry).",
   "extractedKeywords": [
     "agents",
     "apps",
@@ -29,6 +29,8 @@ exports[`azure-hosted-copilot-sdk - Trigger Tests Trigger Keywords Snapshot skil
     "hosted",
     "identity",
     "init",
+    "instead",
+    "mandatory",
     "markers",
     "microsoft-foundry",
     "model",
@@ -37,6 +39,8 @@ exports[`azure-hosted-copilot-sdk - Trigger Tests Trigger Keywords Snapshot skil
     "prefer",
     "sdk",
     "sendandwait",
+    "skill",
+    "this",
     "when",
     "without",
     "your",
@@ -72,6 +76,8 @@ exports[`azure-hosted-copilot-sdk - Trigger Tests Trigger Keywords Snapshot skil
   "hosted",
   "identity",
   "init",
+  "instead",
+  "mandatory",
   "markers",
   "microsoft-foundry",
   "model",
@@ -80,6 +86,8 @@ exports[`azure-hosted-copilot-sdk - Trigger Tests Trigger Keywords Snapshot skil
   "prefer",
   "sdk",
   "sendandwait",
+  "skill",
+  "this",
   "when",
   "without",
   "your",
