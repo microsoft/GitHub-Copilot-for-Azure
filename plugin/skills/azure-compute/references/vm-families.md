@@ -25,6 +25,8 @@ Select a VM family by matching the user's workload to the right category. Famili
 | CFD, weather simulation, FEA         | **HPC**               | HB/HC-series (HBv4, HBv5)          | `standardHBv4Family` / `standardHBv5Family` | InfiniBand, high memory bandwidth                     |
 | EDA, large memory HPC                | **HPC**               | HX-series                          | `standardHXFamily`                        | Very large memory capacity                            |
 
+> ⚠️ **Do not normalize quota name casing.** The mixed casing (e.g., `standard` vs `Standard`) matches the exact values returned by `az vm list-usage`. Changing them will break quota lookups.
+
 ## Decision Tree
 
 ```text
