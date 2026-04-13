@@ -39,7 +39,9 @@ Create a **detailed Mermaid diagram** using `graph TB` (top-to-bottom) or `graph
 
 ## Step 4: File Creation
 
-Use [template-architecture.md](../assets/template-architecture.md) as a template and create `[resource-group-name]-architecture.md` with:
+Create a subdirectory in the current working directory named `[resource-group-name]-architecture/`. Never save output files directly in the current directory.
+
+Use [template-architecture.md](../assets/template-architecture.md) as a template and create `[resource-group-name]-architecture/[resource-group-name]-architecture.md` with:
 
 1. **Header**: Resource group name, subscription, region
 2. **Summary**: Brief overview (2-3 paragraphs)

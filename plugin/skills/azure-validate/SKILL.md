@@ -4,7 +4,7 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # Azure Validate
@@ -44,6 +44,7 @@ metadata:
 |---|--------|-----------|
 | 1 | **Load Plan** — Read `.azure/deployment-plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/deployment-plan.md` |
 | 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/deployment-plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/deployment-plan.md` |
+| 2a | **Aspire Functions Pre-Check** *(if applicable)* — If the project uses .NET Aspire with Azure Functions (`AddAzureFunctionsProject` found in AppHost source), verify `AzureWebJobsSecretStorageType` is configured and add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the builder chain in `AppHost.cs` if missing — **must run BEFORE provisioning** | [aspire-functions-secrets.md](references/aspire-functions-secrets.md) |
 | 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
 | 4 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
 | 5 | **Static Role Verification** — Review Bicep/Terraform for correct RBAC role assignments in code | [role-verification.md](references/role-verification.md) |
