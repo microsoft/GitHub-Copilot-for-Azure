@@ -153,7 +153,9 @@ We can use A/B testing with a rubric-based evaluation using LLM-as-a-judge to as
 
 For each dimension, we write a list of criteria that needs to be met. These criteria should use either 0-5 ratings, or binary true/false scales. Research shows that 0-5 scales result in the biggest human-LLM alignment, while binary scales are most robust to noise. Ideally, each criteria would be assessed in a separate LLM call, however, due to the large number of criteria and large size of each infra plan, we will compromise by running each dimension in a new call.
 
-For each evaluation, we run it on 30 golden prompts with 3 repeated runs per prompt to reduce noise. Each plan is graded based on the rubric, and we compute the mean and sample variance across runs. We can then use statistical tests such as Wilcoxon's signed-rank test to determine whether any observed differences between baseline and insights-enabled scores are statistically significant.
+For each evaluation, we run it on 30 golden prompts with 3 repeated runs per prompt to reduce noise. Each plan is graded based on the rubric, and we compute the mean and sample variance across runs. We can then use Wilcoxon's signed-rank test (α = 0.05) to determine whether any observed differences between baseline and insights-enabled scores are statistically significant. With 30 paired observations, the test has sufficient power to detect medium-to-large effects (Cohen's d ≥ 0.5). If the effect size is smaller, we may need to increase the number of golden prompts in future iterations.
+
+Note that because insights make plans more personalised rather than objectively better, we expect the plan-quality rubric scores to remain roughly the same — any statistically significant *regression* would be a red flag, but the absence of improvement is the expected outcome. The insights-specific metrics (impact and conformance scores) are where we expect to see meaningful signal.
 
 ##### Note on Cost
 
