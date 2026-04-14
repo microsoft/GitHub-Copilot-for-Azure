@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: azure-rbac
 
+environment:
+  skills:
+    - "plugin/skills/azure-rbac"
+
 config:
   runs: 5
   timeout: 600
