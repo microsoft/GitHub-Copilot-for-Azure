@@ -4,7 +4,7 @@ description: "Query the integration-test storage account to find why a specific 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Analyze Skill Issues
