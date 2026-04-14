@@ -251,10 +251,10 @@ azd up
 
 azd passes variables to Terraform through `main.tfvars.json` (with `${VAR}` substitution) or
 explicit `TF_VAR_*` environment variables. Define the variable in `variables.tf` and reference
-it in `main.tfvars.json`:
+it in `main.tfvars.json`.
 
+infra/main.tfvars.json — azd substitutes ${VAR} references via envsubst:
 ```json
-// infra/main.tfvars.json — azd substitutes ${VAR} references via envsubst
 {
     "environment_name": "${AZURE_ENV_NAME}",
     "location": "${AZURE_LOCATION}",
@@ -262,8 +262,8 @@ it in `main.tfvars.json`:
 }
 ```
 
+variables.tf — value provided via main.tfvars.json or TF_VAR_database_name:
 ```hcl
-// variables.tf — value provided via main.tfvars.json or TF_VAR_database_name
 variable "database_name" {
   type = string
 }
