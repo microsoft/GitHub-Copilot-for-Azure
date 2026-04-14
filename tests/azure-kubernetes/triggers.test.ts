@@ -55,8 +55,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Enable monitoring for my AKS cluster",
       "Configure AKS upgrade strategy",
       "How do I set up AKS autoscaling?",
-      "AKS cost analysis",
       "Configure AKS cluster autoscaling and node pools",
+
+      // Optimization
+      "Rightsize my AKS pods",
+      "Help me set up AKS spot nodes",
+      "Enable AKS cluster autoscaler to reduce idle nodes",
+      "How do I enable Vertical Pod Autoscaler on AKS?",
     ];
 
     test.each(shouldTriggerPrompts)(

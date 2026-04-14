@@ -76,6 +76,20 @@ az containerapp update \
   --image $ACR_NAME.azurecr.io/myapp:latest
 ```
 
+**PowerShell:**
+```powershell
+$AcrName = terraform output -raw acr_name
+$AppName = terraform output -raw container_app_name
+$RgName = terraform output -raw resource_group_name
+
+az acr build --registry $AcrName --image myapp:latest ./src/api
+
+az containerapp update `
+  --name $AppName `
+  --resource-group $RgName `
+  --image "$AcrName.azurecr.io/myapp:latest"
+```
+
 ## References
 
 - [Verification steps](./verify.md)

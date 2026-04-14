@@ -1,5 +1,37 @@
 # Telemetry tracking hook for Azure Copilot Skills
 # Reads JSON input from stdin, tracks relevant events, and publishes via MCP
+#
+# === Client Format Reference ===
+#
+# Copilot CLI:
+#   - Field names:    camelCase (toolName, sessionId, toolArgs)
+#   - Tool names:     lowercase (skill, view)
+#   - MCP prefix:     azure-<command>  (e.g., azure-documentation)
+#   - Skill prefix:   none (skill name as-is)
+#   - Detection:      no "hook_event_name" field, has "toolArgs" field
+#
+# Claude Code:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     PascalCase (Skill, Read, Edit)
+#   - MCP prefix:     mcp__plugin_azure_azure__<command>  (double underscores)
+#   - Skill prefix:   azure:<skill-name>  (e.g., azure:azure-prepare)
+#   - Detection:      has "hook_event_name", tool_use_id does NOT contain "__vscode"
+#
+# VS Code:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     snake_case (read_file, replace_string_in_file)
+#   - MCP prefix:     mcp_azure_mcp_<command>  (e.g., mcp_azure_mcp_documentation)
+#   - Skill paths:    .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/<name>/SKILL.md          (VS Code)
+#                     .vscode-insiders/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/<name>/SKILL.md (VS Code Insiders)
+#                     .agents/skills/<name>/SKILL.md
+#   - Detection:      has "hook_event_name", tool_use_id contains "__vscode"
+#                     or transcript_path contains "Code"
+#   - Client name:    "Visual Studio Code" (stable) or "Visual Studio Code - Insiders"
+#                     derived from transcript_path (e.g., .../Code - Insiders/User/...)
+#   - Note:           Skills under .agents/skills/ are tracked as "Visual Studio Code" but
+#                     transcript_path may be absent, so stable vs Insiders can only be
+#                     distinguished when skills are called from agent-plugins (which
+#                     includes transcript_path)
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -39,7 +71,7 @@ try {
 }
 
 # Extract fields from hook data
-# Support both Copilot CLI (camelCase) and Claude Code (snake_case) formats
+# Support Copilot CLI (camelCase), Claude Code (snake_case), and VS Code (snake_case) formats
 $toolName = $inputData.toolName
 if (-not $toolName) {
     $toolName = $inputData.tool_name
@@ -50,7 +82,7 @@ if (-not $sessionId) {
     $sessionId = $inputData.session_id
 }
 
-# Get tool arguments (Copilot CLI: toolArgs, Claude Code: tool_input)
+# Get tool arguments (Copilot CLI: toolArgs, Claude Code / VS Code: tool_input)
 $toolInput = $inputData.toolArgs
 if (-not $toolInput) {
     $toolInput = $inputData.tool_input
@@ -58,14 +90,36 @@ if (-not $toolInput) {
 
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
-# Detect client type based on which format was used
-if ($inputData.PSObject.Properties.Name -contains "hook_event_name") {
-    $clientType = "claude-code"
+# Detect client name based on input format
+# VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
+# Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
+# Copilot CLI: has toolName/toolArgs (camelCase), no hook_event_name
+$hasHookEventName = $inputData.PSObject.Properties.Name -contains "hook_event_name"
+$hasToolArgs = $inputData.PSObject.Properties.Name -contains "toolArgs"
+$toolUseId = $inputData.tool_use_id
+$transcriptPath = $inputData.transcript_path
+$isVscodeToolUseId = $toolUseId -and ($toolUseId -match '__vscode')
+# Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
+$isVscodeTranscript = $transcriptPath -and ($transcriptPath -match '[/\\]Code( - Insiders)?[/\\]')
+
+if ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
+    # Detect VS Code variant from transcript_path
+    # Insiders: ...AppData\Roaming\Code - Insiders\User\...
+    # Stable:   ...AppData\Roaming\Code\User\...
+    if ($transcriptPath -match '[/\\]Code - Insiders[/\\]') {
+        $clientName = "Visual Studio Code - Insiders"
+    } else {
+        $clientName = "Visual Studio Code"
+    }
+} elseif ($hasHookEventName) {
+    $clientName = "claude-code"
+} elseif ($hasToolArgs) {
+    $clientName = "copilot-cli"
 } else {
-    $clientType = "copilot-cli"
+    $clientName = "unknown"
 }
 
-# Skip if no tool name found in either format
+# Skip if no tool name found in any format
 if (-not $toolName) {
     Write-Success
 }
@@ -80,6 +134,12 @@ function Get-ToolInputPath {
 
 # === STEP 2: Determine what to track for azmcp ===
 
+# Azure-skills path patterns per client (used for SKILL.md and file-reference matching)
+$pathPatternCopilot = '\.copilot/installed-plugins/azure-skills/azure/skills/'
+$pathPatternClaude = '\.claude/plugins/cache/azure-skills/azure/[0-9.]+/skills/'
+$pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
+$pathPatternAgentsSkills = '\.agents/skills/'
+
 $shouldTrack = $false
 $eventType = $null
 $skillName = $null
@@ -89,9 +149,8 @@ $filePath = $null
 # Check for skill invocation via 'skill'/'Skill' tool
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     $skillName = $toolInput.skill
-    # Claude Code prefixes skill names with the plugin name: "plugin-name:skill-name"
-    # Since this plugin is named "azure", a skill like "azure-prepare" becomes "azure:azure-prepare"
-    # Strip the "azure:" prefix to get the actual skill name (e.g., "azure:azure-prepare" -> "azure-prepare")
+    # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
+    # Strip it to get the actual skill name for the allowlist
     if ($skillName -and $skillName.StartsWith("azure:")) {
         $skillName = $skillName.Substring(6)
     }
@@ -102,15 +161,26 @@ if ($toolName -eq "skill" -or $toolName -eq "Skill") {
 }
 
 # Check for skill invocation (reading SKILL.md files)
-if ($toolName -eq "view") {
+# Copilot CLI: "view", Claude Code: "Read", VS Code: "read_file"
+if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file") {
     $pathToCheck = Get-ToolInputPath
     if ($pathToCheck) {
         # Normalize path: convert to lowercase, replace backslashes, and squeeze consecutive slashes
         $pathLower = $pathToCheck.ToLower() -replace '\\', '/' -replace '/+', '/'
 
-        # Check for SKILL.md pattern (Copilot: .copilot/...skills/; Claude: .claude/...skills/)
-        if ($pathLower -match '\.copilot.*skills.*/skill\.md' -or $pathLower -match '\.claude.*skills.*/skill\.md') {
-            # Normalize path and extract skill name using regex
+        # Check for SKILL.md pattern — only match azure-skills paths (see path patterns above)
+        $isAzureSkillMd = $false
+        if ($pathLower -match "${pathPatternCopilot}[^/]+/skill\.md") {
+            $isAzureSkillMd = $true
+        } elseif ($pathLower -match "${pathPatternClaude}[^/]+/skill\.md") {
+            $isAzureSkillMd = $true
+        } elseif ($pathLower -match "${pathPatternVscodeAgentPlugins}[^/]+/skill\.md") {
+            $isAzureSkillMd = $true
+        } elseif ($pathLower -match "${pathPatternAgentsSkills}[^/]+/skill\.md") {
+            $isAzureSkillMd = $true
+        }
+
+        if ($isAzureSkillMd) {
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
             if ($pathNormalized -match '/skills/([^/]+)/SKILL\.md$') {
                 $skillName = $Matches[1]
@@ -122,33 +192,35 @@ if ($toolName -eq "view") {
 }
 
 # Check for Azure MCP tool invocation
-# Copilot CLI: "mcp_azure_*" or "azure-*" prefixes
-# Claude Code: "mcp__plugin_azure_azure__*" prefix (double underscores)
+# Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
+# Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
+# VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if ($toolName) {
-    if ($toolName.StartsWith("mcp_azure_") -or $toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__")) {
+    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_")) {
         $azureToolName = $toolName
         $eventType = "tool_invocation"
         $shouldTrack = $true
     }
 }
 
-# Capture file path from any tool input (only track files in azure\skills folder)
-# Check both 'path' and 'filePath' properties
-if (-not $filePath) {
+# Capture file path from any tool input (only track files in azure skills folder)
+# Skip if already matched as SKILL.md skill_invocation — SKILL.md is not a valid file-reference
+if (-not $filePath -and -not $skillName) {
     $pathToCheck = Get-ToolInputPath
     if ($pathToCheck) {
         # Normalize path for matching: replace backslashes and squeeze consecutive slashes
         $pathLower = $pathToCheck.ToLower() -replace '\\', '/' -replace '/+', '/'
 
-        # Check if path matches azure skills folder structure
-        # Copilot: .copilot/installed-plugins/azure-skills/azure/skills/...
-        # Claude:  .claude/plugins/cache/azure-skills/azure/<version>/skills/...
-        if ($pathLower -match '\.copilot.*installed-plugins.*azure-skills.*azure.*skills' -or $pathLower -match '\.claude.*plugins.*cache.*azure-skills.*azure.*skills') {
-            # Extract relative path after 'azure/skills/' or 'azure/<version>/skills/'
+        $matchCopilotSkills = $pathLower -match $pathPatternCopilot
+        $matchClaudeSkills = $pathLower -match $pathPatternClaude
+        $matchVscodeAgentPlugins = $pathLower -match $pathPatternVscodeAgentPlugins
+        $matchAgentsSkills = $pathLower -match $pathPatternAgentsSkills
+        if ($matchCopilotSkills -or $matchClaudeSkills -or $matchVscodeAgentPlugins -or $matchAgentsSkills) {
+            # Extract relative path after 'skills/'
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
 
-            if ($pathNormalized -match 'azure/([0-9]+\.[0-9]+\.[0-9]+/)?skills/(.+)$') {
-                $filePath = $Matches[2]
+            if ($pathNormalized -match '(?:azure/(?:[0-9]+\.[0-9]+\.[0-9]+/)?skills|azure-skills/skills|\.agents/skills)/(.+)$') {
+                $filePath = $Matches[1]
 
                 if (-not $shouldTrack) {
                     $shouldTrack = $true
@@ -166,7 +238,7 @@ if ($shouldTrack) {
     $mcpArgs = @(
         "server", "plugin-telemetry",
         "--timestamp", $timestamp,
-        "--client-type", $clientType
+        "--client-name", $clientName
     )
 
     if ($eventType) { $mcpArgs += "--event-type"; $mcpArgs += $eventType }

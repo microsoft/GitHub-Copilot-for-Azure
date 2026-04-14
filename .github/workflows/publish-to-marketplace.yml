@@ -64,7 +64,7 @@ jobs:
         run: |
           CURRENT_VERSION="${{ steps.version.outputs.current }}"
           TARGET_DIR="target-repo/.github/plugins/azure-skills/"
-          for f in "${TARGET_DIR}.claude-plugin/plugin.json" "${TARGET_DIR}.plugin/plugin.json"; do
+          for f in "${TARGET_DIR}.claude-plugin/plugin.json" "${TARGET_DIR}.cursor-plugin/plugin.json" "${TARGET_DIR}.plugin/plugin.json"; do
             if [ -f "$f" ]; then
               jq --arg v "$CURRENT_VERSION" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
               echo "Restored $f to version $CURRENT_VERSION"
@@ -77,6 +77,7 @@ jobs:
         run: |
           VERSION_FILES=(
             ".github/plugins/azure-skills/.claude-plugin/plugin.json"
+            ".github/plugins/azure-skills/.cursor-plugin/plugin.json"
             ".github/plugins/azure-skills/.plugin/plugin.json"
           )
 
@@ -87,7 +88,7 @@ jobs:
           HAS_CONTENT_CHANGES=false
           if [ -n "$CHANGED" ]; then
             # Non-plugin.json changes are always content changes
-            NON_JSON_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' || true)
+            NON_JSON_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.cursor-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' || true)
             if [ -n "$NON_JSON_CHANGES" ]; then
               HAS_CONTENT_CHANGES=true
             fi
@@ -211,23 +212,26 @@ jobs:
           #   --verbose   list changes
           rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
 
-      # 5. Copy plugin.json, .mcp.json, .claude-plugin/plugin.json, skills/, hooks/, and copilot-hooks.json to the repo root
+      # 5. Copy plugin.json, .mcp.json, .claude-plugin/plugin.json, skills/, hooks/, and gemini-extension.json to the repo root
       - name: Copy plugin files to repo root
         run: |
           cp "source-repo/plugin/.plugin/plugin.json" "target-repo/plugin.json"
           cp "source-repo/plugin/.mcp.json" "target-repo/.mcp.json"
-          cp "source-repo/plugin/copilot-hooks.json" "target-repo/copilot-hooks.json"
           mkdir -p "target-repo/.claude-plugin/"
           cp "source-repo/plugin/.claude-plugin/plugin.json" "target-repo/.claude-plugin/plugin.json"
           mkdir -p "target-repo/skills/"
           rsync --archive --delete --verbose "source-repo/plugin/skills/" "target-repo/skills/"
           mkdir -p "target-repo/hooks/"
           rsync --archive --delete --verbose "source-repo/plugin/hooks/" "target-repo/hooks/"
+          cp "source-repo/plugin/gemini-extension.json" "target-repo/gemini-extension.json"
+
+          # Clean up stale copilot-hooks.json from repo root (previously copied there, now lives under hooks/)
+          rm -f "target-repo/copilot-hooks.json"
 
       # 6. Replace repository URLs in synced files
       - name: Replace repository URLs
         run: |
-          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/copilot-hooks.json" "target-repo/.claude-plugin/plugin.json")
+          TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
               if matches=$(grep -rli --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
@@ -244,7 +248,7 @@ jobs:
         run: |
           CURRENT_VERSION="${{ steps.version.outputs.current }}"
           TARGET_DIR="target-repo/.github/plugins/azure-skills/"
-          for f in "${TARGET_DIR}.claude-plugin/plugin.json" "${TARGET_DIR}.plugin/plugin.json" "target-repo/plugin.json" "target-repo/.claude-plugin/plugin.json"; do
+          for f in "${TARGET_DIR}.claude-plugin/plugin.json" "${TARGET_DIR}.cursor-plugin/plugin.json" "${TARGET_DIR}.plugin/plugin.json" "target-repo/plugin.json" "target-repo/.claude-plugin/plugin.json"; do
             if [ -f "$f" ]; then
               jq --arg v "$CURRENT_VERSION" '.version = $v' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
               echo "Restored $f to version $CURRENT_VERSION"
@@ -257,6 +261,7 @@ jobs:
         run: |
           VERSION_FILES=(
             ".github/plugins/azure-skills/.claude-plugin/plugin.json"
+            ".github/plugins/azure-skills/.cursor-plugin/plugin.json"
             ".github/plugins/azure-skills/.plugin/plugin.json"
             "plugin.json"
             ".claude-plugin/plugin.json"
@@ -269,7 +274,7 @@ jobs:
           HAS_CONTENT_CHANGES=false
           if [ -n "$CHANGED" ]; then
             # Non-plugin.json changes are always content changes
-            NON_JSON_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' | grep -v -x 'plugin.json' || true)
+            NON_JSON_CHANGES=$(echo "$CHANGED" | grep -v -F '.claude-plugin/plugin.json' | grep -v -F '.cursor-plugin/plugin.json' | grep -v -F '.plugin/plugin.json' | grep -v -x 'plugin.json' || true)
             if [ -n "$NON_JSON_CHANGES" ]; then
               HAS_CONTENT_CHANGES=true
             fi

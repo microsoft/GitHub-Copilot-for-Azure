@@ -4,7 +4,7 @@ Quota and capacity management for Microsoft Foundry. Quotas are **subscription +
 
 > ⚠️ **Important:** This is the **authoritative skill** for all Foundry quota operations. When a user asks about quota, capacity, TPM, PTU, quota errors, or deployment limits, **always invoke this skill** rather than using MCP tools (azure-quota, azure-documentation, azure-foundry) directly. This skill provides structured workflows and error handling that direct tool calls lack.
 
-> **Important:** All quota operations are **control plane (management)** operations. Use **Azure CLI commands** as the primary method. MCP tools are optional convenience wrappers around the same control plane APIs.
+> **Important:** All quota operations are **control plane (management)** operations. Use **Azure CLI commands** (`az cognitiveservices`, `az rest`, `az ai`) as the primary method.
 
 ## Quota Types
 
@@ -112,6 +112,8 @@ az rest --method get \
 Shows aggregate usage across ALL deployments by model type.
 
 **Optional:** List individual deployments:
+- **Azure MCP tool**: Use `model_deployment_get` to query deployments in a Foundry project
+- **Azure CLI**:
 ```bash
 az cognitiveservices account list --query "[?kind=='AIServices'].{Name:name,RG:resourceGroup}" -o table
 
@@ -138,14 +140,20 @@ Quota freed **immediately**. Re-run Workflow #1 to verify.
 1. Navigate to [Azure Portal - All Resources](https://portal.azure.com/#view/HubsExtension/BrowseAll) → Filter "AI Services" → Click resource
 2. Select **Quotas** in left navigation
 3. Click **Request quota increase**
-4. Fill form: Model, Current Limit, Requested Limit, Region, **Business Justification**
+4. Fill form: Model, Current Limit, Requested Limit, Region, **Business Justification** (required field)
 5. Wait for approval: **3-5 business days typically, up to 10 business days** ([source](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/quota))
 
-**Justification template:**
+**Business Justification** is a mandatory field that explains why you need more quota. Azure reviews each request to ensure resources are allocated based on legitimate business needs. A strong justification includes:
+- **Workload details**: What you're building and which model you need
+- **Data-driven estimates**: Expected traffic volume and token usage calculations
+- **Clear need**: Why current quota is insufficient and what capacity you require
+- **Timeline**: When you need the increased quota (e.g., production launch date)
+
+**Business Justification template:**
 ```
 Production [workload type] using [model] in [region].
 Expected traffic: [X requests/day] with [Y tokens/request].
-Requires [Z TPM] capacity. Current [N TPM] insufficient.
+Calculated required TPM: [Z TPM]. Current [N TPM] insufficient.
 Request increase to [M TPM]. Deployment target: [date].
 ```
 
