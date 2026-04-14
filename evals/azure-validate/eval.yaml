@@ -53,8 +53,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Check if my app is ready to deploy to Azure"
+    prompt: "Check if my app is ready to deploy to Azure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -75,8 +74,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Validate my azure.yaml configuration before deploying"
+    prompt: "Validate my azure.yaml configuration before deploying"
     graders:
       - type: completed
       - type: output-not-matches
@@ -98,8 +96,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Validate my Bicep template before deploying to Azure"
+    prompt: "Validate my Bicep template before deploying to Azure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -120,8 +117,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
+    prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -142,8 +138,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Verify the RBAC role assignments in my Bicep templates before deploying to Azure"
+    prompt: "Verify the RBAC role assignments in my Bicep templates before deploying to Azure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -164,8 +159,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure"
+    prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -202,8 +196,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static whiteboard web app and deploy to Azure."
+    prompt: "Create a static whiteboard web app and deploy to Azure."
     graders:
       - type: completed
       - type: output-not-matches
@@ -230,8 +223,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static portfolio website and deploy to Azure."
+    prompt: "Create a static portfolio website and deploy to Azure."
     graders:
       - type: completed
       - type: output-not-matches
@@ -256,8 +248,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a containerized web application and deploy to Azure Container Apps."
+    prompt: "Create a containerized web application and deploy to Azure Container Apps."
     graders:
       - type: completed
       - type: output-not-matches
@@ -294,8 +285,7 @@ stimuli:
       cost: free
       area: output
     # Environment setup: cloneRepo with sparse checkout samples/client-apps-integration
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
     graders:
       - type: completed
       - type: output-not-matches
@@ -326,8 +316,7 @@ stimuli:
       cost: free
       area: files
     # Environment setup: cloneRepo with sparse checkout samples/aspire-with-azure-functions
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
     graders:
       - type: completed
       - type: output-not-matches

@@ -59,8 +59,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Prepare my application for Azure deployment and set up the infrastructure"
+    prompt: "Prepare my application for Azure deployment and set up the infrastructure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -81,8 +80,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
+    prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
     graders:
       - type: completed
       - type: output-not-matches
@@ -103,8 +101,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Prepare my web app for Azure and verify it works locally before deploying"
+    prompt: "Prepare my web app for Azure and verify it works locally before deploying"
     graders:
       - type: completed
       - type: output-not-matches
@@ -125,8 +122,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Prepare my application for Azure deployment and check subscription policies for compliance"
+    prompt: "Prepare my application for Azure deployment and check subscription policies for compliance"
     graders:
       - type: completed
       - type: output-not-matches
@@ -147,8 +143,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
+    prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
     graders:
       - type: completed
       - type: output-not-matches
@@ -169,8 +164,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
+    prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
     graders:
       - type: completed
       - type: output-not-matches
@@ -191,8 +185,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
     graders:
       - type: completed
       - type: output-not-matches
@@ -213,8 +206,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure"
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -235,8 +227,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions"
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions"
     graders:
       - type: completed
       - type: output-not-matches
@@ -257,8 +248,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create an Azure Functions app with a timer trigger"
+    prompt: "Create an Azure Functions app with a timer trigger"
     graders:
       - type: completed
       - type: output-not-matches
@@ -283,8 +273,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -305,8 +294,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -331,8 +319,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region."
+    prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -353,8 +340,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region."
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -379,8 +365,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -401,8 +386,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -423,8 +407,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -449,8 +432,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region."
+    prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -471,8 +453,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region."
+    prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -497,8 +478,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -519,8 +499,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -545,8 +524,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -567,8 +545,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -593,8 +570,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -615,8 +591,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -637,8 +612,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -663,8 +637,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -685,8 +658,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -707,8 +679,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -729,8 +700,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Deploy a new Azure API Management instance for my application"
+    prompt: "Deploy a new Azure API Management instance for my application"
     graders:
       - type: completed
       - type: output-not-matches
@@ -763,8 +733,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static whiteboard web app and deploy to Azure."
+    prompt: "Create a static whiteboard web app and deploy to Azure."
     graders:
       - type: completed
       - type: output-not-matches
@@ -792,8 +761,7 @@ stimuli:
       tier: full
       cost: free
       area: files
-    input:
-      prompt: "Create a simple todo web app and deploy to Azure."
+    prompt: "Create a simple todo web app and deploy to Azure."
     graders:
       - type: completed
       - type: output-not-matches
@@ -826,8 +794,7 @@ stimuli:
       tier: full
       cost: free
       area: files
-    input:
-      prompt: "Create a simple todo web app and deploy to Azure with Terraform as the infrastructure provider."
+    prompt: "Create a simple todo web app and deploy to Azure with Terraform as the infrastructure provider."
     graders:
       - type: completed
       - type: output-not-matches
@@ -857,8 +824,7 @@ stimuli:
       tier: full
       cost: free
       area: files
-    input:
-      prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates."
+    prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates."
     graders:
       - type: completed
       - type: output-not-matches
@@ -899,8 +865,7 @@ stimuli:
       cost: free
       area: files
     # Environment setup: cloneRepo with sparse checkout samples/aspire-with-azure-functions
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
     graders:
       - type: completed
       - type: output-not-matches
@@ -941,8 +906,7 @@ stimuli:
       cost: free
       area: files
     # Environment setup: cloneRepo with sparse checkout samples/container-build
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
     graders:
       - type: completed
       - type: output-not-matches
@@ -979,8 +943,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment. Use the eastus2 region and my current subscription."
+    prompt: "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment. Use the eastus2 region and my current subscription."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1019,8 +982,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
+    prompt: "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
     graders:
       - type: completed
       - type: output-not-matches
