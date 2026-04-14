@@ -16,6 +16,10 @@ tags:
   type: integration
   skill: azure-aigateway
 
+environment:
+  skills:
+    - plugin/skills/azure-aigateway
+
 config:
   runs: 5
   timeout: 600

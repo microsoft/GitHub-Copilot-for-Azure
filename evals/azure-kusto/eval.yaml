@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: azure-kusto
 
+environment:
+  skills:
+    - plugin/skills/azure-kusto
+
 config:
   runs: 5
   timeout: 600

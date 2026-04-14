@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: azure-ai
 
+environment:
+  skills:
+    - plugin/skills/azure-ai
+
 config:
   runs: 5
   timeout: 600

@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: azure-storage
 
+environment:
+  skills:
+    - plugin/skills/azure-storage
+
 config:
   runs: 5
   timeout: 600
