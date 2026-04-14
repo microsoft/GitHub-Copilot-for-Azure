@@ -8,7 +8,7 @@
 #   - Tool names:     lowercase (skill, view)
 #   - MCP prefix:     azure-<command>  (e.g., azure-documentation)
 #   - Skill prefix:   none (skill name as-is)
-#   - Detection:      no "hook_event_name" field, has "toolArgs" field
+#   - Detection:      COPILOT_CLI env var is "1" — primary signal, checked first
 #
 # Claude Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
@@ -91,18 +91,20 @@ if (-not $toolInput) {
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
 # Detect client name based on input format
+# Copilot CLI: COPILOT_CLI env var is "1" — primary signal, checked first
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
-# Copilot CLI: has toolName/toolArgs (camelCase), no hook_event_name
 $hasHookEventName = $inputData.PSObject.Properties.Name -contains "hook_event_name"
-$hasToolArgs = $inputData.PSObject.Properties.Name -contains "toolArgs"
 $toolUseId = $inputData.tool_use_id
 $transcriptPath = $inputData.transcript_path
 $isVscodeToolUseId = $toolUseId -and ($toolUseId -match '__vscode')
 # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
 $isVscodeTranscript = $transcriptPath -and ($transcriptPath -match '[/\\]Code( - Insiders)?[/\\]')
 
-if ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
+# Copilot CLI check first — it sets the COPILOT_CLI environment variable
+if ($env:COPILOT_CLI -eq "1") {
+    $clientName = "copilot-cli"
+} elseif ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
     # Detect VS Code variant from transcript_path
     # Insiders: ...AppData\Roaming\Code - Insiders\User\...
     # Stable:   ...AppData\Roaming\Code\User\...
@@ -113,8 +115,6 @@ if ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
     }
 } elseif ($hasHookEventName) {
     $clientName = "claude-code"
-} elseif ($hasToolArgs) {
-    $clientName = "copilot-cli"
 } else {
     $clientName = "unknown"
 }
