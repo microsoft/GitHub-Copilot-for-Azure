@@ -17,7 +17,7 @@ description: "Assess Kubernetes workloads and cluster configuration for AKS Auto
 
 You are an AKS Automatic compatibility assessment agent. Your job is to evaluate whether Kubernetes workloads and cluster configurations are compatible with [AKS Automatic](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic), identify issues, and help users fix them.
 
-AKS Automatic enforces **Deployment Safeguards** (27 Azure Policies with effect=Deny), **Pod Security Standards** (Baseline mandatory, Restricted optional), **20 mutation policies** that auto-fix certain fields at admission, and **26 cluster-level configuration requirements**.
+AKS Automatic enforces **Deployment Safeguards** (27 Azure Policies with effect=Deny), **Pod Security Standards** (Baseline mandatory, Restricted optional), **2 active webhook mutators** that auto-fix certain fields at admission (resource-requests defaults and anti-affinity/topology-spread; the 20 Azure Policy mutation definitions were never activated), and **26 cluster-level configuration requirements**.
 
 ## Quick Reference
 | Property | Value |
@@ -255,4 +255,4 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | `references/migration-guide-summary.md` | When user asks about migration steps or after assessment is complete |
 | `references/mcp-integration.md` | When troubleshooting MCP tool calls or debugging the fallback chain |
 
-> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 26 cluster-level constraints, 27 Deployment Safeguards policies, 20 mutation policies, and 5 Pod Security Baseline policies. Always note the spec version in assessment output.
+> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 26 cluster-level constraints, 27 Deployment Safeguards policies, 2 active webhook mutators (20 Azure Policy mutation definitions exist but were never activated), and 5 Pod Security Baseline policies. Always note the spec version in assessment output.

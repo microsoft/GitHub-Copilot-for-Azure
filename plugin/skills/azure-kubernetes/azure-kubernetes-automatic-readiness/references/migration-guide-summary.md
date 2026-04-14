@@ -96,7 +96,7 @@ No manual setup needed for these — show this list when user asks "what do I ge
 | Node Auto Provisioning (NAP) | Replaces cluster autoscaler; right-sizes node pools automatically |
 | Vertical Pod Autoscaler (VPA) | Auto-tunes resource requests after deployment |
 | Azure Monitor Container Insights | Logs, metrics, and dashboards out of the box |
-| Deployment Safeguards | 27 deny policies + 20 mutation policies enforced at admission |
+| Deployment Safeguards | 27 deny policies + 2 active webhook mutators at admission (resource-requests defaults + anti-affinity/topology-spread; 20 Azure Policy mutation definitions exist but were never activated) |
 | Pod Security Standards (Baseline) | Enforced cluster-wide; Restricted available opt-in |
 | Managed OIDC Issuer | Required for workload identity |
 | Azure Key Vault CSI Driver | Secret injection without static credentials |
