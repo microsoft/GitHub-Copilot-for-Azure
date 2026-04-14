@@ -173,7 +173,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   // Track message deltas to reconstruct full messages
   const messageDeltas: Record<string, string> = {};
   const reasoningDeltas: Record<string, string> = {};
-  const toolResults: Record<string, { success: boolean; content?: string; error?: string }> = {};
+  const toolResults: Record<string, { success: boolean; timestamp: string; content?: string; error?: string; }> = {};
 
   // First pass: collect all tool results
   for (const event of agentMetadata.events) {
@@ -183,6 +183,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
       const error = event.data.error as { message?: string } | undefined;
       toolResults[toolCallId] = {
         success: event.data.success as boolean,
+        timestamp: event.timestamp,
         content: result?.content,
         error: error?.message
       };
@@ -260,6 +261,8 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
           // Add tool response if available
           const result = toolResults[toolCallId];
           if (result) {
+            const durationSec = (new Date(result.timestamp).getTime() - new Date(event.timestamp).getTime()) / 1000;
+            lines.push(`duration: ${durationSec.toFixed(3)} sec`);
             if (result.success && result.content) {
               let content = result.content;
               if (content.length > 500) {

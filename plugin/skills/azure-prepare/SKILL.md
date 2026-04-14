@@ -4,7 +4,11 @@ description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.ya
 license: MIT
 metadata:
   author: Microsoft
+<<<<<<< 20260413-Issue-1695
   version: "1.1.15"
+=======
+  version: "1.1.14"
+>>>>>>> main
 ---
 
 # Azure Prepare
