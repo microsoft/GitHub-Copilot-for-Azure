@@ -73,8 +73,26 @@ Every agent source folder should keep Foundry-specific state under `.foundry/`:
 
 ## Agent: Setup References
 
-- [Standard Agent Setup](references/standard-agent-setup.md) - Standard capability-host setup with customer-managed data, search, and AI Services resources.
-- [Private Network Standard Agent Setup](references/private-network-standard-agent-setup.md) - Standard setup with VNet isolation and private endpoints.
+Choose the correct infrastructure template based on the user's networking and identity requirements:
+
+| Template | Networking | Identity | APIM | MCP Subnet | Status | Reference |
+|----------|-----------|----------|------|------------|--------|-----------|
+| Standard (public) | Public | System-assigned | ❌ | ❌ | GA | [Standard Agent Setup](references/standard-agent-setup.md) |
+| Private Basic (no agents) | Private (VNet + PE) | System-assigned | ❌ | ❌ | GA | [Private Network Basic](references/private-network-basic.md) |
+| Private Standard | Private (BYO VNet) | System-assigned | ❌ | ❌ | GA | [Private Network Standard Agent Setup](references/private-network-standard-agent-setup.md) |
+| Private Standard + APIM | Private (BYO VNet) | System-assigned | ✅ | ❌ | **Preview** | [Private Network APIM Agent Setup](references/private-network-standard-agent-apim-setup.md) |
+| Private Standard + UAI | Private (BYO VNet) | **User-assigned** | ❌ | ❌ | GA | [Private Network UAI Agent Setup](references/private-network-uai-agent-setup.md) |
+| Managed VNet | **Azure-managed VNet** | System-assigned | ❌ | ❌ | **Preview** | [Managed Virtual Network Agent Setup](references/managed-virtual-network-agent-setup.md) |
+| Hybrid Private | Private backend, optional public Foundry | System-assigned | ❌ | ✅ | GA | [Hybrid Private Resources Agent Setup](references/hybrid-private-resources-agent-setup.md) |
+
+**Routing logic — ask these questions in order:**
+
+1. **Does the user need agent workloads?** No → [Private Network Basic](references/private-network-basic.md). Yes → continue.
+2. **Does the user need VNet isolation?** No → [Standard Agent Setup](references/standard-agent-setup.md). Yes → continue.
+3. **Does the user want Azure-managed VNet (no BYO VNet)?** Yes → [Managed Virtual Network Agent Setup](references/managed-virtual-network-agent-setup.md). No → continue.
+4. **Does the user need MCP servers on the VNet or optional public Foundry access?** Yes → [Hybrid Private Resources Agent Setup](references/hybrid-private-resources-agent-setup.md). No → continue.
+5. **Does the user need APIM integration?** Yes → [Private Network APIM Agent Setup](references/private-network-standard-agent-apim-setup.md). No → continue.
+6. **Does the user need a user-assigned managed identity?** Yes → [Private Network UAI Agent Setup](references/private-network-uai-agent-setup.md). No → [Private Network Standard Agent Setup](references/private-network-standard-agent-setup.md).
 
 ## Agent: Project Context Resolution
 
