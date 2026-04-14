@@ -1,5 +1,5 @@
 import { type AgentMetadata } from "../utils/agent-runner";
-import { getToolCalls } from "../utils/evaluate";
+import { getToolCalls, matchesCommand } from "../utils/evaluate";
 
 /**
  * Validation command patterns that indicate the agent is performing
@@ -24,21 +24,6 @@ const DEPLOYMENT_COMMAND_PATTERNS = [
   /azd\s+deploy\b/,
 ];
 
-const SHELL_TOOL_NAMES = ["powershell", "bash"];
-
-/**
- * Return all shell commands from agent metadata.
- */
-function getShellCommands(metadata: AgentMetadata): string[] {
-  return getToolCalls(metadata)
-    .filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName))
-    .map(event => {
-      const data = event.data as Record<string, unknown>;
-      const args = data.arguments as { command?: string } | undefined;
-      return args?.command ?? "";
-    });
-}
-
 /**
  * Check if any shell tool call (powershell or bash) contains a validation command
  * (azd provision, az deployment ... validate, or terraform validate).
@@ -47,9 +32,7 @@ function getShellCommands(metadata: AgentMetadata): string[] {
  * once a validation command has been issued, without waiting for deployment.
  */
 export function hasValidationCommand(metadata: AgentMetadata): boolean {
-  return getShellCommands(metadata).some(cmd =>
-    VALIDATION_COMMAND_PATTERNS.some(pattern => pattern.test(cmd)),
-  );
+  return VALIDATION_COMMAND_PATTERNS.some(p => matchesCommand(metadata, p));
 }
 
 /**
@@ -61,9 +44,7 @@ export function hasValidationCommand(metadata: AgentMetadata): boolean {
  * straight to deployment.
  */
 export function hasDeploymentCommand(metadata: AgentMetadata): boolean {
-  return getShellCommands(metadata).some(cmd =>
-    DEPLOYMENT_COMMAND_PATTERNS.some(pattern => pattern.test(cmd)),
-  );
+  return DEPLOYMENT_COMMAND_PATTERNS.some(p => matchesCommand(metadata, p));
 }
 
 /**
