@@ -20,6 +20,10 @@ tags:
   type: integration
   skill: azure-enterprise-infra-planner
 
+environment:
+  skills:
+    - plugin/skills/azure-enterprise-infra-planner
+
 config:
   runs: 1
   timeout: 600
