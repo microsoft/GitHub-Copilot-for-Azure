@@ -99,7 +99,8 @@ clusterConstraints:
     required: SystemAssigned
     fix: "Day-0 decision for managed VNet clusters."
 
-  # -- Security --  - id: cluster-image-cleaner
+  # -- Security --
+  - id: cluster-image-cleaner
     severity: requiresChanges
     field: securityProfile.imageCleaner.enabled
     required: true

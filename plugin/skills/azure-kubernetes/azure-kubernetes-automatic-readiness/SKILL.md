@@ -24,7 +24,7 @@ AKS Automatic enforces **Deployment Safeguards** (27 Azure Policies with effect=
 |----------|-------|
 | Best for | AKS Automatic migration readiness and manifest validation |
 | MCP Tools | `mcp_azure_mcp_aks` |
-| CLI | `az aks automatic assess` |
+| CLI | `az aks automatic assess` (preview: `api-version=2026-04-01-preview`) |
 | Related skills | azure-kubernetes (cluster creation), azure-diagnostics (live troubleshooting), azure-validate (readiness checks) |
 
 ## When to Use This Skill
@@ -244,7 +244,7 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | HTTP 403 on `assessAutomaticCompatibility` | Missing permission | Ensure caller has `Microsoft.ContainerService/managedClusters/assessAutomaticCompatibility/action` |
 | API returns HTTP 202 | Large cluster (500+ workloads) — async operation | Poll the `Location` header URL using `Retry-After` interval |
 | Helm chart uses Go templating — cannot evaluate | Template values not resolved | Ask user for rendered output (`helm template`) or values files |
-| Constraint spec version mismatch | Skill bundles spec v1.0.0 (2026-03-15) | Note version in output; recommend re-running after spec update |
+| Constraint spec version mismatch | Skill bundles spec v1.1.1 (2026-03-15) | Note version in output; recommend re-running after spec update |
 
 ## Reference Files
 
@@ -255,4 +255,4 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | `references/migration-guide-summary.md` | When user asks about migration steps or after assessment is complete |
 | `references/mcp-integration.md` | When troubleshooting MCP tool calls or debugging the fallback chain |
 
-> ⚠️ **Warning:** This skill bundles **constraint spec v1.0.0** (2026-03-15), covering 26 cluster-level constraints, 27 Deployment Safeguards policies, 20 mutation policies, and 5 Pod Security Baseline policies. Always note the spec version in assessment output.
+> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 26 cluster-level constraints, 27 Deployment Safeguards policies, 20 mutation policies, and 5 Pod Security Baseline policies. Always note the spec version in assessment output.
