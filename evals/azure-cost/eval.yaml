@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: azure-cost
 
+environment:
+  skills:
+    - "plugin/skills/azure-cost"
+
 config:
   runs: 3
   timeout: 600
