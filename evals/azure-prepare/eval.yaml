@@ -26,6 +26,10 @@ tags:
   type: integration
   skill: azure-prepare
 
+environment:
+  skills:
+    - plugin/skills/azure-prepare
+
 config:
   runs: 3
   timeout: 600
