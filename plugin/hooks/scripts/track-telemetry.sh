@@ -10,7 +10,7 @@
 #   - Tool names:     lowercase (skill, view)
 #   - MCP prefix:     azure-<command>  (e.g., azure-documentation)
 #   - Skill prefix:   none (skill name as-is)
-#   - Detection:      COPILOT_CLI env var is "1" — primary signal, checked first
+#   - Detection:      COPILOT_CLI env var is "1" (>=0.0.421); fallback: "toolArgs" without "hook_event_name" (<0.0.421)
 #
 # Claude Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
@@ -128,7 +128,8 @@ fi
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Detect client name based on input format
-# Copilot CLI: COPILOT_CLI env var is "1" — primary signal, checked first
+# Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
+# Copilot CLI (<0.0.421):  has "toolArgs" field without "hook_event_name" — backward compat fallback
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
 if [ "$COPILOT_CLI" = "1" ]; then
@@ -151,6 +152,10 @@ elif echo "$rawInput" | grep -q '"hook_event_name"'; then
     else
         clientName="claude-code"
     fi
+elif echo "$rawInput" | grep -q '"toolArgs"'; then
+    # Backward compat: old Copilot CLI (<0.0.421) sent toolArgs without hook_event_name
+    # Claude Code never sends toolArgs, so this is unambiguous
+    clientName="copilot-cli"
 else
     clientName="unknown"
 fi
