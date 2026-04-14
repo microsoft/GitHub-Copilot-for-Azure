@@ -19,6 +19,10 @@ tags:
   type: integration
   skill: azure-upgrade
 
+environment:
+  skills:
+    - plugin/skills/azure-upgrade
+
 config:
   runs: 1
   timeout: 600

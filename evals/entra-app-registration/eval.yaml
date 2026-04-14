@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: entra-app-registration
 
+environment:
+  skills:
+    - plugin/skills/entra-app-registration
+
 config:
   runs: 5
   timeout: 600
