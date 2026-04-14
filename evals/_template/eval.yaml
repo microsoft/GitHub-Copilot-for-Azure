@@ -24,6 +24,10 @@ tags:
   type: integration
   skill: your-skill-name
 
+environment:
+  skills:
+    - "plugin/skills/azure-deploy"
+
 config:
   runs: 5
   timeout: 600

@@ -26,6 +26,10 @@ tags:
   type: integration
   skill: appinsights-instrumentation
 
+environment:
+  skills:
+    - "plugin/skills/appinsights-instrumentation"
+
 config:
   runs: 5
   timeout: 600

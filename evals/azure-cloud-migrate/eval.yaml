@@ -27,6 +27,10 @@ tags:
   type: integration
   skill: azure-cloud-migrate
 
+environment:
+  skills:
+    - "plugin/skills/azure-cloud-migrate"
+
 config:
   runs: 1
   timeout: 2700
