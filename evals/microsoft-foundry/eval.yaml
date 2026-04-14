@@ -18,7 +18,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/microsoft-foundry
+    - ../../plugin/skills/microsoft-foundry
 
 config:
   runs: 5

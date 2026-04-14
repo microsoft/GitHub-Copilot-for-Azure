@@ -17,7 +17,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-ai
+    - ../../plugin/skills/azure-ai
 
 config:
   runs: 5

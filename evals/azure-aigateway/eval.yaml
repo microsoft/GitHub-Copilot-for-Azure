@@ -18,7 +18,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-aigateway
+    - ../../plugin/skills/azure-aigateway
 
 config:
   runs: 5

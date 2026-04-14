@@ -21,7 +21,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-upgrade
+    - ../../plugin/skills/azure-upgrade
 
 config:
   runs: 1
