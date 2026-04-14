@@ -54,20 +54,29 @@ Ask the user for (infer when possible, except where noted):
 
 ```bash
 # Create the CRG
+# Zonal (specify one or more zones the group will support):
 az capacity reservation group create \
   -g <resource-group> \
   -n <crg-name> \
   -l <region> \
-  --zones <zone>           # optional — omit if non-zonal
+  --zones 1 2 3
+
+# Non-zonal (omit --zones for regional-only reservations):
+az capacity reservation group create \
+  -g <resource-group> \
+  -n <crg-name> \
+  -l <region>
 
 # Create the reservation
+# If the CRG is zonal, specify --zone matching one of the group's zones.
+# If the CRG is non-zonal, omit --zone.
 az capacity reservation create \
   -g <resource-group> \
   -c <crg-name> \
   -n <reservation-name> \
   --sku <vm-size> \
   --capacity <quantity> \
-  --zone <zone>
+  --zone <zone>            # omit if CRG is non-zonal
 ```
 
 ### Step 3: Verify Reservation

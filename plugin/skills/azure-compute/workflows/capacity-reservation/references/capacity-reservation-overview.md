@@ -33,7 +33,7 @@ See [association-disassociation.md](association-disassociation.md) for how to as
 
 ## Finding Valid CRGs for a VM
 
-To associate a VM with a CRG, the CRG must contain a capacity reservation that matches the VM's **size**, **region**, and **zone** (if zonal). Since CRGs are listed per-resource-group via CLI, discovering the right one across multiple resource groups requires querying at the subscription level.
+To associate a VM with a CRG, the CRG must contain a capacity reservation that matches the VM's **size**, **region**, and **zone** (if zonal). While `az capacity reservation group list` can enumerate CRGs at the subscription level, filtering down to matching reservations across many groups is inefficient. Azure Resource Graph is recommended for cross-resource-group discovery.
 
 ### Option 1: Azure Resource Graph (recommended)
 
