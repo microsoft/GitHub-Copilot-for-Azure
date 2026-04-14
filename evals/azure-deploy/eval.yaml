@@ -1,0 +1,1316 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
+# Migrated from: tests/azure-deploy/integration.test.ts
+# Source helpers: tests/azure-deploy/utils.ts (hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment)
+name: azure-deploy-integration-eval
+description: "Integration evaluation for azure-deploy skill — migrated from Jest integration tests"
+skill: azure-deploy
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 3600  # 60 min — matches deployTestTimeoutMs / brownfieldTestTimeoutMs
+  parallel: false
+  executor: copilot-sdk
+  model: claude-sonnet-4-20250514
+
+metrics:
+  - name: task_completion
+    weight: 0.4
+    threshold: 0.8
+    description: Did the skill complete the deployment task?
+  - name: trigger_accuracy
+    weight: 0.3
+    threshold: 0.8
+    description: Does the skill trigger on deploy prompts?
+  - name: behavior_quality
+    weight: 0.3
+    threshold: 0.8
+    description: Deploy links present, correct files generated, no fatal errors
+
+graders:
+  # Global safety graders applied to every stimulus
+  - type: completed
+  - type: regex
+    name: no_fatal_errors
+    config:
+      must_not_match:
+        - "(?i)fatal error|unhandled exception|stack trace"
+
+stimuli:
+  ###########################################################################
+  # Section 1: skill-invocation tests
+  # Source: describe("skill-invocation") — lines 46-157
+  # Original followUp: ["Continue with recommended options until complete."]
+  ###########################################################################
+
+  - id: invocation-deploy-prompt
+    name: "Invokes azure-deploy skill for deployment prompt"
+    description: >
+      Verifies azure-deploy skill is invoked when user asks to run azd up.
+      Migrated from: test("invokes azure-deploy skill for deployment prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Run azd up to deploy my already-prepared app to Azure"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+
+  - id: invocation-publish-to-azure
+    name: "Invokes azure-deploy skill for publish to Azure prompt"
+    description: >
+      Verifies azure-deploy skill is invoked for publish-style prompts.
+      Migrated from: test("invokes azure-deploy skill for publish to Azure prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+
+  - id: invocation-azure-functions-deployment
+    name: "Invokes azure-deploy skill for Azure Functions deployment prompt"
+    description: >
+      Verifies azure-deploy skill is invoked for Azure Functions deploy prompts.
+      Migrated from: test("invokes azure-deploy skill for Azure Functions deployment prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+
+  - id: invocation-live-rbac-verification
+    name: "Invokes azure-deploy skill for live RBAC role verification prompt"
+    description: >
+      Verifies azure-deploy skill is invoked for deploy-with-RBAC-check prompts.
+      Migrated from: test("invokes azure-deploy skill for live RBAC role verification prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Deploy my app to Azure and verify the live RBAC role assignments are correct after provisioning"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+
+  - id: invocation-post-deployment-role-check
+    name: "Invokes azure-deploy skill for post-deployment role assignment check prompt"
+    description: >
+      Verifies azure-deploy skill is invoked for managed identity role assignment checks.
+      Migrated from: test("invokes azure-deploy skill for post-deployment role assignment check prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Deploy my already-prepared Azure app and confirm the managed identity roles are properly assigned"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+
+  ###########################################################################
+  # Section 2: vanilla-static-web-apps-deploy
+  # Source: describe("vanilla-static-web-apps-deploy") — lines 163-214
+  # Tests verify: softCheckDeploySkills, hasDeployLinks, expectFiles(bicep present, no .tf)
+  # Original systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier
+  ###########################################################################
+
+  - id: swa-whiteboard-app
+    name: "Creates whiteboard application (SWA)"
+    description: >
+      Deploy a static whiteboard web app to Azure SWA.
+      Expects deploy links in output and Bicep infra files (no Terraform).
+      Migrated from: test("creates whiteboard application")
+      Note: Original test used systemPrompt append for pseudo-random resource group names.
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      # hasDeployLinks — checks for Azure deployment URLs
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      # expectFiles: bicep present, no .tf
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  - id: swa-portfolio-website
+    name: "Creates static portfolio website (SWA)"
+    description: >
+      Deploy a static portfolio website to Azure SWA.
+      Expects deploy links in output and Bicep infra files (no Terraform).
+      Migrated from: test("creates static portfolio website")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  ###########################################################################
+  # Section 3: vanilla-app-service-deploy
+  # Source: describe("vanilla-app-service-deploy") — lines 217-268
+  ###########################################################################
+
+  - id: appservice-discussion-board
+    name: "Creates discussion board (App Service)"
+    description: >
+      Deploy a discussion board app to Azure App Service.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates discussion board")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in westus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  - id: appservice-todo-list
+    name: "Creates todo list with frontend and API (App Service)"
+    description: >
+      Deploy a todo list with frontend and API to Azure App Service.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates todo list with frontend and API")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in westus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  ###########################################################################
+  # Section 4: vanilla-azure-functions-deploy
+  # Source: describe("vanilla-azure-functions-deploy") — lines 271-346
+  ###########################################################################
+
+  - id: functions-serverless-http-api
+    name: "Creates serverless HTTP API (Azure Functions)"
+    description: >
+      Deploy a serverless HTTP API using Azure Functions.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates serverless HTTP API")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  - id: functions-event-driven
+    name: "Creates event-driven function app (Azure Functions)"
+    description: >
+      Deploy an event-driven function app to process messages.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates event-driven function app")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  - id: functions-python-servicebus-trigger
+    name: "Creates Python function app with Service Bus trigger"
+    description: >
+      Deploy a Python function app with Service Bus trigger.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates Python function app with Service Bus trigger")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  ###########################################################################
+  # Section 5: durable-task-scheduler-deploy
+  # Source: describe("durable-task-scheduler-deploy") — lines 349-380
+  # Additional checks: DTS-specific Bicep content (Microsoft.DurableTask/schedulers, taskHubs, role ID)
+  ###########################################################################
+
+  - id: dts-workflow-app
+    name: "Creates and deploys workflow app with Durable Task Scheduler"
+    description: >
+      Deploy a workflow app that orchestrates multi-step order processing.
+      Expects Bicep infra files containing DTS-specific resources:
+      Microsoft.DurableTask/schedulers, taskHubs, and RBAC role ID 0ad04412-c4d5-4796-b79c-f76d14c8d402.
+      Migrated from: test("creates and deploys workflow app with Durable Task Scheduler")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+      # DTS-specific Bicep content verification
+      - type: file-matches
+        config:
+          path: "infra/*.bicep"
+          pattern: "(?i)Microsoft\\.DurableTask/schedulers"
+      - type: file-matches
+        config:
+          path: "infra/*.bicep"
+          pattern: "(?i)Microsoft\\.DurableTask/schedulers/taskHubs"
+      - type: file-matches
+        config:
+          path: "infra/*.bicep"
+          pattern: "(?i)0ad04412-c4d5-4796-b79c-f76d14c8d402"
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  ###########################################################################
+  # Section 6: vanilla-azure-container-apps-deploy
+  # Source: describe("vanilla-azure-container-apps-deploy") — lines 383-434
+  ###########################################################################
+
+  - id: aca-containerized-web-app
+    name: "Creates containerized web application (ACA)"
+    description: >
+      Deploy a containerized web application to Azure Container Apps.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates containerized web application")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  - id: aca-nodejs-hello-world
+    name: "Creates simple containerized Node.js app (ACA)"
+    description: >
+      Deploy a simple containerized Node.js hello world app to Azure Container Apps.
+      Expects deploy links and Bicep infra files.
+      Migrated from: test("creates simple containerized Node.js app")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.bicep"
+
+  ###########################################################################
+  # Section 7: terraform-static-web-apps-deploy
+  # Source: describe("terraform-static-web-apps-deploy") — lines 437-487
+  # Note: expectFiles checks for .tf present, .bicep absent
+  ###########################################################################
+
+  - id: tf-swa-whiteboard
+    name: "Creates whiteboard application with Terraform (SWA)"
+    description: >
+      Deploy a static whiteboard web app using Terraform infrastructure.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates whiteboard application with Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  - id: tf-swa-portfolio
+    name: "Creates static portfolio website with Terraform (SWA)"
+    description: >
+      Deploy a static portfolio website using Terraform infrastructure.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates static portfolio website with Terraform infrastructure")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  ###########################################################################
+  # Section 8: terraform-app-service-deploy
+  # Source: describe("terraform-app-service-deploy") — lines 490-540
+  ###########################################################################
+
+  - id: tf-appservice-discussion-board
+    name: "Creates discussion board with Terraform (App Service)"
+    description: >
+      Deploy a discussion board to Azure App Service using Terraform.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates discussion board with Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a discussion board application and deploy to Azure App Service, prefer Terraform over Bicep, in my current subscription in westus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  - id: tf-appservice-todo-list
+    name: "Creates todo list with frontend and API using Terraform (App Service)"
+    description: >
+      Deploy a todo list with frontend and API to Azure App Service using Terraform.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates todo list with frontend and API using Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in westus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  ###########################################################################
+  # Section 9: terraform-azure-functions-deploy
+  # Source: describe("terraform-azure-functions-deploy") — lines 543-618
+  ###########################################################################
+
+  - id: tf-functions-serverless-http-api
+    name: "Creates serverless HTTP API with Terraform (Azure Functions)"
+    description: >
+      Deploy a serverless HTTP API using Azure Functions with Terraform infrastructure.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates serverless HTTP API with Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  - id: tf-functions-event-driven
+    name: "Creates event-driven function app with Terraform (Azure Functions)"
+    description: >
+      Deploy an event-driven function app using Terraform infrastructure.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates event-driven function app with Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  - id: tf-functions-url-shortener
+    name: "Creates URL shortener service with Terraform (Azure Functions)"
+    description: >
+      Deploy a URL shortener service using Azure Functions with Terraform.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates URL shortener service with Terraform infrastructure")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  ###########################################################################
+  # Section 10: terraform-azure-container-apps-deploy
+  # Source: describe("terraform-azure-container-apps-deploy") — lines 621-696
+  ###########################################################################
+
+  - id: tf-aca-containerized-web-app
+    name: "Creates containerized web application with Terraform (ACA)"
+    description: >
+      Deploy a containerized web application to Azure Container Apps using Terraform.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates containerized web application with Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  - id: tf-aca-nodejs-hello-world
+    name: "Creates simple containerized Node.js app with Terraform (ACA)"
+    description: >
+      Deploy a simple containerized Node.js hello world app to ACA using Terraform.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates simple containerized Node.js app with Terraform")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  - id: tf-aca-social-media
+    name: "Creates social media application with Terraform (ACA)"
+    description: >
+      Deploy a social media application with likes and comments using Terraform.
+      Expects deploy links and Terraform infra files (no Bicep).
+      Migrated from: test("creates social media application with Terraform infrastructure")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+      - type: file-exists
+        config:
+          path: "infra/*.tf"
+
+  ###########################################################################
+  # Section 11: brownfield-dotnet
+  # Source: describe("brownfield-dotnet") — lines 698-996
+  # Note: These tests use cloneRepo for environment setup — noted as comments.
+  # Original timeout: brownfieldTestTimeoutMs (2700000ms = 45 min)
+  ###########################################################################
+
+  - id: brownfield-dotnet-eshop
+    name: "Deploys eShop (.NET brownfield)"
+    description: >
+      Deploy the dotnet/eShop application to Azure from a cloned repo.
+      Expects deploy links in output.
+      Migrated from: test("deploys eShop")
+      Note: Original test clones https://github.com/dotnet/eShop.git (depth 1).
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    # Environment setup: cloneRepo({ repoUrl: "https://github.com/dotnet/eShop.git", depth: 1 })
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-mvcmovie90
+    name: "Deploys MvcMovie 90 (.NET brownfield)"
+    description: >
+      Deploy MvcMovie90 sample from AspNetCore.Docs to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys MvcMovie 90")
+      Note: Original test clones https://github.com/dotnet/AspNetCore.Docs.git
+      with sparse checkout: aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    # Environment setup: cloneRepo with sparse checkout path
+    input:
+      prompt: "Please deploy this application to Azure. Use the westus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-functions
+    name: "Deploys Aspire Azure Functions (.NET brownfield)"
+    description: >
+      Deploy aspire-with-azure-functions sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire azure functions")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/aspire-with-azure-functions
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-client-apps
+    name: "Deploys Aspire client apps integration (.NET brownfield)"
+    description: >
+      Deploy aspire client-apps-integration sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire client apps integration")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/client-apps-integration
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-container-build
+    name: "Deploys Aspire container build (.NET brownfield)"
+    description: >
+      Deploy aspire container-build sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire container build")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/container-build
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-custom-resources-no-deploy
+    name: "Does not deploy Aspire custom resources (.NET brownfield)"
+    description: >
+      Aspire custom-resources sample should NOT be deployable.
+      Expects deploy links to be ABSENT in output (negative test).
+      Migrated from: test("does not deploy aspire custom resources")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/custom-resources.
+      Original followUp: ["Stop if there is no further work; otherwise go with recommended options."]
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/custom-resources."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      # NEGATIVE: deploy links should NOT be present
+      - type: output-not-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-database-containers
+    name: "Deploys Aspire database containers (.NET brownfield)"
+    description: >
+      Deploy aspire database-containers sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire database containers")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/database-containers
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/database-containers."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-health-checks-no-deploy
+    name: "Does not deploy Aspire health-checks-ui (.NET brownfield)"
+    description: >
+      Aspire health-checks-ui sample should NOT be deployable (custom Aspire resource types).
+      Expects deploy links to be ABSENT in output (negative test).
+      Migrated from: test("does not deploy aspire health-checks-ui")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/health-checks-ui
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/health-checks-ui."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      # NEGATIVE: deploy links should NOT be present
+      - type: output-not-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-dotnet-aspire-orleans-voting
+    name: "Deploys Aspire orleans-voting (.NET brownfield)"
+    description: >
+      Deploy aspire orleans-voting sample to Azure.
+      Expects deploy links in output.
+      Original test also called softCheckContainerDeployEnvVars (checking for
+      AZURE_CONTAINER_REGISTRY_ENDPOINT, AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID,
+      MANAGED_IDENTITY_CLIENT_ID patterns).
+      Migrated from: test("deploys aspire orleans-voting")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/orleans-voting
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/orleans-voting."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  ###########################################################################
+  # Section 12: brownfield-javascript
+  # Source: describe("brownfield-javascript") — lines 998-1095
+  ###########################################################################
+
+  - id: brownfield-js-nodejs-demoapp
+    name: "Deploys nodejs-demoapp (JavaScript brownfield)"
+    description: >
+      Deploy benc-uk/nodejs-demoapp to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys nodejs-demoapp")
+      Note: Original test clones https://github.com/benc-uk/nodejs-demoapp.git (depth 1)
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-js-aspire-javascript
+    name: "Deploys Aspire with JavaScript (JavaScript brownfield)"
+    description: >
+      Deploy aspire-with-javascript sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire with javascript")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/aspire-with-javascript
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-javascript."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-js-aspire-node
+    name: "Deploys Aspire with Node (JavaScript brownfield)"
+    description: >
+      Deploy aspire-with-node sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire with node")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/aspire-with-node
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-node."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  ###########################################################################
+  # Section 13: brownfield-python
+  # Source: describe("brownfield-python") — lines 1097-1161
+  ###########################################################################
+
+  - id: brownfield-python-flask-calculator
+    name: "Deploys Flask calculator (Python brownfield)"
+    description: >
+      Deploy UltiRequiem/flask-calculator to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys flask calculator")
+      Note: Original test clones https://github.com/UltiRequiem/flask-calculator.git (depth 1)
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
+
+  - id: brownfield-python-aspire-python
+    name: "Deploys Aspire with Python (Python brownfield)"
+    description: >
+      Deploy aspire-with-python sample to Azure.
+      Expects deploy links in output.
+      Migrated from: test("deploys aspire with python")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/aspire-with-python
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-python."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          optional:
+            - azure-validate
+            - azure-prepare
+      - type: output-matches
+        config:
+          pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"

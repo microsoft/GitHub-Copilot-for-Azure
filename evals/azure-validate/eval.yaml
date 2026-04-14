@@ -1,0 +1,340 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
+# Migrated from: tests/azure-validate/integration.test.ts
+# Source helpers: tests/azure-validate/utils.ts (hasValidationCommand, hasDeploymentCommand, matchesFileEdit)
+name: azure-validate-integration-eval
+description: "Integration evaluation for azure-validate skill — migrated from Jest integration tests"
+skill: azure-validate
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 2700  # 45 min — matches aspireEnvVarTestTimeoutMs
+  parallel: false
+  executor: copilot-sdk
+  model: claude-sonnet-4-20250514
+
+metrics:
+  - name: task_completion
+    weight: 0.4
+    threshold: 0.8
+    description: Did the skill complete the validation task?
+  - name: trigger_accuracy
+    weight: 0.3
+    threshold: 0.8
+    description: Does the skill trigger on validate prompts?
+  - name: behavior_quality
+    weight: 0.3
+    threshold: 0.8
+    description: Correct validation behavior, no fatal errors
+
+graders:
+  # Global safety graders applied to every stimulus
+  - type: completed
+  - type: regex
+    name: no_fatal_errors
+    config:
+      must_not_match:
+        - "(?i)fatal error|unhandled exception|stack trace"
+
+stimuli:
+  ###########################################################################
+  # Section 1: skill-invocation tests
+  # Source: describe("skill-invocation") — lines 44-153
+  # Original RUNS_PER_PROMPT = 1, invocationRateThreshold = 0.8
+  ###########################################################################
+
+  - id: invocation-deployment-readiness
+    name: "Invokes azure-validate skill for deployment readiness check"
+    description: >
+      Verifies azure-validate skill is invoked when user asks to check deployment readiness.
+      Migrated from: test("invokes azure-validate skill for deployment readiness check")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Check if my app is ready to deploy to Azure"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+
+  - id: invocation-azure-yaml-validation
+    name: "Invokes azure-validate skill for azure.yaml validation prompt"
+    description: >
+      Verifies azure-validate skill is invoked for azure.yaml validation.
+      Migrated from: test("invokes azure-validate skill for azure.yaml validation prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Validate my azure.yaml configuration before deploying"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+
+  - id: invocation-bicep-validation
+    name: "Invokes azure-validate skill for Bicep validation prompt"
+    description: >
+      Verifies azure-validate skill is invoked for Bicep template validation.
+      Formerly azure-deployment-preflight test.
+      Migrated from: test("invokes azure-validate skill for Bicep validation prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Validate my Bicep template before deploying to Azure"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+
+  - id: invocation-what-if-analysis
+    name: "Invokes azure-validate skill for what-if analysis prompt"
+    description: >
+      Verifies azure-validate skill is invoked for what-if infrastructure analysis.
+      Migrated from: test("invokes azure-validate skill for what-if analysis prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+
+  - id: invocation-rbac-role-verification
+    name: "Invokes azure-validate skill for RBAC role verification prompt"
+    description: >
+      Verifies azure-validate skill is invoked for RBAC role verification in Bicep.
+      Migrated from: test("invokes azure-validate skill for RBAC role verification prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Verify the RBAC role assignments in my Bicep templates before deploying to Azure"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+
+  - id: invocation-managed-identity-permissions
+    name: "Invokes azure-validate skill for managed identity permissions check prompt"
+    description: >
+      Verifies azure-validate skill is invoked for managed identity RBAC validation.
+      Migrated from: test("invokes azure-validate skill for managed identity permissions check prompt")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    input:
+      prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure"
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+
+  ###########################################################################
+  # Section 2: deployment-validation tests
+  # Source: describe("deployment-validation") — lines 155-220
+  # Tests verify that the agent terminates at validation (NOT deployment).
+  # Original FOLLOW_UP_PROMPT: ["Continue with recommended options until complete."]
+  # Assertions:
+  #   - azure-deploy skill should NOT be invoked
+  #   - Deployment commands (azd up/deploy) should NOT run
+  #   - Either azure-validate skill invoked OR validation command ran
+  # Validation commands: azd provision, az deployment...validate, terraform validate
+  # Deployment commands: azd up, azd deploy
+  ###########################################################################
+
+  - id: validation-static-whiteboard
+    name: "Terminates at validation for static whiteboard web app"
+    description: >
+      Verifies the agent stops at the validation step (not deployment) for a static
+      whiteboard web app. azure-deploy skill must NOT be invoked. A validation command
+      (azd provision, az deployment...validate, terraform validate) OR azure-validate
+      skill invocation must occur.
+      Migrated from: test("terminates at validation for static whiteboard web app")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a static whiteboard web app and deploy to Azure."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # azure-validate should be invoked OR validation command should run
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      # azure-deploy should NOT be invoked
+      - type: output-not-matches
+        config:
+          pattern: "(?i)azd\\s+up\\b|azd\\s+deploy\\b"
+
+  - id: validation-static-portfolio
+    name: "Terminates at validation for static portfolio website"
+    description: >
+      Verifies the agent stops at the validation step for a static portfolio website.
+      azure-deploy skill must NOT be invoked.
+      Migrated from: test("terminates at validation for static portfolio website")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a static portfolio website and deploy to Azure."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)azd\\s+up\\b|azd\\s+deploy\\b"
+
+  - id: validation-containerized-web-app
+    name: "Terminates at validation for containerized web app on Container Apps"
+    description: >
+      Verifies the agent stops at the validation step for a containerized web application
+      targeting Azure Container Apps. azure-deploy skill must NOT be invoked.
+      Migrated from: test("terminates at validation for containerized web app on Container Apps")
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    input:
+      prompt: "Create a containerized web application and deploy to Azure Container Apps."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)azd\\s+up\\b|azd\\s+deploy\\b"
+
+  ###########################################################################
+  # Section 3: brownfield-dotnet-validate tests
+  # Source: describe("brownfield-dotnet-validate") — lines 222-301
+  # ASPIRE_SAMPLES_REPO = "https://github.com/dotnet/aspire-samples.git"
+  # Original timeout: aspireEnvVarTestTimeoutMs = 2700000ms (45 min)
+  # Note: These tests use cloneRepo for environment setup with sparse checkout.
+  ###########################################################################
+
+  - id: brownfield-dotnet-env-flag-on-init
+    name: "Passes --environment on azd init and sets subscription before provision"
+    description: >
+      Verifies that for aspire client-apps-integration, the agent passes --environment
+      (or -e) flag when running azd init, and sets AZURE_SUBSCRIPTION_ID before provisioning.
+      Migrated from: test("passes --environment on azd init and sets subscription before provision")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/client-apps-integration.
+      Original test comment: "We do not expect this test to deploy."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    # Environment setup: cloneRepo with sparse checkout samples/client-apps-integration
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # matchesCommand: azd init with --environment or -e flag
+      - type: output-matches
+        config:
+          pattern: "(?i)azd\\s+init\\b.*(\\s+--environment\\s+|-e\\s+)\\S+"
+      # matchesCommand: azd env set AZURE_SUBSCRIPTION_ID
+      - type: output-matches
+        config:
+          pattern: "(?i)azd\\s+env\\s+set\\s+AZURE_SUBSCRIPTION_ID\\s+\\S+"
+
+  - id: brownfield-dotnet-aspire-functions-secret-storage
+    name: "Sets AzureWebJobsSecretStorageType for aspire-with-azure-functions"
+    description: >
+      Verifies that for aspire-with-azure-functions, the agent sets
+      AzureWebJobsSecretStorageType in the AppHost.cs file.
+      Migrated from: test("sets AzureWebJobsSecretStorageType for aspire-with-azure-functions")
+      Note: Original test clones https://github.com/dotnet/aspire-samples.git
+      with sparse checkout: samples/aspire-with-azure-functions.
+      Original used matchesFileEdit(metadata, /AppHost\.cs/i, /AzureWebJobsSecretStorageType/i).
+      Original test comment: "We do not expect this test to deploy."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    # Environment setup: cloneRepo with sparse checkout samples/aspire-with-azure-functions
+    input:
+      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    graders:
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # matchesFileEdit: AppHost.cs should contain AzureWebJobsSecretStorageType
+      - type: file-matches
+        config:
+          path: "**/AppHost.cs"
+          pattern: "(?i)AzureWebJobsSecretStorageType"

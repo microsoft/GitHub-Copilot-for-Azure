@@ -1,45 +1,294 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
-name: azure-hosted-copilot-sdk-eval
-description: >
-  Evaluation suite for the azure-hosted-copilot-sdk skill.
-  Validates routing logic (scaffold, add-alongside, deploy-existing),
-  model configuration paths (GitHub default, Azure BYOM),
-  and negative-match behavior (skill should not activate for unrelated prompts).
-skill: azure-hosted-copilot-sdk
-version: "1.0"
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-hosted-copilot-sdk/integration.test.ts
+# Migration: Jest → Vally (Batch 3A — Complex/Smaller)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Jest notes:
+# - RUNS_PER_PROMPT = 3 (default), GREENFIELD_RUNS_PER_PROMPT = 1
+#   Greenfield-explicit prompts trigger full planning + scaffolding per run (~6-8 min each).
+#   See: https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/1447
+# - EXPECTED_INVOCATION_RATE = 0.6 (60% minimum)
+# - TEST_TIMEOUT = 1200000 (20 min per test)
+# - Workspace setup helpers (Jest-specific, not directly portable to Vally):
+#   setupExpressApp: copies express-app-package.json, express-app-server.ts.txt,
+#     express-app-tsconfig.json into workspace (base Express + TypeScript app)
+#   setupCopilotSdkApp: copies copilot-sdk-app-package.json, copilot-sdk-app-server.ts.txt,
+#     express-app-tsconfig.json into workspace (Express + @github/copilot-sdk)
+# - Security regression detectors:
+#   countSecretsInCode → output-not-matches with secret patterns
+#   countApiKeyInByomConfig → output-not-matches with api key patterns
+# - sanitizeMetadata redacts JWT/bearer tokens before keyword checks
+
+name: azure-hosted-copilot-sdk-integration-eval
+description: |
+  Integration evaluation for azure-hosted-copilot-sdk skill — migrated from Jest integration
+  tests. Tests 5 skill invocation scenarios (greenfield explicit, existing + add SDK, existing
+  SDK + deploy, existing SDK + modify, greenfield vague) and 3 content quality checks with
+  security regression detection (3 runs, 60% threshold, 20 min timeout).
+
+tags:
+  type: integration
+  skill: azure-hosted-copilot-sdk
 
 config:
-  trials_per_task: 1
-  timeout_seconds: 600
-  parallel: false
-  executor: mock
-  model: claude-sonnet-4-20250514
+  runs: 3
+  timeout: 1200
+  executor: copilot-sdk
+  model: claude-sonnet-4
 
-metrics:
-  - name: task_completion
-    weight: 0.4
-    threshold: 0.8
-    description: Did the skill produce the expected output for the task?
-  - name: trigger_accuracy
-    weight: 0.3
-    threshold: 0.9
-    description: Does the skill trigger on appropriate prompts and not on unrelated ones?
-  - name: behavior_quality
-    weight: 0.3
-    threshold: 0.7
-    description: Tool call limits, no fatal errors, clean execution
+scoring:
+  threshold: 0.6
 
-graders:
-  # Global grader: ensure no fatal errors appear in any task output
-  - type: regex
-    name: no_fatal_errors
-    config:
-      must_not_match:
-        - "(?i)fatal error|unhandled exception|stack trace"
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation
+  # ═══════════════════════════════════════════════════════════════════════
 
-# Task files use expected.output_contains, expected.output_not_contains,
-# and expected.behavior for mock-mode validation. Task-level graders
-# should be added when switching executor to copilot-sdk.
+  # ── greenfield-explicit ──
+  # Jest: "greenfield: invokes skill when prompt mentions copilot SDK"
+  # Assertions: measureInvocationRate ≥ 60%
+  # Jest note: GREENFIELD_RUNS_PER_PROMPT = 1 (reduced — full planning takes ~6-8 min/run)
+  # Vally note: eval-level runs=3 applies; greenfield may be slower per run.
+  - name: "Greenfield explicit copilot SDK"
+    prompt: "Build an Azure app that uses the Copilot SDK to brutally review GitHub repos based on user input"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-tasks:
-  - "tasks/*.yaml"
+  # ── existing-add-sdk ──
+  # Jest: "existing app: invokes skill when adding copilot SDK to Express app"
+  # Assertions: measureInvocationRate ≥ 60%
+  # Jest setup: setupExpressApp (copies express-app-package.json, server.ts, tsconfig.json)
+  # Vally note: workspace setup via environment.files if supported
+  - name: "Existing Express app add copilot SDK"
+    prompt: "Add a Copilot SDK agent to my existing Express app that reviews code"
+    # environment:
+    #   files:
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/express-app-package.json"
+    #       dest: "package.json"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/express-app-server.ts.txt"
+    #       dest: "server.ts"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/express-app-tsconfig.json"
+    #       dest: "tsconfig.json"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── existing-sdk-deploy ──
+  # Jest: "existing copilot SDK app: invokes skill for deploy prompt via codebase scan"
+  # Assertions: measureInvocationRate ≥ 60%
+  # Jest setup: setupCopilotSdkApp (copies copilot-sdk-app-package.json, server.ts, tsconfig.json)
+  # Jest note: NO SDK keyword in prompt — skill triggered via codebase scan
+  - name: "Existing copilot SDK app deploy"
+    prompt: "Deploy this app to Azure"
+    # environment:
+    #   files:
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-package.json"
+    #       dest: "package.json"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-server.ts.txt"
+    #       dest: "server.ts"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/express-app-tsconfig.json"
+    #       dest: "tsconfig.json"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── existing-sdk-modify ──
+  # Jest: "existing copilot SDK app: invokes skill for modify prompt via codebase scan"
+  # Assertions: measureInvocationRate ≥ 60%
+  # Jest setup: setupCopilotSdkApp (same as above)
+  # Jest note: NO SDK keyword in prompt — skill triggered via codebase scan
+  - name: "Existing copilot SDK app modify"
+    prompt: "Add a new feature to this app that summarizes pull requests"
+    # environment:
+    #   files:
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-package.json"
+    #       dest: "package.json"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-server.ts.txt"
+    #       dest: "server.ts"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/express-app-tsconfig.json"
+    #       dest: "tsconfig.json"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── greenfield-vague ──
+  # Jest: "greenfield: invokes skill for vague copilot-powered prompt"
+  # Assertions: measureInvocationRate ≥ 60%
+  - name: "Greenfield vague copilot-powered"
+    prompt: "Help me set up a copilot-powered Azure app that does code review"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # content-quality (with security regression checks)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── scaffold-mentions-templates ──
+  # Jest: "greenfield scaffold mentions copilot SDK templates"
+  # Assertions:
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk-service") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "Copilot SDK")
+  #   + countSecretsInCode(rawMetadata) === 0
+  - name: "Scaffold mentions copilot SDK templates"
+    prompt: "Scaffold a copilot-powered app using the copilot SDK and deploy it to Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      # Jest OR: "copilot-sdk-service" | "copilot-sdk" | "Copilot SDK"
+      - type: output-contains
+        config:
+          substring: "copilot-sdk"
+      # Security: countSecretsInCode expects 0 secrets
+      - type: output-not-matches
+        config:
+          pattern: "(?i)password\\s*[:=]|secret\\s*[:=]|connection.?string\\s*[:=]|api.?key\\s*[:=]"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── byom-defaultazurecredential ──
+  # Jest: "BYOM prompt mentions DefaultAzureCredential"
+  # Assertions:
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "DefaultAzureCredential") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "bearerToken") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "provider")
+  #   + countApiKeyInByomConfig(rawMetadata) === 0
+  - name: "BYOM mentions DefaultAzureCredential"
+    prompt: "Build a copilot SDK app with BYOM using my Azure model and DefaultAzureCredential for auth"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      # Jest OR: "DefaultAzureCredential" | "bearerToken" | "provider"
+      # Using broadest common match — "DefaultAzureCredential" is the primary target
+      - type: output-contains
+        config:
+          substring: "DefaultAzureCredential"
+      # Security: countApiKeyInByomConfig expects 0 API keys in BYOM config
+      - type: output-not-matches
+        config:
+          pattern: "(?i)api[_-]?key\\s*[:=]"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── deploy-existing-sdk-patterns ──
+  # Jest: "existing copilot SDK app deploy uses correct SDK patterns"
+  # Assertions:
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "Copilot SDK") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "copilot-sdk-service") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "CopilotClient")
+  #   + countSecretsInCode(rawMetadata) === 0
+  # Jest setup: setupCopilotSdkApp
+  - name: "Deploy existing SDK app uses correct patterns"
+    prompt: "Deploy this app to Azure"
+    # environment:
+    #   files:
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-package.json"
+    #       dest: "package.json"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-server.ts.txt"
+    #       dest: "server.ts"
+    #     - src: "tests/azure-hosted-copilot-sdk/resources/express-app-tsconfig.json"
+    #       dest: "tsconfig.json"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      # Jest OR: "copilot-sdk" | "Copilot SDK" | "copilot-sdk-service" | "CopilotClient"
+      - type: output-contains
+        config:
+          substring: "copilot"
+      # Security: countSecretsInCode expects 0 secrets
+      - type: output-not-matches
+        config:
+          pattern: "(?i)password\\s*[:=]|secret\\s*[:=]|connection.?string\\s*[:=]|api.?key\\s*[:=]"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

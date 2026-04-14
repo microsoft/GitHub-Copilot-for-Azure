@@ -1,0 +1,125 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-cloud-migrate/integration.test.ts
+# Migration: Jest → Vally (Batch 3A — Complex/Smaller)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Jest notes:
+# - Tests use cloneRepo() to shallow-clone AWS sample repos into the workspace:
+#   1. https://github.com/aws-samples/serverless-face-blur-service.git
+#   2. https://github.com/aws-samples/lambda-refarch-webapp.git
+#   Vally limitation: cloneRepo is Jest-specific. Mapped to environment.commands
+#   with "git clone --depth 1 <url> ." if supported, otherwise documented.
+# - Tests use findAzureOutputDir() to locate the -azure output directory
+#   (sibling or nested), then expectFiles() to validate migrated files.
+# - FOLLOW_UP_PROMPT = ["Go with recommended options and test it locally."]
+# - migrationTestTimeoutMs = 2700000 (45 min)
+
+name: azure-cloud-migrate-integration-eval
+description: |
+  Integration evaluation for azure-cloud-migrate skill — migrated from Jest integration
+  tests. Tests brownfield Lambda-to-Azure migration for two AWS sample repos:
+  serverless-face-blur-service and lambda-refarch-webapp. Validates skill invocation
+  and migrated output files (1 run, 80% threshold, 45 min timeout).
+
+tags:
+  type: integration
+  skill: azure-cloud-migrate
+
+config:
+  runs: 1
+  timeout: 2700
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # brownfield-lambda (serverless-face-blur-service)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── face-blur-service-migration ──
+  # Jest: "migrates serverless-face-blur-service Lambda to Azure"
+  # Assertions: isSkillInvoked + expectFiles(migratedPath, [
+  #   /src\/app\.js$/, /src\/detectFaces\.js$/, /src\/blurFaces\.js$/,
+  #   /migration-status\.md$/, /migration-assessment-report\.md$/
+  # ])
+  # Jest setup: cloneRepo({ repoUrl: "https://github.com/aws-samples/serverless-face-blur-service.git",
+  #   targetDir: workspace, depth: 1 })
+  # Jest followUp: ["Go with recommended options and test it locally."]
+  - name: "Migrate serverless-face-blur-service Lambda to Azure"
+    prompt: "Migrate this Lambda to Azure. Use the eastus2 region. Use my current subscription. "
+    # environment:
+    #   commands:
+    #     - "git clone --depth 1 https://github.com/aws-samples/serverless-face-blur-service.git ."
+    # followUp (Jest): ["Go with recommended options and test it locally."]
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      # Jest: expectFiles for migrated output files
+      # Note: The skill creates an -azure sibling/nested directory with migrated files.
+      # file-exists paths are approximate — the exact output directory name depends
+      # on the workspace basename.
+      - type: file-exists
+        config:
+          path: "**/migration-status.md"
+      - type: file-exists
+        config:
+          path: "**/migration-assessment-report.md"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # brownfield-lambda-webapp (lambda-refarch-webapp)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── lambda-webapp-migration ──
+  # Jest: "migrates lambda-refarch-webapp to Azure"
+  # Assertions: isSkillInvoked + expectFiles(migratedPath, [
+  #   /migration-status\.md$/, /migration-assessment-report\.md$/
+  # ])
+  # Jest setup: cloneRepo({ repoUrl: "https://github.com/aws-samples/lambda-refarch-webapp.git",
+  #   targetDir: workspace, depth: 1 })
+  # Jest followUp: ["Go with recommended options and test it locally."]
+  - name: "Migrate lambda-refarch-webapp to Azure"
+    prompt: "Migrate this Lambda to Azure. Use the eastus2 region. Use my current subscription. "
+    # environment:
+    #   commands:
+    #     - "git clone --depth 1 https://github.com/aws-samples/lambda-refarch-webapp.git ."
+    # followUp (Jest): ["Go with recommended options and test it locally."]
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: file-exists
+        config:
+          path: "**/migration-status.md"
+      - type: file-exists
+        config:
+          path: "**/migration-assessment-report.md"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
