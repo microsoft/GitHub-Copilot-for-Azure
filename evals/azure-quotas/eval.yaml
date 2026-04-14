@@ -1,0 +1,184 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-quotas/integration.test.ts
+# Migration: Jest → Vally (Batch 2 — Medium)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Note: Jest tests used doToolCallArgsIncludeKeyword() to check tool call
+# arguments. Mapped to output-contains since Vally output includes tool data.
+
+name: azure-quotas-integration-eval
+description: |
+  Integration evaluation for azure-quotas skill — migrated from Jest integration tests.
+  Tests skill routing for quota check/increase prompts and response validation
+  for CLI commands and scope references (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-quotas
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── Quota check ──
+  # Jest: "invokes azure-quotas skill for quota check prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Quota check invocation"
+    prompt: "How do I check my Azure compute quota limits in East US?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Quota increase ──
+  # Jest: "invokes azure-quotas skill for quota increase prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Quota increase invocation"
+    prompt: "I need to request a quota increase for VM vCPUs in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # response-content-validation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── Quota check commands ──
+  # Jest: "provides quota check commands for compute resources"
+  # Assertions: isSkillInvoked + ("az quota" in message OR tool args) + ("/subscriptions/" in message OR tool args)
+  - name: "Quota check commands"
+    prompt: "Check my Azure VM quota limits and current usage in East US"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-contains
+        config:
+          substring: "az quota"
+      - type: output-contains
+        config:
+          substring: "/subscriptions/"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Quota increase workflow ──
+  # Jest: "provides quota increase workflow"
+  # Assertions: isSkillInvoked + "az quota update"
+  - name: "Quota increase workflow"
+    prompt: "How do I request an Azure quota increase for Standard_DS_v3 VMs?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-contains
+        config:
+          substring: "az quota update"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Region comparison ──
+  # Jest: "handles region comparison query"
+  # Assertions: isSkillInvoked + ("az quota" in message OR tool args)
+  - name: "Region comparison query"
+    prompt: "Compare Azure compute quota availability across East US, West US 2, and Central US"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-contains
+        config:
+          substring: "az quota"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Extension installation requirement ──
+  # Jest: "mentions extension installation requirement"
+  # Assertions: isSkillInvoked + "az extension add"
+  - name: "Extension installation requirement"
+    prompt: "What are my Azure service quotas and how do I check them?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-contains
+        config:
+          substring: "az extension add"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
