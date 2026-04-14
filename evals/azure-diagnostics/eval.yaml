@@ -1,0 +1,93 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-diagnostics/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-diagnostics-integration-eval
+description: |
+  Integration evaluation for azure-diagnostics skill — migrated from Jest integration tests.
+  Tests skill routing for Container Apps troubleshooting, image pull failures,
+  and AKS cluster diagnostics prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── container-apps-troubleshooting-prompt ──
+  # Jest: "invokes azure-diagnostics skill for Container Apps troubleshooting prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Container App restart troubleshooting"
+    prompt: "My Azure Container App keeps restarting, how do I troubleshoot it?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── image-pull-failure-prompt ──
+  # Jest: "invokes azure-diagnostics skill for image pull failure prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Image pull failure in Container App"
+    prompt: "I'm getting an image pull failure error in my Azure Container App deployment"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aks-troubleshooting-prompt ──
+  # Jest: "invokes azure-diagnostics skill for AKS troubleshooting prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "AKS pending pods and NotReady node"
+    prompt: "My AKS cluster has pods stuck in Pending and one node is NotReady. Can you troubleshoot it?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
