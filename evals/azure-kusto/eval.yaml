@@ -17,7 +17,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-kusto
+    - ../../plugin/skills/azure-kusto
 
 config:
   runs: 5

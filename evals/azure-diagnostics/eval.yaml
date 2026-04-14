@@ -18,7 +18,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-diagnostics
+    - ../../plugin/skills/azure-diagnostics
 
 config:
   runs: 5

@@ -17,7 +17,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-storage
+    - ../../plugin/skills/azure-storage
 
 config:
   runs: 5

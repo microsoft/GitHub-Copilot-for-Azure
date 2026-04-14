@@ -17,7 +17,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/entra-app-registration
+    - ../../plugin/skills/entra-app-registration
 
 config:
   runs: 5
