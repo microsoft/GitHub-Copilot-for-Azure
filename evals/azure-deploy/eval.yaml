@@ -53,8 +53,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Run azd up to deploy my already-prepared app to Azure"
+    prompt: "Run azd up to deploy my already-prepared app to Azure"
     graders:
       - type: completed
       - type: output-not-matches
@@ -75,8 +74,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now."
+    prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now."
     graders:
       - type: completed
       - type: output-not-matches
@@ -97,8 +95,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up."
+    prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up."
     graders:
       - type: completed
       - type: output-not-matches
@@ -119,8 +116,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Deploy my app to Azure and verify the live RBAC role assignments are correct after provisioning"
+    prompt: "Deploy my app to Azure and verify the live RBAC role assignments are correct after provisioning"
     graders:
       - type: completed
       - type: output-not-matches
@@ -141,8 +137,7 @@ stimuli:
       tier: full
       cost: free
       area: routing
-    input:
-      prompt: "Deploy my already-prepared Azure app and confirm the managed identity roles are properly assigned"
+    prompt: "Deploy my already-prepared Azure app and confirm the managed identity roles are properly assigned"
     graders:
       - type: completed
       - type: output-not-matches
@@ -172,8 +167,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -206,8 +200,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -243,8 +236,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in westus2 region."
+    prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in westus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -275,8 +267,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in westus2 region."
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in westus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -312,8 +303,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -344,8 +334,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -376,8 +365,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -415,8 +403,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region."
+    prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy to Azure using my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -465,8 +452,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region."
+    prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in swedencentral region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -497,8 +483,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region."
+    prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in swedencentral region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -535,8 +520,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -567,8 +551,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -604,8 +587,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a discussion board application and deploy to Azure App Service, prefer Terraform over Bicep, in my current subscription in westus2 region."
+    prompt: "Create a discussion board application and deploy to Azure App Service, prefer Terraform over Bicep, in my current subscription in westus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -636,8 +618,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in westus2 region."
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in westus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -673,8 +654,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -705,8 +685,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -737,8 +716,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -774,8 +752,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region."
+    prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -806,8 +783,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region."
+    prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in swedencentral region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -838,8 +814,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region."
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in swedencentral region."
     graders:
       - type: completed
       - type: output-not-matches
@@ -879,8 +854,7 @@ stimuli:
       cost: free
       area: behavior
     # Environment setup: cloneRepo({ repoUrl: "https://github.com/dotnet/eShop.git", depth: 1 })
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs"
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs"
     graders:
       - type: completed
       - type: output-not-matches
@@ -911,8 +885,7 @@ stimuli:
       cost: free
       area: behavior
     # Environment setup: cloneRepo with sparse checkout path
-    input:
-      prompt: "Please deploy this application to Azure. Use the westus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90."
+    prompt: "Please deploy this application to Azure. Use the westus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90."
     graders:
       - type: completed
       - type: output-not-matches
@@ -942,8 +915,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
     graders:
       - type: completed
       - type: output-not-matches
@@ -973,8 +945,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1004,8 +975,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1036,8 +1006,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/custom-resources."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/custom-resources."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1068,8 +1037,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/database-containers."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/database-containers."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1099,8 +1067,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/health-checks-ui."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/health-checks-ui."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1134,8 +1101,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/orleans-voting."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/orleans-voting."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1169,8 +1135,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1200,8 +1165,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-javascript."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-javascript."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1231,8 +1195,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-node."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-node."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1266,8 +1229,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs."
     graders:
       - type: completed
       - type: output-not-matches
@@ -1297,8 +1259,7 @@ stimuli:
       tier: full
       cost: free
       area: behavior
-    input:
-      prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-python."
+    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-python."
     graders:
       - type: completed
       - type: output-not-matches
