@@ -10,7 +10,7 @@ Azure SQL Server must be configured with Entra-only authentication during provis
 properties: {
   administrators: {
     administratorType: 'ActiveDirectory'
-    principalType: 'User'
+    principalType: principalType  // 'User' for interactive, 'ServicePrincipal' for CI/CD
     login: principalName
     sid: principalId
     tenantId: subscription().tenantId
@@ -18,6 +18,8 @@ properties: {
   }
 }
 ```
+
+> ⚠️ **Warning:** Hardcoding `principalType: 'User'` causes `UnmatchedPrincipalType` errors when deploying from CI/CD with a service principal. Use a parameter instead.
 
 ## Connection Patterns
 
