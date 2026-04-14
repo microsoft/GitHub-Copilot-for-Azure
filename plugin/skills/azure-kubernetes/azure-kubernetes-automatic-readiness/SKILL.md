@@ -196,12 +196,12 @@ Per-issue format:
 - `safeguard-container-capabilities` — remove `capabilities.add`
 - `safeguard-allowed-seccomp-profiles` — add `seccompProfile: RuntimeDefault`
 - `safeguard-enforce-apparmor` — add AppArmor annotation
-- `safeguard-images-no-latest` — replace `:latest` with pinned version
 - `safeguard-csi-driver-storage-class` — replace in-tree provisioner
 
 Use patterns in `references/common-fixes.md` and generate a before/after diff. Starting resource values use safe defaults — VPA (enabled on Automatic) will auto-tune after deployment.
 
 **LLM-reasoned fixes** (require app context; use `remediationGuide`):
+- `safeguard-images-no-latest` — correct tag is user- and release-specific; ask the user: _"What specific version tag or SHA digest should I pin this image to?"_ Do not guess
 - `safeguard-probes-configured` — probes are app-specific; ask for the health endpoint
 - `safeguard-pod-enforce-antiaffinity` — needs app labels for selector
 - `safeguard-no-host-path-volumes` — replacement depends on what hostPath is used for
@@ -218,7 +218,7 @@ For incompatible findings (e.g., hostPath volumes), explain the issue and propos
 4. On approval, write the change using `replace_string_in_file`
 5. Move to the next finding
 
-If the user says "fix all" or "apply all deterministic fixes", batch-apply all `suggestedPatch`-based fixes without individual approval. Show a summary of all changes applied, then suggest re-validation.
+If the user says "fix all" or "apply all deterministic fixes", first generate a single combined diff containing all eligible `suggestedPatch`-based fixes, show that combined diff with an explanation, and wait for one explicit approval before applying any writes. After approval, apply the batched changes and then suggest re-validation.
 
 ### Step 5: Recommend Next Steps
 

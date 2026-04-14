@@ -130,7 +130,7 @@ For clusters with 500+ workloads, the API returns HTTP 202 Accepted with a `Loca
 // Initial call returns: { status: 202, headers: { Location: "...", "Retry-After": "30" } }
 async function pollAssessment(locationUrl, retryAfterSeconds) {
   while (true) {
-    await sleep(retryAfterSeconds * 1000);
+    await new Promise(r => setTimeout(r, retryAfterSeconds * 1000));
     const response = await mcp_azure_mcp_aks({
       action: "pollOperation",
       locationUrl: locationUrl

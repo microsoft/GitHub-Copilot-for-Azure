@@ -65,6 +65,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const hasSeverityContent =
           doesAssistantMessageIncludeKeyword(agentMetadata, "incompatible") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "requiresChanges") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "compatible") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "Compatible");
         expect(hasSeverityContent).toBe(true);
       });

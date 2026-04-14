@@ -61,6 +61,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me write a poem",
       "Explain quantum computing",
       "Write a Python script to parse JSON",
+      "How do I bake sourdough bread?",
+      "Recommend a book about history",
+      "What is the capital of France?",
     ];
 
     const otherCloudPrompts: string[] = [
