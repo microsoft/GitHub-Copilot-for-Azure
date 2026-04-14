@@ -18,6 +18,10 @@ tags:
   type: integration
   skill: azure-quotas
 
+environment:
+  skills:
+    - "plugin/skills/azure-quotas"
+
 config:
   runs: 5
   timeout: 600

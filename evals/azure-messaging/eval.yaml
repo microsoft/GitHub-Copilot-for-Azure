@@ -15,6 +15,10 @@ tags:
   type: integration
   skill: azure-messaging
 
+environment:
+  skills:
+    - "plugin/skills/azure-messaging"
+
 config:
   runs: 3
   timeout: 600
