@@ -177,7 +177,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("routes CRG association prompt to capacity-reservation", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         const result = await expectPromptToInvokeWorkflow(
-          "How do I associate my Azure VM with an existing Capacity Reservation Group?",
+          "How do I associate my Azure VM with a Capacity Reservation Group (CRG) to guarantee reserved compute capacity?",
           CAPACITY_RESERVATION_WORKFLOW_PATH,
         );
         if (!result) return;
