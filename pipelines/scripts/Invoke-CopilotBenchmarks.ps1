@@ -162,6 +162,7 @@
             "--benchmark", $Benchmark,
             "--model", $m,
             "--env", "GITHUB_MCP_SERVER_TOKEN",
+            "--tag", "org=Azure",
             "--no-wait"
         )
 
