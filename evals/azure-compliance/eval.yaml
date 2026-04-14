@@ -1,0 +1,115 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-compliance/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-compliance-integration-eval
+description: |
+  Integration evaluation for azure-compliance skill — migrated from Jest integration tests.
+  Tests skill routing for compliance assessment, Key Vault auditing,
+  combined audit, and orphaned resource detection prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-compliance
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── compliance-assessment-prompt ──
+  # Jest: "invokes azure-compliance skill for comprehensive compliance assessment prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Compliance assessment with azqr"
+    prompt: "Run azqr to check my Azure subscription for compliance against best practices"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compliance
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── key-vault-expiration-prompt ──
+  # Jest: "invokes azure-compliance skill for Key Vault expiration audit prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Key Vault expired certificates and secrets"
+    prompt: "Show me expired certificates and secrets in my Azure Key Vault"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compliance
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── combined-audit-prompt ──
+  # Jest: "invokes azure-compliance skill for combined assessment prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Full compliance audit with Key Vault checks"
+    prompt: "Run a full compliance audit on my Azure environment including resource best practices and Key Vault expiration checks"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compliance
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── orphaned-resources-prompt ──
+  # Jest: "invokes azure-compliance skill for orphaned resources prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Orphaned resources and compliance check"
+    prompt: "Check my Azure subscription for orphaned resources and compliance issues"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compliance
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

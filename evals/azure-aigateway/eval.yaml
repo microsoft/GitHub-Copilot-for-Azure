@@ -1,0 +1,181 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-aigateway/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-aigateway-integration-eval
+description: |
+  Integration evaluation for azure-aigateway skill — migrated from Jest integration tests.
+  Tests skill routing for API Management AI Gateway scenarios: setup, rate limiting,
+  semantic caching, content safety, load balancing, MCP governance, and backend config
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-aigateway
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── apim-gateway-setup-prompt ──
+  # Jest: "invokes azure-aigateway skill for API Management gateway prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "APIM AI Gateway setup for OpenAI"
+    prompt: "How do I set up Azure API Management as an AI Gateway for my Azure OpenAI models?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── rate-limiting-prompt ──
+  # Jest: "invokes azure-aigateway skill for rate limiting prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Rate limiting and token limits for AI requests"
+    prompt: "How do I add rate limiting and token limits to my AI model requests using APIM?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── semantic-caching-prompt ──
+  # Jest: "invokes azure-aigateway skill for semantic caching prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Semantic caching for OpenAI cost reduction"
+    prompt: "Enable semantic caching for my Azure OpenAI API to reduce costs"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── content-safety-prompt ──
+  # Jest: "invokes azure-aigateway skill for content safety prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Content safety and jailbreak detection"
+    prompt: "Add content safety and jailbreak detection to my AI gateway endpoint"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── load-balancing-prompt ──
+  # Jest: "invokes azure-aigateway skill for load balancing prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Load balance across OpenAI backends"
+    prompt: "Load balance requests across multiple Azure OpenAI backends in API Management"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── mcp-tool-governance-prompt ──
+  # Jest: "invokes azure-aigateway skill for MCP tool governance prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "MCP server rate limiting in APIM"
+    prompt: "How do I add rate limiting to protect my MCP server tools in APIM?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── add-ai-backend-prompt ──
+  # Jest: "invokes azure-aigateway skill for adding AI backend prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Add OpenAI backend to APIM"
+    prompt: "Add an Azure OpenAI backend to my existing API Management instance"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-aigateway
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
