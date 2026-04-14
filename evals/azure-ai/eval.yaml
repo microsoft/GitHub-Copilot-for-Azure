@@ -1,0 +1,70 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-ai/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-ai-integration-eval
+description: |
+  Integration evaluation for azure-ai skill — migrated from Jest integration tests.
+  Tests skill routing for Azure AI Search and Azure Speech prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-ai
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── ai-search-vector-prompt ──
+  # Jest: "invokes azure-ai skill for AI Search query prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Vector search index in Azure AI Search"
+    prompt: "How do I create a vector search index in Azure AI Search?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── azure-speech-tts-prompt ──
+  # Jest: "invokes azure-ai skill for Azure Speech prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Azure Speech text-to-speech"
+    prompt: "How do I use Azure Speech to convert text to speech?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
