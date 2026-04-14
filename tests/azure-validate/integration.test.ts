@@ -167,6 +167,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
 
+      // A deployment command (azd up/deploy) means the agent skipped validation entirely.
       const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
       expect(deploymentCommandRan).toBe(false);
 
@@ -187,6 +188,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
 
+      // A deployment command (azd up/deploy) means the agent skipped validation entirely.
       const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
       expect(deploymentCommandRan).toBe(false);
 
@@ -207,6 +209,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
 
+      // A deployment command (azd up/deploy) means the agent skipped validation entirely.
       const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
       expect(deploymentCommandRan).toBe(false);
 
