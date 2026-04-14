@@ -16,6 +16,10 @@ tags:
   type: integration
   skill: microsoft-foundry
 
+environment:
+  skills:
+    - plugin/skills/microsoft-foundry
+
 config:
   runs: 5
   timeout: 600
