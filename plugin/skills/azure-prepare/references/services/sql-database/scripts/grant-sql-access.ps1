@@ -74,6 +74,9 @@ IF NOT EXISTS (
 "@
 }
 
+# Ensure the rdbms-connect extension is installed (provides 'az sql db query')
+az extension add --name rdbms-connect --yes 2>$null
+
 az sql db query `
   --server $env:SQL_SERVER `
   --database $env:SQL_DATABASE `

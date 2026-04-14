@@ -81,6 +81,9 @@ if [ "$SQL_GRANT_DDLADMIN" = "true" ]; then
 "
 fi
 
+# Ensure the rdbms-connect extension is installed (provides 'az sql db query')
+az extension add --name rdbms-connect --yes 2>/dev/null || true
+
 az sql db query \
   --server "$SQL_SERVER" \
   --database "$SQL_DATABASE" \

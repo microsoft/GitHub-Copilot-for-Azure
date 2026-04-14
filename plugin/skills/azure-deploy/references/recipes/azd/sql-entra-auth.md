@@ -23,6 +23,8 @@ properties: {
 
 ### Azure CLI (Recommended for Scripts)
 
+> ⚠️ **Warning:** `az sql db query` requires the `rdbms-connect` extension. Install it first: `az extension add --name rdbms-connect --yes`
+
 ```bash
 az sql db query \
   --server "$SQL_SERVER" \

@@ -133,6 +133,7 @@ hooks:
 **Copy the pre-built scripts** — Read [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) and write them verbatim to the project's `scripts/` folder. Do not regenerate them from scratch.
 
 Key behaviours of the scripts:
+- Installs the `rdbms-connect` Azure CLI extension if not already present (required for `az sql db query`)
 - Loads `azd env get-values` safely (no `eval`)
 - Grants `db_datareader` + `db_datawriter` by default (idempotent)
 - Set `SQL_GRANT_DDLADMIN=true` in the azd env to also grant `db_ddladmin` (needed for EF Core migrations)
