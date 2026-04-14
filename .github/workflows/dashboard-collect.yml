@@ -46,8 +46,8 @@ jobs:
 
       - name: Upload latest.json to Azure Storage
         env:
-          STORAGE_ACCOUNT: ${{ vars.STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.STORAGE_CONTAINER }}
+          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.NON_INTEGRATION_STORAGE_CONTAINER }}
         run: |
           az storage blob upload \
             --account-name "$STORAGE_ACCOUNT" \
