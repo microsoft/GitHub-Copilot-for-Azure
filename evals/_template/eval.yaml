@@ -1,0 +1,137 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/_template/integration.test.ts
+# Migration: Jest → Vally (Batch 3A — Complex/Smaller)
+#
+# This is a TEMPLATE eval config. Replace "your-skill-name" and
+# placeholder prompts with real skill-specific values before use.
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Jest setup notes:
+# - Pattern 2 "works with project files" used fs.writeFileSync to create
+#   example.json in the workspace. In Vally use environment.files if supported,
+#   otherwise document as a limitation.
+
+name: _template-integration-eval
+description: |
+  Integration evaluation template — migrated from Jest integration tests.
+  Contains four stimulus patterns: invocation-rate, keyword assertion,
+  MCP tool-call verification, and workspace-file setup.
+  Replace placeholder prompts and skill name before use (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: your-skill-name
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # Pattern 1: Skill invocation rate test
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── invocation-rate ──
+  # Jest: "invokes skill for relevant prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Invokes skill for relevant prompt"
+    prompt: "Your test prompt that should trigger this skill"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - your-skill-name
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Pattern 2: Simple assertion tests (no invocation rate)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── keyword-check ──
+  # Jest: "response contains expected keywords"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "expected keyword")
+  - name: "Response contains expected keywords"
+    prompt: "Your test prompt here"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-contains
+        config:
+          substring: "expected keyword"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── mcp-tool-success ──
+  # Jest: "MCP tool calls are successful"
+  # Assertions: areToolCallsSuccess(agentMetadata, "azure-documentation")
+  - name: "MCP tool calls are successful"
+    prompt: "Your test prompt that uses Azure tools"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: tool-calls
+        config:
+          required:
+            - name: azure-documentation
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── workspace-file-setup ──
+  # Jest: "works with project files"
+  # Assertions: isSkillInvoked(agentMetadata, SKILL_NAME)
+  # Jest setup: fs.writeFileSync(path.join(workspace, "example.json"), ...)
+  # Vally note: workspace file creation handled by environment.files if supported;
+  #   otherwise Vally's copilot-sdk executor manages workspace differently.
+  - name: "Works with project files"
+    prompt: "Your test prompt that needs workspace files"
+    # environment:
+    #   files:
+    #     - content: '{"key":"value"}'
+    #       path: "example.json"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - your-skill-name
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
