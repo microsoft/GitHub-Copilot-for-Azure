@@ -1,0 +1,145 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-resource-visualizer/integration.test.ts
+# Migration: Jest → Vally (Batch 3A — Complex/Smaller)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Jest notes:
+# - E2E tests used followUp: ["Continue with recommended options until complete."]
+#   Vally multi-turn is via messages[] array if supported; these are documented
+#   in comments. Single-turn prompts are used as the primary stimulus.
+# - doesWorkspaceFileIncludePattern(workspacePath, /graph\s+(TB|LR)/i, /architecture.*\.md$/i)
+#   checks that an architecture*.md file contains a Mermaid graph directive.
+#   Mapped to file-matches grader.
+# - Requires: az login (for Azure resource access in e2e tests)
+
+name: azure-resource-visualizer-integration-eval
+description: |
+  Integration evaluation for azure-resource-visualizer skill — migrated from Jest integration tests.
+  Tests skill routing for architecture diagram and resource visualization prompts (5 runs, 80%
+  threshold), plus end-to-end Mermaid diagram generation with file validation (30 min timeout).
+
+tags:
+  type: integration
+  skill: azure-resource-visualizer
+
+config:
+  runs: 5
+  timeout: 1800
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── architecture-diagram-prompt ──
+  # Jest: "invokes azure-resource-visualizer skill for architecture diagram prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Architecture diagram prompt"
+    prompt: "Generate a Mermaid diagram showing my Azure resource group architecture"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-relationships-prompt ──
+  # Jest: "invokes azure-resource-visualizer skill for resource relationships prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Resource relationships prompt"
+    prompt: "Visualize how my Azure resources are connected and show their relationships"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # resource-group-visualization (end-to-end)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── e2e-architecture-diagram ──
+  # Jest: "generates architecture diagram for a resource group"
+  # Assertions: isSkillInvoked + doesWorkspaceFileIncludePattern(workspacePath, /graph\s+(TB|LR)/i, /architecture.*\.md$/i)
+  # Jest followUp: ["Continue with recommended options until complete."]
+  # Vally note: followUp mapped as multi-turn messages[] if supported;
+  #   prompt includes full instruction for single-turn fallback.
+  - name: "E2E architecture diagram generation"
+    prompt: "Generate a Mermaid diagram showing my Azure resource group architecture. Save the diagram to an architecture.md file in the current working directory."
+    # followUp (Jest): ["Continue with recommended options until complete."]
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      - type: file-matches
+        config:
+          path: "**/architecture*.md"
+          pattern: "(?i)graph\\s+(TB|LR)"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── e2e-resource-connections ──
+  # Jest: "visualizes resource connections and relationships"
+  # Assertions: isSkillInvoked + doesWorkspaceFileIncludePattern(workspacePath, /graph\s+(TB|LR)/i, /architecture.*\.md$/i)
+  # Jest followUp: ["Continue with recommended options until complete."]
+  - name: "E2E resource connections visualization"
+    prompt: "Visualize how my Azure resources are connected and show their relationships. Save the diagram to an architecture.md file in the current working directory."
+    # followUp (Jest): ["Continue with recommended options until complete."]
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      - type: file-matches
+        config:
+          path: "**/architecture*.md"
+          pattern: "(?i)graph\\s+(TB|LR)"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
