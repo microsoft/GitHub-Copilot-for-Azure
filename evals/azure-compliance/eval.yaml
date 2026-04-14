@@ -18,7 +18,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-compliance
+    - ../../plugin/skills/azure-compliance
 
 config:
   runs: 5
