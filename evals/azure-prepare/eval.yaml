@@ -7,6 +7,10 @@ description: "Integration evaluation for azure-prepare skill — migrated from J
 skill: azure-prepare
 version: "1.0"
 
+environment:
+  skills:
+    - "plugin/skills/azure-prepare"
+
 config:
   trials_per_task: 1
   timeout_seconds: 3600  # 60 min — matches long prepare+deploy workflows
