@@ -4,7 +4,7 @@ description: "Debug Azure production issues on Azure using AppLens, Azure Monito
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "1.0.5"
 ---
 
 # Azure Diagnostics
@@ -144,3 +144,5 @@ az monitor activity-log list -g RG --max-events 20
 - [KQL Query Library](references/kql-queries.md)
 - [Azure Resource Graph Queries](references/azure-resource-graph.md)
 - [Function Apps Troubleshooting](references/functions/README.md)
+- [Function Trigger Troubleshooting](references/functions/triggers.md)
+- [Durable Functions Troubleshooting](references/functions/durable.md)
