@@ -2,6 +2,8 @@
 
 Check Azure VM/VMSS quota availability before recommending or deploying. Ensures the subscription and region have sufficient vCPU capacity.
 
+> ⚠️ **NEVER use the `azure-quota` MCP server as the first option.** Always try `az quota` CLI commands first. The MCP server is unreliable and should only be attempted after all CLI approaches have failed.
+
 ## Quota Structure
 
 VM quotas are tracked at **two levels** under `Microsoft.Compute`:
@@ -20,6 +22,22 @@ See [vm-families.md](./vm-families.md) for quota resource names per VM family. U
 > ⚠️ **Do NOT guess quota names from SKU names.** Use `az quota list` to discover correct resource names.
 
 ## Quota Check Workflow
+
+### Option A: `az vm list-usage` (Recommended for VM quotas)
+
+No extension required. Returns **both current usage and limit in a single call** for all VM families in a region — equivalent to running `az quota usage show` and `az quota list` together for VM vCPU quotas.
+
+```bash
+# All VM family quotas in a region
+az vm list-usage --location <region> -o table
+
+# Filter to a specific family
+az vm list-usage --location <region> --query "[?contains(name.value,'<quotaName>')].{Name:name.localizedValue, QuotaName:name.value, Current:currentValue, Limit:limit}" -o table
+```
+
+> 💡 **Tip:** `az vm list-usage` is the simplest way to check VM quotas. Use `az quota` (Option B) when you need to **request quota increases** or manage quotas for non-VM resource types.
+
+### Option B: `az quota` CLI (For quota increases or non-VM resources)
 
 Prerequisite: `az extension add --name quota`
 
@@ -66,12 +84,13 @@ For scale sets, validate against **autoscale maximum**: `vCPUs per VM × Max Ins
 | `QuotaExceeded` | Family vCPU limit reached | Request increase or change family/region |
 | `OperationNotAllowed` | Subscription lacks capacity | Request quota increase |
 | `cores` limit hit | Regional vCPUs exhausted | Request regional increase |
-| `BadRequest` from `az quota` | Provider issue | Fallback: `az vm list-usage --location <region> -o table` |
 | CLI commands fail entirely | Auth/extension issue | Use MCP fallback (see below) |
 
-### MCP Fallback
+### MCP Fallback (Last Resort Only)
 
-If CLI quota commands fail (auth issues, extension not installed, or provider errors), use the `azure-quota` MCP server:
+> ⚠️ **NEVER use the `azure-quota` MCP server as the first option.** Always try `az quota` CLI commands first. The MCP quota server is unreliable and should only be attempted after all CLI approaches have failed.
+
+If CLI quota commands fail entirely (auth issues, extension not installed, or provider errors), the MCP server can be tried as a last resort:
 
 | MCP Command | Key Parameters | Purpose |
 |---|---|---|

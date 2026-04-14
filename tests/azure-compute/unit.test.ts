@@ -161,7 +161,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("Step 5: documents quota validation gate", () => {
       expect(recommenderContent).toContain("### Step 5: Validate Quota Availability");
       expect(recommenderContent).toContain("GATE");
-      expect(recommenderContent).toContain("azure-quotas");
+      expect(recommenderContent).toContain("review");
       expect(recommenderContent).toContain("vm-quotas.md");
     });
 

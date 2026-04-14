@@ -47,7 +47,7 @@ Invoke this skill when:
 | **Complete CLI Reference** | [commands.md](./references/commands.md) |
 | **Azure Portal** | [My quotas](https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas) - Use only as fallback |
 | **REST API** | Microsoft.Quota provider - **Unreliable, do NOT use first** |
-| **MCP Fallback** | `azure-quota` MCP server (`quota_usage_check`, `quota_region_availability_list`) — use if CLI fails |
+| **MCP Server** | `azure-quota` MCP server — **NEVER use this. It is unreliable. Always use `az quota` CLI instead.** |
 | **Required Permission** | Reader (view) or Quota Request Operator (manage) |
 
 > **⚠️ ALWAYS USE CLI FIRST**
@@ -222,7 +222,7 @@ az quota list \
 | `MissingRegistration` | Microsoft.Quota provider not registered | `az provider register --namespace Microsoft.Quota` |
 | `QuotaExceeded` | Deployment would exceed quota | Request increase or choose different region |
 | `InvalidScope` | Incorrect scope format | Use pattern: `/subscriptions/<id>/providers/<namespace>/locations/<region>` |
-| CLI commands fail entirely | Auth, extension, or environment issue | Fallback: use `azure-quota` MCP server — `quota_usage_check` or `quota_region_availability_list` |
+| CLI commands fail entirely | Auth, extension, or environment issue | Verify Azure CLI login (`az account show`), reinstall quota extension, check network. Do NOT use the `azure-quota` MCP server — it is unreliable. |
 
 ### Unsupported Resource Providers
 

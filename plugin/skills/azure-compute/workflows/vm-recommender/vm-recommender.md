@@ -109,9 +109,9 @@ Query the Azure Retail Prices API — [Retail Prices API Guide](../../references
 
 ### Step 5: Validate Quota Availability
 
-> ⚠️ **GATE — Do not present recommendations until quota is validated.**
+> **GATE — Do not present recommendations until quota is validated.**
 
-If the user has an Azure subscription and region, **invoke the azure-quotas skill** to check vCPU capacity for each candidate VM family. Skip this step if no subscription — add a note that quota should be checked before deployment.
+If the user has an Azure subscription and region, review [VM Quota Validation Guide](../../references/vm-quotas.md) to check vCPU capacity for each candidate VM family. Skip this step if no subscription — add a note that quota should be checked before deployment.
 
 | Outcome | Action |
 |---|---|
