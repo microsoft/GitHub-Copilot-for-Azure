@@ -2,10 +2,10 @@
 
 exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, connectivity troubleshooting, and capacity reservations. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot, capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, associate VM with CRG, disassociate VM from CRG.",
+  "description": "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, connectivity troubleshooting, and capacity reservations. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot, capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, CRG association, CRG disassociation.",
   "extractedKeywords": [
     "3389",
-    "associate",
+    "association",
     "autoscale",
     "azure",
     "backend",
@@ -18,11 +18,10 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill descripti
     "connect",
     "connectivity",
     "cost",
-    "disassociate",
+    "disassociation",
     "estimate",
     "family",
     "flexible",
-    "from",
     "guarantee",
     "learning",
     "lightweight",
@@ -53,7 +52,6 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill descripti
     "vmss",
     "website",
     "when",
-    "with",
     "workload",
   ],
   "name": "azure-compute",
@@ -63,7 +61,7 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill descripti
 exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "3389",
-  "associate",
+  "association",
   "autoscale",
   "azure",
   "backend",
@@ -76,11 +74,10 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "connect",
   "connectivity",
   "cost",
-  "disassociate",
+  "disassociation",
   "estimate",
   "family",
   "flexible",
-  "from",
   "guarantee",
   "learning",
   "lightweight",
@@ -111,7 +108,6 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "vmss",
   "website",
   "when",
-  "with",
   "workload",
 ]
 `;
