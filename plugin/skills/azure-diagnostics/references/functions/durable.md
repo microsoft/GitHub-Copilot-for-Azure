@@ -43,8 +43,15 @@ func durable terminate --id INSTANCE_ID --reason "Manual termination — stuck" 
   --connection-string-setting AzureWebJobsStorage --task-hub-name TASKHUB
 
 # Purge completed/terminated instances older than 7 days
+# Compute cutoff timestamp: try GNU date first, then BSD/macOS date
+if CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null); then
+  :
+else
+  CUTOFF=$(date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)
+fi
+
 func durable purge-history --connection-string-setting AzureWebJobsStorage \
-  --task-hub-name TASKHUB --created-before "$(date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)"
+  --task-hub-name TASKHUB --created-before "$CUTOFF"
 ```
 
 > ⚠️ **Warning:** Termination is immediate and non-recoverable. Activity functions already running will complete, but their results are discarded.
@@ -59,7 +66,7 @@ Orchestrator functions replay from history. Any non-deterministic call breaks re
 |-------------|---------------|---------------------|
 | `DateTime.Now` / `DateTime.UtcNow` | Different value on replay | `context.CurrentUtcDateTime` |
 | `Guid.NewGuid()` | Different GUID on replay | `context.NewGuid()` |
-| `Thread.Sleep` / `Task.Delay` | Blocks orchestrator thread | `context.CreateTimer()` |
+| `Thread.Sleep` / `Task.Delay` | Not replay-safe; uses non-durable timers so waits aren't persisted or deterministic | `context.CreateTimer()` |
 | Direct HTTP calls | Different response on replay | Use activity function or `context.CallHttpAsync()` |
 | Environment variables | May change between replays | Pass config as orchestrator input |
 | Random number generation | Non-deterministic | Generate in activity, pass to orchestrator |
@@ -90,12 +97,13 @@ Multiple function apps sharing the same task hub causes cross-contamination of o
 
 **Diagnose:**
 ```bash
-# Check current task hub name
+# Check if a task hub name override is set via app settings
 az functionapp config appsettings list -n APP -g RG \
-  --query "[?name=='AzureWebJobsStorage']" -o table
+  --query "[?name=='AzureFunctionsJobHost__extensions__durableTask__hubName']" -o table
 
-# Inspect host.json for hub name
-az webapp config show -n APP -g RG --query "siteConfig.appSettings"
+# If no override is set, the hub name comes from host.json:
+#   - Inspect host.json in your source repo, or
+#   - Use Kudu (Advanced Tools) / zip-deployed content to view host.json in the deployed app
 ```
 
 **Fix — Set unique hub names in host.json:**
@@ -104,7 +112,7 @@ az webapp config show -n APP -g RG --query "siteConfig.appSettings"
   "version": "2.0",
   "extensions": {
     "durableTask": {
-      "hubName": "MyApp-TaskHub-Prod"
+      "hubName": "MyAppTaskHubProd"
     }
   }
 }
@@ -123,7 +131,7 @@ az storage table list --account-name STORAGE \
   --query "[?starts_with(name, 'TASKHUB')]" --output table
 ```
 
-> 💡 **Tip:** Task hub names map to storage tables. The tables are named `<HubName>History` and `<HubName>Instances`.
+> 💡 **Tip:** Hub names must be alphanumeric only (no hyphens, underscores, or special characters). For the Azure Storage provider, a task hub name is used as a prefix for multiple tables and queues. Common examples include the `<HubName>History` and `<HubName>Instances` tables, as well as control and work-item queues (e.g., `<HubName>-control` and `<HubName>-workitems`). See the [Durable Functions storage provider documentation](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-storage-providers#azure-storage) for the full schema.
 
 ---
 
@@ -160,9 +168,14 @@ traces
 
 **Diagnose excessive history growth:**
 ```bash
-# Count rows in instance history table
+# Verify history table has entries (existence check — not a full count)
 az storage entity query --table-name TASKHUBHistory --account-name STORAGE \
   --num-results 1 --select PartitionKey --query "items[0]"
+
+# To estimate history size for a specific orchestration instance, query by PartitionKey:
+az storage entity query --table-name TASKHUBHistory --account-name STORAGE \
+  --filter "PartitionKey eq 'INSTANCE_ID'" --select PartitionKey \
+  --query "length(items)"
 ```
 
 > ⚠️ **Warning:** An orchestration with 10,000+ history events will experience significant replay latency. Use `ContinueAsNew()` in long-running orchestrations to keep history size manageable.

@@ -8,7 +8,7 @@
 | 401 Unauthorized | Auth level mismatch | Verify `authLevel` in function.json matches request (function key vs anonymous) |
 | 404 Not Found | Route prefix misconfigured | Check `host.json` `extensions.http.routePrefix` — default is `api` |
 | CORS blocked | Missing allowed origins | `az functionapp cors add -n APP -g RG --allowed-origins "https://DOMAIN"` |
-| 408 / timeout | Execution exceeds limit | Consumption plan: 5 min max. Increase `functionTimeout` in host.json or switch to Premium |
+| 408 / timeout | Long-running execution or HTTP client/gateway idle timeout | Check `functionTimeout` in host.json (execution timeout) and client/front-end idle limits. For long-running work use async patterns (202 + status endpoint or Durable HTTP APIs), or move to Premium for longer sync executions. |
 
 **KQL — HTTP errors by status code:**
 ```kql
@@ -35,9 +35,9 @@ curl -s -w "\n%{http_code}" "https://APP.azurewebsites.net/api/FUNCTION?code=FUN
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Timer never fires | Invalid NCRONTAB expression | Validate with `NCrontab.Advanced` — field order: `{second} {minute} {hour} {day} {month} {day-of-week}` |
-| Timer fires twice | Multiple instances running | Set `"isSingleton": true` in function.json or use `host.json` singleton lock |
+| Timer fires twice | Multiple instances running | Configure singleton behavior via `host.json` (singleton settings) or language-specific singleton/lock attributes so only one instance runs the timer |
 | Missed timer execution | App was stopped / scaled to zero | Enable Always On (`az functionapp config set -n APP -g RG --always-on true`) — requires App Service plan |
-| Timer drift after deploy | Missed schedule catch-up | Set `UseMonitor: true` (default) — runtime tracks missed executions in storage |
+| Timer drift after deploy | Missed schedule catch-up | Ensure `"useMonitor": true` in the timer trigger binding in `function.json` (default) — runtime tracks missed executions in storage |
 
 **Diagnose:**
 ```bash
@@ -131,8 +131,13 @@ exceptions
 az servicebus queue show -n QUEUE --namespace-name NS -g RG \
   --query "{dlqCount:countDetails.deadLetterMessageCount, activeCount:countDetails.activeMessageCount}"
 
-# Peek dead-letter messages
-az servicebus queue authorization-rule list -n QUEUE --namespace-name NS -g RG
+# View dead-letter message contents
+# Note: Azure CLI does not currently support peeking DLQ message bodies directly.
+# Use one of the following instead:
+#   - Service Bus Explorer in the Azure portal (Service Bus namespace -> Queues -> <QUEUE> -> Dead-letter)
+#   - An Azure Service Bus SDK (for example, .NET, Java, Python, or JavaScript) with a receiver scoped to:
+#       "<QUEUE>/$DeadLetterQueue"
+#     and using a "peek" or "receive" operation to inspect messages.
 ```
 
 ---
