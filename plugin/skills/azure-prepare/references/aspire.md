@@ -196,7 +196,7 @@ $appHostDir = (Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object
 Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AddAzureFunctionsProject"
 ```
 
-**If `AddAzureFunctionsProject` is NOT found → skip to Step 5.**
+**If `AddAzureFunctionsProject` is NOT found → skip this step.**
 
 **2. Check if `AzureWebJobsSecretStorageType` is already configured:**
 
@@ -209,7 +209,7 @@ grep -n "AzureWebJobsSecretStorageType" "$APPHOST_DIR"/*.cs
 Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AzureWebJobsSecretStorageType"
 ```
 
-**If already present → skip to Step 5.**
+**If already present → skip this step.**
 
 **3. Add the environment variable to the Functions builder chain:**
 
