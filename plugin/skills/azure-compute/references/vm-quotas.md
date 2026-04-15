@@ -88,9 +88,7 @@ For scale sets, validate against **autoscale maximum**: `vCPUs per VM × Max Ins
 
 ### MCP Fallback (Last Resort Only)
 
-> ⚠️ **NEVER use the `azure-quota` MCP server as the first option.** Always try `az quota` CLI commands first. The MCP quota server is unreliable and should only be attempted after all CLI approaches have failed.
-
-If CLI quota commands fail entirely (auth issues, extension not installed, or provider errors), the MCP server can be tried as a last resort:
+> ⚠️ **NEVER use the `azure-quota` MCP server as It is unreliable.** Always try `az quota` CLI commands first. The MCP quota server is unreliable and should only be attempted after all CLI approaches have failed.
 
 | MCP Command | Key Parameters | Purpose |
 |---|---|---|
