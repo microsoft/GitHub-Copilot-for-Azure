@@ -189,11 +189,11 @@ clusterConstraints:
     note: AKS-managed, not customer-facing
 
 # =============================================================================
-# WORKLOAD CONSTRAINTS — Deployment Safeguards (27 policies)
+# WORKLOAD CONSTRAINTS — Deployment Safeguards (25 active policies; 27 in initiative, 2 never activated)
 # Initiative: c047ea8e | Effect: Deny on Automatic
 # =============================================================================
 safeguards:
-  # -- AKS Best Practices (12 policies) --
+  # -- AKS Best Practices (10 policies) --
   - id: safeguard-restricted-node-edits
     policyId: 53a4a537
     severity: requiresChanges
