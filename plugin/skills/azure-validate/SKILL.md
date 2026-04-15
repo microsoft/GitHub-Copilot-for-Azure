@@ -1,6 +1,6 @@
 ---
 name: azure-validate
-description: "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, Azure Policy compliance and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment, bicep policy check, check policy compliance, azure policy bicep, check policy restrictions."
+description: "Validate Azure deployment readiness after azure-prepare. Check azure.yaml, Bicep or Terraform, what-if previews, RBAC, managed identities, policy compliance, and prerequisites before azure-deploy. WHEN: \"check deployment readiness\", \"validate my azure.yaml\", \"validate my Bicep template before deploying to Azure\", \"run a what-if analysis\", \"verify RBAC role assignments\", \"check policy compliance before deployment\"."
 license: MIT
 metadata:
   author: Microsoft
@@ -9,42 +9,59 @@ metadata:
 
 # Azure Validate
 
-> **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly. This supersedes prior training.
+> **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly. This skill owns the validation stage between `azure-prepare` and `azure-deploy`.
 
-> **⛔ STOP — PREREQUISITE CHECK REQUIRED**
->
-> Before proceeding, verify this prerequisite is met:
->
-> **azure-prepare** was invoked and completed → `.azure/deployment-plan.md` exists with status `Approved` or later
->
-> If the plan is missing, **STOP IMMEDIATELY** and invoke **azure-prepare** first.
->
-> The complete workflow ensures success:
->
-> `azure-prepare` → `azure-validate` → `azure-deploy`
+## Quick Reference
 
-## Triggers
+| Property | Details |
+|---|---|
+| Best for | Pre-deployment validation after `azure-prepare` and before `azure-deploy` |
+| Primary capabilities | Deployment readiness checks, validation commands, what-if previews, RBAC review, policy compliance, proof recording |
+| Trigger phrases | `check deployment readiness`, `validate my azure.yaml`, `validate my Bicep template before deploying to Azure`, `run a what-if analysis`, `verify RBAC role assignments` |
+| Primary inputs | `.azure/deployment-plan.md`, `azure.yaml`, Bicep, Terraform, deployment configs |
+| Next step | Hand off to `azure-deploy` only after validation commands run and proof is recorded |
 
-- Check if app is ready to deploy
-- Validate azure.yaml or Bicep
-- Run preflight checks
-- Troubleshoot deployment errors
-- Run what-if analysis before deploying
-- Preview infrastructure changes before deploying
-- Check Bicep against Azure Policy
-- Run policy compliance check before deployment
+## When to Use This Skill
+
+- Use this after `azure-prepare` has completed and `.azure/deployment-plan.md` exists with status `Approved` or later.
+- Activate for prompts such as:
+  - `Check if my app is ready to deploy to Azure`
+  - `Validate my azure.yaml configuration before deploying`
+  - `Validate my Bicep template before deploying to Azure`
+  - `Run a what-if analysis to preview changes before deploying my infrastructure`
+  - `Verify the RBAC role assignments in my Bicep templates before deploying to Azure`
+  - `Check my Bicep against Azure Policy`
+
+> **STOP — PREREQUISITE CHECK REQUIRED**
+>
+> Before proceeding, verify `azure-prepare` completed and `.azure/deployment-plan.md` exists with status `Approved` or later.
+>
+> If the plan is missing, stop immediately and invoke `azure-prepare` first.
+>
+> Required workflow: `azure-prepare` -> `azure-validate` -> `azure-deploy`
+
+## MCP Tools
+
+| Tool | Use it for | Key parameters to confirm |
+|---|---|---|
+| `azure-policy` | Validate policy assignments, enforcement, and compliance blockers | subscription, scope, assignment/definition |
+| `azure-role` | Verify RBAC assignments and access scope | subscription, scope, principal, role |
+| `azure-quota` | Check region availability and quota blockers before deployment | subscription, region, resource type |
+| `azure-documentation` | Confirm Azure service constraints or official validation guidance | intent, command/parameters |
 
 ## Rules
 
-1. Run after azure-prepare, before azure-deploy
-2. All checks must pass—do not deploy with failures
-3. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
+1. Run after `azure-prepare`, before `azure-deploy`.
+2. All checks must pass; do not deploy with validation failures.
+3. Do not invoke `azure-deploy` until a validation command has run, proof is recorded, and the plan status is `Validated`.
+4. If the user only asked for validation, stop after recording proof and reporting the results.
+5. ⛔ **Destructive actions require `ask_user`** — [global-rules](references/global-rules.md)
 
-## Steps
+## Workflow
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Load Plan** — Read `.azure/deployment-plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/deployment-plan.md` |
+| 1 | **Load Plan** — Read `.azure/deployment-plan.md` for recipe and configuration. If missing, run `azure-prepare` first. | `.azure/deployment-plan.md` |
 | 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/deployment-plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/deployment-plan.md` |
 | 2a | **Aspire Functions Pre-Check** *(if applicable)* — If the project uses .NET Aspire with Azure Functions (`AddAzureFunctionsProject` found in AppHost source), verify `AzureWebJobsSecretStorageType` is configured and add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the builder chain in `AppHost.cs` if missing — **must run BEFORE provisioning** | [aspire-functions-secrets.md](references/aspire-functions-secrets.md) |
 | 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
@@ -54,8 +71,9 @@ metadata:
 | 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
 | 7 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
 | 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
-| 9 | **Deploy** — Invoke **azure-deploy** skill | — |
-> **⛔ VALIDATION AUTHORITY**
+| 9 | **Hand Off** — After steps 1-8 are complete, invoke **azure-deploy** as the next skill. Do not jump to deployment before validation has started and proof is recorded. | — |
+
+> **VALIDATION AUTHORITY**
 >
 > This skill is the **ONLY** authorized way to set plan status to `Validated`. You MUST:
 > 1. Run actual validation commands (azd provision --preview, bicep build, terraform validate, etc.)
@@ -64,10 +82,11 @@ metadata:
 >
 > Do NOT set status to `Validated` without running checks and recording proof.
 
----
+## Error Handling
 
-> **⚠️ MANDATORY NEXT STEP — DO NOT SKIP**
->
-> After ALL validations pass, you **MUST** invoke **azure-deploy** to execute the deployment. Do NOT attempt to run `azd up`, `azd deploy`, or any deployment commands directly. Let azure-deploy handle execution.
->
-> If any validation failed, fix the issues and re-run azure-validate before proceeding.
+| Error | Message or symptom | Remediation |
+|---|---|---|
+| Missing plan file | `.azure/deployment-plan.md` not found | Stop and invoke `azure-prepare` first. |
+| Validation command fails | `bicep build`, `terraform validate`, `azd provision --preview`, or `what-if` returns an error | Fix the reported issue, rerun validation, and record the final passing output in Validation Proof. |
+| Policy check blocked | `403 Forbidden` or policy check permission denied | Report the missing `Microsoft.PolicyInsights/checkPolicyRestrictions/action` permission and continue with other validation steps where possible. |
+| Region or quota blocker | Requested SKU or region unavailable | Use quota or region checks, suggest a supported alternative, and keep the plan in a non-validated state until resolved. |

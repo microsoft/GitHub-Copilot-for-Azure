@@ -1,5 +1,7 @@
 # Bicep Parsing Procedure
 
+> **Canonical copy**: This procedure is the canonical source for Bicep parsing guidance used by `azure-validate`. Update this file first, then keep any derivative guidance aligned with it.
+
 Parse Bicep templates into a structured resource model for comparison. Referenced by skills that analyze existing Bicep files.
 
 ---
