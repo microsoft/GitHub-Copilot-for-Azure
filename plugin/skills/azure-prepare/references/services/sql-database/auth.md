@@ -92,14 +92,9 @@ Server=tcp:{server}.database.windows.net,1433;Database={database};Authentication
 - `Microsoft.Data.SqlClient` (v5.1.0+)
 - `Azure.Identity` (for local development)
 
-### Legacy SQL Authentication (⛔ DO NOT USE)
+### Legacy SQL Authentication (⛔ DO NOT USE - EVER)
 
-> ❌ **DEPRECATED - DO NOT USE FOR NEW DEPLOYMENTS**
-> 
-> This authentication method is included for reference only. **DO NOT use SQL authentication for new Azure SQL deployments.** It will fail in any subscription with Entra-only authentication policies and violates Azure security best practices.
->
-> **Always use Entra-only authentication (documented above) for all new deployments.**
-
-```
-Server=tcp:{server}.database.windows.net,1433;Database={database};User ID={username};Password={password};Encrypt=True;
-```
+> ❌ **PROHIBITED — NEVER generate connection strings with `User ID` and `Password` parameters, and NEVER generate `administratorLogin` or `administratorLoginPassword` Bicep properties.**
+> This applies unconditionally — do not include them in any conditional, ternary, or optional branch.
+> SQL admin authentication is disabled in all subscriptions with Entra-only policies and violates Azure security best practices.
+> Always use the Entra ID `Authentication=Active Directory Default` connection string above.

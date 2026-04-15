@@ -26,6 +26,16 @@ ENDPOINT=$(azd env get-values | grep -E "SERVICE_.*_URI|.*_ENDPOINT" | head -1 |
 curl -f "$ENDPOINT/health" || curl -f "$ENDPOINT"
 ```
 
+**PowerShell:**
+```powershell
+# Get endpoint
+$Endpoint = azd env get-values | Select-String -Pattern 'SERVICE_.*_URI|.*_ENDPOINT' |
+    Select-Object -First 1 | ForEach-Object { ($_ -split '=', 2)[1] }
+
+# Test endpoint
+try { Invoke-WebRequest "$Endpoint/health" } catch { Invoke-WebRequest $Endpoint }
+```
+
 Expected: HTTP 200 response.
 
 ## Step 3: Report Results to User
@@ -60,6 +70,8 @@ Aspire Dashboard: https://aspire-dashboard.xxx.azurecontainerapps.io
 
 > ⚠️ If output was truncated, run `azd show` to retrieve endpoint URLs.
 
+> ⚠️ **Always use fully-qualified URLs with the `https://` scheme.** If a command returns a bare hostname (e.g. `myapp.azurestaticapps.net`), prepend `https://` before presenting it to the user.
+
 ## Step 4: Post-Deployment Verification (if applicable)
 
 For deployments with Azure SQL Database and managed identity:
@@ -79,6 +91,23 @@ az sql db query \
   --queries "SELECT name, type_desc FROM sys.database_principals WHERE type = 'E'"
 ```
 
+**PowerShell:**
+```powershell
+# Load environment variables
+azd env get-values | ForEach-Object {
+    $name, $value = $_.Split('=', 2)
+    Set-Item "env:$name" $value
+}
+
+# Check managed identity user exists in database
+az sql db query `
+  --server $env:SQL_SERVER `
+  --database $env:SQL_DATABASE `
+  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --auth-mode ActiveDirectoryDefault `
+  --queries "SELECT name, type_desc FROM sys.database_principals WHERE type = 'E'"
+```
+
 **Expected:** Should list the App Service or Container App managed identity.
 
 ### Verify Database Schema
@@ -92,6 +121,16 @@ az sql db query \
   --database "$SQL_DATABASE" \
   --resource-group "$AZURE_RESOURCE_GROUP" \
   --auth-mode ActiveDirectoryDefault \
+  --queries "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
+```
+
+**PowerShell:**
+```powershell
+az sql db query `
+  --server $env:SQL_SERVER `
+  --database $env:SQL_DATABASE `
+  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --auth-mode ActiveDirectoryDefault `
   --queries "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
 ```
 

@@ -1,0 +1,82 @@
+# Waza eval specification for azure-enterprise-infra-planner skill
+# Tests infrastructure planning from workload descriptions and correct anti-trigger behavior
+#
+# Run:  waza run tests/azure-enterprise-infra-planner/evals/eval.yaml -v
+# Or:   azd waza run tests/azure-enterprise-infra-planner/evals/eval.yaml -v
+name: azure-enterprise-infra-planner-eval
+description: |
+  Evaluation suite for the azure-enterprise-infra-planner skill.
+  Tests across dimensions:
+  - Infrastructure plan quality (resource selection, plan schema, plan-first workflow)
+  - Anti-trigger accuracy (redirects to azure-prepare, azure-deploy, azure-validate)
+  - IaC format awareness (Bicep and Terraform)
+  - Security posture (managed identity, RBAC, no connection strings)
+  - Workload coverage (GenAI, AKS, Container Apps, 3-tier, serverless, data pipeline, ML, IoT, backup/DR)
+
+skill: azure-enterprise-infra-planner
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 600
+  parallel: false
+  executor: mock
+  model: claude-sonnet-4.6
+  skill_directories:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+
+metrics:
+  - name: task_completion
+    weight: 0.3
+    threshold: 0.8
+    description: Did the skill complete the planning task or correctly redirect anti-triggers?
+
+  - name: trigger_accuracy
+    weight: 0.2
+    threshold: 0.9
+    description: Does the skill trigger on appropriate prompts and reject anti-triggers?
+
+  - name: plan_quality
+    weight: 0.3
+    threshold: 0.8
+    description: Does the plan contain appropriate resources, schema, and IaC references?
+
+  - name: behavior_quality
+    weight: 0.2
+    threshold: 0.7
+    description: Plan-first workflow, security posture, efficiency bounds
+
+graders:
+  # All tasks must produce real output
+  - type: code
+    name: has_output
+    config:
+      assertions:
+        - "len(output) > 10"
+
+  # No runtime failures — catch fatal errors in any task
+  - type: text
+    name: no_runtime_failure
+    config:
+      regex_not_match:
+        - "(?i)fatal error|crashed|unhandled exception|panic:"
+
+  # Security posture — should never suggest connection strings or keys
+  - type: text
+    name: security_posture
+    config:
+      regex_not_match:
+        - "(?i)connection.?string.*=.*Account(Key|Name)="
+        - "(?i)SharedAccessKey="
+        - "(?i)masterKey="
+
+  # Behavior constraints — only evaluated when session digest available
+  - type: behavior
+    name: efficiency
+    config:
+      max_tool_calls: 50
+      max_duration_ms: 600000
+      skip_if_no_digest: true
+
+tasks:
+  - "tasks/*.yaml"

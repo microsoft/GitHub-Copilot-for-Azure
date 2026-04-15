@@ -50,6 +50,32 @@ find . -name "*.AppHost.csproj"
 grep -r "Aspire.Hosting" . --include="*.csproj"
 ```
 
+### ⛔ Step 1a: Pre-Check for Custom/Non-Deployable Resources (MANDATORY)
+
+**Before running `azd init --from-code`, scan the AppHost source code to understand whether the app may contain local-only custom resources.**
+
+```bash
+# Find the AppHost project and scan only its source directory
+APPHOST_PROJECT=$(find . -name "*.AppHost.csproj" | head -1)
+APPHOST_DIR=$(dirname "$APPHOST_PROJECT")
+grep -r "ExcludeFromManifest" "$APPHOST_DIR" --include="*.cs" | head -20
+```
+
+**PowerShell:**
+```powershell
+# Find the AppHost project and scan only its source directory
+$appHostProject = Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1
+$appHostDir = $appHostProject.DirectoryName
+Get-ChildItem -Path $appHostDir -Recurse -Filter "*.cs" | Select-String "ExcludeFromManifest" | Select-Object -First 20
+```
+
+This scan is informational. `.ExcludeFromManifest()` can appear alongside deployable resources, so a positive match does **not** immediately block deployment. What matters is the final `azure.yaml` output after `azd init --from-code` completes:
+
+- If `azd init` **fails** with `unsupported resource type` → see Step 2 error guidance below.
+- If `azd init` **succeeds** but `azure.yaml` has an empty or missing `services` section → see Step 4a below.
+
+> 💡 **Why scan early:** Knowing that `.ExcludeFromManifest()` is present gives useful context when azd errors or generates an empty manifest — it confirms the app intentionally targets local development rather than Azure deployment.
+
 ### Step 2: Initialize with azd
 
 **CRITICAL: For Aspire projects, use `azd init --from-code -e <environment-name>` instead of creating azure.yaml manually.**
@@ -72,6 +98,17 @@ azd init --from-code -e "$ENV_NAME"
 - `--from-code`: Tells azd to detect the AppHost automatically (no "How do you want to initialize?" prompt)
 - `-e <name>`: Provides environment name upfront (no "Enter environment name:" prompt)
 - Together, they enable fully non-interactive operation essential for automation, agents, and CI/CD pipelines
+
+**⛔ If `azd init --from-code` fails with "unsupported resource type":**
+
+This error means the AppHost contains custom Aspire resource types that azd cannot process for Azure deployment:
+
+1. ⛔ **Do NOT attempt to fix this error by modifying source code** — do not add `.ExcludeFromManifest()` calls or otherwise patch the AppHost
+2. ⛔ **Do NOT proceed with deployment** — the application is designed for local development only
+3. ✅ Record a blocker: "AppHost contains custom Aspire resource types (`unsupported resource type`) that cannot be deployed to Azure"
+4. ✅ Inform the user: this application uses custom Aspire resource authoring patterns intended for local tooling, not cloud deployment
+
+> ⚠️ **Why modifying source code is forbidden:** Adding `.ExcludeFromManifest()` may suppress the error and allow `azd init` to succeed, but the deployment outcome will not reflect the application's actual intent. The custom resources are deliberately designed to be local-only.
 
 ### Step 3: Configure Subscription and Location
 
@@ -106,6 +143,22 @@ Confirm that `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` match the user's confi
 | `azure.yaml` | Project root | Service definitions from AppHost |
 | `infra/` | Project root | Bicep templates for Azure resources |
 | `.azure/` | Project root | Environment configuration |
+
+### ⛔ Step 4a: Validate Generated Output
+
+**MANDATORY: After `azd init --from-code` completes, verify the generated `azure.yaml` contains deployable services.**
+
+```bash
+# Check if azure.yaml has a non-empty services section
+cat azure.yaml
+```
+
+**If the `services` section is empty or missing:** The AppHost has no deployable resources. This happens when all resources use `.ExcludeFromManifest()` (e.g., custom resource demonstrations, local-only tooling). In this case:
+
+1. ⛔ **Do NOT proceed with deployment** — there is nothing to deploy
+2. ✅ Keep the plan status in a valid state (for example, leave it as **Planning**) and record a blocker in the plan body with the reason: "Application contains only custom/demo Aspire resources with no Azure-deployable services"
+3. ✅ Inform the user that this application is designed for local development and cannot be meaningfully deployed to Azure
+4. ⛔ Do NOT manually create Bicep, Dockerfiles, or azure.yaml to work around this — the absence of services is the correct result
 
 **Example generated azure.yaml:**
 ```yaml
@@ -201,6 +254,28 @@ azd init --from-code -e "my-env"
 1. Verify AppHost project exists: `find . -name "*.AppHost.csproj"`
 2. Check project builds: `dotnet build`
 3. Ensure Aspire.Hosting package is referenced in AppHost project
+
+### Error: "unsupported resource type" during manifest generation
+
+**Symptoms:** `azd init --from-code` fails with output like:
+```
+error: unsupported resource type: <custom-resource-type>
+```
+or the manifest generation step errors on child resources (e.g., ClockHand, or other custom resource types defined in the AppHost).
+
+**Cause:** The AppHost contains custom Aspire resource types that azd cannot convert to Azure deployable resources. These custom types are typically:
+- Demonstration resources showing developers how to build Aspire extensions for local tooling
+- Resources that wrap local services without Azure equivalents
+- Custom child resources (e.g., subcomponents of a custom Aspire integration)
+
+**Resolution:**
+
+1. ⛔ **Do NOT attempt to fix this error by modifying source code** — do not add `.ExcludeFromManifest()` calls or otherwise patch the AppHost
+2. ⛔ **Do NOT proceed with deployment** — this is a deployment blocker, not a recoverable error
+3. ✅ Record a blocker in the deployment plan: "AppHost contains custom Aspire resource types not supported for Azure deployment (unsupported resource type)"
+4. ✅ Inform the user that this application is designed for local development and cannot be meaningfully deployed to Azure
+
+> ⚠️ **Why this is a hard stop:** Custom resource types that produce "unsupported resource type" errors are intentionally not deployable. Adding `.ExcludeFromManifest()` to suppress the error may allow `azd init` to succeed, but the resulting deployment would not represent the application's actual functionality.
 
 ### Azure Functions: Secret initialization from Blob storage failed
 

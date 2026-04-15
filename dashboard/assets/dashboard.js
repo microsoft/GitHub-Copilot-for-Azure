@@ -7,6 +7,20 @@
 /** @type {Record<string, (section: HTMLElement, category: object) => void>} */
 const panelRenderers = {};
 
+// ── Thresholds ──────────────────────────────────────────────────────────────
+
+/** Minimum passing rate for skill invocation tests (0–1). */
+const SIR_THRESHOLD = 0.8;
+const SIR_THRESHOLD_PCT = Math.round(SIR_THRESHOLD * 100);
+
+/** Minimum passing confidence level for skill confidence panels (0–1). */
+const CONFIDENCE_THRESHOLD = 0.8;
+const CONFIDENCE_THRESHOLD_PCT = Math.round(CONFIDENCE_THRESHOLD * 100);
+
+/** Minimum passing rate for end-to-end tests per skill (0–1). */
+const E2E_THRESHOLD = 0.7;
+const E2E_THRESHOLD_PCT = Math.round(E2E_THRESHOLD * 100);
+
 /**
  * Register a renderer function for a named category.
  * @param {string} name - Category key from the report.
@@ -128,51 +142,11 @@ function renderFilterableSummaryStats(container, summary, itemsContainer) {
   container.appendChild(row);
 }
 
-/**
- * Create a horizontal progress bar.
- * @param {string} label
- * @param {number} percent - 0–100
- * @returns {HTMLElement}
- */
-function progressBar(label, percent) {
-  const clamped = Math.max(0, Math.min(100, percent));
-  const container = el("div", "progress-bar-container");
 
-  container.appendChild(el("span", "progress-bar-label", label));
-
-  const track = el("div", "progress-bar-track");
-  track.setAttribute("role", "progressbar");
-  track.setAttribute("aria-valuenow", String(Math.round(clamped)));
-  track.setAttribute("aria-valuemin", "0");
-  track.setAttribute("aria-valuemax", "100");
-  track.setAttribute("aria-label", label + " coverage");
-
-  const fill = el("div", "progress-bar-fill");
-  fill.style.width = clamped + "%";
-  fill.style.backgroundColor = barColor(clamped);
-  track.appendChild(fill);
-
-  container.appendChild(track);
-  container.appendChild(el("span", "progress-bar-value", clamped.toFixed(1) + "%"));
-
-  return container;
-}
-
-/**
- * Return a color based on percentage thresholds.
- * @param {number} pct
- * @returns {string}
- */
-function barColor(pct) {
-  if (pct >= 80) return "var(--color-pass)";
-  if (pct >= 50) return "var(--color-warn)";
-  return "var(--color-fail)";
-}
 
 /**
  * Return the CSS color variable for a token item status.
- * Unlike barColor() which treats high % as good (for coverage),
- * token bars use item status: fail = over budget, warn = near limit, pass = within budget.
+ * Token bars use item status: fail = over budget, warn = near limit, pass = within budget.
  * @param {string} status - pass | warn | fail
  * @returns {string}
  */
@@ -467,10 +441,6 @@ function setupCollapsible(section, category, name) {
 
   // Panel-specific action links (GitHub Actions)
   var panelLinks = {
-    integration: {
-      text: "View Test Runs",
-      href: "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/test-all-integration.yml",
-    },
     tests: {
       text: "View All Workflows",
       href: "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions",
@@ -677,58 +647,7 @@ registerPanel("tests", (section, category) => {
   }
 });
 
-// 2. Coverage panel: horizontal bar charts
-registerPanel("coverage", (section, category) => {
-  const summaryEl = section.querySelector(".panel-summary");
-  const itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  if (category.summary) {
-    renderFilterableSummaryStats(summaryEl, category.summary, itemsEl);
-  }
-
-  const items = category.items || [];
-  if (items.length === 0 || category.status === "skip") {
-    itemsEl.appendChild(
-      el(
-        "p",
-        "no-data-message",
-        category.items?.[0]?.message || "No coverage data available."
-      )
-    );
-    return;
-  }
-
-  // Look for coverage items with metadata containing metric percentages
-  for (const item of items) {
-    const meta = item.metadata || {};
-    const metrics = ["statements", "branches", "functions", "lines"];
-    let hasMetric = false;
-
-    for (const metric of metrics) {
-      if (metric in meta) {
-        itemsEl.appendChild(progressBar(metric, Number(meta[metric])));
-        hasMetric = true;
-      }
-    }
-
-    if (!hasMetric) {
-      // Fallback: show item as row
-      const row = el("div", "progress-bar-container");
-      row.appendChild(el("span", "progress-bar-label", shortName(item.name)));
-      row.appendChild(statusBadge(item.status));
-      if (item.message) {
-        row.appendChild(el("span", "item-message", item.message));
-      }
-      itemsEl.appendChild(row);
-    }
-  }
-});
-
-// 3. Lint panel: error/warning counts + expandable file list
+// 2. Lint panel: error/warning counts + expandable file list
 registerPanel("lint", (section, category) => {
   const summaryEl = section.querySelector(".panel-summary");
   const itemsEl = section.querySelector(".panel-items");
@@ -984,161 +903,6 @@ registerPanel("references", (section, category) => {
   itemsEl.appendChild(list);
 });
 
-// 8. Quality Metrics panel: threshold cards + per-skill breakdown
-registerPanel("integration", (section, category) => {
-  var summaryEl = section.querySelector(".panel-summary");
-  var itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  var items = category.items || [];
-  var summary = category.summary;
-
-  // Separate threshold items from skill-breakdown items
-  var thresholdItems = [];
-  var skillItems = [];
-  for (var k = 0; k < items.length; k++) {
-    var meta = items[k].metadata || {};
-    if (meta.metricType === "threshold") {
-      thresholdItems.push(items[k]);
-    } else {
-      skillItems.push(items[k]);
-    }
-  }
-
-  // Summary row with filterable stat boxes (threshold counts)
-  if (summary) {
-    renderFilterableSummaryStats(summaryEl, summary, itemsEl);
-  }
-
-  // Custom summary text for the collapsed header
-  if (summary) {
-    var parts = [];
-    if (summary.passed > 0) parts.push(summary.passed + " met");
-    if (summary.failed > 0) parts.push(summary.failed + " not met");
-    if (summary.warnings > 0) parts.push(summary.warnings + " near threshold");
-    section.setAttribute(
-      "data-summary-text",
-      parts.join(", ") || "No thresholds checked",
-    );
-  }
-
-  // Handle skip / empty state
-  if (category.status === "skip" || items.length === 0) {
-    var skipMsg =
-      items.length > 0 && items[0].message
-        ? items[0].message
-        : "No quality metrics available.";
-    itemsEl.appendChild(el("p", "no-data-message", skipMsg));
-    return;
-  }
-
-  // ── Threshold metric cards ────────────────────────────────────────────
-  if (thresholdItems.length > 0) {
-    var cardsContainer = el("div", "quality-threshold-cards");
-
-    for (var ti = 0; ti < thresholdItems.length; ti++) {
-      var tItem = thresholdItems[ti];
-      var tMeta = tItem.metadata || {};
-      var card = el("div", "quality-threshold-card");
-      card.setAttribute("data-item-status", tItem.status);
-
-      // Metric name
-      card.appendChild(el("div", "quality-metric-name", tItem.name));
-
-      // Big value
-      var valueStr =
-        tMeta.unit === "%"
-          ? Math.round(Number(tMeta.rate)) + "%"
-          : String(tMeta.rate);
-      card.appendChild(el("div", "quality-metric-value", valueStr));
-
-      // Threshold label
-      var thresholdStr =
-        tMeta.direction === "below"
-          ? "threshold: < " + tMeta.threshold
-          : "threshold: " +
-          tMeta.threshold +
-          (tMeta.unit === "%" ? "%" : "");
-      card.appendChild(el("div", "quality-metric-threshold", thresholdStr));
-
-      // Pass/fail badge
-      card.appendChild(statusBadge(tItem.status));
-
-      cardsContainer.appendChild(card);
-    }
-
-    itemsEl.appendChild(cardsContainer);
-  }
-
-  // ── Skill breakdown table ─────────────────────────────────────────────
-  if (skillItems.length > 0) {
-    var tableSection = el("div", "quality-skill-breakdown");
-    tableSection.appendChild(
-      el("h3", "quality-section-heading", "Breakdown by Skill"),
-    );
-
-    var table = el("table", "quality-skill-table");
-
-    // Header row
-    var thead = el("thead");
-    var headerRow = el("tr");
-    var headers = ["Skill", "Tests", "Passed", "Pass Rate", "Tokens", "Duration"];
-    for (var hi = 0; hi < headers.length; hi++) {
-      headerRow.appendChild(el("th", "", headers[hi]));
-    }
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    // Body rows
-    var tbody = el("tbody");
-    for (var si = 0; si < skillItems.length; si++) {
-      var sItem = skillItems[si];
-      var sMeta = sItem.metadata || {};
-      var tr = el("tr");
-      tr.setAttribute("data-item-status", sItem.status);
-
-      // Status + Name cell
-      var nameCell = el("td");
-      nameCell.appendChild(statusBadge(sItem.status));
-      nameCell.appendChild(document.createTextNode(" " + sItem.name));
-      tr.appendChild(nameCell);
-
-      // Tests
-      tr.appendChild(el("td", "", String(sMeta.tests || 0)));
-
-      // Passed
-      tr.appendChild(el("td", "", String(sMeta.passed || 0)));
-
-      // Pass Rate
-      var passRateVal =
-        sMeta.passRate !== undefined ? sMeta.passRate + "%" : "\u2014";
-      tr.appendChild(el("td", "", passRateVal));
-
-      // Tokens
-      tr.appendChild(el("td", "", String(sMeta.tokenDisplay || "\u2014")));
-
-      // Duration
-      var durMs = Number(sMeta.avgDurationMs || sMeta.durationMs || 0);
-      var durStr = durMs > 0 ? (durMs / 1000).toFixed(1) + "s" : "\u2014";
-      tr.appendChild(el("td", "", durStr));
-
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    tableSection.appendChild(table);
-    itemsEl.appendChild(tableSection);
-  }
-
-  if (thresholdItems.length === 0 && skillItems.length === 0) {
-    itemsEl.appendChild(
-      el("p", "no-data-message", "No quality metrics available."),
-    );
-  }
-});
-
 // ── URL Hash State ───────────────────────────────────────────────────────────
 
 /**
@@ -1379,11 +1143,502 @@ function applyItemFilter(section, status) {
   }
 }
 
+// ── Shared Test Results Loader ──────────────────────────────────────────────
+
+/**
+ * In-flight promise for the latest test results, shared across both panels
+ * so that /api/dates and /api/test-results are only fetched once per page load.
+ * @type {Promise<{latestDate: string|null, skillResults: object}> | null}
+ */
+let _latestTestResultsPromise = null;
+
+/**
+ * Returns a memoized promise that resolves to { latestDate, skillResults }.
+ * Both panels call this so the network requests are deduplicated.
+ * @returns {Promise<{latestDate: string|null, skillResults: object}>}
+ */
+function fetchLatestTestResults() {
+  if (_latestTestResultsPromise) return _latestTestResultsPromise;
+  _latestTestResultsPromise = (async () => {
+    const datesRes = await fetch("/api/dates");
+    if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
+    const dates = await datesRes.json();
+    if (!Array.isArray(dates) || dates.length === 0) {
+      return { latestDate: null, skillResults: {} };
+    }
+    const latestDate = dates[0];
+    const resultsRes = await fetch(
+      "/api/test-results/" + encodeURIComponent(latestDate),
+    );
+    if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
+    const skillResults = await resultsRes.json();
+    return { latestDate, skillResults };
+  })();
+  return _latestTestResultsPromise;
+}
+
+// ── Skill Invocation Rates Panel ────────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the skill invocation
+ * rate for every prompt on the main dashboard.
+ * A prompt is considered passing when its rate is >= SIR_THRESHOLD.
+ */
+async function loadSkillInvocationRates() {
+  const section = document.getElementById("panel-skill-invocation");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderSkillInvocationPanel(section, [], "skip", 0, 0, null);
+      return;
+    }
+
+    // Flatten all test cases that carry a skillInvocationRate
+    const prompts = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const allTests = [
+        ...(stats.passedTests || []),
+        ...(stats.failedTests || []),
+      ];
+      for (const test of allTests) {
+        if (test.skillInvocationRate !== undefined) {
+          prompts.push({
+            skillName: skillName,
+            testName: test.testName,
+            rate: test.skillInvocationRate,
+          });
+        }
+      }
+    }
+
+    // Sort: below threshold first (worst first), then ascending by rate within each group
+    prompts.sort(function (a, b) {
+      const aPass = a.rate >= SIR_THRESHOLD;
+      const bPass = b.rate >= SIR_THRESHOLD;
+      if (aPass !== bPass) return aPass ? 1 : -1;
+      return a.rate - b.rate;
+    });
+
+    const passing = prompts.filter(function (p) { return p.rate >= SIR_THRESHOLD; }).length;
+    const failing = prompts.length - passing;
+    const overallStatus =
+      prompts.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
+
+    renderSkillInvocationPanel(
+      section, prompts, overallStatus, passing, failing, latestDate,
+    );
+  } catch {
+    renderSkillInvocationPanel(section, [], "skip", 0, 0, null);
+  }
+}
+
+/**
+ * Populate and finalise the skill invocation rates panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, testName:string, rate:number}>} prompts
+ * @param {string} overallStatus - pass | fail | skip
+ * @param {number} passing
+ * @param {number} failing
+ * @param {string|null} dateLabel
+ */
+function renderSkillInvocationPanel(
+  section, prompts, overallStatus, passing, failing, dateLabel,
+) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  const total = prompts.length;
+
+  if (total > 0) {
+    const row = el("div", "stats-row");
+    row.appendChild(statBox(total, "Total"));
+    row.appendChild(filterableStatBox(passing, "Above " + SIR_THRESHOLD_PCT + "%", "pass", itemsEl));
+    if (failing > 0) {
+      row.appendChild(filterableStatBox(failing, "Below " + SIR_THRESHOLD_PCT + "%", "fail", itemsEl));
+    }
+    summaryEl.appendChild(row);
+  }
+
+  if (total === 0) {
+    itemsEl.appendChild(
+      el("p", "no-data-message", "No skill invocation rate data available."),
+    );
+  } else {
+    const list = el("ul", "items-list");
+    for (const prompt of prompts) {
+      const status = prompt.rate >= SIR_THRESHOLD ? "pass" : "fail";
+      const li = el("li");
+      li.setAttribute("data-item-status", status);
+      li.appendChild(statusBadge(status));
+      li.appendChild(el("span", "item-name", prompt.testName));
+      const rateSpan = el("span", "sir-rate");
+      rateSpan.setAttribute("data-status", status);
+      rateSpan.textContent = (prompt.rate * 100).toFixed(1) + "%";
+      li.appendChild(rateSpan);
+      list.appendChild(li);
+    }
+    itemsEl.appendChild(list);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", overallStatus);
+
+  var summaryText =
+    total === 0
+      ? "No data"
+      : passing + " above " + SIR_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + SIR_THRESHOLD_PCT + "%" : "");
+  if (dateLabel) summaryText += " \u2014 " + dateLabel;
+  section.setAttribute("data-summary-text", summaryText);
+
+  var fakeCategory = {
+    status: overallStatus,
+    summary: {
+      total: total,
+      passed: passing,
+      failed: failing,
+      warnings: 0,
+      skipped: 0,
+    },
+    items: prompts.map(function (p) {
+      return { name: p.testName, status: p.rate >= SIR_THRESHOLD ? "pass" : "fail" };
+    }),
+  };
+
+  setupCollapsible(section, fakeCategory, "skill-invocation");
+  createItemFilter(section);
+}
+
+// ── E2E Pass Rate per Skill Panel ───────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the end-to-end pass
+ * rate for every skill on the main dashboard.
+ * A skill is considered passing when its e2e rate is >= E2E_THRESHOLD.
+ */
+async function loadE2EPassRates() {
+  const section = document.getElementById("panel-e2e-pass-rate");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderE2EPassRatePanel(section, [], "skip", 0, 0, null);
+      return;
+    }
+
+    // Compute e2e pass rate per skill
+    const skills = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const total =
+        (stats.skillInvocationTestsPassed || 0) +
+        (stats.skillInvocationTestsFailed || 0) +
+        (stats.otherTestsPassed || 0) +
+        (stats.otherTestsFailed || 0);
+      if (total === 0) continue;
+      const passed =
+        (stats.skillInvocationTestsPassed || 0) + (stats.otherTestsPassed || 0);
+      skills.push({ skillName, rate: passed / total });
+    }
+
+    // Sort: below threshold first (worst first), then ascending within each group
+    skills.sort(function (a, b) {
+      const aPass = a.rate >= E2E_THRESHOLD;
+      const bPass = b.rate >= E2E_THRESHOLD;
+      if (aPass !== bPass) return aPass ? 1 : -1;
+      return a.rate - b.rate;
+    });
+
+    const passing = skills.filter(function (s) { return s.rate >= E2E_THRESHOLD; }).length;
+    const failing = skills.length - passing;
+    const overallStatus =
+      skills.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
+
+    renderE2EPassRatePanel(
+      section, skills, overallStatus, passing, failing, latestDate,
+    );
+  } catch {
+    renderE2EPassRatePanel(section, [], "skip", 0, 0, null);
+  }
+}
+
+/**
+ * Populate and finalise the e2e pass rate panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, rate:number}>} skills
+ * @param {string} overallStatus - pass | fail | skip
+ * @param {number} passing
+ * @param {number} failing
+ * @param {string|null} dateLabel
+ */
+function renderE2EPassRatePanel(
+  section, skills, overallStatus, passing, failing, dateLabel,
+) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  const total = skills.length;
+
+  if (total > 0) {
+    const row = el("div", "stats-row");
+    row.appendChild(statBox(total, "Total"));
+    row.appendChild(filterableStatBox(passing, "Above " + E2E_THRESHOLD_PCT + "%", "pass", itemsEl));
+    if (failing > 0) {
+      row.appendChild(filterableStatBox(failing, "Below " + E2E_THRESHOLD_PCT + "%", "fail", itemsEl));
+    }
+    summaryEl.appendChild(row);
+  }
+
+  if (total === 0) {
+    itemsEl.appendChild(
+      el("p", "no-data-message", "No end-to-end pass rate data available."),
+    );
+  } else {
+    const list = el("ul", "items-list");
+    for (const skill of skills) {
+      const status = skill.rate >= E2E_THRESHOLD ? "pass" : "fail";
+      const pct = Math.round(skill.rate * 100);
+      const li = el("li");
+      li.setAttribute("data-item-status", status);
+
+      // Progress bar track — CSS custom property keeps the threshold marker
+      // position in sync with the JS threshold constant.
+      const barTrack = el("div", "e2e-rate-bar-track");
+      barTrack.style.setProperty("--e2e-threshold-pct", String(E2E_THRESHOLD_PCT));
+
+      const barFill = el("div", "e2e-rate-bar-fill");
+      barFill.style.width = pct + "%";
+      barFill.setAttribute("data-status", status);
+      barFill.setAttribute("role", "progressbar");
+      barFill.setAttribute("aria-valuemin", "0");
+      barFill.setAttribute("aria-valuemax", "100");
+      barFill.setAttribute("aria-valuenow", String(pct));
+      barFill.setAttribute(
+        "aria-label",
+        skill.skillName + ": " + pct + "% e2e pass rate (" +
+          (status === "pass" ? "above" : "below") + " " + E2E_THRESHOLD_PCT + "% threshold)",
+      );
+
+      // Threshold marker — hidden from AT; sr-only sibling communicates the threshold
+      const marker = el("div", "e2e-rate-threshold-marker");
+      marker.setAttribute("aria-hidden", "true");
+      const markerSrText = el("span", "sr-only", E2E_THRESHOLD_PCT + "% pass threshold");
+      barTrack.appendChild(barFill);
+      barTrack.appendChild(marker);
+      barTrack.appendChild(markerSrText);
+
+      li.appendChild(statusBadge(status));
+      li.appendChild(el("span", "item-name", skill.skillName));
+      li.appendChild(barTrack);
+      const rateSpan = el("span", "e2e-rate-value");
+      rateSpan.setAttribute("data-status", status);
+      rateSpan.textContent = pct + "%";
+      li.appendChild(rateSpan);
+      list.appendChild(li);
+    }
+    itemsEl.appendChild(list);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", overallStatus);
+
+  var summaryText =
+    total === 0
+      ? "No data"
+      : passing + " above " + E2E_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + E2E_THRESHOLD_PCT + "%" : "");
+  if (dateLabel) summaryText += " \u2014 " + dateLabel;
+  section.setAttribute("data-summary-text", summaryText);
+
+  var fakeCategory = {
+    status: overallStatus,
+    summary: {
+      total: total,
+      passed: passing,
+      failed: failing,
+      warnings: 0,
+      skipped: 0,
+    },
+    items: skills.map(function (s) {
+      return { name: s.skillName, status: s.rate >= E2E_THRESHOLD ? "pass" : "fail" };
+    }),
+  };
+
+  setupCollapsible(section, fakeCategory, "e2e-pass-rate");
+  createItemFilter(section);
+}
+
+// ── Confidence Level per Skill Panel ────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the confidence level per skill on the main dashboard.
+ * A skill is considered passing when its average confidence is >= CONFIDENCE_THRESHOLD (80%).
+ */
+async function loadConfidenceLevelPerSkill() {
+  const section = document.getElementById("panel-confidence-level");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderConfidenceLevelPanel(section, [], "skip", 0, 0, null);
+      return;
+    }
+
+    // Build one entry per skill using its averageConfidence from the SKILL-REPORT
+    const skills = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      if (stats.averageConfidence === null || stats.averageConfidence === undefined) continue;
+      // averageConfidence is stored as 0–100 in the API response
+      skills.push({ skillName, rate: stats.averageConfidence / 100 });
+    }
+
+    // Sort: below threshold first (worst first), then ascending within each group
+    skills.sort(function (a, b) {
+      const aPass = a.rate >= CONFIDENCE_THRESHOLD;
+      const bPass = b.rate >= CONFIDENCE_THRESHOLD;
+      if (aPass !== bPass) return aPass ? 1 : -1;
+      return a.rate - b.rate;
+    });
+
+    const passing = skills.filter(function (s) { return s.rate >= CONFIDENCE_THRESHOLD; }).length;
+    const failing = skills.length - passing;
+    const overallStatus =
+      skills.length === 0 ? "skip" : failing > 0 ? "fail" : "pass";
+
+    renderConfidenceLevelPanel(
+      section, skills, overallStatus, passing, failing, latestDate,
+    );
+  } catch {
+    renderConfidenceLevelPanel(section, [], "skip", 0, 0, null);
+  }
+}
+
+/**
+ * Populate and finalise the confidence level per skill panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, rate:number}>} skills
+ * @param {string} overallStatus - pass | fail | skip
+ * @param {number} passing
+ * @param {number} failing
+ * @param {string|null} dateLabel
+ */
+function renderConfidenceLevelPanel(
+  section, skills, overallStatus, passing, failing, dateLabel,
+) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  const total = skills.length;
+
+  if (total > 0) {
+    const row = el("div", "stats-row");
+    row.appendChild(statBox(total, "Total"));
+    row.appendChild(filterableStatBox(passing, "Above " + CONFIDENCE_THRESHOLD_PCT + "%", "pass", itemsEl));
+    if (failing > 0) {
+      row.appendChild(filterableStatBox(failing, "Below " + CONFIDENCE_THRESHOLD_PCT + "%", "fail", itemsEl));
+    }
+    summaryEl.appendChild(row);
+  }
+
+  if (total === 0) {
+    itemsEl.appendChild(
+      el("p", "no-data-message", "No confidence level data available."),
+    );
+  } else {
+    const list = el("ul", "items-list");
+    for (const skill of skills) {
+      const status = skill.rate >= CONFIDENCE_THRESHOLD ? "pass" : "fail";
+      const pct = Math.min(100, Math.max(0, Math.round(skill.rate * 100)));
+      const li = el("li");
+      li.setAttribute("data-item-status", status);
+
+      // Reuse e2e bar styles; CSS custom property drives the threshold marker
+      const barTrack = el("div", "e2e-rate-bar-track");
+      barTrack.style.setProperty("--e2e-threshold-pct", String(CONFIDENCE_THRESHOLD_PCT));
+
+      const barFill = el("div", "e2e-rate-bar-fill");
+      barFill.style.width = pct + "%";
+      barFill.setAttribute("data-status", status);
+      barFill.setAttribute("role", "progressbar");
+      barFill.setAttribute("aria-valuemin", "0");
+      barFill.setAttribute("aria-valuemax", "100");
+      barFill.setAttribute("aria-valuenow", String(pct));
+      barFill.setAttribute(
+        "aria-label",
+        skill.skillName + ": " + pct + "% confidence level (" +
+          (status === "pass" ? "above" : "below") + " " + CONFIDENCE_THRESHOLD_PCT + "% threshold)",
+      );
+
+      const marker = el("div", "e2e-rate-threshold-marker");
+      marker.setAttribute("aria-hidden", "true");
+      const markerSrText = el("span", "sr-only", CONFIDENCE_THRESHOLD_PCT + "% confidence threshold");
+      barTrack.appendChild(barFill);
+      barTrack.appendChild(marker);
+      barTrack.appendChild(markerSrText);
+
+      li.appendChild(statusBadge(status));
+      li.appendChild(el("span", "item-name", skill.skillName));
+      li.appendChild(barTrack);
+
+      const rateSpan = el("span", "e2e-rate-value");
+      rateSpan.setAttribute("data-status", status);
+      rateSpan.textContent = pct + "%";
+      li.appendChild(rateSpan);
+
+      list.appendChild(li);
+    }
+    itemsEl.appendChild(list);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", overallStatus);
+
+  var summaryText =
+    total === 0
+      ? "No data"
+      : passing + " above " + CONFIDENCE_THRESHOLD_PCT + "%" + (failing > 0 ? " / " + failing + " below " + CONFIDENCE_THRESHOLD_PCT + "%" : "");
+  if (dateLabel) summaryText += " \u2014 " + dateLabel;
+  section.setAttribute("data-summary-text", summaryText);
+
+  var fakeCategory = {
+    status: overallStatus,
+    summary: {
+      total: total,
+      passed: passing,
+      failed: failing,
+      warnings: 0,
+      skipped: 0,
+    },
+    items: skills.map(function (s) {
+      return { name: s.skillName, status: s.rate >= CONFIDENCE_THRESHOLD ? "pass" : "fail" };
+    }),
+  };
+
+  setupCollapsible(section, fakeCategory, "confidence-level");
+  createItemFilter(section);
+}
+
 // ── Initialization ──────────────────────────────────────────────────────────
 
 async function init() {
   try {
-    const response = await fetch("data/latest.json");
+    const response = await fetch("/api/static");
     if (!response.ok) {
       throw new Error("HTTP " + response.status);
     }
@@ -1420,4 +1675,9 @@ async function init() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", function () {
+  init();
+  loadSkillInvocationRates();
+  loadE2EPassRates();
+  loadConfidenceLevelPerSkill();
+});

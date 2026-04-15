@@ -16,6 +16,7 @@
 
   <nav class="site-nav" role="navigation" aria-label="Main navigation">
     <a href="/" class="site-nav-link active" aria-current="page">Dashboard</a>
+    <a href="/integration-tests.html" class="site-nav-link">Integration Tests</a>
     <a href="/nightly-runs.html" class="site-nav-link">Nightly Runs</a>
   </nav>
 
@@ -30,14 +31,6 @@
     <div class="panel-grid" id="panel-grid">
       <section class="panel" id="panel-tests" role="region" aria-label="Tests">
         <h2>Tests</h2>
-        <div class="panel-status"></div>
-        <div class="panel-summary"></div>
-        <div class="panel-items"></div>
-        <p class="loading-text">Loading...</p>
-      </section>
-
-      <section class="panel" id="panel-coverage" role="region" aria-label="Coverage">
-        <h2>Coverage</h2>
         <div class="panel-status"></div>
         <div class="panel-summary"></div>
         <div class="panel-items"></div>
@@ -84,8 +77,24 @@
         <p class="loading-text">Loading...</p>
       </section>
 
-      <section class="panel" id="panel-integration" role="region" aria-label="Quality Metrics">
-        <h2>Quality Metrics</h2>
+      <section class="panel" id="panel-skill-invocation" role="region" aria-label="Skill Invocation Rates">
+        <h2>Skill Invocation Rates</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-e2e-pass-rate" role="region" aria-label="End-to-End Pass Rate per Skill">
+        <h2>End-to-End Pass Rate per Skill</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-confidence-level" role="region" aria-label="Confidence Level per Skill">
+        <h2>Confidence Level per Skill</h2>
         <div class="panel-status"></div>
         <div class="panel-summary"></div>
         <div class="panel-items"></div>

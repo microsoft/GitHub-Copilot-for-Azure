@@ -23,8 +23,14 @@ permissions:
   actions: read
   issues: read
 
-network: {}
+network:
+  allowed:
+    - defaults
+    - github
+    - "*.blob.core.windows.net"
 
+sandbox:
+  agent: awf  # Firewall enabled (migrated from network.firewall)
 tools:
   github:
     toolsets: [actions, issues, labels]
@@ -34,7 +40,10 @@ safe-outputs:
     max: 10
     labels: [bug, integration-test]
 
-engine: copilot
+engine:
+  id: copilot
+  version: v1.0.20
+timeout-minutes: 30
 ---
 
 Run ID or URL: `${{ inputs.run-id-or-url || github.event.workflow_run.id }}`

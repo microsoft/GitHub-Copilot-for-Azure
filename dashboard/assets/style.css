@@ -585,114 +585,6 @@ button.header-status-pill {
   margin: 0.15rem 0;
 }
 
-/* === Quality Metrics Cards === */
-.quality-threshold-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin: 12px 0;
-}
-
-.quality-threshold-card {
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 12px;
-  text-align: center;
-}
-
-.quality-threshold-card[data-item-status="pass"] {
-  border-color: var(--color-pass);
-}
-
-.quality-threshold-card[data-item-status="fail"] {
-  border-color: var(--color-fail);
-}
-
-.quality-threshold-card[data-item-status="warn"] {
-  border-color: var(--color-warn);
-}
-
-.quality-threshold-card[data-item-status="skip"] {
-  border-color: var(--color-skip);
-}
-
-.quality-metric-name {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
-  margin-bottom: 4px;
-}
-
-.quality-metric-value {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.1;
-  margin-bottom: 4px;
-}
-
-.quality-threshold-card[data-item-status="pass"] .quality-metric-value {
-  color: var(--color-pass);
-}
-
-.quality-threshold-card[data-item-status="fail"] .quality-metric-value {
-  color: var(--color-fail);
-}
-
-.quality-threshold-card[data-item-status="warn"] .quality-metric-value {
-  color: var(--color-warn);
-}
-
-.quality-threshold-card[data-item-status="skip"] .quality-metric-value {
-  color: var(--color-skip);
-}
-
-.quality-metric-threshold {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin-bottom: 8px;
-}
-
-/* === Quality Skill Breakdown Table === */
-.quality-section-heading {
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 16px 0 8px;
-  color: var(--color-text);
-}
-
-.quality-skill-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-}
-
-.quality-skill-table th {
-  text-align: left;
-  padding: 6px 8px;
-  border-bottom: 2px solid var(--color-border);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.quality-skill-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.quality-skill-table tr:last-child td {
-  border-bottom: none;
-}
-
-.quality-skill-breakdown {
-  margin-top: 8px;
-}
-
 /* === Token Bar (continued) === */
 .token-bar-container {
   margin: 4px 0;
@@ -938,6 +830,75 @@ button.header-status-pill {
 
 .hidden-by-filter {
   display: none !important;
+}
+
+/* === Skill Invocation Rate Badge === */
+.sir-rate {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 48px;
+  text-align: right;
+}
+
+.sir-rate[data-status="pass"] {
+  color: var(--color-pass);
+}
+
+.sir-rate[data-status="fail"] {
+  color: var(--color-fail);
+}
+
+/* === End-to-End Pass Rate Bar === */
+.e2e-rate-bar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: visible;
+  position: relative;
+  margin: 0 8px;
+}
+
+.e2e-rate-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.e2e-rate-bar-fill[data-status="pass"] {
+  background: var(--color-pass);
+}
+
+.e2e-rate-bar-fill[data-status="fail"] {
+  background: var(--color-fail);
+}
+
+/* Vertical line marking the 70% threshold */
+.e2e-rate-threshold-marker {
+  position: absolute;
+  top: -3px;
+  left: calc(var(--e2e-threshold-pct, 70) * 1%);
+  width: 2px;
+  height: 16px;
+  background: var(--color-warn);
+  border-radius: 1px;
+}
+
+.e2e-rate-value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: right;
+}
+
+.e2e-rate-value[data-status="pass"] {
+  color: var(--color-pass);
+}
+
+.e2e-rate-value[data-status="fail"] {
+  color: var(--color-fail);
 }
 
 /* === Responsive === */

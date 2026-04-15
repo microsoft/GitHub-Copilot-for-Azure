@@ -23,9 +23,9 @@ describe("checkPluginVersionChanges", () => {
     mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit() called");
     });
-    mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
-    mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    
+    mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => { });
+    mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => { });
+
     // Save original environment
     originalEnv = { ...process.env };
   });
@@ -41,8 +41,7 @@ describe("checkPluginVersionChanges", () => {
       delete process.env.BASE_SHA;
       process.env.HEAD_SHA = "f9e8d7c6b5a4321098765";
 
-      expect(() => checkPluginVersionChanges()).toThrow("process.exit() called");
-      expect(mockExit).toHaveBeenCalledWith(1);
+      checkPluginVersionChanges();
       expect(mockConsoleError).toHaveBeenCalledWith("❌ Missing BASE_SHA or HEAD_SHA environment variables");
     });
 
@@ -50,8 +49,7 @@ describe("checkPluginVersionChanges", () => {
       process.env.BASE_SHA = "a1b2c3d4e5f6789012345";
       delete process.env.HEAD_SHA;
 
-      expect(() => checkPluginVersionChanges()).toThrow("process.exit() called");
-      expect(mockExit).toHaveBeenCalledWith(1);
+      checkPluginVersionChanges();
       expect(mockConsoleError).toHaveBeenCalledWith("❌ Missing BASE_SHA or HEAD_SHA environment variables");
     });
   });

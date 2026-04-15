@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
-
-const SKILL_REPORT_PATTERN = /^test-run-.*-SKILL-REPORT\.md$/;
+import { logRequestIdentity } from "../requestIdentity";
+import { SKILL_REPORT_PATTERN } from "../skillReport";
 
 /**
  * Recursively collect all blob paths matching the SKILL-REPORT pattern from a tree node.
@@ -24,6 +24,8 @@ function collectSkillReportPaths(node: BlobTreeNode): string[] {
  * GET /api/reports/{date}
  */
 async function getReports(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    logRequestIdentity(request, context, "getReports");
+
     const date = request.params.date;
     if (!date) {
         return { status: 400, body: "Missing date parameter" };

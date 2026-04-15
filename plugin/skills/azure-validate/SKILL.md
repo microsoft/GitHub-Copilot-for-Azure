@@ -1,10 +1,10 @@
 ---
 name: azure-validate
-description: "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment."
+description: "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.4"
 ---
 
 # Azure Validate
@@ -15,7 +15,7 @@ metadata:
 >
 > Before proceeding, verify this prerequisite is met:
 >
-> **azure-prepare** was invoked and completed → `.azure/plan.md` exists with status `Approved` or later
+> **azure-prepare** was invoked and completed → `.azure/deployment-plan.md` exists with status `Approved` or later
 >
 > If the plan is missing, **STOP IMMEDIATELY** and invoke **azure-prepare** first.
 >
@@ -40,14 +40,15 @@ metadata:
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 1 | **Load Plan** — Read `.azure/plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/plan.md` |
-| 2 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
-| 3 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
-| 4 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/plan.md` |
-| 5 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
-| 6 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/plan.md` |
-| 7 | **Deploy** — Invoke **azure-deploy** skill | — |
-
+| 1 | **Load Plan** — Read `.azure/deployment-plan.md` for recipe and configuration. If missing → run azure-prepare first | `.azure/deployment-plan.md` |
+| 2 | **Add Validation Steps** — Copy recipe "Validation Steps" to `.azure/deployment-plan.md` as children of "All validation checks pass" | [recipes/README.md](references/recipes/README.md), `.azure/deployment-plan.md` |
+| 3 | **Run Validation** — Execute recipe-specific validation commands | [recipes/README.md](references/recipes/README.md) |
+| 4 | **Build Verification** — Build the project and fix any errors before proceeding | See recipe |
+| 5 | **Static Role Verification** — Review Bicep/Terraform for correct RBAC role assignments in code | [role-verification.md](references/role-verification.md) |
+| 6 | **Record Proof** — Populate **Section 7: Validation Proof** with commands run and results | `.azure/deployment-plan.md` |
+| 7 | **Resolve Errors** — Fix failures before proceeding | See recipe's `errors.md` |
+| 8 | **Update Status** — Only after ALL checks pass, set status to `Validated` | `.azure/deployment-plan.md` |
+| 9 | **Deploy** — Invoke **azure-deploy** skill | — |
 > **⛔ VALIDATION AUTHORITY**
 >
 > This skill is the **ONLY** authorized way to set plan status to `Validated`. You MUST:

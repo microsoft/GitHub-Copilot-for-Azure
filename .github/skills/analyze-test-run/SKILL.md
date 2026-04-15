@@ -4,7 +4,7 @@ description: "Analyze a GitHub Actions integration test run and produce a skill 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.5"
+  version: "1.0.6"
 ---
 
 # Analyze Test Run
@@ -129,19 +129,6 @@ Repeat Phase 1–3 for the second run, then produce a side-by-side delta table. 
 
 ### Phase 3 — File Issues for Failures
 
-For Skill Invocation Success Rate that is available and is less than 80%, create a GitHub issue using the `create_issue` MCP tool, assign the label with the same name as the skill, and assign it to the code owners listed in .github/CODEOWNERS file based on which skill it is for:
-
-```javascript
-create_issue({
-  owner: "microsoft", repo: "GitHub-Copilot-for-Azure",
-  title: "Integration test failure: <skill> – skill-invocation",
-  labels: ["bug", "integration-test", "test-failure", "skill-invocation", "<skill>"],
-  body: "<body>",
-  assignees: ["<codeowners>"]
-})
-```
-Issue body template — see [issue-template.md](references/issue-template.md).
-
 For every test with a `<failure>` element in `junit.xml`:
 
 1. Read the failure message and file:line from the XML
@@ -181,6 +168,7 @@ create_issue({
 Issue body template — see [issue-template.md](references/issue-template.md).
 
 > ⚠️ **Note:** Do NOT include the Error Details (JUnit XML) or Agent Metadata sections in the issue body. Keep issues concise with the diagnosis, prompt context, skill report context, and environment sections only.
+> ⚠️ **Note:** Do NOT create issues for skill invocation test failures.
 
 > For azure-deploy integration tests, include an "azure-deploy Skill Invocation" section showing whether azure-deploy was invoked (Yes/No), with a note that the full chain is azure-prepare → azure-validate → azure-deploy. For all other integration tests, include a "{skill} Skill Invocation" section showing only whether the primary skill under test was invoked.
 

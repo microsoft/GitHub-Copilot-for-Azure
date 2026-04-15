@@ -37,10 +37,33 @@ Extract endpoints using the appropriate command for the service type:
 
 ```bash
 # Container Apps
-az containerapp show --name <app-name> --resource-group <rg-name> --query "properties.configuration.ingress.fqdn" -o tsv
+FQDN=$(az containerapp show --name <app-name> --resource-group <rg-name> --query "properties.configuration.ingress.fqdn" -o tsv)
+echo "https://$FQDN"
 
 # App Service
-az webapp show --name <app-name> --resource-group <rg-name> --query "defaultHostName" -o tsv
+HOSTNAME=$(az webapp show --name <app-name> --resource-group <rg-name> --query "defaultHostName" -o tsv)
+echo "https://$HOSTNAME"
+
+# Static Web Apps
+HOSTNAME=$(az staticwebapp show --name <app-name> --resource-group <rg-name> --query "defaultHostname" -o tsv)
+echo "https://$HOSTNAME"
 ```
 
-Present a summary including all service URLs. Do NOT end your response without including them.
+**PowerShell:**
+```powershell
+# Container Apps
+$Fqdn = az containerapp show --name <app-name> --resource-group <rg-name> --query "properties.configuration.ingress.fqdn" -o tsv
+Write-Output "https://$Fqdn"
+
+# App Service
+$Hostname = az webapp show --name <app-name> --resource-group <rg-name> --query "defaultHostName" -o tsv
+Write-Output "https://$Hostname"
+
+# Static Web Apps
+$Hostname = az staticwebapp show --name <app-name> --resource-group <rg-name> --query "defaultHostname" -o tsv
+Write-Output "https://$Hostname"
+```
+
+> ⚠️ **These commands return bare hostnames without a scheme.** Always prepend `https://` when presenting URLs to the user. For example, report `https://myapp.azurewebsites.net`, never `myapp.azurewebsites.net`.
+
+Present a summary including all service URLs as fully-qualified `https://` links. Do NOT end your response without including them.

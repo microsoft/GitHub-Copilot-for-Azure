@@ -12,7 +12,8 @@ import { fileURLToPath } from "node:url";
 
 const PLUGIN_PATHS = [
   "plugin/.plugin/plugin.json",
-  "plugin/.claude-plugin/plugin.json"
+  "plugin/.claude-plugin/plugin.json",
+  "plugin/.cursor-plugin/plugin.json"
 ] as const;
 
 interface PluginConfig {
@@ -72,7 +73,7 @@ function validateGitRef(ref: string): boolean {
 function checkPluginVersionChanges(): void {
   const baseSha = process.env.BASE_SHA;
   const headSha = process.env.HEAD_SHA;
-  
+
   if (!baseSha || !headSha) {
     console.error("❌ Missing BASE_SHA or HEAD_SHA environment variables");
     return;
@@ -82,15 +83,15 @@ function checkPluginVersionChanges(): void {
     console.error("❌ Invalid BASE_SHA or HEAD_SHA value. Expected a commit SHA.");
     return;
   }
-  
+
   console.log(`🔍 Checking plugin version changes between ${baseSha} and ${headSha}`);
-  
+
   let hasVersionChanges = false;
   const changes: VersionChange[] = [];
-  
+
   for (const pluginPath of PLUGIN_PATHS) {
     console.log(`\n📝 Checking ${pluginPath}...`);
-    
+
     // Get file content at base and head
     const baseContent = getFileAtRef(pluginPath, baseSha);
     const headContent = getFileAtRef(pluginPath, headSha);
@@ -103,16 +104,16 @@ function checkPluginVersionChanges(): void {
     // Parse JSON
     const baseJson = parseJsonSafely(baseContent);
     const headJson = parseJsonSafely(headContent);
-    
+
     if (baseJson === null || headJson === null) {
       console.log(`  ℹ️  Failed to parse JSON content in either version of ${pluginPath}, skipping...`);
       continue;
     }
-    
+
     // Compare versions
     const baseVersion = baseJson?.version;
     const headVersion = headJson?.version;
-    
+
     if (baseVersion !== headVersion) {
       hasVersionChanges = true;
       changes.push({
@@ -125,21 +126,21 @@ function checkPluginVersionChanges(): void {
       console.log(`  ✅ Version unchanged: ${baseVersion}`);
     }
   }
-  
+
   // Report results
   if (hasVersionChanges) {
     console.error("\n❌ Plugin version changes detected in this PR!\n");
     console.error("The following plugin versions were modified:");
-    
+
     for (const change of changes) {
       console.error(`  📄 ${change.file}`);
       console.error(`     ${change.baseVersion} → ${change.headVersion}`);
     }
-    
+
     console.error("\n🚫 Plugin versions should not be updated manually in PRs.");
     console.error("   Plugin versions are managed automatically through CI/CD.");
     console.error("   Please revert the version changes in your PR.\n");
-    
+
     process.exit(1);
   } else {
     console.log("\n✅ No plugin version changes detected. PR check passed!");

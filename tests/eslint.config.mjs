@@ -3,7 +3,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
 import integrationTestNameRule from "./eslint-rules/integration-test-name.mjs";
-import importPlugin from "eslint-plugin-import";
+import importPlugin from "eslint-plugin-import-x";
 
 const tsFiles = ["**/*.ts"];
 const jsFiles = ["**/*.js", "**/*.mjs"];
@@ -52,6 +52,7 @@ export default defineConfig(
       "**/__snapshots__/**",
       "swa-deployment-tests/**",
       "**/eval/fixtures/**",  // Test fixtures - not real TS projects
+      "**/evals/fixtures/**",  // Test fixtures - not real TS projects
     ],
   },
   // TypeScript files - use TypeScript parser with project
@@ -82,10 +83,9 @@ export default defineConfig(
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "error",
-      // A significant number of integration tests generate reports for human review.
-      // We don't have deterministic metrics for them yet.
-      "jest/expect-expect": "off",
-      "import/no-unused-modules": [1, { "unusedExports": true }]
+      "jest/expect-expect": "error",
+      // ESLint 10 removed FileEnumerator API which this rule depends on; suppress the no-op warning
+      "import-x/no-unused-modules": [1, { "unusedExports": true, "suppressMissingFileEnumeratorAPIWarning": true }]
     },
   },
   // JavaScript files - no TypeScript project needed

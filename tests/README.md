@@ -129,7 +129,7 @@ npm install
 | `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
 | `npm run test:integration` | Run integration tests (requires Copilot CLI auth, az auth, azd auth) |
 | `npm run test:integration -- azure-deploy` | Run integration tests for a specific skill |
-| `npm run test:integration -- azure-deploy static-web-apps-deploy` | Run integration tests for a specific describe group |
+| `npm run test:integration -- azure-deploy vanilla-static-web-apps-deploy` | Run integration tests for a specific describe group |
 | `npm run test:integration -- azure-deploy "creates simple containerized Node.js"` | Run a specific test |
 | `npm run test:skill -- azure-ai` | Run all tests for a specific skill |
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
@@ -353,24 +353,23 @@ This updates the Skills Coverage Grid in this README.
 | appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
 | azure-ai | ✅ | ✅ | ✅ | ✅ | - |
 | azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cloud-migrate | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
-| azure-create-app | ❌ | - | - | - | - |
+| azure-compute | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cost | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
-| azure-deployment-preflight | ❌ | - | - | - | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
-| azure-functions | ✅ | - | - | ✅ | - |
+| azure-enterprise-infra-planner | ✅ | ✅ | ✅ | ✅ | - |
 | azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
-| azure-keyvault-expiration-audit | ✅ | ✅ | ✅ | ✅ | - |
 | azure-kusto | ✅ | - | - | ✅ | - |
-| azure-observability | ✅ | - | - | ✅ | - |
-| azure-prepare | ✅ | - | - | ✅ | - |
-| azure-quick-review | ✅ | ✅ | ✅ | ✅ | - |
-| azure-resource-visualizer | ✅ | - | - | ✅ | - |
+| azure-messaging | ✅ | ✅ | ✅ | ✅ | - |
+| azure-prepare | ✅ | ✅ | ✅ | ✅ | - |
+| azure-quotas | ✅ | ✅ | ✅ | ✅ | - |
 | azure-rbac | ✅ | ✅ | ✅ | ✅ | - |
-| azure-security | ✅ | - | - | ✅ | - |
-| azure-security-hardening | ✅ | - | - | ✅ | - |
+| azure-resource-lookup | ✅ | ✅ | ✅ | ✅ | - |
+| azure-resource-visualizer | ✅ | ✅ | ✅ | ✅ | - |
 | azure-storage | ✅ | - | - | ✅ | - |
+| azure-upgrade | ✅ | ✅ | ✅ | ✅ | - |
 | azure-validate | ✅ | ✅ | ✅ | ✅ | - |
 | entra-app-registration | ✅ | ✅ | ✅ | ✅ | - |
 | microsoft-foundry | ✅ | ✅ | ✅ | ✅ | - |

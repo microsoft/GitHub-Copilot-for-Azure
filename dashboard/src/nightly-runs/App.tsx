@@ -20,6 +20,11 @@ interface FileSection {
     files: BlobEntry[];
 }
 
+function sectionIdFromLabel(label: string): string {
+    const lastSegment = label.split(" / ").pop() ?? label;
+    return lastSegment.replace(/\s+/g, "_").replace(/_+/g, "_");
+}
+
 /**
  * Organizes files into sections based on their path hierarchy.
  * Sections are labeled with run ID / skill name / group or test case name.
@@ -90,7 +95,9 @@ function Dashboard() {
             .then((data: string[]) => {
                 setDates(data);
                 if (data.length > 0) {
-                    setSelectedDate(data[0]);
+                    const params = new URLSearchParams(window.location.search);
+                    const requested = params.get("date");
+                    setSelectedDate(requested && data.includes(requested) ? requested : data[0]);
                 }
             })
             .catch((err) => setError(err.message))
@@ -135,6 +142,17 @@ function Dashboard() {
         const viewerUrl = `${window.location.origin}${window.location.pathname}?file=${encodeURIComponent(blobName)}`;
         window.open(viewerUrl, "_blank");
     }, []);
+
+    // Auto-scroll the right panel to the section matching the URL fragment
+    useEffect(() => {
+        if (fileSections.length === 0) return;
+        const hash = window.location.hash.slice(1);
+        if (!hash) return;
+        const el = document.getElementById(decodeURIComponent(hash));
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [fileSections]);
 
     if (loadingDates) {
         return <div className="nr-app"><p className="nr-loading">Loading&hellip;</p></div>;
@@ -190,7 +208,7 @@ function Dashboard() {
                     ) : (
                         <div className="nr-file-sections">
                             {fileSections.map((section, idx) => (
-                                <div key={idx} className="nr-file-section">
+                                <div key={idx} className="nr-file-section" id={sectionIdFromLabel(section.label)}>
                                     <div className="nr-file-section-label">{section.label}</div>
                                     <ul className="nr-file-list">
                                         {section.files.map((f) => (

@@ -97,6 +97,8 @@ Let the user choose the build method:
 az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --source-acr-auth-id "[caller]" --file Dockerfile .
 ```
 
+> ⚠️ **Mandatory:** The `--source-acr-auth-id "[caller]"` parameter is required. Do NOT omit it — without this flag the build will fail due to missing authentication context.
+
 **Local Docker Build:**
 ```bash
 docker build --platform linux/amd64 -t <image>:<tag> -f Dockerfile .
