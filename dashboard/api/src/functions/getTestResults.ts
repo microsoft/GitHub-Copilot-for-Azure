@@ -32,6 +32,13 @@ export interface SkillStats {
     passedTests: TestCase[];
     /** Average Confidence extracted from SKILL-REPORT.md files (0–100), or null if not available. */
     averageConfidence: number | null;
+    /**
+     * Maps sanitised test-case directory names to the number of agent runs recorded
+     * for that test case (i.e. the number of agent-metadata-*.md files found).
+     * Populated only for the azure-deploy skill; skill-invocation tests are excluded.
+     * A value greater than 1 means the test case required retries.
+     */
+    scenarioAgentRunCounts?: Record<string, number>;
 }
 
 export type SkillTestResults = Record<string, SkillStats>;
@@ -77,6 +84,48 @@ function collectSkillReportPaths(
     for (const child of Object.values(node.children)) {
         collectSkillReportPaths(child, skillName, results);
     }
+}
+
+/**
+ * Count agent-metadata markdown files (agent-metadata-*.md) per leaf test-case
+ * directory for any skill node that has scenario test groups.
+ *
+ * Traverses two levels deep:
+ *  Level 1 – testGroup directory (e.g. "vanilla-static-web-apps-deploy")
+ *  Level 2 – testCase directory  (e.g. "azure-deploy_-_Integration_Tests_...")
+ *
+ * The "skill-invocation" test group is excluded because only scenario tests
+ * are relevant for retry tracking.
+ *
+ * @param skillNode  The BlobTreeNode for the skill (e.g. azure-deploy)
+ * @returns Map of testCaseDirName → agent run count
+ */
+function collectScenarioAgentRunCounts(skillNode: BlobTreeNode): Map<string, number> {
+    const counts = new Map<string, number>();
+
+    for (const [groupName, groupNode] of Object.entries(skillNode.children)) {
+        if (groupName === "skill-invocation") continue;
+
+        // Level 2: test-case directories under a test-group directory
+        for (const [testCaseName, testCaseNode] of Object.entries(groupNode.children)) {
+            const metaCount = testCaseNode.files.filter(
+                f => /^agent-metadata-.*\.md$/i.test(f.name),
+            ).length;
+            if (metaCount > 0) {
+                counts.set(testCaseName, (counts.get(testCaseName) ?? 0) + metaCount);
+            }
+        }
+
+        // Level 1 fallback: some skills store agent-metadata directly under the group
+        const directMeta = groupNode.files.filter(
+            f => /^agent-metadata-.*\.md$/i.test(f.name),
+        ).length;
+        if (directMeta > 0) {
+            counts.set(groupName, (counts.get(groupName) ?? 0) + directMeta);
+        }
+    }
+
+    return counts;
 }
 
 /**
@@ -178,11 +227,27 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     // Structure: date -> runId -> skillName -> (files | children with testResults.json)
     const pathsBySkill = new Map<string, string[]>();
     const reportPathsBySkill = new Map<string, string[]>();
+    // Accumulate agent-run counts for deploy scenario tests across all runs
+    const agentRunCountsBySkill = new Map<string, Map<string, number>>();
 
     for (const runNode of Object.values(dateNode.children)) {
         for (const [skillName, skillNode] of Object.entries(runNode.children)) {
             collectTestResultPaths(skillNode, skillName, pathsBySkill);
             collectSkillReportPaths(skillNode, skillName, reportPathsBySkill);
+
+            // Collect scenario agent-run counts for the azure-deploy skill
+            if (skillName === "azure-deploy") {
+                const runCounts = collectScenarioAgentRunCounts(skillNode);
+                if (runCounts.size > 0) {
+                    if (!agentRunCountsBySkill.has(skillName)) {
+                        agentRunCountsBySkill.set(skillName, new Map());
+                    }
+                    const existing = agentRunCountsBySkill.get(skillName)!;
+                    for (const [testCase, count] of runCounts) {
+                        existing.set(testCase, (existing.get(testCase) ?? 0) + count);
+                    }
+                }
+            }
         }
     }
 
@@ -233,6 +298,10 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         const confValues = confidenceBySkill.get(skillName);
         if (confValues && confValues.length > 0) {
             stats.averageConfidence = confValues.reduce((a, b) => a + b, 0) / confValues.length;
+        }
+        const runCounts = agentRunCountsBySkill.get(skillName);
+        if (runCounts && runCounts.size > 0) {
+            stats.scenarioAgentRunCounts = Object.fromEntries(runCounts);
         }
         skillTestResults[skillName] = stats;
     }
