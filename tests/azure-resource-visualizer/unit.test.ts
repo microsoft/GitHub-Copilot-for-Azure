@@ -42,8 +42,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Core Responsibilities");
-      expect(skill.content).toContain("## Workflow Process");
+      expect(skill.content).toContain("## When to Use This Skill");
+      expect(skill.content).toContain("## Mermaid Diagram Workflow");
       expect(skill.content).toContain("Resource Group Selection");
       expect(skill.content).toContain("Resource Discovery & Analysis");
       expect(skill.content).toContain("Diagram Construction");
@@ -70,7 +70,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("includes relationship mapping guidance", () => {
-      expect(skill.content).toContain("Relationship Mapping");
+      expect(skill.content).toContain("Map relationships between all resources");
       expect(skill.content).toContain("Network connections");
       expect(skill.content).toContain("Data flow");
     });
