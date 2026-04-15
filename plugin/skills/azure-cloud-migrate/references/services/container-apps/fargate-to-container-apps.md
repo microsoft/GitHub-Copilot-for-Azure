@@ -22,8 +22,8 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 
 | Feature | AWS Fargate | Container Apps | Impact |
 |---------|-------------|----------------|--------|
-| Max vCPU | 16 vCPU | 4 vCPU | Split CPU-intensive tasks |
-| Max Memory | 120 GiB | 8 GiB | Redesign memory-heavy workloads |
+| Max vCPU | 16 vCPU | 4 vCPU (Consumption Plan) | Split CPU-intensive tasks |
+| Max Memory | 120 GiB | 8 GiB (Consumption Plan) | Redesign memory-heavy workloads |
 | GPU | Available (ECS) | Supported (preview) | Validate GPU SKU availability |
 | Sidecar Containers | Supported (ECS) | Supported (init + sidecar) | Compatible pattern |
 | Task Placement | Placement strategies/constraints | No node-level control | Remove placement logic |
@@ -55,8 +55,8 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 | EventBridge | Azure Event Grid | SDK change required |
 | Step Functions | Azure Logic Apps / Durable Functions | Workflow redesign |
 | Kinesis | Azure Event Hubs | SDK change required |
-| X-Ray | Application Insights | Auto-configured with Container Apps |
-| CloudWatch Logs | Azure Monitor Logs | Auto-configured |
+| X-Ray | Application Insights | Requires SDK + connection string setup |
+| CloudWatch Logs | Azure Monitor Logs | Requires Log Analytics workspace on environment |
 
 ## Resource Mapping
 
