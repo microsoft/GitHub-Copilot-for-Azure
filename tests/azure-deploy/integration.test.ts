@@ -926,7 +926,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-
     test("deploys aspire orleans-voting", async () => {
       await withTestResult(async () => {
         const ORLEANS_VOTING_SPARSE_PATH = "samples/orleans-voting";
