@@ -79,6 +79,7 @@ az capacity reservation group list -o table
 
 # List reservations within a CRG and check for matching size/capacity
 az capacity reservation list \
+  -g <rg> \
   --capacity-reservation-group <crg-name> \
   --query "[?sku.name=='<vm-size>'].{name:name, size:sku.name, capacity:sku.capacity, zones:zones}" \
   -o table

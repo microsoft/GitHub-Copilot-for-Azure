@@ -15,7 +15,9 @@ VM / VMSS
 
 ### Associating VMs
 
-When creating or updating a VM, set the `capacityReservationGroup` property:
+Set the `capacityReservationGroup` property when creating or updating a VM.
+
+#### New VM
 
 ```bash
 az vm create \
@@ -25,6 +27,22 @@ az vm create \
   --size Standard_D4s_v5 \
   --zone 1 \
   --capacity-reservation-group <crg-id>
+```
+
+#### Existing VM
+
+Zonal VMs can be associated while running:
+
+```bash
+az vm update -g <rg> -n <vm-name> --capacity-reservation-group <crg-id>
+```
+
+Regional VMs (no zone) must be deallocated first:
+
+```bash
+az vm deallocate -g <rg> -n <vm-name>
+az vm update -g <rg> -n <vm-name> --capacity-reservation-group <crg-id>
+az vm start -g <rg> -n <vm-name>
 ```
 
 ### Associating VMSS
@@ -39,6 +57,8 @@ az vmss create \
   --zones 1 \
   --capacity-reservation-group <crg-id>
 ```
+
+Existing VMSS can be associated using `az vmss update` similarly to VMs. Regional VMSS must be deallocated first. Zonal VMSS can be associated without deallocating, but this is currently a [Preview feature](https://learn.microsoft.com/en-us/azure/virtual-machines/capacity-reservation-associate-virtual-machine-scale-set).
 
 ## Disassociating from a Capacity Reservation Group
 

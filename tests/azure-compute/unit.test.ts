@@ -337,6 +337,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       SKILLS_PATH,
       "azure-compute/workflows/vm-troubleshooter/references"
     );
+    const crRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/capacity-reservation/references"
+    );
 
     const subReferenceFiles = [
       "rdp-connectivity.md",
@@ -371,17 +375,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         "utf-8"
       );
       crOverviewContent = await fs.readFile(
-        path.join(
-          SKILLS_PATH,
-          "azure-compute/workflows/capacity-reservation/references/capacity-reservation-overview.md"
-        ),
+        path.join(crRefsDir, "capacity-reservation-overview.md"),
         "utf-8"
       );
       crAssociationContent = await fs.readFile(
-        path.join(
-          SKILLS_PATH,
-          "azure-compute/workflows/capacity-reservation/references/association-disassociation.md"
-        ),
+        path.join(crRefsDir, "association-disassociation.md"),
         "utf-8"
       );
     });
