@@ -132,3 +132,32 @@ az storage container create \
 | Managed Identity | `identity { type = "UserAssigned" }` |
 | State encryption | Azure Storage encryption |
 | State locking | Azure Blob lease |
+
+## Container Apps with ACR
+
+> **⚠️ Two-Phase Deployment Required.** See [Container Apps Terraform Patterns](../../../azure-prepare/references/services/container-apps/terraform.md) for full details.
+
+Use a **public placeholder image** during initial provisioning. Never reference an ACR image that hasn't been built yet.
+
+```hcl
+resource "azurerm_container_app" "api" {
+  # ...
+  template {
+    container {
+      name   = "api"
+      image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      # ...
+    }
+  }
+
+  # Prevent Terraform from reverting post-apply image and registry updates
+  lifecycle {
+    ignore_changes = [
+      template[0].container[0].image,
+      registry,
+    ]
+  }
+}
+```
+
+After `terraform apply`, build the real image and update the Container App via CLI — see the [deploy recipe](../../../azure-deploy/references/recipes/terraform/README.md#container-apps-two-phase-deployment).
