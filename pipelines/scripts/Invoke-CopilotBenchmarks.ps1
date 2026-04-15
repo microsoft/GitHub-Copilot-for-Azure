@@ -16,7 +16,7 @@
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 
 .PARAMETER Benchmark
-    Benchmark identifier. Default: azure
+    Benchmark identifier. Default: azure.skill
 
 .PARAMETER Model
     One or more model identifiers to benchmark.
