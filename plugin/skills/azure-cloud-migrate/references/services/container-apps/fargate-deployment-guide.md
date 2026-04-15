@@ -201,6 +201,6 @@ az containerapp logs show --name <app-name> -g $env:RG --tail 100
 
 | Issue | Solution |
 |-------|----------|
-| Image pull fails | Verify ACR role: `az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID -o table` |
+| Image pull fails | Verify ACR role: `az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID` |
 | App won't start | Check logs: `az containerapp logs show --name <app> -g $RG --tail 100` |
-| Secret not accessible | Verify access: `az role assignment list --assignee $PRINCIPAL_ID --scope $KV_ID -o table` or check access policies |
+| Secret not accessible | Verify RBAC: `az role assignment list --assignee $PRINCIPAL_ID --scope $KV_ID` |
