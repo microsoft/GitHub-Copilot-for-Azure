@@ -40,7 +40,7 @@ img/lib/azure2/<category>/<PascalCase_Resource_Name>.svg
 ```
 
 **Critical known traps:**
-- `Microsoft.Web/sites` (App Service) → `img/lib/azure2/compute/App_Services.svg`
+- `Microsoft.Web/sites` (App Service) → `img/lib/azure2/app_services/App_Services.svg`
 - `Microsoft.Web/serverFarms` (App Service Plan) → `img/lib/azure2/app_services/App_Service_Plans.svg` (**not** `compute/`)
 - There is no generic `Event_Grid.svg` — use `System_Topic.svg`, `Event_Grid_Topics.svg`, or `Event_Grid_Domains.svg`
 - `Microsoft.AppConfiguration/configurationStores` → `img/lib/mscae/App_Configuration.svg` — this icon is in the **mscae** library, **not** azure2. There is no `App_Configuration.svg` or `App_Configurations.svg` in azure2 at all; using any azure2 path produces an empty broken icon.

@@ -1,5 +1,7 @@
 # Azure Authentication Check
 
+> **Canonical copy** — this file is the single source of truth for the Azure authentication procedure. Referenced by all skills that interact with Azure; edit here, do not duplicate.
+
 Canonical procedure for verifying Azure session before any Azure operations. Referenced by all skills that interact with Azure.
 
 ---

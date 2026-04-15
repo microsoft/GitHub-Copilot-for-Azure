@@ -1,5 +1,7 @@
 # Resource Filtering Rules
 
+> **Canonical copy** — this file is the single source of truth for resource filtering rules. Referenced by multiple skills; edit here, do not duplicate.
+
 Centralized exclusion lists for Azure resource discovery. Different skills filter differently — diagrams show architecture only, Bicep deploys everything deployable.
 
 ---
