@@ -1,0 +1,110 @@
+{
+  "_canonicalCopy": {
+    "description": "Shared Azure stencil mapping copied into azure-iac-generator so diagram-parsing references resolve locally.",
+    "maintainers": [
+      "Azure IaC skills"
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "imagePath": "img/lib/azure2/compute/Virtual_Machine.svg"
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "imagePath": "img/lib/azure2/app_services/App_Services.svg"
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "imagePath": "img/lib/azure2/app_services/App_Service_Plans.svg"
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "imagePath": "img/lib/azure2/storage/Storage_Accounts.svg"
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "imagePath": "img/lib/azure2/security/Key_Vaults.svg"
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "imagePath": "img/lib/azure2/databases/SQL_Server.svg"
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "imagePath": "img/lib/azure2/databases/SQL_Database.svg"
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "imagePath": "img/lib/azure2/networking/Virtual_Networks.svg"
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "imagePath": "img/lib/azure2/networking/Subnets.svg"
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "imagePath": "img/lib/azure2/networking/Network_Security_Groups.svg"
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "imagePath": "img/lib/azure2/networking/Private_Link.svg"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "imagePath": "img/lib/azure2/networking/Private_DNS_Zones.svg"
+    },
+    {
+      "type": "Microsoft.Network/applicationGateways",
+      "imagePath": "img/lib/azure2/networking/Application_Gateways.svg"
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "imagePath": "img/lib/azure2/networking/Load_Balancers.svg"
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "imagePath": "img/lib/azure2/networking/Public_IP_Addresses.svg"
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "imagePath": "img/lib/azure2/containers/Container_Registries.svg"
+    },
+    {
+      "type": "Microsoft.ContainerService/managedClusters",
+      "imagePath": "img/lib/azure2/containers/Kubernetes_Services.svg"
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "imagePath": "img/lib/azure2/containers/Container_Apps.svg"
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "imagePath": "img/lib/azure2/databases/Azure_Cosmos_DB.svg"
+    },
+    {
+      "type": "Microsoft.Cache/redis",
+      "imagePath": "img/lib/azure2/databases/Azure_Cache_for_Redis.svg"
+    },
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "imagePath": "img/lib/azure2/integration/Service_Bus.svg"
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces",
+      "imagePath": "img/lib/azure2/analytics/Event_Hubs.svg"
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "imagePath": "img/lib/azure2/monitor/Application_Insights.svg"
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "imagePath": "img/lib/azure2/monitor/Log_Analytics_Workspaces.svg"
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "imagePath": "img/lib/azure2/identity/Managed_Identities.svg"
+    }
+  ]
+}
