@@ -162,7 +162,7 @@
             "--benchmark", $Benchmark,
             "--model", $m,
             "--env", "GITHUB_MCP_SERVER_TOKEN",
-            "--tag", "org=Azure",
+            "--tag", 'org="CoreAI Cloud and Tools"',
             "--no-wait"
         )
 
