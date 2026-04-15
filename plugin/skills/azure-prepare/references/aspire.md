@@ -177,6 +177,65 @@ services:
     host: containerapp
 ```
 
+### ⛔ Step 4b: Fix Azure Functions Secret Storage (MANDATORY for Aspire + Functions)
+
+**MANDATORY: After `azd init --from-code` succeeds, check if the AppHost contains Azure Functions and fix secret storage configuration.**
+
+This step **MUST** run BEFORE `azd up` or `azd provision`. Skipping it causes a runtime failure: `Secret initialization from Blob storage failed`.
+
+**1. Detect Azure Functions in the AppHost:**
+
+```bash
+APPHOST_DIR=$(dirname "$(find . -name '*.AppHost.csproj' | head -1)")
+grep -n "AddAzureFunctionsProject" "$APPHOST_DIR"/*.cs
+```
+
+**PowerShell:**
+```powershell
+$appHostDir = (Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1).DirectoryName
+Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AddAzureFunctionsProject"
+```
+
+**If `AddAzureFunctionsProject` is NOT found → skip to Step 5.**
+
+**2. Check if `AzureWebJobsSecretStorageType` is already configured:**
+
+```bash
+grep -n "AzureWebJobsSecretStorageType" "$APPHOST_DIR"/*.cs
+```
+
+**PowerShell:**
+```powershell
+Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AzureWebJobsSecretStorageType"
+```
+
+**If already present → skip to Step 5.**
+
+**3. Add the environment variable to the Functions builder chain:**
+
+Use the `edit` tool to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the `AddAzureFunctionsProject` builder chain in the AppHost source file.
+
+**Before:**
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
+    .WithHostStorage(storage)
+    .WithReference(queues);
+```
+
+**After:**
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
+    .WithHostStorage(storage)
+    .WithEnvironment("AzureWebJobsSecretStorageType", "Files")
+    .WithReference(queues);
+```
+
+> 💡 **Tip:** Place `.WithEnvironment(...)` immediately after `.WithHostStorage(...)` for clarity.
+
+> ⚠️ **Why this is required:** When Aspire uses `WithHostStorage(storage)`, it configures identity-based storage URIs (e.g., `AzureWebJobsStorage__blobServiceUri`). Azure Functions' secret/key manager does **not** support these identity-based URIs — it requires either a connection string or file-based storage. Setting `AzureWebJobsSecretStorageType=Files` switches to file-system key storage, bypassing the incompatible blob dependency.
+
+See [aspire-functions-secrets reference](services/functions/aspire-containerapps.md) for additional details.
+
 ## Flags Reference
 
 ### azd init for Aspire
