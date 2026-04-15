@@ -1,8 +1,8 @@
 # Azure Resource Configuration Reference
 
-Per-resource-type property retrieval mapping and auto-detection rules used by AzVerify skills for drift detection and Bicep generation.
+Per-resource-type property retrieval mapping and auto-detection rules used by infrastructure-sync workflows for drift comparison and selective remediation planning.
 
-For per-resource defaults (SKUs, sizes, settings), derive from Bicep MCP `get_az_resource_type_schema`, Azure Verified Modules, or Microsoft documentation. Do not hardcode defaults — verify at generation time.
+For per-resource defaults (SKUs, sizes, settings), derive from Bicep MCP `get_az_resource_type_schema`, Azure Verified Modules, or Microsoft documentation. Do not hardcode defaults — verify at comparison time; if deployment validation is needed, defer to `azure-validate`.
 
 ---
 
@@ -195,4 +195,4 @@ Each resource type section includes:
 
 ## Auto-Detection Rules
 
-See [azure-auto-detection-rules.md](azure-auto-detection-rules.md) for topology-based settings automatically applied during drift detection and Bicep generation.
+See [azure-auto-detection-rules.md](azure-auto-detection-rules.md) for topology-based settings automatically applied during drift detection and remediation planning.

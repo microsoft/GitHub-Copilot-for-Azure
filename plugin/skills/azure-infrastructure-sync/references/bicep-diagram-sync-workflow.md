@@ -1,5 +1,7 @@
 # Bicep ↔ Diagram Sync Workflow
 
+> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
+
 Compare Bicep template resources against a Draw.io diagram to detect resource-level divergence.
 
 ---
@@ -14,4 +16,4 @@ Compare Bicep template resources against a Draw.io diagram to detect resource-le
 | 4 | **Match Resources** | Apply [resource-matching.md](procedures/resource-matching.md) across diagram and Bicep models. |
 | 5 | **Present Drift Report** | Show status: ✅ In Sync, ⬜ Diagram Only, 📄 Bicep Only. |
 | 6 | **Offer Resolution** | Options: update Bicep (add resources from diagram), update diagram (add resources from Bicep), selective, or no action. |
-| 7 | **Execute Resolution** | If updating Bicep: generate new resource blocks following [bicep-best-practices.md](../azure-iac-generator/references/bicep-best-practices.md). Run [azure-deployment-verification.md](azure-deployment-verification.md) before finalizing. If updating diagram: modify Draw.io XML. |
+| 7 | **Execute Resolution** | If updating Bicep: generate new resource blocks following [bicep-best-practices.md](bicep-best-practices.md). Run [azure-deployment-verification.md](azure-deployment-verification.md) before finalizing. If updating diagram: modify Draw.io XML. |

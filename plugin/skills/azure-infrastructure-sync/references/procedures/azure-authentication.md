@@ -1,5 +1,7 @@
 # Azure Authentication Check
 
+> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
+
 Canonical procedure for verifying Azure session before any Azure operations. Referenced by all skills that interact with Azure.
 
 ---

@@ -11,6 +11,8 @@ metadata:
 
 Compare and synchronize infrastructure artifacts to detect drift. Supports four comparison modes across Draw.io diagrams, Bicep templates, and live Azure resources.
 
+Scope: comparison and drift analysis only. This skill does not perform deployment readiness validation, template validation, or policy compliance checks; use `azure-validate` for those workflows.
+
 ## Prerequisites
 
 | Prerequisite | Required? | Purpose |
@@ -23,7 +25,7 @@ Compare and synchronize infrastructure artifacts to detect drift. Supports four 
 
 - Check if a Draw.io diagram matches what's deployed in Azure
 - Detect drift between Bicep templates and a diagram
-- Preview what a Bicep deployment would change (what-if without ARM)
+- Compare Bicep-declared state to deployed Azure resources to identify drift
 - Synchronize diagram, Bicep, and Azure after changes
 
 ## Routing
@@ -39,7 +41,7 @@ User request
 ├── Bicep ↔ Diagram ("bicep matches diagram", "compare bicep to diagram")
 │   └─► [bicep-diagram-sync-workflow.md]
 │
-└── Bicep ↔ Azure ("bicep what-if", "preview bicep changes", "bicep drift")
+└── Bicep ↔ Azure ("compare bicep to azure", "does azure match bicep", "bicep drift")
     └─► [bicep-whatif-workflow.md]
 ```
 
@@ -48,7 +50,7 @@ User request
 - **Diagram ↔ Azure (quick)**: [diagram-azure-sync-workflow.md](references/diagram-azure-sync-workflow.md) — Resource-level existence comparison. Reports resources present in diagram only, Azure only, or both.
 - **Diagram ↔ Azure (deep)**: [diagram-azure-sync-deep-workflow.md](references/diagram-azure-sync-deep-workflow.md) — Property-level comparison with normalization rules. Reports configuration drift with severity.
 - **Bicep ↔ Diagram**: [bicep-diagram-sync-workflow.md](references/bicep-diagram-sync-workflow.md) — Compares Bicep resource definitions against diagram resource model. Offers selective resolution.
-- **Bicep ↔ Azure (what-if)**: [bicep-whatif-workflow.md](references/bicep-whatif-workflow.md) — Compares Bicep expected state against live Azure without using ARM what-if. Reports Create/Modify/Delete/No Change.
+- **Bicep ↔ Azure (drift comparison)**: [bicep-whatif-workflow.md](references/bicep-whatif-workflow.md) — Compares Bicep-declared state against live Azure resource state for drift analysis. This is not a deployment readiness or policy validation workflow. Reports Create/Modify/Delete/No Change.
 
 All workflows use:
 - [azure-resource-model.md](references/azure-resource-model.md) — Canonical resource model schema
