@@ -125,7 +125,7 @@ image: myapp:v1.2.3   # ← version confirmed with user
 
 ---
 
-## `safeguard-probes-configured` — Add probes *(LLM-reasoned — ask user for endpoint)*
+## `safeguard-probes-configured` — Add probes *(best-practice recommendation — warning-only, not blocked at admission)*
 
 **HTTP app (most common):**
 ```yaml

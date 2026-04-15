@@ -127,7 +127,7 @@ Load the constraint spec from `references/constraint-spec-v1.yaml` and evaluate 
 
 **Per container** (containers, initContainers, ephemeralContainers):
 - Resource requests/limits → `safeguard-container-resource-requests`
-- Readiness and liveness probes → `safeguard-probes-configured`
+- Readiness and liveness probes → `safeguard-probes-configured` *(warning-only — not blocked at admission; treat as informational)*
 - Image tag not `:latest` → `safeguard-images-no-latest`
 - `securityContext.privileged` not true → `safeguard-no-privileged-containers`
 - `allowPrivilegeEscalation` not true → `safeguard-no-privilege-escalation`
@@ -196,7 +196,6 @@ Use patterns in `references/common-fixes.md` and generate a before/after diff. S
 
 **LLM-reasoned fixes** (require app context; use `remediationGuide`):
 - `safeguard-images-no-latest` — correct tag is user- and release-specific; ask the user: _"What specific version tag or SHA digest should I pin this image to?"_ Do not guess
-- `safeguard-probes-configured` — probes are app-specific; ask for the health endpoint
 - `safeguard-pod-enforce-antiaffinity` — needs app labels for selector
 - `safeguard-no-host-path-volumes` — replacement depends on what hostPath is used for
 - `safeguard-block-host-namespaces` — may require architecture redesign
