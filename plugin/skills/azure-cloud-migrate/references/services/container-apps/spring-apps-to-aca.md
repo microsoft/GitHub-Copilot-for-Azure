@@ -34,22 +34,16 @@ Assess your Spring Boot application for migration readiness:
 - **Platform Compatibility**: Verify Java 17+, Spring Boot 3.x support → [assessment-guide.md](assessment-guide.md#platform-compatibility)
 - **External Resources**: Inventory databases, message brokers, caches → [assessment-guide.md](assessment-guide.md#external-resources-inventory)
 
-## 5-Phase Workflow
+## Migration Workflow
 
 1. **Assess** — Analyze application for migration readiness
+   > Present findings and complexity rating to user. Ask: "Assessment complete — proceed with containerization?"
 2. **Containerize** — Create Dockerfile, build image, push to ACR
 3. **Provision** — Create Container Apps environment, configure logging
 4. **Deploy** — Deploy container to Azure Container Apps
 5. **Optimize** — Add Spring Cloud components (Config, Eureka, Gateway)
 
-## Deployment Steps
-
-See [deployment-guide.md](deployment-guide.md) for:
-- Dockerfile creation for Spring Boot JAR
-- Azure Container Registry setup
-- Container Apps environment provisioning
-- Application deployment with environment variables
-- Spring Cloud component integration
+See [deployment-guide.md](deployment-guide.md) for detailed phase-by-phase instructions.
 
 ## Key Differences from Azure Spring Apps
 
