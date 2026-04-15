@@ -49,19 +49,9 @@ kubectl get pods -n staging -w
 kubectl get events -n staging --sort-by=.lastTimestamp | grep -i "denied\|error\|failed"
 ```
 
-### Phase 4 — Switch Traffic
+> ⚠️ **Keep the old cluster running** for a rollback window (recommended: 48 hours minimum) while you validate workloads on the new AKS Automatic cluster.
 
-```bash
-# Update your Ingress/DNS to point to the new cluster's load balancer
-kubectl get svc -n <ingress-namespace> -o wide
-
-# Monitor with Container Insights (already enabled)
-# View in Azure Portal → AKS cluster → Monitoring → Insights
-```
-
-> ⚠️ **Keep the old cluster running** for a rollback window (recommended: 48 hours minimum).
-
-### Phase 5 — Decommission Old Cluster
+### Phase 4 — Decommission Old Cluster
 
 ```bash
 # Only after confirming workloads are stable on AKS Automatic
