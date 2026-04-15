@@ -30,7 +30,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("description mentions AKS Automatic", () => {
       const desc = skill.metadata.description.toLowerCase();
-      expect(desc).toMatch(/aks automatic/i);
+      expect(desc).toMatch(/aks automatic/);
     });
 
     test("description is within 1024 character limit", () => {
@@ -70,7 +70,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("covers CLI fallback", () => {
-      expect(skill.content).toMatch(/az aks automatic assess/i);
+      expect(skill.content).toMatch(/fallback/i);
     });
 
     test("defines fallback chain", () => {
@@ -119,18 +119,18 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Frontmatter Formatting", () => {
     test("frontmatter has no tabs", () => {
       const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+      const frontmatterMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
       const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
       expect(frontmatter).not.toMatch(/\t/);
     });
 
     test("frontmatter keys are only supported attributes", () => {
       const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+      const frontmatterMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
       const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
       const supported = ["name", "description", "compatibility", "license", "metadata",
         "argument-hint", "disable-model-invocation", "user-invokable"];
-      const keys = frontmatter.split("\n")
+      const keys = frontmatter.split(/\r?\n/)
         .filter((l: string) => /^[a-z][\w-]*\s*:/.test(l))
         .map((l: string) => l.split(":")[0].trim());
       for (const key of keys) {

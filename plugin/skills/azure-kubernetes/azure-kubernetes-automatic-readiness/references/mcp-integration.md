@@ -150,21 +150,17 @@ Attempt each step in order. Do not ask the user which is available — just try:
 
 ```
 1. mcp_azure_mcp_aks → assessAutomaticCompatibility
-   ↓ fails (tool not found, auth error, timeout, HTTP 403)
+   ↓ fails (tool not found — Azure MCP server not configured)
 
-2. az aks automatic assess CLI
-   az aks automatic assess \
-     --subscription "<subscription-id>" \
-     --resource-group "<resource-group>" \
-     --name "<cluster-name>" \
-     --output json
-   ↓ fails (az CLI not installed, no cluster access, command not found)
-
-3. Offline manifest validation
-   Export with kubectl, then validate against constraint-spec-v1.yaml locally:
+2. Inform user to install Azure MCP, then fall back to offline validation
    kubectl get deployment,statefulset,daemonset,job,cronjob -A -o yaml > /tmp/workloads.yaml
    kubectl get pdb,storageclass -A -o yaml > /tmp/policies.yaml
 ```
+
+If `mcp_azure_mcp_aks` is not available, say:
+> "The Azure MCP server is not configured. To enable live cluster assessment, install it following [aka.ms/azure-mcp-setup](https://aka.ms/azure-mcp-setup). For now, I can validate your local manifests offline — export them with `kubectl get ... -o yaml` or share your manifest files."
+
+Then proceed to offline manifest validation against `constraint-spec-v1.yaml`.
 
 ---
 
@@ -198,7 +194,7 @@ mcp_azure_mcp_aks({ action: "discover" })
 
 | Error | Cause | Fix |
 |---|---|---|
-| `tool not found: mcp_azure_mcp_aks` | Azure MCP server not configured | Fall back to CLI |
+| `tool not found: mcp_azure_mcp_aks` | Azure MCP server not configured | Guide user to install: [aka.ms/azure-mcp-setup](https://aka.ms/azure-mcp-setup), then fall back to offline |
 | `HTTP 401 Unauthorized` | Not logged in | `az login` |
 | `HTTP 403 Forbidden` | Missing `assessAutomaticCompatibility/action` permission | Assign correct RBAC role |
 | `HTTP 404 Not Found` | Wrong subscription, RG, or cluster name | Verify with `az aks list -o table` |

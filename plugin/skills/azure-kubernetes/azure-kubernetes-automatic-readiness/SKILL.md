@@ -78,16 +78,17 @@ If the user pastes or points to a single YAML manifest, validate it directly wit
 
 Call the AKS MCP tool — this is the preferred path:
 
-```yaml
-mcp_azure_mcp_aks:
-  action: assessAutomaticCompatibility
-  parameters:
-    subscriptionId: "<subscription-id>"
-    resourceGroupName: "<resource-group>"
-    resourceName: "<cluster-name>"
-    scope:
-      excludeNamespaces: ["kube-system", "gatekeeper-system"]
-      workloadTypes: ["Deployment", "StatefulSet", "DaemonSet", "CronJob", "Job"]
+```javascript
+mcp_azure_mcp_aks({
+  action: "assessAutomaticCompatibility",
+  subscriptionId: "<subscription-id>",
+  resourceGroupName: "<resource-group>",
+  resourceName: "<cluster-name>",
+  scope: {
+    excludeNamespaces: ["kube-system", "gatekeeper-system"],
+    workloadTypes: ["Deployment", "StatefulSet", "DaemonSet", "CronJob", "Job"]
+  }
+})
 ```
 
 **API path (for reference):**
@@ -112,20 +113,14 @@ Each issue in `workloads[].issues[]` contains: `constraintId`, `severity` (`inco
 
 ```
 1. MCP tool (mcp_azure_mcp_aks)  → preferred, live cluster data
-   ↓ fails
-2. CLI: az aks automatic assess  → requires az CLI + cluster access
-   ↓ fails
-3. Offline validation            → works on local manifests without any cluster
+   ↓ fails (tool not found — Azure MCP server not configured)
+2. Offline validation            → works on local manifests without any cluster
 ```
 
-Fallback to CLI:
-```bash
-az aks automatic assess \
-  --subscription "<subscription-id>" \
-  --resource-group "<resource-group>" \
-  --name "<cluster-name>" \
-  --output json
-```
+If `mcp_azure_mcp_aks` is not available, inform the user:
+> "The Azure MCP server is not configured in your editor. To enable live cluster assessment, follow the setup guide at [aka.ms/azure-mcp-setup](https://aka.ms/azure-mcp-setup). For now, I can validate your local manifests offline."
+
+Then proceed to offline mode.
 
 #### Offline Mode
 
