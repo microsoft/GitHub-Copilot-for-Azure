@@ -14,7 +14,7 @@
 ```kql
 requests
 | where timestamp > ago(1h)
-| where resultCode >= 400
+| where toint(resultCode) >= 400
 | summarize count() by resultCode, operation_Name
 | order by count_ desc
 ```
@@ -148,7 +148,7 @@ az servicebus queue show -n QUEUE --namespace-name NS -g RG \
 |---------|-------|-----|
 | Trigger not firing | Lease container missing | Create lease container (default: `leases`) in same database |
 | Change feed lag | Insufficient RU/s on lease container | Increase RU/s on leases container or enable autoscale |
-| Duplicate processing | Multiple apps share lease container | Set unique `LeaseContainerPrefix` per function app in host.json |
+| Duplicate processing | Multiple apps share lease container | Configure a unique `leaseContainerPrefix` on each Cosmos DB trigger binding per function app, or use separate lease containers |
 | Partial document data | Projection or TTL conflict | Ensure `StartFromBeginning` config and verify no TTL on lease container |
 
 **Diagnose:**
