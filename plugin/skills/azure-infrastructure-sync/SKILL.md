@@ -11,6 +11,22 @@ metadata:
 
 Compare and synchronize infrastructure artifacts to detect drift. Supports four comparison modes across Draw.io diagrams, Bicep templates, and live Azure resources.
 
+## Quick Reference
+
+| Area | Primary MCP tools | CLI fallback | Best for |
+|---|---|---|---|
+| Diagram ↔ Azure (quick) | Azure resource listing tools, Draw.io MCP | `az resource list`, `az graph query` | Fast existence-based drift checks |
+| Diagram ↔ Azure (deep) | Azure resource detail tools, Draw.io MCP | `az resource show`, `az network * show`, `az webapp show` | Property-level drift analysis |
+| Bicep ↔ Diagram | Bicep code quality tools, Draw.io MCP | `bicep build`, `az bicep build` | Comparing IaC intent to architecture diagrams |
+| Bicep ↔ Azure | Azure resource tools, Bicep code quality tools | `az deployment group what-if`, `az deployment sub what-if` | Previewing deployment impact and live drift |
+
+| Comparison mode | Inputs | Output |
+|---|---|---|
+| Diagram ↔ Azure (quick) | `.drawio` + Azure scope | Presence report: in sync, diagram only, Azure only |
+| Diagram ↔ Azure (deep) | `.drawio` + Azure scope + selected properties | Detailed drift report with normalized property differences |
+| Bicep ↔ Diagram | `.bicep` + `.drawio` | Resource mapping report and sync recommendations |
+| Bicep ↔ Azure | `.bicep` + parameters + Azure scope | Create/Modify/Delete/No Change preview |
+
 ## Prerequisites
 
 | Prerequisite | Required? | Purpose |
@@ -18,6 +34,26 @@ Compare and synchronize infrastructure artifacts to detect drift. Supports four 
 | Azure CLI (`az`) + active session | **Required** | Live Azure resource queries |
 | Draw.io MCP server | Recommended | Programmatic diagram updates during resolution |
 | Draw.io VS Code extension | Optional | Preview and edit diagrams |
+
+## MCP Tools
+
+| Tool / capability | Required? | Key parameters | Used for |
+|---|---|---|---|
+| Azure subscription listing | Optional | `tenant` | Resolve subscription when user does not specify one |
+| Azure resource group listing | Optional | `subscription` | Discover candidate scopes for comparison |
+| Azure resources in group | Usually | `subscription`, `resource-group` | Enumerate live resources for drift checks |
+| Azure resource details | Deep mode | `subscription`, `resource-group`, resource identifiers | Fetch properties for property-level comparison |
+| Bicep diagnostics | Bicep modes | `filePath` | Validate Bicep before comparison |
+| Bicep formatting | Optional | `filePath` | Normalize Bicep before parsing or review |
+| Draw.io diagram access/update | Optional | diagram path, XML payload | Read or update diagram artifacts during sync |
+
+| CLI fallback | When to use | Common parameters | Notes |
+|---|---|---|---|
+| `az resource list` | MCP resource listing unavailable | `--resource-group`, `--subscription` | Baseline inventory for quick mode |
+| `az resource show` | Need raw resource properties | `--ids` or `--name`, `--resource-group`, `--resource-type` | Useful for deep comparisons |
+| `az graph query` | Cross-resource-group or broad discovery | `-q`, `--subscriptions` | Good for large scopes |
+| `az deployment group what-if` | Validate Bicep against a resource group | `--resource-group`, `--template-file`, `--parameters` | Preferred CLI preview for RG deployments |
+| `az deployment sub what-if` | Validate subscription-scope Bicep | `--location`, `--template-file`, `--parameters` | Use for subscription deployments |
 
 ## When to Use This Skill
 
