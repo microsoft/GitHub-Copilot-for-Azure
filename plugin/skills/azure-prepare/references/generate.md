@@ -19,7 +19,6 @@ grep -r "Aspire\.Hosting\|Aspire\.AppHost\.Sdk" . --include="*.csproj"
 2. ⛔ **STOP** - Do NOT manually create `infra/` files
 3. ✅ **USE** - `azd init --from-code -e <env-name>` instead
 4. 📖 **READ** - [aspire.md](aspire.md) and [recipes/azd/aspire.md](recipes/azd/aspire.md) for complete guidance
-5. ⚠️ **FIX** - If AppHost has `AddAzureFunctionsProject`, you **MUST** add `AzureWebJobsSecretStorageType` — see [aspire.md Step 4b](aspire.md#-step-4b-fix-azure-functions-secret-storage-mandatory-for-aspire--functions)
 
 **Why this is critical:**
 - Aspire AppHost auto-generates infrastructure from code
