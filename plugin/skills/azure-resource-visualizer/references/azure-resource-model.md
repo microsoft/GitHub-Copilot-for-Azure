@@ -1,5 +1,7 @@
 # Azure Resource Metadata Model
 
+> **Canonical copy** — this file is the single source of truth for the Azure resource metadata model. Referenced by multiple skills; edit here, do not duplicate.
+
 Shared internal representation used by AzVerify skills (sketch-to-diagram, diagram-to-bicep, diagram-azure-sync).
 
 ## Schema
