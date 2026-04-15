@@ -135,7 +135,7 @@ az storage container create \
 
 ## Container Apps with ACR
 
-> **⚠️ Two-Phase Deployment Required.** See [Container Apps Terraform Patterns](../../../azure-prepare/references/services/container-apps/terraform.md) for full details.
+> **⚠️ Two-Phase Deployment Required.** See [Container Apps Terraform Patterns](../../services/container-apps/terraform.md) for full details.
 
 Use a **public placeholder image** during initial provisioning. Never reference an ACR image that hasn't been built yet. Do **not** use `admin_enabled` on the ACR or add a `registry` block with `username`/`password_secret_name` — use managed identity instead.
 
@@ -160,4 +160,4 @@ resource "azurerm_container_app" "api" {
 }
 ```
 
-After `terraform apply`, build the real image and update the Container App via CLI — see the [deploy recipe](../../../azure-deploy/references/recipes/terraform/README.md#container-apps-two-phase-deployment).
+After `terraform apply`, build the real image and update the Container App via CLI — see the [deploy recipe](../../../../azure-deploy/references/recipes/terraform/README.md#container-apps-two-phase-deployment).

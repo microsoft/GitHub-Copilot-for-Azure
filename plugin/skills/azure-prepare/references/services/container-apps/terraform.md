@@ -1,6 +1,6 @@
 # Container Apps Terraform Patterns
 
-> **⚠️ Container Registry Naming:** ACR names must be alphanumeric only (5-50 characters). Use `replace()` in azurecaf or strip hyphens manually.
+> **⚠️ Container Registry Naming:** ACR names must be alphanumeric only (5-50 characters). Use Terraform's `replace()` function when constructing the value passed to `azurecaf_name`, or otherwise strip hyphens manually.
 
 > **⚠️ Two-Phase Deployment (Mandatory):** To avoid the chicken-and-egg problem where Terraform tries to create a Container App referencing an ACR image that doesn't exist yet:
 > - **Phase 1 (`terraform apply`):** Deploy ACR and Container App with a **public placeholder image** and **no `registry` block**.
@@ -131,7 +131,7 @@ az containerapp update `
   --image "$AcrServer/myapp:latest"
 ```
 
-> ⚠️ **Warning:** Step 2 requires the `AcrPull` role assignment to have propagated (1–5 minutes after `terraform apply`). If the image pull fails, wait and retry. See the [RBAC propagation wait](../../../azure-deploy/references/pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) in the pre-deploy checklist.
+> ⚠️ **Warning:** Step 2 requires the `AcrPull` role assignment to have propagated (1–5 minutes after `terraform apply`). If the image pull fails, wait and retry. See the [RBAC propagation wait](../../../../azure-deploy/references/pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) in the pre-deploy checklist.
 
 ## Terraform Outputs
 
