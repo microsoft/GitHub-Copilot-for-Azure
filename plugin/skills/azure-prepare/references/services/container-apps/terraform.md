@@ -8,12 +8,15 @@
 >
 > This mirrors the [Bicep two-phase pattern](bicep.md). Without it, `terraform apply` fails with `ContainerAppOperationError` because the image doesn't exist in ACR yet.
 
+> **⚠️ ACR Authentication — Managed Identity Only:** Do **not** use `admin_enabled = true` on `azurerm_container_registry` or add a `registry` block with `username`/`password_secret_name` to the Container App. Admin credentials are a security risk and leak secrets into Terraform state. Always use **managed identity** with an `AcrPull` role assignment, and configure the registry link via `az containerapp registry set --identity system` in Phase 2.
+
 ## Phase 1: Container App Resource (No Registry Block)
 
 ```hcl
 # Placeholder image allows provisioning before the app image exists in ACR.
 # No registry block in Terraform during Phase 1 — the registry/identity link is
 # configured via CLI after provisioning (see Phase 2 below).
+# Do NOT add a registry block with username/password_secret_name — use managed identity.
 resource "azurerm_container_app" "api" {
   name                         = azurecaf_name.container_app.result
   container_app_environment_id = azurerm_container_app_environment.env.id
@@ -50,8 +53,9 @@ resource "azurerm_container_app" "api" {
     }
   }
 
-  # Phase 2 updates the image and adds a registry block via CLI.
+  # Phase 2 updates the image and configures the registry/identity link via CLI.
   # Prevent Terraform from reverting those changes on subsequent applies.
+  # Do NOT add a registry block here — use `az containerapp registry set --identity system`.
   lifecycle {
     ignore_changes = [
       template[0].container[0].image,
