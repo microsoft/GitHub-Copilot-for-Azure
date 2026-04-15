@@ -40,7 +40,7 @@ Detailed guidance for migrating containerized workloads from Kubernetes (GKE, EK
 | `env: - name: KEY, value: val` | `--env-vars KEY=val` | Environment variables |
 | `env: - name: SECRET, valueFrom: secretKeyRef` | `--secrets SECRET=keyvaultref:...` | Key Vault reference |
 | `ports: - containerPort: 8080` | `--target-port 8080` | Container port |
-| `livenessProbe.httpGet.path: /health` | `--health-probe-path /health` | Health endpoint |
+| `livenessProbe.httpGet.path: /health` | YAML/Bicep `probes` config | Health probes not configurable via CLI |
 
 ## Migration Workflow
 
