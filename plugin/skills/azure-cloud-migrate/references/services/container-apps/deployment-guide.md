@@ -122,9 +122,13 @@ $SECRET_FILE = [System.IO.Path]::GetTempFileName()
 try {
   $SecurePassword = Read-Host "Enter database password" -AsSecureString
   $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
-  $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-  [System.IO.File]::WriteAllText($SECRET_FILE, $PlainPassword)
-  az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --file "$SECRET_FILE"
+  try {
+    $PlainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+    [System.IO.File]::WriteAllText($SECRET_FILE, $PlainPassword)
+    az keyvault secret set --vault-name "$KEY_VAULT" --name db-password --file "$SECRET_FILE"
+  } finally {
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
+  }
 } finally {
   Remove-Item $SECRET_FILE -Force -ErrorAction SilentlyContinue
 }
@@ -137,6 +141,9 @@ az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$AC
 
 **Bash:**
 ```bash
+ACR_NAME="${ACR_NAME:-<acr>}"          # From Phase 3
+KEY_VAULT="${KEY_VAULT:-<keyvault>}"    # From Phase 5
+IDENTITY_ID="${IDENTITY_ID:?Set IDENTITY_ID from Phase 5}"
 SECRET_URI=$(az keyvault secret show --vault-name "$KEY_VAULT" --name db-password --query id -o tsv)
 az containerapp create --name spring-app --resource-group spring-rg --environment spring-env \
   --image "${ACR_NAME}.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external \
@@ -148,6 +155,9 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
 
 **PowerShell:**
 ```powershell
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }          # From Phase 3
+$KEY_VAULT = if ($env:KEY_VAULT) { $env:KEY_VAULT } else { "<keyvault>" }    # From Phase 5
+$IDENTITY_ID = if ($env:IDENTITY_ID) { $env:IDENTITY_ID } else { throw "Set IDENTITY_ID from Phase 5" }
 $SECRET_URI = az keyvault secret show --vault-name "$KEY_VAULT" --name db-password --query id -o tsv
 az containerapp create --name spring-app --resource-group spring-rg --environment spring-env `
   --image "${ACR_NAME}.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external `
@@ -157,14 +167,13 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
   --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod
 ```
 
-**With storage mount** (add these flags to the above command):
-```bash
-  --bind-storage-name spring-storage \
-  --mount-path /mnt/data
-```
+**With storage mount** (add `--bind-storage-name spring-storage --mount-path /mnt/data` to the `az containerapp create` command above):
 
 **PowerShell (with storage mount):**
 ```powershell
+$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
+$KEY_VAULT = if ($env:KEY_VAULT) { $env:KEY_VAULT } else { "<keyvault>" }
+$IDENTITY_ID = if ($env:IDENTITY_ID) { $env:IDENTITY_ID } else { throw "Set IDENTITY_ID from Phase 5" }
 $SECRET_URI = az keyvault secret show --vault-name "$KEY_VAULT" --name db-password --query id -o tsv
 az containerapp create --name spring-app --resource-group spring-rg --environment spring-env `
   --image "${ACR_NAME}.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external `

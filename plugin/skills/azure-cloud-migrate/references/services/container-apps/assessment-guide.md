@@ -62,7 +62,7 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring:
   data:
     mongodb:
-      uri: mongodb://user:pass@server:27017
+      uri: mongodb://<username>:<password>@server:27017
 ```
 
 ### JMS Message Brokers
@@ -95,7 +95,7 @@ spring.activemq.user=admin
 | OAuth2 | Spring Security reference docs |
 | Auth0 | Auth0 Spring Security documentation |
 | PingFederate | Spring Security SAML 2.0/OIDC docs, PingIdentity docs |
-| Microsoft Entra ID | No changes needed for Azure Container Apps |
+| Microsoft Entra ID | Update redirect URIs to new Container Apps FQDN |
 
 ## Scheduled Jobs Assessment
 
@@ -141,7 +141,7 @@ spring.activemq.user=admin
 
 - [ ] Identified all local state and planned migration to external storage
 - [ ] Reviewed file system usage and selected storage solution
-- [ ] Verified Java version compatibility (8, 11, 17, or 21)
+- [ ] Verified Java version compatibility (17+ for Spring Boot 3.x target; 8/11 for source assessment only)
 - [ ] Confirmed Spring Boot 3.x or planned upgrade
 - [ ] Inventoried databases (MySQL, PostgreSQL, MongoDB, Cosmos DB)
 - [ ] Inventoried message brokers (ActiveMQ, IBM MQ, Azure Service Bus)
