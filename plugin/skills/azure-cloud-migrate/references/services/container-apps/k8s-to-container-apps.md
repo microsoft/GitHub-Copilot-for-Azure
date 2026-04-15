@@ -86,10 +86,9 @@ See [deployment-guide.md](deployment-guide.md) for step-by-step deployment.
 Container Apps **does NOT support**:
 - StatefulSets (use Azure Database services instead)
 - DaemonSets (not applicable in serverless model)
-- Persistent Volumes (use Azure Files/Blob Storage with volume mounts)
+- K8s PV/PVC objects (use Azure Files/Blob Storage via Container Apps volume mounts instead)
 - Custom CNI networking
 - Node affinity / pod affinity
-- Init containers (limited support)
 
 For batch and scheduled workloads, migrate Kubernetes **Jobs / CronJobs** to **Azure Container Apps Jobs** instead of long-running Container Apps.
 
