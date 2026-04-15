@@ -160,4 +160,4 @@ resource "azurerm_container_app" "api" {
 }
 ```
 
-After `terraform apply`, build the real image and update the Container App via CLI — see the [deploy recipe](../../../../azure-deploy/references/recipes/terraform/README.md#container-apps-two-phase-deployment).
+After `terraform apply`, build the real image and update the Container App via CLI — see the **azure-deploy** skill's `references/recipes/terraform/README.md` (Container Apps Two-Phase Deployment section).

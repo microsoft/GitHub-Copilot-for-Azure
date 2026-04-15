@@ -65,7 +65,7 @@ After infrastructure is deployed:
 
 ### Container Apps (Two-Phase Deployment)
 
-Container Apps with ACR require a two-phase flow because the app image doesn't exist in ACR during initial `terraform apply`. See [Container Apps Terraform Patterns](../../../../azure-prepare/references/services/container-apps/terraform.md) for the full pattern.
+Container Apps with ACR require a two-phase flow because the app image doesn't exist in ACR during initial `terraform apply`. See the **azure-prepare** skill's `references/services/container-apps/terraform.md` for the full pattern.
 
 ```bash
 ACR_NAME=$(terraform output -raw acr_name)

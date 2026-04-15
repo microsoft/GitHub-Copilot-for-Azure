@@ -131,7 +131,7 @@ az containerapp update `
   --image "$AcrServer/myapp:latest"
 ```
 
-> ⚠️ **Warning:** Step 2 requires the `AcrPull` role assignment to have propagated (1–5 minutes after `terraform apply`). If the image pull fails, wait and retry. See the [RBAC propagation wait](../../../../azure-deploy/references/pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) in the pre-deploy checklist.
+> ⚠️ **Warning:** Step 2 requires the `AcrPull` role assignment to have propagated (1–5 minutes after `terraform apply`). If the image pull fails, wait and retry. See the **azure-deploy** skill's `references/pre-deploy-checklist.md` (Container Apps + ACR pre-deploy RBAC health check).
 
 ## Terraform Outputs
 
