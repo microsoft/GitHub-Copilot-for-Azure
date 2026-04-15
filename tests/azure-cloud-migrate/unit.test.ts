@@ -50,7 +50,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Rules");
       expect(skill.content).toContain("## Steps");
       expect(skill.content).toContain("## Migration Scenarios");
-      // Output directory is mentioned but not a section header
+      expect(skill.content).toContain("## Output Directory");
       expect(skill.content).toContain("<source-folder>-azure/");
     });
 

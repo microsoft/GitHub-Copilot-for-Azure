@@ -140,6 +140,17 @@ az containerapp create --name my-app --resource-group myapp-rg --environment mya
   --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
 ```
 
+```powershell
+$SECRET_URI = az keyvault secret show --vault-name myapp-kv --name password --query id -o tsv
+az containerapp create --name my-app --resource-group myapp-rg --environment myapp-env `
+  --image "$ACR_NAME.azurecr.io/app:v1.0" --target-port 8080 --ingress external `
+  --cpu 1.0 --memory 2Gi --min-replicas 2 --max-replicas 10 `
+  --user-assigned $IDENTITY_ID --registry-identity $IDENTITY_ID --registry-server "$ACR_NAME.azurecr.io" `
+  --secrets "password=keyvaultref:$SECRET_URI,identityref:$IDENTITY_ID" `
+  --env-vars ENV=prod DB_PASSWORD=secretref:password `
+  --scale-rule-name http --scale-rule-type http --scale-rule-http-concurrency 80
+```
+
 ## Phase 7: Validation
 
 ```bash
@@ -152,6 +163,15 @@ curl https://$FQDN/health
 az containerapp logs show --name my-app --resource-group myapp-rg --follow
 ```
 
+```powershell
+$FQDN = az containerapp show --name my-app --resource-group myapp-rg --query properties.configuration.ingress.fqdn -o tsv
+Write-Host "App URL: https://$FQDN"
+Invoke-WebRequest -Uri "https://$FQDN/health" -Method Head
+
+# View logs
+az containerapp logs show --name my-app --resource-group myapp-rg --follow
+```
+
 ## Troubleshooting
 
 | Issue | Solution |
@@ -159,4 +179,4 @@ az containerapp logs show --name my-app --resource-group myapp-rg --follow
 | Image pull | Verify ACR: `az acr check-health --name $ACR_NAME`; check ACRPull role |
 | Port mismatch | Verify `targetPort` matches app port |
 | OOM | Increase memory limit (up to 4 vCPU / 8 GiB max per container) |
-| DNS | Use `APP.internal.ENV.REGION.azurecontainerapps.io` |
+| DNS | Retrieve FQDN: `az containerapp show --name <app> -g <rg> --query properties.configuration.ingress.fqdn -o tsv` |

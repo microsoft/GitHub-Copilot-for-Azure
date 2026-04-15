@@ -30,7 +30,7 @@
 | Replicas per app | 1000+ | 300 per revision | Validate scale requirements |
 | Request timeout | Configurable (hours+) | 240 seconds default | Redesign long-running requests |
 | Startup probe timeout | Configurable | 240 seconds | Optimize startup time |
-| Containers per pod/app | 10+ | Unlimited sidecars | Sidecar pattern supported |
+| Containers per pod/app | 10+ | Up to 10 sidecars | Init + sidecar containers supported |
 
 ## Unsupported Patterns
 
