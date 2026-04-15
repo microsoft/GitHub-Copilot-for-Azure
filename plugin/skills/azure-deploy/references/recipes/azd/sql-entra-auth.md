@@ -7,10 +7,13 @@ Quick reference for Azure SQL Database Entra authentication in post-deployment s
 Azure SQL Server must be configured with Entra-only authentication during provisioning. The signed-in user must be set as Entra admin:
 
 ```bicep
+@allowed(['User', 'Group', 'Application'])
+param principalType string = 'User'
+
 properties: {
   administrators: {
     administratorType: 'ActiveDirectory'
-    principalType: principalType  // 'User' for interactive, 'ServicePrincipal' for CI/CD
+    principalType: principalType  // 'User' for interactive, 'Application' for CI/CD
     login: principalName
     sid: principalId
     tenantId: subscription().tenantId

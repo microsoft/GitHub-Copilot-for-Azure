@@ -7,7 +7,7 @@
 ```bicep
 param principalId string
 param principalName string
-@allowed(['User', 'Group', 'ServicePrincipal'])
+@allowed(['User', 'Group', 'Application'])
 param principalType string = 'User'
 
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
@@ -27,7 +27,7 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
 }
 ```
 
-> ⚠️ **Warning:** If deploying from CI/CD with a service principal, set `principalType` to `'ServicePrincipal'`. The default `'User'` only works for interactive (human) deployments.
+> ⚠️ **Warning:** If deploying from CI/CD with a service principal, set `principalType` to `'Application'`. The default `'User'` only works for interactive (human) deployments.
 
 **Get signed-in user info:**
 ```bash
