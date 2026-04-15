@@ -24,6 +24,10 @@ docker push "$($env:ACR_NAME).azurecr.io/$($env:IMAGE)"
 
 ## Phase 2: Infrastructure
 
+> Choose ONE path: basic (without VNet) OR VNet-integrated.
+
+### Basic (no VNet)
+
 ```bash
 set -euo pipefail
 az group create --name "$RG" --location "$LOCATION"
@@ -50,6 +54,34 @@ az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
 # $logKey = az monitor log-analytics workspace get-shared-keys -g $env:RG -n "$($env:RG)-logs" --query primarySharedKey -o tsv
 # az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
 #   --logs-workspace-id $logId --logs-workspace-key $logKey
+```
+
+### VNet-Integrated
+
+```bash
+set -euo pipefail
+az group create --name "$RG" --location "$LOCATION"
+az monitor log-analytics workspace create -g "$RG" -n "${RG}-logs" -l "$LOCATION"
+LOG_ID=$(az monitor log-analytics workspace show -g "$RG" -n "${RG}-logs" --query customerId -o tsv)
+az network vnet create -g "$RG" -n "${RG}-vnet" \
+  --address-prefix 10.0.0.0/16 --subnet-name aca-subnet --subnet-prefix 10.0.0.0/23
+SUBNET_ID=$(az network vnet subnet show -g "$RG" --vnet-name "${RG}-vnet" -n aca-subnet --query id -o tsv)
+az containerapp env create -n "${RG}-env" -g "$RG" -l "$LOCATION" \
+  --logs-destination azure-monitor --logs-workspace-id "$LOG_ID" \
+  --infrastructure-subnet-resource-id "$SUBNET_ID"
+```
+
+```powershell
+$ErrorActionPreference = 'Stop'
+az group create --name $env:RG --location $env:LOCATION
+az monitor log-analytics workspace create -g $env:RG -n "$($env:RG)-logs" -l $env:LOCATION
+$logId = az monitor log-analytics workspace show -g $env:RG -n "$($env:RG)-logs" --query customerId -o tsv
+az network vnet create -g $env:RG -n "$($env:RG)-vnet" `
+  --address-prefix 10.0.0.0/16 --subnet-name aca-subnet --subnet-prefix 10.0.0.0/23
+$subnet = az network vnet subnet show -g $env:RG --vnet-name "$($env:RG)-vnet" -n aca-subnet | ConvertFrom-Json
+az containerapp env create -n "$($env:RG)-env" -g $env:RG -l $env:LOCATION `
+  --logs-destination azure-monitor --logs-workspace-id $logId `
+  --infrastructure-subnet-resource-id $subnet.id
 ```
 
 ## Phase 3: Secrets & Identity
@@ -137,6 +169,18 @@ az containerapp create --name <app-name> -g $env:RG --environment "$($env:RG)-en
   --secrets "db-pass=keyvaultref:$secretUri,identityref:$identityId" `
   --env-vars ENV=production DB_PASSWORD=secretref:db-pass
 ```
+
+### Configuration Mapping
+
+| ECS Task Definition | Container Apps CLI |
+|---------------------|--------------------|
+| `cpu: "512"` (0.5 vCPU) | `--cpu 0.5` |
+| `memory: "1024"` (1 GB) | `--memory 1Gi` |
+| `containerPort: 8080` | `--target-port 8080` |
+| `desiredCount: 2` | `--min-replicas 2` |
+| `maximumPercent: 200` | `--max-replicas 10` |
+| `secrets` (Secrets Manager ARN) | `--secrets name=keyvaultref:URI,identityref:ID` |
+| `environment` (env vars) | `--env-vars KEY=value` |
 
 ## Phase 5: Validate
 

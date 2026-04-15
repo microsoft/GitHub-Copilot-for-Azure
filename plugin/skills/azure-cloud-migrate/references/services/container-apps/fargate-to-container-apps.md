@@ -49,8 +49,14 @@ Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Co
 | DynamoDB | Azure Cosmos DB | API compatibility or code changes |
 | SQS | Azure Service Bus / Queue Storage | SDK change |
 | SNS | Azure Event Grid / Service Bus Topics | SDK change |
-| RDS | Azure Database for PostgreSQL/MySQL/SQL | Connection string update |
+| RDS | Azure Database for PostgreSQL/MySQL/SQL | Connection string + managed identity |
 | ElastiCache (Redis) | Azure Cache for Redis | Connection string update |
+| Parameter Store | Azure App Configuration / Key Vault | SDK change |
+| EventBridge | Azure Event Grid | SDK change required |
+| Step Functions | Azure Logic Apps / Durable Functions | Workflow redesign |
+| Kinesis | Azure Event Hubs | SDK change required |
+| X-Ray | Application Insights | Auto-configured with Container Apps |
+| CloudWatch Logs | Azure Monitor Logs | Auto-configured |
 
 ## Resource Mapping
 
