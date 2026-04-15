@@ -1,5 +1,8 @@
 # Bicep Parsing Procedure
 
+> **Canonical copy:** Shared Bicep parsing procedure used by Azure IaC and comparison skills. Keep local copies aligned when this procedure changes.
+
+
 Parse Bicep templates into a structured resource model for comparison. Referenced by skills that analyze existing Bicep files.
 
 ---
