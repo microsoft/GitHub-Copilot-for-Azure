@@ -162,6 +162,7 @@
             "--benchmark", $Benchmark,
             "--model", $m,
             "--env", "GITHUB_MCP_SERVER_TOKEN",
+            "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", 'org="CoreAI Cloud and Tools"',
             "--no-wait"
         )
