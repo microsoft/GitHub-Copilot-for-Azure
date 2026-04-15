@@ -1,5 +1,7 @@
 # Bicep Parsing Procedure
 
+> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
+
 Parse Bicep templates into a structured resource model for comparison. Referenced by skills that analyze existing Bicep files.
 
 ---

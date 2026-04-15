@@ -1,19 +1,22 @@
 # Azure Deployment Verification Rules
 
-Shared pre-deployment verification rules for generated Bicep templates. These cover **gotcha-prone constraints** that are easy to miss — SKU dependencies, resource compatibility, and networking rules that cause deployment failures.
+> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
 
-For rules not listed here (security defaults like TLS 1.2, HTTPS enforcement, runtime version currency), verify against Bicep MCP `get_az_resource_type_schema`, [bicep-best-practices.md](bicep-best-practices.md), and Microsoft documentation.
+Shared deployment-blocking compatibility checks for Bicep remediation proposed by infrastructure-sync workflows. These cover **gotcha-prone constraints** that are easy to miss — SKU dependencies, resource compatibility, and networking rules that commonly turn drift remediation into deployment failures.
 
-Any skill that generates or modifies Bicep for deployment MUST run these checks before presenting results. Failures block deployment; warnings are reported but don't block.
+For rules not listed here (security defaults like TLS 1.2, HTTPS enforcement, runtime version currency), verify against Bicep MCP `get_az_resource_type_schema`, [bicep-best-practices.md](bicep-best-practices.md), and Microsoft documentation. For full pre-deployment validation, readiness checks, or policy evaluation, use `azure-validate`.
+
+When this skill proposes Bicep remediation changes, run only the applicable deployment-blocking compatibility checks before presenting results. Failures should be fixed or called out with a concrete remediation. Warnings are informational and should be reported without claiming deployment readiness.
 
 ---
 
 ## How to Use
 
-1. After generating or modifying Bicep files, run every applicable rule category below against the generated code and the `.bicepparam` values.
+1. After proposing or modifying Bicep remediation, run every applicable rule category below against the generated code and the `.bicepparam` values.
 2. Present results as a checklist (see "Output Format" at the end).
 3. **Errors** must be fixed automatically where possible, or presented with a concrete fix. Do not present generated code that has known errors.
 4. **Warnings** are informational — present them so the user can decide.
+5. If the user asks whether the deployment is fully ready, wants ARM/Bicep what-if output, or needs policy validation, hand off to `azure-validate`.
 
 ---
 

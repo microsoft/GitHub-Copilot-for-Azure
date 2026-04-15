@@ -1,5 +1,7 @@
 # Resource Filtering Rules
 
+> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
+
 Centralized exclusion lists for Azure resource discovery. Different skills filter differently — diagrams show architecture only, Bicep deploys everything deployable.
 
 ---
