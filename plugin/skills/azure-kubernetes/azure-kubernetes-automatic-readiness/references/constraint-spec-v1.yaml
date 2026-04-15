@@ -27,7 +27,9 @@ clusterConstraints:
   - id: cluster-keyvault-secrets-provider
     severity: requiresChanges
     field: addonProfiles.azureKeyvaultSecretsProvider.enabled
-    required: true + enableSecretRotation
+    required:
+      enabled: true
+      enableSecretRotation: true
     fix: "az aks addon enable --addon azure-keyvault-secrets-provider --enable-secret-rotation"
 
   # -- Networking --

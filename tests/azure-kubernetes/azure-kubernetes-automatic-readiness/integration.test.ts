@@ -25,7 +25,7 @@ const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
 
 if (skipTests && skipReason) {
-  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
+  console.log(`Skipping integration tests: ${skipReason}`);
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;

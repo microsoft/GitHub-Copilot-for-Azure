@@ -25,7 +25,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("description contains WHEN triggers", () => {
-      expect(skill.metadata.description).toMatch(/WHEN:/i);
+      expect(skill.metadata.description).toContain("WHEN:");
     });
 
     test("description mentions AKS Automatic", () => {
@@ -119,13 +119,15 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Frontmatter Formatting", () => {
     test("frontmatter has no tabs", () => {
       const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatter = raw.split("---")[1];
+      const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+      const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
       expect(frontmatter).not.toMatch(/\t/);
     });
 
     test("frontmatter keys are only supported attributes", () => {
       const raw = readFileSync(skill.filePath, "utf-8");
-      const frontmatter = raw.split("---")[1];
+      const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+      const frontmatter = frontmatterMatch ? frontmatterMatch[1] : "";
       const supported = ["name", "description", "compatibility", "license", "metadata",
         "argument-hint", "disable-model-invocation", "user-invokable"];
       const keys = frontmatter.split("\n")
