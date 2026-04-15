@@ -4,7 +4,7 @@ description: "Assess and migrate cross-cloud workloads to Azure: AWS Lambda→Fu
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "1.0.3"
 ---
 
 # Azure Cloud Migrate
