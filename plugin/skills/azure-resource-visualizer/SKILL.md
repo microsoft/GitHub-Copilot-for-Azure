@@ -4,7 +4,7 @@ description: "Analyze Azure resource groups and generate architecture diagrams a
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.1"
+  version: "1.1.0"
 ---
 
 # Azure Resource Visualizer
@@ -73,14 +73,33 @@ graph LR
   Web["Web App"] --> API["API"] --> DB["Database"]
 ```
 
+Keep the main construction rules in this file even when detailed workflows live in `references/`.
+
 ## Key Diagram Requirements
 
 - **Subgraphs**: Group resources by Resource Group or logical layer
+- **Labels**: Include SKU, tier, or runtime in node labels when known; use `<br/>` for line breaks
+- **Connection styles**:
+  - `-->` for standard data flow or dependency
+  - `-.->` for optional, inferred, or indirect relationships
+  - `==>` for critical paths or primary request flow
+- **Node IDs**: Use meaningful IDs such as `APP`, `FUNC`, `SQL`, `KV`, `VNET`
 - Map relationships between all resources:
   - Network connections (VNet, subnet, NSG, private endpoints)
   - Data flow (app → database, app → storage, messaging)
   - Identity, RBAC, and authentication bindings
   - Security rules and access policies
+
+## Quick Quality Checklist
+
+Before presenting a diagram, verify:
+
+- Resource group and subscription were confirmed with the user
+- Hidden, auto-created, or non-architectural resources were filtered when appropriate
+- Every important resource appears exactly once in the diagram
+- Every important relationship is labeled or visually clear
+- Grouping is logical by layer, purpose, or resource group
+- Output format matches the request: Mermaid for lightweight diagrams, Draw.io for richer layouts
 
 ## Quality Standards
 
@@ -97,7 +116,11 @@ graph LR
 
 | Error | Cause | Remediation |
 |---|---|---|
+| Not authenticated | No active Azure session or expired credentials | Stop and ask the user to sign in before discovery |
+| Resource group not specified | User did not provide a target scope | List available resource groups and ask the user to choose one |
 | No resources found | Empty/wrong resource group | Verify name and subscription |
+| Unsupported resource type | Resource has no clear stencil or relationship mapping | Use a generic labeled node and call out the limitation |
 | Permission denied | Missing RBAC | Check Reader role |
+| Diagram generation failed | Mermaid syntax issue, invalid Draw.io XML, or missing shape mapping | Simplify the diagram, validate syntax, and retry with generic shapes if needed |
 | Draw.io MCP tool not found | MCP not configured | Outputs `.drawio` XML; open with VS Code Draw.io extension |
 | 50+ resources | Large resource group | Split by layer or use Draw.io |
