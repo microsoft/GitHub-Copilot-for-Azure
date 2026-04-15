@@ -14,7 +14,7 @@ Get target scope: resource group name(s) and subscription ID. If not specified, 
 
 ## Step 3 — Discover Resources
 
-Use `azure_mcp-group_resource_list` (or `az resource list --resource-group <name>`) to enumerate all resources. Extract: `id`, `name`, `type`, `location`, `tags`, `sku`. If no resources found, stop with an error.
+Use `group_resource_list` (or `az resource list --resource-group <name>`) to enumerate all resources. Extract: `id`, `name`, `type`, `location`, `tags`, `sku`. If no resources found, stop with an error.
 
 ## Step 4 — Filter Non-Deployable Resources
 
@@ -65,14 +65,14 @@ Follow [bicep-best-practices.md](bicep-best-practices.md) strictly. Call Bicep M
 | `main.bicep` | `targetScope = 'resourceGroup'`; all params with `@description()` and `@secure()` where needed; one `module` block per category; outputs for key endpoints/IDs |
 | `<scope>.bicepparam` | `using 'main.bicep'`; every param value matching current Azure config; 1-3 line comments per param (what it controls, alternatives with cost impact, version EOL dates); `readEnvironmentVariable()` for secrets |
 | `modules/networking.bicep` | VNets, subnets, NSGs, private endpoints, NICs, firewalls |
-| `modules/compute.bicep` | VMs, App Services, Functions, Container Apps — **use actual runtime from Azure** (e.g., `DOTNETCORE|8.0` exactly as extracted, not guessed) |
+| `modules/compute.bicep` | VMs, App Services, Functions, Container Apps — follow the runtime defaulting rules in [version-currency.md](version-currency.md) |
 | `modules/data.bicep` | Storage, SQL, Cosmos DB, Redis, Key Vault |
 | `modules/identity.bicep` | User-assigned managed identities, role assignments |
 | `modules/monitoring.bicep` | App Insights, Log Analytics, action groups |
 
 Only create module files that have resources. Each module receives only the params it needs. Use `parent:` for child resources, `existing` blocks for cross-module refs, symbolic references (`foo.id`) — never `resourceId()`.
 
-**Runtime version rule**: Use the exact runtime version from Azure. If the extracted version is end-of-life per [version-currency.md](version-currency.md), keep the current value as default but add a comment recommending the upgrade with EOL date.
+Apply the runtime defaulting and comment rules from [version-currency.md](version-currency.md). That file is the single source of truth for supported-versus-EOL handling.
 
 ## Step 9 — Generate Dependencies Folder
 

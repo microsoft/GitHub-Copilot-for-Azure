@@ -1,5 +1,8 @@
 # Diagram Parsing Procedure
 
+> **Canonical copy:** Shared diagram-parsing procedure used by Azure IaC and diagram skills. Keep local copies aligned when this procedure changes.
+
+
 Parse a Draw.io XML file into a structured resource model. Referenced by all skills that consume Draw.io diagrams.
 
 ---

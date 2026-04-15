@@ -1,5 +1,8 @@
 # Azure Authentication Check
 
+> **Canonical copy:** Shared authentication gate used by Azure IaC and diagram skills. Keep local copies aligned when this procedure changes.
+
+
 Canonical procedure for verifying Azure session before any Azure operations. Referenced by all skills that interact with Azure.
 
 ---

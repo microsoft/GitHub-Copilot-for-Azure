@@ -4,12 +4,12 @@ description: "Generate deployment-ready Bicep templates from existing Azure envi
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Azure IaC Generator
 
-Reverse-engineer live Azure resources or Draw.io diagrams into deployment-ready, modular Bicep. The goal is an **environment-identical** redeployment — every runtime version, SKU, and setting must match the Azure source.
+Reverse-engineer live Azure resources or Draw.io diagrams into deployment-ready, modular Bicep. The goal is an **environment-identical** redeployment for supported configurations. When Azure uses an end-of-life runtime, preserve the extracted value in comments and default to the current supported upgrade path.
 
 ## Prerequisites
 
@@ -32,6 +32,10 @@ Reverse-engineer live Azure resources or Draw.io diagrams into deployment-ready,
 | **CLI fallback** | `az resource show --ids <id>`, `az webapp show`, `az webapp config appsettings list` |
 | **Output** | Project folder with `main.bicep`, `.bicepparam`, `modules/`, `dependencies/`, `README.md` |
 
+## Design Notes
+
+Named `azure-iac-generator` rather than `azure-bicep-generator` to accommodate future IaC tooling such as Terraform. Bicep is the only supported target today; Terraform support is reserved for a future iteration.
+
 ## Routing — MUST follow the matched workflow
 
 ```
@@ -49,6 +53,7 @@ User request
 - [azure-resource-configs.md](references/azure-resource-configs.md) — Per-type property extraction
 - [azure-deployment-verification.md](references/azure-deployment-verification.md) — Pre-deployment checks
 - [version-currency.md](references/version-currency.md) — API + runtime version rules
+- [bicep-parsing.md](references/procedures/bicep-parsing.md) — Parse existing Bicep and `.bicepparam` files when merging with generated output
 
 ## Output Structure — MUST create this folder layout
 

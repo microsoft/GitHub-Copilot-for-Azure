@@ -1,5 +1,8 @@
 # Azure Deployment Verification Rules
 
+> **Canonical copy:** Shared deployment-verification rules used by Azure IaC skills. Keep local copies aligned when this rule set changes.
+
+
 Shared pre-deployment verification rules for generated Bicep templates. These cover **gotcha-prone constraints** that are easy to miss — SKU dependencies, resource compatibility, and networking rules that cause deployment failures.
 
 For rules not listed here (security defaults like TLS 1.2, HTTPS enforcement, runtime version currency), verify against Bicep MCP `get_az_resource_type_schema`, [bicep-best-practices.md](bicep-best-practices.md), and Microsoft documentation.

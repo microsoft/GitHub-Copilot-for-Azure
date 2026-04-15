@@ -11,6 +11,7 @@
         "azure-diagnostics",
         "azure-enterprise-infra-planner",
         "azure-hosted-copilot-sdk",
+        "azure-iac-generator",
         "azure-kubernetes",
         "azure-kusto",
         "azure-messaging",
