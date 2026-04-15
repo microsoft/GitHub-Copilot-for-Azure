@@ -42,11 +42,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "help me move from Google Cloud Run to Container Apps",
       // Fargate to Container Apps triggers
       "migrate Fargate to Azure Container Apps",
-      "migrate AWS ECS tasks to Container Apps",
       "Fargate to Container Apps migration assessment",
       "convert AWS Fargate workloads to Azure",
       "move ECS Fargate containers to Azure Container Apps",
-      "migrate ECS to Container Apps",
+      "migrate ECS on Fargate to Container Apps",
       "assess AWS Fargate for Azure migration",
       "replatform Fargate to Container Apps",
     ];

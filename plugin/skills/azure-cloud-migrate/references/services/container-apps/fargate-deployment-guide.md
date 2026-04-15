@@ -154,7 +154,7 @@ az containerapp create --name <app-name> -g "$RG" --environment "${RG}-env" \
   --cpu 0.5 --memory 1Gi --min-replicas 1 --max-replicas 10 \
   --user-assigned "$IDENTITY_ID" --registry-identity "$IDENTITY_ID" \
   --registry-server "${ACR_NAME}.azurecr.io" \
-  --secrets db-pass=keyvaultref:"${SECRET_URI}",identityref:"${IDENTITY_ID}" \
+  --secrets "db-pass=keyvaultref:${SECRET_URI},identityref:${IDENTITY_ID}" \
   --env-vars ENV=production DB_PASSWORD=secretref:db-pass
 ```
 
@@ -178,7 +178,6 @@ az containerapp create --name <app-name> -g $env:RG --environment "$($env:RG)-en
 | `memory: "1024"` (1 GB) | `--memory 1Gi` |
 | `containerPort: 8080` | `--target-port 8080` |
 | `desiredCount: 2` | `--min-replicas 2` |
-| `maximumPercent: 200` | `--max-replicas 10` |
 | `secrets` (Secrets Manager ARN) | `--secrets name=keyvaultref:URI,identityref:ID` |
 | `environment` (env vars) | `--env-vars KEY=value` |
 
