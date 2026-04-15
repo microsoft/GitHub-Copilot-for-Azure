@@ -51,7 +51,13 @@ fi
 echo "Granting SQL data-plane access to managed identity: $APP_NAME"
 
 # Ensure the rdbms-connect extension is installed (provides 'az sql db query')
-az extension add --name rdbms-connect --yes 2>/dev/null || true
+if ! az extension show --name rdbms-connect >/dev/null 2>&1; then
+  echo "Installing Azure CLI extension: rdbms-connect"
+  if ! az extension add --name rdbms-connect --yes; then
+    echo "ERROR: Failed to install required Azure CLI extension 'rdbms-connect'. Cannot continue with 'az sql db query'." >&2
+    exit 1
+  fi
+fi
 
 az sql db query \
   --server "$SQL_SERVER" \

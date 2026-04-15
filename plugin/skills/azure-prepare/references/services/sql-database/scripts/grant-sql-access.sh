@@ -82,7 +82,13 @@ if [ "$SQL_GRANT_DDLADMIN" = "true" ]; then
 fi
 
 # Ensure the rdbms-connect extension is installed (provides 'az sql db query')
-az extension add --name rdbms-connect --yes 2>/dev/null || true
+if ! az extension show --name rdbms-connect >/dev/null 2>&1; then
+  echo "Azure CLI extension 'rdbms-connect' is not installed. Installing..."
+  if ! az extension add --name rdbms-connect --yes; then
+    echo "ERROR: Failed to install Azure CLI extension 'rdbms-connect'. Ensure Azure CLI has network access and retry." >&2
+    exit 1
+  fi
+fi
 
 az sql db query \
   --server "$SQL_SERVER" \
