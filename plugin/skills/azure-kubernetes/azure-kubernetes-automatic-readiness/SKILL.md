@@ -24,7 +24,6 @@ AKS Automatic enforces **Deployment Safeguards** (25 active Deny policies; 27 ex
 |----------|-------|
 | Best for | AKS Automatic migration readiness and manifest validation |
 | MCP Tools | `mcp_azure_mcp_aks` |
-| CLI | `az aks automatic assess` (preview: `api-version=2026-04-01-preview`) |
 | Related skills | azure-kubernetes (cluster creation), azure-diagnostics (live troubleshooting), azure-validate (readiness checks) |
 
 ## When to Use This Skill
