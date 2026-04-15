@@ -25,9 +25,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Sync my diagram with what is deployed in Azure",
       "Compare my Bicep to my diagram",
       "Check if Bicep matches the diagram",
-      "Bicep what-if preview",
-      "Preview what my Bicep changes would do",
       "Compare Bicep to live Azure",
+      "Compare Bicep to Azure for drift",
+      "Does Azure match my Bicep template",
       "Detect infrastructure drift",
       "Check for diagram drift",
     ];

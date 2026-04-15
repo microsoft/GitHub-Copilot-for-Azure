@@ -1,6 +1,6 @@
 ---
 name: azure-infrastructure-sync
-description: "Compare and synchronize infrastructure artifacts — Draw.io diagrams, Bicep templates, and live Azure resources — to detect drift and divergence. Supports diagram-to-Azure sync (quick and deep modes), Bicep-to-diagram comparison, and Bicep-to-Azure drift comparison. WHEN: check drift, compare diagram to azure, sync bicep and diagram, detect infrastructure drift, diagram drift, compare bicep to azure, does azure match bicep, does my diagram match azure, compare bicep to diagram, infrastructure drift detection. DO NOT USE FOR: generating diagrams (use azure-resource-visualizer), generating Bicep (use azure-iac-generator), pre-deployment validation, ARM/Bicep what-if previews, template validation, deployment readiness checks, or policy checks (use azure-validate)."
+description: "Compare and synchronize infrastructure artifacts — Draw.io diagrams, Bicep templates, and live Azure resources — to detect drift and divergence. Supports diagram-to-Azure sync (quick and deep modes), Bicep-to-diagram comparison, and Bicep-to-Azure what-if analysis. WHEN: check drift, compare diagram to azure, sync bicep and diagram, bicep what-if, preview bicep changes, detect infrastructure drift, diagram drift, compare bicep deployment, does my diagram match azure, compare bicep to diagram, infrastructure drift detection. DO NOT USE FOR: generating diagrams (use azure-resource-visualizer), generating Bicep (use azure-iac-generator), pre-deployment policy checks (use azure-validate)."
 license: MIT
 metadata:
   author: Microsoft
@@ -11,7 +11,7 @@ metadata:
 
 Compare and synchronize infrastructure artifacts to detect drift. Supports four comparison modes across Draw.io diagrams, Bicep templates, and live Azure resources.
 
-Scope: comparison and drift analysis only. This skill does not perform deployment readiness validation, ARM/Bicep what-if preview, template validation, or policy compliance checks; use `azure-validate` for those workflows.
+Scope: comparison and drift analysis only. This skill does not perform deployment readiness validation, template validation, or policy compliance checks; use `azure-validate` for those workflows.
 
 ## Prerequisites
 
