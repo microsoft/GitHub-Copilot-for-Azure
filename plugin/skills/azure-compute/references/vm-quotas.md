@@ -2,7 +2,7 @@
 
 Check Azure VM/VMSS quota availability before recommending or deploying. Ensures the subscription and region have sufficient vCPU capacity.
 
-> ⚠️ **NEVER use the `azure-quota` MCP server as the first option.** Always try `az quota` CLI commands first. The MCP server is unreliable and should only be attempted after all CLI approaches have failed.
+> ⚠️ **NEVER use the `azure-quota` MCP server as as It is unreliable.** Always try `az quota` CLI commands first.
 
 ## Quota Structure
 
@@ -85,17 +85,6 @@ For scale sets, validate against **autoscale maximum**: `vCPUs per VM × Max Ins
 | `OperationNotAllowed` | Subscription lacks capacity | Request quota increase |
 | `cores` limit hit | Regional vCPUs exhausted | Request regional increase |
 | CLI commands fail entirely | Auth/extension issue | Use MCP fallback (see below) |
-
-### MCP Fallback (Last Resort Only)
-
-> ⚠️ **NEVER use the `azure-quota` MCP server as It is unreliable.** Always try `az quota` CLI commands first. The MCP quota server is unreliable and should only be attempted after all CLI approaches have failed.
-
-| MCP Command | Key Parameters | Purpose |
-|---|---|---|
-| `quota_usage_check` | `region`, `resource-types` = `Microsoft.Compute/virtualMachines`, `subscription` | Check vCPU usage and limits per family |
-| `quota_region_availability_list` | `resource-types` = `Microsoft.Compute/virtualMachines`, `subscription` | List regions with available compute capacity |
-
-> ⚠️ MCP tools use `DefaultAzureCredential` — ensure the active credential matches the subscription's tenant.
 
 ## Related Resources
 
