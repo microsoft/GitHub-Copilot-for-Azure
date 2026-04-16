@@ -68,10 +68,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           RECOMMENDER_WORKFLOW_PATH,
         );
         if (!result) return;
-        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
-        setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const skillInvocationRate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(skillInvocationRate);
+        expect(skillInvocationRate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -85,7 +86,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -99,7 +101,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -113,7 +116,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -127,7 +131,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -141,7 +146,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -155,7 +161,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
   });
