@@ -263,6 +263,9 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
           if (result) {
             const durationSec = (new Date(result.timestamp).getTime() - new Date(event.timestamp).getTime()) / 1000;
             lines.push(`duration: ${durationSec.toFixed(3)} sec`);
+            // Copilot SDK truncates the tool response if it's too long
+            // Record the estimated token count for what it sends to the LLM
+            lines.push(`estimated llm token count: ${((result?.content ?? result?.error)?.length ?? 0) / 4}`);
             if (result.success && result.content) {
               let content = result.content;
               if (content.length > 500) {
