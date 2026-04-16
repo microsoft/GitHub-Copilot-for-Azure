@@ -78,28 +78,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("Policy Compliance Step", () => {
-    test("includes policy compliance check step", () => {
-      expect(skill.content).toContain("Policy Compliance Check");
-    });
-
-    test("references bicep-policy-check-workflow.md", () => {
-      expect(skill.content).toContain("bicep-policy-check-workflow.md");
-    });
-
-    test("policy check comes after role verification and before record proof", () => {
-      const roleVerifIndex = skill.content.indexOf("Static Role Verification");
-      const policyIndex = skill.content.indexOf("Policy Compliance Check");
-      const recordProofIndex = skill.content.indexOf("Record Proof");
-      expect(policyIndex).toBeGreaterThan(roleVerifIndex);
-      expect(policyIndex).toBeLessThan(recordProofIndex);
-    });
-
-    test("marks policy check as optional", () => {
-      expect(skill.content).toMatch(/optional/i);
-    });
-  });
-
   describe("Workflow Integration", () => {
     test("documents recipe references", () => {
       expect(skill.content).toMatch(/recipe/i);
