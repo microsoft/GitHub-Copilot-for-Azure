@@ -41,6 +41,11 @@ jobs:
         with:
           node-version: '22'
           registry-url: https://npm.pkg.github.com
+          scope: '@microsoft'
+      - name: Install dependencies
+        run: npm install --no-save
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run evaluations
         run: npx @microsoft/vally-cli eval --eval-spec evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results --output jsonl
         env:
@@ -52,4 +57,3 @@ jobs:
           name: eval-results
           path: ./results
           retention-days: 30
-
