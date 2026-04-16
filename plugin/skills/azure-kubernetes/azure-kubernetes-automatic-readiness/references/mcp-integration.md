@@ -16,11 +16,20 @@ The response lists available actions and their parameter schemas. Use the return
 
 ---
 
-## `assessAutomaticCompatibility` Call
+## Assessment Call
 
+After calling `discover`, use the assessment action name returned in the response. Pass parameters according to the discovered schema — do not hardcode action names or API versions.
+
+Typical parameters include:
+- `subscriptionId` — Azure subscription ID
+- `resourceGroupName` — resource group containing the cluster
+- `resourceName` — AKS cluster name
+- `scope` (optional) — filter by namespaces or workload types
+
+Example shape (use actual action name and schema from discover output):
 ```javascript
 mcp_azure_mcp_aks({
-  action: "assessAutomaticCompatibility",
+  action: "<action-from-discover>",
   subscriptionId: "<subscription-id>",
   resourceGroupName: "<resource-group>",
   resourceName: "<cluster-name>",
@@ -29,13 +38,6 @@ mcp_azure_mcp_aks({
     workloadTypes: ["Deployment", "StatefulSet", "DaemonSet", "CronJob", "Job"]
   }
 })
-```
-
-**API path (for reference):**
-```
-POST /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/
-     Microsoft.ContainerService/managedClusters/{resourceName}/
-     assessAutomaticCompatibility?api-version=2026-04-01-preview
 ```
 
 All `scope` parameters are optional. If omitted, the API assesses all workloads excluding `kube-system` and `gatekeeper-system`.
@@ -148,7 +150,7 @@ async function pollAssessment(locationUrl, retryAfterSeconds) {
 Attempt each step in order. Do not ask the user which is available — just try:
 
 ```
-1. mcp_azure_mcp_aks → assessAutomaticCompatibility
+1. mcp_azure_mcp_aks → discover, then call the assessment action returned
    ↓ fails (tool not found — Azure MCP server not configured)
 
 2. Inform user to install Azure MCP, then fall back to offline validation
@@ -195,7 +197,7 @@ mcp_azure_mcp_aks({ action: "discover" })
 |---|---|---|
 | `tool not found: mcp_azure_mcp_aks` | Azure MCP server not configured | Guide user to install: [aka.ms/azure-mcp-setup](https://aka.ms/azure-mcp-setup), then fall back to offline |
 | `HTTP 401 Unauthorized` | Not logged in | `az login` |
-| `HTTP 403 Forbidden` | Missing `assessAutomaticCompatibility/action` permission | Assign correct RBAC role |
+| `HTTP 403 Forbidden` | Insufficient RBAC permissions | Ensure caller has read access to the cluster via AKS APIs |
 | `HTTP 404 Not Found` | Wrong subscription, RG, or cluster name | Verify with `az aks list -o table` |
-| `HTTP 202` with no Location header | API version mismatch | Use `api-version=2026-04-01-preview` |
+| `HTTP 202` with no Location header | API version mismatch | Ensure the MCP server version supports async polling; retry with the latest server |
 | Timeout after 30s | Cluster too large (500+ workloads) | Implement async polling — see section above |
