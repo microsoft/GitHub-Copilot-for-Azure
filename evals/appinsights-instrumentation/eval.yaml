@@ -28,7 +28,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/appinsights-instrumentation"
+    - "../../plugin/skills/appinsights-instrumentation"
 
 config:
   runs: 5

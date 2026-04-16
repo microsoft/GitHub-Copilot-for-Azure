@@ -26,7 +26,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-resource-visualizer"
+    - "../../plugin/skills/azure-resource-visualizer"
 
 config:
   runs: 5

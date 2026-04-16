@@ -29,7 +29,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-enterprise-infra-planner"
+    - "../../plugin/skills/azure-enterprise-infra-planner"
 
 config:
   runs: 1
