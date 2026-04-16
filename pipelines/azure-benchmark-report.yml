@@ -82,6 +82,10 @@ stages:
           -InputPath "$(Pipeline.Workspace)/benchmark-run-ids"
           -OutputPath "$(Build.ArtifactStagingDirectory)"
 
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: benchmark-reports
+      displayName: 'Publish benchmark reports artifact'
+
     - task: AzureCLI@2
       displayName: 'Upload reports to blob storage'
       inputs:
@@ -93,7 +97,3 @@ stages:
           -ReportPath "$(Build.ArtifactStagingDirectory)"
           -StorageAccountName "msbenchnightlydata"
           -ContainerName "msbench-reports"
-
-    - publish: $(Build.ArtifactStagingDirectory)
-      artifact: benchmark-reports
-      displayName: 'Publish benchmark reports artifact'

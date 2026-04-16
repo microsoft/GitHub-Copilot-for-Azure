@@ -82,7 +82,7 @@ function Get-SkillName {
 }
 
 # Discover report files (exclude copilot log artifacts)
-$reports = Get-ChildItem -Path $ReportPath -Filter '*.md' -ErrorAction SilentlyContinue |
+$reports = Get-ChildItem -Path $ReportPath -Filter '*.md' |
            Where-Object { $_.DirectoryName -notlike '*copilot_log*' }
 
 if (-not $reports -or $reports.Count -eq 0) {
