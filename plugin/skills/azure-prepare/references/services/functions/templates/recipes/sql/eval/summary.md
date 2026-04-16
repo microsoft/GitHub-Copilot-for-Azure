@@ -2,14 +2,22 @@
 
 ## Coverage Status
 
-| Language | Source | Eval | Status |
-|----------|--------|------|--------|
+| Language | MCP Template | Eval | Status |
+|----------|--------------|------|--------|
 | Python | ✅ | ✅ | PASS |
 | TypeScript | ✅ | 🔲 | Pending |
 | JavaScript | ✅ | 🔲 | Pending |
 | C# (.NET) | ✅ | 🔲 | Pending |
 | Java | ✅ | 🔲 | Pending |
 | PowerShell | ✅ | 🔲 | Pending |
+
+## MCP Tool Validation
+
+| Test | Status | Details |
+|------|--------|---------|
+| `functions_template_get` | ✅ PASS | SQL templates retrieved |
+| Template Discovery | ✅ PASS | Templates found via resource filter |
+| IaC Included | ✅ PASS | SQL Server Bicep + RBAC in projectFiles |
 
 ## IaC Validation
 
@@ -39,10 +47,9 @@
 
 ## Notes
 
-Dedicated AZD templates available:
-- `functions-quickstart-python-azd-sql`
-- `functions-quickstart-typescript-azd-sql`
-- `functions-quickstart-dotnet-azd-sql`
+- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Dedicated AZD templates available for Python, TypeScript, .NET
+- Requires T-SQL post-deploy for managed identity access
 
 ## IaC Features
 

@@ -2,14 +2,23 @@
 
 ## Coverage Status
 
-| Language | Source | Eval | Status |
-|----------|--------|------|--------|
+| Language | MCP Template | Eval | Status |
+|----------|--------------|------|--------|
 | Python | ✅ | ✅ | PASS |
 | TypeScript | ✅ | 🔲 | Pending |
 | JavaScript | ✅ | 🔲 | Pending |
 | C# (.NET) | ✅ | 🔲 | Pending |
 | Java | ✅ | 🔲 | Pending |
 | PowerShell | ✅ | 🔲 | Pending |
+
+## MCP Tool Validation
+
+| Test | Status | Details |
+|------|--------|---------|
+| `functions_template_get` | ✅ PASS | `timer-trigger-python-azd` template retrieved |
+| Template Discovery | ✅ PASS | Timer templates found via resource filter |
+| IaC Included | ✅ PASS | Bicep infra/ included in projectFiles |
+| E2E Agent Test | ✅ PASS | 12 API calls, 146s, template retrieved and applied |
 
 ## Results
 
@@ -18,3 +27,12 @@
 | Health | ✅ | - | - | - | - | - |
 | Timer fires | ✅ | - | - | - | - | - |
 | Schedule correct | ✅ | - | - | - | - | - |
+
+## Notes
+
+- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Timer templates include cron schedule in function code
+
+## Test Date
+
+2025-04-16

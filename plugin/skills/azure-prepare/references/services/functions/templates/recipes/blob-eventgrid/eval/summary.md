@@ -2,14 +2,22 @@
 
 ## Coverage Status
 
-| Language | Source | Eval | Status |
-|----------|--------|------|--------|
+| Language | MCP Template | Eval | Status |
+|----------|--------------|------|--------|
 | Python | ✅ | ✅ | PASS |
 | TypeScript | ✅ | 🔲 | Pending |
 | JavaScript | ✅ | 🔲 | Pending |
 | C# (.NET) | ✅ | 🔲 | Pending |
 | Java | ✅ | 🔲 | Pending |
 | PowerShell | ✅ | 🔲 | Pending |
+
+## MCP Tool Validation
+
+| Test | Status | Details |
+|------|--------|---------|
+| `functions_template_get` | ✅ PASS | Blob/EventGrid templates retrieved |
+| Template Discovery | ✅ PASS | Templates found via resource filter |
+| IaC Included | ✅ PASS | EventGrid + Storage Bicep in projectFiles |
 
 ## IaC Validation
 
@@ -40,8 +48,9 @@
 
 ## Notes
 
-Dedicated AZD templates available for all 6 languages:
-- `functions-quickstart-{lang}-azd-eventgrid-blob`
+- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Dedicated AZD templates available for all 6 languages
+- Uses Event Grid for reliable blob event delivery
 
 ## IaC Features
 
