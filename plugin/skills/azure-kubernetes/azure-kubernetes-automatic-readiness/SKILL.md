@@ -90,11 +90,6 @@ mcp_azure_mcp_aks({
 })
 ```
 
-**API path (for reference):**
-```
-POST /subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ContainerService/managedClusters/{resourceName}/assessAutomaticCompatibility?api-version=2026-04-01-preview
-```
-
 **Required permissions:**
 - `Microsoft.ContainerService/managedClusters/read`
 - `Microsoft.ContainerService/managedClusters/assessAutomaticCompatibility/action`

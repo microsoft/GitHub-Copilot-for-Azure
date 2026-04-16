@@ -368,10 +368,10 @@ safeguards:
 
   - id: safeguard-allowed-volume-types
     policyId: 16697877
-    severity: requiresChanges
+    severity: informational
     category: podSecurity
-    check: Only safe volume types (configMap, csi, downwardAPI, emptyDir, ephemeral, pvc, projected, secret)
-    fix: Replace non-standard volumes with PVC-based alternatives
+    check: Restricted PSS recommendation (not enforced by AKS Automatic baseline)
+    fix: "Optional hardening: replace non-standard volumes with supported alternatives"
 
 # =============================================================================
 # WEBHOOK MUTATIONS (2 active mutators) — auto-applied at admission
