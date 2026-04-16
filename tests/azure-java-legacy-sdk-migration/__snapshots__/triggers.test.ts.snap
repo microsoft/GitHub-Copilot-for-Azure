@@ -1,0 +1,51 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`azure-java-legacy-sdk-migration - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Upgrade legacy Azure Java SDKs (com.microsoft.azure) to modern Azure SDKs (com.azure) with structured planning and execution. WHEN: "migrate legacy Azure SDKs for Java", "migrate legacy Azure Java SDK", "upgrade legacy Azure SDKs for Java", "upgrade legacy Azure Java SDK". DO NOT USE FOR: "migrate azure sdk for .NET/Python/JavaScript/Go", "upgrade azure sdk for .NET/Python/JavaScript/Go".",
+  "extractedKeywords": [
+    "azure",
+    "execution",
+    "java",
+    "javascript",
+    "legacy",
+    "microsoft",
+    "migrate",
+    "migration",
+    "modern",
+    "planning",
+    "python",
+    "sdk",
+    "sdks",
+    "structured",
+    "upgrade",
+    "validation",
+    "when",
+    "with",
+  ],
+  "name": "azure-java-legacy-sdk-migration",
+}
+`;
+
+exports[`azure-java-legacy-sdk-migration - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "azure",
+  "execution",
+  "java",
+  "javascript",
+  "legacy",
+  "microsoft",
+  "migrate",
+  "migration",
+  "modern",
+  "planning",
+  "python",
+  "sdk",
+  "sdks",
+  "structured",
+  "upgrade",
+  "validation",
+  "when",
+  "with",
+]
+`;

@@ -44,7 +44,7 @@ After completing changes in each step, review code changes per the rules in the 
 - **Minimal changes**: Only upgrade dependencies essential for compatibility with the modern Azure SDKs.
 - **Risk-first**: Handle EOL/challenging deps early in isolated steps.
 - **Necessary/Meaningful steps only**: Each step MUST change code/config. NO steps for pure analysis/validation. Merge small related changes. **Test**: "Does this step modify project files?"
-- **Automation tools**: Use automation tools like OpenRewrite for efficiency; always verify output.
+- **Automation tools**: Use automation tools like OpenRewrite for efficiency; always verify output. For BOM upgrades, run the `scripts/upgrade_bom.py` script (see [Migration Guidelines](./INSTRUCTION.md#maven-use-the-upgrade_bom-script)).
 - **Successor preference**: Compatible successor > Adapter pattern > Code rewrite.
 - **Build tool compatibility**: Check Maven/Gradle version compatibility with the project's JDK. Upgrade the build tool (including wrapper) if the current version does not support the JDK.
 - **Temporary errors OK**: Steps may pass with known errors if resolved later or pre-existing.
