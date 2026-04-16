@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs MSBench CLI and runs a Copilot Azure benchmark.
+    Installs MSBench CLI and runs Azure benchmarks.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
@@ -163,7 +163,7 @@
             "--model", $m,
             "--env", "GITHUB_MCP_SERVER_TOKEN",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
-            "--tag", 'org="CoreAI Cloud and Tools"',
+            "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait"
         )
 
