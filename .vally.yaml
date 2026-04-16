@@ -7,13 +7,13 @@ paths:
 
 suites:
   smoke:
-    description: "Fast static checks — no LLM calls, <60s"
+    description: "Static non-LLM checks only (e.g., trigger-pattern tests). Currently empty — all evals use the copilot-sdk executor."
     filter:
       tier: smoke
       cost: free
 
   pr:
-    description: "All free-tier evals for PR gate, <2min"
+    description: "Non-LLM PR gate evals (cost: free reserved for static checks). Currently empty — populate as static evals are added."
     filter:
       cost: free
 
@@ -23,7 +23,7 @@ suites:
       type: trigger
 
   integration:
-    description: "All behavior/integration evals"
+    description: "All behavior/integration evals (LLM-backed)"
     filter:
       type: integration
 

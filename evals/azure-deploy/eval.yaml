@@ -42,7 +42,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     graders:
       # Task: expected.output_contains
@@ -80,7 +79,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     graders:
       # Task: expected.output_contains
