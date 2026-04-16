@@ -18,4 +18,4 @@ See [Durable Task Scheduler reference](../../../../durable-task-scheduler/README
 | Path | Description |
 |------|-------------|
 | [eval/summary.md](eval/summary.md) | Evaluation summary |
-| [eval/python.md](eval/python.md) | Python evaluation results |```
+| [eval/python.md](eval/python.md) | Python evaluation results |
