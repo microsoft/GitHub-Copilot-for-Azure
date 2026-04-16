@@ -118,3 +118,8 @@ foreach ($report in $reports) {
 }
 
 Write-Host "`nUpload complete: $successCount succeeded, $failCount failed (container: $ContainerName/$Date/)"
+
+if ($failCount -gt 0) {
+    Write-Error "$failCount report upload(s) failed."
+    exit 1
+}
