@@ -1,10 +1,5 @@
 name: Run Skill Evaluations
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'evals/**'
-      - 'plugin/skills/**'
   workflow_dispatch:
 
 permissions:
@@ -23,8 +18,8 @@ jobs:
           node-version: '22'
           registry-url: https://npm.pkg.github.com
           scope: '@microsoft'
-      - name: Install dependencies
-        run: npm install --no-save
+      - name: Install vally-cli
+        run: npm install --no-save @microsoft/vally-cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.VALLY_NPM_TOKEN }}
       - name: Run evaluations

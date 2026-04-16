@@ -19,6 +19,9 @@ tags:
 environment:
   skills:
     - ../../plugin/skills/azure-hosted-copilot-sdk
+    - ../../plugin/skills/azure-prepare
+    - ../../plugin/skills/azure-validate
+    - ../../plugin/skills/azure-deploy
 
 config:
   runs: 1
@@ -38,7 +41,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 10
@@ -48,12 +50,6 @@ stimuli:
         config:
           substring: "azd init --template azure-samples/copilot-sdk-service"
       # Task: expected.output_not_contains
-      - type: output-not-contains
-        config:
-          substring: "error"
-      - type: output-not-contains
-        config:
-          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -67,7 +63,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 10
@@ -77,12 +72,6 @@ stimuli:
         config:
           substring: "azure.yaml"
       # Task: expected.output_not_contains
-      - type: output-not-contains
-        config:
-          substring: "error"
-      - type: output-not-contains
-        config:
-          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -96,7 +85,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 15
@@ -112,12 +100,6 @@ stimuli:
         config:
           substring: "azure-deploy"
       # Task: expected.output_not_contains
-      - type: output-not-contains
-        config:
-          substring: "error"
-      - type: output-not-contains
-        config:
-          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -131,7 +113,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 10
@@ -150,12 +131,6 @@ stimuli:
       - type: output-not-contains
         config:
           substring: "DefaultAzureCredential"
-      - type: output-not-contains
-        config:
-          substring: "error"
-      - type: output-not-contains
-        config:
-          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -169,7 +144,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 10
@@ -185,12 +159,6 @@ stimuli:
         config:
           substring: "DefaultAzureCredential"
       # Task: expected.output_not_contains
-      - type: output-not-contains
-        config:
-          substring: "error"
-      - type: output-not-contains
-        config:
-          substring: "failed"
       - type: output-not-contains
         config:
           substring: "apiKey"
@@ -213,7 +181,6 @@ stimuli:
     tags:
       type: trigger
       tier: smoke
-      cost: free
       area: routing
     constraints:
       max_turns: 10

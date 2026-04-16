@@ -50,7 +50,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -114,7 +113,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -177,7 +175,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -228,7 +225,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -284,7 +280,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -328,7 +323,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -380,7 +374,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -432,7 +425,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: behavior
     constraints:
       max_turns: 40
@@ -485,7 +477,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
@@ -537,7 +528,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: output
     constraints:
       max_turns: 40
