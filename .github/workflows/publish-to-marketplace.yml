@@ -121,6 +121,10 @@ jobs:
                 echo "Updated $f to version $NEW_VERSION"
               fi
             done
+
+            # Update CHANGELOG.md with new version entry
+            bash "../source-repo/.github/scripts/update-changelog.sh" \
+              ".github/plugins/azure-skills/CHANGELOG.md" "$NEW_VERSION"
           else
             echo "No content changes detected. Skipping version bump."
           fi
@@ -307,6 +311,10 @@ jobs:
                 echo "Updated $f to version $NEW_VERSION"
               fi
             done
+
+            # Update CHANGELOG.md with new version entry
+            bash "../source-repo/.github/scripts/update-changelog.sh" \
+              ".github/plugins/azure-skills/CHANGELOG.md" "$NEW_VERSION"
           else
             echo "No content changes detected. Skipping version bump."
           fi
