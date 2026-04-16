@@ -28,7 +28,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-prepare
+    - ../../plugin/skills/azure-prepare
 
 config:
   runs: 3

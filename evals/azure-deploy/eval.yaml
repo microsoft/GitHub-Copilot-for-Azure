@@ -19,7 +19,7 @@ tags:
 
 environment:
   skills:
-    - plugin/skills/azure-deploy
+    - ../../plugin/skills/azure-deploy
 
 config:
   runs: 3
