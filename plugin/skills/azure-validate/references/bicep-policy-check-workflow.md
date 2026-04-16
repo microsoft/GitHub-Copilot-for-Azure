@@ -1,16 +1,24 @@
 # Bicep Policy Check Workflow
 
-Check Bicep templates against Azure Policy using the `checkPolicyRestrictions` REST API. This validates that proposed resources comply with organization policies before deployment.
+Check Bicep templates against Azure Policy before deployment. Use this workflow when standard policy listing is not enough and you need per-resource preflight compliance.
 
----
+## Required References
 
-## Steps
+- [Azure Authentication](procedures/azure-authentication.md)
+- [Bicep Parsing](procedures/bicep-parsing.md)
+- [Azure Resource Model](azure-resource-model.md)
+- [Azure Resource Configs](azure-resource-configs.md)
+
+## Workflow
 
 | # | Action | Details |
 |---|--------|---------|
-| 1 | **Parse Bicep** | Read `main.bicep` and modules. Extract all resource types, names, locations, and key properties. See [bicep-parsing.md](procedures/bicep-parsing.md) if available, or parse directly. |
-| 2 | **Build Resource Entries** | For each resource, construct a policy check entry with `type`, `name`, `location`, and relevant properties. Include the resource group as a separate `Microsoft.Resources/resourceGroups` entry. |
-| 3 | **Call checkPolicyRestrictions** | Make a single REST API call per resource (batch where possible): |
+| 1 | **Parse Bicep** | Read `main.bicep` and modules. Extract all resource types, names, locations, and key properties. Follow [bicep-parsing.md](procedures/bicep-parsing.md) to parse the template and any referenced modules. |  
+| 2 | **Build Resource Entries** | For each resource, construct a policy check entry with `type`, `name`, `location`, and relevant properties. Include the resource group as a separate `Microsoft.Resources/resourceGroups` entry. |  
+| 3 | **Call checkPolicyRestrictions** | Make one REST API call per resource using that resource's payload: |  
+
+
+## API Pattern
 
 ```bash
 az rest --method POST \
@@ -50,8 +58,9 @@ az rest --method POST \
 
 ## Error Handling
 
-| Error | Cause | Remediation |
-|---|---|---|
-| 403 Forbidden | Insufficient permissions for policy check API | User needs `Microsoft.PolicyInsights/checkPolicyRestrictions/action` permission. Report the resources that could not be checked and continue with the rest. |
-| Resource type not recognized | Preview or rare resource type | Skip and note in report |
-| No active policies | Subscription has no policy assignments | Report "No policy restrictions found" — all resources pass |
+| Error | Remediation |
+|---|---|
+| 403 Forbidden | Report missing `Microsoft.PolicyInsights/checkPolicyRestrictions` permission and use fallback logic if possible. |
+| 404 Not Found | Retry at subscription scope when the resource group does not yet exist. |
+| Unrecognized resource type | Note it for manual review. |
+| No active policies | Report that no policy restrictions were found. |
