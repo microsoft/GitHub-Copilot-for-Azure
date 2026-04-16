@@ -1,0 +1,101 @@
+name: azure-enterprise-infra-planner-eval-trigger-reject
+description: |
+  Trigger accuracy — prompts that should NOT invoke azure-enterprise-infra-planner.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: trigger-reject-weather
+    prompt: "What is the weather today?"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-poem
+    prompt: "Help me write a poem about clouds"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-azd-deploy
+    prompt: "Deploy my already-prepared app with azd up"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-azd-push
+    prompt: "Run azd up to push my app to Azure"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-prepare-existing
+    prompt: "I have an existing Express app, help me prepare it for Azure"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-add-auth
+    prompt: "Add authentication to my existing Azure app"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-bicep-validate
+    prompt: "Check if my Bicep files have errors"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-aws-lambda
+    prompt: "Help me with AWS Lambda functions"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-gcp
+    prompt: "Configure my GCP Cloud Functions"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-reject-generic-coding
+    prompt: "Write a Python script to parse CSV files"
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-enterprise-infra-planner

@@ -1,0 +1,57 @@
+name: azure-enterprise-infra-planner-eval-plan-backup-dr
+description: |
+  Backup/DR with site recovery.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-backup-dr
+    prompt: >
+      Configure a site recovery plan for disaster failover from East to West
+      Azure region, replicate major VM workloads, and automate DNS failbacks.
+      Assume all defaults to create the preliminary resource list, then approve
+      the preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)site.?recovery|disaster.?recovery|dr|failover|replicate"
+      - type: output-matches
+        config:
+          pattern: "(?i)region|east|west|geo|cross.?region|failback"
+      - type: output-matches
+        config:
+          pattern: "(?i)vm|virtual.?machine|workload|replicate"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'recovery|replicate|failover' .azure/infrastructure-plan.json"
+
+  - name: trigger-should-backup-dr
+    prompt: "Set up backup and disaster recovery across Azure regions"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner

@@ -1,0 +1,37 @@
+name: azure-enterprise-infra-planner-eval-plan-genai-chatbot
+description: |
+  GenAI chatbot with Azure OpenAI.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-genai-chatbot
+    prompt: >
+      I need to build a customer support chatbot powered by GPT-4. It should use
+      Azure OpenAI Service for the LLM, store conversation history in a database,
+      and have a REST API frontend. The system needs to handle about 1000 concurrent
+      users. Can you plan the Azure infrastructure for this? Assume all defaults to
+      create the preliminary resource list, then approve the preliminary list and
+      proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner

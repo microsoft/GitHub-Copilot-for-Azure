@@ -1,0 +1,45 @@
+name: azure-enterprise-infra-planner-eval-plan-data-pipeline
+description: |
+  Real-time data pipeline.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-data-pipeline
+    prompt: >
+      I need to set up a real-time data pipeline on Azure that ingests IoT sensor
+      data from 10,000 devices, processes events in near real-time, stores raw and
+      processed data for analytics, and triggers alerts when thresholds are exceeded.
+      What Azure resources do I need? Please plan the infrastructure. Assume all
+      defaults to create the preliminary resource list, then approve the preliminary
+      list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-data-pipeline
+    prompt: "Plan a data pipeline with Event Hubs and Synapse Analytics"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
