@@ -19,9 +19,9 @@ This migration enables you to move existing Spring Boot applications from Azure 
 | Spring Apps Feature | Container Apps Equivalent |
 |-------------------|---------------------------|
 | App Deployment | Container App |
-| Service Registry (Eureka) | Dapr service invocation + Container Apps internal DNS |
-| Config Server | Azure App Configuration + Key Vault |
-| Spring Cloud Gateway | Azure API Management / Container Apps ingress |
+| Service Registry (Eureka) | Managed Eureka for Spring (`eureka-server-for-spring`); alt: Dapr service invocation + internal DNS |
+| Config Server | Managed Config Server for Spring (`config-server-for-spring`); alt: Azure App Configuration + Key Vault |
+| Spring Cloud Gateway | Managed Gateway for Spring; alt: Azure API Management / Container Apps ingress |
 | Distributed Tracing | Application Insights |
 | Log Streaming | Log Analytics Workspace |
 
@@ -50,8 +50,8 @@ See [deployment-guide.md](deployment-guide.md) for detailed phase-by-phase instr
 | Aspect | Azure Spring Apps | Container Apps |
 |--------|-------------------|----------------|
 | Deployment Unit | JAR/WAR | Container Image |
-| Service Discovery | Built-in Eureka | Dapr / DNS-based |
-| Configuration Management | Built-in Config Server | Azure App Configuration |
+| Service Discovery | Built-in Eureka | Managed Eureka component (or Dapr / DNS) |
+| Configuration Management | Built-in Config Server | Managed Config Server component (or App Configuration) |
 | Scaling | Auto-scaling | HTTP/CPU/Memory/Custom metrics |
 | Networking | VNet injection | VNet integration + Internal ingress |
 
