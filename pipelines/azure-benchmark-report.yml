@@ -85,3 +85,15 @@ stages:
     - publish: $(Build.ArtifactStagingDirectory)
       artifact: benchmark-reports
       displayName: 'Publish benchmark reports artifact'
+
+    - task: AzureCLI@2
+      displayName: 'Upload reports to blob storage'
+      inputs:
+        connectedServiceNameARM: 'azure_msbench_eval'
+        scriptType: 'pscore'
+        scriptLocation: 'scriptPath'
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-UploadBenchmarkReports.ps1
+        scriptArguments: >
+          -ReportPath "$(Build.ArtifactStagingDirectory)"
+          -StorageAccountName "msbenchnightlydata"
+          -ContainerName "msbench-reports"

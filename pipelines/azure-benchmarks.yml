@@ -42,7 +42,7 @@ stages:
         addSpnToEnvironment: true
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
-        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-Benchmarks.ps1
         scriptArguments: >
           -OutputPath "$(Build.ArtifactStagingDirectory)"
 

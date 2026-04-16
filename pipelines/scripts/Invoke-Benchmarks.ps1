@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs MSBench CLI and runs a Copilot Azure benchmark.
+    Installs MSBench CLI and runs Azure benchmarks.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
@@ -16,7 +16,7 @@
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 
 .PARAMETER Benchmark
-    Benchmark identifier. Default: azure
+    Benchmark identifier. Default: azure.skill
 
 .PARAMETER Model
     One or more model identifiers to benchmark.
@@ -26,7 +26,7 @@
 #>
 
     param(
-        [string]$Benchmark = "azure",
+        [string]$Benchmark = "azure.skill",
         [string[]]$Model = @(
             "claude-sonnet-4.5-autodev-test",
             "claude-opus-4.5-autodev-test",
@@ -162,6 +162,8 @@
             "--benchmark", $Benchmark,
             "--model", $m,
             "--env", "GITHUB_MCP_SERVER_TOKEN",
+            "--dataset", (Join-Path $targetDir "metadata.csv"),
+            "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait"
         )
 
