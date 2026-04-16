@@ -8,14 +8,14 @@ For intent-to-resource mapping and selection algorithm, see [selection.md](../se
 
 | Recipe | Resource |
 |--------|----------|
-| [cosmosdb](cosmosdb/) | `cosmos` |
-| [eventhubs](eventhubs/) | `eventhub` |
-| [servicebus](servicebus/) | `servicebus` |
-| [timer](timer/) | `timer` |
-| [durable](durable/) | `durable` |
-| [mcp](mcp/) | `mcp` |
-| [sql](sql/) | `sql` |
-| [blob-eventgrid](blob-eventgrid/) | `blob` |
+| [cosmosdb](cosmosdb/README.md) | `cosmos` |
+| [eventhubs](eventhubs/README.md) | `eventhub` |
+| [servicebus](servicebus/README.md) | `servicebus` |
+| [timer](timer/README.md) | `timer` |
+| [durable](durable/README.md) | `durable` |
+| [mcp](mcp/README.md) | `mcp` |
+| [sql](sql/README.md) | `sql` |
+| [blob-eventgrid](blob-eventgrid/README.md) | `blob` |
 
 ## Composition
 

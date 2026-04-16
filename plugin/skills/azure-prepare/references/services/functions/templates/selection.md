@@ -9,14 +9,14 @@ Map user intent to MCP template `resource` filter.
 | User Says | Code Indicators (existing projects) | Resource Filter | Recipe Reference |
 |-----------|-------------------------------------|-----------------|------------------|
 | "HTTP", "REST", "API", "webhook" | `HttpTrigger`, `@app.route`, `req: HttpRequest` | `http` | — |
-| "timer", "schedule", "cron", "periodic" | `TimerTrigger`, `@app.schedule`, `TimerInfo` | `timer` | [recipes/timer/](recipes/timer/) |
-| "Cosmos", "CosmosDB", "document DB" | `CosmosDBTrigger`, `@app.cosmos_db`, `cosmos_db_input` | `cosmos` | [recipes/cosmosdb/](recipes/cosmosdb/) |
-| "Event Hub", "streaming", "events" | `EventHubTrigger`, `@app.event_hub`, `event_hub_output` | `eventhub` | [recipes/eventhubs/](recipes/eventhubs/) |
-| "Service Bus", "queue", "message" | `ServiceBusTrigger`, `@app.service_bus_queue` | `servicebus` | [recipes/servicebus/](recipes/servicebus/) |
-| "blob", "file", "storage trigger" | `BlobTrigger`, `@app.blob`, `blob_input`, `blob_output` | `blob` | [recipes/blob-eventgrid/](recipes/blob-eventgrid/) |
-| "SQL", "database trigger" | `SqlTrigger`, `@app.sql`, `sql_input`, `SqlOutput` | `sql` | [recipes/sql/](recipes/sql/) |
-| "MCP", "MCP server", "tools" | `McpToolTrigger`, `@app.mcp_tool`, `mcp` in project | `mcp` | [recipes/mcp/](recipes/mcp/) |
-| "durable", "workflow", "orchestration" | `DurableOrchestrationTrigger`, `orchestrator`, `durable_functions` | `durable` | [recipes/durable/](recipes/durable/) |
+| "timer", "schedule", "cron", "periodic" | `TimerTrigger`, `@app.schedule`, `TimerInfo` | `timer` | [recipes/timer/README.md](recipes/timer/README.md) |
+| "Cosmos", "CosmosDB", "document DB" | `CosmosDBTrigger`, `@app.cosmos_db`, `cosmos_db_input` | `cosmos` | [recipes/cosmosdb/README.md](recipes/cosmosdb/README.md) |
+| "Event Hub", "streaming", "events" | `EventHubTrigger`, `@app.event_hub`, `event_hub_output` | `eventhub` | [recipes/eventhubs/README.md](recipes/eventhubs/README.md) |
+| "Service Bus", "queue", "message" | `ServiceBusTrigger`, `@app.service_bus_queue` | `servicebus` | [recipes/servicebus/README.md](recipes/servicebus/README.md) |
+| "blob", "file", "storage trigger" | `BlobTrigger`, `@app.blob`, `blob_input`, `blob_output` | `blob` | [recipes/blob-eventgrid/README.md](recipes/blob-eventgrid/README.md) |
+| "SQL", "database trigger" | `SqlTrigger`, `@app.sql`, `sql_input`, `SqlOutput` | `sql` | [recipes/sql/README.md](recipes/sql/README.md) |
+| "MCP", "MCP server", "tools" | `McpToolTrigger`, `@app.mcp_tool`, `mcp` in project | `mcp` | [recipes/mcp/README.md](recipes/mcp/README.md) |
+| "durable", "workflow", "orchestration" | `DurableOrchestrationTrigger`, `orchestrator`, `durable_functions` | `durable` | [recipes/durable/README.md](recipes/durable/README.md) |
 | "AI", "agent", "chatbot", "OpenAI" | `openai`, `AzureOpenAI`, `langchain`, `semantic_kernel` | `http` | Scan description for "AI", "agent", "Copilot SDK" |
 
 ## Selection Algorithm
