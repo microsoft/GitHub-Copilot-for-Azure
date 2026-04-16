@@ -25,11 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm install --no-save
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.VALLY_NPM_TOKEN }}
       - name: Run evaluations
         run: npx @microsoft/vally-cli eval --eval-spec evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results --output jsonl
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.VALLY_NPM_TOKEN }}
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -37,3 +37,4 @@ jobs:
           name: eval-results
           path: ./results
           retention-days: 30
+
