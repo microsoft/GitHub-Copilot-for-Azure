@@ -69,12 +69,13 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/constraint-spec/i);
     });
 
-    test("covers CLI fallback", () => {
+    test("defines MCP-to-offline fallback chain", () => {
       expect(skill.content).toMatch(/fallback/i);
+      expect(skill.content).toMatch(/offline/i);
     });
 
-    test("defines fallback chain", () => {
-      expect(skill.content).toMatch(/fallback/i);
+    test("includes MCP setup guidance when tool is unavailable", () => {
+      expect(skill.content).toMatch(/aka\.ms\/azure-mcp-setup/i);
     });
   });
 
