@@ -3,25 +3,7 @@ on:
   pull_request:
     paths:
       - 'plugin/skills/**'
-      - 'evals/**'
-      - '.vally.yaml'
   workflow_dispatch:
-    inputs:
-      suite:
-        description: 'Eval suite to run (triggers, integration, full)'
-        required: false
-        default: 'full'
-        type: choice
-        options:
-          - triggers
-          - integration
-          - full
-      pr_number:
-        description: 'PR number to evaluate (checks out refs/pull/<n>/head)'
-        required: false
-        type: string
-  schedule:
-    - cron: '0 6 * * *' # Nightly full suite at 06:00 UTC
 
 permissions:
   contents: read
