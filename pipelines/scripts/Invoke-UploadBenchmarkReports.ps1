@@ -101,14 +101,24 @@ foreach ($report in $reports) {
 
     Write-Host "Uploading $($report.Name) -> $ContainerName/$blobPath (skill: $skillName)"
 
-    az storage blob upload `
-        --account-name $StorageAccountName `
-        --container-name $ContainerName `
-        --name $blobPath `
-        --file $report.FullName `
-        --auth-mode login `
-        --overwrite
+    $azArgs = @(
+        "storage"
+        "blob"
+        "upload"
+        "--account-name"
+        $StorageAccountName
+        "--container-name"
+        $ContainerName
+        "--name"
+        $blobPath
+        "--file"
+        $report.FullName
+        "--auth-mode"
+        "login"
+        "--overwrite"
+    )
 
+    az @azArgs
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Failed to upload $($report.Name)"
         $failCount++
