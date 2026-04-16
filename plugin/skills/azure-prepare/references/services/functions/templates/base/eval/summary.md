@@ -4,7 +4,7 @@
 
 | Language | MCP Template | Eval | Status |
 |----------|--------------|------|--------|
-| Python | ✅ | ✅ | PASS |
+| Python | ✅ | [✅](python.md) | PASS |
 | TypeScript | ✅ | 🔲 | Pending |
 | JavaScript | ✅ | 🔲 | Pending |
 | C# (.NET) | ✅ | 🔲 | Pending |

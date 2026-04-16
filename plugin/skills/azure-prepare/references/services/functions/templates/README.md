@@ -173,5 +173,7 @@ azd up --no-prompt
 
 - [Composition Details](recipes/composition.md) — recipe algorithm
 - [Selection Guide](selection.md) — intent→resource mapping
+- [Recipes Index](recipes/README.md) — all available recipes
+- [Base Template Eval](base/eval/summary.md) — HTTP base evaluation results
 
 **Browse all:** [Awesome AZD Functions](https://azure.github.io/awesome-azd/?tags=functions)

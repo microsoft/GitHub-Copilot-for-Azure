@@ -25,6 +25,7 @@ See [composition.md](composition.md) for merging multiple templates.
 
 | Pattern | Description |
 |---------|-------------|
+| [Error Handling](common/error-handling.md) | Try/catch + logging patterns |
 | [Health Check](common/health-check.md) | Health endpoint for monitoring |
 | [Node.js Entry Point](common/nodejs-entry-point.md) | `src/index.js` requirements |
 | [.NET Entry Point](common/dotnet-entry-point.md) | `Program.cs` requirements |
