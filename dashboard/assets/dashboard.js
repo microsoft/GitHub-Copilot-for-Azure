@@ -1653,12 +1653,11 @@ async function loadDeployScenarioRetries() {
     }
 
     const deployStats = skillResults["azure-deploy"];
-    const counts = (deployStats && deployStats.scenarioAgentRunCounts) || {};
+    const counts = (deployStats && deployStats.scenarioDeployRetryCounts) || {};
 
-    const rows = Object.entries(counts).map(function ([name, runs]) {
-      // Strip the leading "…_-_Integration_Tests_" prefix and replace underscores
+    const rows = Object.entries(counts).map(function ([name, retries]) {
       const label = name.replace(/^.*?_-_Integration_Tests_/i, "").replace(/_/g, " ");
-      return { label, runs: /** @type {number} */ (runs), retries: /** @type {number} */ (runs) - 1 };
+      return { label, retries: /** @type {number} */ (retries) };
     });
 
     rows.sort(function (a, b) {
@@ -1678,8 +1677,8 @@ async function loadDeployScenarioRetries() {
 /**
  * Populate and finalise the deploy scenario retries panel.
  * @param {HTMLElement} section
- * @param {Array<{label:string, runs:number, retries:number}>} rows
- * @param {string} overallStatus - pass | warn | skip
+ * @param {Array<{label:string, retries:number}>} rows
+ * @param {string} overallStatus - pass | warn | fail | skip
  * @param {string|null} dateLabel
  */
 function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
@@ -1716,12 +1715,9 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
     const headerRow = el("tr");
     const thScenario = el("th", undefined, "Test Scenario");
     thScenario.setAttribute("scope", "col");
-    const thRuns = el("th", "deploy-retries-num-col", "Agent Runs");
-    thRuns.setAttribute("scope", "col");
     const thRetries = el("th", "deploy-retries-num-col", "Retries");
     thRetries.setAttribute("scope", "col");
     headerRow.appendChild(thScenario);
-    headerRow.appendChild(thRuns);
     headerRow.appendChild(thRetries);
     thead.appendChild(headerRow);
     table.appendChild(thead);
@@ -1735,7 +1731,6 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
       else if (row.retries > 0) tr.className = "deploy-retries-row-warn";
 
       const tdName = el("td", "deploy-retries-name", row.label);
-      const tdRuns = el("td", "deploy-retries-num-col", String(row.runs));
       const tdRetries = el("td", "deploy-retries-num-col deploy-retries-count");
       tdRetries.textContent = String(row.retries);
       if (row.retries >= 3) {
@@ -1747,7 +1742,6 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
       }
 
       tr.appendChild(tdName);
-      tr.appendChild(tdRuns);
       tr.appendChild(tdRetries);
       tbody.appendChild(tr);
     }
