@@ -6,7 +6,7 @@
 | `Provider version conflict` | Update required_providers |
 | `State lock failed` | Wait or force unlock |
 | `Validation failed` | Check terraform validate output |
-| `Error: Cycle` | See [Cycle Errors](#cycle-errors) below |
+| `Error: Cycle:` | See [Cycle Errors](#cycle-errors) below |
 
 ## Cycle Errors
 
@@ -42,18 +42,26 @@ resource "azurerm_linux_web_app" "frontend" {
 
 ### Fix Strategies
 
-**Option A (recommended):** Break the cycle by using a wildcard or removing one side of the cross-reference. Set CORS to allow all origins and configure the specific origin post-deployment:
+**Option A (recommended):** Use a Terraform variable for the frontend origin so CORS is restrictive by default and the cycle is broken. Define the variable with a sensible default and pass the real frontend URL after the first deployment:
 
 ```hcl
+variable "frontend_origin" {
+  type        = string
+  description = "Frontend origin for API CORS. Set after first deployment."
+  default     = ""
+}
+
 resource "azurerm_linux_web_app" "api" {
   site_config {
     cors {
-      allowed_origins     = ["*"]
-      support_credentials = false
+      allowed_origins     = var.frontend_origin != "" ? [var.frontend_origin] : ["*"]
+      support_credentials = var.frontend_origin != "" ? true : false
     }
   }
 }
 ```
+
+> ⚠️ **Warning:** If using `["*"]` as a temporary bootstrap value, you **must** set `frontend_origin` to the actual URL (e.g., `https://app-web-*.azurewebsites.net`) and re-run `terraform apply` in the same deployment session before reporting success. Do not leave wildcard CORS in a completed deployment.
 
 **Option B:** Use `azurerm_app_service_custom_hostname_binding` or a `null_resource` with a `local-exec` provisioner to configure CORS after both resources are created, breaking the dependency chain.
 
