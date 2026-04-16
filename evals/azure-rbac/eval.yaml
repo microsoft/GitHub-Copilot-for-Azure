@@ -17,7 +17,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-rbac"
+    - "../../plugin/skills/azure-rbac"
 
 config:
   runs: 5

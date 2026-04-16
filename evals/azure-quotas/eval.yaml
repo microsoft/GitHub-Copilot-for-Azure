@@ -20,7 +20,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-quotas"
+    - "../../plugin/skills/azure-quotas"
 
 config:
   runs: 5
