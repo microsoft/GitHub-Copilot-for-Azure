@@ -17,7 +17,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-messaging"
+    - "../../plugin/skills/azure-messaging"
 
 config:
   runs: 3

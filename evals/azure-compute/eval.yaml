@@ -21,7 +21,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-compute"
+    - "../../plugin/skills/azure-compute"
 
 config:
   runs: 5
