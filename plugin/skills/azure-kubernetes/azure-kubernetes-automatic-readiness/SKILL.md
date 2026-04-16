@@ -92,7 +92,6 @@ mcp_azure_mcp_aks({
 
 **Required permissions:**
 - `Microsoft.ContainerService/managedClusters/read`
-- `Microsoft.ContainerService/managedClusters/assessAutomaticCompatibility/action`
 
 For large clusters (500+ workloads), the API may return HTTP 202 with a `Location` header. Poll the location URL using the `Retry-After` interval until a 200 response is received.
 
@@ -229,7 +228,7 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | Error / Symptom | Likely Cause | Remediation |
 |-----------------|--------------|-------------|
 | MCP tool call fails or times out | Invalid credentials or subscription context | Verify `az login`, confirm active subscription with `az account show`; if MCP remains unavailable, continue with offline validation using local or exported manifests and the bundled constraint spec |
-| HTTP 403 on `assessAutomaticCompatibility` | Missing permission | Ensure caller has `Microsoft.ContainerService/managedClusters/assessAutomaticCompatibility/action` |
+| HTTP 403 on `assessAutomaticCompatibility` | Missing permission | Ensure caller has sufficient RBAC access to read and assess the cluster via AKS APIs |
 | API returns HTTP 202 | Large cluster (500+ workloads) — async operation | Poll the `Location` header URL using `Retry-After` interval |
 | Helm chart uses Go templating — cannot evaluate | Template values not resolved | Ask user for rendered output (`helm template`) or values files |
 | Constraint spec version mismatch | Skill bundles spec v1.1.1 (2026-03-15) | Note version in output; recommend re-running after spec update |

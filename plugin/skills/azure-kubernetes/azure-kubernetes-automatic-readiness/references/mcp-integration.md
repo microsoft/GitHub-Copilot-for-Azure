@@ -52,7 +52,6 @@ az role assignment list \
 
 # Minimum permissions required:
 # - Microsoft.ContainerService/managedClusters/read
-# - Microsoft.ContainerService/managedClusters/assessAutomaticCompatibility/action
 
 # Assign if missing (requires Owner or User Access Administrator)
 az role assignment create \
