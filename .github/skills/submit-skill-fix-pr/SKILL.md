@@ -19,7 +19,7 @@ Creates a pull request after committing skill fixes in `microsoft/github-copilot
 
 ## Steps
 
-1. Install NPM dependencies in the `scripts` directory,if necessary.
+1. Install NPM dependencies in the `scripts` directory, if necessary.
 2. From the `scripts` directory run `npm run frontmatter` and `npm run references` to validate the skill structure. Fix and commit any problems.
 3. Ensure that skill version has been bumped for any updated SKILL.md.
 4. Push the branch to origin and create a PR into upstream. The PR description should include:
