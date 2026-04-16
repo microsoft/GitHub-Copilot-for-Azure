@@ -30,7 +30,7 @@ jobs:
       - name: Run evaluations
         run: npx @microsoft/vally-cli eval --eval-spec evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results --output jsonl
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.VALLY_NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
