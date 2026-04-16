@@ -44,3 +44,6 @@ services:
 - [Scaling Patterns](scaling.md)
 - [Health Probes](health-probes.md)
 - [Environment Variables](environment.md)
+- [Day-2 Operations](day2-operations.md)
+- [Networking & Ingress](networking.md)
+- [Revisions & Traffic Splitting](revisions.md)
