@@ -8,7 +8,7 @@ version: "1.0"
 
 environment:
   skills:
-    - "plugin/skills/azure-deploy"
+    - "../../plugin/skills/azure-deploy"
 
 config:
   trials_per_task: 1

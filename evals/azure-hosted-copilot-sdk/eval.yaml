@@ -34,7 +34,7 @@ tags:
 
 environment:
   skills:
-    - "plugin/skills/azure-hosted-copilot-sdk"
+    - "../../plugin/skills/azure-hosted-copilot-sdk"
 
 config:
   runs: 3
