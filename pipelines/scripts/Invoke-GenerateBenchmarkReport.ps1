@@ -206,12 +206,12 @@
     Write-Host "Moving generated report files to output path: $OutputPath"
     $reportsDir = Join-Path $targetDir "reports"
     $reportFiles = @()
-    $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md' -ErrorAction SilentlyContinue
+    $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
     if ((Test-Path $reportsDir) -and $reportsDirMdFiles) {
         $reportFiles = $reportsDirMdFiles
         Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
     } else {
-        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notlike "*\.github\*" -and $_.FullName -notlike "*/.github/*" }
+        $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' | Where-Object { $_.FullName -notlike "*\.github\*" -and $_.FullName -notlike "*/.github/*" }
         Write-Host "Found $($reportFiles.Count) report(s) in $targetDir (excluding .github folders)"
     }
 
