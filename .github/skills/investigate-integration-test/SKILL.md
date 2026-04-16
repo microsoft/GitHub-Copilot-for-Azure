@@ -9,7 +9,7 @@ metadata:
 
 # Integration Test Investigation
 
-Investigates a failing integration test given a GitHub issue in `microsoft/github-copilot-for-azure`.
+Investigates a failing integration test given a GitHub issue in `microsoft/GitHub-Copilot-for-Azure`.
 
 ## When to Use This Skill
 
