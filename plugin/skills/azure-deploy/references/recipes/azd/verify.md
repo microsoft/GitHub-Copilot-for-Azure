@@ -42,18 +42,20 @@ Expected: HTTP 200 response.
 
 > ⛔ **MANDATORY** — You **MUST** present the deployed endpoint URLs to the user in your response. A deployment is not considered complete until the user has received the URLs.
 
-Extract all endpoints from the `azd up` / `azd deploy` output or by running:
+> ⛔ **ALWAYS run `azd show`** after deployment to extract endpoint URLs. Do NOT rely on the `azd deploy` output alone — it is frequently truncated before endpoint URLs appear.
 
 ```bash
 azd show
 ```
 
+Parse the `Endpoint:` lines from the `azd show` output to collect all deployed service URLs.
+
 **Present a summary to the user that includes:**
 
 | Item | Source |
 |------|--------|
-| Deployed service endpoint(s) | `Endpoint:` lines from `azd` output or `azd show` |
-| Aspire Dashboard URL (if applicable) | `Aspire Dashboard:` line from `azd` output |
+| Deployed service endpoint(s) | `Endpoint:` lines from `azd show` |
+| Aspire Dashboard URL (if applicable) | `Aspire Dashboard:` line from `azd show` |
 | Azure Portal deployment link (if available) | Portal URL from provisioning output |
 
 Example response format:
@@ -67,8 +69,6 @@ Example response format:
 
 Aspire Dashboard: https://aspire-dashboard.xxx.azurecontainerapps.io
 ```
-
-> ⚠️ If output was truncated, run `azd show` to retrieve endpoint URLs.
 
 > ⚠️ **Always use fully-qualified URLs with the `https://` scheme.** If a command returns a bare hostname (e.g. `myapp.azurestaticapps.net`), prepend `https://` before presenting it to the user.
 
