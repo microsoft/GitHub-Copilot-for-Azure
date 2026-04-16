@@ -23,6 +23,7 @@ Check Bicep templates against Azure Policy before deployment. Use this workflow 
 ```bash
 az rest --method POST \
   --url "https://management.azure.com/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.PolicyInsights/checkPolicyRestrictions?api-version=2022-03-01" \
+  --headers "Content-Type=application/json" \
   --body '{
     "resourceDetails": {
       "resourceContent": {
