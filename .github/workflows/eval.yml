@@ -5,6 +5,7 @@ on:
     paths:
       - 'evals/**'
       - 'plugin/skills/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
