@@ -200,7 +200,10 @@
         throw "copilot report generation failed with exit code $LASTEXITCODE"
     }
 
+    Write-Host "`nMSBench benchmark report generation completed successfully."
+
     # Move generated markdown reports from the working directory to the specified output path
+    Write-Host "Moving generated report files to output path: $OutputPath"
     $reportsDir = Join-Path $targetDir "reports"
     $reportFiles = @()
     $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md' -ErrorAction SilentlyContinue
@@ -232,6 +235,7 @@
     # Find and copy eval_report.json files for each benchmark instance,
     # enriched with model name and run ID from run_metadata.json.
     # Path structure: msbench_run_results/{runId}_results/azure.eval.x86_64.{instance}-output/output/eval_report.json
+    Write-Host "Searching for eval_report.json files to enrich and copy to output path"
     $runResultsDirs = Get-ChildItem -Path $targetDir -Directory -Filter 'msbench_run_results' -ErrorAction SilentlyContinue
     if (-not $runResultsDirs) {
         $runResultsDirs = Get-ChildItem -Path $cloneDir -Directory -Filter 'msbench_run_results' -Recurse -ErrorAction SilentlyContinue
@@ -278,8 +282,6 @@
     } else {
         Write-Warning "No msbench_run_results directory found"
     }
-
-    Write-Host "`nMSBench benchmark report generation completed successfully."
 
     # --- Upload reports to Azure Blob Storage ---
     if ($StorageAccountName -and $ContainerName) {
