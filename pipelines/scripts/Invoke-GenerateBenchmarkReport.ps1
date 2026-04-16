@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-    Generates benchmark analysis reports for completed MSBench runs using GitHub Copilot.
+    Generates benchmark analysis reports for completed MSBench runs using GitHub Copilot
+    and optionally uploads them to Azure Blob Storage.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
@@ -13,11 +14,24 @@
     The script reads run IDs from run_ids.json in the InputPath, generates reports using
     GitHub Copilot CLI, and saves the generated markdown reports to the OutputPath.
 
+    When StorageAccountName and ContainerName are provided, the generated reports are
+    uploaded to Azure Blob Storage organized by date, skill name, and benchmark instance.
+    Blob path format: {date}/{skill_name}/{benchmark_instance}/{filename}
+
 .PARAMETER InputPath
     Directory path containing the run_ids.json file with benchmark run IDs to analyze.
 
 .PARAMETER OutputPath
     Directory path where generated benchmark reports will be saved.
+
+.PARAMETER StorageAccountName
+    Optional. The Azure Storage account name to upload reports to.
+
+.PARAMETER ContainerName
+    Optional. The blob container name to upload reports to.
+
+.PARAMETER Date
+    Optional date string in yyyy-MM-dd format for blob path organization. Defaults to today's date.
 
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -28,7 +42,10 @@
 
     param(
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$InputPath,
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
+        [Parameter(Mandatory=$false)][string]$StorageAccountName,
+        [Parameter(Mandatory=$false)][string]$ContainerName,
+        [Parameter(Mandatory=$false)][string]$Date
     )
 
     Set-StrictMode -Version Latest
@@ -211,5 +228,209 @@
     } else {
         Write-Warning "No generated report (.md) files found in $reportsDir or $targetDir"
     }
-    
+
+    # Find and copy eval_report.json files for each benchmark instance,
+    # enriched with model name and run ID from run_metadata.json.
+    # Path structure: msbench_run_results/{runId}_results/azure.eval.x86_64.{instance}-output/output/eval_report.json
+    $runResultsDirs = Get-ChildItem -Path $targetDir -Directory -Filter 'msbench_run_results' -ErrorAction SilentlyContinue
+    if (-not $runResultsDirs) {
+        $runResultsDirs = Get-ChildItem -Path $cloneDir -Directory -Filter 'msbench_run_results' -Recurse -ErrorAction SilentlyContinue
+    }
+
+    if ($runResultsDirs) {
+        $evalCount = 0
+        foreach ($runResultsDir in $runResultsDirs) {
+            $runDirs = Get-ChildItem -Path $runResultsDir.FullName -Directory -Filter '*_results' -ErrorAction SilentlyContinue
+            foreach ($runDir in $runDirs) {
+                # Read model name and run ID from run_metadata.json
+                $metadataFile = Join-Path $runDir.FullName 'run_metadata.json'
+                $model = $null
+                if (Test-Path $metadataFile) {
+                    $metadata = Get-Content -Path $metadataFile -Raw | ConvertFrom-Json
+                    $model = $metadata.model
+                    Write-Host "Run $(($runDir.Name -replace '_results$', '')): model=$model"
+                }
+
+                # Find eval_report.json files under azure.eval.x86_64.{instance}-output/output/
+                $evalReports = Get-ChildItem -Path $runDir.FullName -Filter 'eval_report.json' -Recurse -ErrorAction SilentlyContinue
+                foreach ($evalReport in $evalReports) {
+                    # Extract instance name from: azure.eval.x86_64.{instance}-output
+                    $outputDirName = $evalReport.Directory.Parent.Name  # e.g. azure.eval.x86_64.aca_deployment_skill-output
+                    $instanceName = $outputDirName -replace '^azure\.eval\.x86_64\.', '' -replace '-output$', ''
+
+                    # Enrich eval_report.json with model and run metadata
+                    $evalContent = Get-Content -Path $evalReport.FullName -Raw | ConvertFrom-Json
+                    if ($model) { $evalContent | Add-Member -NotePropertyName 'model' -NotePropertyValue $model -Force }
+                    $evalContent | Add-Member -NotePropertyName 'instance_id' -NotePropertyValue $instanceName -Force
+
+                    $destination = Join-Path $OutputPath "${instanceName}_eval_report.json"
+                    $evalContent | ConvertTo-Json -Depth 10 | Set-Content -Path $destination -Encoding UTF8
+                    Write-Host "Saved enriched eval_report.json for instance '$instanceName' (model: $model) to $destination"
+                    $evalCount++
+                }
+            }
+        }
+        if ($evalCount -eq 0) {
+            Write-Warning "No eval_report.json files found under msbench_run_results"
+        } else {
+            Write-Host "Processed $evalCount eval_report.json file(s)"
+        }
+    } else {
+        Write-Warning "No msbench_run_results directory found"
+    }
+
     Write-Host "`nMSBench benchmark report generation completed successfully."
+
+    # --- Upload reports to Azure Blob Storage ---
+    if ($StorageAccountName -and $ContainerName) {
+        Write-Host "`n--- Uploading reports to Azure Blob Storage ---"
+
+        if (-not $Date) {
+            $Date = Get-Date -Format "yyyy-MM-dd"
+        }
+
+        # Known skill categories ordered longest-first to ensure greedy matching.
+        # For example, "enterprise_infra_planner" must match before a hypothetical "enterprise".
+        $skillCategories = @(
+            "enterprise_infra_planner"
+            "resource_visualization"
+            "cost_optimization"
+            "resource_lookup"
+            "app_insights"
+            "observability"
+            "diagnostics"
+            "deployment"
+            "compliance"
+            "foundry"
+            "rbac"
+        )
+
+        function Get-BenchmarkInstance {
+            param([string]$FileName)
+
+            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName).ToLower()
+            $normalized = $baseName -replace '-', '_'
+
+            # Extract BENCHMARK_INSTANCE from: msbench_analysis_report_[BENCHMARK_INSTANCE]_[DATE]
+            $instance = $normalized -replace '^msbench_(analysis_)?report_', '' `
+                                    -replace '_\d{4}_\d{2}_\d{2}$', ''
+
+            if ($instance) {
+                return $instance
+            }
+
+            return $baseName
+        }
+
+        function Get-SkillName {
+            param([string]$FileName)
+
+            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName).ToLower()
+
+            # Normalize separators: replace hyphens with underscores for consistent matching
+            $normalized = $baseName -replace '-', '_'
+
+            foreach ($skill in $skillCategories) {
+                if ($normalized -match [regex]::Escape($skill)) {
+                    return $skill
+                }
+            }
+
+            # Fallback: strip common prefixes/suffixes and date patterns
+            $cleaned = $normalized -replace '^msbench_(analysis_)?report_', '' `
+                                   -replace '_?\d{4}_\d{2}_\d{2}$', '' `
+                                   -replace '_skill$', '' `
+                                   -replace '_report$', ''
+
+            if ($cleaned) {
+                return $cleaned
+            }
+
+            return $baseName
+        }
+
+        # Discover report files (exclude copilot log artifacts)
+        $uploadReports = Get-ChildItem -Path $OutputPath -Filter '*.md' |
+                   Where-Object { $_.DirectoryName -notlike '*copilot_log*' }
+
+        if (-not $uploadReports -or $uploadReports.Count -eq 0) {
+            Write-Warning "No report files found in $OutputPath for upload"
+        } else {
+            Write-Host "Found $($uploadReports.Count) report(s) to upload"
+
+            $successCount = 0
+            $failCount = 0
+
+            foreach ($report in $uploadReports) {
+                $skillName = Get-SkillName -FileName $report.Name
+                $benchmarkInstance = Get-BenchmarkInstance -FileName $report.Name
+                $blobPath = "$Date/$skillName/$benchmarkInstance/$($report.Name)"
+
+                Write-Host "Uploading $($report.Name) -> $ContainerName/$blobPath (skill: $skillName, instance: $benchmarkInstance)"
+
+                $azArgs = @(
+                    "storage"
+                    "blob"
+                    "upload"
+                    "--account-name"
+                    $StorageAccountName
+                    "--container-name"
+                    $ContainerName
+                    "--name"
+                    $blobPath
+                    "--file"
+                    $report.FullName
+                    "--auth-mode"
+                    "login"
+                    "--overwrite"
+                )
+
+                az @azArgs
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to upload $($report.Name)"
+                    $failCount++
+                } else {
+                    $successCount++
+                }
+
+                # Upload corresponding eval_report.json if it exists
+                $evalReportFile = Join-Path $OutputPath "${benchmarkInstance}_eval_report.json"
+                if (Test-Path $evalReportFile) {
+                    $evalBlobPath = "$Date/$skillName/$benchmarkInstance/eval_report.json"
+                    Write-Host "Uploading eval_report.json -> $ContainerName/$evalBlobPath"
+
+                    $evalAzArgs = @(
+                        "storage"
+                        "blob"
+                        "upload"
+                        "--account-name"
+                        $StorageAccountName
+                        "--container-name"
+                        $ContainerName
+                        "--name"
+                        $evalBlobPath
+                        "--file"
+                        $evalReportFile
+                        "--auth-mode"
+                        "login"
+                        "--overwrite"
+                    )
+
+                    az @evalAzArgs
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Warning "Failed to upload eval_report.json for instance $benchmarkInstance"
+                        $failCount++
+                    } else {
+                        $successCount++
+                    }
+                }
+            }
+
+            Write-Host "`nUpload complete: $successCount succeeded, $failCount failed (container: $ContainerName/$Date/)"
+
+            if ($failCount -gt 0) {
+                Write-Error "$failCount report upload(s) failed."
+                exit 1
+            }
+        }
+    }
