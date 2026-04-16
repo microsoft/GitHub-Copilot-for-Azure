@@ -9,7 +9,7 @@ metadata:
 
 # Submit Skill Fix PR
 
-Creates a pull request after committing skill fixes in `microsoft/github-copilot-for-azure`.
+Creates a pull request after committing skill fixes in `microsoft/GitHub-Copilot-for-Azure`.
 
 ## When to Use This Skill
 
