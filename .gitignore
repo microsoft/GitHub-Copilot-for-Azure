@@ -356,3 +356,6 @@ dashboard/**/dist/
 
 # C# DevKit (VS Code extension) language server cache files
 *.lscache
+
+# Local vally eval outputs
+results/
