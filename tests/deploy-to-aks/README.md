@@ -49,8 +49,8 @@ tests/deploy-to-aks/
 
 ## Prerequisites for Integration Tests
 
-1. Install GitHub Copilot CLI
-2. Authenticate: run `gh extension install github/gh-copilot` and `gh auth login`
+1. Install Copilot CLI: `npm install -g @github/copilot-cli`
+2. Authenticate: Run `copilot` and follow prompts
 3. Ensure `GITHUB_TOKEN` is set in the environment
 
 See `/tests/AGENTS.md` for complete testing patterns and guidelines.

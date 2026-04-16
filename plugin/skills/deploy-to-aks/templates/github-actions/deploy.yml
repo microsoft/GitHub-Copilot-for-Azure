@@ -169,6 +169,9 @@ jobs:
       - name: Deploy to AKS
         id: deploy
         run: |
+          # Ensure the namespace exists before applying manifests
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml \
+            | kubectl apply -f -
           kubectl apply -f k8s/ --namespace ${{ env.NAMESPACE }}
 
           kubectl rollout status deployment/${{ env.APP_NAME }} \

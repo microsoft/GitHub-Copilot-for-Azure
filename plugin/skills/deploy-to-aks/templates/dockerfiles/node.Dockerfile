@@ -5,7 +5,7 @@
 #   - APP_NAME:    Replace in comments as needed
 #   - PORT:        Change EXPOSE port if not 3000
 #   - ENTRY_POINT: Change the final CMD to your main file (e.g. dist/main.js)
-#   - BUILD_CMD:   Adjust "npm run build" if your build script differs
+#   - BUILD_CMD:   Adjust "npm run build --if-present" if your build script differs
 #
 # Package manager support:
 #   - npm:  This file is configured for npm by default
@@ -31,7 +31,7 @@ RUN npm ci
 # Copy the rest of the source and build
 COPY . .
 
-RUN npm run build
+RUN npm run build --if-present
 
 # Guard: verify build output exists at expected location
 RUN test -d /app/dist || (echo "ERROR: Build output directory '/app/dist' not found." && echo "Your build script did not produce output in the 'dist/' directory." && echo "Update the 'COPY --from=build /app/dist ./dist' line in the runtime stage" && echo "to match your build script's output directory (e.g., 'build/', 'out/', 'public/')." && exit 1)
