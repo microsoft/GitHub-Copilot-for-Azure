@@ -42,7 +42,6 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      cost: free
       area: files
     constraints:
       max_turns: 50
@@ -78,7 +77,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: behavior
     constraints:
       max_turns: 50
@@ -110,7 +108,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
@@ -175,7 +172,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
@@ -239,7 +235,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: behavior
     constraints:
       max_turns: 50
@@ -270,7 +265,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: behavior
     constraints:
       max_turns: 50
@@ -302,7 +296,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
@@ -367,7 +360,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
@@ -432,7 +424,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
@@ -497,7 +488,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
@@ -561,7 +551,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: behavior
     constraints:
       max_turns: 50
@@ -593,7 +582,6 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
       area: [output, files]
     constraints:
       max_turns: 50
