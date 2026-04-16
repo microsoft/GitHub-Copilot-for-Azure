@@ -158,8 +158,15 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(recommenderContent).toContain("retail-prices-api.md");
     });
 
-    test("Step 5: documents recommendation presentation format", () => {
-      expect(recommenderContent).toContain("### Step 5: Present Recommendations");
+    test("Step 5: documents quota validation gate", () => {
+      expect(recommenderContent).toContain("### Step 5: Validate Quota Availability");
+      expect(recommenderContent).toContain("GATE");
+      expect(recommenderContent).toContain("review");
+      expect(recommenderContent).toContain("vm-quotas.md");
+    });
+
+    test("Step 6: documents recommendation presentation format", () => {
+      expect(recommenderContent).toContain("### Step 6: Present Recommendations");
       expect(recommenderContent).toContain("2–3 options");
       expect(recommenderContent).toContain("Hosting Model");
       expect(recommenderContent).toContain("VM Size");
@@ -167,8 +174,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(recommenderContent).toContain("Trade-off");
     });
 
-    test("Step 6: documents next steps", () => {
-      expect(recommenderContent).toContain("### Step 6: Offer Next Steps");
+    test("Step 7: documents next steps", () => {
+      expect(recommenderContent).toContain("### Step 7: Offer Next Steps");
       expect(recommenderContent).toContain("Azure Pricing Calculator");
     });
 
@@ -202,6 +209,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(recommenderContent).toContain("../../references/vm-families.md");
       expect(recommenderContent).toContain("../../references/retail-prices-api.md");
       expect(recommenderContent).toContain("../../references/vmss-guide.md");
+      expect(recommenderContent).toContain("../../references/vm-quotas.md");
     });
   });
 
@@ -324,6 +332,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     let vmFamiliesContent: string;
     let retailPricesApiContent: string;
     let vmssGuideContent: string;
+    let vmQuotasContent: string;
     let cannotConnectContent: string;
 
     const troubleshooterRefsDir = path.join(
@@ -359,6 +368,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         path.join(refsDir, "vmss-guide.md"),
         "utf-8"
       );
+      vmQuotasContent = await fs.readFile(
+        path.join(refsDir, "vm-quotas.md"),
+        "utf-8"
+      );
       cannotConnectContent = await fs.readFile(
         path.join(troubleshooterRefsDir, "cannot-connect-to-vm.md"),
         "utf-8"
@@ -378,6 +391,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("vmss-guide reference file exists and has content", () => {
       expect(vmssGuideContent).toBeDefined();
       expect(vmssGuideContent.length).toBeGreaterThan(100);
+    });
+
+    test("vm-quotas reference file exists and has content", () => {
+      expect(vmQuotasContent).toBeDefined();
+      expect(vmQuotasContent.length).toBeGreaterThan(100);
     });
 
     test("cannot-connect-to-vm reference file exists and has content", () => {
