@@ -30,10 +30,17 @@ on:
   workflow_dispatch:
 
 # OIDC federation requires these permissions so GitHub can issue
-# an ID token that Azure AD will accept.
+# an ID token that Microsoft Entra ID will accept.
 permissions:
   id-token: write   # Required for requesting the JWT
   contents: read     # Required for actions/checkout
+
+# Prevent parallel deployments to the same namespace.
+# cancel-in-progress: false ensures the running deploy finishes
+# before the queued deploy starts (avoids mid-rollout conflicts).
+concurrency:
+  group: deploy-${{ env.NAMESPACE }}
+  cancel-in-progress: false
 
 env:
   ACR_NAME: __ACR_NAME__
@@ -168,3 +175,18 @@ jobs:
           kubectl rollout status deployment/${{ env.APP_NAME }} \
             --namespace ${{ env.NAMESPACE }} \
             --timeout=300s
+
+      - name: Verify deployment health
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app=${{ env.APP_NAME }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=120s
+          echo "✓ All pods are ready"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          kubectl rollout undo deployment/${{ env.APP_NAME }} \
+            --namespace ${{ env.NAMESPACE }}
+          echo "⚠️ Rolled back to previous revision"

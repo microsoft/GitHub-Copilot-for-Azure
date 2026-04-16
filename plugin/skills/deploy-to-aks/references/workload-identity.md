@@ -7,7 +7,7 @@
 Workload Identity lets pods in AKS authenticate to Azure services (Key Vault, Storage,
 PostgreSQL, etc.) without storing any secrets. Instead of injecting connection strings or
 passwords, your pod proves its identity through a short-lived token issued by the
-cluster's OIDC provider, which Azure AD trusts because you've set up a federation
+cluster's OIDC provider, which Microsoft Entra ID trusts because you've set up a federation
 between the cluster and a Managed Identity. The pod gets a token automatically — your
 app code just uses the standard Azure SDK credential chain.
 
@@ -72,7 +72,7 @@ AKS OIDC Issuer issues a projected service account token
   ├── Subject (system:serviceaccount:ns:sa) matches the Federated Credential's subject
   │
   ▼
-Azure AD validates the federation and issues an Azure AD token
+Microsoft Entra ID validates the federation and issues a token
   │
   ▼
 Azure SDK (DefaultAzureCredential) uses the token to access Azure resources
@@ -90,7 +90,7 @@ picks it up automatically.
 
 ## Per-Service Patterns
 
-### PostgreSQL (Flexible Server with Azure AD Auth)
+### PostgreSQL (Flexible Server with Microsoft Entra ID Auth)
 
 The Managed Identity needs the `<db-name> Admin` or a custom PostgreSQL role.
 
@@ -169,12 +169,12 @@ var client = new BlobServiceClient(
     new Uri("https://<account>.blob.core.windows.net"), credential);
 ```
 
-### Azure Cache for Redis (Azure AD Token Auth)
+### Azure Cache for Redis (Microsoft Entra ID Token Auth)
 
 Role assignment: `Redis Cache Contributor` or custom data-plane role.
 
 ```python
-# Python — redis-py with Azure AD token
+# Python — redis-py with Microsoft Entra ID token
 import os
 from azure.identity import DefaultAzureCredential
 import redis
