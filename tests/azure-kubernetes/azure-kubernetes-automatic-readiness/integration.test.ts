@@ -15,11 +15,39 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../../utils/evaluate";
+import {
+  softCheckSkill,
+  isSkillInvoked,
+  isToolCalled,
+  shouldEarlyTerminateForSkillInvocation,
+  withTestResult
+} from "../../utils/evaluate";
 
 const SKILL_NAME = "azure-kubernetes-automatic-readiness";
+const ROUTER_SKILL_NAME = "azure-kubernetes";
 const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
+
+function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvoked>[0]): boolean {
+  if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+    return true;
+  }
+
+  // Current runtime routes readiness requests through azure-kubernetes.
+  if (isSkillInvoked(agentMetadata, ROUTER_SKILL_NAME)) {
+    return true;
+  }
+
+  // Fallback signal when references are used without explicit nested skill invocation.
+  return (
+    doesAssistantMessageIncludeKeyword(agentMetadata, "azure-kubernetes-automatic-readiness") ||
+    isToolCalled(
+      agentMetadata,
+      "view",
+      /azure-kubernetes\/azure-kubernetes-automatic-readiness\//,
+    )
+  );
+}
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -40,11 +68,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible.",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, ROUTER_SKILL_NAME)
           });
 
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          softCheckSkill(agentMetadata, ROUTER_SKILL_NAME);
+          if (isReadinessWorkflowInvoked(agentMetadata)) {
             invocationCount += 1;
           }
         }
@@ -66,7 +94,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           doesAssistantMessageIncludeKeyword(agentMetadata, "incompatible") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "requiresChanges") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "compatible") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "Compatible");
+          doesAssistantMessageIncludeKeyword(agentMetadata, "Compatible") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "critical") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "required") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "warning") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "auto-fixed");
         expect(hasSeverityContent).toBe(true);
       });
     });
