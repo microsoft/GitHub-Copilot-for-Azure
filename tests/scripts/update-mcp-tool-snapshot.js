@@ -32,10 +32,10 @@ function listServerTools() {
       child.kill("SIGTERM");
       reject(
         new Error(
-          `Timed out after 30 seconds waiting for Azure MCP server tools list.${stderrOutput ? `\nStderr: ${stderrOutput.trim()}` : ""}`,
+          `Timed out after 60 seconds waiting for Azure MCP server tools list.${stderrOutput ? `\nStderr: ${stderrOutput.trim()}` : ""}`,
         ),
       );
-    }, 30_000);
+    }, 60_000);
 
     const cleanup = () => {
       clearTimeout(timeout);
@@ -95,16 +95,17 @@ function listServerTools() {
         if (message.id === 2) {
           if (settled) return;
           settled = true;
-          cleanup();
 
           const names = [...new Set((message.result?.tools ?? []).map((tool) => tool.name))].sort();
           if (names.length === 0) {
+            cleanup();
             reject(new Error("Azure MCP server returned an empty tools list."));
             return;
           }
 
-          resolve(names);
           child.kill("SIGTERM");
+          cleanup();
+          resolve(names);
         }
       }
     });
@@ -140,4 +141,7 @@ async function main() {
   console.log(`Updated MCP tool snapshot with ${toolNames.length} tools at ${snapshotPath}`);
 }
 
-await main();
+await main().catch((error) => {
+  console.error("Failed to update MCP tool snapshot:", error);
+  process.exit(1);
+});
