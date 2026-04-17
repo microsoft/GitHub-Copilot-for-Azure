@@ -12,6 +12,7 @@
         "test": "echo \"No tests yet\""
     },
     "dependencies": {
+        "@azure/data-tables": "^13.3.2",
         "@azure/functions": "^4.6.0",
         "@azure/identity": "^4.13.0",
         "@azure/storage-blob": "^12.31.0"
