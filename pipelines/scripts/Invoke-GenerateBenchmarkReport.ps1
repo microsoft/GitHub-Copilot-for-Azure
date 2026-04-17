@@ -58,6 +58,7 @@
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     # --- Retrieve GitHub PAT from KeyVault ---
+    # It needs to be a fine grained github PAT token here.
     try {
         Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
         $azArgs = @(
