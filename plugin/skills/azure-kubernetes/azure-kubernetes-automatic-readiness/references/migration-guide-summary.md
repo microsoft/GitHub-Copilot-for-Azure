@@ -8,7 +8,7 @@ Loaded when user asks about migration steps or after assessment is complete.
 
 ### Phase 1 — Assessment (this skill)
 
-- [ ] Run `assessAutomaticCompatibility` against the existing cluster (or offline manifest scan)
+- [ ] Run the AKS Automatic compatibility assessment (via `mcp_azure_mcp_aks({ action: "discover" })` then the assessment action returned, or the offline manifest scan)
 - [ ] Resolve all `incompatible` findings — these are hard blockers
 - [ ] Apply all `requiresChanges` fixes — these will be denied at admission
 - [ ] Review `autoFixed` items — understand what AKS Automatic will mutate at runtime
