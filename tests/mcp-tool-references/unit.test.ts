@@ -25,6 +25,23 @@ interface ToolReference {
   pattern: string;
 }
 
+interface AzureMcpSnapshot {
+  source?: string;
+  azureMcpVersion?: string;
+  toolNames: string[];
+}
+
+function readAndValidateSnapshot(filePath: string): AzureMcpSnapshot {
+  const snapshot = JSON.parse(readFileSync(filePath, "utf8")) as AzureMcpSnapshot;
+  if (!Array.isArray(snapshot.toolNames) || snapshot.toolNames.length === 0) {
+    throw new Error(
+      `Invalid Azure MCP tool snapshot at ${filePath}: expected a non-empty "toolNames" array`,
+    );
+  }
+
+  return snapshot;
+}
+
 function collectMarkdownFiles(rootDir: string): string[] {
   const markdownFiles: string[] = [];
 
@@ -77,27 +94,19 @@ describe("Azure MCP tool references in skill markdown", () => {
   let allReferences: ToolReference[];
 
   beforeAll(() => {
-    const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8")) as {
-      source?: string;
-      azureMcpVersion?: string;
-      toolNames: string[];
-    };
+    const snapshot = readAndValidateSnapshot(snapshotPath);
     snapshotToolNames = snapshot.toolNames;
     validToolNames = new Set(snapshotToolNames);
     allReferences = collectMarkdownFiles(skillsRoot).flatMap(extractToolReferences);
   });
 
   test("snapshot file exists and has expected shape", () => {
-    const raw = JSON.parse(readFileSync(snapshotPath, "utf8")) as {
-      source?: string;
-      azureMcpVersion?: string;
-      toolNames?: string[];
-    };
+    const raw = readAndValidateSnapshot(snapshotPath);
 
     expect(typeof raw.source).toBe("string");
     expect(typeof raw.azureMcpVersion).toBe("string");
     expect(Array.isArray(raw.toolNames)).toBe(true);
-    expect(raw.toolNames?.length).toBeGreaterThan(0);
+    expect(raw.toolNames.length).toBeGreaterThan(0);
     expect(statSync(snapshotPath).size).toBeGreaterThan(0);
   });
 
