@@ -40,8 +40,8 @@
 
     param(
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
-        [Parameter(Mandatory=$false)][string]$StorageAccountName,
-        [Parameter(Mandatory=$false)][string]$ContainerName
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
     )
 
     Set-StrictMode -Version Latest
@@ -156,7 +156,7 @@
     }
 
     # --- Get dates from ToBeProcessed file in blob container root ---
-    Write-Host "Checking for ToBeProcessed file in blob container $ContainerName"
+    Write-Host "Downloading ToBeProcessed file from blob container $ContainerName"
     $toBeProcessedLocal = Join-Path $OutputPath 'ToBeProcessed'
 
     $azArgs = @(
@@ -167,14 +167,15 @@
         "--file", $toBeProcessedLocal,
         "--auth-mode", "login"
     )
-    az @azArgs 2>$null
-
+    az @azArgs
     if ($LASTEXITCODE -ne 0 -or !(Test-Path $toBeProcessedLocal)) {
-        Write-Host "ToBeProcessed file not found in blob container root. No action needed."
-        exit 0
+        throw "Failed to download ToBeProcessed file from blob container $ContainerName. Ensure the file exists and the service principal has access."
     }
 
-    $dates = @(Get-Content -Path $toBeProcessedLocal | Where-Object { $_.Trim() -ne '' } | ForEach-Object { $_.Trim() })
+    $dates = @(Get-Content -Path $toBeProcessedLocal | 
+                Where-Object { $_.Trim() -ne '' } | 
+                ForEach-Object { $_.Trim() } |
+                Where-Object { $_ -match '^\d{4}-\d{2}-\d{2}$' })
     if ($dates.Count -eq 0) {
         Write-Host "ToBeProcessed file is empty. No action needed."
         exit 0
@@ -402,7 +403,7 @@
                 $resolvedValue = $null
                 # eval.json structure: { "instance_name": { "resolved": true/false } }
                 foreach ($prop in $evalJson.PSObject.Properties) {
-                    if ($null -ne $prop.Value.resolved) {
+                    if ($prop.Value -is [psobject] -and $prop.Value.PSObject.Properties.Name -contains 'resolved') {
                         $resolvedValue = $prop.Value.resolved
                         break
                     }
