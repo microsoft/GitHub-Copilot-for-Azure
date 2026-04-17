@@ -56,6 +56,7 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
   return new Promise<Set<string>>((resolve, reject) => {
     const serverProcess = spawn("npx", ["-y", "@azure/mcp@latest", "server", "start"], {
       stdio: ["pipe", "pipe", "pipe"],
+      shell: true,
     });
 
     const toolNames = new Set<string>();
@@ -77,7 +78,7 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
 
       for (const line of lines) {
         if (!line.trim()) continue;
-        let parsed: { id?: number; result?: { tools?: Array<{ name: string }> } };
+        let parsed: { id?: number; result?: { tools?: Array<{ name: string }>; nextCursor?: string } };
         try {
           parsed = JSON.parse(line) as typeof parsed;
         } catch {
@@ -97,6 +98,16 @@ function getAzureMcpToolNames(): Promise<Set<string>> {
             }) + "\n",
           );
         } else if (parsed.id === 2 && parsed.result) {
+          if (parsed.result.nextCursor) {
+            settled = true;
+            serverProcess.kill();
+            reject(
+              new Error(
+                "tools/list returned paginated results — pagination support is required to validate all tool names",
+              ),
+            );
+            return;
+          }
           for (const tool of parsed.result.tools ?? []) {
             if (tool.name) toolNames.add(tool.name);
           }
