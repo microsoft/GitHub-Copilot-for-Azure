@@ -3,6 +3,7 @@
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +26,8 @@ function listServerTools() {
 
     let buffer = "";
     let stderrOutput = "";
+    const stdoutDecoder = new StringDecoder("utf8");
+    const stderrDecoder = new StringDecoder("utf8");
     let settled = false;
     const timeout = setTimeout(() => {
       if (settled) return;
@@ -48,7 +51,7 @@ function listServerTools() {
 
     child.stderr.on("data", (chunk) => {
       // Drain stderr to avoid potential backpressure deadlocks and keep tail output for debugging.
-      stderrOutput = `${stderrOutput}${chunk.toString()}`.slice(-4000);
+      stderrOutput = `${stderrOutput}${stderrDecoder.write(chunk)}`.slice(-4000);
     });
 
     child.on("error", (error) => {
@@ -70,7 +73,7 @@ function listServerTools() {
     });
 
     child.stdout.on("data", (chunk) => {
-      buffer += chunk.toString();
+      buffer += stdoutDecoder.write(chunk);
       let newlineIndex = buffer.indexOf("\n");
 
       while (newlineIndex >= 0) {
@@ -98,6 +101,7 @@ function listServerTools() {
 
           const names = [...new Set((message.result?.tools ?? []).map((tool) => tool.name))].sort();
           if (names.length === 0) {
+            child.kill("SIGTERM");
             cleanup();
             reject(new Error("Azure MCP server returned an empty tools list."));
             return;
