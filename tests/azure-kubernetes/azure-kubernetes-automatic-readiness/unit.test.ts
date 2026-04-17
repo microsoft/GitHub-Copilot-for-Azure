@@ -61,7 +61,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Assessment Workflow", () => {
     test("covers cluster-connected assessment via MCP", () => {
       expect(skill.content).toMatch(/mcp_azure_mcp_aks/i);
-      expect(skill.content).toMatch(/assessAutomaticCompatibility/i);
+      expect(skill.content).toMatch(/discover/i);
     });
 
     test("covers offline manifest validation", () => {

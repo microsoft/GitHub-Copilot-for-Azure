@@ -54,7 +54,7 @@ AKS Automatic enforces **Deployment Safeguards** (25 active Deny policies; 27 ex
 ## MCP Tools
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `mcp_azure_mcp_aks` | AKS MCP entry point — discover exact AKS tools, then call `assessAutomaticCompatibility` | `subscriptionId`, `resourceGroupName`, `resourceName`, `scope` |
+| `mcp_azure_mcp_aks` | AKS MCP entry point — call `discover` first, then use the assessment action name returned in the response | `subscriptionId`, `resourceGroupName`, `resourceName`, `scope` |
 
 ## Workflow
 
@@ -75,11 +75,15 @@ If the user pastes or points to a single YAML manifest, validate it directly wit
 
 #### Cluster-Connected Mode
 
-Call the AKS MCP tool — this is the preferred path:
+Call the AKS MCP tool — this is the preferred path. Always call `discover` first to get the available actions, then use the assessment action name returned in the response:
 
 ```javascript
+// Step 1: Discover available actions
+mcp_azure_mcp_aks({ action: "discover" })
+
+// Step 2: Use the assessment action name from the discover response
 mcp_azure_mcp_aks({
-  action: "assessAutomaticCompatibility",
+  action: "<action-from-discover>",
   subscriptionId: "<subscription-id>",
   resourceGroupName: "<resource-group>",
   resourceName: "<cluster-name>",
@@ -228,7 +232,7 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | Error / Symptom | Likely Cause | Remediation |
 |-----------------|--------------|-------------|
 | MCP tool call fails or times out | Invalid credentials or subscription context | Verify `az login`, confirm active subscription with `az account show`; if MCP remains unavailable, continue with offline validation using local or exported manifests and the bundled constraint spec |
-| HTTP 403 on `assessAutomaticCompatibility` | Missing permission | Ensure caller has sufficient RBAC access to read and assess the cluster via AKS APIs |
+| HTTP 403 on assessment action | Missing permission | Ensure caller has sufficient RBAC access to read and assess the cluster via AKS APIs |
 | API returns HTTP 202 | Large cluster (500+ workloads) — async operation | Poll the `Location` header URL using `Retry-After` interval |
 | Helm chart uses Go templating — cannot evaluate | Template values not resolved | Ask user for rendered output (`helm template`) or values files |
 | Constraint spec version mismatch | Skill bundles spec v1.1.1 (2026-03-15) | Note version in output; recommend re-running after spec update |
