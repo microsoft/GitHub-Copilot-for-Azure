@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Generates benchmark analysis reports for completed MSBench runs using GitHub Copilot
-    and optionally uploads them to Azure Blob Storage.
+    and uploads them to Azure Blob Storage.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
@@ -11,22 +11,25 @@
     installs MSBench CLI, checks the status of existing benchmark runs, and uses GitHub Copilot
     to generate detailed analysis reports for the specified run IDs.
 
-    The script reads dates from a ToBeProcessed file in the blob container root, downloads
-    run_ids.json for each date, generates reports using GitHub Copilot CLI, and saves the
-    generated markdown reports to the OutputPath.
+    The script downloads a ToBeProcessed file from the blob container root to determine which
+    dates need report generation. For each date, it downloads the corresponding run_ids.json,
+    generates reports using GitHub Copilot CLI, enriches eval_report.json files with model
+    metadata and resolved status from eval.json, and uploads all artifacts to Azure Blob Storage.
 
-    When StorageAccountName and ContainerName are provided, the generated reports are
-    uploaded to Azure Blob Storage organized by date, skill name, and benchmark instance.
+    After processing, successfully completed dates are removed from the ToBeProcessed file,
+    which is then uploaded back to blob storage. If the ToBeProcessed file does not exist
+    in the container, the script exits gracefully with no action.
+
     Blob path format: {date}/{benchmark_instance}/{filename}
 
 .PARAMETER OutputPath
-    Directory path where generated benchmark reports will be saved.
+    Directory path where generated benchmark reports will be saved, organized by date.
 
 .PARAMETER StorageAccountName
-    Optional. The Azure Storage account name to upload reports to.
+    The Azure Storage account name for reading ToBeProcessed/run_ids.json and uploading reports.
 
 .PARAMETER ContainerName
-    Optional. The blob container name to upload reports to.
+    The blob container name for reading ToBeProcessed/run_ids.json and uploading reports.
 
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -57,7 +60,14 @@
     # --- Retrieve GitHub PAT from KeyVault ---
     try {
         Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
-        $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
+        $azArgs = @(
+            "keyvault", "secret", "show",
+            "--vault-name", $vaultName,
+            "--name", $secretName,
+            "--query", "value",
+            "-o", "tsv"
+        )
+        $pat = az @azArgs
 
         if (!$pat) {
             throw "Secret $secretName not found in KeyVault $vaultName."
@@ -116,7 +126,13 @@
 
     Write-Host "Cloning $msbenchRepo into $cloneDir"
     # ADO resource id for Azure Repos is 499b84ac-1321-427f-aa17-267ca6975798
-    $token = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv  
+    $azArgs = @(
+        "account", "get-access-token",
+        "--resource", "499b84ac-1321-427f-aa17-267ca6975798",
+        "--query", "accessToken",
+        "-o", "tsv"
+    )
+    $token = az @azArgs  
     if ($pipelineRun) {  
         Write-Host "##vso[task.setsecret]$token"  
     }  
@@ -143,12 +159,15 @@
     Write-Host "Checking for ToBeProcessed file in blob container $ContainerName"
     $toBeProcessedLocal = Join-Path $OutputPath 'ToBeProcessed'
 
-    az storage blob download `
-        --account-name $StorageAccountName `
-        --container-name $ContainerName `
-        --name "ToBeProcessed" `
-        --file $toBeProcessedLocal `
-        --auth-mode login 2>$null
+    $azArgs = @(
+        "storage", "blob", "download",
+        "--account-name", $StorageAccountName,
+        "--container-name", $ContainerName,
+        "--name", "ToBeProcessed",
+        "--file", $toBeProcessedLocal,
+        "--auth-mode", "login"
+    )
+    az @azArgs 2>$null
 
     if ($LASTEXITCODE -ne 0 -or !(Test-Path $toBeProcessedLocal)) {
         Write-Host "ToBeProcessed file not found in blob container root. No action needed."
@@ -169,12 +188,15 @@
         $runIdsLocalFile = Join-Path $OutputPath "run_ids_${d}.json"
 
         Write-Host "Downloading $runIdsBlobPath from blob container $ContainerName"
-        az storage blob download `
-            --account-name $StorageAccountName `
-            --container-name $ContainerName `
-            --name $runIdsBlobPath `
-            --file $runIdsLocalFile `
-            --auth-mode login
+        $azArgs = @(
+            "storage", "blob", "download",
+            "--account-name", $StorageAccountName,
+            "--container-name", $ContainerName,
+            "--name", $runIdsBlobPath,
+            "--file", $runIdsLocalFile,
+            "--auth-mode", "login"
+        )
+        az @azArgs
 
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to download $runIdsBlobPath from blob container $ContainerName"
@@ -211,6 +233,7 @@
     }
 
     # --- Process each date ---
+    $processedDates = @()
     foreach ($date in $dateRunIdMap.Keys) {
         $inputRunIds = @($dateRunIdMap[$date])
         Write-Host "`n=========================================="
@@ -420,6 +443,46 @@
             Remove-Item -Path $reportsCleanup -Recurse -Force
             Write-Host "Cleaned up $reportsCleanup for next iteration"
         }
+
+        $processedDates += $date
+        Write-Host "Date $date processed successfully."
+    }
+
+    # --- Update ToBeProcessed file in blob storage ---
+    if ($processedDates.Count -gt 0) {
+        Write-Host "`nSuccessfully processed $($processedDates.Count) date(s): $($processedDates -join ', ')"
+
+        # Remove processed dates from the original list
+        $remainingDates = @($dates | Where-Object { $_ -notin $processedDates })
+
+        if ($remainingDates.Count -eq 0) {
+            Write-Host "All dates processed. Uploading empty ToBeProcessed file."
+            Set-Content -Path $toBeProcessedLocal -Value '' -Encoding UTF8
+        } else {
+            Write-Host "Remaining dates to process: $($remainingDates -join ', ')"
+            Set-Content -Path $toBeProcessedLocal -Value ($remainingDates -join "`n") -Encoding UTF8
+        }
+
+        # Upload updated ToBeProcessed file to blob storage
+        Write-Host "Uploading updated ToBeProcessed file to blob container $ContainerName"
+        $azArgs = @(
+            "storage", "blob", "upload",
+            "--account-name", $StorageAccountName,
+            "--container-name", $ContainerName,
+            "--name", "ToBeProcessed",
+            "--file", $toBeProcessedLocal,
+            "--auth-mode", "login",
+            "--overwrite"
+        )
+        az @azArgs
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Failed to upload updated ToBeProcessed file to blob storage"
+        } else {
+            Write-Host "Updated ToBeProcessed file uploaded successfully."
+        }
+    } else {
+        Write-Warning "No dates were processed successfully."
     }
 
     Write-Host "`nAll dates processed successfully."
