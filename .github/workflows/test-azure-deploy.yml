@@ -20,7 +20,7 @@ on:
           - claude-sonnet-4.5
           - claude-opus-4.5
       test-pattern:
-        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
+        description: 'Optional: Comma separated patterns by name or describe block (e.g. "creates todo list", "vanilla-static-web-apps-deploy", "Terraform"). If empty, all tests will be run.'
         required: false
         type: string
         default: ''
@@ -67,7 +67,7 @@ jobs:
           INPUT: ${{ inputs.test-pattern }}
         run: |
           # Default test groups if input is empty
-          DEFAULT='["skill-invocation","static-web-apps-deploy","app-service-deploy","azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
+          DEFAULT='["skill-invocation","vanilla-static-web-apps-deploy","vanilla-app-service-deploy","vanilla-azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
           
           if [ -z "$INPUT" ]; then
             echo "matrix=$DEFAULT" >> "$GITHUB_OUTPUT"
@@ -101,6 +101,9 @@ jobs:
 
       - name: Install azd
         uses: Azure/setup-azd@c495e71ba59e44bfaaac10a32c8ee90d191ca4a3 # v2
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85 # v4
 
       - name: Log in with Azure (Federated Credentials)
         run: |
