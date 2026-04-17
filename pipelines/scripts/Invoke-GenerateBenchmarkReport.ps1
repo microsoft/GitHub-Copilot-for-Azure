@@ -16,7 +16,7 @@
 
     When StorageAccountName and ContainerName are provided, the generated reports are
     uploaded to Azure Blob Storage organized by date, skill name, and benchmark instance.
-    Blob path format: {date}/{skill_name}/{benchmark_instance}/{filename}
+    Blob path format: {date}/{benchmark_instance}/{filename}
 
 .PARAMETER InputPath
     Directory path containing the run_ids.json file with benchmark run IDs to analyze.
@@ -291,22 +291,6 @@
             $Date = Get-Date -Format "yyyy-MM-dd"
         }
 
-        # Known skill categories ordered longest-first to ensure greedy matching.
-        # For example, "enterprise_infra_planner" must match before a hypothetical "enterprise".
-        $skillCategories = @(
-            "enterprise_infra_planner"
-            "resource_visualization"
-            "cost_optimization"
-            "resource_lookup"
-            "app_insights"
-            "observability"
-            "diagnostics"
-            "deployment"
-            "compliance"
-            "foundry"
-            "rbac"
-        )
-
         function Get-BenchmarkInstance {
             param([string]$FileName)
 
@@ -319,33 +303,6 @@
 
             if ($instance) {
                 return $instance
-            }
-
-            return $baseName
-        }
-
-        function Get-SkillName {
-            param([string]$FileName)
-
-            $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName).ToLower()
-
-            # Normalize separators: replace hyphens with underscores for consistent matching
-            $normalized = $baseName -replace '-', '_'
-
-            foreach ($skill in $skillCategories) {
-                if ($normalized -match [regex]::Escape($skill)) {
-                    return $skill
-                }
-            }
-
-            # Fallback: strip common prefixes/suffixes and date patterns
-            $cleaned = $normalized -replace '^msbench_(analysis_)?report_', '' `
-                                   -replace '_?\d{4}_\d{2}_\d{2}$', '' `
-                                   -replace '_skill$', '' `
-                                   -replace '_report$', ''
-
-            if ($cleaned) {
-                return $cleaned
             }
 
             return $baseName
@@ -364,11 +321,10 @@
             $failCount = 0
 
             foreach ($report in $uploadReports) {
-                $skillName = Get-SkillName -FileName $report.Name
                 $benchmarkInstance = Get-BenchmarkInstance -FileName $report.Name
-                $blobPath = "$Date/$skillName/$benchmarkInstance/$($report.Name)"
+                $blobPath = "$Date/$benchmarkInstance/$($report.Name)"
 
-                Write-Host "Uploading $($report.Name) -> $ContainerName/$blobPath (skill: $skillName, instance: $benchmarkInstance)"
+                Write-Host "Uploading $($report.Name) -> $ContainerName/$blobPath (instance: $benchmarkInstance)"
 
                 $azArgs = @(
                     "storage"
@@ -398,7 +354,7 @@
                 # Upload corresponding eval_report.json files if they exist (one per model)
                 $evalReportFiles = Get-ChildItem -Path $OutputPath -Filter "*_${benchmarkInstance}_eval_report.json" -ErrorAction SilentlyContinue
                 foreach ($evalReportFile in $evalReportFiles) {
-                    $evalBlobPath = "$Date/$skillName/$benchmarkInstance/$($evalReportFile.Name)"
+                    $evalBlobPath = "$Date/$benchmarkInstance/$($evalReportFile.Name)"
                     Write-Host "Uploading $($evalReportFile.Name) -> $ContainerName/$evalBlobPath"
 
                     $evalAzArgs = @(
