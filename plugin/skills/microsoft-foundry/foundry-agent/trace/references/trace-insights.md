@@ -1,6 +1,6 @@
-# Optimization Insights — Explore Agent Improvement Opportunities
+# Trace Insights — Surface Agent Health from Telemetry
 
-Surface actionable optimization insights for a Foundry agent by calling the Agent Insights API, which analyzes trace telemetry from Application Insights.
+Surface actionable trace insights for a Foundry agent by calling the Agent Insights API, which analyzes trace telemetry from Application Insights.
 
 ## Prerequisites
 
