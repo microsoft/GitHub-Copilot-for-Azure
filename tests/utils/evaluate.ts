@@ -5,7 +5,49 @@ import { type AgentMetadata } from "./agent-runner";
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
 /**
+ * Strip content that is not actually executed as shell commands.
+ * Removes heredoc bodies, shell comments, and PowerShell here-strings
+ * so that pattern matching only hits real commands.
+ */
+export function stripNonExecutableContent(command: string): string {
+  const lines = command.split("\n");
+  const result: string[] = [];
+  let heredocDelimiter: string | null = null;
+
+  for (const line of lines) {
+    if (heredocDelimiter !== null) {
+      // Inside a heredoc — check if this line is the closing delimiter
+      if (line.trim() === heredocDelimiter) {
+        heredocDelimiter = null;
+      }
+      continue;
+    }
+
+    // Detect heredoc opener: << or <<- followed by optional quotes around delimiter
+    const heredocMatch = line.match(/<<-?\s*['"]?([A-Za-z_][\w-]*)['"]?/);
+    if (heredocMatch) {
+      heredocDelimiter = heredocMatch[1];
+      // Keep the portion of the line before the heredoc (e.g., `cat > file`)
+      // but strip the heredoc body that follows on subsequent lines
+      result.push(line.substring(0, line.indexOf("<<")));
+      continue;
+    }
+
+    // Skip shell comment lines (but keep shebangs)
+    if (/^\s*#[^!]/.test(line) || /^\s*#$/.test(line)) {
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result.join("\n");
+}
+
+/**
  * Extract all shell command strings (powershell and bash) from agent metadata.
+ * Non-executable content (heredoc bodies, comments) is stripped so that
+ * pattern matching via {@link matchesCommand} only matches real commands.
  */
 function getShellCommands(metadata: AgentMetadata): string[] {
   return getToolCalls(metadata)
@@ -13,7 +55,7 @@ function getShellCommands(metadata: AgentMetadata): string[] {
     .map(event => {
       const data = event.data as Record<string, unknown>;
       const args = data.arguments as { command?: string } | undefined;
-      return args?.command ?? "";
+      return stripNonExecutableContent(args?.command ?? "");
     });
 }
 
