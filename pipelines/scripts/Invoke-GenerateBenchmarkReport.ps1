@@ -288,7 +288,15 @@
         Write-Host "`n--- Uploading reports to Azure Blob Storage ---"
 
         if (-not $Date) {
-            $Date = Get-Date -Format "yyyy-MM-dd"
+            # Use run_ids.json last-write time as the benchmark run date (file is created by Invoke-Benchmarks.ps1 at launch time)
+            $runIdsFileInfo = Get-Item -Path $runIdsFile -ErrorAction SilentlyContinue
+            if ($runIdsFileInfo) {
+                $Date = $runIdsFileInfo.LastWriteTimeUtc.ToString("yyyy-MM-dd")
+                Write-Host "Using benchmark run date from run_ids.json timestamp: $Date"
+            } else {
+                $Date = Get-Date -Format "yyyy-MM-dd"
+                Write-Warning "Could not determine benchmark run date, falling back to today's date: $Date"
+            }
         }
 
         function Get-BenchmarkInstance {
