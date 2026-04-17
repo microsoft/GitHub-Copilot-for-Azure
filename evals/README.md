@@ -1,6 +1,10 @@
 # Evals
 
-Skill evaluation suites run by [Vally](https://github.com/microsoft/ai-bench) (`@microsoft/vally-cli`). Each subdirectory corresponds to a skill and contains an `eval.yaml` defining stimuli, graders, and configuration.
+Skill evaluation suites run by [Vally](https://github.com/microsoft/evaluate) (`@microsoft/vally-cli`). Each subdirectory corresponds to a skill and contains an `eval.yaml` defining stimuli, graders, and configuration.
+
+Full docs: <https://aka.ms/vally>
+
+> **You don't need access to the Vally source repo to run evals locally.** You only need the `@microsoft/vally-cli` package from GitHub Packages (see [Prerequisites](#prerequisites) below). If you need source access (e.g., to debug vally internals), reach out via <https://aka.ms/vally>.
 
 ## Prerequisites
 
@@ -58,5 +62,6 @@ After a run, check the output directory (default `./results`):
 
 ## More info
 
-- Vally docs & source: <https://github.com/microsoft/ai-bench>
+- Vally docs: <https://aka.ms/vally>
+- Vally source: <https://github.com/microsoft/evaluate>
 - Suite definitions: [`.vally.yaml`](../.vally.yaml)
