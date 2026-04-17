@@ -4,7 +4,7 @@ Analyze production traces for Foundry agents using Application Insights and GenA
 
 ## When to Use This Skill
 
-USE FOR: analyze agent traces, search agent conversations, find failing traces, slow traces, latency analysis, trace search, conversation history, agent errors in production, debug agent responses, App Insights traces, GenAI telemetry, trace correlation, span tree, production trace analysis, evaluation results, evaluation scores, eval run results, find by response ID, get agent trace by conversation ID, agent evaluation scores from App Insights.
+USE FOR: analyze agent traces, search agent conversations, find failing traces, slow traces, latency analysis, trace search, conversation history, agent errors in production, debug agent responses, App Insights traces, GenAI telemetry, trace correlation, span tree, production trace analysis, evaluation results, evaluation scores, eval run results, find by response ID, get agent trace by conversation ID, agent evaluation scores from App Insights, optimization insights, optimize agent, improve agent performance, agent recommendations.
 
 > **USE THIS SKILL INSTEAD OF** `azure-monitor` or `azure-applicationinsights` when querying Foundry agent traces, evaluations, or GenAI telemetry. This skill has correct GenAI OTel attribute mappings and tested KQL templates that those general tools lack.
 
@@ -31,6 +31,7 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 | "My agent is slow" / "Latency analysis" | [Analyze Latency](references/analyze-latency.md) |
 | "Show me this conversation" / "Trace detail" | [Conversation Detail](references/conversation-detail.md) |
 | "Find eval results for response ID" / "eval scores from traces" | [Eval Correlation](references/eval-correlation.md) |
+| "How can I improve my agent?" / "optimization insights" | [Optimization Insights](references/optimization-insights.md) |
 | "What KQL do I need?" | [KQL Templates](references/kql-templates.md) |
 
 ## Before Starting — Resolve App Insights Connection
