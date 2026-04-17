@@ -6,7 +6,15 @@ The application is identified using legacy Azure SDKs for Java (`com.microsoft.a
 
 Follow these steps:
 
-* **Inventory legacy dependencies**: Use tools such as `mvn dependency:tree` or `gradlew dependencies` to find every `com.microsoft.azure.*` SDK and map each one to its modern counterpart under `com.azure.*`.
+* **Inventory legacy dependencies**: Use tools such as `mvn dependency:tree` or `gradlew dependencies` to find every `com.microsoft.azure.*` SDK and map each one to its modern counterpart under `com.azure.*`. Do **not** rely solely on the root reactor — also grep the entire repository for legacy coordinates so you catch build files that aren't reachable from the root project. Run from the repo root:
+
+  ```bash
+  # Find every file referencing legacy groupIds/artifacts, including CI, samples, parent poms, buildSrc, version catalogs, Dockerfiles, and docs.
+  grep -RIn --exclude-dir={.git,target,build,node_modules,out} \
+    -E 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["'\''])' .
+  ```
+
+  Commonly overlooked locations: `.ci/**/pom.xml`, `ci/**`, parent/BOM poms, `buildSrc/`, `gradle/libs.versions.toml`, `settings.gradle(.kts)`, `archetype-resources/`, sample sub-modules, Dockerfiles, shell/PowerShell scripts, and README snippets. Every hit must end up on the migration file list.
 
 * **Adopt supported SDKs**: Replace the legacy dependencies with their modern equivalents in your `pom.xml` or `build.gradle`, following the migration guide to align feature parity and new SDK names.
 
@@ -49,7 +57,22 @@ Use these package-specific references:
 **Make sure**
 - Migrated project pass compilation.
 - All tests pass. Don't silently skip tests.
-- No legacy SDK dependencies/references exist.
+- No legacy SDK dependencies/references exist. This is a **hard gate**, not a self-assessment — you must prove it by running the commands below from the repo root and showing they return zero hits. Do not declare migration complete until all three return empty:
+
+  ```bash
+  # 1. Legacy groupId / artifact references in ANY text file (pom.xml, *.gradle, *.gradle.kts, libs.versions.toml, Dockerfile, *.sh, *.md, etc.)
+  grep -RIn --exclude-dir={.git,target,build,node_modules,out} \
+    -E 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["'\''])' .
+
+  # 2. Legacy imports still in Java sources
+  grep -RIn --include='*.java' -E '^\s*import\s+com\.microsoft\.azure\.' .
+
+  # 3. Every pom.xml and *.gradle(.kts) file in the repo (not just the root reactor) — eyeball each for legacy coordinates
+  find . -type d \( -name .git -o -name target -o -name build -o -name node_modules \) -prune -o \
+    -type f \( -name 'pom.xml' -o -name '*.gradle' -o -name '*.gradle.kts' -o -name 'libs.versions.toml' \) -print
+  ```
+
+  Pay special attention to files outside the root Maven/Gradle reactor — e.g. `.ci/**/pom.xml`, `ci/**`, `buildSrc/`, sample sub-modules, archetype resources — these are frequently missed because `mvn dependency:tree` on the root project never visits them.
 - If azure-sdk-bom is used, ensure **NO** explicit version dependencies for Azure libraries that are in azure-sdk-bom.
   E.g. Instead of `implementation 'com.azure.resourcemanager:azure-resourcemanager:2.60.0'`, we should use `implementation 'com.azure.resourcemanager:azure-resourcemanager'`.
   For Azure libraries in azure-sdk-bom, check https://repo1.maven.org/maven2/com/azure/azure-sdk-bom/{bom_version}/azure-sdk-bom-{bom_version}.pom (bom_version be version used during migration)
