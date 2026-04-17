@@ -18,7 +18,8 @@ These errors occur **during** `azd up` execution:
 | `map has no entry for key "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID"` | Missing managed identity env vars | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `map has no entry for key "MANAGED_IDENTITY_CLIENT_ID"` | Missing managed identity client ID | See [Missing Container Registry Variables](#missing-container-registry-variables) |
 | `Operation expired` / revision creation timeout (900s) | RBAC propagation delay — Container App's managed identity doesn't have `AcrPull` on ACR yet | See [Container App Revision Timeout](#container-app-revision-timeout) |
-| `found '2' resources tagged with 'azd-service-name: <name>'` | Previous deployment left duplicate-tagged resources in same RG | **Preferred**: Create fresh env with `azd env new <new-name>`, set subscription/location, redeploy. **Alternative**: Delete conflicting resources (requires `ask_user`). |
+| `found '2' resources tagged with 'azd-service-name: <name>'` | Previous deployment left duplicate-tagged resources in same RG | **Preferred**: Create fresh env with `azd env new <new-name> --no-prompt`, set subscription/location, redeploy. **Alternative**: Delete conflicting resources (requires `ask_user`). |
+| Literal `{{ .Env.* }}` in Terraform errors | azd does not interpolate template variables in `.tfvars.json` | See [Unresolved Terraform Template Variables](#unresolved-terraform-template-variables) |
 
 > ℹ️ **Pre-flight validation**: Run `azure-validate` before deployment to catch configuration errors early. See [Pre-Deploy Checklist](../../pre-deploy-checklist.md).
 
@@ -27,9 +28,9 @@ These errors occur **during** `azd up` execution:
 **Symptom:** `azd up` provisions infrastructure successfully but the Container App revision creation times out after ~900 seconds. The Container App enters a `Failed` provisioning state with no active revision. The `azd` output shows `Operation expired` or `The operation did not complete within the permitted time`.
 
 **Cause:** Azure RBAC propagation delay. When `azd up` runs both `azd provision` and `azd deploy` in a single step:
-1. Bicep creates the Container App with a system-assigned managed identity
-2. Bicep creates an `AcrPull` role assignment for that identity on the ACR
-3. `azd deploy` immediately pushes the image and creates a new Container App revision
+1. Bicep creates the Container App with a system-assigned managed identity and a public placeholder image
+2. Bicep creates an `AcrPull` role assignment for that identity on ACR in a separate module using the two-phase deployment pattern
+3. `azd deploy` immediately pushes the real image and creates a new Container App revision
 4. The revision tries to pull the image from ACR, but the `AcrPull` role assignment hasn't propagated yet (can take 1–5 minutes)
 5. The image pull fails repeatedly until the 900-second timeout is reached
 
@@ -48,6 +49,13 @@ az role assignment list --scope $(az acr show --name <acr-name> --resource-group
   --assignee-object-id "$PRINCIPAL_ID" --query "[].roleDefinitionName" -o tsv
 ```
 
+**PowerShell:**
+```powershell
+$PrincipalId = az containerapp identity show --name <app-name> --resource-group <resource-group> --query principalId -o tsv
+$AcrScope = az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv
+az role assignment list --scope $AcrScope --assignee-object-id $PrincipalId --query "[].roleDefinitionName" -o tsv
+```
+
 3. **If AcrPull is missing, assign it:**
 ```bash
 az role assignment create \
@@ -55,6 +63,16 @@ az role assignment create \
   --assignee-principal-type ServicePrincipal \
   --role AcrPull \
   --scope $(az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv)
+```
+
+**PowerShell:**
+```powershell
+$AcrScope = az acr show --name <acr-name> --resource-group <resource-group> --query id -o tsv
+az role assignment create `
+  --assignee-object-id $PrincipalId `
+  --assignee-principal-type ServicePrincipal `
+  --role AcrPull `
+  --scope $AcrScope
 ```
 
 4. **Wait for propagation, then redeploy:**
@@ -75,6 +93,27 @@ for attempt in 1 2 3 4 5; do
     exit 1
   fi
 done
+```
+
+**PowerShell:**
+```powershell
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr show --name <acr-name> --resource-group <resource-group> --query loginServer -o tsv)
+
+for ($attempt = 1; $attempt -le 5; $attempt++) {
+    Write-Output "Waiting for RBAC propagation (attempt $attempt/5)..."
+    Start-Sleep -Seconds 60
+
+    azd deploy --no-prompt
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output "Deployment succeeded after RBAC propagation."
+        break
+    }
+
+    if ($attempt -eq 5) {
+        Write-Output "Deployment still failing after 5 minutes. Re-check AcrPull assignment and Container App revision status."
+        exit 1
+    }
+}
 ```
 
 > 💡 **Prevention:** To avoid this in future deployments, ensure the Bicep template includes the `AcrPull` role assignment with `principalType: 'ServicePrincipal'`, and consider using `azd provision` + `azd deploy` as separate steps instead of `azd up` to allow RBAC propagation time between infrastructure creation and app deployment.
@@ -114,6 +153,14 @@ docker push <acr-name>.azurecr.io/<image>:<tag>
 ACR_USER=$(az acr credential show --name <acr-name> --query username -o tsv)
 ACR_PASS=$(az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv)
 docker login <acr-name>.azurecr.io -u "$ACR_USER" -p "$ACR_PASS"
+docker push <acr-name>.azurecr.io/<image>:<tag>
+```
+
+**PowerShell (Method 2):**
+```powershell
+$AcrUser = az acr credential show --name <acr-name> --query username -o tsv
+$AcrPass = az acr credential show --name <acr-name> --query "passwords[0].value" -o tsv
+docker login <acr-name>.azurecr.io -u $AcrUser -p $AcrPass
 docker push <acr-name>.azurecr.io/<image>:<tag>
 ```
 
@@ -179,6 +226,50 @@ azd deploy --no-prompt
 ```
 
 > 💡 **Tip:** This issue is specific to Aspire limited mode. Manually setting these environment variables after `azd provision` is the recommended workaround.
+
+## Unresolved Terraform Template Variables
+
+**Symptom:** Terraform receives literal Go-style template strings instead of resolved values during `azd provision`:
+
+```
+Error: Invalid value for variable "environment_name"
+  The value "{{ .Env.AZURE_ENV_NAME }}" is not valid.
+```
+
+Or Terraform silently uses the literal string, causing resource naming failures, state conflicts, and cascading errors that lead to deployment timeouts.
+
+**Cause:** azd reads `infra/main.tfvars.json`, substitutes `${VAR}` references using its built-in envsubst, and passes the resolved file to Terraform via `-var-file=`. Go-style `{{ .Env.* }}` variables are only processed in `azure.yaml` and service manifests — they are **NOT** interpolated in `.tfvars.json` or any Terraform variable files. If `azure-prepare` generated a `main.tfvars.json` with Go-style template expressions, those literal strings are passed to Terraform.
+
+**Solution:**
+
+1. **Fix the syntax** in `infra/main.tfvars.json` — replace Go-style `{{ .Env.* }}` with `${VAR}`:
+   ```json
+   {
+       "environment_name": "${AZURE_ENV_NAME}",
+       "location": "${AZURE_LOCATION}",
+       "subscription_id": "${AZURE_SUBSCRIPTION_ID}"
+   }
+   ```
+
+2. **Or use `TF_VAR_*` environment variables** if you don't have `main.tfvars.json`:
+   ```bash
+   azd env set TF_VAR_environment_name "$(azd env get-value AZURE_ENV_NAME)"
+   azd env set TF_VAR_location "$(azd env get-value AZURE_LOCATION)"
+   azd env set TF_VAR_subscription_id "$(azd env get-value AZURE_SUBSCRIPTION_ID)"
+   ```
+
+3. **Ensure `variables.tf`** declares all required variables:
+   ```hcl
+   variable "environment_name" { type = string }
+   variable "location" { type = string }
+   ```
+
+4. **Re-run deployment:**
+   ```bash
+   azd up --no-prompt
+   ```
+
+> ⚠️ **Prevention:** This issue should be caught by `azure-validate` Step 10 (Template Variable Resolution Check) before deployment. If you encounter it, re-run validation after fixing.
 
 ## Retry
 

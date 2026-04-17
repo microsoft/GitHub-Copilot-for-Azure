@@ -1,12 +1,16 @@
 # SQL Database - Bicep Patterns
 
+> ⛔ **CRITICAL — SQL Server Bicep MUST use Entra-only authentication. NEVER include `administratorLogin` or `administratorLoginPassword` anywhere in a Bicep file — not even inside a conditional (`condition ? { ... } : { administratorLoginPassword: ... }`) branch. If either property name appears anywhere in the file, the deployment will be rejected. Always use the pattern below.**
+
 ## Basic Setup (Entra-Only Authentication)
 
-**Recommended approach** — Uses Microsoft Entra ID authentication only. Required for subscriptions with policies enforcing Entra-only authentication.
+**Required approach** — Uses Microsoft Entra ID authentication only. Required for subscriptions with Entra-only policies; SQL admin authentication is disabled by policy in those environments.
 
 ```bicep
 param principalId string
 param principalName string
+@allowed(['User', 'Group', 'Application'])
+param principalType string = 'User'
 
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: '${resourcePrefix}-sql-${uniqueHash}'
@@ -14,7 +18,7 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   properties: {
     administrators: {
       administratorType: 'ActiveDirectory'
-      principalType: 'User'
+      principalType: principalType
       login: principalName
       sid: principalId
       tenantId: subscription().tenantId
@@ -54,6 +58,8 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2022-05-01-previe
 ```bash
 az ad signed-in-user show --query "{id:id, name:displayName}" -o json
 ```
+
+> ⚠️ **Warning:** If deploying from CI/CD with a service principal, set `principalType` to `'Application'`. The default `'User'` only works for interactive (human) deployments. Mismatched `principalType` causes `UnmatchedPrincipalType` errors during provisioning.
 
 2. Set as azd environment variables:
 ```bash
@@ -107,8 +113,57 @@ resource sqlPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = {
 }
 ```
 
-## Legacy SQL Authentication (⛔ DO NOT USE)
+## ⛔ MANDATORY: SQL Data-Plane Access via postprovision Hook
 
-> ❌ **DEPRECATED — DO NOT generate `administratorLogin` or `administratorLoginPassword` properties.**
-> SQL admin authentication is disabled in subscriptions with Entra-only policies and violates Azure security best practices.
+> **CRITICAL:** ARM/Bicep role assignments (`SQL DB Contributor`) only grant **control-plane** access. They do **not** grant the app **data-plane** access to the database. Without the T-SQL grant below, apps using `Authentication=Active Directory Default` will crash on startup with a login failure.
+>
+> **When you generate SQL + Managed Identity infrastructure you MUST also:**
+> 1. Add a `postprovision` hook to `azure.yaml` that runs the SQL grant script
+> 2. Copy the pre-built scripts from [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) to `scripts/` in the user's project root
+
+**azure.yaml hooks section (add or merge):**
+
+```yaml
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: ./scripts/grant-sql-access.sh
+    windows:
+      shell: pwsh
+      run: ./scripts/grant-sql-access.ps1
+```
+
+**Copy the pre-built scripts** — Read [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) and write them verbatim to the project's `scripts/` folder. Do not regenerate them from scratch.
+
+Key behaviours of the scripts:
+- Installs the `rdbms-connect` Azure CLI extension if not already present (required for `az sql db query`)
+- Loads `azd env get-values` safely (no `eval`)
+- Grants `db_datareader` + `db_datawriter` by default (idempotent)
+- Set `SQL_GRANT_DDLADMIN=true` in the azd env to also grant `db_ddladmin` (needed for EF Core migrations)
+- `SERVICE_WEB_NAME` takes priority over `SERVICE_API_NAME` when resolving the app identity
+
+> 💡 Make executable: `chmod +x scripts/*.sh`
+
+> 💡 If the app also uses EF Core migrations, combine this with the migration hook — see the `azure-deploy` skill's `references/recipes/azd/sql-managed-identity.md`.
+
+## Legacy SQL Authentication (⛔ DO NOT USE - EVER)
+
+> ❌ **PROHIBITED — NEVER generate `administratorLogin` or `administratorLoginPassword` properties.**
+> This applies unconditionally: do NOT include them in direct assignments, conditional expressions, ternary branches, parameter defaults, or any other construct. The **text** of these property names must not appear anywhere in a generated `.bicep` file.
+> SQL admin authentication is disabled in all subscriptions with Entra-only policies and violates Azure security best practices.
 > Always use the Entra-only authentication pattern at the top of this file.
+>
+> ❌ **DO NOT generate conditional patterns like:**
+> ```bicep
+> properties: useEntraAuth ? {
+>   administrators: {
+>     azureADOnlyAuthentication: true
+>     // ...
+>   }
+> } : {
+>   administratorLogin: sqlAdminLogin          // ❌ PROHIBITED
+>   administratorLoginPassword: sqlAdminPassword  // ❌ PROHIBITED
+> }
+> ```
+> Use only the unconditional Entra-only pattern. No fallback. No toggle. No conditional.

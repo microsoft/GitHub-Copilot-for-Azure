@@ -4,7 +4,7 @@ description: "Execute Azure deployments for ALREADY-PREPARED applications that h
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.13"
+  version: "1.0.23"
 ---
 
 # Azure Deploy
@@ -61,12 +61,13 @@ Activate this skill when user wants to:
 | 1 | **Check Plan** — Read `.azure/deployment-plan.md`, verify status = `Validated` AND **Validation Proof** section is populated | `.azure/deployment-plan.md` |
 | 2 | **Pre-Deploy Checklist** — MUST complete ALL steps | [Pre-Deploy Checklist](references/pre-deploy-checklist.md) |
 | 3 | **Load Recipe** — Based on `recipe.type` in `.azure/deployment-plan.md` | [recipes/README.md](references/recipes/README.md) |
-| 4 | **Execute Deploy** — Follow recipe steps. For Container Apps with managed identity + ACR, watch for RBAC propagation delays (see [Container App Revision Timeout](references/recipes/azd/errors.md#container-app-revision-timeout)) | Recipe README |
-| 5 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
-| 6 | **Handle Errors** — See recipe's `errors.md` | — |
-| 7 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
-| 8 | **Live Role Verification** — Query Azure to confirm provisioned RBAC roles are correct and sufficient | [live-role-verification.md](references/live-role-verification.md) |
-| 9 | **Report Results** — Present deployed endpoint URLs to the user as fully-qualified `https://` links | [Verification](references/recipes/azd/verify.md) |
+| 4 | **RBAC Health Check** — For Container Apps + ACR with managed identity: run `azd provision --no-prompt`, then verify `AcrPull` role has propagated before proceeding (see checklist) | [Pre-Deploy Checklist — Container Apps RBAC](references/pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) |
+| 5 | **Execute Deploy** — Follow recipe steps | Recipe README |
+| 6 | **Post-Deploy** — Configure SQL managed identity and apply EF migrations if applicable | [Post-Deployment](references/recipes/azd/post-deployment.md) |
+| 7 | **Handle Errors** — See recipe's `errors.md` | — |
+| 8 | **Verify Success** — Confirm deployment completed and endpoints are accessible | [Verification](references/recipes/azd/verify.md) |
+| 9 | **Live Role Verification** — Query Azure to confirm provisioned RBAC roles are correct and sufficient | [live-role-verification.md](references/live-role-verification.md) |
+| 10 | **Report Results** — Present deployed endpoint URLs to the user as fully-qualified `https://` links | [Verification](references/recipes/azd/verify.md) |
 
 > **⛔ URL FORMAT RULE**
 >
@@ -88,7 +89,7 @@ Activate this skill when user wants to:
 | `mcp_azure_mcp_subscription_list` | List available subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups in subscription |
 | `mcp_azure_mcp_azd` | Execute AZD commands |
-| `azure__role` | List role assignments for live RBAC verification (step 8) |
+| `azure__role` | List role assignments for live RBAC verification (step 9) |
 
 ## References
 

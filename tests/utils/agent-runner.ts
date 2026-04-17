@@ -113,6 +113,11 @@ export interface AgentRunConfig {
    * If undefined, all the skills in azure plugin will be included.
    */
   includeSkills?: string[];
+
+  /**
+   * Number of milliseconds as timeout for follow ups.
+   */
+  followUpTimeout?: number;
 }
 
 interface KeywordOptions {
@@ -173,7 +178,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   // Track message deltas to reconstruct full messages
   const messageDeltas: Record<string, string> = {};
   const reasoningDeltas: Record<string, string> = {};
-  const toolResults: Record<string, { success: boolean; content?: string; error?: string }> = {};
+  const toolResults: Record<string, { success: boolean; timestamp: string; content?: string; error?: string; }> = {};
 
   // First pass: collect all tool results
   for (const event of agentMetadata.events) {
@@ -183,6 +188,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
       const error = event.data.error as { message?: string } | undefined;
       toolResults[toolCallId] = {
         success: event.data.success as boolean,
+        timestamp: event.timestamp,
         content: result?.content,
         error: error?.message
       };
@@ -260,6 +266,11 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
           // Add tool response if available
           const result = toolResults[toolCallId];
           if (result) {
+            const durationSec = (new Date(result.timestamp).getTime() - new Date(event.timestamp).getTime()) / 1000;
+            lines.push(`duration: ${durationSec.toFixed(3)} sec`);
+            // Copilot SDK truncates the tool response if it's too long
+            // Record the estimated token count for what it sends to the LLM
+            lines.push(`estimated llm token count: ${((result?.content ?? result?.error)?.length ?? 0) / 4}`);
             if (result.success && result.content) {
               let content = result.content;
               if (content.length > 500) {
@@ -487,7 +498,7 @@ export function useAgentRunner() {
 
   async function run(config: AgentRunConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
-    const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
+    const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
 

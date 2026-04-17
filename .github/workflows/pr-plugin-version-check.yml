@@ -6,6 +6,7 @@ on:
     paths:
       - 'plugin/.plugin/plugin.json'
       - 'plugin/.claude-plugin/plugin.json'
+      - 'plugin/.cursor-plugin/plugin.json'
       - 'plugin/CHANGELOG.md'
 
 permissions:

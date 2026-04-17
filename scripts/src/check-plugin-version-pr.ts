@@ -12,7 +12,8 @@ import { fileURLToPath } from "node:url";
 
 const PLUGIN_PATHS = [
   "plugin/.plugin/plugin.json",
-  "plugin/.claude-plugin/plugin.json"
+  "plugin/.claude-plugin/plugin.json",
+  "plugin/.cursor-plugin/plugin.json"
 ] as const;
 
 interface PluginConfig {

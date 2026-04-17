@@ -1,16 +1,3 @@
-parameters:
-- name: buildVersionToDownload
-  displayName: 'Build version to download'
-  type: string
-  default: 'latestFromBranch'
-  values:
-  - latestFromBranch
-  - specific
-- name: buildVersionDetail
-  displayName: 'Build version detail (branch name or build ID)'
-  type: string
-  default: 'refs/heads/main'
-
 trigger: none
 pr: none
 
@@ -36,20 +23,6 @@ stages:
   - job: ReportBenchmark
     displayName: 'Report Copilot Benchmarks'
     steps:
-
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download benchmark results artifact'
-      inputs:
-        buildType: specific
-        project: 'internal'
-        definition: 8091
-        buildVersionToDownload: ${{ parameters.buildVersionToDownload }}
-        ${{ if eq(parameters.buildVersionToDownload, 'specific') }}:
-          runId: ${{ parameters.buildVersionDetail }}
-        ${{ else }}:
-          branchName: ${{ parameters.buildVersionDetail }}
-        artifactName: 'benchmark-run-ids'
-        targetPath: '$(Pipeline.Workspace)/benchmark-run-ids'
 
     - task: NodeTool@0
       displayName: 'Setup Node.js'
@@ -79,8 +52,9 @@ stages:
         scriptLocation: 'scriptPath'
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-GenerateBenchmarkReport.ps1
         scriptArguments: >
-          -InputPath "$(Pipeline.Workspace)/benchmark-run-ids"
           -OutputPath "$(Build.ArtifactStagingDirectory)"
+          -StorageAccountName "msbenchnightlydata"
+          -ContainerName "msbench-reports"
 
     - publish: $(Build.ArtifactStagingDirectory)
       artifact: benchmark-reports
