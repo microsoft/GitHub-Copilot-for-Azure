@@ -37,7 +37,7 @@ metadata:
 | Source | Target | Reference |
 |--------|--------|-----------|
 | Azure Functions Consumption Plan | Azure Functions Flex Consumption Plan | [consumption-to-flex.md](references/services/functions/consumption-to-flex.md) |
-| Legacy Azure Java SDK (`com.microsoft.azure.*`) | Modern Azure Java SDK (`com.azure.*`) | [sdk/java-legacy/README.md](references/sdk/java-legacy/README.md) |
+| Legacy Azure Java SDK (`com.microsoft.azure.*`) | Modern Azure Java SDK (`com.azure.*`) | [languages/java/README.md](references/languages/java/README.md) |
 
 > SDK upgrade scenarios (e.g. Java legacy → modern) run a **source-code modernization flow** that is distinct from Azure service/plan/SKU upgrades: follow the scenario reference, **not** the Steps below.
 

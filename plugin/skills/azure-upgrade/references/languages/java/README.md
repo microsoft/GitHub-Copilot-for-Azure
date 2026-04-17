@@ -10,14 +10,14 @@ Upgrade all `com.microsoft.azure.*` to `com.azure.*` equivalents in one autonomo
 
 - [Rules and Workflow](./RULES.md) — success criteria, anti-excuse rules, workflow
 - [Migration Guidelines](./INSTRUCTION.md) — package mappings, code samples, validation
-- [Plan Template](../../../templates/java-legacy/PLAN_TEMPLATE.md) · [Progress Template](../../../templates/java-legacy/PROGRESS_TEMPLATE.md) · [Summary Template](../../../templates/java-legacy/SUMMARY_TEMPLATE.md)
+- [Plan Template](./templates/PLAN_TEMPLATE.md) · [Progress Template](./templates/PROGRESS_TEMPLATE.md) · [Summary Template](./templates/SUMMARY_TEMPLATE.md)
 
 ## Workflow
 
-1. **Precheck** — Verify Maven/Gradle project, detect JDK/build tools, create `plan.md` from [Plan Template](../../../templates/java-legacy/PLAN_TEMPLATE.md). If git available, create branch `java-upgrade/{RUN_ID}`.
+1. **Precheck** — Verify Maven/Gradle project, detect JDK/build tools, create `plan.md` from [Plan Template](./templates/PLAN_TEMPLATE.md). If git available, create branch `java-upgrade/{RUN_ID}`.
 2. **Plan** — Inventory deps, consult [Migration Guidelines](./INSTRUCTION.md), populate `plan.md`
-3. **Execute** — Create `progress.md` from [Progress Template](../../../templates/java-legacy/PROGRESS_TEMPLATE.md), migrate build config then source, build/test/fix, commit per step
-4. **Validate** — Create `summary.md` from [Summary Template](../../../templates/java-legacy/SUMMARY_TEMPLATE.md), apply [validation checklist](./INSTRUCTION.md#validation)
+3. **Execute** — Create `progress.md` from [Progress Template](./templates/PROGRESS_TEMPLATE.md), migrate build config then source, build/test/fix, commit per step
+4. **Validate** — Create `summary.md` from [Summary Template](./templates/SUMMARY_TEMPLATE.md), apply [validation checklist](./INSTRUCTION.md#validation)
 
 ## Constraints
 

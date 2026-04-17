@@ -1,12 +1,12 @@
 # BOM Migration — Maven Projects
 
-Run the `upgrade_bom.py` script located at `scripts/java-legacy/upgrade_bom.py` (relative to this skill). It auto-detects Maven and performs two steps:
+Run the `upgrade_bom.py` script located at `references/languages/java/scripts/upgrade_bom.py` (relative to this skill). It auto-detects Maven and performs two steps:
 
 1. **Set/upgrade the BOM** — adds `azure-sdk-bom` if missing, or upgrades the version if already present.
 2. **Remove redundant explicit versions** — strips explicit `<version>` tags from individual Azure dependencies that are now managed by the BOM.
 
 ```bash
-python3 <skill_dir>/scripts/java-legacy/upgrade_bom.py <project_dir> <bom_version>
+python3 <skill_dir>/references/languages/java/scripts/upgrade_bom.py <project_dir> <bom_version>
 ```
 
 Options:

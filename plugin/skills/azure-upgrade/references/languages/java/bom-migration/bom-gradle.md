@@ -6,7 +6,7 @@ Run the same `upgrade_bom.py` script. It auto-detects Gradle and performs:
 2. **Remove redundant explicit versions** — strips inline version strings from Azure dependencies managed by the BOM.
 
 ```bash
-python3 <skill_dir>/scripts/java-legacy/upgrade_bom.py <project_dir> <bom_version>
+python3 <skill_dir>/references/languages/java/scripts/upgrade_bom.py <project_dir> <bom_version>
 ```
 
 Options:
