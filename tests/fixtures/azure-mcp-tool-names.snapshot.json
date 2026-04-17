@@ -1,5 +1,6 @@
 {
   "source": "npx -y @azure/mcp server start (initialize + tools/list)",
+  "toolReferenceConvention": "References must match exact tool names from toolNames. Compound forms like <toolName>_* are not supported.",
   "azureMcpVersion": "3.0.0-beta.3+ae9594a1268710e678c0a6c9f9801212b1ee3694",
   "toolNames": [
     "acr",

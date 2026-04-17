@@ -56,13 +56,6 @@ describe("Azure MCP tool references in skill markdown", () => {
           continue;
         }
 
-        const hasValidNamespacePrefix = snapshot.toolNames.some((snapshotToolName) =>
-          resolvedToolName.startsWith(`${snapshotToolName}_`),
-        );
-        if (hasValidNamespacePrefix) {
-          continue;
-        }
-
         const relativePath = path.relative(skillsRoot, markdownPath);
         unknownReferences.push(`${toolReference} (${relativePath})`);
       }
@@ -74,11 +67,15 @@ describe("Azure MCP tool references in skill markdown", () => {
   test("snapshot file exists and has expected shape", () => {
     const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8")) as {
       source?: string;
+      toolReferenceConvention?: string;
       azureMcpVersion?: string;
       toolNames?: string[];
     };
 
     expect(typeof snapshot.source).toBe("string");
+    expect(snapshot.toolReferenceConvention).toBe(
+      "References must match exact tool names from toolNames. Compound forms like <toolName>_* are not supported.",
+    );
     expect(typeof snapshot.azureMcpVersion).toBe("string");
     expect(Array.isArray(snapshot.toolNames)).toBe(true);
     expect(snapshot.toolNames?.length).toBeGreaterThan(0);
