@@ -113,6 +113,11 @@ export interface AgentRunConfig {
    * If undefined, all the skills in azure plugin will be included.
    */
   includeSkills?: string[];
+
+  /**
+   * Number of milliseconds as timeout for follow ups.
+   */
+  followUpTimeout?: number;
 }
 
 interface KeywordOptions {
@@ -493,7 +498,7 @@ export function useAgentRunner() {
 
   async function run(config: AgentRunConfig): Promise<AgentMetadata> {
     const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
-    const FOLLOW_UP_TIMEOUT = 1800000; // 30 minutes
+    const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
 
