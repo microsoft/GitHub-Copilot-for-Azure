@@ -211,5 +211,10 @@
 
     Write-Host "Saving run IDs to $jsonPath"
     $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
+
+    $timestampPath = Join-Path $OutputPath "timestamp.txt"
+    $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
+    Write-Host "Saving timestamp to $timestampPath: $timestamp"
+    $timestamp | Out-File -FilePath $timestampPath -Encoding utf8 -NoNewline
     
     Write-Host "`nAll $($Model.Count) model runs completed successfully."
