@@ -96,6 +96,7 @@ mcp_azure_mcp_aks({
 
 **Required permissions:**
 - `Microsoft.ContainerService/managedClusters/read`
+- `Microsoft.ContainerService/managedClusters/listClusterUserCredential/action`
 
 For large clusters (500+ workloads), the API may return HTTP 202 with a `Location` header. Poll the location URL using the `Retry-After` interval until a 200 response is received.
 
@@ -205,7 +206,7 @@ For incompatible findings (e.g., hostPath volumes), explain the issue and propos
 1. Generate the fix as a YAML diff
 2. Show the diff with explanation
 3. Wait for explicit approval: "apply", "edit", or "skip"
-4. On approval, write the change using `replace_string_in_file`
+4. On approval, apply the change to the file
 5. Move to the next finding
 
 If the user says "fix all" or "apply all deterministic fixes", first generate a single combined diff containing all eligible `suggestedPatch`-based fixes, show that combined diff with an explanation, and wait for one explicit approval before applying any writes. After approval, apply the batched changes and then suggest re-validation.

@@ -1,7 +1,6 @@
 # AKS Automatic Compatibility Constraint Spec — Condensed Reference
-# Full spec: src/constraint-spec/v1/constraint-spec.yaml
 # Version: 1.1.1 | AKS: 2026-03-15
-# This condensed version is optimized for LLM context. Use full spec for schema details.
+# This condensed version is optimized for LLM context.
 
 apiVersion: aks-automatic.azure.com/v1
 kind: ConstraintSpecReference
