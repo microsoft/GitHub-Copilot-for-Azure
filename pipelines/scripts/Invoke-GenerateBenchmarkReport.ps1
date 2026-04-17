@@ -47,8 +47,8 @@
     Set-StrictMode -Version Latest
     $ErrorActionPreference = "Stop"
 
-    if (!$OutputPath) {
-        throw "OutputPath parameter is required."
+    if (!(Test-Path -Path $OutputPath)) {
+        New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
     }
 
     $vaultName = "kv-msbench-eval-azuremcp"
