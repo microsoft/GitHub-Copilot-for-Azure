@@ -137,6 +137,8 @@ async function main() {
 
   const snapshot = {
     source: "npx -y @azure/mcp server start (initialize + tools/list)",
+    toolReferenceConvention:
+      "References must match exact tool names from toolNames. Compound forms like <toolName>_* are not supported.",
     azureMcpVersion: version,
     toolNames,
   };
