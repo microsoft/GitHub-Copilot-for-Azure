@@ -1,6 +1,6 @@
 import { BlobServiceClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import { BlobEntry, BlobTree, BlobTreeNode } from "./blobEnumerator";
+import { BlobTree, BlobTreeNode } from "./blobEnumerator";
 
 const MSBENCH_STORAGE_ACCOUNT = "msbenchnightlydata";
 const MSBENCH_REPORTS_CONTAINER_NAME = "msbench-reports";
