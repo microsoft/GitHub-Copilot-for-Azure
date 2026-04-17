@@ -52,11 +52,14 @@ describe("Azure MCP tool references in skill markdown", () => {
         const normalizedTool = toolReference.toLowerCase();
         const toolName = normalizedTool.slice(TOOL_NAME_PREFIX.length);
         const resolvedToolName = TOOL_NAME_ALIASES[toolName] ?? toolName;
-        const hasNamespacePrefixMatch = snapshot.toolNames.some((snapshotToolName) =>
-          resolvedToolName.startsWith(`${snapshotToolName}_`),
-        );
+        if (!validToolNames.has(resolvedToolName)) {
+          const hasNamespacePrefixMatch = snapshot.toolNames.some((snapshotToolName) =>
+            resolvedToolName.startsWith(`${snapshotToolName}_`),
+          );
+          if (hasNamespacePrefixMatch) {
+            continue;
+          }
 
-        if (!validToolNames.has(resolvedToolName) && !hasNamespacePrefixMatch) {
           const relativePath = path.relative(skillsRoot, markdownPath);
           unknownReferences.push(`${toolReference} (${relativePath})`);
         }
