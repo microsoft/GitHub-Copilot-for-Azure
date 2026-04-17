@@ -51,6 +51,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Steps");
       expect(skill.content).toContain("## Migration Scenarios");
       expect(skill.content).toContain("## Output Directory");
+      expect(skill.content).toContain("<source-folder>-azure/");
     });
 
     test("references azure-prepare for post-migration", () => {
@@ -92,6 +93,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("includes GCP Cloud Run source in scenario table", () => {
       expect(skill.content).toContain("GCP Cloud Run");
+    });
+  });
+
+  describe("Kubernetes to Container Apps Scenario", () => {
+    test("includes Kubernetes migration scenario", () => {
+      expect(skill.content).toContain("Kubernetes");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references k8s-to-container-apps guide", () => {
+      expect(skill.content).toContain("k8s-to-container-apps.md");
+    });
+
+    test("includes GKE/EKS sources in scenario table", () => {
+      expect(skill.content).toMatch(/GKE|EKS|Kubernetes/);
     });
   });
 });
