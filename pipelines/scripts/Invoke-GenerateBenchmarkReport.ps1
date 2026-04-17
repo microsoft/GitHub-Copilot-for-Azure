@@ -267,7 +267,7 @@
                     if ($model) { $evalContent | Add-Member -NotePropertyName 'model' -NotePropertyValue $model -Force }
                     $evalContent | Add-Member -NotePropertyName 'instance_id' -NotePropertyValue $instanceName -Force
 
-                    $destination = Join-Path $OutputPath "${instanceName}_eval_report.json"
+                    $destination = Join-Path $OutputPath "${model}_${instanceName}_eval_report.json"
                     $evalContent | ConvertTo-Json -Depth 10 | Set-Content -Path $destination -Encoding UTF8
                     Write-Host "Saved enriched eval_report.json for instance '$instanceName' (model: $model) to $destination"
                     $evalCount++
@@ -395,11 +395,11 @@
                     $successCount++
                 }
 
-                # Upload corresponding eval_report.json if it exists
-                $evalReportFile = Join-Path $OutputPath "${benchmarkInstance}_eval_report.json"
-                if (Test-Path $evalReportFile) {
-                    $evalBlobPath = "$Date/$skillName/$benchmarkInstance/eval_report.json"
-                    Write-Host "Uploading eval_report.json -> $ContainerName/$evalBlobPath"
+                # Upload corresponding eval_report.json files if they exist (one per model)
+                $evalReportFiles = Get-ChildItem -Path $OutputPath -Filter "*_${benchmarkInstance}_eval_report.json" -ErrorAction SilentlyContinue
+                foreach ($evalReportFile in $evalReportFiles) {
+                    $evalBlobPath = "$Date/$skillName/$benchmarkInstance/$($evalReportFile.Name)"
+                    Write-Host "Uploading $($evalReportFile.Name) -> $ContainerName/$evalBlobPath"
 
                     $evalAzArgs = @(
                         "storage"
@@ -412,7 +412,7 @@
                         "--name"
                         $evalBlobPath
                         "--file"
-                        $evalReportFile
+                        $evalReportFile.FullName
                         "--auth-mode"
                         "login"
                         "--overwrite"
@@ -420,7 +420,7 @@
 
                     az @evalAzArgs
                     if ($LASTEXITCODE -ne 0) {
-                        Write-Warning "Failed to upload eval_report.json for instance $benchmarkInstance"
+                        Write-Warning "Failed to upload $($evalReportFile.Name) for instance $benchmarkInstance"
                         $failCount++
                     } else {
                         $successCount++
