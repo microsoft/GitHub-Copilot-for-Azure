@@ -24,12 +24,17 @@ function listServerTools() {
     });
 
     let buffer = "";
+    let stderrOutput = "";
     let settled = false;
     const timeout = setTimeout(() => {
       if (settled) return;
       settled = true;
       child.kill("SIGTERM");
-      reject(new Error("Timed out waiting for Azure MCP server tools list."));
+      reject(
+        new Error(
+          `Timed out after 30 seconds waiting for Azure MCP server tools list.${stderrOutput ? `\nStderr: ${stderrOutput.trim()}` : ""}`,
+        ),
+      );
     }, 30_000);
 
     const cleanup = () => {
@@ -42,8 +47,8 @@ function listServerTools() {
     };
 
     child.stderr.on("data", (chunk) => {
-      // Keep stderr drains to avoid potential backpressure deadlocks.
-      chunk.toString();
+      // Drain stderr to avoid potential backpressure deadlocks and keep tail output for debugging.
+      stderrOutput = `${stderrOutput}${chunk.toString()}`.slice(-4000);
     });
 
     child.on("error", (error) => {
@@ -59,7 +64,7 @@ function listServerTools() {
       cleanup();
       reject(
         new Error(
-          `Azure MCP server exited before returning tools (code=${code ?? "null"}, signal=${signal ?? "null"}).`,
+          `Azure MCP server exited before returning tools (code=${code ?? "null"}, signal=${signal ?? "null"}).${stderrOutput ? `\nStderr: ${stderrOutput.trim()}` : ""}`,
         ),
       );
     });

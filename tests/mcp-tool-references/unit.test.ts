@@ -3,7 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const TOOL_NAME_PREFIX = "mcp_azure_mcp_";
-const TOOL_NAME_PATTERN = /mcp_azure_mcp_[a-z0-9_-]+/gi;
+const TOOL_NAME_PATTERN = /mcp_azure_mcp_[a-z0-9_-]+/g;
+// Legacy alias still appears in committed skill markdown while Azure MCP exposes get_azure_bestpractices.
+// Remove this mapping once all `mcp_azure_mcp_get_bestpractices` references are migrated in skill docs.
 const TOOL_NAME_ALIASES: Record<string, string> = {
   get_bestpractices: "get_azure_bestpractices",
 };
