@@ -2,16 +2,19 @@
  * MCP Tool Name Validation Tests
  *
  * Validates that all Azure MCP tool names referenced in skill markdown files
- * match the actual tools exposed by the Azure MCP server.
+ * are present in the static snapshot `azure-mcp-tools.json`.
  *
  * Two naming conventions are supported:
  *   - `mcp_azure_mcp_<tool>` — GitHub Copilot MCP tool reference format
  *   - `azure__<tool>`        — Alternative GitHub Copilot MCP tool reference format
  *
+ * The tool list is read from a static JSON snapshot so the test is fast,
+ * offline, and deterministic. Update the snapshot when new tools are added to
+ * the @azure/mcp server (tracked in issue #1933).
+ *
  * Run: npm run test:unit -- --testPathPattern=mcp-tool-names
  */
 
-import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -20,6 +23,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SKILLS_DIR = path.resolve(__dirname, "../../plugin/skills");
+const SNAPSHOT_PATH = path.resolve(__dirname, "azure-mcp-tools.json");
 
 /** Tool reference found in a markdown file */
 interface ToolReference {
@@ -44,134 +48,20 @@ const AZURE_DOUBLE_UNDERSCORE_RE = /azure__([a-z][a-z0-9_]*)/g;
 const PATTERNS = [MCP_AZURE_MCP_RE, AZURE_DOUBLE_UNDERSCORE_RE];
 
 // ---------------------------------------------------------------------------
-// MCP server helpers
+// Snapshot helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Queries the Azure MCP server via JSON-RPC and returns the set of valid tool
- * names it exposes. The server process is terminated as soon as the list is
- * received.
+ * Reads the static Azure MCP tool name snapshot from `azure-mcp-tools.json`
+ * and returns the set of valid tool names.
  */
-function getAzureMcpToolNames(): Promise<Set<string>> {
-  return new Promise<Set<string>>((resolve, reject) => {
-    const serverProcess = spawn("npx", ["-y", "@azure/mcp@latest", "server", "start"], {
-      stdio: ["pipe", "pipe", "pipe"],
-      shell: true,
-    });
-
-    const toolNames = new Set<string>();
-    let stdoutBuffer = "";
-    let stderrLines: string[] = [];
-    let initialized = false;
-    let settled = false;
-
-    serverProcess.stderr?.on("data", (chunk: Buffer) => {
-      // Keep a rolling window of the last 20 stderr lines for diagnostics
-      const newLines = chunk.toString().split("\n").filter(Boolean);
-      stderrLines = stderrLines.concat(newLines).slice(-20);
-    });
-
-    serverProcess.stdout.on("data", (chunk: Buffer) => {
-      stdoutBuffer += chunk.toString();
-      const lines = stdoutBuffer.split("\n");
-      stdoutBuffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        let parsed: { id?: number; result?: { tools?: Array<{ name: string }>; nextCursor?: string } };
-        try {
-          parsed = JSON.parse(line) as typeof parsed;
-        } catch {
-          // Skip non-JSON lines (server startup/log output)
-          continue;
-        }
-
-        if (parsed.id === 1 && !initialized) {
-          // Server acknowledged initialization; request the tool list
-          initialized = true;
-          serverProcess.stdin.write(
-            JSON.stringify({
-              jsonrpc: "2.0",
-              id: 2,
-              method: "tools/list",
-              params: {},
-            }) + "\n",
-          );
-        } else if (parsed.id === 2 && parsed.result) {
-          if (parsed.result.nextCursor) {
-            settled = true;
-            serverProcess.kill();
-            reject(
-              new Error(
-                "tools/list returned paginated results — pagination support is required to validate all tool names",
-              ),
-            );
-            return;
-          }
-          for (const tool of parsed.result.tools ?? []) {
-            if (tool.name) toolNames.add(tool.name);
-          }
-          // Destroy stdio streams before killing to avoid open-handle warnings
-          settled = true;
-          serverProcess.stdin.destroy();
-          serverProcess.stdout.destroy();
-          serverProcess.stderr?.destroy();
-          serverProcess.kill();
-          resolve(toolNames);
-        }
-      }
-    });
-
-    serverProcess.on("error", (err) => {
-      settled = true;
-      reject(err);
-    });
-
-    // Send the MCP initialize request
-    serverProcess.stdin.write(
-      JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: "2024-11-05",
-          capabilities: {},
-          clientInfo: { name: "mcp-tool-name-validator", version: "1.0" },
-        },
-      }) + "\n",
-    );
-
-    const timeoutHandle = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      serverProcess.kill();
-      if (toolNames.size > 0) {
-        resolve(toolNames);
-      } else {
-        reject(new Error("Timed out waiting for Azure MCP server tools/list response"));
-      }
-    }, 110_000); // slightly below the beforeAll timeout of 120s to allow Jest to report the error
-
-    // Unref the timeout so it doesn't keep the Node.js event loop alive
-    timeoutHandle.unref();
-
-    serverProcess.on("close", (code, signal) => {
-      clearTimeout(timeoutHandle);
-      if (settled) return;
-      settled = true;
-      const stderrSummary = stderrLines.length
-        ? `\nLast stderr output:\n${stderrLines.join("\n")}`
-        : "";
-      reject(
-        new Error(
-          `Azure MCP server process exited unexpectedly (code=${code ?? "null"}, signal=${signal ?? "none"}) before tools/list response was received.${stderrSummary}`,
-        ),
-      );
-    });
-
-    // Unref the child process so it doesn't prevent the Jest worker from exiting
-    serverProcess.unref();
-  });
+function getAzureMcpToolNamesFromSnapshot(): Set<string> {
+  const raw = fs.readFileSync(SNAPSHOT_PATH, "utf-8");
+  const snapshot = JSON.parse(raw) as { tools: string[] };
+  if (!Array.isArray(snapshot.tools)) {
+    throw new Error(`azure-mcp-tools.json is malformed: "tools" must be an array`);
+  }
+  return new Set(snapshot.tools);
 }
 
 // ---------------------------------------------------------------------------
@@ -227,12 +117,12 @@ describe("Azure MCP Tool Name Validation", () => {
   let validToolNames: Set<string>;
   let allReferences: ToolReference[];
 
-  beforeAll(async () => {
-    validToolNames = await getAzureMcpToolNames();
+  beforeAll(() => {
+    validToolNames = getAzureMcpToolNamesFromSnapshot();
     allReferences = findMarkdownFiles(SKILLS_DIR).flatMap(extractToolReferences);
-  }, 120_000); // Allow up to 2 minutes for the MCP server to start
+  });
 
-  test("Azure MCP server exposes at least one tool", () => {
+  test("snapshot contains at least one tool", () => {
     expect(validToolNames.size).toBeGreaterThan(0);
   });
 
