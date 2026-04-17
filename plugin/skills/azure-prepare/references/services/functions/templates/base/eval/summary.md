@@ -15,10 +15,10 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | Returns template with functionFiles + projectFiles |
+| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | HTTP templates found for all languages |
-| IaC Included | ✅ PASS | Bicep infra/ included in projectFiles |
-| E2E Agent Test | ✅ PASS | 5 API calls, 54s, `http-trigger-python-azd` retrieved |
+| IaC Included | ✅ PASS | Bicep/Terraform infra/ included in projectFiles |
+| E2E Agent Test | ✅ PASS | 4 azure-functions calls, 5m 42s, template retrieved and applied |
 
 ## Results
 
@@ -36,4 +36,4 @@
 
 ## Test Date
 
-2025-04-16
+2026-04-17

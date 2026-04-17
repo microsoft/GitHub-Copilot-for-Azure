@@ -1008,4 +1008,200 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     });
   });
+
+  // ─── Functions Template MCP Tool Validation ─────────────────────────────────
+  //
+  // These tests let the agent run past skill invocation to verify that the
+  // `functions_template_get` command is actually called via the `azure-functions`
+  // MCP tool, and that generated output contains expected code indicators.
+  // NOTE: These are slower (~5 min each) than the routing tests above because
+  // they let the agent generate files. Consider splitting to a separate file
+  // if the suite becomes too slow.
+
+  describe("functions-template-mcp", () => {
+    const MCP_SERVER = "azure";
+
+    const FAST_TEMPLATE_PROMPT = {
+      mode: "append" as const,
+      content: [
+        "Skip the Provisioning Limit Checklist (Step 6 in the plan template).",
+        "Use reasonable default values for quota/limit columns instead of running az quota commands.",
+        "Focus on generating the function code and infrastructure files.",
+        "Use the functions_template_get MCP tool to discover and fetch templates.",
+        "Do not ask clarifying questions — pick sensible defaults and proceed.",
+      ].join(" "),
+    };
+
+    /**
+     * Count actual `functions_template_get` MCP tool calls.
+     * Only counts `tool.execution_start` events where the `azure-functions`
+     * tool was called with `command: "functions_template_get"` in arguments.
+     * Does NOT count skill definition references.
+     */
+    function countFunctionsTemplateCalls(agentMetadata: Parameters<typeof isSkillInvoked>[0]): number {
+      return agentMetadata.events
+        .filter(e => e.type === "tool.execution_start")
+        .filter(e => {
+          const data = e.data as {
+            toolName?: string;
+            mcpToolName?: string;
+            mcpServerName?: string;
+            arguments?: { command?: string };
+          };
+          const isAzureFunctions =
+            data.toolName === "azure-functions" ||
+            (data.mcpServerName === MCP_SERVER && data.mcpToolName === "functions");
+          return isAzureFunctions && data.arguments?.command === "functions_template_get";
+        }).length;
+    }
+
+    function shouldTerminateMcp(metadata: Parameters<typeof isSkillInvoked>[0]): boolean {
+      return hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate");
+    }
+
+    interface TriggerTestCase {
+      name: string;
+      prompt: string;
+      codeIndicator: RegExp;
+      iacPattern?: RegExp;
+      extraIndicator?: RegExp;
+    }
+
+    const triggerTests: TriggerTestCase[] = [
+      {
+        name: "HTTP trigger (base)",
+        prompt: "Create a Python Azure Functions HTTP API with a health endpoint and deploy to Azure.",
+        codeIndicator: /app\.(route|function_name)|@app\.route|func\.FunctionApp/,
+        iacPattern: /\.bicep$/,
+      },
+      {
+        name: "Timer trigger",
+        prompt: "Create a Python Azure Functions app with a timer trigger that runs every 5 minutes and deploy to Azure.",
+        codeIndicator: /timer_trigger|TimerTrigger|schedule/i,
+        iacPattern: /\.bicep$/,
+      },
+      {
+        name: "Cosmos DB trigger",
+        prompt: "Create a Python Azure Functions app with a Cosmos DB change feed trigger and deploy to Azure.",
+        codeIndicator: /cosmos_db_trigger|CosmosDBTrigger/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /cosmos|Microsoft\.DocumentDB/i,
+      },
+      {
+        name: "SQL trigger",
+        prompt: "Create a Python Azure Functions app with a SQL database trigger and deploy to Azure.",
+        codeIndicator: /sql_trigger|SqlTrigger/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /Microsoft\.Sql/i,
+      },
+      {
+        name: "Blob Storage / Event Grid trigger",
+        prompt: "Create a Python Azure Functions app with Blob storage trigger using Event Grid and deploy to Azure.",
+        codeIndicator: /blob_trigger|BlobTrigger|event_grid/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /Microsoft\.Storage|EventGrid/i,
+      },
+      {
+        name: "Service Bus trigger",
+        prompt: "Create a Python Azure Functions app with a Service Bus queue trigger for message processing and deploy to Azure.",
+        codeIndicator: /service_bus_queue_trigger|ServiceBusTrigger/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /Microsoft\.ServiceBus|ServiceBusConnection/i,
+      },
+      {
+        name: "Event Hubs trigger",
+        prompt: "Create a Python Azure Functions app with an Event Hub trigger for streaming events and deploy to Azure.",
+        codeIndicator: /event_hub_message_trigger|EventHubTrigger/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /Microsoft\.EventHub|EventHubConnection/i,
+      },
+      {
+        name: "Durable Functions",
+        prompt: "Create a Python Azure Durable Functions app with an orchestrator pattern and deploy to Azure.",
+        codeIndicator: /orchestration_trigger|OrchestrationTrigger|DurableClient/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /DurableTask|durable/i,
+      },
+      {
+        name: "MCP server on Functions",
+        prompt: "Create a Python Azure Functions MCP server that exposes tools over HTTP and deploy to Azure.",
+        codeIndicator: /jsonrpc|mcp|tools\/list|tools\/call/i,
+        iacPattern: /\.bicep$/,
+      },
+      {
+        name: "HTTP trigger with Terraform",
+        prompt: "Create a Python Azure Functions HTTP API and deploy to Azure using Terraform infrastructure.",
+        codeIndicator: /app\.(route|function_name)|@app\.route|func\.FunctionApp/,
+        iacPattern: /\.tf$/,
+      },
+      {
+        name: "Cosmos DB trigger with Terraform",
+        prompt: "Create a Python Azure Functions app with Cosmos DB change feed trigger and deploy to Azure using Terraform.",
+        codeIndicator: /cosmos_db_trigger|CosmosDBTrigger/i,
+        iacPattern: /\.tf$/,
+        extraIndicator: /cosmos|azurerm_cosmosdb/i,
+      },
+    ];
+
+    test.each(triggerTests)(
+      "calls functions_template_get for $name",
+      async ({ name, prompt, codeIndicator, iacPattern, extraIndicator }) => {
+        await withTestResult(async () => {
+          let workspacePath: string | undefined;
+
+          const agentMetadata = await agent.run({
+            setup: async (workspace: string) => {
+              workspacePath = workspace;
+            },
+            prompt,
+            nonInteractive: true,
+            followUp: FOLLOW_UP_PROMPT,
+            systemPrompt: FAST_TEMPLATE_PROMPT,
+            preserveWorkspace: true,
+            shouldEarlyTerminate: shouldTerminateMcp,
+          });
+
+          // 1. Skill must be invoked
+          expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+          // 2. functions_template_get MCP tool must be called (actual tool.execution_start events only)
+          const templateCallCount = countFunctionsTemplateCalls(agentMetadata);
+
+          agentMetadata.testComments.push(
+            `functions_template_get calls: ${templateCallCount} (${name})`
+          );
+
+          expect(templateCallCount).toBeGreaterThanOrEqual(1);
+
+          // 3. Workspace should have files generated
+          expect(workspacePath).toBeDefined();
+
+          // 4. Code indicator: generated function code matches trigger pattern
+          const codeFilePatterns = /\.(py|ts|js|cs|java|ps1)$/;
+          const hasCode = doesWorkspaceFileIncludePattern(
+            workspacePath!,
+            codeIndicator,
+            codeFilePatterns,
+          );
+          agentMetadata.testComments.push(
+            `Code indicator (${codeIndicator.source}): ${hasCode ? "✅" : "❌"}`
+          );
+          expect(hasCode).toBe(true);
+
+          // 5. IaC files present
+          if (iacPattern) {
+            expectFiles(workspacePath!, [iacPattern], []);
+          }
+
+          // 6. Extra indicator (service-specific Bicep/TF resource) — soft check
+          if (extraIndicator) {
+            const hasExtra = doesWorkspaceFileIncludePattern(workspacePath!, extraIndicator);
+            agentMetadata.testComments.push(
+              `Extra indicator (${extraIndicator.source}): ${hasExtra ? "✅" : "⚠️ not found"}`
+            );
+          }
+        });
+      },
+    );
+  });
 });

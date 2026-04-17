@@ -43,6 +43,9 @@ OUTPUT: Complete project ready for `azd up`
 
 1. FETCH MANIFEST
    GET https://cdn.functions.azure.com/public/templates-manifest/manifest.json
+   If fetch fails → fall back to: https://github.com/Azure/azure-functions-templates/blob/dev/Functions.Templates/Template-Manifest/manifest.json
+   If both fail → fall back to known-good Azure-Samples/functions-quickstart-* repos by language+resource
+   If all fail → report error and ask user to retry later
 
 2. FILTER TEMPLATES
    Filter by: language, resource (from selection.md), iac

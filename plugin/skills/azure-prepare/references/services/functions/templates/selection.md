@@ -18,6 +18,7 @@ Map user intent to MCP template `resource` filter.
 | "MCP", "MCP server", "tools" | `McpToolTrigger`, `@app.mcp_tool`, `mcp` in project | `mcp` | [recipes/mcp/README.md](recipes/mcp/README.md) |
 | "durable", "workflow", "orchestration" | `DurableOrchestrationTrigger`, `orchestrator`, `durable_functions` | `durable` | [recipes/durable/README.md](recipes/durable/README.md) |
 | "AI", "agent", "chatbot", "OpenAI" | `openai`, `AzureOpenAI`, `langchain`, `semantic_kernel` | `http` | Scan description for "AI", "agent", "Copilot SDK" |
+| **No specific trigger / intent unclear** | — | `http` (default) | — |
 
 ## Selection Algorithm
 

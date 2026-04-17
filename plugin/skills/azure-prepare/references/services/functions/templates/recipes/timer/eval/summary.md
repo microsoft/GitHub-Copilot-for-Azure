@@ -15,10 +15,10 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | `timer-trigger-python-azd` template retrieved |
+| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Timer templates found via resource filter |
 | IaC Included | ✅ PASS | Bicep infra/ included in projectFiles |
-| E2E Agent Test | ✅ PASS | 12 API calls, 146s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 3 azure-functions calls, 5m 21s, template retrieved and applied |
 
 ## Results
 
@@ -35,4 +35,4 @@
 
 ## Test Date
 
-2025-04-16
+2026-04-17

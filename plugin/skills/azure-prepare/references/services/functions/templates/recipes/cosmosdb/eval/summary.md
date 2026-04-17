@@ -15,10 +15,10 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | Cosmos templates retrieved |
+| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Cosmos templates found via resource filter |
 | IaC Included | ✅ PASS | Cosmos Bicep module + RBAC in projectFiles |
-| E2E Agent Test | ✅ PASS | 5 API calls, 49s, template retrieved |
+| E2E Agent Test | ✅ PASS | 3 azure-functions calls, 5m 00s, template retrieved and applied |
 
 ## Results
 
@@ -36,4 +36,4 @@
 
 ## Test Date
 
-2025-04-16
+2026-04-17

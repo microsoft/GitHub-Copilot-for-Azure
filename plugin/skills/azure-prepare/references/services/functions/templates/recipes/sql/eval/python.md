@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get("python")` returns list | ✅ PASS |
+| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
 | Filter by resource | `resource == "sql"` finds matches | ✅ PASS |
 | Has trigger code | `@app.sql_trigger` decorator in output | ✅ PASS |
 | Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |

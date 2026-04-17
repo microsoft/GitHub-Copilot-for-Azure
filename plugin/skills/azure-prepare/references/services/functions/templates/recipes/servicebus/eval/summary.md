@@ -15,10 +15,10 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | Service Bus templates retrieved |
+| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Service Bus Bicep + RBAC in projectFiles |
-| E2E Agent Test | ⚠️ TIMEOUT | Agent execution exceeded 10 min limit |
+| E2E Agent Test | ✅ PASS | 2 azure-functions calls, 8m 33s, template retrieved and applied |
 
 ## Results
 
@@ -35,4 +35,4 @@
 
 ## Test Date
 
-2025-04-16
+2026-04-17

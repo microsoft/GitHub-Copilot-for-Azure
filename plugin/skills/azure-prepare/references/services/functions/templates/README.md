@@ -36,21 +36,9 @@ Returns template list with metadata:
 
 ### Step 2: Select Template
 
-**Use description to match user intent:**
+Use the intent→resource mapping in [selection.md](selection.md) to map user intent to a `resource` filter value.
 
-| User Intent | Scan Description For | Resource Filter |
-|-------------|---------------------|-----------------|
-| MCP, server, tools, resource, prompt | "MCP", "MCP server", "remote tools", "remote server" | `mcp` |
-| HTTP API, REST endpoint | "HTTP trigger" | `http` |
-| Timer, Scheduled task, cron job | "Timer trigger", "scheduled" | `timer` |
-| Cosmos, Database changes | "Cosmos DB trigger", "event-driven" | `cosmos` |
-| Service Bus, Message processing topic, queue| "Service Bus" | `servicebus` |
-| Event Hubs, Message processing | "Event Hub trigger" | `eventhub` |
-| Blob, File processing | "Blob trigger", "EventGrid" | `blob` |
-| AI agent, chatbot | "AI agent", "Copilot SDK", "Foundry", "LangChain" | `http` (scan description) |
-| **No specific trigger mentioned / Intent unclear** | — | `http` (default) |
-
-> **Default behavior:** When user intent cannot be determined or no trigger type is known, use HTTP as the default. HTTP is the most common trigger and provides a safe starting point.
+> **Default behavior:** When user intent cannot be determined or no trigger type is known, use `http` as the default.
 
 **Single-template optimization:** If description mentions BOTH trigger AND binding user needs, fetch that one template only.
 
@@ -114,6 +102,11 @@ If MCP tools are unavailable, download the CDN manifest which points to the same
 ```
 GET https://cdn.functions.azure.com/public/templates-manifest/manifest.json
 ```
+
+> ⚠️ **If manifest fetch fails** (any error):
+> 1. Fall back to the source manifest at `https://github.com/Azure/azure-functions-templates/blob/dev/Functions.Templates/Template-Manifest/manifest.json`
+> 2. If both sources are unreachable, fall back to known-good repos: `Azure-Samples/functions-quickstart-*` keyed by language + resource (e.g., `functions-quickstart-python-http-azd`)
+> 3. If all fallbacks fail, report the error to the user and ask them to retry later
 
 ### Step 2: Filter Templates
 

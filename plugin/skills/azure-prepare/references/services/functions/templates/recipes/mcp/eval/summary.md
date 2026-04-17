@@ -15,9 +15,10 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | MCP templates retrieved |
+| `functions_template_get` | ✅ PASS | 3 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Storage queue config in projectFiles |
+| E2E Agent Test | ✅ PASS | 3 azure-functions calls, 2m 58s, template retrieved and applied |
 
 ## Results
 
@@ -35,4 +36,4 @@
 
 ## Test Date
 
-2025-04-16
+2026-04-17

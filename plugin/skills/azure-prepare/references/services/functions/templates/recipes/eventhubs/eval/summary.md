@@ -15,9 +15,10 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | Event Hubs templates retrieved |
+| `functions_template_get` | ✅ PASS | 3 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Event Hubs Bicep + RBAC in projectFiles |
+| E2E Agent Test | ✅ PASS | 4 azure-functions calls, 4m 07s, template retrieved and applied |
 
 ## Results
 
@@ -34,4 +35,4 @@
 
 ## Test Date
 
-2025-04-16
+2026-04-17
