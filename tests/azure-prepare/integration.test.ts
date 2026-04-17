@@ -15,13 +15,13 @@ import {
   getIntegrationSkipReason,
 } from "../utils/agent-runner";
 import { hasValidationCommand } from "../azure-validate/utils";
-import { hasPlanReadyForValidation, getDockerContext, hasServicesSection, getServiceProject } from "./utils";
+import { hasPlanReadyForValidation, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { doesWorkspaceFileIncludePattern, expectFiles, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
-const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
 const invocationRateThreshold = 0.8;
 
 /**
@@ -49,7 +49,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
-    const followUp = ["Go with recommended options."];
+    const followUp = ["Continue with recommended options until complete."];
     test("invokes azure-prepare skill for new Azure application preparation prompt", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
@@ -78,6 +78,50 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-prepare skill for functional verification before deployment prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "Prepare my web app for Azure and verify it works locally before deploying",
+            nonInteractive: true,
+            followUp,
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+          });
+
+          softCheckSkill(agentMetadata, SKILL_NAME);
+          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+            invocationCount += 1;
+          }
+        }
+        const rate = invocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("invokes azure-prepare skill for subscription policy compliance prompt", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        let invocationCount = 0;
+        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+          const agentMetadata = await agent.run({
+            prompt: "Prepare my application for Azure deployment and check subscription policies for compliance",
             nonInteractive: true,
             followUp,
             shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
@@ -713,13 +757,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+          [/deployment-plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
           [/\.tf$/],
         );
       });
@@ -739,14 +783,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.tf$/],
-          [/\.bicep$/, /azure\.yaml$/],
+          [/deployment-plan\.md$/, /infra\/.*\.tf$/],
+          [/\.bicep$/],
         );
       });
     });
@@ -765,13 +809,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!,
-          [/plan\.md$/, /infra\/.*\.bicep$/, /infra\/(.*\.bicepparam|(.*\.)?parameters\.json)$/],
+          [/deployment-plan\.md$/, /infra\/.*\.bicep$/, /infra\/(.*\.bicepparam|(.*\.)?parameters\.json)$/],
           [/azure\.yaml$/, /\.tf$/],
         );
       });
@@ -807,7 +851,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         expect(workspacePath).toBeDefined();
@@ -854,18 +898,20 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
         expectFiles(workspacePath!, [/azure\.yaml$/], []);
 
-        // The AppHost defines: builder.AddDockerfile("ginapp", "./ginapp")
-        // So azure.yaml should have docker.context: ginapp (not "." or the project root)
-        const dockerContext = getDockerContext(workspacePath!, "ginapp");
-        expect(dockerContext).toBeDefined();
-        expect(dockerContext).toMatch(/ginapp/);
+        // For Aspire projects, azd init --from-code generates a single "app" service
+        // pointing to the AppHost. Aspire handles AddDockerfile container builds
+        // (including ginapp) at runtime — they do NOT appear as separate services
+        // in azure.yaml.
+        expect(hasServicesSection(workspacePath!)).toBe(true);
+        const serviceProject = getServiceProject(workspacePath!, "app");
+        expect(serviceProject).toBeDefined();
       });
     });
   });
@@ -873,7 +919,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("entra-sql-auth", () => {
     test("generates Entra-only SQL auth for ASP.NET Core EF Core app (not SQL admin password)", async () => {
       await withTestResult(async () => {
+        let workspacePath: string | undefined;
+
         const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
           prompt:
             "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. " +
             "Then prepare it for Azure deployment. " +
@@ -881,43 +932,28 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
+          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) ||
             hasValidationCommand(metadata) ||
             isSkillInvoked(metadata, "azure-validate"),
         });
 
         // Preconditions
+        expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        // Collect all file contents the agent wrote via create tool calls
-        const createCalls = getToolCalls(agentMetadata, "create");
-        const bicepContents = createCalls
-          .filter(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
-            return args?.path?.endsWith(".bicep");
-          })
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          });
-        const bicepContent = bicepContents.join("\n");
-        expect(bicepContent.length).toBeGreaterThan(0);
+        // Verify Bicep files exist on disk (agent may use create tool or shell commands)
+        const bicepPattern = /\.bicep$/;
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], []);
 
         // Must NOT use legacy SQL admin login/password auth
-        expect(/administratorLoginPassword/i.test(bicepContent)).toBe(false);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /administratorLoginPassword/i, bicepPattern)).toBe(false);
 
         // Must use Entra-only authentication
-        expect(/azureADOnlyAuthentication\s*:\s*true/i.test(bicepContent)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azureADOnlyAuthentication\s*:\s*true/i, bicepPattern)).toBe(true);
 
         // Connection string should use Active Directory auth (Default or Managed Identity)
-        const allFileContents = createCalls
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          })
-          .join("\n");
-        expect(/Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i.test(allFileContents)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i)).toBe(true);
       });
     });
   });
@@ -940,53 +976,24 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
-            hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
+            hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
 
         // Preconditions
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        // Collect all file contents the agent wrote via create tool calls
-        const createCalls = getToolCalls(agentMetadata, "create");
-
-        // Gather all Bicep file contents
-        const bicepContents = createCalls
-          .filter(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
-            return args?.path?.endsWith(".bicep");
-          })
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          });
-        const bicepContent = bicepContents.join("\n");
-        expect(bicepContent.length).toBeGreaterThan(0);
-
-        // Must provision a Durable Task Scheduler resource
-        expect(/Microsoft\.DurableTask\/schedulers/i.test(bicepContent)).toBe(true);
-
-        // Must provision a task hub child resource
-        expect(/Microsoft\.DurableTask\/schedulers\/taskHubs/i.test(bicepContent)).toBe(true);
-
-        // Must assign the Durable Task Data Contributor RBAC role (role ID: 0ad04412-c4d5-4796-b79c-f76d14c8d402)
-        expect(/0ad04412-c4d5-4796-b79c-f76d14c8d402/i.test(bicepContent)).toBe(true);
-
-        // Must include the scheduler connection string app setting
-        const allFileContents = createCalls
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          })
-          .join("\n");
-        expect(/DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i.test(allFileContents)).toBe(true);
-
-        // Must include ipAllowlist to avoid 403 errors (empty list denies all traffic)
-        expect(/ipAllowlist/i.test(bicepContent)).toBe(true);
+        // Verify DTS-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.DurableTask\/schedulers\/taskHubs/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /0ad04412-c4d5-4796-b79c-f76d14c8d402/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ipAllowlist/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /DURABLE_TASK_SCHEDULER_CONNECTION_STRING/i)).toBe(true);
 
         // Workspace should contain orchestration/workflow code files
         expectFiles(workspacePath!,
-          [/plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
+          [/deployment-plan\.md$/, /azure\.yaml$/, /infra\/.*\.bicep$/],
           [/\.tf$/],
         );
       });

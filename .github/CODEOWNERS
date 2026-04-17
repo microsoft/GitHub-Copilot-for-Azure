@@ -11,9 +11,9 @@
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT
 /plugin/skills/azure-ai/ @charris-msft
 /plugin/skills/azure-aigateway/ @azaslonov
-/plugin/skills/azure-cloud-migrate/ @saikoumudi
+/plugin/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT
 /plugin/skills/azure-compliance/ @saikoumudi
-/plugin/skills/azure-compute/ @alex-thompson
+/plugin/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21
 /plugin/skills/azure-cost-optimization/ @saikoumudi
 /plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
@@ -28,6 +28,7 @@
 /plugin/skills/azure-resource-lookup/ @charris-msft
 /plugin/skills/azure-resource-visualizer/ @tmeschter
 /plugin/skills/azure-storage/ @charris-msft
+/plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi
 /plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan
-/plugin/skills/entra-app-registration/ @JasonYeMSFT
+/plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan
 /plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst

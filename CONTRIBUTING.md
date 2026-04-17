@@ -229,9 +229,10 @@ plugin/skills/your-skill-name/
 
 > ⚠️ Char count of skill descriptions in this repo is close to the char count budget in tools like Copilot CLI. Exceeding the char count budget may result in any skill being truncated at runtime, causing inconsistent agent behavior. Consider adding the new content to an existing skill or rebrand an existing skill to cover the new content.
 
-_NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill.
-- The Creator agents expects you already know what scenarios the skill should address
+_NOTE:_ You can use the "Azure Skill Brainstormer", "Azure Skill Creator", or "Skill Fixer" agents in Copilot to help you build and maintain skills. They are recognizable across all github copilot agent hosts, such as Copilot Coding Agent, Copilot CLI and VSCode copilot chat.
+- The Creator agent expects you already know what scenarios the skill should address
 - The Brainstormer agent will help you identify scenarios
+- The Skill Fixer agent works on your skills related tasks and follows rules it was pre-configured with, such as skill version bumping.
 
 1. **Create your skill folder** under `plugin/skills/your-skill-name/`
 

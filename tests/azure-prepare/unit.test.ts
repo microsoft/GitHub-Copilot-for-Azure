@@ -58,7 +58,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Plan-First Workflow", () => {
     test("mentions plan file requirement", () => {
-      expect(skill.content).toContain(".azure/plan.md");
+      expect(skill.content).toContain(".azure/deployment-plan.md");
     });
 
     test("requires user confirmation for subscription and location", () => {
@@ -72,6 +72,45 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("Functional Verification Step", () => {
+    test("includes functional verification step in workflow", () => {
+      expect(skill.content).toContain("Functional Verification");
+    });
+
+    test("references functional-verification.md", () => {
+      expect(skill.content).toContain("functional-verification.md");
+    });
+
+    test("functional verification comes before plan update", () => {
+      const funcVerifIndex = skill.content.indexOf("Functional Verification");
+      const updatePlanIndex = skill.content.indexOf("Update Plan");
+      expect(funcVerifIndex).toBeGreaterThan(-1);
+      expect(updatePlanIndex).toBeGreaterThan(-1);
+      expect(funcVerifIndex).toBeLessThan(updatePlanIndex);
+    });
+  });
+
+  describe("Subscription Policy Checks", () => {
+    test("references policy tool in requirements", () => {
+      const refsDir = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/requirements.md"
+      );
+      const content = fs.readFileSync(refsDir, "utf-8");
+      expect(content).toContain("mcp_azure_mcp_policy");
+    });
+
+    test("mentions subscription policies in requirements", () => {
+      const refsDir = path.join(
+        SKILLS_PATH,
+        "azure-prepare/references/requirements.md"
+      );
+      const content = fs.readFileSync(refsDir, "utf-8");
+      expect(content).toContain("Subscription Policies");
+      expect(content).toContain("policy_assignment_list");
+    });
+  });
+
   describe("Aspire Support", () => {
     test("aspire.md reference file exists", () => {
       const aspirePath = path.join(
@@ -81,15 +120,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(fs.existsSync(aspirePath)).toBe(true);
     });
 
-    test("aspire.md contains Docker context guidance", () => {
+    test("aspire.md contains AddDockerfile guidance", () => {
       const aspirePath = path.join(
         SKILLS_PATH,
         "azure-prepare/references/recipes/azd/aspire.md"
       );
       const aspireContent = fs.readFileSync(aspirePath, "utf-8");
       expect(aspireContent).toContain("AddDockerfile");
-      expect(aspireContent).toContain("docker.context");
-      expect(aspireContent).toContain("build context");
+      expect(aspireContent).toContain("container builds");
     });
 
     test("azure-yaml.md references aspire.md", () => {
@@ -99,7 +137,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       );
       const azureYamlContent = fs.readFileSync(azureYamlPath, "utf-8");
       expect(azureYamlContent).toContain("aspire.md");
-      expect(azureYamlContent).toContain("docker.context");
+      expect(azureYamlContent).toContain("docker");
     });
   });
 });

@@ -49,7 +49,7 @@ The research step loads service-specific references and invokes related skills t
 1. ✅ Completed [Research Components](research.md) step
 2. ✅ Loaded all relevant `services/*.md` references
 3. ✅ Invoked related skills for specialized guidance
-4. ✅ Documented findings in `.azure/plan.md`
+4. ✅ Documented findings in `.azure/deployment-plan.md`
 
 ## Generation Order
 
@@ -79,7 +79,7 @@ Load the appropriate recipe for detailed generation steps:
 ```
 project-root/
 ├── .azure/
-│   └── plan.md
+│   └── deployment-plan.md
 ├── infra/
 │   ├── main.bicep (or main.tf)
 │   └── modules/
@@ -89,12 +89,29 @@ project-root/
 └── azure.yaml (AZD only)
 ```
 
+### Directory Creation
+
+> ⚠️ **Warning:** The `create` tool fails with `Parent directory does not exist` when intermediate directories are missing. Always create the full directory tree before writing files.
+
+**Before creating nested files** (e.g., `src/frontend/src/App.jsx`), create all parent directories first:
+
+```bash
+mkdir -p src/frontend/src src/api
+```
+
+- Use **absolute paths** in `mkdir -p` when the working directory may differ from the project root
+- Create directories for **all components** in a single command before writing any files
+- Do **not** rely on the `create` tool to create parent directories — it will not
+
 ### Security Requirements
 
 - No hardcoded secrets
 - Use Key Vault for sensitive values
 - Managed Identity for service auth
 - HTTPS only, TLS 1.2+
+- SQL Server Bicep MUST use Entra-only auth — omit `administratorLogin` and `administratorLoginPassword` entirely, including from conditional/ternary branches (see [services/sql-database/bicep.md](services/sql-database/bicep.md)). These property names must not appear anywhere in a generated `.bicep` file.
+- **SQL + Managed Identity: MUST add postprovision hook** — ARM role assignments only grant control-plane access; you MUST also generate `scripts/grant-sql-access.sh` + `.ps1` and add a `postprovision` hook in `azure.yaml` to run T-SQL grants. See [services/sql-database/bicep.md](services/sql-database/bicep.md).
+- **App Service Bicep: MUST include `azd-service-name` tag** — Every App Service `Microsoft.Web/sites` resource MUST have `tags: union(tags, { 'azd-service-name': serviceName })`. Without this tag, `azd deploy` cannot locate the resource. See [services/app-service/bicep.md](services/app-service/bicep.md).
 
 ### Runtime Configuration
 
@@ -106,6 +123,6 @@ Apply language-specific production settings for containerized apps:
 
 ## After Generation
 
-1. Update `.azure/plan.md` with generated file list
+1. Update `.azure/deployment-plan.md` with generated file list
 2. Run validation checks
 3. Proceed to **azure-validate** skill

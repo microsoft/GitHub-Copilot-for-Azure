@@ -56,6 +56,28 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("Static Role Verification Step", () => {
+    test("includes static role verification step in workflow", () => {
+      expect(skill.content).toContain("Static Role Verification");
+    });
+
+    test("references role-verification.md", () => {
+      expect(skill.content).toContain("role-verification.md");
+    });
+
+    test("mentions RBAC role assignments", () => {
+      expect(skill.content).toMatch(/rbac|role\s+assignment/i);
+    });
+
+    test("role verification comes before record proof", () => {
+      const roleVerifIndex = skill.content.indexOf("Static Role Verification");
+      const recordProofIndex = skill.content.indexOf("Record Proof");
+      expect(roleVerifIndex).toBeGreaterThan(-1);
+      expect(recordProofIndex).toBeGreaterThan(-1);
+      expect(roleVerifIndex).toBeLessThan(recordProofIndex);
+    });
+  });
+
   describe("Workflow Integration", () => {
     test("documents recipe references", () => {
       expect(skill.content).toMatch(/recipe/i);

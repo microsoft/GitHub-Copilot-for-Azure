@@ -34,6 +34,19 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "servicebus java send timeout",
       "servicebus dotnet receiver disconnected",
 
+      // Lock renewal and session lock scenarios
+      "service bus message lock expired during batch processing",
+      "lock renewal failing for large batch of messages",
+      "session lock expired error in service bus receiver",
+
+      // Idle timeout and reconnection
+      "event hub connection closed due to idle timeout",
+      "service bus slow reconnect after connection inactive",
+
+      // Link detach and duplicate events
+      "AMQP link detach forced error on service bus sender",
+      "event hub consumer receiving duplicate events after offset reset",
+
       // General messaging issues
       "AMQP error connecting to Azure messaging",
       "messaging connection failure to Event Hubs",

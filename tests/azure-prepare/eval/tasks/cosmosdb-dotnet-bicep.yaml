@@ -25,7 +25,7 @@ expected:
   outcomes:
     - type: task_completed
   output_contains:
-    - "plan.md"
+    - "deployment-plan.md"
     - "cosmos"
   tool_calls:
     required:
