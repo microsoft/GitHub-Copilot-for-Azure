@@ -13,10 +13,9 @@ const skillsRoot = path.resolve(__dirname, "../../plugin/skills");
 const MCP_AZURE_MCP_RE = /mcp_azure_mcp_([a-z][a-z0-9_]*)/g;
 const AZURE_DOUBLE_UNDERSCORE_RE = /azure__([a-z][a-z0-9_]*)/g;
 
-// Legacy alias: remove once all `get_bestpractices` references are migrated (see azure-cost skill).
-const TOOL_NAME_ALIASES: Record<string, string> = {
-  get_bestpractices: "get_azure_bestpractices",
-};
+// No legacy Azure MCP tool aliases are currently allowed in skill markdown tests.
+// Keep this map empty so invalid tool names fail validation instead of being silently normalized.
+const TOOL_NAME_ALIASES: Record<string, string> = {};
 
 interface ToolReference {
   toolName: string;
