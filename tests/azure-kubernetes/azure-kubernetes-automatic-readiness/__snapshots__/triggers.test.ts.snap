@@ -2,13 +2,13 @@
 
 exports[`azure-kubernetes-automatic-readiness - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Assess Kubernetes workloads and cluster configuration for AKS Automatic compatibility. Identifies incompatibilities, generates fixes, and guides migration from AKS Standard to AKS Automatic. WHEN: migrate to AKS Automatic, check AKS Automatic readiness, validate manifests for Automatic, assess cluster for Automatic compatibility, fix deployment for Automatic compatibility, what would break switching to AKS Automatic, is my cluster ready for AKS Automatic.",
+  "description": "Assess Kubernetes workloads and cluster configuration for AKS Automatic compatibility. Identifies incompatibilities, generates fixes, and guides migration from AKS Standard to AKS Automatic. WHEN: migrate to AKS Automatic, check AKS Automatic readiness, validate manifests for Automatic, assess cluster for Automatic compatibility, fix deployment for Automatic compatibility, identify AKS Automatic migration blockers, is my cluster ready for AKS Automatic.",
   "extractedKeywords": [
     "aks",
     "assess",
     "automatic",
     "azure",
-    "break",
+    "blockers",
     "check",
     "cli",
     "cluster",
@@ -23,6 +23,7 @@ exports[`azure-kubernetes-automatic-readiness - Trigger Tests Trigger Keywords S
     "generates",
     "guides",
     "identifies",
+    "identify",
     "incompatibilities",
     "kubernetes",
     "manifests",
@@ -37,13 +38,10 @@ exports[`azure-kubernetes-automatic-readiness - Trigger Tests Trigger Keywords S
     "security",
     "standard",
     "storage",
-    "switching",
     "validate",
     "validation",
-    "what",
     "when",
     "workloads",
-    "would",
   ],
   "name": "azure-kubernetes-automatic-readiness",
 }
@@ -55,7 +53,7 @@ exports[`azure-kubernetes-automatic-readiness - Trigger Tests Trigger Keywords S
   "assess",
   "automatic",
   "azure",
-  "break",
+  "blockers",
   "check",
   "cli",
   "cluster",
@@ -70,6 +68,7 @@ exports[`azure-kubernetes-automatic-readiness - Trigger Tests Trigger Keywords S
   "generates",
   "guides",
   "identifies",
+  "identify",
   "incompatibilities",
   "kubernetes",
   "manifests",
@@ -84,12 +83,9 @@ exports[`azure-kubernetes-automatic-readiness - Trigger Tests Trigger Keywords S
   "security",
   "standard",
   "storage",
-  "switching",
   "validate",
   "validation",
-  "what",
   "when",
   "workloads",
-  "would",
 ]
 `;

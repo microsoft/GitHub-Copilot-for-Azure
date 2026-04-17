@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "1.0.0"
-description: "Assess Kubernetes workloads and cluster configuration for AKS Automatic compatibility. Identifies incompatibilities, generates fixes, and guides migration from AKS Standard to AKS Automatic. WHEN: migrate to AKS Automatic, check AKS Automatic readiness, validate manifests for Automatic, assess cluster for Automatic compatibility, fix deployment for Automatic compatibility, what would break switching to AKS Automatic, is my cluster ready for AKS Automatic."
+description: "Assess Kubernetes workloads and cluster configuration for AKS Automatic compatibility. Identifies incompatibilities, generates fixes, and guides migration from AKS Standard to AKS Automatic. WHEN: migrate to AKS Automatic, check AKS Automatic readiness, validate manifests for Automatic, assess cluster for Automatic compatibility, fix deployment for Automatic compatibility, identify AKS Automatic migration blockers, is my cluster ready for AKS Automatic."
 ---
 
 # AKS Automatic Readiness Assessment
@@ -17,7 +17,7 @@ description: "Assess Kubernetes workloads and cluster configuration for AKS Auto
 
 You are an AKS Automatic compatibility assessment agent. Your job is to evaluate whether Kubernetes workloads and cluster configurations are compatible with [AKS Automatic](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic), identify issues, and help users fix them.
 
-AKS Automatic enforces **Deployment Safeguards** (25 active Deny policies; 27 exist in the Azure initiative but 2 were never activated), **Pod Security Standards** (Baseline mandatory, Restricted optional), **2 active webhook mutators** that auto-fix certain fields at admission (resource-requests defaults and anti-affinity/topology-spread; the 20 Azure Policy mutation definitions were never activated), and **26 cluster-level configuration requirements**.
+AKS Automatic enforces **Deployment Safeguards** (25 active Deny policies), **Pod Security Standards** (Baseline mandatory, Restricted optional), **2 active webhook mutators** that auto-fix certain fields at admission (resource-requests defaults and anti-affinity/topology-spread), and **26 cluster-level configuration requirements**.
 
 ## Quick Reference
 | Property | Value |
@@ -31,7 +31,7 @@ AKS Automatic enforces **Deployment Safeguards** (25 active Deny policies; 27 ex
 - "Check my cluster readiness for Automatic"
 - "Validate manifests against AKS Automatic constraints"
 - "Fix my deployment for Automatic compatibility"
-- "What would break if I switch to Automatic?"
+- "Identify AKS Automatic migration blockers"
 - Any mention of AKS Automatic + (migration | readiness | compatibility | assessment | validation)
 
 ## Routing Rules
@@ -198,7 +198,6 @@ Use patterns in `references/common-fixes.md` and generate a before/after diff. S
 - `safeguard-no-host-path-volumes` — replacement depends on what hostPath is used for
 - `safeguard-block-host-namespaces` — may require architecture redesign
 - `safeguard-host-network-ports` — needs alternative networking approach
-- `safeguard-allowed-container-images` — needs registry migration plan
 
 For incompatible findings (e.g., hostPath volumes), explain the issue and propose alternatives. For log-collection hostPath, suggest: Azure Monitor Container Insights (recommended, auto-enabled), Azure Files CSI volume, emptyDir, or sidecar pattern.
 
@@ -246,4 +245,4 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | `references/migration-guide-summary.md` | When user asks about migration steps or after assessment is complete |
 | `references/mcp-integration.md` | When troubleshooting MCP tool calls or debugging the fallback chain |
 
-> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 26 cluster-level constraints, 25 active Deployment Safeguards policies (27 in the Azure initiative, 2 never activated), 2 active webhook mutators (20 Azure Policy mutation definitions exist but were never activated), and 5 Pod Security Baseline policies. Always note the spec version in assessment output.
+> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 26 cluster-level constraints, 25 active Deployment Safeguards policies, 2 active webhook mutators, and 5 Pod Security Baseline policies. Always note the spec version in assessment output.

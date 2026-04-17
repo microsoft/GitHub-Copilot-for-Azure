@@ -183,9 +183,11 @@ az aks show \
 # 3. Verify kubectl context
 kubectl config current-context
 kubectl cluster-info
+```
 
-# 4. Verify MCP server is reachable (Azure MCP)
-# Test by listing resource groups — if this works, MCP is available
+```javascript
+// 4. Verify MCP server is reachable (Azure MCP)
+// If this returns available actions, MCP is configured
 mcp_azure_mcp_aks({ action: "discover" })
 ```
 

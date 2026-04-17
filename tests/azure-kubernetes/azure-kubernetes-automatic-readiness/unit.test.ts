@@ -50,11 +50,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Routing Rules", () => {
     test("routes cluster creation to azure-kubernetes", () => {
-      expect(skill.content).toMatch(/azure-kubernetes/i);
+      expect(skill.content).toMatch(/Route to `azure-kubernetes` instead/i);
     });
 
     test("routes live troubleshooting to azure-diagnostics", () => {
-      expect(skill.content).toMatch(/azure-diagnostics/i);
+      expect(skill.content).toMatch(/Route to `azure-diagnostics` instead/i);
     });
   });
 

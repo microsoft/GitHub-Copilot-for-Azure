@@ -189,7 +189,7 @@ clusterConstraints:
     note: AKS-managed, not customer-facing
 
 # =============================================================================
-# WORKLOAD CONSTRAINTS — Deployment Safeguards (25 active policies; 27 in initiative, 2 never activated)
+# WORKLOAD CONSTRAINTS — Deployment Safeguards (25 active policies)
 # Initiative: c047ea8e | Effect: Deny on Automatic
 # =============================================================================
 safeguards:
@@ -199,7 +199,7 @@ safeguards:
     severity: requiresChanges
     category: nodeProtection
     check: Blocks unauthorized Node object mutations
-    fix: Use allowed service accounts for node operations
+    fix: Manage node pools through the AKS API (az aks nodepool) instead of direct Node object edits
 
   - id: safeguard-container-resource-requests
     policyId: 03a4ecdb
@@ -221,13 +221,6 @@ safeguards:
     category: labeling
     check: AKS-reserved label prefixes blocked
     fix: Remove/rename labels with kubernetes.azure.com/ prefix
-
-  - id: safeguard-allowed-container-images
-    policyId: febd0533
-    severity: requiresChanges
-    category: imagePolicy
-    check: Images must match allowed registry regex
-    fix: Retag and push to allowed registry (e.g. *.azurecr.io)
 
   - id: safeguard-restricted-taints
     policyId: 48940d92
@@ -264,9 +257,6 @@ safeguards:
     category: imagePolicy
     check: Image tag must not be :latest or untagged (no colon)
     patch: "replace image tag with specific version or sha256 digest"
-
-  # Note: safeguard-mutate-system-pool-taints and safeguard-print-mutations-annotations
-  # were Azure Policy mutations that were never activated. Removed.
 
   # -- Baseline PSS policies in Safeguards (15 policies) --
   - id: safeguard-block-host-namespaces
@@ -326,10 +316,10 @@ safeguards:
 
   - id: safeguard-enforce-selinux
     policyId: e1e6c427
-    severity: requiresChanges
+    severity: informational
     category: podSecurity
-    check: SELinux type must be container_t, container_init_t, container_kvm_t, or container_engine_t
-    fix: Remove custom seLinuxOptions or use allowed types
+    check: Restricted PSS only — SELinux type must be container_t, container_init_t, container_kvm_t, or container_engine_t. Not enforced by AKS Automatic baseline.
+    fix: "Optional hardening: remove custom seLinuxOptions or use allowed types"
 
   - id: safeguard-windows-block-host-process
     policyId: 077f0ce1
@@ -375,8 +365,6 @@ safeguards:
 
 # =============================================================================
 # WEBHOOK MUTATIONS (2 active mutators) — auto-applied at admission
-# Note: All Azure Policy mutations (PSS, PDB, system pool taints, cpu/memory
-# limits) were NEVER ACTIVATED. Only the two webhook mutators below are active.
 # =============================================================================
 mutations:
   - id: mutation-anti-affinity-topology-spread

@@ -26,7 +26,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Can I migrate my cluster to AKS Automatic?",
       "Check my cluster readiness for AKS Automatic",
       "Assess my AKS cluster for Automatic compatibility",
-      "What would break if I switch to AKS Automatic?",
+      "Identify AKS Automatic migration blockers",
       "Is my workload compatible with AKS Automatic?",
 
       // Manifest validation

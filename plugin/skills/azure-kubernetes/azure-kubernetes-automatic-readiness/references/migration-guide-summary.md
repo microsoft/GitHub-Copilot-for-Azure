@@ -63,14 +63,14 @@ az aks delete \
 
 ---
 
-## Day-0 Decisions — Cannot Change on an Existing Cluster
+## Day-0 Decisions — Cluster-Level Configuration Requirements
 
-These require creating a **new** cluster. Route to `azure-kubernetes` skill for creation.
+Some settings require creating a **new** cluster; others can be enabled on existing clusters. Route to `azure-kubernetes` skill for cluster creation.
 
 | Requirement | AKS Automatic default | What to do |
 |---|---|---|
-| API Server VNet Integration | Required, auto-enabled | Must use a new cluster |
-| Network plugin | Azure CNI Overlay | Must use a new cluster if currently on kubenet |
+| API Server VNet Integration | Required, auto-enabled | Requires a new cluster |
+| Network plugin | Azure CNI Overlay | Requires a new cluster if currently on kubenet |
 | System node pool OS | Azure Linux | Recreate system node pool (user pools unaffected) |
 | OIDC Issuer | Auto-enabled | Can be enabled on existing: `az aks update --enable-oidc-issuer` |
 | Workload Identity | Auto-enabled | Can be enabled on existing: `az aks update --enable-workload-identity` |
@@ -86,7 +86,7 @@ No manual setup needed for these — show this list when user asks "what do I ge
 | Node Auto Provisioning (NAP) | Replaces cluster autoscaler; right-sizes node pools automatically |
 | Vertical Pod Autoscaler (VPA) | Auto-tunes resource requests after deployment |
 | Azure Monitor Container Insights | Logs, metrics, and dashboards out of the box |
-| Deployment Safeguards | 27 deny policies + 2 active webhook mutators at admission (resource-requests defaults + anti-affinity/topology-spread; 20 Azure Policy mutation definitions exist but were never activated) |
+| Deployment Safeguards | 25 active deny policies + 2 webhook mutators at admission (resource-requests defaults + anti-affinity/topology-spread) |
 | Pod Security Standards (Baseline) | Enforced cluster-wide; Restricted available opt-in |
 | Managed OIDC Issuer | Required for workload identity |
 | Azure Key Vault CSI Driver | Secret injection without static credentials |

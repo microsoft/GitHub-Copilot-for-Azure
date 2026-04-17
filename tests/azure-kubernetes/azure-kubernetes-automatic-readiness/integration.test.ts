@@ -29,24 +29,29 @@ const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
 
 function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvoked>[0]): boolean {
+  // Best signal: the readiness sub-skill was directly invoked.
   if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
     return true;
   }
 
-  // Current runtime routes readiness requests through azure-kubernetes.
-  if (isSkillInvoked(agentMetadata, ROUTER_SKILL_NAME)) {
-    return true;
-  }
-
-  // Fallback signal when references are used without explicit nested skill invocation.
-  return (
-    doesAssistantMessageIncludeKeyword(agentMetadata, "azure-kubernetes-automatic-readiness") ||
+  // Next best: the agent viewed a readiness-specific reference file.
+  if (
     isToolCalled(
       agentMetadata,
       "view",
       /azure-kubernetes\/azure-kubernetes-automatic-readiness\//,
     )
-  );
+  ) {
+    return true;
+  }
+
+  // Weakest signal: the response mentions the readiness sub-skill by name.
+  if (doesAssistantMessageIncludeKeyword(agentMetadata, "azure-kubernetes-automatic-readiness")) {
+    return true;
+  }
+
+  // Router-only invocation does NOT count — it doesn't prove readiness workflow ran.
+  return false;
 }
 
 const skipTests = shouldSkipIntegrationTests();
