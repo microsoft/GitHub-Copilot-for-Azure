@@ -17,8 +17,7 @@
     metadata and resolved status from eval.json, and uploads all artifacts to Azure Blob Storage.
 
     After processing, successfully completed dates are removed from the ToBeProcessed file,
-    which is then uploaded back to blob storage. If the ToBeProcessed file does not exist
-    in the container, the script exits gracefully with no action.
+    which is then uploaded back to blob storage.
 
     Blob path format: {date}/{benchmark_instance}/{filename}
 
@@ -58,7 +57,7 @@
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     # --- Retrieve GitHub PAT from KeyVault ---
-    # It needs to be a fine grained github PAT token here.
+    # It needs to be a fine-grained GitHub access token with the Account level Copilot Request permission
     try {
         Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
         $azArgs = @(
@@ -280,13 +279,16 @@
         Write-Host "Copying generated report files to output path: $dateOutputPath"
         $reportsDir = Join-Path $targetDir "reports"
         $reportFiles = @()
+        $reportsFound = $false
         if ((Test-Path $reportsDir)) {
-            $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
-            if ($reportsDirMdFiles) {
+            $reportsDirMdFiles = @(Get-ChildItem -Path $reportsDir -Filter '*.md')
+            if ($reportsDirMdFiles.Count -gt 0) {
                 $reportFiles = $reportsDirMdFiles
+                $reportsFound = $true
                 Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
             }
-        } else {
+        }
+        if (-not $reportsFound) {
             $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' | Where-Object { $_.FullName -notlike "*\.github\*" -and $_.FullName -notlike "*/.github/*" }
             Write-Host "Found $($reportFiles.Count) report(s) in $targetDir (excluding .github folders)"
         }
