@@ -132,4 +132,51 @@ EOF`;
     // The cat > file part before the heredoc is preserved
     expect(result).toContain("cat > /tmp/skill-test-Fjv9Xq/README.md ");
   });
+
+  test("comment with heredoc syntax does not enter heredoc mode", () => {
+    // A commented-out example must not swallow subsequent real commands
+    const command = `# example: cat <<EOF
+azd provision --preview
+echo done`;
+    const result = stripNonExecutableContent(command);
+    expect(result).toContain("azd provision --preview");
+    expect(result).toContain("echo done");
+    expect(result).not.toContain("example");
+  });
+
+  test("strips PowerShell single-quoted here-string", () => {
+    const command = `$readme = @'
+azd up
+azd deploy
+'@
+Write-Host "done"`;
+    const result = stripNonExecutableContent(command);
+    expect(result).not.toContain("azd up");
+    expect(result).not.toContain("azd deploy");
+    expect(result).toContain('Write-Host "done"');
+  });
+
+  test("strips PowerShell double-quoted here-string", () => {
+    const command = `$content = @"
+Run azd up to deploy
+Run azd deploy for updates
+"@
+Set-Content -Path README.md -Value $content`;
+    const result = stripNonExecutableContent(command);
+    expect(result).not.toContain("azd up");
+    expect(result).not.toContain("azd deploy");
+    expect(result).toContain("Set-Content");
+  });
+
+  test("preserves real PowerShell commands around here-strings", () => {
+    const command = `azd env set FOO bar
+$x = @'
+azd up
+'@
+azd provision --preview`;
+    const result = stripNonExecutableContent(command);
+    expect(result).toContain("azd env set FOO bar");
+    expect(result).not.toContain("azd up");
+    expect(result).toContain("azd provision --preview");
+  });
 });
