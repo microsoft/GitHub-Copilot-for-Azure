@@ -66,6 +66,25 @@ azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
 
 > 💡 **Tip:** Set these variables immediately after `azd init` to avoid deployment failures. The Bicep `principalId` and `principalName` parameters will automatically use these environment variables.
 
+## ⚠️ MANDATORY: Connection String with Entra Auth Parameter
+
+> **CRITICAL:** When outputting SQL connection strings in Bicep (e.g., in App Service `connectionStrings` or as outputs), ALWAYS include `Authentication=Active Directory Default`. A bare `Server=tcp:...;Database=...;` connection string without this parameter will fail at runtime.
+
+**Correct pattern in Bicep:**
+
+```bicep
+connectionStrings: [
+  {
+    name: 'DefaultConnection'
+    value: 'Server=tcp:${sqlServer.outputs.fqdn},1433;Database=${sqlDatabase.outputs.name};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;'
+    type: 'SQLAzure'
+  }
+]
+```
+
+> ❌ **DO NOT** generate connection strings without the `Authentication=Active Directory Default` parameter.
+> ❌ **DO NOT** use manual `AccessToken` assignment or `DefaultAzureCredential().GetToken()` in application code as an alternative to the connection string parameter.
+
 ## Serverless Configuration
 
 ```bicep

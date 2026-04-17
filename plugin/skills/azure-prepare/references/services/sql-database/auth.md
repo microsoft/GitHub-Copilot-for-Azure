@@ -84,6 +84,8 @@ ALTER ROLE db_datawriter ADD MEMBER [my-container-app];
 
 ### Entra ID Authentication (Recommended)
 
+> ⚠️ **MANDATORY**: When generating SQL connection strings for apps with Entra-only auth, ALWAYS include `Authentication=Active Directory Default` directly in the connection string. Do NOT use manual `AccessToken` assignment, `DefaultAzureCredential().GetToken()` patterns, or bare connection strings without an authentication parameter. The `Authentication=Active Directory Default` parameter is required in both the Bicep infrastructure output (e.g., App Service `connectionStrings` property) and in any application configuration files (e.g., `appsettings.json`).
+
 ```
 Server=tcp:{server}.database.windows.net,1433;Database={database};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;
 ```
