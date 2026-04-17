@@ -10,7 +10,6 @@ const skillsRoot = path.resolve(__dirname, "../../plugin/skills");
 // Two naming conventions for Azure MCP tool references in skill markdown:
 //   mcp_azure_mcp_<tool>  — GitHub Copilot MCP tool reference format
 //   azure__<tool>          — Alternative GitHub Copilot MCP tool reference format
-const MCP_AZURE_MCP_PREFIX = "mcp_azure_mcp_";
 const MCP_AZURE_MCP_RE = /mcp_azure_mcp_([a-z][a-z0-9_]*)/g;
 const AZURE_DOUBLE_UNDERSCORE_RE = /azure__([a-z][a-z0-9_]*)/g;
 
