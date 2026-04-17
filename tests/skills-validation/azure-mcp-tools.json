@@ -1,5 +1,0 @@
-{
-  "description": "Reference to the canonical Azure MCP tool-name snapshot used by skills validation. Do not duplicate tool names in this file; refresh the canonical snapshot instead.",
-  "updatedAt": "2026-04-17",
-  "sourceSnapshot": "../fixtures/azure-mcp-tool-names.snapshot.json"
-}

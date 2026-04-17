@@ -13,6 +13,9 @@
  * the @azure/mcp server (tracked in issue #1933).
  *
  * Run: npm run test:unit -- --testPathPatterns=mcp-tool-names
+ *
+ * The snapshot is the canonical `tests/fixtures/azure-mcp-tool-names.snapshot.json`,
+ * refreshed via `npm run update:mcp-tool-snapshot`.
  */
 
 import * as fs from "fs";
@@ -23,7 +26,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SKILLS_DIR = path.resolve(__dirname, "../../plugin/skills");
-const SNAPSHOT_PATH = path.resolve(__dirname, "azure-mcp-tools.json");
+const SNAPSHOT_PATH = path.resolve(__dirname, "../fixtures/azure-mcp-tool-names.snapshot.json");
 
 /** Tool reference found in a markdown file */
 interface ToolReference {
@@ -52,16 +55,19 @@ const PATTERNS = [MCP_AZURE_MCP_RE, AZURE_DOUBLE_UNDERSCORE_RE];
 // ---------------------------------------------------------------------------
 
 /**
- * Reads the static Azure MCP tool name snapshot from `azure-mcp-tools.json`
- * and returns the set of valid tool names.
+ * Reads the canonical Azure MCP tool name snapshot from
+ * `tests/fixtures/azure-mcp-tool-names.snapshot.json` and returns the set of
+ * valid tool names. Refresh the snapshot with `npm run update:mcp-tool-snapshot`.
  */
 function getAzureMcpToolNamesFromSnapshot(): Set<string> {
   const raw = fs.readFileSync(SNAPSHOT_PATH, "utf-8");
-  const snapshot = JSON.parse(raw) as { tools: string[] };
-  if (!Array.isArray(snapshot.tools)) {
-    throw new Error(`azure-mcp-tools.json is malformed: "tools" must be an array`);
+  const snapshot = JSON.parse(raw) as { toolNames: string[] };
+  if (!Array.isArray(snapshot.toolNames)) {
+    throw new Error(
+      `azure-mcp-tool-names.snapshot.json is malformed: "toolNames" must be an array`
+    );
   }
-  return new Set(snapshot.tools);
+  return new Set(snapshot.toolNames);
 }
 
 // ---------------------------------------------------------------------------
