@@ -68,21 +68,33 @@ azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
 
 ## ⚠️ MANDATORY: Connection String with Entra Auth Parameter
 
-> **CRITICAL:** When outputting SQL connection strings in Bicep (e.g., in App Service `connectionStrings` or as outputs), ALWAYS include `Authentication=Active Directory Default`. A bare `Server=tcp:...;Database=...;` connection string without this parameter will fail at runtime.
+> **CRITICAL:** When outputting SQL connection strings in Bicep (e.g., in App Service `connectionStrings` or as outputs), ALWAYS include an `Authentication` parameter. Use `Authentication=Active Directory Default` for general scenarios or `Authentication=Active Directory Managed Identity` when a user-assigned managed identity with a specific `User Id` is required. A bare `Server=tcp:...;Database=...;` connection string without this parameter will fail at runtime.
 
-**Correct pattern in Bicep:**
+**Correct pattern in Bicep (Active Directory Default):**
 
 ```bicep
 connectionStrings: [
   {
     name: 'DefaultConnection'
-    value: 'Server=tcp:${sqlServer.outputs.fqdn},1433;Database=${sqlDatabase.outputs.name};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;'
+    value: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${sqlDatabase.name};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;'
     type: 'SQLAzure'
   }
 ]
 ```
 
-> ❌ **DO NOT** generate connection strings without the `Authentication=Active Directory Default` parameter.
+**With user-assigned managed identity:**
+
+```bicep
+connectionStrings: [
+  {
+    name: 'DefaultConnection'
+    value: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${sqlDatabase.name};Authentication=Active Directory Managed Identity;User Id=${uamiClientId};Encrypt=True;TrustServerCertificate=False;'
+    type: 'SQLAzure'
+  }
+]
+```
+
+> ❌ **DO NOT** generate connection strings without an `Authentication=Active Directory Default` or `Authentication=Active Directory Managed Identity` parameter.
 > ❌ **DO NOT** use manual `AccessToken` assignment or `DefaultAzureCredential().GetToken()` in application code as an alternative to the connection string parameter.
 
 ## Serverless Configuration
