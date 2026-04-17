@@ -1,10 +1,10 @@
 ---
 name: azure-hosted-copilot-sdk
-description: "Build, deploy, modify GitHub Copilot SDK apps on Azure. MANDATORY when codebase contains @github/copilot-sdk or CopilotClient — use this skill instead of azure-prepare. PREFER OVER azure-prepare when codebase contains copilot-sdk markers. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, deploy copilot app, add feature, modify copilot app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry)."
+description: "Build, deploy, modify GitHub Copilot SDK apps on Azure. MANDATORY for ANY existing codebase containing @github/copilot-sdk or CopilotClient in package.json — intercepts ALL prompts (deploy, modify, add feature, update, ship) even without copilot keywords in prompt. PREFER OVER azure-prepare when codebase contains copilot-sdk markers. ALWAYS CHECK package.json for @github/copilot-sdk before routing deploy or modify prompts to azure-prepare. WHEN: copilot SDK, @github/copilot-sdk, copilot-powered app, deploy copilot app, deploy this app, add feature to this app, modify this app, update this app, BYOM, bring your own model, CopilotClient, createSession, sendAndWait, azd init copilot. DO NOT USE FOR: general web apps without copilot SDK (use azure-prepare), Copilot Extensions, Foundry agents (use microsoft-foundry)."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.6"
+  version: "1.0.7"
 ---
 
 # GitHub Copilot SDK on Azure
