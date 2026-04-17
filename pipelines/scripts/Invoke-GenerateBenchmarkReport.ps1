@@ -278,10 +278,12 @@
         Write-Host "Copying generated report files to output path: $dateOutputPath"
         $reportsDir = Join-Path $targetDir "reports"
         $reportFiles = @()
-        $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
-        if ((Test-Path $reportsDir) -and $reportsDirMdFiles) {
-            $reportFiles = $reportsDirMdFiles
-            Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
+        if ((Test-Path $reportsDir)) {
+            $reportsDirMdFiles = Get-ChildItem -Path $reportsDir -Filter '*.md'
+            if ($reportsDirMdFiles) {
+                $reportFiles = $reportsDirMdFiles
+                Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
+            }
         } else {
             $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' | Where-Object { $_.FullName -notlike "*\.github\*" -and $_.FullName -notlike "*/.github/*" }
             Write-Host "Found $($reportFiles.Count) report(s) in $targetDir (excluding .github folders)"
@@ -331,112 +333,130 @@
 
         # Find and copy eval_report.json files for each benchmark instance,
         # enriched with model name and run ID from run_metadata.json.
-        # Path structure: msbench_run_results/{runId}_results/azure.eval.x86_64.{instance}-output/output/eval_report.json
+        # Folder structure:
+        #   msbench_run_results/
+        #     {runId}_results/
+        #       run_metadata.json
+        #       azure.eval.x86_64.{instance}-output/
+        #         output/
+        #           eval_report.json
+        #           eval.json
         Write-Host "Searching for eval_report.json files to enrich and copy to output path"
-        $runResultsDirs = Get-ChildItem -Path $targetDir -Directory -Filter 'msbench_run_results' -ErrorAction SilentlyContinue
-        if (-not $runResultsDirs) {
-            $runResultsDirs = Get-ChildItem -Path $cloneDir -Directory -Filter 'msbench_run_results' -Recurse -ErrorAction SilentlyContinue
+        $msbenchRunResultsDir = Join-Path $targetDir 'msbench_run_results'
+        if (!(Test-Path $msbenchRunResultsDir)) {
+            # Fallback: find run_metadata.json and derive the results folder
+            # Structure: {results_folder}/{runId}_results/run_metadata.json
+            Write-Host "msbench_run_results not found at expected path. Searching for run_metadata.json under $targetDir"
+            $metadataHit = Get-ChildItem -Path $targetDir -Filter 'run_metadata.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $metadataHit) {
+                Write-Warning "No run_metadata.json found under $targetDir. Cannot locate results folder. Skipping date $date."
+                continue
+            }
+            # run_metadata.json is inside {results_folder}/{runId}_results/ — go up 2 levels
+            $msbenchRunResultsDir = $metadataHit.Directory.Parent.FullName
+            Write-Host "Found results folder via run_metadata.json: $msbenchRunResultsDir"
         }
 
-        if ($runResultsDirs) {
-            $evalCount = 0
-            foreach ($runResultsDir in $runResultsDirs) {
-                $runDirs = Get-ChildItem -Path $runResultsDir.FullName -Directory -Filter '*_results' -ErrorAction SilentlyContinue
-                Write-Host "Processing run results directory: $($runResultsDir.FullName)"
-                foreach ($runDir in $runDirs) {
-                    # Read model name and run ID from run_metadata.json
-                    $metadataFile = Join-Path $runDir.FullName 'run_metadata.json'
-                    $model = $null
-                    if (Test-Path $metadataFile) {
-                        $metadata = Get-Content -Path $metadataFile -Raw | ConvertFrom-Json
-                        $model = $metadata.model -replace '-autodev-test$', ''
-                        Write-Host "Run $(($runDir.Name -replace '_results$', '')): model=$model"
-                    }
+        $evalCount = 0
+        $runDirs = Get-ChildItem -Path $msbenchRunResultsDir -Directory -Filter '*_results' -ErrorAction SilentlyContinue
+        Write-Host "Processing run results directory: $msbenchRunResultsDir"
+        foreach ($runDir in $runDirs) {
+            # Read model name from run_metadata.json
+            $metadataFile = Join-Path $runDir.FullName 'run_metadata.json'
+            if (!(Test-Path $metadataFile)) {
+                Write-Warning "run_metadata.json not found in $($runDir.FullName). Skipping this run directory."
+                continue
+            }
+            $metadata = Get-Content -Path $metadataFile -Raw | ConvertFrom-Json
+            if (-not $metadata.model) {
+                Write-Warning "No 'model' field in run_metadata.json in $($runDir.FullName). Skipping this run directory."
+                continue
+            }
+            $model = $metadata.model -replace '-autodev-test$', ''
+            $runId = $runDir.Name -replace '_results$', ''
+            Write-Host "Run ${runId}: model=$model"
 
-                    # Find eval_report.json files under azure.eval.x86_64.{instance}-output/output/
-                    $evalReports = Get-ChildItem -Path $runDir.FullName -Filter 'eval_report.json' -Recurse -ErrorAction SilentlyContinue
-                    foreach ($evalReport in $evalReports) {
-                        # Extract instance name from: azure.eval.x86_64.{instance}-output
-                        $outputDirName = $evalReport.Directory.Parent.Name  # e.g. azure.eval.x86_64.aca_deployment_skill-output
-                        $instanceName = $outputDirName -replace '^azure\.eval\.x86_64\.', '' -replace '-output$', ''
+            # Iterate over azure.eval.x86_64.{instance}-output directories
+            $instanceDirs = Get-ChildItem -Path $runDir.FullName -Directory -Filter 'azure.eval.x86_64.*-output' -ErrorAction SilentlyContinue
+            foreach ($instanceDir in $instanceDirs) {
+                $instanceName = $instanceDir.Name -replace '^azure\.eval\.x86_64\.', '' -replace '-output$', ''
+                $outputDir = Join-Path $instanceDir.FullName 'output'
 
-                        # Enrich eval_report.json with model and run metadata
-                        $evalContent = Get-Content -Path $evalReport.FullName -Raw | ConvertFrom-Json
-                        if ($model) { $evalContent | Add-Member -NotePropertyName 'model' -NotePropertyValue $model -Force }
-                        $evalContent | Add-Member -NotePropertyName 'instance_id' -NotePropertyValue $instanceName -Force
+                $evalReportFile = Join-Path $outputDir 'eval_report.json'
+                if (!(Test-Path $evalReportFile)) {
+                    Write-Warning "eval_report.json not found in $outputDir for instance '$instanceName'. Skipping."
+                    continue
+                }
+                # Enrich eval_report.json with model and instance metadata
+                $evalContent = Get-Content -Path $evalReportFile -Raw | ConvertFrom-Json
+                $evalContent | Add-Member -NotePropertyName 'model' -NotePropertyValue $model -Force
+                $evalContent | Add-Member -NotePropertyName 'instance_id' -NotePropertyValue $instanceName -Force
 
-                        # Enrich with resolved field from eval.json in the same directory
-                        $evalJsonFile = Join-Path $evalReport.DirectoryName 'eval.json'
-                        if (Test-Path $evalJsonFile) {
-                            $evalJson = Get-Content -Path $evalJsonFile -Raw | ConvertFrom-Json
-                            $resolvedValue = $null
-                            # eval.json structure: { "instance_name": { "resolved": true/false } }
-                            foreach ($prop in $evalJson.PSObject.Properties) {
-                                if ($null -ne $prop.Value.resolved) {
-                                    $resolvedValue = $prop.Value.resolved
-                                    break
-                                }
-                            }
-                            if ($null -ne $resolvedValue) {
-                                $evalContent | Add-Member -NotePropertyName 'resolved' -NotePropertyValue $resolvedValue -Force
-                                Write-Host "Enriched with resolved=$resolvedValue from eval.json for instance '$instanceName'"
-                            } else {
-                                Write-Warning "eval.json found but no 'resolved' field for instance '$instanceName'"
-                            }
-                        } else {
-                            Write-Warning "eval.json not found at $evalJsonFile for instance '$instanceName'"
-                        }
-
-                        $destination = Join-Path $dateOutputPath "${model}_${instanceName}_eval_report.json"
-                        $evalContent | ConvertTo-Json -Depth 10 | Set-Content -Path $destination -Encoding UTF8
-                        Write-Host "Saved enriched eval_report.json for instance '$instanceName' (model: $model) to $destination"
-
-                        # Upload eval_report.json to Azure Blob Storage
-                        $evalBlobPath = "$date/$instanceName/${model}_${instanceName}_eval_report.json"
-                        Write-Host "Uploading ${model}_${instanceName}_eval_report.json -> $ContainerName/$evalBlobPath"
-
-                        $evalAzArgs = @(
-                            "storage"
-                            "blob"
-                            "upload"
-                            "--account-name"
-                            $StorageAccountName
-                            "--container-name"
-                            $ContainerName
-                            "--name"
-                            $evalBlobPath
-                            "--file"
-                            $destination
-                            "--auth-mode"
-                            "login"
-                            "--overwrite"
-                        )
-
-                        az @evalAzArgs
-                        if ($LASTEXITCODE -ne 0) {
-                            Write-Warning "Failed to upload $([System.IO.Path]::GetFileName($destination)) for instance $instanceName"
-                        }
-
-                        $evalCount++
+                # Enrich with resolved field from eval.json in the same output directory
+                $evalJsonFile = Join-Path $outputDir 'eval.json'
+                if (!(Test-Path $evalJsonFile)) {
+                    Write-Warning "eval.json not found in $outputDir for instance '$instanceName'. Skipping."
+                    continue
+                }
+                $evalJson = Get-Content -Path $evalJsonFile -Raw | ConvertFrom-Json
+                $resolvedValue = $null
+                # eval.json structure: { "instance_name": { "resolved": true/false } }
+                foreach ($prop in $evalJson.PSObject.Properties) {
+                    if ($null -ne $prop.Value.resolved) {
+                        $resolvedValue = $prop.Value.resolved
+                        break
                     }
                 }
+                if ($null -ne $resolvedValue) {
+                    $evalContent | Add-Member -NotePropertyName 'resolved' -NotePropertyValue $resolvedValue -Force
+                    Write-Host "Enriched with resolved=$resolvedValue from eval.json for instance '$instanceName'"
+                } else {
+                    Write-Warning "eval.json found but no 'resolved' field for instance '$instanceName'"
+                }
+
+                $destination = Join-Path $dateOutputPath "${model}_${instanceName}_eval_report.json"
+                $evalContent | ConvertTo-Json -Depth 10 | Set-Content -Path $destination -Encoding UTF8
+                Write-Host "Saved enriched eval_report.json for instance '$instanceName' (model: $model) to $destination"
+
+                # Upload eval_report.json to Azure Blob Storage
+                $evalBlobPath = "$date/$instanceName/${model}_${instanceName}_eval_report.json"
+                Write-Host "Uploading ${model}_${instanceName}_eval_report.json -> $ContainerName/$evalBlobPath"
+
+                $evalAzArgs = @(
+                    "storage"
+                    "blob"
+                    "upload"
+                    "--account-name"
+                    $StorageAccountName
+                    "--container-name"
+                    $ContainerName
+                    "--name"
+                    $evalBlobPath
+                    "--file"
+                    $destination
+                    "--auth-mode"
+                    "login"
+                    "--overwrite"
+                )
+
+                az @evalAzArgs
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to upload $([System.IO.Path]::GetFileName($destination)) for instance $instanceName"
+                }
+
+                $evalCount++
             }
-            if ($evalCount -eq 0) {
-                Write-Warning "No eval_report.json files found under msbench_run_results"
-            } else {
-                Write-Host "Processed $evalCount eval_report.json file(s)"
-            }
+        }
+        if ($evalCount -eq 0) {
+            Write-Warning "No eval_report.json files found under msbench_run_results"
         } else {
-            Write-Warning "No msbench_run_results directory found"
+            Write-Host "Processed $evalCount eval_report.json file(s)"
         }
 
-        # Clean up msbench_run_results for the next date iteration
-        $runResultsCleanup = Get-ChildItem -Path $targetDir -Directory -Filter 'msbench_run_results' -ErrorAction SilentlyContinue
-        if ($runResultsCleanup) {
-            foreach ($dir in $runResultsCleanup) {
-                Remove-Item -Path $dir.FullName -Recurse -Force
-                Write-Host "Cleaned up $($dir.FullName) for next iteration"
-            }
+        # Clean up run results for the next date iteration
+        if ($msbenchRunResultsDir -and (Test-Path $msbenchRunResultsDir)) {
+            Remove-Item -Path $msbenchRunResultsDir -Recurse -Force
+            Write-Host "Cleaned up $msbenchRunResultsDir for next iteration"
         }
         $reportsCleanup = Join-Path $targetDir "reports"
         if (Test-Path $reportsCleanup) {
