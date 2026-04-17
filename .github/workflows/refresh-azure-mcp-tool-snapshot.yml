@@ -28,6 +28,10 @@ jobs:
       - name: Update Azure MCP tool snapshot
         working-directory: tests
         run: npm run update:mcp-tool-snapshot
+        env:
+          AZURE_MCP_TELEMETRY_OPTOUT: "true"
+          DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+          AZURE_CORE_COLLECT_TELEMETRY: "0"
 
       - name: Commit and push snapshot changes
         id: commit_changes
