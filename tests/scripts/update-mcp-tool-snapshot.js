@@ -8,11 +8,12 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const npxExecutable = process.platform === "win32" ? "npx.cmd" : "npx";
 
 const snapshotPath = path.resolve(__dirname, "../fixtures/azure-mcp-tool-names.snapshot.json");
 
 function runAzureMcp(args) {
-  return execFileSync("npx", ["-y", "@azure/mcp", ...args], {
+  return execFileSync(npxExecutable, ["-y", "@azure/mcp", ...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   }).trim();
@@ -20,7 +21,7 @@ function runAzureMcp(args) {
 
 function listServerTools() {
   return new Promise((resolve, reject) => {
-    const child = spawn("npx", ["-y", "@azure/mcp", "server", "start"], {
+    const child = spawn(npxExecutable, ["-y", "@azure/mcp", "server", "start"], {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
