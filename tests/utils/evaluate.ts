@@ -5,7 +5,67 @@ import { type AgentMetadata } from "./agent-runner";
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
 /**
+ * Strip content that is not actually executed as shell commands.
+ * Removes bash heredoc bodies, shell comments, and PowerShell here-strings
+ * so that pattern matching only hits real commands.
+ */
+export function stripNonExecutableContent(command: string): string {
+  const lines = command.split("\n");
+  const result: string[] = [];
+  let heredocDelimiter: string | null = null;
+  let psHereStringCloser: string | null = null;
+
+  for (const line of lines) {
+    // Inside a bash heredoc — skip until closing delimiter
+    if (heredocDelimiter !== null) {
+      if (line.trim() === heredocDelimiter) {
+        heredocDelimiter = null;
+      }
+      continue;
+    }
+
+    // Inside a PowerShell here-string — skip until closing marker
+    if (psHereStringCloser !== null) {
+      if (line.trim() === psHereStringCloser) {
+        psHereStringCloser = null;
+      }
+      continue;
+    }
+
+    // Skip shell comment lines before heredoc detection to prevent
+    // commented examples like `# cat <<EOF` from entering heredoc mode
+    if (/^\s*#[^!]/.test(line) || /^\s*#$/.test(line)) {
+      continue;
+    }
+
+    // Detect bash heredoc opener: << or <<- followed by optional quotes around delimiter
+    const heredocMatch = line.match(/<<-?\s*['"]?([A-Za-z_][\w-]*)['"]?/);
+    if (heredocMatch) {
+      heredocDelimiter = heredocMatch[1];
+      // Keep the portion of the line before the heredoc (e.g., `cat > file`)
+      result.push(line.substring(0, line.indexOf("<<")));
+      continue;
+    }
+
+    // Detect PowerShell here-string openers: @' or @" (may appear mid-line after =)
+    const psMatch = line.match(/@(['"])\s*$/);
+    if (psMatch) {
+      psHereStringCloser = `${psMatch[1]}@`;
+      // Keep the portion before the here-string opener
+      result.push(line.substring(0, line.indexOf("@" + psMatch[1])));
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result.join("\n");
+}
+
+/**
  * Extract all shell command strings (powershell and bash) from agent metadata.
+ * Non-executable content (heredoc bodies, comments) is stripped so that
+ * pattern matching via {@link matchesCommand} only matches real commands.
  */
 function getShellCommands(metadata: AgentMetadata): string[] {
   return getToolCalls(metadata)
@@ -13,7 +73,7 @@ function getShellCommands(metadata: AgentMetadata): string[] {
     .map(event => {
       const data = event.data as Record<string, unknown>;
       const args = data.arguments as { command?: string } | undefined;
-      return args?.command ?? "";
+      return stripNonExecutableContent(args?.command ?? "");
     });
 }
 
