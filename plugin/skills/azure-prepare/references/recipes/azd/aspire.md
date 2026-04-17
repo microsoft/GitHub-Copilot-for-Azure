@@ -46,7 +46,7 @@ services:
 
 > 💡 **AddDockerfile services:** If the AppHost uses `AddDockerfile()` (e.g., `builder.AddDockerfile("ginapp", "./ginapp")`), do NOT add separate service entries for those resources. Aspire handles container builds for `AddDockerfile` resources at runtime through the AppHost. The `azure.yaml` should contain only the single `app` service pointing to the AppHost.
 
-> ⛔ **BEFORE continuing:** Complete the mandatory [AddParameter + WithBuildArg scan](#-after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy) below. Skipping this step is the #1 cause of failed Aspire container-build deployments.
+> ⛔ **BEFORE continuing:** Complete the mandatory [AddParameter + WithBuildArg scan](#after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy) below. Skipping this step is the #1 cause of failed Aspire container-build deployments.
 
 ## Command Flags
 
@@ -71,13 +71,13 @@ services:
 
 **Bash:**
 ```bash
-grep -RIn --include="*.cs" -E "AddParameter|WithBuildArg" <path/to/AppHost>
+grep -RIn --include="*.cs" -E "AddParameter|WithBuildArg|WithBuildSecret" <path/to/AppHost>
 ```
 
 **PowerShell:**
 ```powershell
 Get-ChildItem -Path "<path/to/AppHost>" -Recurse -Filter "*.cs" |
-  Select-String -Pattern "AddParameter|WithBuildArg"
+  Select-String -Pattern "AddParameter|WithBuildArg|WithBuildSecret"
 ```
 
 **Problematic pattern:**
@@ -207,7 +207,7 @@ azd env config set infra.parameters.goversion 1.25.4
 
 ## Validation Steps
 
-1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#-after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy)
+1. **⛔ Fix `AddParameter` used with `WithBuildArg`** — see [Post-Init: Fix AddParameter Used with WithBuildArg](#after-azd-init-fix-addparameter-used-with-withbuildarg-before-builddeploy)
 2. Verify azure.yaml has a non-empty services section
 3. Do NOT add separate service entries for `AddDockerfile()` resources — Aspire handles container builds at runtime through the AppHost
 4. Run `azd package` to validate Docker build succeeds
