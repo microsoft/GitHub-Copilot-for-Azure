@@ -19,15 +19,46 @@ Deploy to Azure using Azure Developer CLI (azd).
 |------|------|---------|
 | 1 | **Verify environment** | `azd env get-values` — Confirm AZURE_SUBSCRIPTION_ID and AZURE_LOCATION set |
 | 2 | **Provision infrastructure** | `azd provision --no-prompt` |
-| 3 | **RBAC health check** *(Container Apps + ACR only)* | After provisioning, verify `AcrPull` role has propagated before deploying — see [Pre-Deploy Checklist](../../pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) |
-| 4 | **Deploy application** | `azd deploy --no-prompt` |
-| 5 | **Post-Deploy** | [Post-Deployment Steps](post-deployment.md) — If using SQL + managed identity |
-| 6 | **Verify** | See [Verification](verify.md) |
-| 7 | **Report** | Present deployed endpoint URLs to the user — see [Verification](verify.md) Step 3 |
+| 3 | **Sync provisioning outputs** | `azd env refresh` — See [Sync Outputs After Provision](#sync-outputs-after-provision) |
+| 4 | **RBAC health check** *(Container Apps + ACR only)* | After provisioning, verify `AcrPull` role has propagated before deploying — see [Pre-Deploy Checklist](../../pre-deploy-checklist.md#container-apps--acr--pre-deploy-rbac-health-check) |
+| 5 | **Deploy application** | `azd deploy --no-prompt` |
+| 6 | **Post-Deploy** | [Post-Deployment Steps](post-deployment.md) — If using SQL + managed identity |
+| 7 | **Verify** | See [Verification](verify.md) |
+| 8 | **Report** | Present deployed endpoint URLs to the user — see [Verification](verify.md) Step 3 |
 
 > ⚠️ **Important:** For Container Apps that use a managed identity to pull from ACR, always run `azd provision` and `azd deploy` as **separate steps** (not `azd up`) and complete the RBAC health check between them. This ensures the managed identity `AcrPull` role assignment has propagated before the Container App revision attempts to pull the image.
 
 > ⚠️ **Important:** For .NET Aspire projects or projects using azd "limited mode" (no explicit `infra/` folder), verify that `azd provision` populated all required environment variables. If `azd deploy` fails with errors about missing `AZURE_CONTAINER_REGISTRY_ENDPOINT`, `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, or `MANAGED_IDENTITY_CLIENT_ID`, see [Error Handling](errors.md#missing-container-registry-variables) for the resolution.
+
+## Sync Outputs After Provision
+
+> ⚠️ **MANDATORY** after `azd provision` and before `azd deploy`. Skipping this step can leave critical environment variables (e.g., `AZURE_CONTAINER_REGISTRY_ENDPOINT`) unpopulated, causing `azd deploy` to fail.
+
+After `azd provision` completes, run `azd env refresh` to sync Bicep/Terraform outputs into the azd environment, then verify the required variables are set:
+
+```bash
+azd env refresh
+azd env get-values
+```
+
+**PowerShell:**
+```powershell
+azd env refresh
+azd env get-values
+```
+
+For Container Apps deployments, confirm that `AZURE_CONTAINER_REGISTRY_ENDPOINT` appears in the output. If it is missing after `azd env refresh`, set it manually:
+
+```bash
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT $(az acr list --resource-group rg-<env-name> --query "[0].loginServer" -o tsv)
+```
+
+**PowerShell:**
+```powershell
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr list --resource-group rg-<env-name> --query "[0].loginServer" -o tsv)
+```
+
+> 💡 **Tip:** `azd env refresh` re-reads all outputs from the most recent deployment. This is especially important when `azd provision` runs a long deployment where outputs may not be captured automatically.
 
 ## Common Mistakes
 
@@ -38,6 +69,7 @@ Deploy to Azure using Azure Developer CLI (azd).
 | `mkdir .azure` then `azd env new --no-prompt` | Creates env folder structure incorrectly |
 | Setting AZURE_LOCATION without checking RG | "Invalid resource group location" if RG exists elsewhere |
 | Ignoring `azd-service-name` tag conflicts in same RG | "found '2' resources tagged with..." error |
+| Skipping `azd env refresh` after `azd provision` | `AZURE_CONTAINER_REGISTRY_ENDPOINT` missing, `azd deploy` fails |
 | `language: html` or `language: static` | Not valid - use `language: js` with `dist: .` for static sites |
 
 ## Deployment Commands
