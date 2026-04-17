@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""Upgrade or add azure-sdk-bom in a Maven or Gradle project using OpenRewrite.
+
+Detects the build system automatically and applies the appropriate OpenRewrite
+recipes.  All operations use OpenRewrite — no manual XML/text manipulation.
+
+Step 1 – Add or upgrade BOM:
+- Maven (add):     org.openrewrite.maven.AddManagedDependency
+- Maven (upgrade): org.openrewrite.maven.UpgradeDependencyVersion
+- Gradle (add):    org.openrewrite.gradle.AddPlatformDependency
+- Gradle (upgrade):org.openrewrite.gradle.UpgradeDependencyVersion
+
+Step 2 – Remove redundant explicit versions:
+- Maven:  org.openrewrite.maven.RemoveRedundantDependencyVersions
+- Gradle: org.openrewrite.gradle.RemoveRedundantDependencyVersions
+
+Usage:
+    python3 upgrade_bom.py <project_dir> <bom_version> [options]
+
+Arguments:
+    project_dir   Path to the project root (must contain pom.xml or build.gradle).
+    bom_version   Target azure-sdk-bom version (e.g. 1.2.31).
+
+Options:
+    --mvn <cmd>     Maven command override.
+    --gradle <cmd>  Gradle command override.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+import textwrap
+import xml.etree.ElementTree as ET
+
+GROUP_ID = "com.azure"
+ARTIFACT_ID = "azure-sdk-bom"
+
+# Maven constants
+MVN_REWRITE_PLUGIN = "org.openrewrite.maven:rewrite-maven-plugin"
+MVN_REWRITE_ARTIFACT_COORDS = "org.openrewrite:rewrite-maven"
+MVN_UPGRADE_RECIPE = "org.openrewrite.maven.UpgradeDependencyVersion"
+MVN_ADD_MANAGED_RECIPE = "org.openrewrite.maven.AddManagedDependency"
+MVN_REMOVE_REDUNDANT_RECIPE = "org.openrewrite.maven.RemoveRedundantDependencyVersions"
+
+# Gradle constants
+GRADLE_UPGRADE_RECIPE = "org.openrewrite.gradle.UpgradeDependencyVersion"
+GRADLE_ADD_PLATFORM_RECIPE = "org.openrewrite.gradle.AddPlatformDependency"
+GRADLE_REMOVE_REDUNDANT_RECIPE = "org.openrewrite.gradle.RemoveRedundantDependencyVersions"
+REWRITE_YML_NAME = "rewrite.yml"
+GRADLE_PLUGIN_MARKER = "// --- openrewrite-upgrade-bom-plugin (auto-added, safe to remove) ---"
+
+# ---------------------------------------------------------------------------
+# Build-system detection
+# ---------------------------------------------------------------------------
+
+def _detect_build_system(project_dir: str) -> str:
+    """Return 'maven' or 'gradle' depending on which build file is present."""
+    if os.path.isfile(os.path.join(project_dir, "pom.xml")):
+        return "maven"
+    for name in ("build.gradle", "build.gradle.kts"):
+        if os.path.isfile(os.path.join(project_dir, name)):
+            return "gradle"
+    return "unknown"
+
+
+# ---------------------------------------------------------------------------
+# Maven helpers
+# ---------------------------------------------------------------------------
+
+def _detect_maven(project_dir: str) -> str:
+    if sys.platform == "win32":
+        wrapper = os.path.join(project_dir, "mvnw.cmd")
+    else:
+        wrapper = os.path.join(project_dir, "mvnw")
+    if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
+        return wrapper
+    return "mvn"
+
+
+def _has_maven_bom_entry(pom_path: str) -> bool:
+    try:
+        tree = ET.parse(pom_path)
+    except ET.ParseError:
+        return False
+    ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+    for dep in tree.findall(".//m:dependencyManagement/m:dependencies/m:dependency", ns):
+        gid = dep.find("m:groupId", ns)
+        aid = dep.find("m:artifactId", ns)
+        if gid is not None and aid is not None:
+            if gid.text == GROUP_ID and aid.text == ARTIFACT_ID:
+                return True
+    for dep in tree.findall(".//dependencyManagement/dependencies/dependency"):
+        gid = dep.find("groupId")
+        aid = dep.find("artifactId")
+        if gid is not None and aid is not None:
+            if gid.text == GROUP_ID and aid.text == ARTIFACT_ID:
+                return True
+    return False
+
+
+def _run_maven_recipe(mvn_cmd: str, project_dir: str, recipe: str, options: str) -> int:
+    """Run an OpenRewrite recipe via the rewrite-maven-plugin."""
+    cmd = [
+        mvn_cmd, "-U",
+        f"{MVN_REWRITE_PLUGIN}:run",
+        f"-Drewrite.recipeArtifactCoordinates={MVN_REWRITE_ARTIFACT_COORDS}",
+        f"-Drewrite.activeRecipes={recipe}",
+        f"-Drewrite.options={options}",
+    ]
+    print(f"[upgrade_bom] Running: {' '.join(cmd)}")
+    return subprocess.run(cmd, cwd=project_dir).returncode
+
+
+def _handle_maven(project_dir: str, bom_version: str, mvn_cmd: str | None) -> int:
+    pom_path = os.path.join(project_dir, "pom.xml")
+    mvn = mvn_cmd or _detect_maven(project_dir)
+
+    # Step 1: Add or upgrade the BOM
+    if not _has_maven_bom_entry(pom_path):
+        print("[upgrade_bom] No existing azure-sdk-bom entry found — adding via AddManagedDependency.")
+        options = ",".join([
+            f"groupId={GROUP_ID}",
+            f"artifactId={ARTIFACT_ID}",
+            f"version={bom_version}",
+            "type=pom",
+            "scope=import",
+        ])
+        rc = _run_maven_recipe(mvn, project_dir, MVN_ADD_MANAGED_RECIPE, options)
+        if rc != 0:
+            print(f"[upgrade_bom] ERROR: AddManagedDependency exited with code {rc}", file=sys.stderr)
+            return rc
+        print(f"[upgrade_bom] azure-sdk-bom {bom_version} added successfully.")
+    else:
+        print(f"[upgrade_bom] Existing azure-sdk-bom entry found — upgrading to {bom_version}.")
+        options = ",".join([
+            f"groupId={GROUP_ID}",
+            f"artifactId={ARTIFACT_ID}",
+            f"newVersion={bom_version}",
+            "overrideManagedVersion=true",
+        ])
+        rc = _run_maven_recipe(mvn, project_dir, MVN_UPGRADE_RECIPE, options)
+        if rc != 0:
+            print(f"[upgrade_bom] ERROR: UpgradeDependencyVersion exited with code {rc}", file=sys.stderr)
+            return rc
+        print(f"[upgrade_bom] azure-sdk-bom upgraded to {bom_version} successfully.")
+
+    # Step 2: Remove explicit versions from Azure deps managed by the BOM
+    print("[upgrade_bom] Removing redundant explicit versions for Azure dependencies...")
+    options = f"groupPattern={GROUP_ID}*,onlyIfManagedVersionIs=GTE"
+    rc = _run_maven_recipe(mvn, project_dir, MVN_REMOVE_REDUNDANT_RECIPE, options)
+    if rc != 0:
+        print(f"[upgrade_bom] WARNING: RemoveRedundantDependencyVersions exited with code {rc}", file=sys.stderr)
+    else:
+        print("[upgrade_bom] Redundant explicit versions removed successfully.")
+    return rc
+
+
+# ---------------------------------------------------------------------------
+# Gradle helpers
+# ---------------------------------------------------------------------------
+
+def _detect_gradle(project_dir: str) -> str:
+    if sys.platform == "win32":
+        wrapper = os.path.join(project_dir, "gradlew.bat")
+    else:
+        wrapper = os.path.join(project_dir, "gradlew")
+    if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
+        return wrapper
+    return "gradle"
+
+
+def _find_gradle_build_file(project_dir: str) -> str | None:
+    for name in ("build.gradle", "build.gradle.kts"):
+        path = os.path.join(project_dir, name)
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def _is_kotlin_dsl(build_file: str) -> bool:
+    return build_file.endswith(".kts")
+
+
+def _has_gradle_bom_entry(build_file: str) -> bool:
+    """Check whether build.gradle already references azure-sdk-bom."""
+    try:
+        with open(build_file, "r", encoding="utf-8") as f:
+            content = f.read()
+    except OSError:
+        return False
+    return f"{GROUP_ID}:{ARTIFACT_ID}" in content
+
+
+def _create_rewrite_yml(project_dir: str, bom_version: str, has_bom: bool) -> str:
+    """Create a temporary rewrite.yml with the appropriate OpenRewrite recipes.
+
+    When has_bom is True, uses UpgradeDependencyVersion to upgrade the existing BOM.
+    When has_bom is False, uses AddPlatformDependency to add a new enforcedPlatform BOM.
+    Always includes RemoveRedundantDependencyVersions as a final step.
+    """
+    yml_path = os.path.join(project_dir, REWRITE_YML_NAME)
+    recipes: list[str] = []
+
+    if has_bom:
+        recipes.append(textwrap.dedent(f"""\
+          - org.openrewrite.gradle.UpgradeDependencyVersion:
+              groupId: {GROUP_ID}
+              artifactId: {ARTIFACT_ID}
+              newVersion: {bom_version}"""))
+    else:
+        recipes.append(textwrap.dedent(f"""\
+          - org.openrewrite.gradle.AddPlatformDependency:
+              groupId: {GROUP_ID}
+              artifactId: {ARTIFACT_ID}
+              version: {bom_version}
+              configuration: implementation
+              enforced: true"""))
+
+    recipes.append(textwrap.dedent(f"""\
+          - org.openrewrite.gradle.RemoveRedundantDependencyVersions:
+              groupPattern: {GROUP_ID}*
+              onlyIfManagedVersionIs: GTE"""))
+
+    yml_content = textwrap.dedent("""\
+        ---
+        type: specs.openrewrite.org/v1beta/recipe
+        name: com.azure.UpgradeBom
+        displayName: Upgrade azure-sdk-bom and remove redundant versions
+        recipeList:
+    """) + "\n".join(recipes) + "\n"
+
+    with open(yml_path, "w", encoding="utf-8") as f:
+        f.write(yml_content)
+    print(f"[upgrade_bom] Created {yml_path}")
+    return yml_path
+
+
+def _inject_gradle_rewrite_plugin(build_file: str) -> bool:
+    """Temporarily add the OpenRewrite plugin to build.gradle if not present.
+
+    Returns True if the plugin block was injected (and should be cleaned up).
+    """
+    with open(build_file, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "org.openrewrite.rewrite" in content:
+        return False
+
+    kotlin = _is_kotlin_dsl(build_file)
+    if kotlin:
+        plugin_line = '    id("org.openrewrite.rewrite") version "latest.release"'
+    else:
+        plugin_line = '    id "org.openrewrite.rewrite" version "latest.release"'
+
+    rewrite_block_kt = textwrap.dedent("""\
+
+        rewrite {
+            activeRecipe("com.azure.UpgradeBom")
+        }
+
+        repositories {
+            mavenCentral()
+        }
+    """)
+    rewrite_block_groovy = rewrite_block_kt  # same syntax for both DSLs here
+
+    plugins_pattern = re.compile(r"(plugins\s*\{)", re.MULTILINE)
+    match = plugins_pattern.search(content)
+    if match:
+        insert_pos = match.end()
+        content = (
+            content[:insert_pos]
+            + "\n"
+            + GRADLE_PLUGIN_MARKER
+            + "\n"
+            + plugin_line
+            + "\n"
+            + content[insert_pos:]
+        )
+    else:
+        # No plugins block — prepend one
+        content = (
+            "plugins {\n"
+            + GRADLE_PLUGIN_MARKER
+            + "\n"
+            + plugin_line
+            + "\n}\n\n"
+            + content
+        )
+
+    content += GRADLE_PLUGIN_MARKER + "\n"
+    content += rewrite_block_kt if kotlin else rewrite_block_groovy
+
+    with open(build_file, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(f"[upgrade_bom] Injected OpenRewrite plugin into {build_file}")
+    return True
+
+
+def _remove_gradle_rewrite_plugin(build_file: str) -> None:
+    """Remove the temporarily injected OpenRewrite plugin and config blocks."""
+    with open(build_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    cleaned: list[str] = []
+    skip = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if GRADLE_PLUGIN_MARKER in line:
+            # Skip this marker line and the next content line
+            if not skip:
+                # First marker: skip it and the following plugin id line
+                i += 1
+                if i < len(lines):
+                    i += 1  # skip the plugin line
+                continue
+            else:
+                # Second marker onwards: skip remaining injected block
+                i += 1
+                continue
+        # Detect the start of the injected rewrite/repositories block at end
+        if line.strip() == GRADLE_PLUGIN_MARKER.strip():
+            skip = True
+            i += 1
+            continue
+        if not skip:
+            cleaned.append(line)
+        i += 1
+
+    with open(build_file, "w", encoding="utf-8") as f:
+        f.writelines(cleaned)
+    print(f"[upgrade_bom] Cleaned up OpenRewrite plugin from {build_file}")
+
+
+def _run_gradle_openrewrite(gradle_cmd: str, project_dir: str) -> int:
+    cmd = [gradle_cmd, "rewriteRun"]
+    print(f"[upgrade_bom] Running: {' '.join(cmd)}")
+    return subprocess.run(cmd, cwd=project_dir).returncode
+
+
+def _handle_gradle(project_dir: str, bom_version: str, gradle_cmd: str | None) -> int:
+    build_file = _find_gradle_build_file(project_dir)
+    if build_file is None:
+        print("[upgrade_bom] ERROR: no build.gradle or build.gradle.kts found", file=sys.stderr)
+        return 1
+
+    gradle = gradle_cmd or _detect_gradle(project_dir)
+    has_bom = _has_gradle_bom_entry(build_file)
+
+    if has_bom:
+        print(f"[upgrade_bom] Existing azure-sdk-bom entry found — upgrading to {bom_version}.")
+    else:
+        print("[upgrade_bom] No existing azure-sdk-bom entry found — adding via AddPlatformDependency.")
+
+    # Set up OpenRewrite: create rewrite.yml + inject plugin temporarily
+    yml_path = _create_rewrite_yml(project_dir, bom_version, has_bom=has_bom)
+    injected = _inject_gradle_rewrite_plugin(build_file)
+
+    try:
+        rc = _run_gradle_openrewrite(gradle, project_dir)
+    finally:
+        if os.path.isfile(yml_path):
+            os.remove(yml_path)
+            print(f"[upgrade_bom] Removed {yml_path}")
+        if injected:
+            _remove_gradle_rewrite_plugin(build_file)
+
+    if rc != 0:
+        print(f"[upgrade_bom] ERROR: OpenRewrite exited with code {rc}", file=sys.stderr)
+    else:
+        print(f"[upgrade_bom] BOM set to {bom_version} and redundant versions removed successfully.")
+    return rc
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Upgrade azure-sdk-bom version in a Maven or Gradle project using OpenRewrite."
+    )
+    parser.add_argument("project_dir", help="Path to the project root.")
+    parser.add_argument("bom_version", help="Target azure-sdk-bom version (e.g. 1.2.31).")
+    parser.add_argument("--mvn", default=None, help="Maven command override.")
+    parser.add_argument("--gradle", default=None, help="Gradle command override.")
+    args = parser.parse_args(argv)
+
+    project_dir = os.path.abspath(args.project_dir)
+    build_system = _detect_build_system(project_dir)
+
+    if build_system == "maven":
+        print("[upgrade_bom] Detected Maven project.")
+        return _handle_maven(project_dir, args.bom_version, args.mvn)
+    elif build_system == "gradle":
+        print("[upgrade_bom] Detected Gradle project.")
+        return _handle_gradle(project_dir, args.bom_version, args.gradle)
+    else:
+        print(
+            f"[upgrade_bom] ERROR: No pom.xml or build.gradle found in {project_dir}",
+            file=sys.stderr,
+        )
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

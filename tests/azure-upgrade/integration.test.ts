@@ -69,6 +69,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       softCheckSkill(agentMetadata, SKILL_NAME);
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
     }));
+
+    test("invokes azure-upgrade skill for legacy Azure Java SDK migration prompt (Flow B)", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Migrate my Java project from legacy Azure SDK (com.microsoft.azure) to modern Azure SDK (com.azure)",
+        nonInteractive: true,
+        followUp: ["Continue with recommended options until complete."],
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    }));
+
+    test("invokes azure-upgrade skill for upgrading legacy Azure Java libraries prompt (Flow B)", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Upgrade legacy Azure SDKs for Java to the latest modern Azure SDK packages",
+        nonInteractive: true,
+        followUp: ["Continue with recommended options until complete."],
+        shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    }));
   });
 
 });
