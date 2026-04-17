@@ -10,8 +10,8 @@ const skillsRoot = path.resolve(__dirname, "../../plugin/skills");
 // Two naming conventions for Azure MCP tool references in skill markdown:
 //   mcp_azure_mcp_<tool>  — GitHub Copilot MCP tool reference format
 //   azure__<tool>          — Alternative GitHub Copilot MCP tool reference format
-const MCP_AZURE_MCP_RE = /mcp_azure_mcp_([a-z][a-z0-9_]*)/g;
-const AZURE_DOUBLE_UNDERSCORE_RE = /azure__([a-z][a-z0-9_]*)/g;
+const MCP_AZURE_MCP_RE = /mcp_azure_mcp_([a-z0-9_-]+)(?![a-z0-9_-])/gi;
+const AZURE_DOUBLE_UNDERSCORE_RE = /azure__([a-z0-9_-]+)(?![a-z0-9_-])/gi;
 
 // No legacy Azure MCP tool aliases are currently allowed in skill markdown tests.
 // Keep this map empty so invalid tool names fail validation instead of being silently normalized.
@@ -75,7 +75,7 @@ function extractToolReferences(filePath: string): ToolReference[] {
       let match: RegExpExecArray | null;
       while ((match = re.exec(lineText)) !== null) {
         refs.push({
-          toolName: match[1],
+          toolName: match[1].toLowerCase(),
           filePath,
           line: i + 1,
           context: lineText.trim(),
@@ -122,9 +122,11 @@ describe("Azure MCP tool references in skill markdown", () => {
 
       // Allow namespaced tool references like mcp_azure_mcp_storage_blob_list
       // where "storage" is a valid tool prefix.
-      const hasValidNamespacePrefix = snapshotToolNames.some((snapshotToolName) =>
-        resolvedToolName.startsWith(`${snapshotToolName}_`),
-      );
+      const hasValidNamespacePrefix =
+        /^[a-z0-9_]+$/.test(resolvedToolName) &&
+        snapshotToolNames.some((snapshotToolName) =>
+          resolvedToolName.startsWith(`${snapshotToolName}_`),
+        );
       if (hasValidNamespacePrefix) {
         continue;
       }
