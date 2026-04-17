@@ -45,6 +45,8 @@ stages:
         scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-RunBenchmarks.ps1
         scriptArguments: >
           -OutputPath "$(Build.ArtifactStagingDirectory)"
+          -StorageAccountName "msbenchnightlydata"
+          -ContainerName "msbench-reports"
 
     - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
       displayName: 'Display Run IDs'
