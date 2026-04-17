@@ -56,10 +56,10 @@ describe("Azure MCP tool references in skill markdown", () => {
           continue;
         }
 
-        const hasValidPrefix = snapshot.toolNames.some((snapshotToolName) =>
+        const hasValidNamespacePrefix = snapshot.toolNames.some((snapshotToolName) =>
           resolvedToolName.startsWith(`${snapshotToolName}_`),
         );
-        if (hasValidPrefix) {
+        if (hasValidNamespacePrefix) {
           continue;
         }
 
