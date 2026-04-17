@@ -30,9 +30,6 @@
 .PARAMETER ContainerName
     Optional. The blob container name to upload reports to.
 
-.PARAMETER Date
-    Optional date string in yyyy-MM-dd format for blob path organization. Defaults to today's date.
-
     MSBench CLI reference:
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 
@@ -44,8 +41,7 @@
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$InputPath,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
         [Parameter(Mandatory=$false)][string]$StorageAccountName,
-        [Parameter(Mandatory=$false)][string]$ContainerName,
-        [Parameter(Mandatory=$false)][string]$Date
+        [Parameter(Mandatory=$false)][string]$ContainerName
     )
 
     Set-StrictMode -Version Latest
@@ -72,6 +68,14 @@
         throw "No run IDs found in $runIdsFile. Ensure run_ids.json contains at least one run ID."
     }
     Write-Host "Loaded run IDs from ${runIdsFile}: $($inputRunIds -join ',')"
+
+    # --- Read timestamp from the benchmark run pipeline ---
+    $timestampFile = Join-Path $InputPath 'timestamp.txt'
+    if (!(Test-Path $timestampFile)) {
+        throw "timestamp.txt not found at $timestampFile"
+    }
+    $date = (Get-Content -Path $timestampFile -Raw).Trim()
+    Write-Host "Benchmark run date: $date"
 
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretName = "msbench-report-copilot-usage"
@@ -185,7 +189,7 @@
     # Copilot will analyze the specified run IDs and generate detailed markdown reports
     Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
-    $reportGenerationPrompt = "analyze msbench run: $($inputRunIds -join ', ')"
+    $reportGenerationPrompt = "analyze msbench run on $date: $($inputRunIds -join ', ')"
     $copilotLogDir = Join-Path $OutputPath "copilot_log"
     $copilotLogFile = Join-Path $copilotLogDir "copilot_log.md"
     New-Item -Path $copilotLogDir -ItemType Directory -Force | Out-Null
@@ -286,18 +290,7 @@
     # --- Upload reports to Azure Blob Storage ---
     if ($StorageAccountName -and $ContainerName) {
         Write-Host "`n--- Uploading reports to Azure Blob Storage ---"
-
-        if (-not $Date) {
-            # Use run_ids.json last-write time as the benchmark run date (file is created by Invoke-Benchmarks.ps1 at launch time)
-            $runIdsFileInfo = Get-Item -Path $runIdsFile -ErrorAction SilentlyContinue
-            if ($runIdsFileInfo) {
-                $Date = $runIdsFileInfo.LastWriteTimeUtc.ToString("yyyy-MM-dd")
-                Write-Host "Using benchmark run date from run_ids.json timestamp: $Date"
-            } else {
-                $Date = Get-Date -Format "yyyy-MM-dd"
-                Write-Warning "Could not determine benchmark run date, falling back to today's date: $Date"
-            }
-        }
+        Write-Host "Using benchmark run date: $date"
 
         function Get-BenchmarkInstance {
             param([string]$FileName)
