@@ -93,6 +93,10 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
       healthCheckPath: '/health'
       appSettings: [
         {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'true'  // Required for source-based Node.js deploys (azd deploy)
+        }
+        {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
           value: '~20'
         }
@@ -118,7 +122,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
 
 > ⚠️ **Warning:** For source-based Node.js deployments to App Service (e.g. `azd deploy`), you **must** set `SCM_DO_BUILD_DURING_DEPLOYMENT=true` so App Service runs `npm install` during deployment. Without this, the app fails at runtime with `Cannot find module` errors.
 
-This setting is already included in the Linux example above. For Windows, add it to `appSettings` alongside `WEBSITE_NODE_DEFAULT_VERSION`.
+This setting is already included in both the Linux and Windows examples above.
 
 ## Key Vault Integration
 
