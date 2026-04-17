@@ -1,0 +1,229 @@
+/* ── Performance Dashboard ──────────────────────────────────────────────── */
+
+.pd-dashboard {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--color-bg, #f8f9fa);
+    color: var(--color-text, #1a1a1a);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.pd-header {
+    padding: 1.25rem 2rem 0.5rem;
+}
+
+.pd-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* ── Filters bar ────────────────────────── */
+
+.pd-filters {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.75rem 2rem;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-surface, #fff);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.pd-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-muted, #64748b);
+}
+
+.pd-filter select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 6px;
+    background: var(--color-bg, #f8f9fa);
+    color: var(--color-text, #1a1a1a);
+    font-size: 0.85rem;
+    min-width: 200px;
+    cursor: pointer;
+}
+
+.pd-filter select:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: -1px;
+}
+
+/* ── Charts ─────────────────────────────── */
+
+.pd-charts {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1.5rem 2rem 2rem;
+    flex: 1;
+}
+
+.pd-chart-section {
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+}
+
+.pd-chart-section h2 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ── States ─────────────────────────────── */
+
+.pd-loading,
+.pd-empty {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--color-text-muted, #64748b);
+    font-size: 1rem;
+}
+
+.pd-error {
+    padding: 0.75rem 2rem;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+/* ── Sync button ────────────────────────── */
+
+.pd-sync {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.pd-sync-button {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 6px;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #1a1a1a);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.pd-sync-button:hover:not(:disabled) {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.pd-sync-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pd-sync-result {
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #64748b);
+    white-space: nowrap;
+}
+
+/* ── Custom legend ──────────────────────── */
+
+.pd-legend {
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+.pd-legend-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.pd-legend-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #64748b);
+    margin-right: auto;
+}
+
+.pd-legend-btn {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 4px;
+    background: transparent;
+    font-size: 0.7rem;
+    color: var(--color-text-muted, #64748b);
+    cursor: pointer;
+}
+
+.pd-legend-btn:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.pd-legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.pd-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    font-size: 0.72rem;
+    color: var(--color-text, #1a1a1a);
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.6;
+}
+
+.pd-legend-item:hover {
+    background: #f1f5f9;
+}
+
+.pd-legend-item--hidden {
+    opacity: 0.35;
+    text-decoration: line-through;
+}
+
+.pd-legend-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* ── Responsive ─────────────────────────── */
+
+@media (max-width: 640px) {
+    .pd-filters {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .pd-filter select {
+        min-width: 100%;
+    }
+
+    .pd-charts {
+        padding: 1rem;
+    }
+}
