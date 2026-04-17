@@ -251,7 +251,7 @@
                 $model = $null
                 if (Test-Path $metadataFile) {
                     $metadata = Get-Content -Path $metadataFile -Raw | ConvertFrom-Json
-                    $model = $metadata.model
+                    $model = $metadata.model -replace '-autodev-test$', ''
                     Write-Host "Run $(($runDir.Name -replace '_results$', '')): model=$model"
                 }
 
