@@ -12,7 +12,7 @@
  * offline, and deterministic. Update the snapshot when new tools are added to
  * the @azure/mcp server (tracked in issue #1933).
  *
- * Run: npm run test:unit -- --testPathPattern=mcp-tool-names
+ * Run: npm run test:unit -- --testPathPatterns=mcp-tool-names
  */
 
 import * as fs from "fs";
