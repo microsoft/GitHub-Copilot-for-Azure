@@ -1,14 +1,10 @@
 name: Run Skill Evaluations
-
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'evals/**'
-      - 'plugin/skills/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   eval:
@@ -16,15 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - name: Install Azure Developer CLI
-        uses: Azure/setup-azd@c495e71ba59e44bfaaac10a32c8ee90d191ca4a3 # v2
-      - name: Install waza extension
-        run: |
-          azd config set alpha.extensions on
-          azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
-          azd ext install microsoft.azd.waza
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '22'
+          registry-url: https://npm.pkg.github.com
+          scope: '@microsoft'
+      - name: Install vally-cli
+        run: npm install --no-save @microsoft/vally-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.VALLY_NPM_TOKEN }}
       - name: Run evaluations
-        run: azd waza run evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results
+        run: npx @microsoft/vally-cli eval --eval-spec evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results --output jsonl
+        env:
+          GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -32,3 +33,4 @@ jobs:
           name: eval-results
           path: ./results
           retention-days: 30
+

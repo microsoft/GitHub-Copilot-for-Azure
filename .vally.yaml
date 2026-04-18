@@ -1,0 +1,32 @@
+paths:
+  skills:
+    - plugin/skills
+  evals:
+    - evals
+  results: results
+
+suites:
+  smoke:
+    description: "Static non-LLM checks only (e.g., trigger-pattern tests). Currently empty — all evals use the copilot-sdk executor."
+    filter:
+      tier: smoke
+      cost: free
+
+  pr:
+    description: "Non-LLM PR gate evals (cost: free reserved for static checks). Currently empty — populate as static evals are added."
+    filter:
+      cost: free
+
+  triggers:
+    description: "All routing/trigger evals"
+    filter:
+      type: trigger
+
+  integration:
+    description: "All behavior/integration evals (LLM-backed)"
+    filter:
+      type: integration
+
+  full:
+    description: "All evals including LLM graders — nightly"
+    filter: {}

@@ -347,3 +347,6 @@ x86/
 dashboard/.azure/
 dashboard/dist/
 dashboard/**/dist/
+
+# Local vally eval outputs
+results/
