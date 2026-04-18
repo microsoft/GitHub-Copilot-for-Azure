@@ -1,0 +1,380 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-kubernetes/integration.test.ts
+# Migration: Jest → Vally (Batch 2 — Medium)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-kubernetes-integration-eval
+description: |
+  Integration evaluation for azure-kubernetes skill — migrated from Jest integration tests.
+  Tests skill routing for AKS cluster management prompts and response quality
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-kubernetes
+
+environment:
+  skills:
+    - "../../plugin/skills/azure-kubernetes"
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── AKS cluster creation ──
+  # Jest: "invokes azure-kubernetes skill for AKS cluster creation prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "AKS cluster creation"
+    prompt: "Help me create a production-ready AKS cluster with best practices"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Pod rightsizing ──
+  # Jest: "invokes azure-kubernetes skill for pod rightsizing prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Pod rightsizing invocation"
+    prompt: "My AKS pods are over-provisioned, how do I rightsize them?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Cluster Autoscaler ──
+  # Jest: "invokes azure-kubernetes skill for cluster autoscaler prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Cluster Autoscaler invocation"
+    prompt: "How do I enable and configure Cluster Autoscaler on my AKS cluster?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── CAS profile tuning ──
+  # Jest: "invokes azure-kubernetes skill for CAS profile tuning prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "CAS profile tuning invocation"
+    prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Spot node pool ──
+  # Jest: "invokes azure-kubernetes skill for spot node pool prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Spot node pool invocation"
+    prompt: "How do I add a Spot VM node pool to my AKS cluster?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── VPA setup ──
+  # Jest: "invokes azure-kubernetes skill for VPA setup prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "VPA setup invocation"
+    prompt: "How do I enable Vertical Pod Autoscaler on AKS to get rightsizing recommendations?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # response-quality
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── Day-0 vs Day-1 guidance ──
+  # Jest: "responds with Day-0 vs Day-1 guidance"
+  # Assertions: doesAssistantMessageIncludeKeyword("tier") OR "networking" OR "API server"
+  - name: "Day-0 vs Day-1 guidance"
+    prompt: "What Day-0 decisions do I need to make for AKS?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)tier|networking|API server"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── AKS Automatic vs Standard ──
+  # Jest: "recommends AKS Automatic vs Standard appropriately"
+  # Assertions: doesAssistantMessageIncludeKeyword("Automatic") OR "Standard"
+  - name: "AKS Automatic vs Standard recommendation"
+    prompt: "Should I use AKS Automatic or Standard for my production workload?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Automatic|Standard"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Networking recommendations ──
+  # Jest: "provides networking recommendations"
+  # Assertions: doesAssistantMessageIncludeKeyword("CNI") OR "overlay" OR "VNet"
+  - name: "AKS networking recommendations"
+    prompt: "How should I configure AKS networking for pods that need VNet-routable IPs?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)CNI|overlay|VNet"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Security best practices ──
+  # Jest: "covers security best practices"
+  # Assertions: doesAssistantMessageIncludeKeyword("identity") OR "Entra" OR "workload" OR "Key Vault"
+  - name: "AKS security best practices"
+    prompt: "What security best practices should I follow for AKS?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)identity|Entra|workload|Key Vault"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Pod rightsizing content ──
+  # Jest: "response mentions resource requests and limits for pod rightsizing prompt"
+  # Assertions: softCheckSkill + doesAssistantMessageIncludeKeyword("kubectl top") OR "VPA" OR "resource requests"
+  - name: "Pod rightsizing content"
+    prompt: "My AKS pods are over-provisioned, how do I rightsize them?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-matches
+        config:
+          pattern: "(?i)kubectl top|VPA|resource requests"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Cluster Autoscaler content ──
+  # Jest: "response mentions autoscaler commands for cluster autoscaler prompt"
+  # Assertions: softCheckSkill + doesAssistantMessageIncludeKeyword("enable-cluster-autoscaler") OR "min-count" OR "scale-down"
+  - name: "Cluster Autoscaler content"
+    prompt: "How do I enable and configure Cluster Autoscaler on my AKS cluster?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-matches
+        config:
+          pattern: "(?i)enable-cluster-autoscaler|min-count|scale-down"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── CAS tuning content ──
+  # Jest: "response mentions autoscaler profile parameters for CAS tuning prompt"
+  # Assertions: softCheckSkill + doesAssistantMessageIncludeKeyword("scale-down-unneeded-time")
+  #   OR "utilization-threshold" OR "cluster-autoscaler-profile" OR "scale-down-delay"
+  - name: "CAS tuning content"
+    prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-matches
+        config:
+          pattern: "(?i)scale-down-unneeded-time|utilization-threshold|cluster-autoscaler-profile|scale-down-delay"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Spot node pool content ──
+  # Jest: "response mentions spot priority and eviction for spot node pool prompt"
+  # Assertions: softCheckSkill + doesAssistantMessageIncludeKeyword("Spot") OR "eviction-policy" OR "scalesetpriority"
+  - name: "Spot node pool content"
+    prompt: "How do I add a Spot VM node pool to my AKS cluster?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-matches
+        config:
+          pattern: "(?i)Spot|eviction-policy|scalesetpriority"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── VPA content ──
+  # Jest: "response mentions VPA and recommendation mode for VPA setup prompt"
+  # Assertions: softCheckSkill + doesAssistantMessageIncludeKeyword("VerticalPodAutoscaler") OR "updateMode" OR "VPA"
+  - name: "VPA content"
+    prompt: "How do I enable Vertical Pod Autoscaler on AKS to get rightsizing recommendations?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-matches
+        config:
+          pattern: "(?i)VerticalPodAutoscaler|updateMode|VPA"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

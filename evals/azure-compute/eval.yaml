@@ -1,0 +1,220 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-compute/integration.test.ts
+# Migration: Jest → Vally (Batch 2 — Medium)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Note: Jest tests used isToolCalled(metadata, "view", workflowPathPattern)
+# to verify specific workflow files were opened. Vally tool-calls grader
+# checks that the "view" tool was called (path pattern not expressible).
+
+name: azure-compute-integration-eval
+description: |
+  Integration evaluation for azure-compute skill — migrated from Jest integration tests.
+  Tests skill routing and tool-call behavior for VM recommendation, VMSS,
+  and troubleshooting prompts (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-compute
+
+environment:
+  skills:
+    - "../../plugin/skills/azure-compute"
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation (with tool-call assertions)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── Web workload recommendation → vm-recommender ──
+  # Jest: "routes web workload recommendation prompt to vm-recommender"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", RECOMMENDER_WORKFLOW_PATH)
+  - name: "Web workload VM recommendation"
+    prompt: "Which Azure VM size should I use for a web server handling 500 concurrent users?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── GPU VM recommendation → vm-recommender ──
+  # Jest: "routes GPU VM prompt to vm-recommender"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", RECOMMENDER_WORKFLOW_PATH)
+  - name: "GPU VM recommendation"
+    prompt: "I need a GPU VM on Azure for training a deep learning model. What do you recommend?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── VMSS autoscale → vm-recommender ──
+  # Jest: "routes VMSS autoscale prompt to vm-recommender"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", RECOMMENDER_WORKFLOW_PATH)
+  - name: "VMSS autoscale recommendation"
+    prompt: "Should I use a VM Scale Set with autoscaling for my API backend on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── VM vs VMSS → vmss-guide ──
+  # Jest: "routes VM vs VMSS prompt to vm-recommender"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", VMSS_GUIDE_PATH)
+  - name: "VM vs VMSS guidance"
+    prompt: "When should I use VMSS versus individual VMs on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── VM family comparison → vm-recommender ──
+  # Jest: "routes VM family comparison prompt to vm-recommender"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", RECOMMENDER_WORKFLOW_PATH)
+  - name: "VM family comparison"
+    prompt: "Compare Azure VM families for a memory-optimized database workload"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── RDP troubleshooting → vm-troubleshooter ──
+  # Jest: "routes RDP troubleshooting prompt to vm-troubleshooter"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", TROUBLESHOOTER_WORKFLOW_PATH)
+  - name: "RDP troubleshooting"
+    prompt: "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── SSH troubleshooting → vm-troubleshooter ──
+  # Jest: "routes SSH troubleshooting prompt to vm-troubleshooter"
+  # Assertions: softCheckSkill + isSkillInvoked + isToolCalled("view", TROUBLESHOOTER_WORKFLOW_PATH)
+  - name: "SSH troubleshooting"
+    prompt: "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: behavior
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

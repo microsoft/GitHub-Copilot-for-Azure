@@ -1,0 +1,275 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-messaging/integration.test.ts
+# Migration: Jest → Vally (Batch 2 — Medium)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-messaging-integration-eval
+description: |
+  Integration evaluation for azure-messaging skill — migrated from Jest integration tests.
+  Tests skill routing for customer-reported Azure messaging SDK issues and
+  response content validation (3 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-messaging
+
+environment:
+  skills:
+    - "../../plugin/skills/azure-messaging"
+
+config:
+  runs: 3
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # customer-reported-issues (invocation rate tests)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── #41220 — Event Hub connection inactive timeout ──
+  # Jest: "event-hub-connection-inactive-timeout"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Event Hub connection inactive timeout"
+    prompt: "My Python Event Hub producer client logs 'Connection closed with error: amqp:connection:forced, The connection was inactive for more than the allowed 240000 milliseconds'. I didn't set idle_timeout. Why is the connection being closed?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #38973 — Service Bus K8s pods idle after AMQP connection reset ──
+  # Jest: "servicebus-k8s-pods-idle-after-amqp-error"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service Bus K8s pods idle after AMQP error"
+    prompt: "My Kubernetes pods running azure-servicebus Python SDK stop processing messages after logging 'Connection keep-alive for SendClientAsync failed: AMQPConnectionError, Connection reset by peer'. The pods never reconnect and stay idle until restarted."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #38627 — Service Bus amqp:link:detach-forced causing slow sends ──
+  # Jest: "servicebus-link-detach-forced-slow-send"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service Bus link detach forced slow send"
+    prompt: "Using azure-servicebus Python SDK, my sender.send_messages takes 7 seconds every 10 minutes. The error shows 'amqp:link:detach-forced, IdleTimerExpired: Idle timeout: 00:10:00'. How do I prevent this delay?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #37340 — Service Bus message lock renewal too slow for large batches ──
+  # Jest: "servicebus-lock-renewal-batch-timeout"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service Bus lock renewal batch timeout"
+    prompt: "I'm receiving a batch of 400 messages from a Service Bus queue with a 4-minute lock duration. The lock renewal starts only 10 seconds before expiry and there's a 0.5s sleep between each renewal, so most message locks expire before they can be renewed."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #40156 — Service Bus receive_messages returns fewer messages in loop ──
+  # Jest: "servicebus-receive-messages-limited-in-loop"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service Bus receive messages limited in loop"
+    prompt: "When I call receiver.receive_messages(max_message_count=100) in a loop with the azure-servicebus Python SDK, after the first call returns 100 messages, subsequent calls only return 1 message even though there are 100+ messages in the queue."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #35266 — Service Bus slow sender reconnection after idle timeout ──
+  # Jest: "servicebus-slow-sender-reconnect"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service Bus slow sender reconnect"
+    prompt: "Using azure-servicebus Python SDK, creating a sender takes 1-2 seconds initially, but after the connection is closed due to idle timeout (660 seconds), recreating the sender takes 8-10 seconds. Why is reconnection so slow?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #38629 — Service Bus session-enabled queue receiver immediate detach ──
+  # Jest: "servicebus-session-receiver-detach"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service Bus session receiver detach"
+    prompt: "My ServiceBusReceiver with session_id=NEXT_AVAILABLE_SESSION connects and authenticates successfully, but the link immediately detaches with a 'Session error'. I've tried increasing timeouts and changing TransportType but the session receiver keeps failing."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── #41024 — Event Hub duplicate events with in-memory checkpoint ──
+  # Jest: "eventhub-duplicate-events-in-memory-checkpoint"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Event Hub duplicate events in-memory checkpoint"
+    prompt: "My EventHubConsumerClient using in-memory checkpoint starts consuming duplicate old events after running for 2-3 hours. The offsets reset to old values without any exception. Using azure-eventhub Python SDK 5.7.0 with receive_batch and update_checkpoint."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # response-content-validation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── session-lock-diagnosis ──
+  # Jest: "session-lock-diagnosis"
+  # Assertions: isSkillInvoked + doesAssistantMessageIncludeKeyword("session")
+  #   AND "lock" AND ("renew" OR "duration" OR "auto_lock_renewer")
+  - name: "Session lock diagnosis"
+    prompt: "I'm using azure-servicebus Python SDK with session-enabled queues. After processing a few messages, I get 'SessionLockLostError: The session lock has expired on the session'. My processing takes about 2 minutes but the session lock duration is 30 seconds. How do I fix this?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      - type: output-contains
+        config:
+          substring: "session"
+      - type: output-contains
+        config:
+          substring: "lock"
+      - type: output-matches
+        config:
+          pattern: "(?i)renew|duration|auto_lock_renewer"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── sdk-configuration-guidance ──
+  # Jest: "sdk-configuration-guidance"
+  # Assertions: isSkillInvoked + doesAssistantMessageIncludeKeyword("retry")
+  #   AND ("EventHubConsumerClient" OR "retry_total" OR "retry_backoff")
+  - name: "SDK configuration guidance"
+    prompt: "How do I configure retry policy for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+      - type: output-contains
+        config:
+          substring: "retry"
+      - type: output-matches
+        config:
+          pattern: "(?i)EventHubConsumerClient|retry_total|retry_backoff"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
