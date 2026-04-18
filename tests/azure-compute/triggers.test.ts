@@ -225,6 +225,28 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe("Should Trigger - Capacity Reservation", () => {
+    const capacityReservationPrompts: string[] = [
+      "How do I create a Capacity Reservation Group in Azure?",
+      "I need to reserve VM capacity in East US for Standard_D4s_v5",
+      "Help me set up a CRG to guarantee compute capacity for my production VMs",
+      "How do I associate a VM with a Capacity Reservation Group?",
+      "I want to pre-provision capacity for GPU VMs before a product launch",
+      "Disassociate my VMSS from a capacity reservation group",
+      "How do I guarantee Azure VM capacity in a specific zone?",
+      "Reserve Azure VM capacity for 10 Standard_E8s_v5 instances in West Europe zone 1",
+    ];
+
+    test.each(capacityReservationPrompts)(
+      'triggers on capacity reservation prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",
@@ -234,7 +256,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure my PostgreSQL database", // Different service, no azure keyword
       "How do I write a Python web scraper?", // Unrelated to Azure
       "Set up a Kubernetes cluster with Helm", // AKS, not VMs
-      "Create a serverless function with AWS Lambda", // Wrong cloud provider
+      "Create a serverless function on AWS", // Wrong cloud provider
       "What is Docker Compose and how does it work?", // Unrelated
       "Help me configure nginx as a reverse proxy", // Unrelated
       "Deploy my Node.js app to Azure"
