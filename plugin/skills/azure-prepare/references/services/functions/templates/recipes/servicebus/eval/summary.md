@@ -2,14 +2,16 @@
 
 ## Coverage Status
 
-| Language | MCP Template | Eval | Status |
-|----------|--------------|------|--------|
-| Python | ✅ | ✅ | PASS |
-| TypeScript | ✅ | 🔲 | Pending |
-| JavaScript | ✅ | 🔲 | Pending |
-| C# (.NET) | ✅ | 🔲 | Pending |
-| Java | ✅ | 🔲 | Pending |
-| PowerShell | ✅ | 🔲 | Pending |
+| Language | Manifest Templates | Eval | Status |
+|----------|-------------------|------|--------|
+| Python | — | ✅ | ✅ Verified (no AZD template) |
+| TypeScript | — | — | ⚠️ No AZD template |
+| JavaScript | — | — | ⚠️ No AZD template |
+| C# (.NET) | — | — | ⚠️ No AZD template |
+| Java | — | — | ⚠️ No AZD template |
+| PowerShell | — | — | ⚠️ No AZD template |
+
+> ⚠️ **No Service Bus AZD templates exist in the [functions template manifest](https://cdn.functions.azure.com/public/templates-manifest/manifest.json).** The Service Bus recipe relies on agent-composed scaffolding rather than a dedicated AZD quickstart repo.
 
 ## MCP Tool Validation
 
@@ -22,11 +24,11 @@
 
 ## Results
 
-| Test | Python | TypeScript | JavaScript | .NET | Java | PowerShell |
-|------|--------|------------|------------|------|------|------------|
-| Health | ✅ | - | - | - | - | - |
-| Queue message | ✅ | - | - | - | - | - |
-| Output binding | ✅ | - | - | - | - | - |
+| Test | Python |
+|------|--------|
+| Health | ✅ |
+| Queue message | ✅ |
+| Output binding | ✅ |
 
 ## Notes
 

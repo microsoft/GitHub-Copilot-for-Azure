@@ -2,14 +2,16 @@
 
 ## Coverage Status
 
-| Language | MCP Template | Eval | Status |
-|----------|--------------|------|--------|
-| Python | ✅ | ✅ | PASS |
-| TypeScript | ✅ | 🔲 | Pending |
-| JavaScript | ✅ | 🔲 | Pending |
-| C# (.NET) | ✅ | 🔲 | Pending |
-| Java | ✅ | 🔲 | Pending |
-| PowerShell | ✅ | 🔲 | Pending |
+| Language | Manifest Templates | Eval | Status |
+|----------|-------------------|------|--------|
+| Python | 3 (Bicep) | ✅ | ✅ Verified |
+| TypeScript | 2 (Bicep) | — | 📋 AZD template exists |
+| C# (.NET) | 2 (Bicep) | — | 📋 AZD template exists |
+| Java | 2 (Bicep) | — | 📋 AZD template exists |
+| JavaScript | — | — | ⚠️ No AZD template |
+| PowerShell | — | — | ⚠️ No AZD template |
+
+> ⚠️ **Eval cost note:** Each language eval requires ~5 min of agent runtime. Python is verified end-to-end; other languages confirmed in [manifest](https://cdn.functions.azure.com/public/templates-manifest/manifest.json). JavaScript and PowerShell have no MCP AZD template. Multi-language eval expansion tracked as follow-up.
 
 ## MCP Tool Validation
 
@@ -22,11 +24,11 @@
 
 ## Results
 
-| Test | Python | TypeScript | JavaScript | .NET | Java | PowerShell |
-|------|--------|------------|------------|------|------|------------|
-| Health | ✅ | - | - | - | - | - |
-| tools/list | ✅ | - | - | - | - | - |
-| tools/call | ✅ | - | - | - | - | - |
+| Test | Python |
+|------|--------|
+| Health | ✅ |
+| tools/list | ✅ |
+| tools/call | ✅ |
 
 ## Notes
 

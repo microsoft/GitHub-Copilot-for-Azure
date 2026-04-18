@@ -2,14 +2,16 @@
 
 ## Coverage Status
 
-| Language | MCP Template | Eval | Status |
-|----------|--------------|------|--------|
-| Python | ✅ | [✅](python.md) | PASS |
-| TypeScript | ✅ | 🔲 | Pending |
-| JavaScript | ✅ | 🔲 | Pending |
-| C# (.NET) | ✅ | 🔲 | Pending |
-| Java | ✅ | 🔲 | Pending |
-| PowerShell | ✅ | 🔲 | Pending |
+| Language | Manifest Templates | Eval | Status |
+|----------|-------------------|------|--------|
+| Python | 5 (Bicep + TF) | [✅](python.md) | ✅ Verified |
+| TypeScript | 2 (Bicep) | — | 📋 AZD template exists |
+| JavaScript | 2 (Bicep) | — | 📋 AZD template exists |
+| C# (.NET) | 4 (Bicep + TF) | — | 📋 AZD template exists |
+| Java | 2 (Bicep) | — | 📋 AZD template exists |
+| PowerShell | 1 (Bicep) | — | 📋 AZD template exists |
+
+> ⚠️ **Eval cost note:** Each language × trigger eval requires ~5 min of agent runtime. Full matrix (6 languages × 9 triggers) = ~4.5 hours of CI. Python is verified end-to-end; other languages are confirmed available in the [functions template manifest](https://cdn.functions.azure.com/public/templates-manifest/manifest.json) (70 templates, 6 languages). Multi-language eval expansion tracked as follow-up.
 
 ## MCP Tool Validation
 
@@ -22,11 +24,11 @@
 
 ## Results
 
-| Test | Python | TypeScript | JavaScript | .NET | Java | PowerShell |
-|------|--------|------------|------------|------|------|------------|
-| Syntax Valid | ✅ | - | - | - | - | - |
-| Health Endpoint | ✅ | - | - | - | - | - |
-| HTTP Trigger | ✅ | - | - | - | - | - |
+| Test | Python |
+|------|--------|
+| Syntax Valid | ✅ |
+| Health Endpoint | ✅ |
+| HTTP Trigger | ✅ |
 
 ## Notes
 
