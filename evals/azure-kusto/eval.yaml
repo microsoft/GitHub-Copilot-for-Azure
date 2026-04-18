@@ -1,0 +1,74 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-kusto/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-kusto-integration-eval
+description: |
+  Integration evaluation for azure-kusto skill — migrated from Jest integration tests.
+  Tests skill routing for KQL query and Kusto time series prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-kusto
+
+environment:
+  skills:
+    - ../../plugin/skills/azure-kusto
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── kql-query-prompt ──
+  # Jest: "invokes azure-kusto skill for KQL query prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "KQL query to analyze logs"
+    prompt: "Write a KQL query to analyze logs in my Azure Data Explorer database"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── kusto-time-series-prompt ──
+  # Jest: "invokes azure-kusto skill for Kusto time series prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Kusto time series aggregation"
+    prompt: "Query my Kusto database to show events aggregated by hour for the last 24 hours"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

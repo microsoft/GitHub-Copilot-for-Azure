@@ -1,0 +1,74 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/entra-app-registration/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: entra-app-registration-integration-eval
+description: |
+  Integration evaluation for entra-app-registration skill — migrated from Jest integration tests.
+  Tests skill routing for OAuth app registration and API permissions prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: entra-app-registration
+
+environment:
+  skills:
+    - ../../plugin/skills/entra-app-registration
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── oauth-app-registration-prompt ──
+  # Jest: "invokes entra-app-registration skill for OAuth app registration prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Entra app registration for OAuth"
+    prompt: "How do I create a Microsoft Entra app registration for OAuth authentication?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-app-registration
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── api-permissions-prompt ──
+  # Jest: "invokes entra-app-registration skill for API permissions prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "API permissions for Microsoft Graph"
+    prompt: "Configure API permissions for my Entra ID application to access Microsoft Graph"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-app-registration
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
