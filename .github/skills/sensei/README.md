@@ -283,7 +283,7 @@ To reach Medium-High, a skill must have:
 
 ### Token Budget
 
-From [skill-authoring](/.github/skills/skill-authoring):
+Per the [agentskills.io specification](https://agentskills.io/specification):
 - **SKILL.md:** < 500 tokens (soft), < 5000 (hard)
 - **references/*.md:** < 1000 tokens each
 - Check with: `cd scripts && npm run tokens -- check plugin/skills/{skill}/SKILL.md`
@@ -441,5 +441,4 @@ If Sensei produces unexpected results:
 
 ### Related Skills
 
-- [markdown-token-optimizer](/.github/skills/markdown-token-optimizer) - Token analysis and optimization suggestions
-- [skill-authoring](/.github/skills/skill-authoring) - Guidelines for writing compliant Agent Skills
+- [agentskills.io specification](https://agentskills.io/specification) - Official spec

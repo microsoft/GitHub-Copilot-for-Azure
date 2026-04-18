@@ -10,7 +10,7 @@ Sensei evaluates skills on two dimensions:
 
 ## Token Budgets
 
-From [skill-authoring](/.github/skills/skill-authoring):
+Per the [agentskills.io specification](https://agentskills.io/specification):
 
 | File | Soft Limit | Hard Limit | Notes |
 |------|------------|------------|-------|
@@ -30,7 +30,7 @@ References load **only when explicitly linked** in SKILL.md, not on activation:
 - No caching between requests
 - Structure with recipes/services patterns for multi-option skills
 
-See [skill-authoring REFERENCE-LOADING.md](/.github/skills/skill-authoring/references/REFERENCE-LOADING.md) for details.
+See [CREATE.md](CREATE.md) for reference loading patterns and skill structure details.
 
 ## Adherence Levels
 
@@ -412,5 +412,3 @@ From the [frontmatter audit](https://gist.github.com/spboyer/28c31bf0cafb8748940
 10. `azure-aigateway`
 11. `azure-resource-visualizer`
 12. `microsoft-foundry`
-13. `skill-authoring`
-14. `markdown-token-optimizer`

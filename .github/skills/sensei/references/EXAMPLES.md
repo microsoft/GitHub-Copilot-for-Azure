@@ -376,7 +376,7 @@ Creates GitHub issue:
   
   ## References
   
-  - [OPTIMIZATION-PATTERNS.md](/.github/skills/markdown-token-optimizer/references/OPTIMIZATION-PATTERNS.md)
+  - [TOKEN-INTEGRATION.md](/.github/skills/sensei/references/TOKEN-INTEGRATION.md)
   ```
 
 
