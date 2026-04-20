@@ -423,7 +423,7 @@ function main(): void {
     allowPositionals: true,
   });
 
-  if (values["skills-dir"]) {
+  if (values["skills-dir"] && typeof values["skills-dir"] === "string") {
     const dir = resolve(values["skills-dir"]);
     if (!existsSync(dir) || !statSync(dir).isDirectory()) {
       console.error(`\n❌ Skills directory not found: ${dir}\n`);
