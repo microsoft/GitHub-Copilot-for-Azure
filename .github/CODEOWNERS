@@ -8,27 +8,28 @@
 /.github/workflows/ @microsoft/ghcp4a
 
 # Plugin skills owners
-/plugin/skills/appinsights-instrumentation/ @JasonYeMSFT
-/plugin/skills/azure-ai/ @charris-msft
-/plugin/skills/azure-aigateway/ @azaslonov
-/plugin/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT
-/plugin/skills/azure-compliance/ @saikoumudi
-/plugin/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21
-/plugin/skills/azure-cost-optimization/ @saikoumudi
-/plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk
-/plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
-/plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab
+/plugin/skills/airunway-aks-setup/ @jongio
+/plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @jongio
+/plugin/skills/azure-ai/ @charris-msft @jongio
+/plugin/skills/azure-aigateway/ @azaslonov @jongio
+/plugin/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT @jongio
+/plugin/skills/azure-compliance/ @saikoumudi @jongio
+/plugin/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21 @jongio
+/plugin/skills/azure-cost/ @saikoumudi @jongio
+/plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk @jongio
+/plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi @jongio
+/plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @jongio
 /plugin/skills/azure-hosted-copilot-sdk/ @jongio
-/plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel
-/plugin/skills/azure-kusto/ @saikoumudi
-/plugin/skills/azure-messaging/ @kashifkhan
-/plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan
-/plugin/skills/azure-quotas/ @rakal-dyh
-/plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman
-/plugin/skills/azure-resource-lookup/ @charris-msft
-/plugin/skills/azure-resource-visualizer/ @tmeschter
-/plugin/skills/azure-storage/ @charris-msft
-/plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi
-/plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan
-/plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan
-/plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst
+/plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @jongio
+/plugin/skills/azure-kusto/ @saikoumudi @jongio
+/plugin/skills/azure-messaging/ @kashifkhan @jongio
+/plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan @jongio
+/plugin/skills/azure-quotas/ @rakal-dyh @jongio
+/plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman @jongio
+/plugin/skills/azure-resource-lookup/ @charris-msft @jongio
+/plugin/skills/azure-resource-visualizer/ @tmeschter @jongio
+/plugin/skills/azure-storage/ @charris-msft @jongio
+/plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @jongio
+/plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan @jongio
+/plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan @jongio
+/plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @jongio
