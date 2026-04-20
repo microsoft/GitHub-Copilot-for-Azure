@@ -194,6 +194,64 @@ jobs:
         if: steps.changed-plugin-skills.outputs.any_changed == 'true'
         run: npm ci --ignore-scripts && npm run build
 
+      - name: Verify build output versions
+        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const SEMVER_RE = /^\d+\.\d+\.\d+$/;
+            const PLACEHOLDER = '0.0.0-placeholder';
+            let hasError = false;
+
+            // Check all SKILL.md files have real semver versions (not placeholder)
+            const skillsDir = 'output/skills';
+            if (fs.existsSync(skillsDir)) {
+              for (const dir of fs.readdirSync(skillsDir)) {
+                const skillPath = path.join(skillsDir, dir, 'SKILL.md');
+                if (!fs.existsSync(skillPath)) continue;
+                const content = fs.readFileSync(skillPath, 'utf8');
+                const match = content.match(/^\s*version:\s*"([^"]+)"/m);
+                if (!match) {
+                  console.log(`❌ ${skillPath}: no version found in frontmatter`);
+                  hasError = true;
+                } else if (match[1] === PLACEHOLDER) {
+                  console.log(`❌ ${skillPath}: version is still placeholder "${PLACEHOLDER}"`);
+                  hasError = true;
+                } else if (!SEMVER_RE.test(match[1])) {
+                  console.log(`❌ ${skillPath}: version "${match[1]}" is not valid semver`);
+                  hasError = true;
+                } else {
+                  console.log(`✅ ${skillPath}: ${match[1]}`);
+                }
+              }
+            }
+
+            // Check all plugin.json files have real semver versions (not placeholder)
+            const pluginDirs = ['.plugin', '.claude-plugin', '.cursor-plugin'];
+            for (const dir of pluginDirs) {
+              const jsonPath = path.join('output', dir, 'plugin.json');
+              if (!fs.existsSync(jsonPath)) continue;
+              const json = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+              if (json.version === PLACEHOLDER) {
+                console.log(`❌ ${jsonPath}: version is still placeholder "${PLACEHOLDER}"`);
+                hasError = true;
+              } else if (!SEMVER_RE.test(json.version)) {
+                console.log(`❌ ${jsonPath}: version "${json.version}" is not valid semver`);
+                hasError = true;
+              } else {
+                console.log(`✅ ${jsonPath}: ${json.version}`);
+              }
+            }
+
+            if (hasError) {
+              core.setFailed('Build output contains invalid or placeholder versions. NBGV stamping may have failed.');
+            } else {
+              console.log('\n✅ All built output files have valid semver versions.');
+            }
+
       - name: Install scripts dependencies
         if: steps.changed-plugin-skills.outputs.any_changed == 'true'
         working-directory: ./scripts
@@ -335,18 +393,44 @@ jobs:
         run: |
           echo "## Markdown Reference Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Validate against built output so version-stamped files are checked
+
+          VALIDATION_FAILED=0
+
+          # Validate built plugin skill output so version-stamped files are checked
+          echo "Validating references in ../output/skills"
           if OUTPUT=$(npm run references -- --skills-dir ../output/skills 2>&1); then
             echo "$OUTPUT"
-            echo "✅ All markdown references are valid" >> $GITHUB_STEP_SUMMARY
+            echo "✅ output/skills references are valid" >> $GITHUB_STEP_SUMMARY
           else
             echo "$OUTPUT"
-            echo "❌ Found broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
+            echo "❌ output/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            VALIDATION_FAILED=1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Validate .github/skills directly (not built through gulp)
+          if [ -d "../.github/skills" ]; then
+            echo "Validating references in ../.github/skills"
+            if OUTPUT=$(npm run references -- --skills-dir ../.github/skills 2>&1); then
+              echo "$OUTPUT"
+              echo "✅ .github/skills references are valid" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "$OUTPUT"
+              echo "❌ .github/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              VALIDATION_FAILED=1
+            fi
+          fi
+
+          if [ "$VALIDATION_FAILED" -ne 0 ]; then
             exit 1
           fi
 

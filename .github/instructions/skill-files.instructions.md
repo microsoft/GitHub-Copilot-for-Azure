@@ -17,7 +17,7 @@ description: "Detailed description including trigger phrases and use cases."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "0.0.0-placeholder"
 ---
 ```
 
@@ -25,7 +25,7 @@ metadata:
 - **description**: 1-1024 characters, explain WHAT the skill does and WHEN to use it. Include trigger phrases.
 - **license**: Required for all skills. Use `MIT` unless there is a documented exception.
 - **metadata.author**: Recommended value is `Microsoft`.
-- **metadata.version**: Semver format (`X.Y.Z`). Set to `"1.0.0"` for new skills. Must be bumped in the same PR that modifies the skill.
+- **metadata.version**: Must be set to `"0.0.0-placeholder"` in source. Real semver versions are stamped automatically at build time by [NBGV](https://github.com/dotnet/Nerdbank.Gitversioning). Do not set a real version number manually.
 
 ## Size Limits
 

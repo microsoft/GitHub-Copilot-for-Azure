@@ -26,7 +26,7 @@
     "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/fancy-log": "^2.0.2",
     "@types/gulp": "^4.0.18",
-    "@types/node": "^25.6.0",
+    "@types/node": "^22.0.0",
     "@types/vinyl": "^2.0.12",
     "fancy-log": "^2.0.0",
     "gulp": "^5.0.1",
