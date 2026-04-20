@@ -192,7 +192,7 @@ jobs:
 
       - name: Build output
         if: steps.changed-plugin-skills.outputs.any_changed == 'true'
-        run: npm ci && npm run build
+        run: npm ci --ignore-scripts && npm run build
 
       - name: Install scripts dependencies
         if: steps.changed-plugin-skills.outputs.any_changed == 'true'
@@ -322,7 +322,7 @@ jobs:
 
       - name: Build output
         if: steps.changed-markdown.outputs.any_changed == 'true'
-        run: npm ci && npm run build
+        run: npm ci --ignore-scripts && npm run build
 
       - name: Install scripts dependencies
         if: steps.changed-markdown.outputs.any_changed == 'true'

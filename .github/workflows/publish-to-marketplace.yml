@@ -31,10 +31,9 @@ jobs:
       - name: Build plugin
         working-directory: source-repo
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npm run build
 
-      # 3. Clone the main branch of microsoft/skills and create a feature branch
       - name: Clone microsoft/skills and create feature branch
         env:
           GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
@@ -117,10 +116,9 @@ jobs:
       - name: Build plugin
         working-directory: source-repo
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npm run build
 
-      # 3. Clone the main branch of microsoft/azure-skills and create a feature branch
       - name: Clone microsoft/azure-skills and create feature branch
         env:
           GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
