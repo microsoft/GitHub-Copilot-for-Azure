@@ -196,7 +196,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Install azd
-        uses: Azure/setup-azd@c495e71ba59e44bfaaac10a32c8ee90d191ca4a3 # v2
+        uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2
 
       - name: Log in with Azure (Federated Credentials)
         run: |
