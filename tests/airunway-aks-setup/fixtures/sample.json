@@ -1,0 +1,20 @@
+{
+  "samplePrompts": {
+    "shouldTrigger": [
+      "How do I set up AI Runway on my AKS cluster?",
+      "Install the AI Runway controller on Kubernetes",
+      "I want to deploy my first model with AI Runway"
+    ],
+    "shouldNotTrigger": [
+      "Help me configure Azure Storage",
+      "Deploy to GCP GKE"
+    ]
+  },
+  "sampleInput": {
+    "description": "A bare AKS cluster with a single A10G GPU node pool that needs AI Runway installed end-to-end."
+  },
+  "expectedOutput": {
+    "description": "Step-by-step guidance covering cluster verification, controller installation, GPU assessment, provider setup, and first ModelDeployment CR."
+  },
+  "mcpResponses": {}
+}
