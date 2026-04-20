@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import stat
 import subprocess
 import sys
 import textwrap
@@ -74,10 +75,28 @@ def _detect_build_system(project_dir: str) -> str:
 def _detect_maven(project_dir: str) -> str:
     if sys.platform == "win32":
         wrapper = os.path.join(project_dir, "mvnw.cmd")
+        # .cmd files on Windows are invoked by the shell; no executable bit needed.
+        if os.path.isfile(wrapper):
+            return wrapper
     else:
         wrapper = os.path.join(project_dir, "mvnw")
-    if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
-        return wrapper
+        if os.path.isfile(wrapper):
+            if not os.access(wrapper, os.X_OK):
+                # Wrapper exists but isn't executable (common after fresh clones
+                # on filesystems that don't preserve the +x bit). Try to fix it.
+                try:
+                    mode = os.stat(wrapper).st_mode
+                    os.chmod(wrapper, mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                    print(f"[upgrade_bom] Added executable bit to {wrapper}.")
+                except OSError as exc:
+                    print(
+                        f"[upgrade_bom] WARNING: mvnw exists at {wrapper} but is not "
+                        f"executable and chmod failed ({exc}); falling back to 'mvn'.",
+                        file=sys.stderr,
+                    )
+                    return "mvn"
+            if os.access(wrapper, os.X_OK):
+                return wrapper
     return "mvn"
 
 
@@ -272,13 +291,14 @@ def _inject_gradle_rewrite_plugin(build_file: str) -> bool:
     match = plugins_pattern.search(content)
     if match:
         insert_pos = match.end()
+        # content[insert_pos:] already starts with the newline that follows
+        # `plugins {`, so don't add another one before the marker.
         content = (
             content[:insert_pos]
             + "\n"
             + GRADLE_PLUGIN_MARKER
             + "\n"
             + plugin_line
-            + "\n"
             + content[insert_pos:]
         )
     else:
@@ -307,29 +327,23 @@ def _remove_gradle_rewrite_plugin(build_file: str) -> None:
         lines = f.readlines()
 
     cleaned: list[str] = []
-    skip = False
+    marker_count = 0
     i = 0
     while i < len(lines):
         line = lines[i]
         if GRADLE_PLUGIN_MARKER in line:
-            # Skip this marker line and the next content line
-            if not skip:
-                # First marker: skip it and the following plugin id line
-                i += 1
-                if i < len(lines):
-                    i += 1  # skip the plugin line
+            marker_count += 1
+            if marker_count == 1:
+                # First marker (inside plugins {}): skip the marker line and
+                # the following injected plugin id line.
+                i += 2
                 continue
             else:
-                # Second marker onwards: skip remaining injected block
-                i += 1
-                continue
-        # Detect the start of the injected rewrite/repositories block at end
-        if line.strip() == GRADLE_PLUGIN_MARKER.strip():
-            skip = True
-            i += 1
-            continue
-        if not skip:
-            cleaned.append(line)
+                # Second marker (at end of file): skip the marker and every
+                # remaining line — they're the injected rewrite {} and
+                # repositories {} blocks.
+                break
+        cleaned.append(line)
         i += 1
 
     with open(build_file, "w", encoding="utf-8") as f:

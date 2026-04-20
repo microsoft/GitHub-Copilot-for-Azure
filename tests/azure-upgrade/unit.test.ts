@@ -4,9 +4,17 @@
  * Test isolated skill logic and validation rules.
  */
 
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
 const SKILL_NAME = "azure-upgrade";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -124,5 +132,48 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const hasDeleteProtection = content.includes("never delete") || content.includes("explicit user confirmation");
       expect(hasDeleteProtection).toBe(true);
     });
+  });
+
+  describe("Helper Scripts (pytest)", () => {
+    const pytestDir = path.resolve(__dirname, "scripts");
+    const pytestFile = path.join(pytestDir, "test_upgrade_bom.py");
+
+    test("upgrade_bom.py pytest suite passes", () => {
+      if (!existsSync(pytestFile)) {
+        throw new Error(`Expected pytest file at ${pytestFile}`);
+      }
+
+      // Resolve a Python interpreter; skip gracefully on environments without one.
+      const pythonCmd = process.env.PYTHON ?? "python3";
+      const probe = spawnSync(pythonCmd, ["--version"], { encoding: "utf8" });
+      if (probe.status !== 0) {
+        console.warn(`[azure-upgrade] Skipping pytest: '${pythonCmd}' not available.`);
+        return;
+      }
+
+      // Ensure pytest is importable; skip if unavailable so contributors without
+      // pytest installed aren't blocked.
+      const pytestProbe = spawnSync(pythonCmd, ["-c", "import pytest"], { encoding: "utf8" });
+      if (pytestProbe.status !== 0) {
+        console.warn(
+          `[azure-upgrade] Skipping pytest: pytest not installed for '${pythonCmd}'. ` +
+            `Install with: ${pythonCmd} -m pip install pytest`
+        );
+        return;
+      }
+
+      const result = spawnSync(
+        pythonCmd,
+        ["-m", "pytest", "test_upgrade_bom.py", "-v"],
+        { cwd: pytestDir, encoding: "utf8" }
+      );
+
+      if (result.status !== 0) {
+        // Surface pytest output so failures are diagnosable from Jest output.
+        throw new Error(
+          `pytest failed (exit ${result.status}):\n${result.stdout}\n${result.stderr}`
+        );
+      }
+    }, 60_000);
   });
 });
