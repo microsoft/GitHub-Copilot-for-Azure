@@ -167,22 +167,24 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
   --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod
 ```
 
-**With storage mount** (add `--bind-storage-name spring-storage --mount-path /mnt/data` to the `az containerapp create` command above):
+**With storage mount** (add `--bind-storage-name spring-storage --mount-path /mnt/data` flags to either command above).
 
-**PowerShell (with storage mount):**
+**Health Probes** (recommended for Spring Boot apps): Add liveness and readiness probes after deployment:
+
+**Bash:**
+```bash
+az containerapp update --name spring-app --resource-group spring-rg \
+  --set-env-vars SPRING_PROFILES_ACTIVE=prod \
+  --liveness-probe-type http --liveness-probe-path /actuator/health/liveness --liveness-probe-port 8080 \
+  --readiness-probe-type http --readiness-probe-path /actuator/health/readiness --readiness-probe-port 8080
+```
+
+**PowerShell:**
 ```powershell
-$ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
-$KEY_VAULT = if ($env:KEY_VAULT) { $env:KEY_VAULT } else { "<keyvault>" }
-$IDENTITY_ID = if ($env:IDENTITY_ID) { $env:IDENTITY_ID } else { throw "Set IDENTITY_ID from Phase 5" }
-$SECRET_URI = az keyvault secret show --vault-name "$KEY_VAULT" --name db-password --query id -o tsv
-az containerapp create --name spring-app --resource-group spring-rg --environment spring-env `
-  --image "${ACR_NAME}.azurecr.io/spring-app:v1.0" --target-port 8080 --ingress external `
-  --cpu 2.0 --memory 4Gi --min-replicas 2 --max-replicas 10 `
-  --user-assigned "$IDENTITY_ID" --registry-identity "$IDENTITY_ID" --registry-server "${ACR_NAME}.azurecr.io" `
-  --secrets db-password=keyvaultref:"${SECRET_URI}",identityref:"${IDENTITY_ID}" `
-  --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod `
-  --bind-storage-name spring-storage `
-  --mount-path /mnt/data
+az containerapp update --name spring-app --resource-group spring-rg `
+  --set-env-vars SPRING_PROFILES_ACTIVE=prod `
+  --liveness-probe-type http --liveness-probe-path /actuator/health/liveness --liveness-probe-port 8080 `
+  --readiness-probe-type http --readiness-probe-path /actuator/health/readiness --readiness-probe-port 8080
 ```
 
 ## Phase 7: Validation
