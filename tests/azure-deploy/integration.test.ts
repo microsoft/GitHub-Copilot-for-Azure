@@ -717,7 +717,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -751,7 +752,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -784,7 +786,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -817,7 +820,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -850,7 +854,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -883,7 +888,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: ["Stop if there is no further work; otherwise go with recommended options."],
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -916,7 +922,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -949,7 +956,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -983,7 +991,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1016,7 +1025,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1049,7 +1059,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1082,7 +1093,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1115,7 +1127,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);

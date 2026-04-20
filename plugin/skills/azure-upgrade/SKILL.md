@@ -26,7 +26,7 @@ metadata:
 1. Follow phases sequentially — do not skip
 2. Generate an assessment before any upgrade operations
 3. Load the scenario reference and follow its rules
-4. Use `mcp_azure_mcp_get_bestpractices` and `mcp_azure_mcp_documentation` MCP tools
+4. Use `mcp_azure_mcp_get_azure_bestpractices` and `mcp_azure_mcp_documentation` MCP tools
 5. Destructive actions require `ask_user` — [global-rules](references/global-rules.md)
 6. Always confirm the target plan/SKU with the user before proceeding
 7. Never delete or stop the original app without explicit user confirmation
@@ -41,13 +41,13 @@ metadata:
 
 > SDK upgrade scenarios (e.g. Java legacy → modern) run a **source-code modernization flow** that is distinct from Azure service/plan/SKU upgrades: follow the scenario reference, **not** the Steps below.
 
-> No matching scenario? Use `mcp_azure_mcp_documentation` and `mcp_azure_mcp_get_bestpractices` tools to research the upgrade path.
+> No matching scenario? Use `mcp_azure_mcp_documentation` and `mcp_azure_mcp_get_azure_bestpractices` tools to research the upgrade path.
 
 ## MCP Tools
 
 | Tool | Purpose |
 |------|---------|
-| `mcp_azure_mcp_get_bestpractices` | Get Azure best practices for the target service |
+| `mcp_azure_mcp_get_azure_bestpractices` | Get Azure best practices for the target service |
 | `mcp_azure_mcp_documentation` | Look up Azure documentation for upgrade scenarios |
 | `mcp_azure_mcp_appservice` | Query App Service and Functions plan details |
 | `mcp_azure_mcp_applicationinsights` | Verify monitoring configuration |
