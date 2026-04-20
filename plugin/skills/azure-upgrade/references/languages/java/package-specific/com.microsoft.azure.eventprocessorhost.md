@@ -7,6 +7,8 @@
 - **MUST NOT** introduce any other custom `CheckpointStore` implementation as part of this migration. If the legacy code stored checkpoints in memory, switch to `BlobCheckpointStore` — do not preserve the in-memory semantics.
 - If the user explicitly asks for an in-memory implementation, refuse and direct them to the upstream `SampleCheckpointStore` reference instead of generating one.
 
+> ⚠️ **Important:** The switch from `InMemoryCheckpointManager`/`InMemoryLeaseManager` to `BlobCheckpointStore` is an **expected and necessary behavioral change**. It is inherent to the modern SDK design and **must not block the migration from completing**. Do not treat this behavioral difference as a migration defect or attempt to preserve in-memory semantics — proceed with `BlobCheckpointStore` and complete the migration.
+
 ## Code Samples
 
 ### EventProcessorHost with InMemoryCheckpointManager / InMemoryLeaseManager
