@@ -50,6 +50,9 @@ export default function App() {
     const [selectedBenchmark, setSelectedBenchmark] = useState<string>("");
     const [selectedModel, setSelectedModel] = useState<string>("");
     const [selectedResolved, setSelectedResolved] = useState<string>("");
+    const [timeRange, setTimeRange] = useState<string>("30");
+    const [customStart, setCustomStart] = useState<string>("");
+    const [customEnd, setCustomEnd] = useState<string>("");
     const [metrics, setMetrics] = useState<EvalMetricRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState<"" | "new" | "all">("");
@@ -132,6 +135,29 @@ export default function App() {
         loadMetrics();
     }, [selectedBenchmark, selectedModel, selectedResolved]);
 
+    // Filter metrics by time range
+    const filteredMetrics = useMemo(() => {
+        if (timeRange === "all") return metrics;
+        let startDate: string;
+        let endDate: string;
+        if (timeRange === "custom") {
+            if (!customStart && !customEnd) return metrics;
+            startDate = customStart;
+            endDate = customEnd;
+        } else {
+            const days = parseInt(timeRange, 10);
+            const now = new Date();
+            now.setDate(now.getDate() - days);
+            startDate = now.toISOString().slice(0, 10);
+            endDate = "";
+        }
+        return metrics.filter((row) => {
+            if (startDate && row.date < startDate) return false;
+            if (endDate && row.date > endDate) return false;
+            return true;
+        });
+    }, [metrics, timeRange, customStart, customEnd]);
+
     // Build a series key for each metric row based on active filters
     const seriesKey = (row: EvalMetricRow): string => {
         if (selectedBenchmark && selectedModel) return row.model;
@@ -143,14 +169,14 @@ export default function App() {
     // Discover unique series names for multi-line rendering
     const seriesNames = useMemo(() => {
         const set = new Set<string>();
-        for (const row of metrics) set.add(seriesKey(row));
+        for (const row of filteredMetrics) set.add(seriesKey(row));
         return [...set].sort();
-    }, [metrics, selectedBenchmark, selectedModel]);
+    }, [filteredMetrics, selectedBenchmark, selectedModel]);
 
     // Build chart data: one row per date, with per-series columns
     const tokenChartData = useMemo(() => {
         const byDate: Record<string, Record<string, number>> = {};
-        for (const row of metrics) {
+        for (const row of filteredMetrics) {
             if (!byDate[row.date]) byDate[row.date] = {};
             const key = seriesKey(row);
             byDate[row.date][key] = (byDate[row.date][key] || 0) + (Number(row.totalConsumedTokens) || 0);
@@ -158,11 +184,11 @@ export default function App() {
         return Object.entries(byDate)
             .map(([date, series]) => ({ date, ...series }))
             .sort((a, b) => a.date.localeCompare(b.date));
-    }, [metrics, selectedBenchmark, selectedModel]);
+    }, [filteredMetrics, selectedBenchmark, selectedModel]);
 
     const stepsChartData = useMemo(() => {
         const byDate: Record<string, Record<string, number>> = {};
-        for (const row of metrics) {
+        for (const row of filteredMetrics) {
             if (!byDate[row.date]) byDate[row.date] = {};
             const key = seriesKey(row);
             byDate[row.date][key] = (byDate[row.date][key] || 0) + (Number(row.totalSteps) || 0);
@@ -170,11 +196,11 @@ export default function App() {
         return Object.entries(byDate)
             .map(([date, series]) => ({ date, ...series }))
             .sort((a, b) => a.date.localeCompare(b.date));
-    }, [metrics]);
+    }, [filteredMetrics]);
 
     const resolvedChartData = useMemo(() => {
         const byDate: Record<string, Record<string, number>> = {};
-        for (const row of metrics) {
+        for (const row of filteredMetrics) {
             if (!byDate[row.date]) byDate[row.date] = {};
             const key = seriesKey(row);
             byDate[row.date][key] = Number(row.resolved) || 0;
@@ -182,7 +208,7 @@ export default function App() {
         return Object.entries(byDate)
             .map(([date, series]) => ({ date, ...series }))
             .sort((a, b) => a.date.localeCompare(b.date));
-    }, [metrics, selectedBenchmark, selectedModel]);
+    }, [filteredMetrics, selectedBenchmark, selectedModel]);
 
     return (
         <div className="pd-dashboard" id="main">
@@ -233,6 +259,43 @@ export default function App() {
                         <option value="0">Unresolved (0)</option>
                     </select>
                 </label>
+
+                <label className="pd-filter">
+                    <span>Time Range</span>
+                    <select
+                        value={timeRange}
+                        onChange={(e) => setTimeRange(e.target.value)}
+                    >
+                        <option value="7">Past 7 days</option>
+                        <option value="14">Past 14 days</option>
+                        <option value="30">Past 30 days</option>
+                        <option value="all">All time</option>
+                        <option value="custom">Custom range</option>
+                    </select>
+                </label>
+
+                {timeRange === "custom" && (
+                    <div className="pd-custom-range">
+                        <label className="pd-filter">
+                            <span>Start</span>
+                            <input
+                                type="date"
+                                className="pd-date-input"
+                                value={customStart}
+                                onChange={(e) => setCustomStart(e.target.value)}
+                            />
+                        </label>
+                        <label className="pd-filter">
+                            <span>End</span>
+                            <input
+                                type="date"
+                                className="pd-date-input"
+                                value={customEnd}
+                                onChange={(e) => setCustomEnd(e.target.value)}
+                            />
+                        </label>
+                    </div>
+                )}
 
                 <div className="pd-sync">
                     <button

@@ -56,6 +56,30 @@
     outline-offset: -1px;
 }
 
+/* ── Custom date range ──────────────────── */
+
+.pd-custom-range {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.pd-date-input {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 6px;
+    background: var(--color-bg, #f8f9fa);
+    color: var(--color-text, #1a1a1a);
+    font-size: 0.85rem;
+    min-width: 140px;
+    cursor: pointer;
+}
+
+.pd-date-input:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: -1px;
+}
+
 /* ── Charts ─────────────────────────────── */
 
 .pd-charts {
