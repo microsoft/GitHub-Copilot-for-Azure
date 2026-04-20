@@ -22,7 +22,6 @@ jobs:
       - name: Checkout PR head
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
-          fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
           
       - name: Setup Node.js
@@ -37,11 +36,8 @@ jobs:
 
       - name: Check plugin version changes
         run: |
-          echo "Checking if plugin versions were modified in this PR..."
+          echo "Checking that plugin.json versions are placeholders..."
           cd scripts && npm run checkPluginVersionPr
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           
       - name: Check CHANGELOG modifications
         run: |
