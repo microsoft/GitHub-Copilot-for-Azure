@@ -31,11 +31,9 @@ Follow these steps:
 
 ### Migrate dependencies
 
-It is recommended to use azure-sdk-bom (version higher than 1.3.0).
+It is recommended to use `azure-sdk-bom` at version 1.3.0 or later.
 
-Help with looking up the latest stable version on https://repo1.maven.org/maven2/com/azure/azure-sdk-bom/ and proceed with migration.
-
-Follow the detailed steps in [BOM Migration Guide](./bom-migration/bom-migration.md) — it covers Maven, plain Gradle, TOML version catalogs (`libs.versions.toml`), and programmatic version catalogs (`settings.gradle`).
+Follow the detailed steps in [BOM Migration Guide](./bom-migration/bom-migration.md) — it covers how to determine the latest BOM version, plus Maven, plain Gradle, TOML version catalogs (`libs.versions.toml`), and programmatic version catalogs (`settings.gradle`).
 
 ### Migrate Java Code
 

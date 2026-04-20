@@ -16,6 +16,7 @@ Step 2 – Remove redundant explicit versions:
 
 Usage:
     python3 upgrade_bom.py <project_dir> <bom_version> [options]
+    python3 upgrade_bom.py --get-latest-version
 
 Arguments:
     project_dir   Path to the project root (must contain pom.xml or build.gradle).
@@ -35,10 +36,14 @@ import stat
 import subprocess
 import sys
 import textwrap
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
 
 GROUP_ID = "com.azure"
 ARTIFACT_ID = "azure-sdk-bom"
+BOM_POM_URL = "https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml"
+POM_NAMESPACE = {"m": "http://maven.apache.org/POM/4.0.0"}
 
 # Maven constants
 MVN_REWRITE_PLUGIN = "org.openrewrite.maven:rewrite-maven-plugin"
@@ -66,6 +71,25 @@ def _detect_build_system(project_dir: str) -> str:
         if os.path.isfile(os.path.join(project_dir, name)):
             return "gradle"
     return "unknown"
+
+
+def _get_latest_bom_version() -> str:
+    try:
+        with urllib.request.urlopen(BOM_POM_URL) as response:
+            pom_xml = response.read()
+    except urllib.error.URLError as exc:
+        raise SystemExit(f"Failed to download {BOM_POM_URL}: {exc}") from exc
+
+    try:
+        root = ET.fromstring(pom_xml)
+    except ET.ParseError as exc:
+        raise SystemExit(f"Failed to parse BOM pom.xml: {exc}") from exc
+
+    version = root.findtext("m:version", namespaces=POM_NAMESPACE)
+    if not version:
+        raise SystemExit("Failed to find the azure-sdk-bom <version> in pom.xml")
+
+    return version.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -399,11 +423,25 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Upgrade azure-sdk-bom version in a Maven or Gradle project using OpenRewrite."
     )
-    parser.add_argument("project_dir", help="Path to the project root.")
-    parser.add_argument("bom_version", help="Target azure-sdk-bom version (e.g. 1.2.31).")
+    parser.add_argument("project_dir", nargs="?", help="Path to the project root.")
+    parser.add_argument("bom_version", nargs="?", help="Target azure-sdk-bom version (e.g. 1.2.31).")
     parser.add_argument("--mvn", default=None, help="Maven command override.")
     parser.add_argument("--gradle", default=None, help="Gradle command override.")
+    parser.add_argument(
+        "--get-latest-version",
+        action="store_true",
+        help="Print the latest azure-sdk-bom version from the Azure SDK for Java BOM pom.xml.",
+    )
     args = parser.parse_args(argv)
+
+    if args.get_latest_version:
+        if args.project_dir or args.bom_version:
+            parser.error("--get-latest-version does not accept project_dir or bom_version.")
+        print(_get_latest_bom_version())
+        return 0
+
+    if not args.project_dir or not args.bom_version:
+        parser.error("project_dir and bom_version are required unless --get-latest-version is used.")
 
     project_dir = os.path.abspath(args.project_dir)
     build_system = _detect_build_system(project_dir)

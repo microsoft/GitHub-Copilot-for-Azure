@@ -2,6 +2,31 @@
 
 How to add or upgrade `azure-sdk-bom` and clean up redundant versions across all supported build configurations.
 
+## Prerequisite — Python availability check
+
+The Maven and plain-Gradle flows are automated by `scripts/upgrade_bom.py` (Python 3.8+). Before picking a guide, verify Python is available:
+
+```bash
+python3 --version || python --version
+```
+
+- **Python available** → use the script as documented in [bom-maven.md](./bom-maven.md) / [bom-gradle.md](./bom-gradle.md).
+- **Python NOT available** → follow the **Manual Fallback** section in the same guide. Do not attempt to install Python; perform the edits by hand.
+
+The TOML and programmatic-catalog guides ([bom-gradle-toml.md](./bom-gradle-toml.md), [bom-gradle-settings.md](./bom-gradle-settings.md)) are manual-only and unaffected by Python availability.
+
+## Determine the latest BOM version
+
+Resolve the target `azure-sdk-bom` version from the Azure SDK for Java source of truth before editing build files:
+
+```bash
+# Path is relative to the skill directory (plugin/skills/azure-upgrade/)
+python3 ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
+# or: python ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
+```
+
+If Python is not available, fetch `https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml` directly and use the `<version>` value declared in that BOM `pom.xml`.
+
 ## Decision Tree
 
 ```

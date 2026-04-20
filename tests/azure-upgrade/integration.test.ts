@@ -27,7 +27,13 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import {
+  getAllAssistantMessages,
+  isSkillInvoked,
+  shouldEarlyTerminateForSkillInvocation,
+  softCheckSkill,
+  withTestResult,
+} from "../utils/evaluate";
 
 const SKILL_NAME = "azure-upgrade";
 

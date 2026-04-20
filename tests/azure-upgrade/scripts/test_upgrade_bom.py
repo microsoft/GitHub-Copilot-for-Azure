@@ -7,6 +7,7 @@ Run with: python3 -m pytest tests/azure-upgrade/scripts/test_upgrade_bom.py -v
 from __future__ import annotations
 
 import os
+import re
 import sys
 import textwrap
 
@@ -34,8 +35,10 @@ if _SCRIPT_DIR not in sys.path:
 
 from upgrade_bom import (  # noqa: E402  (import after sys.path manipulation)
     GRADLE_PLUGIN_MARKER,
+    _get_latest_bom_version,
     _inject_gradle_rewrite_plugin,
     _remove_gradle_rewrite_plugin,
+    main,
 )
 
 
@@ -150,3 +153,19 @@ def test_inject_without_plugins_block_then_remove(tmp_path):
     # which is acceptable — we only assert the original lines survive).
     for line in original.splitlines():
         assert line in cleaned
+
+
+def test_get_latest_bom_version_returns_version():
+    version = _get_latest_bom_version()
+
+    assert version
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:[-.][A-Za-z0-9]+)*", version)
+
+
+def test_main_get_latest_version_prints_value(capsys):
+    result = main(["--get-latest-version"])
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert captured.out.strip()
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:[-.][A-Za-z0-9]+)*", captured.out.strip())

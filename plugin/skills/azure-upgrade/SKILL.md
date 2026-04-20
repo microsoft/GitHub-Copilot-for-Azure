@@ -2,6 +2,7 @@
 name: azure-upgrade
 description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, migrate hosting plan, change hosting plan, function app SKU, migrate App Service to Container Apps, migrate legacy Azure SDKs for Java, upgrade legacy Azure Java SDK, com.microsoft.azure to com.azure."
 license: MIT
+compatibility: python3.8+
 metadata:
   author: Microsoft
   version: "1.1.0"
