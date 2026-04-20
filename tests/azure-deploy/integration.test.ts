@@ -14,9 +14,9 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment, shouldEarlyTerminateForAzdProvision } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, arePatternsInSeparateFiles, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -394,15 +394,26 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+
+        // Verify Container Apps-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/containerApps/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/managedEnvironments/i, bicepPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three modules in main.bicep):
+        // Phase 1: ACR module
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image and system-assigned managed identity
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
+        // Phase 2: AcrPull role assignment in a separate module file from the Container App
+        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -419,15 +430,26 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+
+        // Verify Container Apps-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/containerApps/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/managedEnvironments/i, bicepPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three modules in main.bicep):
+        // Phase 1: ACR module
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image and system-assigned managed identity
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
+        // Phase 2: AcrPull role assignment in a separate module file from the Container App
+        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -632,15 +654,27 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+
+        // Verify Container Apps-specific Terraform content on disk
+        const tfPattern = /\.tf$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app[^_]/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app_environment/i, tfPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three resources):
+        // Phase 1: ACR resource
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
+        // Phase 2: AcrPull role assignment in a separate file from the Container App
+        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -657,15 +691,27 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+
+        // Verify Container Apps-specific Terraform content on disk
+        const tfPattern = /\.tf$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app[^_]/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app_environment/i, tfPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three resources):
+        // Phase 1: ACR resource
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
+        // Phase 2: AcrPull role assignment in a separate file from the Container App
+        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -682,15 +728,27 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+
+        // Verify Container Apps-specific Terraform content on disk
+        const tfPattern = /\.tf$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app[^_]/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app_environment/i, tfPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three resources):
+        // Phase 1: ACR resource
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
+        // Phase 2: AcrPull role assignment in a separate file from the Container App
+        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
   });
@@ -834,9 +892,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("deploys aspire container build", async () => {
       await withTestResult(async () => {
         const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
+        let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
+            workspacePath = workspace;
             await cloneRepo({
               repoUrl: ASPIRE_SAMPLES_REPO,
               targetDir: workspace,
@@ -854,14 +914,26 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
           followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
+        expect(workspacePath).toBeDefined();
 
-        expect(containsDeployLinks).toBe(true);
+        // Verify Container Apps-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/containerApps/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/managedEnvironments/i, bicepPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three modules in main.bicep):
+        // Phase 1: ACR module
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image and system-assigned managed identity
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
+        // Phase 2: AcrPull role assignment in a separate module file from the Container App
+        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, brownfieldTestTimeoutMs);
 

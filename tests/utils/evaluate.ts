@@ -62,6 +62,48 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
 }
 
 /**
+ * Checks that two value patterns exist in **different** files within the workspace.
+ * This verifies separation of concerns — e.g. the AcrPull role assignment is in a separate module from the Container App.
+ * @param workspace Path to a directory containing the files of interest.
+ * @param patternA First value pattern to match
+ * @param patternB Second value pattern — must be in a different file from patternA
+ * @param filePattern If provided, only files whose names match the pattern are considered
+ * @returns True if both patterns are found and they appear in different files
+ */
+export function arePatternsInSeparateFiles(workspace: string, patternA: RegExp, patternB: RegExp, filePattern?: RegExp): boolean {
+  const filesWithA: string[] = [];
+  const filesWithB: string[] = [];
+
+  const scanDirectory = (dir: string): void => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        scanDirectory(fullPath);
+      } else if (entry.isFile()) {
+        if (filePattern && !entry.name.match(filePattern)) {
+          continue;
+        }
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (content.match(patternA)) filesWithA.push(fullPath);
+          if (content.match(patternB)) filesWithB.push(fullPath);
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+  };
+
+  scanDirectory(workspace);
+
+  if (filesWithA.length === 0 || filesWithB.length === 0) return false;
+
+  // Check that at least one file with patternB is different from all files with patternA
+  return filesWithB.some(f => !filesWithA.includes(f));
+}
+
+/**
  * Recursively list all files under a directory, returning paths relative to the root.
  * Paths are normalized to use forward slashes for cross-platform regex matching.
  */

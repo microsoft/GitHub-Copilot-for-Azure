@@ -63,3 +63,14 @@ export function shouldEarlyTerminateForCompletedDeployment(agentMetadata: AgentM
   }
   return containsDeployLinks;
 }
+
+export function shouldEarlyTerminateForAzdProvision(agentMetadata: AgentMetadata): boolean {
+  const hasCalledProvision = matchesCommand(agentMetadata, /azd\s+provision/i);
+  if (hasCalledProvision) {
+    const commentToAdd = "✅ azd provision was called. Terminating early — infrastructure provisioning has started.";
+    if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
+      agentMetadata.testComments.push(commentToAdd);
+    }
+  }
+  return hasCalledProvision;
+}
