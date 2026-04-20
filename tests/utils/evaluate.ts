@@ -24,9 +24,11 @@ export function stripNonExecutableContent(command: string): string {
       continue;
     }
 
-    // Inside a PowerShell here-string — skip until closing marker
+    // Inside a PowerShell here-string — skip until closing marker.
+    // The closer ('@ or "@) must be at the start of a line (possibly indented),
+    // but may have trailing content (e.g., '@ + "extra").
     if (psHereStringCloser !== null) {
-      if (line.trim() === psHereStringCloser) {
+      if (new RegExp(`^\\s*${psHereStringCloser.replace(/"/g, "\\\"")}`).test(line)) {
         psHereStringCloser = null;
       }
       continue;

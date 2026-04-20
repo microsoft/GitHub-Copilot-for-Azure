@@ -179,4 +179,16 @@ azd provision --preview`;
     expect(result).not.toContain("azd up");
     expect(result).toContain("azd provision --preview");
   });
+
+  test("handles PowerShell here-string closer with trailing content", () => {
+    const command = `$msg = @'
+azd up
+azd deploy
+'@ + " suffix"
+azd provision --preview`;
+    const result = stripNonExecutableContent(command);
+    expect(result).not.toContain("azd up");
+    expect(result).not.toContain("azd deploy");
+    expect(result).toContain("azd provision --preview");
+  });
 });
