@@ -424,7 +424,12 @@ function main(): void {
   });
 
   if (values["skills-dir"]) {
-    SKILLS_DIR = resolve(values["skills-dir"]);
+    const dir = resolve(values["skills-dir"]);
+    if (!existsSync(dir) || !statSync(dir).isDirectory()) {
+      console.error(`\n❌ Skills directory not found: ${dir}\n`);
+      process.exit(1);
+    }
+    SKILLS_DIR = dir;
   }
 
   const jsonOutput = values.json ?? false;

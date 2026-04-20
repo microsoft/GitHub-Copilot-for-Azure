@@ -3,6 +3,7 @@ import { Transform } from "stream";
 import * as nbgv from "nerdbank-gitversioning";
 import * as path from "path";
 import log from "fancy-log";
+import { rmSync } from "fs";
 import Vinyl = require("vinyl");
 
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
@@ -32,11 +33,17 @@ function stampSkillVersions() {
         const version = versionInfo.simpleVersion;
 
         const content = file.contents!.toString();
+        const versionPlaceholderPattern =
+          /(version:\s*")0\.0\.0-placeholder(")/;
+
+        if (!versionPlaceholderPattern.test(content)) {
+          throw new Error(
+            `Failed to stamp skill version for ${file.relative}: expected to find version: "0.0.0-placeholder".`
+          );
+        }
+
         file.contents = Buffer.from(
-          content.replace(
-            /(version:\s*")0\.0\.0-placeholder(")/,
-            `$1${version}$2`
-          )
+          content.replace(versionPlaceholderPattern, `$1${version}$2`)
         );
         log(`setting skill version: skills/${skillName} ${version}`);
       } catch (err) {
@@ -74,11 +81,17 @@ function stampPluginVersions() {
         const version = await pluginVersionPromise;
 
         const content = file.contents!.toString();
+        const versionPlaceholderPattern =
+          /("version":\s*")0\.0\.0-placeholder(")/;
+
+        if (!versionPlaceholderPattern.test(content)) {
+          throw new Error(
+            `Failed to stamp plugin version for ${file.relative}: expected to find "version": "0.0.0-placeholder".`
+          );
+        }
+
         file.contents = Buffer.from(
-          content.replace(
-            /("version":\s*")0\.0\.0-placeholder(")/,
-            `$1${version}$2`
-          )
+          content.replace(versionPlaceholderPattern, `$1${version}$2`)
         );
         log(`setting plugin version: ${file.relative} ${version}`);
       } catch (err) {
@@ -92,6 +105,7 @@ function stampPluginVersions() {
 }
 
 function build() {
+  rmSync("output", { recursive: true, force: true });
   return src("plugin/**/*", { dot: true, encoding: false })
     .pipe(stampSkillVersions())
     .pipe(stampPluginVersions())
