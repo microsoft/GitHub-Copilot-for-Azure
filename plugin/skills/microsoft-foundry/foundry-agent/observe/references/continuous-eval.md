@@ -104,7 +104,7 @@ Arguments:
 
 ### Disable
 
-To temporarily disable without changing configuration, pass the configuration currently in use along with `enabled: false`. Because `continuous_eval_create` has replace semantics, omitting parameters will change the configuration when re-enabled. The `continuous_eval_get` response does not include evaluator names directly — they are stored in the linked evaluation group — so retrieve them via `evaluation_get` first.
+To temporarily disable without changing configuration, pass the configuration currently in use along with `enabled: false`. Because `continuous_eval_create` has replace semantics, omitting parameters will change the configuration when re-enabled. The `continuous_eval_get` response does not include evaluator names directly — they are stored in the linked evaluation group — so retrieve them via `evaluation_get` first. If multiple configurations are returned in the `continuous_eval_get` response, present the list to the user and ask which to target.
 
 ```yaml
 # Step 1: Get the evalId, then retrieve current evaluators from the eval group
@@ -142,7 +142,7 @@ Arguments:
   agentName: <agent name>
 ```
 
-Always call `continuous_eval_get` first to retrieve the `id` field of the configuration to delete.
+Always call `continuous_eval_get` first to retrieve the `id` field of the configuration to delete. If multiple configurations are returned, present the list to the user and ask which to target.
 
 ## Acting on Results
 
