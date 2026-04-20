@@ -143,6 +143,11 @@ function Dashboard() {
         window.open(viewerUrl, "_blank");
     }, []);
 
+    // Update browser tab title with selected date
+    useEffect(() => {
+        document.title = selectedDate ? `Nightly Runs ${selectedDate}` : "Nightly Runs";
+    }, [selectedDate]);
+
     // Auto-scroll the right panel to the section matching the URL fragment
     useEffect(() => {
         if (fileSections.length === 0) return;
