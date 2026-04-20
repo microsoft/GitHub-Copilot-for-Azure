@@ -181,15 +181,21 @@ jobs:
             .github/skills/**
 
       - name: Setup Node.js
-        if: steps.changed-skills.outputs.any_changed == 'true'
+        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: scripts/package.json
+          cache-dependency-path: |
+            package-lock.json
+            scripts/package-lock.json
+
+      - name: Build output
+        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
+        run: npm ci && npm run build
 
       - name: Install scripts dependencies
-        if: steps.changed-skills.outputs.any_changed == 'true'
+        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
         working-directory: ./scripts
         run: npm ci --ignore-scripts
 
@@ -202,11 +208,16 @@ jobs:
           echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Pass changed SKILL.md file paths directly to the validator
-          # Prefix with ../ since working-directory is ./scripts
+          # Map changed plugin/skills paths to built output/skills paths so we
+          # validate the version-stamped copies. .github/skills are unchanged.
           SKILL_FILES=""
           for file in $CHANGED_FILES; do
-            SKILL_FILES="$SKILL_FILES ../$file"
+            if echo "$file" | grep -q '^plugin/skills/'; then
+              mapped=$(echo "$file" | sed 's|^plugin/skills/|output/skills/|')
+              SKILL_FILES="$SKILL_FILES ../$mapped"
+            else
+              SKILL_FILES="$SKILL_FILES ../$file"
+            fi
           done
           
           # Run frontmatter spec validation
@@ -224,14 +235,15 @@ jobs:
           fi
 
       - name: Validate skills.json
+        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
 
-            // Get all skill directories
-            const skillsDir = 'plugin/skills';
+            // Get all skill directories from the built output
+            const skillsDir = 'output/skills';
             const skillDirs = fs.readdirSync(skillsDir)
                 .filter(f => fs.statSync(path.join(skillsDir, f)).isDirectory())
                 .sort();
@@ -247,7 +259,7 @@ jobs:
             const jsonSkillsStr = JSON.stringify(jsonSkills);
             if (skillDirsStr !== jsonSkillsStr) {
                 console.log();
-                console.log("skills in skills.json doesn't match available skills in plugin/skills/");
+                console.log("skills in skills.json doesn't match available skills in output/skills/");
                 hasError = true;
             }
 
@@ -265,7 +277,7 @@ jobs:
             if (skillDirsStr !== scheduledSkillsStr) {
                 console.log("skillDirs", JSON.stringify(skillDirs));
                 console.log("scheduledSkills", JSON.stringify(scheduledSkills));
-                console.log("integrationTestSchedule in skills.json doesn't match available skills in plugin/skills/");
+                console.log("integrationTestSchedule in skills.json doesn't match available skills in output/skills/");
                 hasError = true;
             }
 
@@ -273,85 +285,8 @@ jobs:
                 core.setFailed('tests/skills.json validation failed');
             }
 
-      - name: Check skill version bumps
-        if: steps.changed-plugin-skills.outputs.any_changed == 'true'
-        env:
-          CHANGED_FILES: ${{ steps.changed-plugin-skills.outputs.all_changed_files }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          echo "## Skill Version Check" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          FAILED=false
-
-          # Validate BASE_REF to avoid unsafe characters in shell command
-          if ! echo "$BASE_REF" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
-            echo "Error: Invalid base ref: '$BASE_REF'. Aborting skill version check."
-            exit 1
-          fi
-
-          # For each changed file, map to the top-level SKILL.md (one level under plugin/skills or .github/skills).
-          # This ensures that deeply nested files (e.g. plugin/skills/foo/references/bar/SKILL.md)
-          # always resolve to the skill root (e.g. plugin/skills/foo/SKILL.md) rather than
-          # an intermediate SKILL.md found by walking up the directory tree.
-          SKILL_FILES=""
-          for file in $CHANGED_FILES; do
-            skill_dir=""
-            # Extract the first path segment after the skills/ prefix — this is the skill root dir.
-            # e.g. "plugin/skills/microsoft-foundry/references/deep/file.md" → "plugin/skills/microsoft-foundry"
-            if echo "$file" | grep -qE '^plugin/skills/[^/]+/'; then
-              skill_dir=$(echo "$file" | sed 's|^\(plugin/skills/[^/]*\)/.*|\1|')
-            elif echo "$file" | grep -qE '^\.github/skills/[^/]+/'; then
-              skill_dir=$(echo "$file" | sed 's|^\(\.github/skills/[^/]*\)/.*|\1|')
-            fi
-            # Only include if the skill root actually contains a SKILL.md
-            if [ -n "$skill_dir" ] && [ -f "$skill_dir/SKILL.md" ]; then
-              SKILL_FILES="$SKILL_FILES $skill_dir/SKILL.md"
-            fi
-          done
-
-          # Deduplicate
-          SKILL_FILES=$(echo "$SKILL_FILES" | tr ' ' '\n' | sort -u | grep -v '^$')
-
-          if [ -z "$SKILL_FILES" ]; then
-            echo "No SKILL.md files affected by changes."
-            echo "✅ No version bump needed" >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
-
-          for skill_file in $SKILL_FILES; do
-            SKILL_NAME=$(basename "$(dirname "$skill_file")")
-
-            # Get version in base branch (use [[:space:]] for portable whitespace matching)
-            BASE_VERSION=$(git show "origin/${BASE_REF}:${skill_file}" 2>/dev/null | sed -n '/^---$/,/^---$/p' | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/' || echo "")
-
-            # Get version in PR branch
-            HEAD_VERSION=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep -E '^[[:space:]]+version:' | head -1 | sed 's/.*version:[[:space:]]*"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
-
-            # New skill (no base version) — skip, it starts at 1.0.0
-            if [ -z "$BASE_VERSION" ]; then
-              echo "✅ $skill_file — new skill (version: $HEAD_VERSION)"
-              continue
-            fi
-
-            if [ "$BASE_VERSION" = "$HEAD_VERSION" ]; then
-              echo "::error file=$skill_file::Skill '$SKILL_NAME' was modified but metadata.version was not bumped ($BASE_VERSION). Bump the version in your PR."
-              echo "❌ \`$SKILL_NAME\` (\`$skill_file\`) — version not bumped ($BASE_VERSION)" >> $GITHUB_STEP_SUMMARY
-              FAILED=true
-            else
-              echo "✅ $skill_file — $SKILL_NAME version bumped: $BASE_VERSION → $HEAD_VERSION"
-              echo "✅ \`$SKILL_NAME\` (\`$skill_file\`) — $BASE_VERSION → $HEAD_VERSION" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
-
-          if [ "$FAILED" = true ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "> Every PR that modifies a skill must bump its \`metadata.version\` in the same PR." >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
       - name: Skip message
-        if: steps.changed-skills.outputs.any_changed != 'true'
+        if: steps.changed-plugin-skills.outputs.any_changed != 'true'
         run: echo "No skill files changed - skipping validation"
 
   # Validate markdown references
@@ -364,6 +299,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
 
       - name: Check changed skill markdown files
         id: changed-markdown
@@ -377,9 +314,15 @@ jobs:
         if: steps.changed-markdown.outputs.any_changed == 'true'
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: scripts/package.json
+          cache-dependency-path: |
+            package-lock.json
+            scripts/package-lock.json
+
+      - name: Build output
+        if: steps.changed-markdown.outputs.any_changed == 'true'
+        run: npm ci && npm run build
 
       - name: Install scripts dependencies
         if: steps.changed-markdown.outputs.any_changed == 'true'
@@ -393,8 +336,8 @@ jobs:
           echo "## Markdown Reference Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Run reference check and capture output
-          if OUTPUT=$(npm run references 2>&1); then
+          # Validate against built output so version-stamped files are checked
+          if OUTPUT=$(npm run references -- --skills-dir ../output/skills 2>&1); then
             echo "$OUTPUT"
             echo "✅ All markdown references are valid" >> $GITHUB_STEP_SUMMARY
           else
