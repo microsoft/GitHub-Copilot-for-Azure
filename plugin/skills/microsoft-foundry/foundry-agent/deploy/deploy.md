@@ -31,7 +31,7 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 | `agent_container_status_get` | Check container running status | `projectEndpoint`, `agentName` (required); `agentVersion` |
 
 ## Workflow: Hosted Agent Deployment
-There are two types of hosted agent - ACA based and vNext. There is only one change in the deployment flow for vNext which is indicated in the steps below. You must use vNext experience only when user explicitly asks you to deploy the agent to vNext (or v2, or v-next, or similar words). For all other cases, use the ACA based deployment flow.
+There are two types of hosted agent - ACA based and vNext. There is only one change in the deployment flow for vNext which is indicated in the steps below. You must use the ACA based deployment flow only when user explicitly asks you to deploy the agent to ACA (or Azure Container Apps, or similar words). For all other cases, use the vNext deployment flow.
 
 
 ### Step 1: Detect and Scan Project
