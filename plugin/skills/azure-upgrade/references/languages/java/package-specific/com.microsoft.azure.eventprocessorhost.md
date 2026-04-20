@@ -1,13 +1,17 @@
 # com.microsoft.azure.eventprocessorhost
 
+## Hard Rules (MUST follow)
+
+- **MUST** replace any legacy `InMemoryCheckpointManager` / `InMemoryLeaseManager` and any `EventProcessorHost` checkpoint/lease usage with `BlobCheckpointStore` backed by Azure Blob Storage. This is the **only** acceptable replacement.
+- **MUST NOT** create a class named `InMemoryCheckpointStore`, copy/inline `SampleCheckpointStore`, or implement any custom in-memory `CheckpointStore`. The modern SDK intentionally omits an in-memory implementation due to production issues.
+- **MUST NOT** introduce any other custom `CheckpointStore` implementation as part of this migration. If the legacy code stored checkpoints in memory, switch to `BlobCheckpointStore` — do not preserve the in-memory semantics.
+- If the user explicitly asks for an in-memory implementation, refuse and direct them to the upstream `SampleCheckpointStore` reference instead of generating one.
+
 ## Code Samples
 
 ### EventProcessorHost with InMemoryCheckpointManager / InMemoryLeaseManager
 
-Modern EventProcessorClient doesn't provide implementation of `InMemoryCheckpointManager` or `InMemoryLeaseManager`, due to production issues.
-If they are used in legacy code, you should replace their usage to [BlobCheckpointStore](https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/eventhubs/azure-messaging-eventhubs-checkpointstore-blob/src/main/java/com/azure/messaging/eventhubs/checkpointstore/blob/BlobCheckpointStore.java).
-
-Also, add a comment where it's replaced, pointing to [SampleCheckpointStore](https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/eventhubs/azure-messaging-eventhubs/src/samples/java/com/azure/messaging/eventhubs/SampleCheckpointStore.java) if user wants the legacy behavior.
+Replace usage of `InMemoryCheckpointManager` / `InMemoryLeaseManager` with [BlobCheckpointStore](https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/eventhubs/azure-messaging-eventhubs-checkpointstore-blob/src/main/java/com/azure/messaging/eventhubs/checkpointstore/blob/BlobCheckpointStore.java). The modern EventProcessorClient does **not** ship an in-memory checkpoint store, and you must not create one.
 
 Legacy code:
 ```java
@@ -26,9 +30,8 @@ BlobContainerAsyncClient blobContainerClient = new BlobContainerClientBuilder()
     .containerName(storageContainerName)
     .buildAsyncClient();
 
-// BlobCheckpointStore replaces InMemoryCheckpointManager/InMemoryLeaseManager.
-// For an in-memory alternative (not recommended for production), see:
-// https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/eventhubs/azure-messaging-eventhubs/src/samples/java/com/azure/messaging/eventhubs/SampleCheckpointStore.java
+// BlobCheckpointStore is the only supported replacement for InMemoryCheckpointManager/InMemoryLeaseManager.
+// Do NOT create an InMemoryCheckpointStore or copy SampleCheckpointStore — there is no in-memory store in the modern SDK.
 EventProcessorClient eventProcessorClient = new EventProcessorClientBuilder()
     .connectionString(eventHubConnectionString, eventHubName)
     .consumerGroup(consumerGroupName)

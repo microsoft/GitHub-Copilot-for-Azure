@@ -49,7 +49,13 @@ Handle `IOException` and other checked exceptions according to the project's sta
 
 ### OKHttp Interceptors
 
-Legacy OKHttp `Interceptor` implementation classes should be migrated to `HttpPipelinePolicy` implementation classes.
+Legacy OKHttp `Interceptor` implementation classes should be migrated to `HttpPipelinePolicy` implementation classes. This is a two-step migration — both steps are required:
+
+**Step 1: Convert each `Interceptor` subclass to an `HttpPipelinePolicy` subclass.** Rename the class from `XxxInterceptor` to `XxxPolicy` and reimplement its logic against the `HttpPipelinePolicy` interface (i.e. `process(HttpPipelineCallContext, HttpPipelineNextPolicy)`) instead of the OKHttp `Interceptor.intercept(Chain)` API.
+
+**Step 2: Register every converted policy on the new manager builder via `.withPolicy(new XxxPolicy())`.** Each `withNetworkInterceptor(new XxxInterceptor())` call on the legacy `RestClient.Builder` must have a corresponding `.withPolicy(new XxxPolicy())` call on `AzureResourceManager.configure()` (or the equivalent `XxxManager.configure()`). Preserve the original ordering of the interceptors when registering the policies.
+
+Do not skip Step 2: converting the class without wiring it into the manager builder silently drops the behavior.
 
 1. Legacy code:
 ```java
@@ -62,7 +68,7 @@ Azure.Authenticated azureAuthed = Azure.authenticate(builder.build(), subscripti
 Azure azure = azureAuthed.withSubscription(subscriptionId);
 ```
 
-2. Migrated code:
+2. Migrated code (note: `ResourceGroupTaggingPolicy` is the Step 1 conversion of `ResourceGroupTaggingInterceptor`, and it must be registered via `.withPolicy(...)` in Step 2):
 ```java
 AzureResourceManager azureResourceManager = AzureResourceManager.configure()
     .withPolicy(new ResourceGroupTaggingPolicy())
