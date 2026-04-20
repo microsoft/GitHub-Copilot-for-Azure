@@ -28,7 +28,7 @@
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^10.2.0",
-    "fast-xml-parser": "^5.5.9",
+    "fast-xml-parser": "^5.7.1",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
     "sirv-cli": "^3.0.1",
