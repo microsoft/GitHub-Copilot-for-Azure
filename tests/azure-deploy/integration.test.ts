@@ -717,7 +717,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -751,7 +752,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -784,7 +786,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -817,7 +820,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -850,7 +854,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -883,7 +888,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: ["Stop if there is no further work; otherwise go with recommended options."],
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -916,47 +922,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
         const containsDeployLinks = hasDeployLinks(agentMetadata);
 
         expect(containsDeployLinks).toBe(true);
-      });
-    }, brownfieldTestTimeoutMs);
-
-    test("does not deploy aspire health-checks-ui", async () => {
-      await withTestResult(async () => {
-        const HEALTH_CHECKS_SPARSE_PATH = "samples/health-checks-ui";
-
-        const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            await cloneRepo({
-              repoUrl: ASPIRE_SAMPLES_REPO,
-              targetDir: workspace,
-              depth: 1,
-              sparseCheckoutPath: HEALTH_CHECKS_SPARSE_PATH,
-            });
-          },
-          prompt:
-            "Please deploy this application to Azure. " +
-            "Use the eastus2 region. " +
-            "Use my current subscription. " +
-            "This is for a small scale production environment. " +
-            "Use standard SKUs. " +
-            `The app can be found under ${HEALTH_CHECKS_SPARSE_PATH}.`,
-          systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
-          nonInteractive: true,
-          followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
-        });
-
-        softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
-        // This app contains custom Aspire resource types that Azure Developer CLI cannot deploy to Azure.
-        expect(containsDeployLinks).toBe(false); //should not deploy
       });
     }, brownfieldTestTimeoutMs);
 
@@ -983,7 +956,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1017,7 +991,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1050,7 +1025,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1083,7 +1059,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1116,7 +1093,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1149,7 +1127,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);

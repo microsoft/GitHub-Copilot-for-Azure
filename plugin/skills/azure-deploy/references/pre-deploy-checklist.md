@@ -47,12 +47,12 @@ ask_user(
 
 **For new projects (no azure.yaml):**
 ```bash
-azd init -e <environment-name>
+azd init -e <environment-name> --no-prompt
 ```
 
 **For existing projects (azure.yaml exists):**
 ```bash
-azd env new <environment-name>
+azd env new <environment-name> --no-prompt
 ```
 
 Both commands create:
@@ -97,7 +97,7 @@ az resource list --resource-group rg-<env-name> --tag azd-service-name=<service-
 
 Check for each service in `azure.yaml`. If duplicates exist **in the target RG**:
 
-1. **Preferred — Fresh environment**: Run `azd env new <new-name>` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
+1. **Preferred — Fresh environment**: Run `azd env new <new-name> --no-prompt` and restart from Step 4. Non-destructive, no user confirmation needed, avoids orphan risks.
 2. **Alternative — Delete conflicts**: Use `ask_user` to confirm deletion of old resources (required by global rules).
 
 ## Step 5a: Check for Existing Container Apps Environments (Container Apps only)
@@ -155,14 +155,14 @@ ask_user(
      ```
    - **If the environment does NOT exist locally** (e.g., it was provisioned on a different machine or has been cleaned up), create it and configure it to target the existing resource group:
      ```bash
-     azd env new <matching-env-name>
+     azd env new <matching-env-name> --no-prompt
      azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
      azd env set AZURE_LOCATION <location-of-existing-rg>
      ```
 
 2. **Choose a different name** — Create a new AZD environment:
    ```bash
-   azd env new <new-unique-env-name>
+   azd env new <new-unique-env-name> --no-prompt
    azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
    # Then restart from Step 4 with the new environment name
    ```
@@ -241,7 +241,7 @@ fi
 
 ```bash
 # 1. Create environment FIRST
-azd env new myapp-dev
+azd env new myapp-dev --no-prompt
 
 # 2. Set subscription
 azd env set AZURE_SUBSCRIPTION_ID 25fd0362-...
@@ -261,7 +261,7 @@ azd up --no-prompt
 | ❌ Wrong | ✅ Correct |
 |----------|-----------|
 | `azd up --location eastus2` | `azd env set AZURE_LOCATION eastus2` then `azd up` |
-| Running `azd up` without environment | `azd env new <name>` first |
+| Running `azd up` without environment | `azd env new <name> --no-prompt` first |
 | Assuming location without checking RG | Check `az group show` before choosing |
 | Ignoring tag conflicts in target RG | Check `az resource list --resource-group rg-<env-name>` before deploy |
 | Skipping Container Apps environment check | Run `az containerapp env list --resource-group rg-<env-name>` before deploy (Step 5a) |
@@ -371,6 +371,63 @@ for ($attempt = 1; $attempt -le 5; $attempt++) {
 Only after this check confirms `AcrPull` has propagated should you run `azd deploy --no-prompt`.
 
 > 💡 **Tip:** If `AcrPull` is missing entirely, assign it manually using the steps in [Container App Revision Timeout](recipes/azd/errors.md#container-app-revision-timeout), then re-run the poll loop above.
+
+---
+
+### AZD/Bicep — Non-User Principal RBAC Fix
+
+> **⛔ MANDATORY**: If the deploying identity is NOT an interactive user (e.g., service principal in CI/CD), you **MUST** check and patch Bicep templates that hardcode user-type RBAC role assignments. Skipping this causes `PrincipalType` mismatch errors during provisioning, leading to costly retry loops and potential test timeouts.
+
+This check is **required** when ALL of the following are true:
+- The deployment uses AZD with Bicep infrastructure
+- The deploying identity is not an interactive user (service principal, managed identity, etc.)
+- The Bicep templates contain `allowUserIdentityPrincipal` set to `true` or role assignments with `principalType: 'User'`
+
+> ⚠️ **Known affected templates:** `functions-quickstart-python-http-azd` and other AZD quickstart templates that include optional user-identity RBAC. See [Principal Type Mismatch](recipes/azd/errors.md#principal-type-mismatch) for details.
+
+**Step A — Detect the deploying identity type:**
+
+```bash
+AUTH_TYPE=$(az account show --query user.type -o tsv)
+echo "Auth type: $AUTH_TYPE"
+```
+
+**PowerShell:**
+```powershell
+$AuthType = az account show --query user.type -o tsv
+Write-Output "Auth type: $AuthType"
+```
+
+If `AUTH_TYPE` is `user`, skip to the next section — no fix needed.
+
+**Step B — Search for user-type RBAC in Bicep templates:**
+
+```bash
+grep -rn "allowUserIdentityPrincipal" infra/ --include='*.bicep'
+```
+
+**PowerShell:**
+```powershell
+Select-String -Path infra\*.bicep -Pattern 'allowUserIdentityPrincipal' -Recurse
+```
+
+If no matches are found, skip to the next section.
+
+**Step C — Patch `allowUserIdentityPrincipal` to `false`:**
+
+For each match where `allowUserIdentityPrincipal` is set to `true`, change it to `false`:
+
+```bicep
+// Before (fails with service principal deployments):
+allowUserIdentityPrincipal: true
+
+// After (CI/CD compatible):
+allowUserIdentityPrincipal: false
+```
+
+> ⚠️ **This is a CI/CD compatibility patch.** Setting this to `false` disables optional interactive-user RBAC role assignments. The application's managed identity roles are unaffected. If the user later needs local interactive access, they can re-enable this flag or assign roles manually.
+
+> ⚠️ **Do NOT** attempt to fix this by clearing `AZURE_PRINCIPAL_ID`. The `azd` CLI repopulates this value from the current auth context on every run.
 
 ---
 

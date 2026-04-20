@@ -31,8 +31,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: scripts/package-lock.json
 
-      - name: Install dependencies
+      - name: Install scripts dependencies
         run: cd scripts && npm ci
+
+      - name: Install tests dependencies
+        run: cd tests && npm ci
+
+      - name: Run non-integration tests
+        run: cd tests && npm run test:ci
 
       - name: Collect dashboard data
         run: npm run dashboard:collect

@@ -107,6 +107,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use my current subscription. ",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
+          followUpTimeout: migrationTestTimeoutMs
         });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -145,6 +146,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use my current subscription. ",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
+          followUpTimeout: migrationTestTimeoutMs
         });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
