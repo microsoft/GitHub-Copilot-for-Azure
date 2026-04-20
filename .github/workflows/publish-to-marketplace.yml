@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   sync-to-microsoft-skills:
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     runs-on: ubuntu-latest
 
     steps:
@@ -163,6 +164,7 @@ jobs:
             --body "Automated sync of \`plugin/\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
 
   sync-to-microsoft-azure-skills:
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     runs-on: ubuntu-latest
 
     steps:

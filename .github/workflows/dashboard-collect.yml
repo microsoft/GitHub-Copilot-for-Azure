@@ -17,6 +17,7 @@ on:
 jobs:
   collect-and-upload:
     name: Collect and upload dashboard data
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     runs-on: ubuntu-latest
     environment: cideploytest
 
