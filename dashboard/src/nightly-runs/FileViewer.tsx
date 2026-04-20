@@ -15,8 +15,8 @@ function FileViewer({ blobPath }: FileViewerProps) {
     const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
 
     useEffect(() => {
-        document.title = "agentMetadata";
-    }, []);
+        document.title = fileName;
+    }, [fileName]);
 
     useEffect(() => {
         setLoading(true);
