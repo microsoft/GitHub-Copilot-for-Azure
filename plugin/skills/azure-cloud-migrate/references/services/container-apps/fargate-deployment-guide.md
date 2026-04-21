@@ -186,7 +186,7 @@ az containerapp create --name <app-name> -g $env:RG --environment "$($env:RG)-en
 ```bash
 set -euo pipefail
 FQDN=$(az containerapp show --name <app-name> -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
-curl -I "https://$FQDN/health"
+curl -f -I "https://$FQDN/health" || { echo "Health check failed"; exit 1; }
 az containerapp logs show --name <app-name> -g "$RG" --tail 100
 ```
 
@@ -200,6 +200,6 @@ az containerapp logs show --name <app-name> -g $env:RG --tail 100
 
 | Issue | Solution |
 |-------|----------|
-| Image pull fails | Verify ACR role: `az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID` |
+| Image pull fails | Verify ACR role: `az role assignment list --assignee $(az containerapp show --name <app> -g $RG --query identity.principalId -o tsv) --scope $(az acr show -n <acr-name> --query id -o tsv)` |
 | App won't start | Check logs: `az containerapp logs show --name <app> -g $RG --tail 100` |
-| Secret not accessible | Verify RBAC: `az role assignment list --assignee $PRINCIPAL_ID --scope $KV_ID` |
+| Secret not accessible | Verify RBAC: `az role assignment list --assignee $(az containerapp show --name <app> -g $RG --query identity.principalId -o tsv) --scope $(az keyvault show -n <vault-name> --query id -o tsv)` |

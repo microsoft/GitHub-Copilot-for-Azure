@@ -1,12 +1,12 @@
 # AWS Fargate to Azure Container Apps Migration
 
-Guidance for migrating AWS Fargate (ECS/EKS) containerized workloads to Azure Container Apps.
+Guidance for migrating AWS Fargate (ECS) containerized workloads to Azure Container Apps.
 
 ## Overview
 
 | AWS Service | Azure Equivalent | Notes |
 |-------------|------------------|-------|
-| ECS/EKS Fargate | Azure Container Apps | Serverless container platform |
+| ECS Fargate | Azure Container Apps | Serverless container platform |
 | ECR | Azure Container Registry | Private container registry |
 | Application Load Balancer | Container Apps Ingress | Built-in HTTPS |
 | AWS Secrets Manager | Azure Key Vault | Managed identity integration |
