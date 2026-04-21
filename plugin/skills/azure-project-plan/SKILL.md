@@ -4,7 +4,7 @@ description: "Plan and design an Azure-centric project with user requirements ga
 license: MIT
 metadata:
   author: Microsoft
-  version: "2.0.0"
+  version: "1.0.0"
 ---
 
 # Azure Project Plan
@@ -41,7 +41,6 @@ Activate when user wants to:
 | Add test coverage to scaffolded project | **azure-project-verify** |
 | Deploy to Azure | **azure-prepare** |
 | Generate Bicep/Terraform | **azure-prepare** |
-| Benchmark scaffold quality | **scaffold-benchmark** |
 
 ---
 
@@ -143,17 +142,23 @@ Question definitions below. Only include questions not answerable from workspace
 - `allowFreeformInput`: false
 
 **Q2: Runtime** (ask if not detectable)
-- Options: `TypeScript` (Node.js — Functions v4), `Python` (Functions v2), `C# (.NET 10)` (Isolated worker)
+- Options: `TypeScript` (Node.js — Functions v4), `C# (.NET 10)` (Isolated worker)
 - `allowFreeformInput`: false
 
 **Q3: Data Stores** (ask if not detectable from SDK imports or `.azure/plan.md`)
 - Options: `Blob Storage` (Files/images), `Queue Storage` (Async queue), `PostgreSQL` (Relational), `CosmosDB` (NoSQL), `Redis` (Cache), `Azure SQL` (Managed SQL Server)
 - `multiSelect`: true
-- `allowFreeformInput`: false
+- `allowFreeformInput`: true
 
 **Q4: Frontend Framework** (ask if app includes frontend and not detectable)
-- Options: `React` (+ Vite), `Vue` (+ Vite), `Angular` (CLI), `Svelte` (+ Vite), `None`
-- `allowFreeformInput`: false
+
+| Runtime | Options | Default |
+|---------|---------|---------|
+| TypeScript | React (+Vite), Vue (+Vite), Angular (CLI), Svelte (+Vite), None | React |
+| C# (.NET 10) | Blazor Server, Blazor WASM, None | Blazor Server |
+| Python | None (use separate SWA for frontend) | None — skip question |
+
+- `allowFreeformInput`: true
 
 **Q5: Features / Routes** (ask if new app and user hasn't described features)
 - Free text, `allowFreeformInput`: true
@@ -358,19 +363,11 @@ Write `.azure/project-plan.md` with this structure (replace all `{placeholders}`
 - [ ] Step 9: OpenAPI Contract
 - [ ] Step 10: Structured Logging
 - [ ] Step 11: Wire Frontend (if applicable)
-- [ ] Step 12: Wrap Up & Smoke Test
+- [ ] Step 12: Wrap Up
 
 ---
 
-## 10. Test Suite Plan
-
-| # | Test File | Type | Tests | Pass Criteria |
-|---|-----------|------|-------|---------------|
-| {n} | {path} | {Unit/Integration} | {what it tests} | {criteria} |
-
----
-
-## 11. Files to Generate
+## 10. Files to Generate
 
 | File | Action | Description |
 |------|--------|-------------|
@@ -378,11 +375,12 @@ Write `.azure/project-plan.md` with this structure (replace all `{placeholders}`
 
 ---
 
-## 12. Next Steps
+## 11. Next Steps
 
 1. Run **azure-project-scaffold** to execute this plan
-2. Run **azure-localdev** for Docker emulators and VS Code debugging
-3. Run **azure-prepare** → **azure-deploy** when ready to deploy
+2. Run **azure-project-verify** for test coverage
+3. Run **azure-localdev** for Docker emulators and VS Code debugging
+4. Run **azure-prepare** → **azure-deploy** when ready to deploy
 ````
 
 #### After Writing the Plan
@@ -518,6 +516,5 @@ project-root/
 > **Automatic**: After plan approved, immediately invokes **azure-project-scaffold**:
 > - Generates frontend preview (if applicable) with auto-open in VS Code Simple Browser
 > - Scaffolds backend (services, handlers, migrations, types)
-> - Auto-invokes **azure-project-verify** for test coverage
 >
 > **No user action required** — chain is automatic.
