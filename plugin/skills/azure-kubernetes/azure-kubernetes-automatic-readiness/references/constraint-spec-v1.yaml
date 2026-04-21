@@ -467,6 +467,7 @@ safeguards:
       The allowed values are:
         - undefined/nil
         - ""
+      Remove the `host` field from probes and lifecycle hooks; the kubelet uses the pod IP by default.
 
   - id: safeguard-allowed-seccomp-profiles
     policyId: 975ce327

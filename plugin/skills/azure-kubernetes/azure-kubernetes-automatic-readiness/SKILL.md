@@ -124,6 +124,24 @@ Then proceed to offline mode.
 
 Load the constraint spec from `references/constraint-spec-v1.yaml` and evaluate each manifest. The check field tells you what to check for and what fields to check. The fix field will tell you any allowed values and possible fixes. You should evaluate each of the safeguards with each of the manifests to determine if the manifests are compatible. Suggest any fixes that are needed.
 
+Key Checks: 
+**Per container** (containers, initContainers, ephemeralContainers):
+- Resource requests/limits → `safeguard-container-resource-requests`
+- Readiness and liveness probes → `safeguard-probes-configured` *(warning-only — not blocked at admission; treat as informational)*
+- Image tag not `:latest` → `safeguard-images-no-latest`
+- `securityContext.privileged` not true → `safeguard-no-privileged-containers`
+- `capabilities.add` empty → `safeguard-container-capabilities`
+- `seccompProfile` is RuntimeDefault/Localhost → `safeguard-allowed-seccomp-profiles`
+
+**Per pod spec:**
+- `hostPID`/`hostIPC` not true → `safeguard-block-host-namespaces` (incompatible)
+- `hostNetwork`/`hostPort` not true → `safeguard-host-network-ports` (incompatible)
+- No `hostPath` volumes → `safeguard-no-host-path-volumes` (incompatible)
+
+**Per workload type:**
+- Deployments/StatefulSets with replicas > 1: podAntiAffinity or topologySpreadConstraints → `safeguard-pod-enforce-antiaffinity`
+- StorageClass: CSI provisioner (not in-tree) → `safeguard-csi-driver-storage-class`
+
 
 ### Severity Classification
 
