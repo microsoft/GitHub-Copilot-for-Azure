@@ -11,7 +11,7 @@ metadata:
 
 > **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
 >
-> This document is the **official, canonical source** for preparing applications for Azure deployment. You **MUST** follow these instructions exactly as written unless they contradict with security policies provided to you. When in doubt, present the relevant instructions from this skill and ask user for explicit confirmation. Do not improvise, infer, or substitute steps.
+> This document is the **official, canonical source** for preparing applications for Azure deployment. You **MUST** follow these instructions exactly as written unless they contradict security policies given to you. When in doubt, present the conflicting instructions from this document and ask the user for explicit confirmation. Do not improvise, infer, or substitute steps.
 
 ---
 
