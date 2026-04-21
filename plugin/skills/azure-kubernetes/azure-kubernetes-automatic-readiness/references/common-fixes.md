@@ -46,7 +46,6 @@ securityContext:
 securityContext:
   capabilities:
     drop: ["ALL"]
-  allowPrivilegeEscalation: false
 ```
 
 > ⚠️ **Warning:** If the app genuinely requires `NET_ADMIN` or similar, it is **incompatible** with AKS Automatic. Do not silently drop — explain the incompatibility and suggest redesign.
@@ -165,11 +164,22 @@ spec:
     image: nginx:v1.2.3
     livenessProbe:
       httpGet:
-        host: true
+        host: "some host"
 ```
 
 **After:**
 Suggest a fix similar to the previously mentioned `safeguard-probes-configured` fix
+Example:
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  failureThreshold: 3
+
+```
 
 ---
 

@@ -130,8 +130,9 @@ Key Checks:
 - Readiness and liveness probes → `safeguard-probes-configured` *(warning-only — not blocked at admission; treat as informational)*
 - Image tag not `:latest` → `safeguard-images-no-latest`
 - `securityContext.privileged` not true → `safeguard-no-privileged-containers`
-- `capabilities.add` empty → `safeguard-container-capabilities`
+- `capabilities.add` only adds allowed capabilities → `safeguard-container-capabilities`
 - `seccompProfile` is RuntimeDefault/Localhost → `safeguard-allowed-seccomp-profiles`
+- no `host` field in any container probes and lifecycle hooks
 
 **Per pod spec:**
 - `hostPID`/`hostIPC` not true → `safeguard-block-host-namespaces` (incompatible)

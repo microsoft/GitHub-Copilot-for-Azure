@@ -13,7 +13,7 @@ metadata:
     podSecurityRestricted: 42b8ef37-b724-4e24-bbc8-7a7708edfe00
 
 # =============================================================================
-# CLUSTER CONSTRAINTS (26 total, 3 are internal/HOBO)
+# CLUSTER CONSTRAINTS (21 total)
 # =============================================================================
 clusterConstraints:
   # -- Addons --
@@ -178,7 +178,7 @@ clusterConstraints:
 
 # =============================================================================
 # WORKLOAD CONSTRAINTS — Deployment Safeguards (21 active policies)
-# Initiative: c047ea8e | Effect: Deny on Automatic
+# Initiative: c047ea8e | Effect: Mixed(Deny/Warn/Mutate) on Automatic
 # =============================================================================
 safeguards:
   # -- AKS Best Practices (9 policies) --
