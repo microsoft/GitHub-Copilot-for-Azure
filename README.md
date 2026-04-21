@@ -120,9 +120,9 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 | **Copilot CLI** | ✅ | ✅ | ✅ Custom (`copilot-hooks.json`) | `.plugin/plugin.json` | ✅ Onboarded |
 | **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/marketplace.json` | ✅ Onboarded |
 | **VS Code Extension** | ✅ (`.agents` folder) | ✅ | ✅ `hooks/hooks.json` (`.agents` folder) | Extension-based | ✅ Onboarded |
-| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | 🔜 Hooks Support ETA - End of April 2026 |
+| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
 | **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | `gemini-extension.json` | ✅ Onboarded|
-| **Cursor** | 🔜 | 🔜 | 🔜 | `.cursor-plugin/marketplace.json` | 🔜 WIP |
+| **Cursor** | 🔜 | 🔜 | 🔜 | `.cursor-plugin/marketplace.json` | ✅ Onboarded. Hooks testing - WIP |
 | **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | TBD | 🔜 WIP |
 | **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | ⚠️ MCP only |
 
