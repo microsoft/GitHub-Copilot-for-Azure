@@ -181,7 +181,7 @@ clusterConstraints:
 # Initiative: c047ea8e | Effect: Deny on Automatic
 # =============================================================================
 safeguards:
-  # -- AKS Best Practices (10 policies) --
+  # -- AKS Best Practices (9 policies) --
   - id: safeguard-restricted-node-edits
     policyId: 53a4a537
     severity: requiresChanges
@@ -223,7 +223,7 @@ safeguards:
     enforcement: warn  # Warning-only — deployments are admitted with a kubectl warning, not denied
     category: reliability
     check: Every container should have readinessProbe + livenessProbe (recommended best practice)
-    fix: Add probes (app-specific — HTTP/TCP) — recommended, not required for migration
+    fix: Add probes (app-specific — HTTP/TCP/exec/GRPC) — recommended, not required for migration
 
   - id: safeguard-csi-driver-storage-class
     policyId: 4f3823b6
@@ -246,7 +246,7 @@ safeguards:
     check: Image tag must not be :latest or untagged (no colon)
     patch: "replace image tag with specific version or sha256 digest"
 
-  # -- PSS-related policies in Safeguards (13 policies) --
+  # -- PSS-related policies in Safeguards (12 policies) --
   - id: safeguard-block-host-namespaces
     policyId: 47a1ee2f
     severity: incompatible
@@ -437,7 +437,7 @@ safeguards:
       Remove any added capability outside this list.
 
   - id: safeguard-host-probes
-    policyId: asdf8909
+    policyId: acdf8909
     severity: requiresChanges
     category: podSecurity
     check: |
