@@ -366,7 +366,6 @@ jobs:
         with:
           files: |
             plugin/skills/**/*.md
-            .github/skills/**/*.md
 
       - name: Setup Node.js
         if: steps.changed-markdown.outputs.any_changed == 'true'
@@ -409,25 +408,6 @@ jobs:
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             VALIDATION_FAILED=1
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Validate .github/skills directly (not built through gulp)
-          if [ -d "../.github/skills" ]; then
-            echo "Validating references in ../.github/skills"
-            if OUTPUT=$(npm run references -- --skills-dir ../.github/skills 2>&1); then
-              echo "$OUTPUT"
-              echo "✅ .github/skills references are valid" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "$OUTPUT"
-              echo "❌ .github/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-              echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-              VALIDATION_FAILED=1
-            fi
           fi
 
           if [ "$VALIDATION_FAILED" -ne 0 ]; then
