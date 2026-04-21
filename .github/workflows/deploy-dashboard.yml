@@ -98,11 +98,9 @@ jobs:
           AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           AZD_ENV_NAME: ${{ vars.AZD_ENV_NAME}}
-          WEB_URL: ${{ vars.WEB_URL }}
         run: |
           azd init -e $AZD_ENV_NAME -l $AZURE_LOCATION -s $AZURE_SUBSCRIPTION_ID --no-prompt
           azd env set AZURE_RESOURCE_GROUP $AZURE_RESOURCE_GROUP
-          azd env set WEB_URL $WEB_URL
         working-directory: dashboard
       
       - name: Deploy
