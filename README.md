@@ -115,16 +115,16 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 
 ## Client Support Matrix
 
-| Client | Skills | MCP Servers | Hooks | Manifest | Status |
-|--------|:------:|:-----------:|:-----:|----------|--------|
-| **Copilot CLI** | ✅ | ✅ | ✅ Custom (`copilot-hooks.json`) | `.plugin/plugin.json` | ✅ Onboarded |
-| **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/marketplace.json` | ✅ Onboarded |
-| **VS Code Extension** | ✅ (`.agents` folder) | ✅ | ✅ `hooks/hooks.json` (`.agents` folder) | Extension-based | ✅ Onboarded |
-| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
-| **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | `gemini-extension.json` | ✅ Onboarded|
-| **Cursor** | 🔜 | 🔜 | 🔜 | `.cursor-plugin/marketplace.json` | ✅ Onboarded. Hooks testing - WIP |
-| **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | TBD | 🔜 WIP |
-| **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | ⚠️ MCP only |
+| Client | Skills | MCP Servers | Hooks | Marketplace | Manifest | Status |
+|--------|:------:|:-----------:|:-----:|:-----------:|----------|--------|
+| **Copilot CLI** | ✅ | ✅ | ✅ Custom (`plugin/hooks/copilot-hooks.json`) | ✅ `.plugin/` | `.plugin/plugin.json` | ✅ Onboarded |
+| **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/marketplace.json` (exists only in azure-skills repo)| ✅ `plugin/.claude-plugin/plugin.json` | ✅ Onboarded |
+| **VS Code Extension** | ✅ (`.agents` folder) | ✅ | ✅ `hooks/hooks.json` (`.agents` folder) | Extension-based | Extension-based | ✅ Onboarded |
+| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
+| **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | No marketplace | `gemini-extension.json` | ✅ Onboarded|
+| **Cursor** | ✅ | ✅ | `plugin/hooks/cursor-hooks.json` |  `.cursor-plugin/marketplace.json` (exists only in azure-skills repo) |  ✅ `plugin/.cursor-plugin/plugin.json` | ✅ Onboarded. Hooks testing - WIP |
+| **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | 🔜 | TBD | 🔜 WIP |
+| **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ⚠️ MCP only |
 
 ## Contributing
 
