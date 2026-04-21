@@ -4,6 +4,8 @@ Use this guide when node image rotation, Kubernetes version changes, or node-poo
 
 ## Node Image / OS Upgrade Issues
 
+> ⚠️ **Warning:** `az aks nodepool upgrade` and `az aks nodepool update --max-surge ...` change cluster state. During diagnostics, do not recommend or run upgrade actions by default. Only surface these commands after the user explicitly approves remediation or confirms the change window / change-control context.
+
 ```bash
 # Check current node image versions
 az aks nodepool show -g <rg> --cluster-name <cluster> -n <nodepool> \

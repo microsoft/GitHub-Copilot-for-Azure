@@ -24,6 +24,8 @@ kubectl describe node <node-name>
 
 **AKS-specific - SSH to a node:**
 
+> ⚠️ **Warning:** `kubectl debug node/...` creates a privileged debug pod on the node and is not a read-only diagnostic step. Default to read-only evidence gathering first. Only suggest or run this after the user explicitly asks for remediation or approves a privileged diagnostic action and understands the change-control impact.
+
 ```bash
 # Create a privileged debug pod on the node
 kubectl debug node/<node-name> -it --image=mcr.microsoft.com/cbl-mariner/base/core:2.0
