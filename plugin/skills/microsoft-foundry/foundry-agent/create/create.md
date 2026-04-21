@@ -6,9 +6,9 @@ Create new hosted agent applications for Microsoft Foundry, or convert existing 
 
 | Property | Value |
 |----------|-------|
-| **Samples Repo** | `microsoft-foundry/foundry-samples` |
-| **Python Samples** | `samples/python/hosted-agents/{framework}/` |
-| **C# Samples** | `samples/csharp/hosted-agents/{framework}/` |
+| **Samples Repo** | `microsoft-foundry/foundry-samples` #todo |
+| **Python Samples** | `samples/python/hosted-agents/{framework}/` #todo |
+| **C# Samples** | `samples/csharp/hosted-agents/{framework}/` #todo |
 | **Hosted Agents Docs** | https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents |
 | **Best For** | Creating new or converting existing agent projects for Foundry |
 
@@ -51,7 +51,7 @@ If user has no specific preference, suggest Microsoft Agent Framework + Python a
 List available samples using the GitHub API:
 
 ```
-GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}
+GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework} #todo
 ```
 
 If the user has specified any information on what they want their agent to do, just choose the most relevant or most simple sample to start with. Only if user has not given any preferences, present the sample directories to the user and help them choose based on their requirements (e.g., RAG, tools, multi-agent workflows, HITL).
@@ -62,7 +62,7 @@ Download only the selected sample directory — do NOT clone the entire repo. Pr
 
 **Using `gh` CLI (preferred if available):**
 ```bash
-gh api repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}/{sample} \
+gh api repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}/{sample} \ #todo
   --jq '.[] | select(.type=="file") | .download_url' | while read url; do
   filepath="${url##*/samples/{language}/hosted-agents/{framework}/{sample}/}"
   mkdir -p "$(dirname "$filepath")"
@@ -72,7 +72,7 @@ done
 
 **Using curl (fallback):**
 ```bash
-curl -s "https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}/{sample}" | \
+curl -s "https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samples/{language}/hosted-agents/{framework}/{sample}" | \ #todo
   jq -r '.[] | select(.type=="file") | .path + "\t" + .download_url' | while IFS=$'\t' read path url; do
     relpath="${path#samples/{language}/hosted-agents/{framework}/{sample}/}"
     mkdir -p "$(dirname "$relpath")"
@@ -120,7 +120,7 @@ Scan the project to determine:
 
 | Indicator | Framework |
 |-----------|-----------|
-| Imports from `agent_framework` or `Microsoft.Agents.AI` | Microsoft Agent Framework |
+| Imports from `agent_framework` or `Microsoft.Agents.AI` | Microsoft Agent Framework | #todo
 | Imports from `langgraph`, `langchain` | LangGraph |
 | No recognized framework imports, or other frameworks (e.g., Semantic Kernel, AutoGen) | Custom |
 
@@ -135,7 +135,7 @@ Add the correct adapter package based on framework and language. Get the latest 
 
 | Framework | Package |
 |-----------|---------|
-| Microsoft Agent Framework | `azure-ai-agentserver-agentframework` |
+| Microsoft Agent Framework | `azure-ai-agentserver-agentframework` | #todo
 | LangGraph | `azure-ai-agentserver-langgraph` |
 | Custom | `azure-ai-agentserver-core` |
 
@@ -143,7 +143,7 @@ Add the correct adapter package based on framework and language. Get the latest 
 
 | Framework | Package |
 |-----------|---------|
-| Microsoft Agent Framework | `Azure.AI.AgentServer.AgentFramework` |
+| Microsoft Agent Framework | `Azure.AI.AgentServer.AgentFramework` | #todo
 | Custom | `Azure.AI.AgentServer.Core` |
 
 Add the package to the project's dependency file (`requirements.txt`, `pyproject.toml`, or `.csproj`). For Python, also add `python-dotenv` if not present.
@@ -152,7 +152,7 @@ Add the package to the project's dependency file (`requirements.txt`, `pyproject
 
 Modify the project's main entrypoint to wrap the existing agent with the adapter. The approach differs by framework:
 
-**Microsoft Agent Framework (Python):**
+**Microsoft Agent Framework (Python):** #todo
 - Import `from_agent_framework` from the adapter package
 - Pass the agent instance (a `BaseAgent` subclass) to the adapter
 - Call `.run()` on the adapter as the default entrypoint
@@ -163,14 +163,14 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 - Pass the compiled `StateGraph` to the adapter
 - Call `.run()` on the adapter as the default entrypoint
 
-**Custom code (Python):**
+**Custom code (Python):** #todo
 - Import `FoundryCBAgent` from the core adapter package
 - Create a class that extends `FoundryCBAgent`
 - Implement the `agent_run()` method which receives an `AgentRunContext` and returns either an `OpenAIResponse` (non-streaming) or `AsyncGenerator[ResponseStreamEvent]` (streaming)
 - The agent must handle the Foundry request/response protocol manually — refer to the [custom sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/custom) for the exact interface
 - Instantiate and call `.run()` as the default entrypoint
 
-**Custom code (C#):**
+**Custom code (C#):** #todo
 - Use `AgentServerApplication.RunAsync()` with dependency injection to register an `IAgentInvocation` implementation
 - Refer to the [C# custom sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents/AgentWithCustomFramework) for the exact interface
 
@@ -179,8 +179,8 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 ### Step B4: Configure Environment
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
-2. For Python: ensure the code uses `load_dotenv()` so Foundry-injected environment variables is available at runtime.
-3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version) for **local development**, not `azure.identity.DefaultAzureCredential`. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
+2. For Python: ensure the code uses `load_dotenv(override=False)` so Foundry-injected environment variables is available at runtime.
+3. If the project uses Azure credentials: ensure Python uses #todo `azure.identity.aio.DefaultAzureCredential` (async version) for **local development**, not `azure.identity.DefaultAzureCredential`. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
 
 ### Step B5: Create agent.yaml
 
@@ -192,7 +192,7 @@ Create an `agent.yaml` file in the project root. This file defines the agent's m
 - `template.protocols` — Must include `responses` protocol v1
 - `template.environment_variables` — List all environment variables the agent needs at runtime
 
-Refer to any sample's `agent.yaml` in the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for the exact schema.
+Refer to any sample's `agent.yaml` in the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) #todo for the exact schema.
 
 ### Step B6: Create Dockerfile
 
@@ -206,7 +206,7 @@ Create a `Dockerfile` if one doesn't exist. Requirements:
 
 > ⚠️ **Warning:** When building, MUST use `--platform linux/amd64`. Hosted agents run on Linux AMD64 infrastructure. Images built for other architectures (e.g., ARM64 on Apple Silicon) will fail.
 
-Refer to any sample's `Dockerfile` in the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for the exact pattern.
+Refer to any sample's `Dockerfile` in the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) #todo for the exact pattern.
 
 ### Step B7: Test Locally
 

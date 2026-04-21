@@ -18,19 +18,19 @@ Best practices when building hosted agents with Microsoft Agent Framework for de
 
 ## Installation
 
-**Python:** `pip install agent-framework --pre` (installs all sub-packages)
+**Python:** `pip install agent-framework --pre` (installs all sub-packages) #todo
 
 **.NET:** `dotnet add package Microsoft.Agents.AI`
 
-> ⚠️ **Warning:** Always pin specific pre-release versions. Use `--pre` to get the latest. Check the [PyPI page](https://pypi.org/project/agent-framework/) or [NuGet profile](https://www.nuget.org/profiles/MicrosoftAgentFramework/) for current stable versions.
+> ⚠️ **Warning:** Always pin specific pre-release versions. Use `--pre` to get the latest. Check the [PyPI page](https://pypi.org/project/agent-framework/) or [NuGet profile](https://www.nuget.org/profiles/MicrosoftAgentFramework/) for current stable versions. #todo
 
 ## Hosting Adapter
 
 Hosted agents must expose an HTTP server using the hosting adapter. This enables local testing and Foundry deployment with the same code.
 
-**Python adapter packages:** `azure-ai-agentserver-core`, `azure-ai-agentserver-agentframework`
+**Python adapter packages:** `azure-ai-agentserver-core`, `azure-ai-agentserver-agentframework` #todo
 
-**.NET adapter packages:** `Azure.AI.AgentServer.Core`, `Azure.AI.AgentServer.AgentFramework`
+**.NET adapter packages:** `Azure.AI.AgentServer.Core`, `Azure.AI.AgentServer.AgentFramework` #todo
 
 The adapter handles protocol translation between Foundry request/response formats and your framework's native data structures, including conversation management, message serialization, and streaming.
 
@@ -40,7 +40,7 @@ The adapter handles protocol translation between Foundry request/response format
 
 ### Python: Async Credentials
 
-For **local development**, use `DefaultAzureCredential` from `azure.identity.aio` (not `azure.identity`) — `AzureAIClient` requires async credentials. In production, use `ManagedIdentityCredential` from `azure.identity.aio`. See [auth-best-practices.md](../../../references/auth-best-practices.md).
+For **local development**, use `DefaultAzureCredential` from `azure.identity.aio` (not `azure.identity`) — `AzureAIClient` requires async credentials. In production, use `ManagedIdentityCredential` from `azure.identity.aio`. See [auth-best-practices.md](../../../references/auth-best-practices.md). #todo
 
 ### Python: Environment Variables
 
@@ -74,7 +74,7 @@ For workflow samples and advanced patterns, search the [Agent Framework GitHub r
 
 ## Debugging
 
-Use [AI Toolkit for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) with the `agentdev` CLI tool for interactive debugging:
+Use [AI Toolkit for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) with the `agentdev` CLI tool for interactive debugging: #todo
 
 1. Install `debugpy` for VS Code Python Debugger support
 2. Install `agent-dev-cli` (pre-release) for the `agentdev` command
