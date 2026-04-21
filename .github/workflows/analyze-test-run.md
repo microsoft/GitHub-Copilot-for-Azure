@@ -40,7 +40,8 @@ safe-outputs:
     max: 10
     labels: [bug, integration-test]
 
-engine: copilot
+engine:
+  id: copilot
 timeout-minutes: 30
 ---
 

@@ -324,8 +324,8 @@ function FindOrCreateDeleteAfterTag {
         (Get-AzResource -ResourceGroupName $ResourceGroup.ResourceGroupName `
                 -ResourceType 'Microsoft.Web/serverfarms' -ErrorAction SilentlyContinue)
         if ($hasAppServiceResources) {
-            Write-Host " Resource group '$($ResourceGroup.ResourceGroupName)' contains App Service or App Service Plan resources, setting DeleteAfter to 1 day."
-            $deleteAfter = [datetime]::UtcNow.AddDays(1)
+            Write-Host " Resource group '$($ResourceGroup.ResourceGroupName)' contains App Service or App Service Plan resources, setting DeleteAfter to 12 hours later."
+            $deleteAfter = [datetime]::UtcNow.AddHours(12)
         }
         else {
             $deleteAfter = [datetime]::UtcNow.AddDays(5)
@@ -461,6 +461,10 @@ function DeleteOrUpdateResourceGroups() {
     Write-Host "Total Resource Groups: $($allGroups.Count)"
 
     foreach ($rg in $allGroups) {
+        if ($rg -ieq "rg-dashboard") {
+            Write-Host "Skipping resource group '$($rg.ResourceGroupName)' because it is the resource group that supports dashboard application"
+            continue
+        }
         if (HasException $rg) {
             continue
         }

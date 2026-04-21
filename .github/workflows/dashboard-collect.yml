@@ -1,0 +1,64 @@
+# Collect dashboard data and upload to Azure Storage.
+#
+# Runs daily and on manual trigger.
+
+name: Dashboard Collect
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  schedule:
+    # Daily at 6:00 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-and-upload:
+    name: Collect and upload dashboard data
+    runs-on: ubuntu-latest
+    environment: cideploytest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install scripts dependencies
+        run: cd scripts && npm ci
+
+      - name: Install tests dependencies
+        run: cd tests && npm ci
+
+      - name: Run non-integration tests
+        run: cd tests && npm run test:ci
+
+      - name: Collect dashboard data
+        run: npm run dashboard:collect
+
+      - name: Azure login
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload latest.json to Azure Storage
+        env:
+          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.NON_INTEGRATION_STORAGE_CONTAINER }}
+        run: |
+          az storage blob upload \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
+            --name "data/latest.json" \
+            --file dashboard/data/latest.json \
+            --auth-mode login \
+            --overwrite
