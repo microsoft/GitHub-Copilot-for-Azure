@@ -1,8 +1,8 @@
 {
-    "name": "skill-test-dashboard-api",
+    "name": "eval-sync-function",
     "version": "1.0.0",
     "private": true,
-    "description": "SWA managed API for Skill Test Dashboard",
+    "description": "Isolated sync function app for eval metrics (write operations)",
     "main": "dist/src/functions/*.js",
     "scripts": {
         "build": "tsc",
