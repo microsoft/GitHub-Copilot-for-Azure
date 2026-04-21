@@ -1,10 +1,10 @@
 ---
 name: azure-compute
-description: "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, connectivity troubleshooting, and capacity reservations. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot, capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, CRG association, CRG disassociation."
+description: "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, connectivity troubleshooting, capacity reservations, and Essential Machine Management. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot, capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, CRG association, CRG disassociation, essential machine management, EMM, machine enrollment."
 license: MIT
 metadata:
   author: Microsoft
-  version: "2.4.0"
+  version: "2.6.0"
 ---
 
 # Azure Compute Skill
@@ -20,6 +20,7 @@ Activate this skill when the user:
 - Mentions VM families, autoscale, load balancing, or Flexible versus Uniform orchestration
 - Wants to troubleshoot Azure VM connectivity issues such as unreachable VMs, RDP/SSH failures, black screens, NSG/firewall issues, or credential resets
 - Asks about Capacity Reservation Groups (CRGs), reserving VM capacity, associating/disassociating VMs with a CRG, or guaranteeing compute capacity
+- Asks about Essential Machine Management (EMM), machine enrollment, onboarding VMs for monitoring/security, or enabling machine management at subscription level
 - Uses prompts like "Help me choose a VM"
 
 ## Routing
@@ -35,8 +36,11 @@ User intent?
 ├─ Capacity reservation / CRG / reserve capacity / associate VM with CRG
 │  └─ Route to [Capacity Reservation](workflows/capacity-reservation/capacity-reservation.md)
 │
+├─ Essential Machine Management / EMM / machine enrollment
+│  └─ Route to [Essential Machine Management](workflows/essential-machine-management/essential-machine-management.md)
+│
 └─ Unclear
-   └─ Ask: "Are you looking for a VM recommendation, troubleshooting a connectivity issue, or managing capacity reservations?"
+   └─ Ask: "Are you looking for a VM recommendation, troubleshooting a connectivity issue, managing capacity reservations, or enabling Essential Machine Management?"
 ```
 
 | Signal                                                                        | Workflow                                                                                   |
@@ -44,6 +48,7 @@ User intent?
 | "recommend VM", "which VM", "VM size", "VM pricing", "VMSS", "scale set"     | [VM Recommender](workflows/vm-recommender/vm-recommender.md)                               |
 | "can't connect", "RDP", "SSH", "NSG blocking", "reset password", "black screen" | [VM Troubleshooter](workflows/vm-troubleshooter/vm-troubleshooter.md)                   |
 | "capacity reservation", "CRG", "reserve capacity", "guarantee capacity", "associate VM with CRG" | [Capacity Reservation](workflows/capacity-reservation/capacity-reservation.md) |
+| "essential machine management", "EMM", "machine enrollment" | [Essential Machine Management](workflows/essential-machine-management/essential-machine-management.md) |
 
 > **Routing rule:** Always read the matched workflow file before accessing any reference files. The workflow file contains the step-by-step guidance and the reference routing table for the user's request.
 
@@ -54,4 +59,5 @@ User intent?
 | **VM Recommender**        | Recommend VM sizes, VMSS, pricing using public APIs/docs | [vm-families](references/vm-families.md), [retail-prices-api](references/retail-prices-api.md), [vmss-guide](references/vmss-guide.md), [vm-quotas](references/vm-quotas.md) |
 | **VM Troubleshooter**     | Diagnose and resolve VM connectivity failures (RDP/SSH)  | [cannot-connect-to-vm](workflows/vm-troubleshooter/references/cannot-connect-to-vm.md) |
 | **Capacity Reservation**  | Create and manage Capacity Reservation Groups (CRGs)     | [capacity-reservation-overview](workflows/capacity-reservation/references/capacity-reservation-overview.md), [association-disassociation](workflows/capacity-reservation/references/association-disassociation.md) |
+| **Essential Machine Management** | Enable and manage EMM for subscription-level VM onboarding | [emm-overview](workflows/essential-machine-management/references/emm-overview.md), [emm-prerequisites](workflows/essential-machine-management/references/emm-prerequisites.md), [emm-enable-flow-portal](workflows/essential-machine-management/references/emm-enable-flow-portal.md), [emm-enable-flow](workflows/essential-machine-management/references/emm-enable-flow.md) |
 
