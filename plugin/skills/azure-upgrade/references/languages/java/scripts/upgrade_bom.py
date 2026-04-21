@@ -20,7 +20,7 @@ Usage:
 
 Arguments:
     project_dir   Path to the project root (must contain pom.xml or build.gradle).
-    bom_version   Target azure-sdk-bom version (e.g. 1.2.31).
+    bom_version   Target azure-sdk-bom version to apply. Resolve the latest stable version first.
 
 Options:
     --mvn <cmd>     Maven command override.
@@ -424,7 +424,11 @@ def main(argv: list[str] | None = None) -> int:
         description="Upgrade azure-sdk-bom version in a Maven or Gradle project using OpenRewrite."
     )
     parser.add_argument("project_dir", nargs="?", help="Path to the project root.")
-    parser.add_argument("bom_version", nargs="?", help="Target azure-sdk-bom version (e.g. 1.2.31).")
+    parser.add_argument(
+        "bom_version",
+        nargs="?",
+        help="Target azure-sdk-bom version to apply. Resolve the latest stable version first.",
+    )
     parser.add_argument("--mvn", default=None, help="Maven command override.")
     parser.add_argument("--gradle", default=None, help="Gradle command override.")
     parser.add_argument(

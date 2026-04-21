@@ -31,7 +31,7 @@ Follow these steps:
 
 ### Migrate dependencies
 
-It is recommended to use `azure-sdk-bom` at version 1.3.0 or later.
+Use the latest stable `azure-sdk-bom` version from the Azure SDK for Java source of truth before editing any build file. Versions below `1.3.0` are invalid for this migration flow and must not be used.
 
 Follow the detailed steps in [BOM Migration Guide](./bom-migration/bom-migration.md) — it covers how to determine the latest BOM version, plus Maven, plain Gradle, TOML version catalogs (`libs.versions.toml`), and programmatic version catalogs (`settings.gradle`).
 
@@ -73,8 +73,9 @@ Use these package-specific references:
   Pay special attention to files outside the root Maven/Gradle reactor — e.g. `.ci/**/pom.xml`, `ci/**`, `buildSrc/`, sample sub-modules, archetype resources — these are frequently missed because `mvn dependency:tree` on the root project never visits them.
 - If azure-sdk-bom is used, ensure **NO** explicit version dependencies for Azure libraries that are in azure-sdk-bom.
   E.g. Instead of `implementation 'com.azure.resourcemanager:azure-resourcemanager:2.60.0'`, we should use `implementation 'com.azure.resourcemanager:azure-resourcemanager'`.
-  For Azure libraries in azure-sdk-bom, check https://repo1.maven.org/maven2/com/azure/azure-sdk-bom/{bom_version}/azure-sdk-bom-{bom_version}.pom (bom_version be version used during migration)
-  If the BOM version is wrong or missing, or individual Azure packages still have explicit versions that should be managed by the BOM, follow the appropriate section in [BOM Migration Guide](./bom-migration/bom-migration.md) to fix it.
+  For Azure libraries in azure-sdk-bom, check https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml.
+  The BOM version used during migration must be the latest stable version available at migration time and must not be below `1.3.0`.
+  If the BOM version is below `1.3.0` or missing, or individual Azure packages still have explicit versions that should be managed by the BOM, follow the appropriate section in [BOM Migration Guide](./bom-migration/bom-migration.md) to fix it.
 - **Version catalog projects**: Follow the [BOM Validation Checklist](./bom-migration/bom-validation.md) — it covers TOML, programmatic `settings.gradle` catalogs, and plain Gradle.
 - For each migration guide you recorded during migration:
   1. Fetch and read the full content of the guide URL.

@@ -17,7 +17,7 @@ The TOML and programmatic-catalog guides ([bom-gradle-toml.md](./bom-gradle-toml
 
 ## Determine the latest BOM version
 
-Resolve the target `azure-sdk-bom` version from the Azure SDK for Java source of truth before editing build files:
+Resolve the target `azure-sdk-bom` version from the Azure SDK for Java source of truth before editing build files. This is mandatory: do not hardcode, guess, or reuse an illustrative version from another example. Versions below `1.3.0` are invalid for this migration flow.
 
 ```bash
 # Path is relative to the skill directory (plugin/skills/azure-upgrade/)
@@ -26,6 +26,8 @@ python3 ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
 ```
 
 If Python is not available, fetch `https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml` directly and use the `<version>` value declared in that BOM `pom.xml`.
+
+Do not continue until you have resolved that latest stable version explicitly.
 
 ## Decision Tree
 
