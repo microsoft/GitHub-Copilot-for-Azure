@@ -313,22 +313,34 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     await Promise.all(reportFetchTasks);
 
     // Fetch agent-metadata.json files for azure-deploy scenario retry counts
-    const deployRetryCounts = new Map<string, number>();
+    const deployRetryTotals = new Map<string, number>();
+    const deployRetryRunCounts = new Map<string, number>();
     const retryFetchTasks: Promise<void>[] = [];
     for (const [testCaseName, paths] of agentMetadataPathsByTestCase) {
         for (const blobPath of paths) {
             retryFetchTasks.push(
                 getBlobContent(blobPath).then((raw) => {
                     const retries = countDeployRetries(raw);
-                    deployRetryCounts.set(
+                    deployRetryTotals.set(
                         testCaseName,
-                        (deployRetryCounts.get(testCaseName) ?? 0) + retries,
+                        (deployRetryTotals.get(testCaseName) ?? 0) + retries,
+                    );
+                    deployRetryRunCounts.set(
+                        testCaseName,
+                        (deployRetryRunCounts.get(testCaseName) ?? 0) + 1,
                     );
                 }).catch(() => { /* skip unreadable files */ }),
             );
         }
     }
     await Promise.all(retryFetchTasks);
+
+    // Average retries per run to avoid inflating counts when a scenario fires across multiple runs
+    const deployRetryCounts = new Map<string, number>();
+    for (const [testCaseName, total] of deployRetryTotals) {
+        const runCount = deployRetryRunCounts.get(testCaseName) ?? 1;
+        deployRetryCounts.set(testCaseName, total / runCount);
+    }
 
     // Compute statistics per skill
     const skillTestResults: SkillTestResults = {};
