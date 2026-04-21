@@ -164,11 +164,16 @@ spec:
     image: nginx:v1.2.3
     livenessProbe:
       httpGet:
-        host: "some host"
+        host: "my-host"
+        path: /healthz
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 20
+      failureThreshold: 3
 ```
 
 **After:**
-Suggest a fix similar to the previously mentioned `safeguard-probes-configured` fix
+Remove the `host` field
 Example:
 ```yaml
 livenessProbe:
@@ -178,7 +183,6 @@ livenessProbe:
   initialDelaySeconds: 15
   periodSeconds: 20
   failureThreshold: 3
-
 ```
 
 ---

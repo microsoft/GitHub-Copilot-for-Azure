@@ -13,7 +13,7 @@ metadata:
     podSecurityRestricted: 42b8ef37-b724-4e24-bbc8-7a7708edfe00
 
 # =============================================================================
-# CLUSTER CONSTRAINTS (21 total)
+# CLUSTER CONSTRAINTS (23 total)
 # =============================================================================
 clusterConstraints:
   # -- Addons --
