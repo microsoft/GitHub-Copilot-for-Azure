@@ -28,7 +28,7 @@ export function stripNonExecutableContent(command: string): string {
     // The closer ('@ or "@) must be at the start of a line (possibly indented),
     // but may have trailing content (e.g., '@ + "extra").
     if (psHereStringCloser !== null) {
-      if (new RegExp(`^\\s*${psHereStringCloser.replace(/"/g, "\\\"")}`).test(line)) {
+      if (line.trimStart().startsWith(psHereStringCloser)) {
         psHereStringCloser = null;
       }
       continue;
