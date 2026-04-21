@@ -72,6 +72,8 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
         return { synced: 0, message: "All dates already processed." };
     }
 
+    // Process each date sequentially to avoid overwhelming the storage account with parallel requests
+    // For each date, we download eval_report.json files with limited concurrency to balance speed and resource usage
     const CONCURRENCY_LIMIT = 5;
     let totalSynced = 0;
 
