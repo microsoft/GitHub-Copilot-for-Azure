@@ -100,7 +100,7 @@ Arguments:
 | `maxHourlyRuns` | Prompt | Cap on evaluation runs per hour | No limit |
 | `intervalHours` | Hosted | Hours between evaluation runs | 1 |
 | `maxTraces` | Hosted | Max data points per evaluation run | 1000 |
-| `scenario` | Prompt | Evaluation scenario (`standard` or `business`) | `standard` |
+| `scenario` | Prompt | Evaluation scenario: `standard` (quality and safety metrics, default) or `business` (business success metrics). An agent can have one of each simultaneously. | `standard` |
 
 ### Disable
 
@@ -112,14 +112,18 @@ Tool: continuous_eval_get
 Arguments:
   projectEndpoint: <project endpoint>
   agentName: <agent name>
-→ Note the evalId from the response
+# Note the evalId from the response
+```
 
+```yaml
 Tool: evaluation_get
 Arguments:
   projectEndpoint: <project endpoint>
   evalId: <evalId from above>
-→ Note the evaluator names from the evaluation group's testing criteria
+# Note the evaluator names from the evaluation group's testing criteria
+```
 
+```yaml
 # Step 2: Disable with the same evaluators
 Tool: continuous_eval_create
 Arguments:
@@ -157,7 +161,7 @@ Tool: continuous_eval_get
 Arguments:
   projectEndpoint: <project endpoint>
   agentName: <agent name>
-→ Note the evalId from the response
+# Note the evalId from the response
 ```
 
 ```yaml
@@ -166,7 +170,7 @@ Arguments:
   projectEndpoint: <project endpoint>
   evalId: <evalId from continuous_eval_get>
   isRequestForRuns: true
-→ Returns evaluation runs with per-evaluator scores
+# Returns evaluation runs with per-evaluator scores
 ```
 
 Review the run results for score trends. Each run contains scores for every configured evaluator. Look for:
