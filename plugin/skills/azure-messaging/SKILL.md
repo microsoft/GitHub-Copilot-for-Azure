@@ -50,14 +50,16 @@ metadata:
 
 ## Connectivity Troubleshooting
 
-See [Service Troubleshooting Guide](../azure-diagnostics/troubleshooting/messaging/service-troubleshooting.md) for ports, WebSocket fallback, IP firewall, private endpoints, and service tags.
+See the Service Troubleshooting Guide in the azure-diagnostics skill (`troubleshooting/messaging/service-troubleshooting.md`) for ports, WebSocket fallback, IP firewall, private endpoints, and service tags.
 
 ## SDK Troubleshooting Guides
 
-- **Event Hubs**: [Python](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-py.md) | [Java](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-java.md) | [JS](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-js.md) | [.NET](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-dotnet.md)
-- **Service Bus**: [Python](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-py.md) | [Java](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-java.md) | [JS](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-js.md) | [.NET](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-dotnet.md)
+SDK-specific troubleshooting guides are located in the azure-diagnostics skill under `troubleshooting/messaging/`:
+
+- **Event Hubs**: Python (`azure-eventhubs-py.md`) | Java (`azure-eventhubs-java.md`) | JS (`azure-eventhubs-js.md`) | .NET (`azure-eventhubs-dotnet.md`)
+- **Service Bus**: Python (`azure-servicebus-py.md`) | Java (`azure-servicebus-java.md`) | JS (`azure-servicebus-js.md`) | .NET (`azure-servicebus-dotnet.md`)
 
 ## References
 
 - [Auth Best Practices](references/auth-best-practices.md)
-- Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](../azure-diagnostics/troubleshooting/messaging/service-troubleshooting.md) for network and service-level docs.
+- Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance.
