@@ -37,7 +37,7 @@ Activate when user wants to:
 | User Intent | Correct Skill |
 |-------------|---------------|
 | Execute approved plan / scaffold backend | **azure-project-scaffold** |
-| Docker Compose, emulators, VS Code F5 | **azure-localdev** |
+| Docker Compose, emulators, VS Code F5 | **azure-local-development** |
 | Add test coverage to scaffolded project | **azure-project-verify** |
 | Deploy to Azure | **azure-prepare** |
 | Generate Bicep/Terraform | **azure-prepare** |
@@ -379,7 +379,7 @@ Write `.azure/project-plan.md` with this structure (replace all `{placeholders}`
 
 1. Run **azure-project-scaffold** to execute this plan
 2. Run **azure-project-verify** for test coverage
-3. Run **azure-localdev** for Docker emulators and VS Code debugging
+3. Run **azure-local-development** for Docker emulators and VS Code debugging
 4. Run **azure-prepare** → **azure-deploy** when ready to deploy
 ````
 
