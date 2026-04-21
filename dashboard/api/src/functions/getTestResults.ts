@@ -135,16 +135,18 @@ function collectAgentMetadataPaths(
  * Counts tool.execution_start events for powershell/bash tools whose command
  * matches azd up, azd deploy, or terraform apply.
  *
- * @returns max(0, deployInvocations - 1)
+ * Returns null when the input cannot be parsed or contains no events array,
+ * so callers can distinguish invalid/unreadable files from a genuine 0-retry run.
+ * @returns max(0, deployInvocations - 1), or null for invalid input
  */
-function countDeployRetries(raw: string): number {
+function countDeployRetries(raw: string): number | null {
     let parsed: { events?: Array<{ type: string; data?: { toolName?: string; arguments?: { command?: string } } }> };
     try {
         parsed = JSON.parse(raw);
     } catch {
-        return 0;
+        return null;
     }
-    if (!Array.isArray(parsed.events)) return 0;
+    if (!Array.isArray(parsed.events)) return null;
 
     let deployCount = 0;
     for (const event of parsed.events) {
@@ -321,6 +323,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
             retryFetchTasks.push(
                 getBlobContent(blobPath).then((raw) => {
                     const retries = countDeployRetries(raw);
+                    if (retries === null) return; // invalid/unreadable — don't skew the average
                     deployRetryTotals.set(
                         testCaseName,
                         (deployRetryTotals.get(testCaseName) ?? 0) + retries,
