@@ -47,7 +47,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     virtualNetworkSubnetId: subnet.id
-    vnetRouteAllEnabled: true // route all outbound through VNet
+    outboundVnetRouting.allTraffic: true // route all outbound through VNet
   }
 }
 ```
