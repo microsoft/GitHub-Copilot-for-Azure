@@ -95,6 +95,24 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("Route active AKS incidents");
     });
 
+    test("links to messaging troubleshooting reference", () => {
+      expect(skill.content).toContain("troubleshooting/messaging/README.md");
+    });
+
+    test("routes messaging incidents to the troubleshooting guide", () => {
+      expect(skill.content).toContain("Route Azure Messaging SDK troubleshooting");
+    });
+
+    test("messaging troubleshooting files exist", () => {
+      const messagingReadmePath = path.join(skill.path, "troubleshooting", "messaging", "README.md");
+      const messagingReadme = readFileSync(messagingReadmePath, "utf-8");
+
+      expect(messagingReadme).toContain("Azure Messaging Troubleshooting");
+      expect(messagingReadme).toContain("service-troubleshooting.md");
+      expect(messagingReadme).toContain("azure-eventhubs-py.md");
+      expect(messagingReadme).toContain("azure-servicebus-py.md");
+    });
+
     test("supports sidecar references for AKS command flows and MCP guidance", () => {
       const troubleshootingSkillPath = path.join(skill.path, "troubleshooting", "aks", "aks-troubleshooting.md");
       const troubleshootingContent = readFileSync(troubleshootingSkillPath, "utf-8");
