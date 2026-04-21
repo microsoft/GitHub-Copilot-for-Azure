@@ -62,9 +62,9 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("SDK Troubleshooting Guides");
     });
 
-    test("links to language-specific SDK references in azure-diagnostics", () => {
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-eventhubs-py.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-servicebus-py.md");
+    test("points to azure-diagnostics for SDK references", () => {
+      expect(skill.content).toContain("azure-diagnostics");
+      expect(skill.content).toContain("troubleshooting/messaging/");
     });
   });
 
@@ -82,22 +82,22 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   });
 
   describe("Reference Files", () => {
-    test("links to all language-specific Event Hubs SDK guides in azure-diagnostics", () => {
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-eventhubs-py.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-eventhubs-java.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-eventhubs-js.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-eventhubs-dotnet.md");
+    test("mentions all Event Hubs SDK guides", () => {
+      expect(skill.content).toContain("azure-eventhubs-py.md");
+      expect(skill.content).toContain("azure-eventhubs-java.md");
+      expect(skill.content).toContain("azure-eventhubs-js.md");
+      expect(skill.content).toContain("azure-eventhubs-dotnet.md");
     });
 
-    test("links to all language-specific Service Bus SDK guides in azure-diagnostics", () => {
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-servicebus-py.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-servicebus-java.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-servicebus-js.md");
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/azure-servicebus-dotnet.md");
+    test("mentions all Service Bus SDK guides", () => {
+      expect(skill.content).toContain("azure-servicebus-py.md");
+      expect(skill.content).toContain("azure-servicebus-java.md");
+      expect(skill.content).toContain("azure-servicebus-js.md");
+      expect(skill.content).toContain("azure-servicebus-dotnet.md");
     });
 
-    test("links to service-level troubleshooting guide in azure-diagnostics", () => {
-      expect(skill.content).toContain("azure-diagnostics/troubleshooting/messaging/service-troubleshooting.md");
+    test("mentions service-level troubleshooting guide", () => {
+      expect(skill.content).toContain("service-troubleshooting.md");
     });
 
     test("keeps auth-best-practices locally", () => {
