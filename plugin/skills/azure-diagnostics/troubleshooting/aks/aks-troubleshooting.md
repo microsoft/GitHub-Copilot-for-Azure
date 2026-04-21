@@ -1,6 +1,6 @@
 # AKS Troubleshooting Guide
 
-Primary AKS troubleshooting guide for incidents routed from [../SKILL.md](../SKILL.md).
+Primary AKS troubleshooting guide for incidents routed from [../../SKILL.md](../../SKILL.md).
 
 ## When to Use This Guide
 
