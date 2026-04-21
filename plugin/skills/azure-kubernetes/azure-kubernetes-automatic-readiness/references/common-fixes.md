@@ -32,21 +32,6 @@ containers:
 
 ---
 
-## `safeguard-no-privilege-escalation` — Disable privilege escalation
-
-**Before:**
-```yaml
-securityContext: {}
-```
-
-**After:**
-```yaml
-securityContext:
-  allowPrivilegeEscalation: false
-```
-
----
-
 ## `safeguard-container-capabilities` — Drop all capabilities
 
 **Before:**
