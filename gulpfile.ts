@@ -27,7 +27,7 @@ function stampSkillVersions() {
       }
 
       try {
-        const skillName = file.relative.split("/")[1];
+        const skillName = file.relative.split(/[/\\]/)[1];
         const sourceSkillDir = path.resolve("plugin/skills", skillName);
         const versionInfo = await nbgv.getVersion(sourceSkillDir);
         const version = versionInfo.simpleVersion;
@@ -106,7 +106,7 @@ function stampPluginVersions() {
 
 function build() {
   rmSync("output", { recursive: true, force: true });
-  return src("plugin/**/*", { dot: true, encoding: false })
+  return src(["plugin/**/*", "!plugin/**/version.json"], { dot: true, encoding: false })
     .pipe(stampSkillVersions())
     .pipe(stampPluginVersions())
     .pipe(dest("output"));
