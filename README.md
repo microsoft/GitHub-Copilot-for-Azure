@@ -74,7 +74,9 @@ By default, the Azure MCP server connects to the Azure Public Cloud. If you use 
 
 ### Copilot CLI
 
-After installing the plugin, the skills are installed in `~/.copilot/installed-plugins/` on macOS/Linux (or `%USERPROFILE%\.copilot\installed-plugins\` on Windows). Edit the `<skill_installation_dir>/azure-skills/azure/.mcp.json` file in the installed plugin directory to add the `--cloud` argument:
+After installing the plugin from the marketplace, the skills are installed in `~/.copilot/installed-plugins/` on macOS/Linux (or `%USERPROFILE%\.copilot\installed-plugins\` on Windows). Edit the `<skill_installation_dir>/azure-skills/azure/.mcp.json` file in the installed plugin directory to add the `--cloud` argument:
+
+> **Note:** If you are developing locally using `copilot --plugin-dir ./output`, edit `output/.mcp.json` in your local build output instead.
 
 **Azure China Cloud:**
 

@@ -1,6 +1,8 @@
 name: Update Plugin Versions
 
-# Disabled: previously triggered on push to main
+# DEPRECATED: Plugin versions are now managed by NBGV at build time via the
+# Gulp pipeline (npm run build). This workflow used semantic-release, which is
+# no longer needed. Kept as manual-trigger-only for reference.
 on:
   workflow_dispatch: # Manual trigger only
 
