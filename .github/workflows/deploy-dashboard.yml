@@ -1,0 +1,110 @@
+# Deploys dashboard website
+#
+# Runs on manual trigger.
+
+name: Deploy Health Dashboard
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: 'Optional commit hash to checkout'
+        required: false
+        default: ''
+
+jobs:
+  deploy-dashboard:
+    name: Deploy dashboard
+    runs-on: ubuntu-latest
+    environment: deploydashboard
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Checkout specific commit
+        if: ${{ inputs.commit_hash != '' }}
+        env:
+          COMMIT_HASH: ${{ inputs.commit_hash }}
+        run: |
+          git checkout "$COMMIT_HASH"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            dashboard/api/package-lock.json
+
+      - name: Build dashboard api
+        run: |
+          npm ci
+          npm run build
+        working-directory: dashboard/api
+
+      - name: Build dashboard frontend
+        run: |
+          npm ci
+          npm run build
+        working-directory: dashboard
+
+      - name: Azure login
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      
+      # azure/login only fetches the OIDC access token once.
+      # If a test starts after the token expires, it will fail with authentication errors.
+      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
+      # Learn more at https://github.com/Azure/login/issues/372
+      - name: Fetch OIDC token every 300 seconds
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          while true; do
+            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
+            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
+            sleep 300
+          done &
+
+      - name: Install azd
+        uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2
+
+      - name: Log in with Azure (Federated Credentials)
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+
+      - name: Setup azd env
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZD_ENV_NAME: ${{ vars.AZD_ENV_NAME}}
+          WEB_URL: ${{ vars.WEB_URL }}
+        run: |
+          azd init -e $AZD_ENV_NAME -l $AZURE_LOCATION -s $AZURE_SUBSCRIPTION_ID --no-prompt
+          azd env set AZURE_RESOURCE_GROUP $AZURE_RESOURCE_GROUP
+          azd env set WEB_URL $WEB_URL
+        working-directory: dashboard
+      
+      - name: Deploy
+        run: azd up --no-prompt
+        working-directory: dashboard
