@@ -62,7 +62,7 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      
+
       # azure/login only fetches the OIDC access token once.
       # If a deployment takes long enough and the token expires, requests will fail with authentication errors.
       # This step runs code to refresh the cached OIDC access token periodically to ensure the deployment always have a valid access token.
@@ -102,7 +102,7 @@ jobs:
           azd init -e $AZD_ENV_NAME -l $AZURE_LOCATION -s $AZURE_SUBSCRIPTION_ID --no-prompt
           azd env set AZURE_RESOURCE_GROUP $AZURE_RESOURCE_GROUP
         working-directory: dashboard
-      
+
       - name: Deploy
         run: azd up --no-prompt
         working-directory: dashboard
