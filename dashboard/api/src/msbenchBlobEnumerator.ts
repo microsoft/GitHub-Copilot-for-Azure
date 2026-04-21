@@ -1,4 +1,4 @@
-import { BlobServiceClient } from "@azure/storage-blob";
+import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { BlobTree, listDatePrefixes, enumerateBlobTree, downloadBlobContent, getCredential } from "./blobEnumerator";
 
 const MSBENCH_STORAGE_ACCOUNT = process.env.MSBENCH_STORAGE_ACCOUNT;
@@ -18,8 +18,22 @@ function getContainerClient() {
     return blobServiceClient.getContainerClient(MSBENCH_REPORTS_CONTAINER_NAME);
 }
 
+async function hasReportBlobs(containerClient: ContainerClient, datePrefix: string): Promise<boolean> {
+    for await (const blob of containerClient.listBlobsFlat({ prefix: datePrefix + "/" })) {
+        if (blob.name.endsWith(".md")) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export async function listMsbenchDates(): Promise<string[]> {
-    return listDatePrefixes(getContainerClient());
+    const containerClient = getContainerClient();
+    const allDates = await listDatePrefixes(containerClient);
+    const results = await Promise.all(
+        allDates.map(async (date) => ({ date, hasReports: await hasReportBlobs(containerClient, date) }))
+    );
+    return results.filter((r) => r.hasReports).map((r) => r.date);
 }
 
 export async function enumerateMsbenchBlobs(prefix?: string): Promise<BlobTree> {

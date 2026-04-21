@@ -39,10 +39,13 @@ module identity './modules/managed-identity.bicep' = {
   }
 }
 
-// TO-DO for post deployment: make role assignment for this MI and limit role assignment to read only for dashboard MI
-// This MI has the following permissions to the msbenchnightlydata storage account:
-// - Storage Blob Data Reader role on the storage account, which allows it to read blobs in any container. This is needed to read MSBench metrics stored in eval_report.json.
-// - Storage Table Data Contributor role on the storage account, which allows it to read/write entities in any table. This is needed to store MSBench eval metrics in msbenchevalmetrics table that are retrieved from the eval_report.json files.
+// The dashboard MI (identity) has the following permissions to the msbenchnightlydata storage account:
+// - Storage Blob Data Reader: read blobs in any container (read MSBench metrics from eval_report.json).
+// - Storage Table Data Reader: read entities in any table (read MSBench eval metrics from msbenchevalmetrics table).
+//
+// The sync MI (syncIdentity) has the following permissions to the msbenchnightlydata storage account:
+// - Storage Blob Data Reader: read blobs in any container (read eval_report.json files for syncing).
+// - Storage Table Data Contributor: read/write entities in any table (write MSBench eval metrics to msbenchevalmetrics table).
 module syncIdentity './modules/managed-identity.bicep' = {
   name: 'syncIdentity'
   scope: rg
