@@ -9,17 +9,11 @@ param tags object = {}
 @description('Environment name used for unique naming.')
 param environmentName string
 
-@description('Resource ID of the user-assigned managed identity.')
+@description('Resource ID of the user-assigned managed identity for the sync function.')
 param userAssignedIdentityId string
 
-@description('Client ID of the user-assigned managed identity.')
+@description('Client ID of the user-assigned managed identity for the sync function.')
 param userAssignedIdentityClientId string
-
-@description('Name of the storage account for integration reports.')
-param storageAccountName string
-
-@description('Application Insights connection string for monitoring.')
-param appInsightsConnectionString string
 
 @description('Name of the existing MSBench nightly data storage account.')
 param msbenchStorageAccountName string
@@ -30,11 +24,14 @@ param msbenchEvalTableName string
 @description('Name of the MSBench reports blob container.')
 param msbenchReportsContainerName string
 
+@description('Application Insights connection string for monitoring.')
+param appInsightsConnectionString string
+
 var resourceSuffix = take(uniqueString(subscription().id, resourceGroup().name, environmentName), 6)
-var storagePrefix = take(replace(environmentName, '-', ''), 14)
+var storagePrefix = take(replace(environmentName, '-', ''), 12)
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
-  name: 'st${storagePrefix}${resourceSuffix}'
+  name: 'sync${storagePrefix}${resourceSuffix}'
   location: location
   tags: tags
   kind: 'StorageV2'
@@ -54,7 +51,7 @@ resource deploymentContainer 'Microsoft.Storage/storageAccounts/blobServices/con
 }
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
-  name: 'plan-${environmentName}-${resourceSuffix}'
+  name: 'plan-${environmentName}-sync-${resourceSuffix}'
   location: location
   tags: tags
   kind: 'functionapp'
@@ -68,9 +65,9 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
 }
 
 resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
-  name: 'func-${environmentName}-${resourceSuffix}'
+  name: 'func-${environmentName}-sync-${resourceSuffix}'
   location: location
-  tags: union(tags, { 'azd-service-name': 'api' })
+  tags: union(tags, { 'azd-service-name': 'sync' })
   kind: 'functionapp,linux'
   identity: {
     type: 'UserAssigned'
@@ -92,7 +89,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         }
       }
       scaleAndConcurrency: {
-        maximumInstanceCount: 100
+        maximumInstanceCount: 10
         instanceMemoryMB: 2048
       }
       runtime: {
@@ -113,7 +110,6 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
         { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
-        { name: 'STORAGE_ACCOUNT_NAME', value: storageAccountName }
         { name: 'MSBENCH_STORAGE_ACCOUNT', value: msbenchStorageAccountName }
         { name: 'MSBENCH_REPORTS_CONTAINER', value: msbenchReportsContainerName }
         { name: 'MSBENCH_EVAL_TABLE_NAME', value: msbenchEvalTableName }
@@ -123,5 +119,5 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   }
 }
 
-output functionAppId string = functionApp.id
-output functionAppUrl string = 'https://${functionApp.properties.defaultHostName}'
+output syncFunctionAppId string = functionApp.id
+output syncFunctionAppUrl string = 'https://${functionApp.properties.defaultHostName}'

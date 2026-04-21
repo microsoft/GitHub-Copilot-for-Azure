@@ -55,8 +55,6 @@ export default function App() {
     const [customEnd, setCustomEnd] = useState<string>("");
     const [metrics, setMetrics] = useState<EvalMetricRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [syncing, setSyncing] = useState<"" | "new" | "all">("");
-    const [syncResult, setSyncResult] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [hiddenSeries, setHiddenSeries] = useState<Set<string>>(new Set());
 
@@ -102,27 +100,6 @@ export default function App() {
             .then((data: EvalMetricRow[]) => setMetrics(data))
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
-    };
-
-    const handleSync = async (force: boolean) => {
-        setSyncing(force ? "all" : "new");
-        setSyncResult(null);
-        try {
-            const url = force
-                ? "/api/msbench-eval-metrics/sync?force=true"
-                : "/api/msbench-eval-metrics/sync";
-            const res = await fetch(url, { method: "POST" });
-            if (!res.ok) throw new Error(`Sync failed: ${res.status}`);
-            const data = await res.json();
-            setSyncResult(`Synced ${data.synced} entries.`);
-            // Reload data after sync
-            await loadFilters();
-            await loadMetrics();
-        } catch (err: any) {
-            setSyncResult(`Sync error: ${err.message}`);
-        } finally {
-            setSyncing("");
-        }
     };
 
     // Load filter options
@@ -196,7 +173,7 @@ export default function App() {
         return Object.entries(byDate)
             .map(([date, series]) => ({ date, ...series }))
             .sort((a, b) => a.date.localeCompare(b.date));
-    }, [filteredMetrics]);
+    }, [filteredMetrics, selectedBenchmark, selectedModel]);
 
     const resolvedChartData = useMemo(() => {
         const byDate: Record<string, Record<string, number>> = {};
@@ -213,7 +190,7 @@ export default function App() {
     return (
         <div className="pd-dashboard" id="main">
             <header className="pd-header">
-                <h1>Performance Dashboard</h1>
+                <h1>MSBench Performance Dashboard</h1>
             </header>
 
             {/* Filters */}
@@ -297,23 +274,6 @@ export default function App() {
                     </div>
                 )}
 
-                <div className="pd-sync">
-                    <button
-                        className="pd-sync-button"
-                        onClick={() => handleSync(false)}
-                        disabled={!!syncing}
-                    >
-                        {syncing === "new" ? "Syncing…" : "Sync New Data"}
-                    </button>
-                    <button
-                        className="pd-sync-button"
-                        onClick={() => handleSync(true)}
-                        disabled={!!syncing}
-                    >
-                        {syncing === "all" ? "Syncing…" : "Sync All Data"}
-                    </button>
-                    {syncResult && <span className="pd-sync-result">{syncResult}</span>}
-                </div>
             </div>
 
             {/* Charts */}
