@@ -171,6 +171,11 @@ tolerations:
     operator: Equal
     value: spot
     effect: NoSchedule
+```
+
+Add this preferred node affinity when you want the workload to bias toward spot nodes:
+
+```yaml
 affinity:
   nodeAffinity:
     preferredDuringSchedulingIgnoredDuringExecution:

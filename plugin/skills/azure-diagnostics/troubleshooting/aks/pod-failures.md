@@ -5,13 +5,10 @@
 ```bash
 # List unhealthy pods across all namespaces
 kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
-
 # All pods wide view
 kubectl get pods -A -o wide
-
 # Detailed pod status - events section is critical
 kubectl describe pod <pod-name> -n <namespace>
-
 # Pod logs (current and previous crash)
 kubectl logs <pod-name> -n <namespace>
 kubectl logs <pod-name> -n <namespace> --previous

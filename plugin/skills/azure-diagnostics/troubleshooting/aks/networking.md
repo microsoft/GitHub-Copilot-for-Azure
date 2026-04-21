@@ -36,14 +36,14 @@ Pods that are running but not Ready are removed from Endpoints. Check `kubectl g
 
 **Diagnostics:**
 
+The live DNS test creates a temporary pod. Prefer `get`, `describe`, `logs`, or `exec` into an existing pod first. Only use it after the user explicitly approves creating the test pod.
+
 ```bash
 # Confirm CoreDNS is running and healthy (read-only)
 kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide
 kubectl top pod -n kube-system -l k8s-app=kube-dns
 
 # Optional live DNS test from the same namespace as the failing pod
-# This creates a temporary pod. Prefer get/describe/logs or exec into an existing pod first.
-# Only use it after the user explicitly approves creating the test pod.
 kubectl run dnstest --image=busybox:1.28 -it --rm -n <ns> -- \
   nslookup <service-name>.<ns>.svc.cluster.local
 

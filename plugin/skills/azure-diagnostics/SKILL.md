@@ -71,13 +71,10 @@ Activate this skill when user wants to:
 ```bash
 # Check resource health
 az resource show --ids RESOURCE_ID
-
 # View activity log
 az monitor activity-log list -g RG --max-events 20
-
 # Container Apps logs
 az containerapp logs show --name APP -g RG --follow
-
 # Function App logs (query App Insights traces)
 az monitor app-insights query --apps APP-INSIGHTS -g RG \
   --analytics-query "traces | where timestamp > ago(1h) | order by timestamp desc | take 50"
