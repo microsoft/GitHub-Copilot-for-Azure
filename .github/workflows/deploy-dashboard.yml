@@ -64,8 +64,8 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       
       # azure/login only fetches the OIDC access token once.
-      # If a test starts after the token expires, it will fail with authentication errors.
-      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
+      # If a deployment takes long enough and the token expires, requests will fail with authentication errors.
+      # This step runs code to refresh the cached OIDC access token periodically to ensure the deployment always have a valid access token.
       # Learn more at https://github.com/Azure/login/issues/372
       - name: Fetch OIDC token every 300 seconds
         shell: bash
