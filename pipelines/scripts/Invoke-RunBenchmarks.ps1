@@ -22,10 +22,10 @@
     Directory path where run_ids.json and timestamp.txt will be saved.
 
 .PARAMETER StorageAccountName
-    Optional. The Azure Storage account name to upload run artifacts to.
+    Required. The Azure Storage account name to upload run artifacts to.
 
 .PARAMETER ContainerName
-    Optional. The blob container name to upload run artifacts to.
+    Required. The blob container name to upload run artifacts to.
 
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -41,8 +41,8 @@
             "gemini-2.5-pro-autodev-test"
         ),
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
-        [Parameter(Mandatory=$true)][string]$StorageAccountName,
-        [Parameter(Mandatory=$true)][string]$ContainerName
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
     )
 
     Set-StrictMode -Version Latest
