@@ -155,6 +155,24 @@ readinessProbe:
 
 ---
 
+## `safeguard-host-probes` - Remove host field in probes and lifecycle hooks
+
+**Before:**
+```yaml
+spec:
+  containers:
+  - name: my-container
+    image: nginx:v1.2.3
+    livenessProbe:
+      httpGet:
+        host: true
+```
+
+**After:**
+Suggest a fix similar to the previously mentioned `safeguard-probes-configured` fix
+
+---
+
 ## `safeguard-pod-enforce-antiaffinity` — Add topology spread *(LLM-reasoned — ask user for label)*
 
 Ask user: _"What label key/value identifies your workload's pods?"_
