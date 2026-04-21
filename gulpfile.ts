@@ -27,7 +27,7 @@ function stampSkillVersions() {
       }
 
       try {
-        const skillName = file.relative.split(path.sep)[1];
+        const skillName = file.relative.split("/")[1];
         const sourceSkillDir = path.resolve("plugin/skills", skillName);
         const versionInfo = await nbgv.getVersion(sourceSkillDir);
         const version = versionInfo.simpleVersion;

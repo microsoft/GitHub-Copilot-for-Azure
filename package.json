@@ -6,7 +6,7 @@
   "scripts": {
     "build": "gulp",
     "tokens": "cd scripts && npm run tokens --",
-    "verify-local": "echo 'Removed: use npm run build + copilot --plugin-dir ./output instead'",
+    "verify-local": "echo 'Removed: use npm run build + copilot --plugin-dir ./output instead' && exit 1",
     "test": "cd scripts && npm test",
     "test:skills": "cd tests && npm test --",
     "test:skills:integration": "cd tests && npm run test:integration --",
