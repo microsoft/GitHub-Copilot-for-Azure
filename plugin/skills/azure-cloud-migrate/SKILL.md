@@ -1,6 +1,6 @@
 ---
 name: azure-cloud-migrate
-description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. AWS Lambda→Functions, GCP Cloud Run→Container Apps, Spring Boot→Container Apps. WHEN: migrate Lambda to Functions, migrate from AWS/GCP, Lambda assessment, convert serverless, Cloud Run to Container Apps, Spring Boot to Container Apps, Azure Spring Apps to ACA."
+description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. AWS Lambda→Functions, GCP Cloud Run→Container Apps, Spring Boot→Container Apps. WHEN: migrate Lambda to Functions, migrate AWS to Azure, Lambda assessment, convert serverless, migration readiness, migrate from GCP, Cloud Run migration, Spring Boot to Container Apps, Azure Spring Apps to ACA."
 license: MIT
 metadata:
   author: Microsoft

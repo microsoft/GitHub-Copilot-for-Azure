@@ -167,7 +167,12 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
   --env-vars SPRING_DATASOURCE_PASSWORD=secretref:db-password SPRING_PROFILES_ACTIVE=prod
 ```
 
-**With storage mount** (add `--bind-storage-name spring-storage --mount-path /mnt/data` flags to either command above).
+**With storage mount:** Export the app configuration, add volumeMounts, and update:
+```bash
+az containerapp show --name spring-app --resource-group spring-rg -o yaml > app.yaml
+# Edit app.yaml: add volumeMounts under containers[0] and volumes at template level
+az containerapp update --name spring-app --resource-group spring-rg --yaml app.yaml
+```
 
 **Health Probes** (recommended for Spring Boot apps): Add liveness and readiness probes after deployment:
 
