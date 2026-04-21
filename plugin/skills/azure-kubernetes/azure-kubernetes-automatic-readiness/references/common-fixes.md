@@ -154,7 +154,7 @@ readinessProbe:
 
 ---
 
-## `safeguard-host-probes` - Remove host field in probes and lifecycle hooks
+## `safeguard-host-probes` — Remove host field in probes and lifecycle hooks
 
 **Before:**
 ```yaml

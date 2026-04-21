@@ -132,7 +132,7 @@ Key Checks:
 - `securityContext.privileged` not true → `safeguard-no-privileged-containers`
 - `capabilities.add` only adds allowed capabilities → `safeguard-container-capabilities`
 - `seccompProfile` is RuntimeDefault/Localhost → `safeguard-allowed-seccomp-profiles`
-- no `host` field in any container probes and lifecycle hooks
+- no `host` field in any container probes and lifecycle hooks → `safeguard-host-probes`
 
 **Per pod spec:**
 - `hostPID`/`hostIPC` not true → `safeguard-block-host-namespaces` (incompatible)

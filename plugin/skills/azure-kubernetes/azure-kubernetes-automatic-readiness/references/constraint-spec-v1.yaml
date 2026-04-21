@@ -223,7 +223,7 @@ safeguards:
     enforcement: warn  # Warning-only — deployments are admitted with a kubectl warning, not denied
     category: reliability
     check: Every container should have readinessProbe + livenessProbe (recommended best practice)
-    fix: Add probes (app-specific — HTTP/TCP/exec/GRPC) — recommended, not required for migration
+    fix: Add probes (app-specific — HTTP/TCP/exec/gRPC) — recommended, not required for migration
 
   - id: safeguard-csi-driver-storage-class
     policyId: 4f3823b6
