@@ -50,13 +50,14 @@ metadata:
 
 ## Connectivity Troubleshooting
 
-See [Service Troubleshooting Guide](references/service-troubleshooting.md) for ports, WebSocket fallback, IP firewall, private endpoints, and service tags.
+See [Service Troubleshooting Guide](../azure-diagnostics/troubleshooting/messaging/service-troubleshooting.md) for ports, WebSocket fallback, IP firewall, private endpoints, and service tags.
 
 ## SDK Troubleshooting Guides
 
-- **Event Hubs**: [Python](references/sdk/azure-eventhubs-py.md) | [Java](references/sdk/azure-eventhubs-java.md) | [JS](references/sdk/azure-eventhubs-js.md) | [.NET](references/sdk/azure-eventhubs-dotnet.md)
-- **Service Bus**: [Python](references/sdk/azure-servicebus-py.md) | [Java](references/sdk/azure-servicebus-java.md) | [JS](references/sdk/azure-servicebus-js.md) | [.NET](references/sdk/azure-servicebus-dotnet.md)
+- **Event Hubs**: [Python](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-py.md) | [Java](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-java.md) | [JS](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-js.md) | [.NET](../azure-diagnostics/troubleshooting/messaging/azure-eventhubs-dotnet.md)
+- **Service Bus**: [Python](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-py.md) | [Java](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-java.md) | [JS](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-js.md) | [.NET](../azure-diagnostics/troubleshooting/messaging/azure-servicebus-dotnet.md)
 
 ## References
 
-Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](references/service-troubleshooting.md) for network and service-level docs.
+- [Auth Best Practices](references/auth-best-practices.md)
+- Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](../azure-diagnostics/troubleshooting/messaging/service-troubleshooting.md) for network and service-level docs.
