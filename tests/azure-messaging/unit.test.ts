@@ -54,17 +54,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("Diagnosis Workflow");
     });
 
-    test("contains connectivity troubleshooting section", () => {
-      expect(skill.content).toContain("Connectivity Troubleshooting");
+    test("contains troubleshooting guides section", () => {
+      expect(skill.content).toContain("Troubleshooting Guides");
     });
 
-    test("references SDK troubleshooting guides", () => {
-      expect(skill.content).toContain("SDK Troubleshooting Guides");
-    });
-
-    test("points to azure-diagnostics for SDK references", () => {
-      expect(skill.content).toContain("azure-diagnostics");
-      expect(skill.content).toContain("troubleshooting/messaging/");
+    test("directs to azure-diagnostics skill for troubleshooting content", () => {
+      expect(skill.content).toContain(
+        "troubleshooting guides are located in the azure-diagnostics skill under `troubleshooting/messaging/`"
+      );
     });
   });
 
@@ -82,26 +79,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   });
 
   describe("Reference Files", () => {
-    test("mentions all Event Hubs SDK guides", () => {
-      expect(skill.content).toContain("azure-eventhubs-py.md");
-      expect(skill.content).toContain("azure-eventhubs-java.md");
-      expect(skill.content).toContain("azure-eventhubs-js.md");
-      expect(skill.content).toContain("azure-eventhubs-dotnet.md");
-    });
-
-    test("mentions all Service Bus SDK guides", () => {
-      expect(skill.content).toContain("azure-servicebus-py.md");
-      expect(skill.content).toContain("azure-servicebus-java.md");
-      expect(skill.content).toContain("azure-servicebus-js.md");
-      expect(skill.content).toContain("azure-servicebus-dotnet.md");
-    });
-
-    test("mentions service-level troubleshooting guide", () => {
-      expect(skill.content).toContain("service-troubleshooting.md");
-    });
-
-    test("keeps auth-best-practices locally", () => {
-      expect(skill.content).toContain("references/auth-best-practices.md");
+    test("does not duplicate troubleshooting files locally", () => {
+      // Troubleshooting content moved to azure-diagnostics; no local references/ links should remain
+      expect(skill.content).not.toContain("references/sdk/");
+      expect(skill.content).not.toContain("references/service-troubleshooting.md");
+      expect(skill.content).not.toContain("references/auth-best-practices.md");
     });
   });
 
