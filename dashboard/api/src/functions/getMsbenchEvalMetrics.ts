@@ -7,12 +7,18 @@ const MSBENCH_STORAGE_ACCOUNT = process.env.MSBENCH_STORAGE_ACCOUNT;
 const EVAL_TABLE_NAME = process.env.MSBENCH_EVAL_TABLE_NAME;
 
 function getEvalTableClient(): TableClient {
+    if (!MSBENCH_STORAGE_ACCOUNT) {
+        throw new Error("MSBENCH_STORAGE_ACCOUNT environment variable is not set");
+    }
+    if (!EVAL_TABLE_NAME) {
+        throw new Error("MSBENCH_EVAL_TABLE_NAME environment variable is not set");
+    }
     const clientId = process.env.AZURE_CLIENT_ID;
     const isDevEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development";
     const credential = isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
     return new TableClient(
         `https://${MSBENCH_STORAGE_ACCOUNT}.table.core.windows.net`,
-        EVAL_TABLE_NAME!,
+        EVAL_TABLE_NAME,
         credential
     );
 }

@@ -19,6 +19,12 @@ const MSBENCH_REPORTS_CONTAINER_NAME = process.env.MSBENCH_REPORTS_CONTAINER;
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
 
 function getContainerClient() {
+    if (!MSBENCH_STORAGE_ACCOUNT) {
+        throw new Error("MSBENCH_STORAGE_ACCOUNT environment variable is not set");
+    }
+    if (!MSBENCH_REPORTS_CONTAINER_NAME) {
+        throw new Error("MSBENCH_REPORTS_CONTAINER environment variable is not set");
+    }
     const clientId = process.env.AZURE_CLIENT_ID;
     const isDevEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development";
     const credential = isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
@@ -26,7 +32,7 @@ function getContainerClient() {
         `https://${MSBENCH_STORAGE_ACCOUNT}.blob.core.windows.net`,
         credential
     );
-    return blobServiceClient.getContainerClient(MSBENCH_REPORTS_CONTAINER_NAME!);
+    return blobServiceClient.getContainerClient(MSBENCH_REPORTS_CONTAINER_NAME);
 }
 
 function isExcluded(blobName: string): boolean {

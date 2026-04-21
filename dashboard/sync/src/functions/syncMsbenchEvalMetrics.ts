@@ -17,12 +17,18 @@ interface EvalReport {
 }
 
 function getEvalTableClient(): TableClient {
+    if (!MSBENCH_STORAGE_ACCOUNT) {
+        throw new Error("MSBENCH_STORAGE_ACCOUNT environment variable is not set");
+    }
+    if (!EVAL_TABLE_NAME) {
+        throw new Error("MSBENCH_EVAL_TABLE_NAME environment variable is not set");
+    }
     const clientId = process.env.AZURE_CLIENT_ID;
     const isDevEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development";
     const credential = isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
     return new TableClient(
         `https://${MSBENCH_STORAGE_ACCOUNT}.table.core.windows.net`,
-        EVAL_TABLE_NAME!,
+        EVAL_TABLE_NAME,
         credential
     );
 }
@@ -66,18 +72,23 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
         return { synced: 0, message: "All dates already processed." };
     }
 
+    const CONCURRENCY_LIMIT = 5;
     let totalSynced = 0;
 
-    await Promise.all(
-        datesToProcess.map(async (date) => {
-            const tree = await enumerateMsbenchBlobs(`${date}/`);
-            const dateNode = tree[date];
-            if (!dateNode) return;
+    // Process dates sequentially to avoid unbounded parallelism
+    for (const date of datesToProcess) {
+        const tree = await enumerateMsbenchBlobs(`${date}/`);
+        const dateNode = tree[date];
+        if (!dateNode) continue;
 
-            const evalPaths = collectEvalReportPaths(dateNode);
+        const evalPaths = collectEvalReportPaths(dateNode);
 
-            const reports = await Promise.all(
-                evalPaths.map(async (path) => {
+        // Download reports with bounded concurrency
+        const reports: (EvalReport | null)[] = [];
+        for (let i = 0; i < evalPaths.length; i += CONCURRENCY_LIMIT) {
+            const batch = evalPaths.slice(i, i + CONCURRENCY_LIMIT);
+            const batchResults = await Promise.all(
+                batch.map(async (path) => {
                     try {
                         const raw = await getMsbenchBlobContent(path);
                         return JSON.parse(raw) as EvalReport;
@@ -87,25 +98,26 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
                     }
                 })
             );
+            reports.push(...batchResults);
+        }
 
-            for (const report of reports) {
-                if (!report) continue;
-                const benchmark = report.instance_id || "unknown";
-                const model = report.model || "unknown";
+        for (const report of reports) {
+            if (!report) continue;
+            const benchmark = report.instance_id || "unknown";
+            const model = report.model || "unknown";
 
-                await tableClient.upsertEntity({
-                    partitionKey: date,
-                    rowKey: `${benchmark}_${model}`,
-                    benchmark,
-                    model,
-                    totalConsumedTokens: Number(report.total_consumed_tokens) || 0,
-                    totalSteps: Number(report.total_steps) || 0,
-                    resolved: report.resolved ? 1 : 0,
-                });
-                totalSynced++;
-            }
-        })
-    );
+            await tableClient.upsertEntity({
+                partitionKey: date,
+                rowKey: `${benchmark}_${model}`,
+                benchmark,
+                model,
+                totalConsumedTokens: Number(report.total_consumed_tokens) || 0,
+                totalSteps: Number(report.total_steps) || 0,
+                resolved: report.resolved ? 1 : 0,
+            });
+            totalSynced++;
+        }
+    }
 
     return { synced: totalSynced, dates: datesToProcess };
 }
