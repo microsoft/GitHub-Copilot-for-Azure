@@ -191,4 +191,43 @@ azd provision --preview`;
     expect(result).not.toContain("azd deploy");
     expect(result).toContain("azd provision --preview");
   });
+
+  test("bash << heredoc does not match indented delimiter", () => {
+    // With plain <<, the closing delimiter must be at column 0
+    const command = `cat << EOF
+azd up
+  EOF
+azd deploy
+EOF
+azd provision`;
+    const result = stripNonExecutableContent(command);
+    expect(result).not.toContain("azd up");
+    expect(result).not.toContain("azd deploy");
+    // "  EOF" (indented) should NOT close the heredoc — only bare "EOF" does
+    expect(result).toContain("azd provision");
+  });
+
+  test("bash <<- heredoc strips only leading tabs from delimiter", () => {
+    const command = `cat <<-EOF
+\tazd up
+\tEOF
+azd provision`;
+    const result = stripNonExecutableContent(command);
+    expect(result).not.toContain("azd up");
+    expect(result).toContain("azd provision");
+  });
+
+  test("PS here-string closer must be at column 0", () => {
+    // Indented '@ should NOT close the here-string
+    const command = `$x = @'
+azd up
+  '@
+azd deploy
+'@
+azd provision`;
+    const result = stripNonExecutableContent(command);
+    expect(result).not.toContain("azd up");
+    expect(result).not.toContain("azd deploy");
+    expect(result).toContain("azd provision");
+  });
 });
