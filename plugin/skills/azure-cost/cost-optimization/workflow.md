@@ -73,6 +73,7 @@ Wait for user response before proceeding.
 **Reference files (load only what is needed for the request):**
 - [Cost Analysis Add-on](./azure-aks-cost-addon.md) — enable namespace-level cost visibility
 - [Anomaly Investigation](./azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
+- [AKS Cost Optimization Report Template](./aks-cost-optimization-report.md) — use when generating an AKS cost report covering overprovisioned pods, node rightsizing, autoscaler, spot nodes, and reserved instances
 
 > **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the relevant reference file above.
 
