@@ -24,7 +24,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   kind: 'GlobalDocumentDB'
   properties: {
     databaseAccountOfferType: 'Standard'
-    disableLocalAuthentication: true
+    disableLocalAuth: true
     locations: [
       { locationName: location, failoverPriority: 0 }
     ]
@@ -101,4 +101,4 @@ const client = new CosmosClient({
 });
 ```
 
-> ⚠️ **Always set `disableLocalAuthentication: true`** — use RBAC only, never keys.
+> ⚠️ **Always set `disableLocalAuth: true`** — use RBAC only, never keys.

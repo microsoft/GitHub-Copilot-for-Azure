@@ -35,14 +35,14 @@ resource redis 'Microsoft.Cache/redis@2024-03-01' = {
   }
 }
 
-// RBAC — Redis Cache Contributor
+// RBAC — Redis Cache Data Owner
 resource rbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(redis.id, principalId, 'e0f68234-74aa-48ed-b826-c38b57376e17')
+  name: guid(redis.id, principalId, 'e12a10f1-dcd0-4ee7-abb0-0b2e24e345e7')
   scope: redis
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
-      'e0f68234-74aa-48ed-b826-c38b57376e17'
+      'e12a10f1-dcd0-4ee7-abb0-0b2e24e345e7'
     )
     principalId: principalId
     principalType: 'ServicePrincipal'
@@ -67,8 +67,8 @@ env: [
 
 | Role | GUID | Access |
 |------|------|--------|
-| Redis Cache Contributor | `e0f68234-74aa-48ed-b826-c38b57376e17` | Manage cache + data |
-| Redis Cache Data Access | Custom role | Data plane operations |
+| Redis Cache Data Owner | `e12a10f1-dcd0-4ee7-abb0-0b2e24e345e7` | Read + write data |
+| Redis Cache Data Contributor | `e12a10f1-dcd0-4ee7-abb0-0b2e24e345c2` | Read-only data |
 
 ## SDK Connection (Node.js Example)
 
@@ -80,10 +80,16 @@ const credential = new DefaultAzureCredential({
   managedIdentityClientId: process.env.AZURE_CLIENT_ID,
 });
 
-const client = createClient({
-  url: `rediss://${process.env.REDIS_HOSTNAME}:${process.env.REDIS_PORT}`,
-  credential,
-});
+async function createRedisClient() {
+  const { token } = await credential.getToken("https://redis.azure.com/.default");
+  const client = createClient({
+    url: `rediss://${process.env.REDIS_HOSTNAME}:${process.env.REDIS_PORT}`,
+    username: process.env.AZURE_CLIENT_ID,
+    password: token,
+  });
+  await client.connect();
+  return client;
+}
 ```
 
 ## Dapr State Store
@@ -101,6 +107,7 @@ resource stateStore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01
       { name: 'redisHost', value: '${redis.outputs.hostName}:${redis.outputs.sslPort}' }
       { name: 'enableTLS', value: 'true' }
       { name: 'azureClientId', value: uamiClientId }
+      { name: 'useEntraID', value: 'true' }
     ]
   }
 }

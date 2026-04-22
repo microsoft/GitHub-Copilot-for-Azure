@@ -68,6 +68,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
           allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
           allowedHeaders: ['*']
         }
+        // ⚠️ Replace '*' with specific origins for production
       }
       registries: [
         {

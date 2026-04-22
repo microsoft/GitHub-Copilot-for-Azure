@@ -53,7 +53,10 @@ services:
 param name string
 param location string = resourceGroup().location
 param tags object = {}
+param logAnalyticsWorkspaceId string
+param logAnalyticsSharedKey string
 
+// logAnalytics resource must be declared or passed as parameter
 // Shared Container Apps Environment
 resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: '${name}-env'
@@ -63,8 +66,8 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
-        customerId: logAnalytics.properties.customerId
-        sharedKey: logAnalytics.listKeys().primarySharedKey
+        customerId: logAnalyticsWorkspaceId
+        sharedKey: logAnalyticsSharedKey
       }
     }
   }

@@ -85,17 +85,14 @@ scale: {
           queueName: sb.outputs.queueName
           messageCount: '5'
         }
-        auth: [
-          {
-            secretRef: 'sb-identity'
-            triggerParameter: 'connection'
-          }
-        ]
+        identity: managedIdentityResourceId
       }
     }
   ]
 }
 ```
+
+> 💡 **Tip:** Set `identity` to the UAMI resource ID to authenticate the KEDA scaler via managed identity instead of connection strings.
 
 ## RBAC Roles
 

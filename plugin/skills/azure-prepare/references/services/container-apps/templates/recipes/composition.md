@@ -49,7 +49,7 @@ IF recipes detected:
        name: name
        location: location
        tags: tags
-       containerAppPrincipalId: app.outputs.principalId
+       principalId: app.outputs.principalId
      }
    }
    ```
@@ -78,16 +78,13 @@ Read the recipe's `README.md` for required env vars. Add them to the container a
 Each recipe defines required RBAC roles. Use exact role definition GUIDs from recipe docs.
 
 ```bicep
-resource cosmosRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(cosmos.id, uami.id, cosmosDataContributor)
-  scope: cosmos
+resource cosmosRbac 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = {
+  parent: cosmos
+  name: guid(cosmos.id, uami.id, 'data-contributor')
   properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      '00000000-0000-0000-0000-000000000002'  // from recipe
-    )
+    roleDefinitionId: '${cosmos.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
     principalId: uami.outputs.principalId
-    principalType: 'ServicePrincipal'
+    scope: cosmos.id
   }
 }
 ```
@@ -132,7 +129,7 @@ Base (web-app)
 ## Critical Rules
 
 1. **Never synthesize IaC from scratch** — always extend base template
-2. **Never modify base IaC files** — only ADD recipe modules alongside them
+2. **Don't replace or remove base IaC resources** — extend base files only by adding module references and additive resources
 3. **Always use recipe RBAC role GUIDs** — never let the LLM guess role IDs
 4. **Always use UAMI** — never use connection strings or access keys
 5. **Always use `--no-prompt`** with azd commands

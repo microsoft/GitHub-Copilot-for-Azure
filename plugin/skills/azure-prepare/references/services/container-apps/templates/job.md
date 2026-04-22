@@ -103,12 +103,22 @@ resource eventJob 'Microsoft.App/jobs@2024-03-01' = {
   name: '${name}-event'
   location: location
   tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${userAssignedIdentityId}': {} }
+  }
   properties: {
     environmentId: envId
     configuration: {
       triggerType: 'Event'
       replicaTimeout: 600
       replicaRetryLimit: 2
+      registries: [
+        {
+          server: '${containerRegistryName}.azurecr.io'
+          identity: userAssignedIdentityId
+        }
+      ]
       eventTriggerConfig: {
         parallelism: 1
         replicaCompletionCount: 1
