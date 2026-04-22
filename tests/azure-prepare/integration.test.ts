@@ -1052,6 +1052,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     interface TriggerTestCase {
       name: string;
+      language?: string;
       prompt: string;
       codeIndicator: RegExp;
       iacPattern?: RegExp;
@@ -1132,11 +1133,35 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         iacPattern: /\.tf$/,
         extraIndicator: /cosmos|azurerm_cosmosdb/i,
       },
+      // TypeScript cross-language tests
+      {
+        name: "HTTP trigger (TypeScript)",
+        language: "typescript",
+        prompt: "Create a TypeScript Azure Functions HTTP API with a health endpoint and deploy to Azure.",
+        codeIndicator: /app\.(http|get|post)|httpTrigger|HttpRequest/i,
+        iacPattern: /\.bicep$/,
+      },
+      {
+        name: "Service Bus trigger (TypeScript)",
+        language: "typescript",
+        prompt: "Create a TypeScript Azure Functions app with a Service Bus queue trigger for message processing and deploy to Azure.",
+        codeIndicator: /app\.serviceBusQueue|serviceBusTrigger|ServiceBusQueueTrigger/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /Microsoft\.ServiceBus|ServiceBusConnection/i,
+      },
+      {
+        name: "Cosmos DB trigger (TypeScript)",
+        language: "typescript",
+        prompt: "Create a TypeScript Azure Functions app with a Cosmos DB change feed trigger and deploy to Azure.",
+        codeIndicator: /app\.cosmosDB|cosmosDBTrigger|CosmosDBTrigger/i,
+        iacPattern: /\.bicep$/,
+        extraIndicator: /cosmos|Microsoft\.DocumentDB/i,
+      },
     ];
 
     test.each(triggerTests)(
       "calls functions_template_get for $name",
-      async ({ name, prompt, codeIndicator, iacPattern, extraIndicator }) => {
+      async ({ name, prompt, codeIndicator, iacPattern, extraIndicator, language }) => {
         await withTestResult(async () => {
           let workspacePath: string | undefined;
 
@@ -1159,7 +1184,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           const templateCallCount = countFunctionsTemplateCalls(agentMetadata);
 
           agentMetadata.testComments.push(
-            `functions_template_get calls: ${templateCallCount} (${name})`
+            `functions_template_get calls: ${templateCallCount} (${name}, lang: ${language ?? "python"})`
           );
 
           expect(templateCallCount).toBeGreaterThanOrEqual(1);
