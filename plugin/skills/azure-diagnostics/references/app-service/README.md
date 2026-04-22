@@ -23,9 +23,8 @@ az monitor metrics list --resource APP_RESOURCE_ID \
   --metric "CpuPercentage,MemoryPercentage" --interval PT1M --output table
 
 # View running processes via ARM Processes API (Entra ID auth)
-TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
 ```
 
 **AppLens (MCP):**
