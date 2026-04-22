@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`capacity - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+exports[`finetuning - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
   "description": "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, batch eval, prompt optimization, prompt optimizer, agent.yaml, dataset curation from traces, model fine-tuning (SFT/DPO/RFT). USE FOR: deploy agent, hosted agent, create agent, invoke agent, evaluate agent, batch eval, optimize prompt, improve prompt, prompt optimizer, improve agent instructions, optimize system prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, availability, troubleshoot agent, deployment failure, create Foundry resource, provision resource, Cognitive Services, AI Services, customize deployment, fine-tune, SFT, DPO, RFT, training data, grader, distillation, custom model, training job, large file upload. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare).",
   "extractedKeywords": [
@@ -78,7 +78,7 @@ exports[`capacity - Trigger Tests Trigger Keywords Snapshot skill description tr
 }
 `;
 
-exports[`capacity - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+exports[`finetuning - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "agent",
   "agents",
