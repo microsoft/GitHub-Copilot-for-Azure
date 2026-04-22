@@ -1,10 +1,10 @@
 ---
 name: azure-resource-lookup
-description: "List, find, and show Azure resources. Answers \"list my VMs\", \"show my storage accounts\", \"list websites\", \"find container apps\", \"what resources do I have\", and similar queries for any Azure resource type. USE FOR: list resources, list virtual machines, list VMs, list storage accounts, list websites, list web apps, list container apps, show resources, find resources, what resources do I have, list resources in resource group, list resources in subscription, find resources by tag, find orphaned resources, resource inventory, count resources by type, cross-subscription resource query, Azure Resource Graph, resource discovery, list container registries, list SQL servers, list Key Vaults, show resource groups, list app services, find resources across subscriptions, find unattached disks, tag analysis. DO NOT USE FOR: deploying resources (use azure-deploy), creating or modifying resources, cost optimization (use azure-cost-optimization), writing application code, non-Azure clouds."
+description: "List, find, and show Azure resources — including websites, web apps, and App Services (no dedicated MCP list command). Answers \"list the websites in my subscription\", \"list my web apps\", \"show my app services\", \"list my VMs\", \"find container apps\", \"what resources do I have\". USE FOR: list websites, list web apps, list app services, show websites in subscription, list resources, list VMs, list storage accounts, list container apps, show resources, find resources, list resources in subscription, find orphaned resources, resource inventory, cross-subscription resource query, Azure Resource Graph, resource discovery, find unattached disks, tag analysis. DO NOT USE FOR: deploying (use azure-deploy), cost optimization (use azure-cost-optimization), non-Azure clouds."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Azure Resource Lookup
@@ -22,6 +22,9 @@ Use this skill when the user wants to:
 - Get a **resource inventory** spanning multiple types
 - Find resources in a **specific state** (unhealthy, failed provisioning, stopped)
 - Answer "**what resources do I have?**" or "**show me my Azure resources**"
+- **List web apps, websites, or App Services** — no dedicated MCP list command exists for these resource types; this skill with Azure Resource Graph is the correct route
+
+> ⚠️ **Warning:** App Service / Web Apps have no dedicated MCP `list` command. Prompts like "list websites", "list web apps", or "list app services" **must** route through this skill to use Azure Resource Graph.
 
 > 💡 **Tip:** For single-resource-type queries, first check if a dedicated MCP tool can handle it (see routing table below). If none exists, use Azure Resource Graph.
 
