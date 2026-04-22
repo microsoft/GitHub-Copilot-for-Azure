@@ -49,15 +49,20 @@ function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvo
     return true;
   }
 
-  // Fallback: the agent is clearly working on AKS Automatic readiness assessment
-  // even without formal skill invocation (e.g. local SDK without skill routing).
-  if (
-    doesAssistantMessageIncludeKeyword(agentMetadata, "AKS Automatic") &&
-    (doesAssistantMessageIncludeKeyword(agentMetadata, "migrat") ||
-     doesAssistantMessageIncludeKeyword(agentMetadata, "compatib") ||
-     doesAssistantMessageIncludeKeyword(agentMetadata, "readiness"))
-  ) {
-    return true;
+  // Fallback for environments without skill routing: require "AKS Automatic"
+  // plus at least two domain-specific terms to avoid false positives from
+  // the agent merely restating the user prompt.
+  if (doesAssistantMessageIncludeKeyword(agentMetadata, "AKS Automatic")) {
+    const domainHits = [
+      doesAssistantMessageIncludeKeyword(agentMetadata, "migrat"),
+      doesAssistantMessageIncludeKeyword(agentMetadata, "compatib"),
+      doesAssistantMessageIncludeKeyword(agentMetadata, "readiness"),
+      doesAssistantMessageIncludeKeyword(agentMetadata, "Deployment Safeguards"),
+      doesAssistantMessageIncludeKeyword(agentMetadata, "workload"),
+    ].filter(Boolean).length;
+    if (domainHits >= 2) {
+      return true;
+    }
   }
 
   // Router-only invocation does NOT count — it doesn't prove readiness workflow ran.
@@ -115,7 +120,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           doesAssistantMessageIncludeKeyword(agentMetadata, "requirement") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "restriction") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "limitation") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "constraint") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "warning") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "auto-fixed");
         expect(hasSeverityContent).toBe(true);
