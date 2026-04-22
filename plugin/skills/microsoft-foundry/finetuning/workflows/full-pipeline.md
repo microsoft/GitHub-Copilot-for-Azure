@@ -28,7 +28,7 @@ Answer before touching data or models:
 
 ### Option B: Synthetic Data
 1. Generate using LLM prompts (see `workflows/dataset-creation.md`)
-2. Convert to SFT JSONL with `scripts/submit_training.py`
+2. Convert to SFT JSONL with `scripts/convert_dataset.py`
 
 ### Option C: Hybrid (Seed + Synthetic)
 1. Use existing data as seed, generate synthetic variations

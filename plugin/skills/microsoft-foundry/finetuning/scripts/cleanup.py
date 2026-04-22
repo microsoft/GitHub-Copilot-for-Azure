@@ -8,16 +8,16 @@
 """
 cleanup.py — Clean up fine-tuning resources to avoid quota exhaustion.
 
-Lists and optionally deletes deployments, uploaded files, and completed/failed
-jobs. Useful after experimentation to reclaim quota (max 100 files per resource,
+Lists and optionally deletes uploaded files and cancels pending jobs.
+Useful after experimentation to reclaim quota (max 100 files per resource,
 deployment slots are limited).
 
 Usage:
   python cleanup.py --list                            # List all resources
-  python cleanup.py --list --type deployments         # List only deployments
-  python cleanup.py --delete-deployments              # Delete all FT deployments
+  python cleanup.py --list --type files               # List only files
   python cleanup.py --delete-files --older-than 7     # Delete files older than 7 days
-  python cleanup.py --delete-all                      # Delete all FT deployments + old files
+  python cleanup.py --delete-files --dry-run          # Preview what would be deleted
+  python cleanup.py --cancel-pending                  # Cancel queued jobs
 """
 
 import argparse
