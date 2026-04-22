@@ -32,6 +32,7 @@ from common import HelpOnErrorParser, get_clients
 
 def load_grader(grader_path):
     """Load and compile a Python grader file. Returns the grade() function."""
+    # WARNING: executes arbitrary code from grader_path — must be a trusted local file
     with open(grader_path) as f:
         source = f.read()
     namespace = {}
