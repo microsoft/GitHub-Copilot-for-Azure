@@ -24,7 +24,6 @@ import {
 } from "../../utils/evaluate";
 
 const SKILL_NAME = "azure-kubernetes-automatic-readiness";
-const ROUTER_SKILL_NAME = "azure-kubernetes";
 const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
 
@@ -73,10 +72,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
             prompt: "Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible.",
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, ROUTER_SKILL_NAME)
+            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
 
-          softCheckSkill(agentMetadata, ROUTER_SKILL_NAME);
+          softCheckSkill(agentMetadata, SKILL_NAME);
           if (isReadinessWorkflowInvoked(agentMetadata)) {
             invocationCount += 1;
           }
