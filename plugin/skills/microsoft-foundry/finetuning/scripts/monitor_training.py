@@ -31,7 +31,6 @@ TERMINAL_STATUSES = {"succeeded", "failed", "cancelled"}
 def monitor_job(client, job_id, poll_interval=15):
     """Poll a fine-tuning job until it reaches a terminal state."""
     seen_events = set()
-    last_step = 0
 
     print(f"Monitoring job: {job_id}")
     print(f"Polling every {poll_interval}s. Ctrl+C to stop.\n")

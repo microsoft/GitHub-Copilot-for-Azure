@@ -102,6 +102,7 @@ def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_k
     print("   AZURE_AI_PROJECT_ENDPOINT (Foundry SDK)")
     print("   AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_KEY")
     sys.exit(1)
+    return None, "none"  # unreachable, satisfies static analysis
 
 
 def upload_file(openai_client, filepath: str, purpose: str = "fine-tune") -> str:
