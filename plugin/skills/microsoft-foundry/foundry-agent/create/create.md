@@ -135,7 +135,7 @@ Add the correct adapter package based on framework and language. Get the latest 
 
 | Framework | Package |
 |-----------|---------|
-| Microsoft Agent Framework | `agent_framework_foundry_hosting ` |
+| Microsoft Agent Framework | `agent_framework_foundry_hosting` |
 | LangGraph | `azure-ai-agentserver-langgraph` |
 | Custom | `azure-ai-agentserver-core` |
 
