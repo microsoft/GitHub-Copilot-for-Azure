@@ -46,7 +46,7 @@ See `references/hyperparameters.md` for full guide.
 |-------|----------|
 | gpt-4.1-mini | Best quality-per-dollar, most tasks |
 | gpt-4.1-nano | Fastest inference, simple tasks |
-| gpt-oss-20b-11 | Large datasets, lowest absolute loss |
+| gpt-oss-20b | Large datasets, lowest absolute loss |
 | Ministral-3B | Lightweight, fast inference |
 | Qwen-3-32B, Llama-3.3-70B | Multilingual or specialized tasks |
 
@@ -81,7 +81,7 @@ Training curves healthy (no overfitting)?
 
 Run the same dataset through 2-3 base models:
 1. **gpt-4.1-mini** — primary candidate
-2. **gpt-oss-20b-11** — large-dataset specialist (500+ examples)
+2. **gpt-oss-20b** — large-dataset specialist (500+ examples)
 3. **gpt-4.1-nano** — fast inference option
 
 ## Common Mistakes

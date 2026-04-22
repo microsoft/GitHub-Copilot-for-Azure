@@ -7,7 +7,7 @@
 | gpt-4.1-mini | `"OpenAI"` | `"Standard"` | Project |
 | gpt-4.1-nano | `"OpenAI"` | `"Standard"` | Project |
 | o4-mini (RFT) | `"OpenAI"` | `"Standard"` | Project |
-| gpt-oss-20b-11 | `"Microsoft"` | `"GlobalStandard"` | Cognitive Services |
+| gpt-oss-20b | `"Microsoft"` | `"GlobalStandard"` | Cognitive Services |
 | Ministral-3B | `"Mistral AI"` | `"GlobalStandard"` | Cognitive Services |
 | Llama-3.3-70B | `"Meta"` | `"GlobalStandard"` | Cognitive Services |
 | Qwen-3-32B | `"Alibaba"` | `"GlobalStandard"` | Cognitive Services |
@@ -41,7 +41,7 @@ az cognitiveservices account deployment create \
 | Base model family | ARM REST `model.format` | CLI `--model-format` |
 |-------------------|------------------------|----------------------|
 | gpt-4.1-mini/nano | `"OpenAI"` | `"OpenAI"` |
-| gpt-oss-20b-11 | `"Microsoft"` | `"OpenAI-OSS"` |
+| gpt-oss-20b | `"Microsoft"` | `"OpenAI-OSS"` |
 | Ministral-3B | `"Mistral AI"` | `"OpenAI-OSS"` |
 | Llama-3.3-70B | `"Meta"` | `"OpenAI-OSS"` |
 | Qwen-3-32B | `"Alibaba"` | `"OpenAI-OSS"` |
@@ -60,7 +60,7 @@ PUT https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{rg}/prov
   "properties": {
     "model": {
       "format": "Microsoft",
-      "name": "gpt-oss-20b-11.ft-{jobid}-suffix",
+      "name": "gpt-oss-20b.ft-{jobid}-suffix",
       "version": "1"
     }
   }
