@@ -52,7 +52,7 @@ resource webApp 'Microsoft.Web/sites@2022-09-01' = {
 }
 ```
 
-> 💡 **Tip:** Set `vnetRouteAllEnabled: true` to route ALL outbound traffic through the VNet. Without this, only RFC1918 traffic is routed through the VNet.
+> 💡 **Tip:** Set `outboundVnetRouting.allTraffic: true` to route ALL outbound traffic through the VNet. Without this, only RFC1918 traffic is routed through the VNet.
 
 ## Private Endpoints (Inbound)
 
