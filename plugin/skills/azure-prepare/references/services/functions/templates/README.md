@@ -67,6 +67,8 @@ Write every file from BOTH arrays:
 
 **PRESERVE generated IaC security patterns** — keep RBAC, managed identity, and security config intact. When composing multiple templates, merge additively (see [composition.md](recipes/composition.md)).
 
+> **Skip content verification** — MCP template files are pre-validated. After writing, do not `view`/`cat` files unless you customized them. Check success via exit code and file count only.
+
 ### Step 5: Deploy
 
 ```bash

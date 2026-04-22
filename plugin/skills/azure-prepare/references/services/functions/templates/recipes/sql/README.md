@@ -25,13 +25,13 @@ ALTER TABLE [dbo].[ToDo] ENABLE CHANGE_TRACKING;
 **Solution:** Set the SQL connection string with managed identity authentication:
 
 ```
-Server=<server>.database.windows.net; Authentication=Active Directory Managed Identity; Database=<database>
+Server=tcp:<server>.database.windows.net,1433;Database=<database>;Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;
 ```
 
 For user-assigned managed identity, add `User Id=<ClientId>`:
 
 ```
-Server=<server>.database.windows.net; Authentication=Active Directory Managed Identity; User Id=<ClientId>; Database=<database>
+Server=tcp:<server>.database.windows.net,1433;Database=<database>;Authentication=Active Directory Default;User Id=<ClientId>;Encrypt=True;TrustServerCertificate=False;
 ```
 
 Also run post-deploy T-SQL to grant the function app data access:

@@ -4,8 +4,8 @@
 
 | Language | Manifest Templates | Eval | Status |
 |----------|-------------------|------|--------|
-| Python | 1 (Bicep) | ✅ | ✅ Verified |
-| TypeScript | 1 (Bicep) | ✅ | ✅ Verified |
+| Python | 1 (Bicep) | [✅](python.md) | ✅ Verified |
+| TypeScript | 1 (Bicep) | [✅](typescript.md) | ✅ Verified |
 | C# (.NET) | 1 (Bicep) | — | 📋 AZD template exists |
 | Java | 3 (Bicep) | — | 📋 AZD template exists |
 | JavaScript | — | — | ⚠️ No AZD template |

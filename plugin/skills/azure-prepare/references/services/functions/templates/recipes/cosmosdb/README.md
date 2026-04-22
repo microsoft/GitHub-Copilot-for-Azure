@@ -32,3 +32,4 @@ See [Cosmos DB trigger connections](https://learn.microsoft.com/en-us/azure/azur
 |------|-------------|
 | [eval/summary.md](eval/summary.md) | Evaluation summary |
 | [eval/python.md](eval/python.md) | Python evaluation results |
+| [eval/typescript.md](eval/typescript.md) | TypeScript evaluation results |

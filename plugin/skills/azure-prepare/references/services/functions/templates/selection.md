@@ -70,6 +70,6 @@ If specific trigger/binding has no AZD template:
 
 | Non-AZD Resource | Related AZD Reference |
 |-----------------|----------------------|
-| ServiceBus, RabbitMQ, Kafka | EventHub AZD |
+| RabbitMQ, Kafka | EventHub AZD |
 | SendGrid, Twilio, Webhook | HTTP AZD |
 | IoT Hub | EventHub AZD |
