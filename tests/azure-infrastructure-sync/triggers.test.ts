@@ -43,12 +43,22 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
 
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
+      // Off-topic
       "What is the weather today?",
       "Help me write a poem",
       "Explain quantum computing",
-      "Translate this sentence into Dutch",
-      "Sort this array in JavaScript",
-      "Summarize this meeting transcript",
+
+      // Non-Azure cloud providers
+      "Help me with AWS CloudFormation",
+      "Design a GCP network topology",
+
+      // Code generation (no drift/comparison intent)
+      "Write a TypeScript function to call a REST API",
+      "Implement retry logic for my HTTP client",
+
+      // Azure cost management (use azure-cost)
+      "How much am I spending on Azure this month?",
+      "Show me my Azure billing summary",
     ];
 
     test.each(shouldNotTriggerPrompts)(

@@ -1,6 +1,6 @@
 ---
 name: azure-infrastructure-sync
-description: "Compare and synchronize infrastructure artifacts — Draw.io diagrams, Bicep templates, and live Azure resources — to detect drift and divergence. Supports diagram-to-Azure sync (quick and deep modes), Bicep-to-diagram comparison, and Bicep-to-Azure what-if analysis. WHEN: check drift, compare diagram to azure, sync bicep and diagram, bicep what-if, preview bicep changes, detect infrastructure drift, diagram drift, compare bicep deployment, does my diagram match azure, compare bicep to diagram, infrastructure drift detection. DO NOT USE FOR: generating diagrams (use azure-resource-visualizer), generating Bicep (use azure-iac-generator), pre-deployment policy checks (use azure-validate)."
+description: "Compare and synchronize infrastructure artifacts — Draw.io diagrams, Bicep templates, and live Azure resources — to detect drift and divergence. Supports diagram-to-Azure sync (quick and deep modes), Bicep-to-diagram comparison, and Bicep-to-Azure what-if analysis. WHEN: check drift, compare diagram to azure, sync bicep and diagram, bicep what-if, preview bicep changes, detect infrastructure drift, diagram drift, compare bicep deployment, does my diagram match azure, compare bicep to diagram, infrastructure drift detection. DO NOT USE FOR: generating diagrams (use azure-resource-visualizer), pre-deployment policy checks (use azure-validate)."
 license: MIT
 metadata:
   author: Microsoft
@@ -18,7 +18,7 @@ Compare and synchronize infrastructure artifacts to detect drift. Supports four 
 | Diagram ↔ Azure (quick) | Azure resource listing tools, Draw.io MCP | `az resource list`, `az graph query` | Fast existence-based drift checks |
 | Diagram ↔ Azure (deep) | Azure resource detail tools, Draw.io MCP | `az resource show`, `az network * show`, `az webapp show` | Property-level drift analysis |
 | Bicep ↔ Diagram | Bicep code quality tools, Draw.io MCP | `bicep build`, `az bicep build` | Comparing IaC intent to architecture diagrams |
-| Bicep ↔ Azure | Azure resource tools, Bicep code quality tools | `az deployment group what-if`, `az deployment sub what-if` | Previewing deployment impact and live drift |
+| Bicep ↔ Azure | Azure resource tools, Bicep code quality tools | `az resource list`, `az bicep build` | Previewing deployment impact and live drift |
 
 | Comparison mode | Inputs | Output |
 |---|---|---|

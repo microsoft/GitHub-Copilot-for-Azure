@@ -26,7 +26,7 @@ Certain SKUs require companion resources or specific configurations. Missing the
 
 ### 1.1 Application Gateway WAF_v2 requires WAF Policy
 - **Applies to**: `Microsoft.Network/applicationGateways` with `sku.tier == 'WAF_v2'`
-- **Rule**: A `Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies` resource MUST exist and be referenced via the `firewallPolicy.id` property on the Application Gateway.
+- **Rule**: A `Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies` resource MUST exist and be referenced via the `firewallPolicy.id` property on the Application Gateway.
 - **Fix**: Create a WAF policy resource with OWASP 3.2 managed rules in Prevention mode and link it to the gateway.
 - **Severity**: Error
 

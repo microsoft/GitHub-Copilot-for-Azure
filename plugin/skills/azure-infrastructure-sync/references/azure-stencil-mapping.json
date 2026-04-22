@@ -54,7 +54,7 @@
     },
 
     "_comment_wrongCategory": "These icons are in unexpected categories — the LLM would guess wrong",
-    "Microsoft.Web/serverFarms": {
+    "Microsoft.Web/serverfarms": {
       "imagePath": "img/lib/azure2/app_services/App_Service_Plans.svg",
       "label": "App Service Plan",
       "defaultWidth": 50,
