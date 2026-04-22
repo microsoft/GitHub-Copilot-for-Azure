@@ -63,6 +63,8 @@ Write every file from BOTH arrays:
 - `functionFiles[]` — function source code
 - `projectFiles[]` — IaC, azure.yaml, host.json, dependencies
 
+> **Create parent directories first** — template file paths include subdirectories (e.g., `infra/main.bicep`, `.azure/config.json`). Create all unique parent directories before writing files to avoid "parent directory does not exist" errors.
+
 **PRESERVE generated IaC security patterns** — keep RBAC, managed identity, and security config intact. When composing multiple templates, merge additively (see [composition.md](recipes/composition.md)).
 
 ### Step 5: Deploy

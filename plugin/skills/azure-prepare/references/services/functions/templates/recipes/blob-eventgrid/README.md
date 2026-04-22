@@ -19,11 +19,11 @@ Discover templates via MCP or CDN manifest where `resource == "blob"` and `langu
 ### "Unauthorized" or "Forbidden" Errors
 
 **Cause:** Missing UAMI credential settings for Storage.  
-**Solution:** Ensure these settings are present in app configuration (prefix must match the connection name used in your function code, default `AzureWebJobsStorage`):
+**Solution:** Ensure these settings are present in app configuration (prefix must match the connection name used in your function code, default: `AzureWebJobsStorage`):
 
-- `AzureWebJobsStorage__blobServiceUri` (e.g., `https://<account>.blob.core.windows.net`)
-- `AzureWebJobsStorage__credential` (value: `managedidentity`)
-- `AzureWebJobsStorage__clientId`
+- `<ConnectionName>__blobServiceUri` (e.g., `https://<account>.blob.core.windows.net`)
+- `<ConnectionName>__credential` (value: `managedidentity`)
+- `<ConnectionName>__clientId`
 
 See [Blob Storage trigger connections](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-storage-blob-trigger#connections) for identity-based config — refer to the **"Connections"** section on that page for managed identity app settings.
 

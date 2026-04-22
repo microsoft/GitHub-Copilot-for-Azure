@@ -9,6 +9,8 @@ Discover templates via MCP or CDN manifest where `resource == "timer"` and `lang
 
 ## Cron Expressions
 
+Some templates define the schedule via an app setting reference `%TIMER_SCHEDULE%` so the cron expression is configurable without code changes. Set the `TIMER_SCHEDULE` app setting to the desired expression.
+
 | Schedule | Expression |
 |----------|------------|
 | Every 5 minutes | `0 */5 * * * *` |
@@ -17,7 +19,7 @@ Discover templates via MCP or CDN manifest where `resource == "timer"` and `lang
 | Every Monday at 9am | `0 0 9 * * 1` |
 | Every 30 seconds | `*/30 * * * * *` |
 
-> Azure uses 6-part cron expressions (with seconds). Validate at [crontab.guru](https://crontab.guru/).
+> Azure uses 6-part cron expressions (with seconds). See [Azure Functions timer trigger](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer#ncrontab-expressions) for full syntax reference.
 
 ## Troubleshooting
 
