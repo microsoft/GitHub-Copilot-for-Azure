@@ -17,8 +17,6 @@ Usage:
   python deploy_model.py --list
 """
 
-import argparse
-import json
 import os
 import subprocess
 import sys
@@ -50,7 +48,7 @@ if not AZ_CLI:
 
 # Model format auto-detection rules
 FORMAT_RULES = [
-    (lambda m: "oss-20b" in m or "oss20b" in m, "Microsoft", "GlobalStandard"),
+    (lambda m: "oss-20b" in m.lower() or "oss20b" in m.lower(), "Microsoft", "GlobalStandard"),
     (lambda m: "ministral" in m.lower() or "mistral" in m.lower(), "Mistral AI", "GlobalStandard"),
     (lambda m: "llama" in m.lower() or "meta" in m.lower(), "Meta", "GlobalStandard"),
     (lambda m: "qwen" in m.lower() or "alibaba" in m.lower(), "Alibaba", "GlobalStandard"),

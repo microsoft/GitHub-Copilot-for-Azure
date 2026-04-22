@@ -34,7 +34,6 @@ Usage:
       --concurrency 4
 """
 
-import argparse
 import json
 import os
 import re
@@ -135,6 +134,7 @@ def generate_response(client, deployment, prompt, system_prompt=None, max_retrie
                 time.sleep(3 * (attempt + 1))
             else:
                 return f"ERROR: {e}"
+    return "ERROR: max retries exceeded"
 
 
 def grade_response(judge_client, judge_model, prompt, reference, output, max_retries=3):

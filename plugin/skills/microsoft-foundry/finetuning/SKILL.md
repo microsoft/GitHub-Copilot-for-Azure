@@ -1,6 +1,6 @@
 ---
 name: finetuning
-description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, training job submission, deployment, and evaluation."
+description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, training job submission, deployment, and evaluation. USE FOR: fine-tune, SFT, DPO, RFT, training data, grader, distillation, custom model, training job, large file upload, calibrate grader, deploy fine-tuned model, evaluate fine-tuned model. DO NOT USE FOR: general model deployment without fine-tuning (use deploy-model), agent creation (use agents), prompt optimization without training (use prompt-optimizer)."
 license: MIT
 metadata:
   author: Microsoft
@@ -76,3 +76,24 @@ Use this sub-skill when the user asks about:
 3. **Calibrate RFT graders** — target 25-50% failure rate on the base model
 4. **Evaluate checkpoints** — don't blindly deploy the final one
 5. **Measure token cost** alongside accuracy when comparing models
+
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Validate SFT data | `python scripts/validate/validate_sft.py data.jsonl` |
+| Submit SFT job | `python scripts/submit_training.py --model gpt-4.1-mini --training-file train.jsonl --validation-file val.jsonl --type sft` |
+| Monitor job | `python scripts/monitor_training.py --job-id ftjob-xxx` |
+| Analyze curves | `python scripts/check_training.py --job-id ftjob-xxx` |
+| Deploy model | `python scripts/deploy_model.py --model-id ft:gpt-4.1-mini:... --name my-eval` |
+| Evaluate model | `python scripts/evaluate_model.py --deployment-name my-eval --test-file test.jsonl` |
+
+## Error Handling
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| "API version not supported" | Older `openai` SDK on `/v1/` endpoint | Upgrade to `openai>=1.0` |
+| "does not support fine-tuning with Standard TrainingType" | OSS model needs `globalStandard` | Use `--use-rest` flag or script auto-falls back |
+| Job stuck in post-training eval | Under-provisioned tool endpoint (RFT) | Scale to S2+, enable Always On |
+| "DeploymentNotReady" after ARM succeeds | ARM/data-plane race condition | Delete and recreate deployment, wait 5 min |
+| Content safety block at deployment | PII-dense training data | Remove problematic document types |

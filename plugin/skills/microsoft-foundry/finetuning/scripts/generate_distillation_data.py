@@ -30,7 +30,6 @@ Usage:
       --output-dir ./my_dataset
 """
 
-import argparse
 import json
 import os
 import random
@@ -95,6 +94,7 @@ def teacher_generate(client, model, system_prompt, prompt, retries=3):
             else:
                 print(f"  Failed after {retries} attempts: {e}")
                 return None
+    return None
 
 
 QUALITY_PROMPT = """Rate this AI-generated text on quality dimensions (1-10 each).
@@ -180,7 +180,8 @@ def main():
 
     # Step 1: Generate or load prompts
     if args.prompts_file:
-        prompts = [line.strip() for line in open(args.prompts_file) if line.strip()]
+        with open(args.prompts_file) as pf:
+            prompts = [line.strip() for line in pf if line.strip()]
         print(f"Loaded {len(prompts)} prompts from {args.prompts_file}")
     else:
         topics = [t.strip() for t in (args.topics or "general knowledge").split(",")]

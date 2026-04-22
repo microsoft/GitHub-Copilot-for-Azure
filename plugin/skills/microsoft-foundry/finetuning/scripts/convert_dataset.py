@@ -22,11 +22,9 @@ Usage:
   python convert_dataset.py --input dpo.jsonl --output sft.jsonl --format sft-from-dpo
 """
 
-import argparse
 import json
 import os
 import sys
-import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser
 
@@ -85,7 +83,8 @@ def sft_to_dpo(input_path, output_path, endpoint, api_key, base_model):
         azure_endpoint=endpoint, api_key=api_key, api_version="2025-04-01-preview"
     )
 
-    examples = [json.loads(l) for l in open(input_path)]
+    with open(input_path) as inf:
+        examples = [json.loads(l) for l in inf]
     count = 0
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -138,20 +137,21 @@ def sft_to_rft(input_path, output_path):
     count = 0
     skipped = 0
     with open(output_path, "w", encoding="utf-8") as out:
-        for line in open(input_path):
-            ex = json.loads(line)
-            msgs = ex.get("messages", [])
-            # Keep only system + user messages; RFT last message must be user
-            rft_msgs = [m for m in msgs if m["role"] in ("system", "user")]
-            if not rft_msgs or rft_msgs[-1]["role"] != "user":
-                skipped += 1
-                continue
-            # Extract assistant content as a reference answer placeholder
-            asst_msgs = [m for m in msgs if m["role"] == "assistant"]
-            expected = asst_msgs[-1]["content"] if asst_msgs else ""
-            rft_entry = {"messages": rft_msgs, "expected_answer": expected}
-            out.write(json.dumps(rft_entry, ensure_ascii=False) + "\n")
-            count += 1
+        with open(input_path) as inf:
+            for line in inf:
+                ex = json.loads(line)
+                msgs = ex.get("messages", [])
+                # Keep only system + user messages; RFT last message must be user
+                rft_msgs = [m for m in msgs if m["role"] in ("system", "user")]
+                if not rft_msgs or rft_msgs[-1]["role"] != "user":
+                    skipped += 1
+                    continue
+                # Extract assistant content as a reference answer placeholder
+                asst_msgs = [m for m in msgs if m["role"] == "assistant"]
+                expected = asst_msgs[-1]["content"] if asst_msgs else ""
+                rft_entry = {"messages": rft_msgs, "expected_answer": expected}
+                out.write(json.dumps(rft_entry, ensure_ascii=False) + "\n")
+                count += 1
     print(f"Converted {count} examples to RFT JSONL → {output_path}")
     if skipped:
         print(f"  Skipped {skipped} examples (no user message)")
@@ -162,20 +162,21 @@ def dpo_to_sft(input_path, output_path, system_prompt=None):
     """Extract chosen responses from DPO format to SFT format."""
     count = 0
     with open(output_path, "w", encoding="utf-8") as f:
-        for line in open(input_path):
-            ex = json.loads(line)
-            input_messages = ex["input"]["messages"]
-            chosen_messages = ex["preferred_output"]
+        with open(input_path) as inf:
+            for line in inf:
+                ex = json.loads(line)
+                input_messages = ex["input"]["messages"]
+                chosen_messages = ex["preferred_output"]
 
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-                messages.extend(m for m in input_messages if m["role"] != "system")
-            else:
-                messages.extend(input_messages)
-            messages.extend(chosen_messages)
-            f.write(json.dumps({"messages": messages}, ensure_ascii=False) + "\n")
-            count += 1
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                    messages.extend(m for m in input_messages if m["role"] != "system")
+                else:
+                    messages.extend(input_messages)
+                messages.extend(chosen_messages)
+                f.write(json.dumps({"messages": messages}, ensure_ascii=False) + "\n")
+                count += 1
     print(f"Extracted {count} chosen examples to SFT JSONL → {output_path}")
 
 

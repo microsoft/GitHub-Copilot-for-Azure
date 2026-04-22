@@ -2,7 +2,7 @@
 """Validate RFT (Reinforcement Fine-Tuning) JSONL files for Azure AI Foundry.
 
 Adapted from foundry-ft agent with critical additions from our platform gotchas:
-- Grader escaping warnings (\\n, \\t must be \\\\n, \\\\t in JSON strings)
+- Grader escaping warnings for newlines (\\n must be \\\\n in JSON strings)
 - Content moderation risk detection ("chain of thought" triggers RAI filter)
 - Reference answer diversity check
 """

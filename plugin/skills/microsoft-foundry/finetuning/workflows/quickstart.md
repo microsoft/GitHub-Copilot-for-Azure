@@ -90,9 +90,8 @@ for _ in range(30):
 job = client.fine_tuning.jobs.create(
     model="gpt-4.1-mini", training_file=train.id, validation_file=val.id,
     suffix="my-first-ft",
-    method={"type": "supervised", "supervised": {
-        "hyperparameters": {"n_epochs": 2, "learning_rate_multiplier": 1.0}
-    }},
+    method={"type": "supervised"},
+    hyperparameters={"n_epochs": 2, "learning_rate_multiplier": 1.0},
 )
 print(f"Job submitted: {job.id}")
 ```
