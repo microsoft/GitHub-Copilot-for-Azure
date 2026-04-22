@@ -51,7 +51,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Dedicated AZD templates available for all 6 languages
 - Uses Event Grid for reliable blob event delivery
 

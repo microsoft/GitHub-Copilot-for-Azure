@@ -33,7 +33,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Uses Durable Task Scheduler (NOT Storage queues/tables)
 - See [Durable Task Scheduler docs](../../../../../durable-task-scheduler/README.md)
 

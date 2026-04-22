@@ -32,7 +32,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Requires `enableQueue: true` for MCP state management
 - Uses JSON-RPC 2.0 protocol over HTTP
 

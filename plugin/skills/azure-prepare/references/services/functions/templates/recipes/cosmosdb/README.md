@@ -7,14 +7,24 @@ Cosmos DB change feed trigger with managed identity authentication.
 Resource filter: `cosmos`  
 Discover templates via MCP or CDN manifest where `resource == "cosmos"` and `language` matches user request.
 
-## Note: Dual RBAC System
+## Troubleshooting
 
-Cosmos DB uses **two separate RBAC systems**:
+### "Forbidden" on Data Operations
 
-- **Azure RBAC** — for control plane (account management)
-- **Cosmos SQL RBAC** (`sqlRoleAssignments`) — for data plane (read/write documents)
+**Cause:** Cosmos DB uses **two separate RBAC systems** — Azure RBAC (control plane) and Cosmos SQL RBAC via `sqlRoleAssignments` (data plane). The MCP template configures both, but if the SQL role assignment is missing, data reads/writes will fail even if Azure RBAC is correctly assigned.
 
-The MCP template configures both. If you see "Forbidden" on data operations, check that the SQL role assignment exists.
+**Solution:** Verify the `sqlRoleAssignments` resource exists in the Bicep/Terraform output. Check the function app has the `Cosmos DB Built-in Data Contributor` SQL role.
+
+### UAMI Connection Issues
+
+**Cause:** Missing managed identity credential settings.  
+**Solution:** Ensure all three settings are present in app configuration:
+
+- `COSMOS_CONNECTION__accountEndpoint`
+- `COSMOS_CONNECTION__credential` (value: `managedidentity`)
+- `COSMOS_CONNECTION__clientId`
+
+See [Cosmos DB trigger connections](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-cosmosdb-v2-trigger#connections) for identity-based config — refer to the **"Connections"** section on that page for managed identity app settings.
 
 ## Eval
 

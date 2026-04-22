@@ -32,7 +32,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Timer templates include cron schedule in function code
 
 ## Test Date

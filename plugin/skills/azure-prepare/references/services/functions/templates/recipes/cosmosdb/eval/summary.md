@@ -32,7 +32,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Cosmos DB requires dual RBAC: Azure control plane + SQL data plane
 - See README for RBAC troubleshooting
 

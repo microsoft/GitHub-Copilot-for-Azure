@@ -5,7 +5,7 @@ Service Bus queue/topic trigger with managed identity authentication.
 ## Template Selection
 
 Resource filter: `servicebus`  
-Discover templates via MCP or CDN manifest where `resource == "servicebus"` and `language` matches user request.
+Discover templates via MCP tool or CDN manifest where `resource == "servicebus"` and `language` matches user request.
 
 ## Troubleshooting
 
@@ -22,6 +22,8 @@ Discover templates via MCP or CDN manifest where `resource == "servicebus"` and 
 - `ServiceBusConnection__fullyQualifiedNamespace`
 - `ServiceBusConnection__credential` (value: `managedidentity`)
 - `ServiceBusConnection__clientId`
+
+See [Service Bus trigger connections](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-service-bus-trigger#connections) for identity-based config — refer to the **"Connections"** section on that page for managed identity app settings.
 
 ## Eval
 

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "awesome-azd-template-submit": {
+      "source": "azure/awesome-azd",
+      "sourceType": "github",
+      "computedHash": "82f8bc66f8ee7136d753ffbc0cba83fef78631ad87a66448e42816b0ba3169fa"
+    }
+  }
+}

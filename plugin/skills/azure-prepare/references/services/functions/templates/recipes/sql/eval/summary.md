@@ -50,7 +50,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Dedicated AZD templates available for Python, TypeScript, .NET
 - Requires T-SQL post-deploy for managed identity access
 

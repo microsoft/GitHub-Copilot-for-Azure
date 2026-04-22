@@ -32,7 +32,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language, template)` MCP tool
+- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
 - Base HTTP template provides the foundation for all recipes
 - All recipes compose on top of this base
 

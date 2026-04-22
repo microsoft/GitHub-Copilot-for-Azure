@@ -14,6 +14,24 @@ Discover templates via MCP or CDN manifest where `resource == "blob"` and `langu
 | **Latency** | 10s-60s | Sub-second |
 | **Scale** | Limited | High-scale |
 
+## Troubleshooting
+
+### "Unauthorized" or "Forbidden" Errors
+
+**Cause:** Missing UAMI credential settings for Storage.  
+**Solution:** Ensure these settings are present in app configuration (prefix must match the connection name used in your function code, default `AzureWebJobsStorage`):
+
+- `AzureWebJobsStorage__blobServiceUri` (e.g., `https://<account>.blob.core.windows.net`)
+- `AzureWebJobsStorage__credential` (value: `managedidentity`)
+- `AzureWebJobsStorage__clientId`
+
+See [Blob Storage trigger connections](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-storage-blob-trigger#connections) for identity-based config — refer to the **"Connections"** section on that page for managed identity app settings.
+
+### Blob Events Not Triggering
+
+**Cause:** Event Grid subscription not created or filtering incorrectly.  
+**Solution:** Verify the Event Grid system topic and subscription exist. Check the blob container prefix filter matches the expected path.
+
 ## Eval
 
 | Path | Description |

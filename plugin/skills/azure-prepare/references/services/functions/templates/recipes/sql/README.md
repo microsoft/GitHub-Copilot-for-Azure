@@ -7,14 +7,42 @@ SQL change tracking trigger with Entra ID managed identity authentication.
 Resource filter: `sql`  
 Discover templates via MCP or CDN manifest where `resource == "sql"` and `language` matches user request.
 
-## Note
+## Troubleshooting
 
-SQL trigger requires change tracking enabled on the table:
+### SQL Trigger Not Firing
+
+**Cause:** Change tracking not enabled on the target table.  
+**Solution:** Run these T-SQL commands on your database:
 
 ```sql
 ALTER DATABASE [YourDatabase] SET CHANGE_TRACKING = ON;
 ALTER TABLE [dbo].[ToDo] ENABLE CHANGE_TRACKING;
 ```
+
+### "Login failed" or "Unauthorized" Errors
+
+**Cause:** Missing managed identity authentication or SQL access not granted.  
+**Solution:** Set the SQL connection string with managed identity authentication:
+
+```
+Server=<server>.database.windows.net; Authentication=Active Directory Managed Identity; Database=<database>
+```
+
+For user-assigned managed identity, add `User Id=<ClientId>`:
+
+```
+Server=<server>.database.windows.net; Authentication=Active Directory Managed Identity; User Id=<ClientId>; Database=<database>
+```
+
+Also run post-deploy T-SQL to grant the function app data access:
+
+```sql
+CREATE USER [<function-app-name>] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_datareader ADD MEMBER [<function-app-name>];
+ALTER ROLE db_datawriter ADD MEMBER [<function-app-name>];
+```
+
+See [SQL managed identity](https://learn.microsoft.com/en-us/azure/azure-functions/functions-identity-access-azure-sql-with-managed-identity) for identity-based config — refer to the **"Configure the function app"** section for connection string and identity settings.
 
 ## Eval
 
