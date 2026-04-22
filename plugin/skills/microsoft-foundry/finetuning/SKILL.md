@@ -4,12 +4,27 @@ description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "0.0.0-placeholder"
 ---
 
 # Fine-Tuning on Azure AI Foundry
 
 Fine-tune models using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset prep, training, deployment, and evaluation.
+
+## When to Use
+
+Use this sub-skill when the user asks about:
+- Fine-tuning a model (SFT, DPO, or RFT)
+- Preparing, validating, or formatting training data
+- Submitting, monitoring, or diagnosing training jobs
+- Calibrating graders or pass thresholds for RFT
+- Deploying or evaluating a fine-tuned model
+- Choosing between training types (SFT vs DPO vs RFT)
+- Distillation, synthetic data generation, or dataset quality scoring
+- Large file uploads for training data
+- Cleaning up fine-tuning resources (files, deployments)
+
+**Do NOT use for:** General model deployment without fine-tuning (use deploy-model), agent creation (use agents), prompt optimization without training (use prompt-optimizer).
 
 ## Workflows
 
