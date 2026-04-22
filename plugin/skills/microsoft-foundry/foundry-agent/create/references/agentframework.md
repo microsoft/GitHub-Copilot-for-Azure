@@ -18,7 +18,7 @@ Best practices when building hosted agents with Microsoft Agent Framework for de
 
 ## Installation
 
-**Python:** `pip install agent-framework agent-framework-foundry-hosting ` (installs all sub-packages)
+**Python:** `pip install agent-framework agent-framework-foundry-hosting` (installs all sub-packages)
 
 **.NET:** `dotnet add package Microsoft.Agents.AI`
 
