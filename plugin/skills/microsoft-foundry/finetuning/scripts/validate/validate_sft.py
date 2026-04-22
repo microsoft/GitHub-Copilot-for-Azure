@@ -3,7 +3,6 @@
 
 Adapted from foundry-ft agent with additional checks from our platform gotchas:
 - Token length warnings (4096 limit varies by model)
-- Content filter risk detection (PII, security content)
 - System prompt consistency check
 """
 import json
@@ -26,10 +25,10 @@ def validate_sft(filepath: str) -> None:
 
     with open(filepath, "r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
-            total += 1
             line = line.strip()
             if not line:
                 continue
+            total += 1
 
             try:
                 record = json.loads(line)

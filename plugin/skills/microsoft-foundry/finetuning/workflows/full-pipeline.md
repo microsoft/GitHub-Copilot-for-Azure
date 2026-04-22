@@ -24,7 +24,7 @@ Answer before touching data or models:
 ### Option A: You Have Data
 1. Convert to SFT JSONL format (see `references/dataset-formats.md`)
 2. Split: 80% train, 10% validation, 10% held-out test
-4. Remove or fix low-quality examples
+3. Remove or fix low-quality examples
 
 ### Option B: Synthetic Data
 1. Generate using LLM prompts (see `workflows/dataset-creation.md`)
@@ -39,7 +39,7 @@ Answer before touching data or models:
 ## Phase 3: Establish Baselines
 
 1. Deploy base model (or use existing deployment)
-3. Record scores — this is your "zero" that every fine-tune must beat
+2. Record scores — this is your "zero" that every fine-tune must beat
 
 ## Phase 4: Choose Training Type
 
@@ -72,8 +72,8 @@ azd ai finetuning jobs submit -f ./fine-tune-job.yaml
 ## Phase 7: Evaluate Fine-Tuned Model
 
 1. Deploy fine-tuned model (see `references/deployment.md` for format/SKU)
-3. Compare against baseline and previous experiments
-4. Delete deployment after evaluation
+2. Compare against baseline and previous experiments
+3. Delete deployment after evaluation
 
 ## Phase 8: Iterate
 

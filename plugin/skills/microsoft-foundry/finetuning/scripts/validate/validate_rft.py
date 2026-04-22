@@ -29,11 +29,11 @@ def validate_rft(filepath: str, expected_field: str | None = None) -> None:
 
     with open(filepath, "r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
-            total += 1
             raw_line = line
             line = line.strip()
             if not line:
                 continue
+            total += 1
 
             try:
                 record = json.loads(line)
@@ -77,15 +77,27 @@ def validate_rft(filepath: str, expected_field: str | None = None) -> None:
                         if val:
                             grader_values.append(val)
 
-                    # Check for grader escaping issues (CRITICAL platform gotcha)
+                    # Check for unescaped newlines in the raw JSON (CRITICAL platform gotcha)
+                    # We check the raw JSONL line for literal \n inside field values,
+                    # which indicates improperly escaped grader source code.
                     for field in extra_fields:
-                        val = str(record[field])
-                        if "\n" in val:
-                            warnings.append(
-                                f"Line {line_num}: '{field}' contains newlines — "
-                                "if this is grader source code embedded in JSON, "
-                                "ensure newlines are escaped as \\\\n."
-                            )
+                        # Extract the raw JSON value for this field from the original line
+                        # A properly escaped newline in JSON is \\n; a literal newline would
+                        # have been caught by json.loads() as invalid JSON. However, if the
+                        # field contains \n (two chars: backslash + n) that was decoded to a
+                        # real newline, we check if the raw line has an odd number of
+                        # backslashes before 'n' — indicating it wasn't double-escaped.
+                        pattern = rf'"{re.escape(field)}"\s*:\s*"((?:[^"\\]|\\.)*)"'
+                        match = re.search(pattern, raw_line)
+                        if match:
+                            raw_val = match.group(1)
+                            # Look for single-escaped \n (not \\n) in the raw JSON string
+                            if re.search(r'(?<!\\)\\n', raw_val) and not re.search(r'\\\\n', raw_val):
+                                warnings.append(
+                                    f"Line {line_num}: '{field}' contains \\n sequences — "
+                                    "if this is grader source code embedded in JSON, "
+                                    "ensure newlines are escaped as \\\\n."
+                                )
 
             # Content moderation risk
             all_text = json.dumps(record).lower()

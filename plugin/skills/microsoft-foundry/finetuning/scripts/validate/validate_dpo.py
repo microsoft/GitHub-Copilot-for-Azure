@@ -3,7 +3,6 @@
 
 Adapted from foundry-ft agent with additional checks:
 - Identical preferred/non_preferred detection
-- Token length warnings
 - DPO overtraining risk (small dataset warning)
 """
 import json
@@ -17,10 +16,10 @@ def validate_dpo(filepath: str) -> None:
 
     with open(filepath, "r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
-            total += 1
             line = line.strip()
             if not line:
                 continue
+            total += 1
 
             try:
                 record = json.loads(line)

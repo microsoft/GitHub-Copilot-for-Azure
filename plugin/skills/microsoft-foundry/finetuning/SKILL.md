@@ -1,3 +1,12 @@
+---
+name: finetuning
+description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, training job submission, deployment, and evaluation."
+license: MIT
+metadata:
+  author: Microsoft
+  version: "1.0.0"
+---
+
 # Fine-Tuning on Azure AI Foundry
 
 Fine-tune models using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset prep, training, deployment, and evaluation.
