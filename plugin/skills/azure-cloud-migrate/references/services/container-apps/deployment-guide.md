@@ -168,28 +168,53 @@ az containerapp create --name spring-app --resource-group spring-rg --environmen
 ```
 
 **With storage mount:** Export the app configuration, add volumeMounts, and update:
+
+**Bash:**
 ```bash
 az containerapp show --name spring-app --resource-group spring-rg -o yaml > app.yaml
 # Edit app.yaml: add volumeMounts under containers[0] and volumes at template level
 az containerapp update --name spring-app --resource-group spring-rg --yaml app.yaml
 ```
 
-**Health Probes** (recommended for Spring Boot apps): Add liveness and readiness probes after deployment:
+**PowerShell:**
+```powershell
+az containerapp show --name spring-app --resource-group spring-rg -o yaml | Out-File -Encoding utf8 app.yaml
+# Edit app.yaml: add volumeMounts under containers[0] and volumes at template level
+az containerapp update --name spring-app --resource-group spring-rg --yaml app.yaml
+```
+
+**Health Probes** (recommended for Spring Boot apps): Export configuration, add probes, and update:
 
 **Bash:**
 ```bash
-az containerapp update --name spring-app --resource-group spring-rg \
-  --set-env-vars SPRING_PROFILES_ACTIVE=prod \
-  --liveness-probe-type http --liveness-probe-path /actuator/health/liveness --liveness-probe-port 8080 \
-  --readiness-probe-type http --readiness-probe-path /actuator/health/readiness --readiness-probe-port 8080
+az containerapp show --name spring-app --resource-group spring-rg -o yaml > app.yaml
+# Edit app.yaml: add probes under containers[0]
+#   probes:
+#   - type: Liveness
+#     httpGet:
+#       path: /actuator/health/liveness
+#       port: 8080
+#   - type: Readiness
+#     httpGet:
+#       path: /actuator/health/readiness
+#       port: 8080
+az containerapp update --name spring-app --resource-group spring-rg --yaml app.yaml
 ```
 
 **PowerShell:**
 ```powershell
-az containerapp update --name spring-app --resource-group spring-rg `
-  --set-env-vars SPRING_PROFILES_ACTIVE=prod `
-  --liveness-probe-type http --liveness-probe-path /actuator/health/liveness --liveness-probe-port 8080 `
-  --readiness-probe-type http --readiness-probe-path /actuator/health/readiness --readiness-probe-port 8080
+az containerapp show --name spring-app --resource-group spring-rg -o yaml | Out-File -Encoding utf8 app.yaml
+# Edit app.yaml: add probes under containers[0]
+#   probes:
+#   - type: Liveness
+#     httpGet:
+#       path: /actuator/health/liveness
+#       port: 8080
+#   - type: Readiness
+#     httpGet:
+#       path: /actuator/health/readiness
+#       port: 8080
+az containerapp update --name spring-app --resource-group spring-rg --yaml app.yaml
 ```
 
 ## Phase 7: Validation
