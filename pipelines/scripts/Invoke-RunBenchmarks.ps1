@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs MSBench CLI and runs a Copilot Azure benchmark.
+    Installs MSBench CLI and runs Azure benchmarks.
 
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
@@ -16,17 +16,23 @@
     - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 
 .PARAMETER Benchmark
-    Benchmark identifier. Default: azure
+    Benchmark identifier. Default: azure.skill
 
-.PARAMETER Model
-    One or more model identifiers to benchmark.
+.PARAMETER OutputPath
+    Directory path where run_ids.json and timestamp.txt will be saved.
+
+.PARAMETER StorageAccountName
+    Required. The Azure Storage account name to upload run artifacts to.
+
+.PARAMETER ContainerName
+    Required. The blob container name to upload run artifacts to.
 
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
 #>
 
     param(
-        [string]$Benchmark = "azure",
+        [string]$Benchmark = "azure.skill",
         [string[]]$Model = @(
             "claude-sonnet-4.5-autodev-test",
             "claude-opus-4.5-autodev-test",
@@ -34,7 +40,9 @@
             "gpt-5.2-autodev-test",
             "gemini-2.5-pro-autodev-test"
         ),
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
     )
 
     Set-StrictMode -Version Latest
@@ -135,13 +143,6 @@
         throw "git clone failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "Checking out branch main in $cloneDir" 
-    Set-Location $cloneDir
-    git checkout main
-    if ($LASTEXITCODE -ne 0) {
-        throw "git checkout failed with exit code $LASTEXITCODE"
-    }
-
     $targetDir = Join-Path $cloneDir "curation/benchmarks/azure"
     if (!(Test-Path $targetDir)) {
         throw "Working directory '$targetDir' does not exist after clone."
@@ -162,6 +163,8 @@
             "--benchmark", $Benchmark,
             "--model", $m,
             "--env", "GITHUB_MCP_SERVER_TOKEN",
+            "--dataset", (Join-Path $targetDir "metadata.csv"),
+            "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait"
         )
 
@@ -209,5 +212,77 @@
 
     Write-Host "Saving run IDs to $jsonPath"
     $runIds | ConvertTo-Json -AsArray | Out-File -FilePath $jsonPath -Encoding utf8
+
+    $timestampPath = Join-Path $OutputPath "timestamp.txt"
+    $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
+    Write-Host "Saving timestamp to ${timestampPath}: $timestamp"
+    $timestamp | Out-File -FilePath $timestampPath -Encoding utf8 -NoNewline
+
+    # --- Upload run_ids.json and timestamp.txt to Azure Blob Storage ---
+    Write-Host "`n--- Uploading run artifacts to Azure Blob Storage ---"
+    foreach ($file in @($jsonPath, $timestampPath)) {
+        $fileName = [System.IO.Path]::GetFileName($file)
+        $blobPath = "$timestamp/$fileName"
+        Write-Host "Uploading $fileName -> $ContainerName/$blobPath"
+        $azArgs = @(
+            "storage", "blob", "upload",
+            "--account-name", $StorageAccountName,
+            "--container-name", $ContainerName,
+            "--name", $blobPath,
+            "--file", $file,
+            "--auth-mode", "login",
+            "--overwrite"
+        )
+        az @azArgs
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Failed to upload $fileName to blob storage"
+        }
+    }
+
+    # --- Append timestamp to ToBeProcessed file ---
+    $toBeProcessedBlob = "ToBeProcessed"
+    $toBeProcessedLocal = Join-Path $OutputPath "ToBeProcessed"
+
+    Write-Host "Checking for existing $toBeProcessedBlob in $ContainerName"
+    $downloadArgs = @(
+        "storage", "blob", "download",
+        "--account-name", $StorageAccountName,
+        "--container-name", $ContainerName,
+        "--name", $toBeProcessedBlob,
+        "--file", $toBeProcessedLocal,
+        "--auth-mode", "login"
+    )
+    $null = az @downloadArgs 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "$toBeProcessedBlob not found, creating new file"
+        "" | Out-File -FilePath $toBeProcessedLocal -Encoding utf8 -NoNewline
+    }
+
+    $existingDates = @(Get-Content -Path $toBeProcessedLocal -ErrorAction SilentlyContinue | Where-Object { $_.Trim() -ne "" })
+    if ($existingDates -notcontains $timestamp) {
+        Write-Host "Appending $timestamp to $toBeProcessedBlob"
+        $existingDates += $timestamp
+    } else {
+        Write-Host "$timestamp already in $toBeProcessedBlob, skipping"
+    }
+
+    ($existingDates -join "`n") + "`n" | Out-File -FilePath $toBeProcessedLocal -Encoding utf8 -NoNewline
+
+    $uploadArgs = @(
+        "storage", "blob", "upload",
+        "--account-name", $StorageAccountName,
+        "--container-name", $ContainerName,
+        "--name", $toBeProcessedBlob,
+        "--file", $toBeProcessedLocal,
+        "--auth-mode", "login",
+        "--overwrite"
+    )
+    az @uploadArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Failed to upload $toBeProcessedBlob to blob storage"
+    } else {
+        Write-Host "Updated $toBeProcessedBlob with timestamp $timestamp"
+    }
     
     Write-Host "`nAll $($Model.Count) model runs completed successfully."

@@ -2,11 +2,12 @@
 /**
  * PR Plugin Version Check
  * 
- * This script ensures that plugin versions are not manually updated in PRs.
- * Plugin versions should be updated automatically through CI/CD processes.
+ * Validates that all plugin.json files use the "0.0.0-placeholder" version.
+ * Real versions are stamped at build time by NBGV, so the source should
+ * never contain a real version number.
  */
 
-import { execFileSync } from "node:child_process";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,148 +17,60 @@ const PLUGIN_PATHS = [
   "plugin/.cursor-plugin/plugin.json"
 ] as const;
 
+const EXPECTED_VERSION = "0.0.0-placeholder";
+
 interface PluginConfig {
   version: string;
-  name?: string;
-  description?: string;
   [key: string]: unknown;
 }
 
-interface VersionChange {
-  file: string;
-  baseVersion: string | undefined;
-  headVersion: string | undefined;
-}
-
 /**
- * Get file content at a specific git reference
+ * Check that all plugin.json files have the placeholder version.
  */
-function getFileAtRef(filePath: string, ref: string): string | null {
-  try {
-    const content = execFileSync("git", ["show", `${ref}:${filePath}`], {
-      encoding: "utf8",
-      stdio: ["pipe", "pipe", "ignore"] // Suppress stderr
-    });
-    return content.trim();
-  } catch (error) {
-    console.error(`Error retrieving ${filePath} at ${ref}:`, error);
-    return null;
-  }
-}
+function checkPluginVersionPlaceholders(): void {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../.."
+  );
 
-/**
- * Parse JSON content safely
- */
-function parseJsonSafely(content: string | null): PluginConfig | null {
-  try {
-    return content ? JSON.parse(content) : null;
-  } catch (error) {
-    console.error("Error parsing JSON content for:\n", content, "\nHere is the error:", error);
-    return null;
-  }
-}
-
-/**
- * Validate that a git ref is a safe commit SHA.
- * We are intentionally conservative and only allow full/abbreviated hex SHAs.
- */
-function validateGitRef(ref: string): boolean {
-  // Disallow values that could be parsed as options or complex revision syntax.
-  // Accept only hex commit SHAs (7-40 characters).
-  return /^[0-9a-fA-F]{7,40}$/.test(ref);
-}
-
-/**
- * Check if plugin versions have changed between base and head
- */
-function checkPluginVersionChanges(): void {
-  const baseSha = process.env.BASE_SHA;
-  const headSha = process.env.HEAD_SHA;
-
-  if (!baseSha || !headSha) {
-    console.error("❌ Missing BASE_SHA or HEAD_SHA environment variables");
-    return;
-  }
-
-  if (!validateGitRef(baseSha) || !validateGitRef(headSha)) {
-    console.error("❌ Invalid BASE_SHA or HEAD_SHA value. Expected a commit SHA.");
-    return;
-  }
-
-  console.log(`🔍 Checking plugin version changes between ${baseSha} and ${headSha}`);
-
-  let hasVersionChanges = false;
-  const changes: VersionChange[] = [];
+  let hasErrors = false;
 
   for (const pluginPath of PLUGIN_PATHS) {
-    console.log(`\n📝 Checking ${pluginPath}...`);
+    const fullPath = path.resolve(repoRoot, pluginPath);
 
-    // Get file content at base and head
-    const baseContent = getFileAtRef(pluginPath, baseSha);
-    const headContent = getFileAtRef(pluginPath, headSha);
-
-    if (baseContent === null || headContent === null) {
-      console.log(`  ℹ️  File not found in either version of ${pluginPath}, skipping...`);
+    if (!fs.existsSync(fullPath)) {
+      console.log(`  ℹ️  ${pluginPath} not found, skipping...`);
       continue;
     }
 
-    // Parse JSON
-    const baseJson = parseJsonSafely(baseContent);
-    const headJson = parseJsonSafely(headContent);
+    const content = fs.readFileSync(fullPath, "utf8");
+    const json: PluginConfig = JSON.parse(content);
 
-    if (baseJson === null || headJson === null) {
-      console.log(`  ℹ️  Failed to parse JSON content in either version of ${pluginPath}, skipping...`);
-      continue;
-    }
-
-    // Compare versions
-    const baseVersion = baseJson?.version;
-    const headVersion = headJson?.version;
-
-    if (baseVersion !== headVersion) {
-      hasVersionChanges = true;
-      changes.push({
-        file: pluginPath,
-        baseVersion,
-        headVersion
-      });
-      console.log(`  ❌ Version changed: ${baseVersion} → ${headVersion}`);
+    if (json.version === EXPECTED_VERSION) {
+      console.log(`  ✅ ${pluginPath}: version is "${EXPECTED_VERSION}"`);
     } else {
-      console.log(`  ✅ Version unchanged: ${baseVersion}`);
+      console.error(`  ❌ ${pluginPath}: expected version "${EXPECTED_VERSION}", found "${json.version}"`);
+      hasErrors = true;
     }
   }
 
-  // Report results
-  if (hasVersionChanges) {
-    console.error("\n❌ Plugin version changes detected in this PR!\n");
-    console.error("The following plugin versions were modified:");
-
-    for (const change of changes) {
-      console.error(`  📄 ${change.file}`);
-      console.error(`     ${change.baseVersion} → ${change.headVersion}`);
-    }
-
-    console.error("\n🚫 Plugin versions should not be updated manually in PRs.");
-    console.error("   Plugin versions are managed automatically through CI/CD.");
-    console.error("   Please revert the version changes in your PR.\n");
-
+  if (hasErrors) {
+    console.error("\n❌ Plugin version check failed!");
+    console.error("   Plugin versions are stamped automatically at build time by NBGV.");
+    console.error(`   Source files must always use "${EXPECTED_VERSION}".\n`);
     process.exit(1);
   } else {
-    console.log("\n✅ No plugin version changes detected. PR check passed!");
+    console.log("\n✅ All plugin.json files have the correct placeholder version.");
   }
 }
 
-/**
- * Main function for CLI execution
- */
 function main(): void {
-  checkPluginVersionChanges();
+  console.log("🔍 Checking plugin.json versions are placeholders...\n");
+  checkPluginVersionPlaceholders();
 }
 
-// Only run main if this file is executed directly (not imported)
-// Convert import.meta.url to file path and compare with resolved argv[1]
 if (fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   main();
 }
 
-export { checkPluginVersionChanges, type PluginConfig, type VersionChange };
+export { checkPluginVersionPlaceholders, type PluginConfig };
