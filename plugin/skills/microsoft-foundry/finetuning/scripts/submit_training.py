@@ -219,6 +219,9 @@ def main():
                                     args.epochs, args.lr, args.batch_size, args.suffix)
     except Exception as e:
         if "does not support fine-tuning with Standard TrainingType" in str(e):
+            if not args.endpoint:
+                print(f"SDK failed for {args.model}. REST fallback requires --endpoint or AZURE_OPENAI_ENDPOINT.")
+                sys.exit(1)
             print(f"SDK failed for {args.model}, falling back to REST API...")
             result = submit_sft_rest(args.endpoint, args.api_key, args.model,
                                      train_id, val_id, args.epochs, args.lr, args.batch_size)

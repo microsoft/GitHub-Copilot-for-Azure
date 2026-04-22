@@ -51,13 +51,13 @@ A cheap model (gpt-4.1-mini) works well — no new ground truth needed, just phr
 Generate training data from scratch using LLM prompts.
 
 
-1. Defines topic/scenario categories for diversity
-2. Generates prompts from an LLM
-3. Generates responses (or preferred/non-preferred pairs for DPO)
-4. Grades quality with an LLM judge
-5. Filters to a quality threshold
-6. Splits into train/validation/test sets
-7. Writes JSONL in the correct format (see `references/dataset-formats.md`)
+1. Define topic/scenario categories for diversity
+2. Generate prompts from an LLM
+3. Generate responses (or preferred/non-preferred pairs for DPO)
+4. Grade quality with an LLM judge
+5. Filter to a quality threshold
+6. Split into train/validation/test sets
+7. Write JSONL in the correct format (see `references/dataset-formats.md`)
 
 ## Quality Checklist
 

@@ -4,7 +4,7 @@
 
 2. **Model catalog `fine_tune` flag is wrong for OSS models** — API returns `fine_tune = false` for all OSS models despite being FT-supported. Hardcode the supported list.
 
-3. **Project endpoint SDK is broken for file uploads and job management** — `client.files.create()` throws "API version not supported" on `/v1/` endpoints. Use REST API with the non-project `/openai/` endpoint.
+3. **Older SDK versions may fail on `/v1/` project endpoints** — `client.files.create()` throws "API version not supported" with older `openai` package versions. Upgrade to `openai>=1.0` and use the `/v1/` project endpoint (preferred). If you must use an older SDK, fall back to REST API with the non-project `/openai/` endpoint.
 
 4. **ARM "Succeeded" doesn't mean deployment is ready** — `provisioningState: Succeeded` but data plane returns `DeploymentNotReady` indefinitely. Delete and recreate the deployment, then wait ~5 minutes.
 

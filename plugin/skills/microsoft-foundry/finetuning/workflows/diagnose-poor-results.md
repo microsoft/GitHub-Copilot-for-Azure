@@ -6,11 +6,11 @@ When your fine-tuned model performs worse than expected, work through this check
 
 | # | Symptom | Likely Cause | Fix |
 |---|---------|-------------|-----|
-| 3 | Training loss → 0, validation loss rises | Overfitting | 1) Deploy earlier checkpoint. 2) Reduce epochs. 3) Lower LR. 4) Add more diverse data. Overfitting ratio > 1.5 is concerning. |
-| 4 | High correctness, low conciseness (or reverse) | Dataset style mismatch | **Verbose**: Add concise examples, use "Be concise" system prompt, filter to shortest correct examples. **Terse**: Add detailed examples, increase dataset with quality-filtered data. |
-| 5 | Model seems good on spot-check but auto-eval is low | Evaluation rubric issue | Manually grade 10 examples vs. LLM judge. Check: Is judge model strong enough? Is rubric clear? Do reference answers match desired output? |
-| 6 | Garbage, empty outputs, or errors | Deployment/client bug | Check: wrong model format (→ HTTP 500), `AzureOpenAI` on project endpoint (→ "api-version not allowed"), low capacity (→ timeouts), wrong deployment name. Test with curl. |
-| 7 | RFT model scores below base model | RFT-specific issue | See RFT section below. |
+| 1 | Training loss → 0, validation loss rises | Overfitting | 1) Deploy earlier checkpoint. 2) Reduce epochs. 3) Lower LR. 4) Add more diverse data. Overfitting ratio > 1.5 is concerning. |
+| 2 | High correctness, low conciseness (or reverse) | Dataset style mismatch | **Verbose**: Add concise examples, use "Be concise" system prompt, filter to shortest correct examples. **Terse**: Add detailed examples, increase dataset with quality-filtered data. |
+| 3 | Model seems good on spot-check but auto-eval is low | Evaluation rubric issue | Manually grade 10 examples vs. LLM judge. Check: Is judge model strong enough? Is rubric clear? Do reference answers match desired output? |
+| 4 | Garbage, empty outputs, or errors | Deployment/client bug | Check: wrong model format (→ HTTP 500), `AzureOpenAI` on project endpoint (→ "api-version not allowed"), low capacity (→ timeouts), wrong deployment name. Test with curl. |
+| 5 | RFT model scores below base model | RFT-specific issue | See RFT section below. |
 
 ## RFT-Specific Diagnosis
 
