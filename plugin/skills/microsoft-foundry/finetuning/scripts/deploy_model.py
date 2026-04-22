@@ -12,7 +12,7 @@ Supports all model families with correct format/SKU mapping.
 
 Usage:
   python deploy_model.py --model-id "ft:gpt-4.1-mini-2025-04-14:..." --name "my-ft-eval" --capacity 100
-  python deploy_model.py --model-id "ft:gpt-oss-20b-11:..." --name "oss-eval" --format Microsoft --sku GlobalStandard
+  python deploy_model.py --model-id "ft:gpt-oss-20b:..." --name "oss-eval" --format Microsoft --sku GlobalStandard
   python deploy_model.py --delete --name "my-ft-eval"
   python deploy_model.py --list
 """

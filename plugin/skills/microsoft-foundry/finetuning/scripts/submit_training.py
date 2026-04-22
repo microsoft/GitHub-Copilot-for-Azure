@@ -19,7 +19,7 @@ Usage:
 
   python submit_training.py --endpoint https://<resource>.openai.azure.com --api-key KEY \
       --training-file-id file-abc123 --validation-file-id file-def456 \
-      --model gpt-oss-20b-11 --type sft --epochs 2 --lr 0.5 --use-rest
+      --model gpt-oss-20b --type sft --epochs 2 --lr 0.5 --use-rest
 
   python submit_training.py --base-url <url> --api-key KEY \
       --training-file-id file-abc123 --validation-file-id file-def456 \
@@ -82,7 +82,7 @@ def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size
 
 
 def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None):
-    """Submit SFT job via REST API (fallback for models like gpt-oss-20b-11)."""
+    """Submit SFT job via REST API (fallback for models like gpt-oss-20b)."""
     url = f"{endpoint}/openai/fine_tuning/jobs?api-version=2025-04-01-preview"
     body = {
         "model": model,
@@ -159,7 +159,7 @@ def main():
 
     # REST fallback
     parser.add_argument("--use-rest", action="store_true",
-                        help="Force REST API (needed for gpt-oss-20b-11)")
+                        help="Force REST API (needed for gpt-oss-20b)")
 
     args = parser.parse_args()
 

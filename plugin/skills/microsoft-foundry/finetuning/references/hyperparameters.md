@@ -52,7 +52,7 @@ for cp in checkpoints.data:
 |-------|------------------|-------|
 | gpt-4.1-mini | 2ep, lr=0.5–1.0 | Very capable base; small nudges work |
 | gpt-4.1-nano | 2–3ep, lr=1.0–1.5 | Smaller capacity, needs more epochs |
-| gpt-oss-20b-11 | 2ep, lr=0.2–0.5 | Lower LR critical; deployment may need capacity=100 |
+| gpt-oss-20b | 2ep, lr=0.2–0.5 | Lower LR critical; deployment may need capacity=100 |
 | o4-mini (RFT) | Grader quality > HPs | Focus on grader, not HP sweep |
 
 ## OSS Model Parameters
@@ -62,7 +62,7 @@ All OSS models require `trainingType: "globalStandard"` in the API request.
 | Model | Recommended Start | Best Found | Notes |
 |-------|------------------|------------|-------|
 | Ministral-3B | 5ep, lr=1.0 | 10ep, lr=0.5 | Small model, slow convergence |
-| gpt-oss-20b-11 | 2ep, lr=0.3 | 2ep, lr=0.3 | lr=1.0 overfits quickly |
+| gpt-oss-20b | 2ep, lr=0.3 | 2ep, lr=0.3 | lr=1.0 overfits quickly |
 | Llama-3.3-70B | 3ep, lr=0.3 | 5ep, lr=0.5 | lr=2.0 causes catastrophic degradation |
 | Qwen-3-32B | 3ep, lr=0.3 | 3ep, lr=0.3 | Most fragile — more data can hurt |
 
