@@ -533,7 +533,7 @@ export function useAgentRunner() {
       }) as CopilotClient;
       entry.client = client;
 
-      const skillDirectory = path.resolve(__dirname, "../../plugin/skills");
+      const skillDirectory = path.resolve(__dirname, "../../output/skills");
 
       let disabledSkills: string[] | undefined;
       if (config.includeSkills) {

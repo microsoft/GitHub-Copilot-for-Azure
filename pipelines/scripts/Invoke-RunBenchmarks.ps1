@@ -22,10 +22,10 @@
     Directory path where run_ids.json and timestamp.txt will be saved.
 
 .PARAMETER StorageAccountName
-    Optional. The Azure Storage account name to upload run artifacts to.
+    Required. The Azure Storage account name to upload run artifacts to.
 
 .PARAMETER ContainerName
-    Optional. The blob container name to upload run artifacts to.
+    Required. The blob container name to upload run artifacts to.
 
 .LINK
     https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
@@ -41,8 +41,8 @@
             "gemini-2.5-pro-autodev-test"
         ),
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
-        [Parameter(Mandatory=$false)][string]$StorageAccountName,
-        [Parameter(Mandatory=$false)][string]$ContainerName
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
     )
 
     Set-StrictMode -Version Latest
@@ -143,13 +143,6 @@
         throw "git clone failed with exit code $LASTEXITCODE"
     }
 
-    Write-Host "Checking out branch main in $cloneDir" 
-    Set-Location $cloneDir
-    git checkout main
-    if ($LASTEXITCODE -ne 0) {
-        throw "git checkout failed with exit code $LASTEXITCODE"
-    }
-
     $targetDir = Join-Path $cloneDir "curation/benchmarks/azure"
     if (!(Test-Path $targetDir)) {
         throw "Working directory '$targetDir' does not exist after clone."
@@ -222,7 +215,7 @@
 
     $timestampPath = Join-Path $OutputPath "timestamp.txt"
     $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
-    Write-Host "Saving timestamp to $timestampPath: $timestamp"
+    Write-Host "Saving timestamp to ${timestampPath}: $timestamp"
     $timestamp | Out-File -FilePath $timestampPath -Encoding utf8 -NoNewline
 
     # --- Upload run_ids.json and timestamp.txt to Azure Blob Storage ---
@@ -259,7 +252,7 @@
         "--file", $toBeProcessedLocal,
         "--auth-mode", "login"
     )
-    $existingContent = az @downloadArgs 2>&1
+    $null = az @downloadArgs 2>&1
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "$toBeProcessedBlob not found, creating new file"
