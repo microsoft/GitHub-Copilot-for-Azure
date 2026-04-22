@@ -42,7 +42,7 @@ function cleanTarget(rawTarget: string): string {
 
 type LocalLink = {
   /**
-   * Line number at which the link exist in the given file.
+   * Line number at which the link exists in the given file.
    * The first line's line number is 1.
    */
   line: number;
@@ -93,13 +93,12 @@ export function extractLocalLinks(mdFile: string, _skillDir: string): LocalLink[
       const fileDir = dirname(mdFile);
       const resolved = resolve(fileDir, target);
 
-      // Only include links that exist and are files (not directories)
       if (existsSync(resolved)) {
         try {
           if (!statSync(resolved).isDirectory()) {
             links.push({
               line: i + 1,
-              link: target,
+              link: rawTarget,
               absPath: resolved,
               isDirectory: false,
               exists: true
@@ -107,7 +106,7 @@ export function extractLocalLinks(mdFile: string, _skillDir: string): LocalLink[
           } else {
             links.push({
               line: i + 1,
-              link: target,
+              link: rawTarget,
               absPath: resolved,
               isDirectory: true,
               exists: true
@@ -117,7 +116,7 @@ export function extractLocalLinks(mdFile: string, _skillDir: string): LocalLink[
           // Treat the item as non-existent if stat fails.
           links.push({
             line: i + 1,
-            link: target,
+            link: rawTarget,
             absPath: resolved,
             exists: false
           });
@@ -125,7 +124,7 @@ export function extractLocalLinks(mdFile: string, _skillDir: string): LocalLink[
       } else {
         links.push({
           line: i + 1,
-          link: target,
+          link: rawTarget,
           absPath: resolved,
           exists: false
         });

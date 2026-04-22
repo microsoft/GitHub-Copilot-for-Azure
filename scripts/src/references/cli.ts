@@ -133,7 +133,7 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
     return {
       file: mdFile,
       line: item.line,
-      link: item.absPath,
+      link: item.link,
       reason: `Target does not exist: ${item.link}`,
     };
   }));
