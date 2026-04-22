@@ -22,12 +22,14 @@
 az monitor metrics list --resource APP_RESOURCE_ID \
   --metric "CpuPercentage,MemoryPercentage" --interval PT1M --output table
 
-# View running processes via Kudu REST API
-curl -u '$USER:$PASS' https://APP.scm.azurewebsites.net/api/processes
+# View running processes via ARM Processes API (Entra ID auth)
+TOKEN=$(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
 ```
 
 **AppLens (MCP):**
-```
+```yaml
 mcp_azure_mcp_applens
   intent: "diagnose high CPU on app service APP"
   command: "diagnose"
@@ -166,15 +168,15 @@ az webapp config ssl show --certificate-name CERT -g RG
 
 | MCP Tool | Command | Use When |
 |----------|---------|----------|
-| `azure-mcp-appservice` | `list` | List all web apps in subscription |
-| `azure-mcp-appservice` | `get` | Get app config, stack, status |
-| `azure-mcp-appservice` | `get_app_settings` | Check env vars and connection strings |
-| `azure-mcp-appservice` | `get_deployment_slots` | Compare slot configurations |
-| `azure-mcp-applens` | `diagnose` | AI-powered root cause analysis |
-| `azure-mcp-monitor` | `logs_query` | Run KQL against Log Analytics |
-| `azure-mcp-resourcehealth` | `get` | Check platform-level health status |
+| `mcp_azure_mcp_appservice` | `list` | List all web apps in subscription |
+| `mcp_azure_mcp_appservice` | `get` | Get app config, stack, status |
+| `mcp_azure_mcp_appservice` | `get_app_settings` | Check env vars and connection strings |
+| `mcp_azure_mcp_appservice` | `get_deployment_slots` | Compare slot configurations |
+| `mcp_azure_mcp_applens` | `diagnose` | AI-powered root cause analysis |
+| `mcp_azure_mcp_monitor` | `logs_query` | Run KQL against Log Analytics |
+| `mcp_azure_mcp_resourcehealth` | `get` | Check platform-level health status |
 
-> 💡 **Tip:** Start with `azure-mcp-applens diagnose` — it automatically runs relevant detectors and surfaces the most likely root cause before you dig into logs manually.
+> 💡 **Tip:** Start with `mcp_azure_mcp_applens` (`diagnose`) — it automatically runs relevant detectors and surfaces the most likely root cause before you dig into logs manually.
 
 ---
 
