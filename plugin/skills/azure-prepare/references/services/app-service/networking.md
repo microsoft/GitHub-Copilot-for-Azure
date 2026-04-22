@@ -41,13 +41,15 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-11-01' = {
   }
 }
 
-resource webApp 'Microsoft.Web/sites@2022-09-01' = {
+resource webApp 'Microsoft.Web/sites@2024-11-01' = {
   name: appName
   location: location
   properties: {
     serverFarmId: appServicePlan.id
     virtualNetworkSubnetId: subnet.id
-    outboundVnetRouting.allTraffic: true // route all outbound through VNet
+    outboundVnetRouting: {
+      allTraffic: true // route all outbound through VNet
+    }
   }
 }
 ```
@@ -134,7 +136,7 @@ Connect to on-premises resources without VPN. Requires Standard tier or higher. 
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| Cannot reach private DB | VNet integration not enabled | Enable VNet integration; check `vnetRouteAllEnabled` |
+| Cannot reach private DB | VNet integration not enabled | Enable VNet integration; check `outboundVnetRouting.allTraffic` |
 | DNS resolution fails | Private DNS zone not linked | Link `privatelink.*` DNS zone to VNet |
 | Access restriction not working | Priority ordering wrong | Lower numbers = higher priority; check rule order |
 | Hybrid Connection timeout | HCM not running | Verify HCM service status on-premises |
