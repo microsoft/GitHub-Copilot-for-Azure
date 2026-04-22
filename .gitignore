@@ -344,6 +344,9 @@ UpgradeLog*.XML
 x64/
 x86/
 
+# Gulp build output
+output/
+
 dashboard/.azure/
 dashboard/dist/
 dashboard/**/dist/

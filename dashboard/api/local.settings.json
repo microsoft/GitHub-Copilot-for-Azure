@@ -2,6 +2,10 @@
     "IsEncrypted": false,
     "Values": {
         "AzureWebJobsStorage": "",
-        "FUNCTIONS_WORKER_RUNTIME": "node"
+        "FUNCTIONS_WORKER_RUNTIME": "node",
+        "AZURE_FUNCTIONS_ENVIRONMENT": "Development",
+        "MSBENCH_STORAGE_ACCOUNT": "msbenchnightlydata",
+        "MSBENCH_REPORTS_CONTAINER": "msbench-reports",
+        "MSBENCH_EVAL_TABLE_NAME": "msbenchevalmetrics"
     }
 }
