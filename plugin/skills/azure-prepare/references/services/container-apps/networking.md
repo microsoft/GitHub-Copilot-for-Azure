@@ -45,7 +45,7 @@ Container Apps run inside an environment that can be injected into a VNet subnet
 | Requirement | Workload Profiles (default) | Consumption-only (legacy) |
 |------------|---------------------------|--------------------------|
 | Minimum subnet size | `/27` (32 addresses) | `/23` (512 addresses) |
-| Delegation | `Microsoft.App/environments` | None (do not delegate) |
+| Delegation | `Microsoft.App/environments` | `Microsoft.App/environments` |
 | Dedicated | Subnet must be exclusive to the Container Apps environment | Same |
 
 ### Bicep — VNet-Integrated Environment
@@ -116,9 +116,9 @@ Azure automatically provisions and renews TLS certificates for custom domains �
 
 ## IP Restrictions
 
-> ⚠️ **Warning:** All IP restriction rules must be the **same action type** — you cannot mix Allow and Deny rules.
+> ⚠️ **Warning:** IP restriction rules are evaluated by priority (lower number = higher priority). You can mix Allow and Deny rules — use explicit priorities to control evaluation order.
 
-Allow rules implicitly deny all traffic not matching any rule. Deny rules implicitly allow all other traffic.
+Allow-only rules implicitly deny all traffic not matching any rule. Deny-only rules implicitly allow all other traffic.
 
 ```bicep
 configuration: {
@@ -151,6 +151,7 @@ configuration: {
 |----------|----------------------|-------------------|--------|
 | Public app | `false` | `true` | Internet + VNet |
 | Internal microservice | `false` | `false` | Same environment; VNet if environment is VNet-injected |
-| Fully private | `true` | `true` or `false` | VNet only (no public IP) |
+| Fully private (VNet-wide) | `true` | `true` | VNet only (no public IP); accessible from anywhere in the VNet |
+| Fully private (env-only) | `true` | `false` | VNet only (no public IP); accessible only within the Container Apps environment |
 
 > ⚠️ **Warning:** An internal environment has no public IP. You need VPN, ExpressRoute, or a jump box to reach apps in an internal environment.

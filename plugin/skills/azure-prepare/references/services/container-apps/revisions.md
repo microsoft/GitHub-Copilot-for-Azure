@@ -30,7 +30,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 ```
 
-> 💡 **Tip:** At deploy time only one revision exists. Use `latestRevision: true` in Bicep. Configure traffic splitting via CLI after deploying additional revisions.
+> 💡 **Tip:** On first deployment, only one revision exists. Use `latestRevision: true` in Bicep. Configure traffic splitting via CLI after deploying additional revisions.
 
 ## Traffic Splitting Patterns
 
