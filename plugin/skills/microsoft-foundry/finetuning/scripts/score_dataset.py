@@ -111,6 +111,8 @@ def main():
     parser.add_argument("--dimensions", default=None,
                         help="Comma-separated dimension names (default: correctness,relevance,quality)")
     parser.add_argument("--concurrency", type=int, default=4, help="Parallel scoring workers")
+    parser.add_argument("--strip-metadata", action="store_true",
+                        help="Remove _quality_scores and _avg_quality from output (safe for training input)")
     args = parser.parse_args()
 
     if not args.endpoint or not args.api_key:
@@ -175,9 +177,9 @@ def main():
     filtered = 0
     with open(args.output, "w", encoding="utf-8") as f:
         for ex in examples:
-            # Add scores as metadata
-            ex["data"]["_quality_scores"] = ex.get("scores", {})
-            ex["data"]["_avg_quality"] = ex.get("avg_score", 0)
+            if not args.strip_metadata:
+                ex["data"]["_quality_scores"] = ex.get("scores", {})
+                ex["data"]["_avg_quality"] = ex.get("avg_score", 0)
 
             if args.min_score and ex.get("avg_score", 0) < args.min_score:
                 filtered += 1
@@ -189,6 +191,8 @@ def main():
     print(f"\nKept: {kept}, Filtered: {filtered}")
     if args.min_score:
         print(f"(min_score threshold: {args.min_score})")
+    if args.strip_metadata:
+        print("(metadata stripped — output is safe for training input)")
     print(f"Output: {args.output}")
 
 
