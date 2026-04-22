@@ -14,12 +14,12 @@ WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys \
 az containerapp env create \
   --name <env-name> \
   --resource-group <rg> \
-  --logs-workspace-id <workspace-id> \
+  --logs-workspace-id <workspace-customer-id> \
   --logs-workspace-key $WORKSPACE_KEY \
   --logs-destination log-analytics
 ```
 
-> 💡 **Tip:** All apps in the same environment share the workspace. Use `--logs-destination none` only for BYOB (bring-your-own-backend) scenarios.
+> 💡 **Tip:** `--logs-workspace-id` expects the Log Analytics workspace **Customer ID** (a GUID found under Agents management), not the ARM resource ID. All apps in the same environment share the workspace. Use `--logs-destination none` only for BYOB (bring-your-own-backend) scenarios.
 
 ## System Logs vs Application Logs
 
@@ -27,6 +27,8 @@ az containerapp env create \
 |-----------|---------|-----------|
 | `ContainerAppConsoleLogs_CL` | stdout/stderr from containers | Workspace default |
 | `ContainerAppSystemLogs_CL` | Platform events (scaling, restarts, image pulls) | Workspace default |
+
+> 💡 **Note:** The `_CL` suffix applies when using the **Log Analytics** logs destination. If your environment uses the **Azure Monitor** destination, the tables are `ContainerAppConsoleLogs` and `ContainerAppSystemLogs` (no `_CL` suffix) with a slightly different schema.
 
 System logs capture events outside your code—replica scheduling, health probe results, and revision activation. Console logs capture everything your app writes to stdout/stderr.
 
@@ -77,7 +79,16 @@ Container Apps with multiple services need correlation. The OpenTelemetry SDK pr
 
 For apps using Dapr sidecars, Dapr generates tracing spans for service invocation, pub/sub, and state operations when tracing is configured. Note that `samplingRate: "1"` means 100% sampling — consider lowering for production workloads.
 
-Configure Dapr tracing in the environment:
+Configure Dapr tracing via the ACA environment Dapr configuration:
+
+```bash
+az containerapp env dapr-component set \
+  --name <env-name> --resource-group <rg> \
+  --dapr-component-name appconfig \
+  --yaml dapr-config.yaml
+```
+
+Where `dapr-config.yaml` contains the tracing spec:
 
 ```yaml
 # dapr-config.yaml
@@ -154,7 +165,7 @@ ContainerAppConsoleLogs_CL
 | render timechart
 ```
 
-### Request latency by revision (requires Application Insights SDK)
+### Request latency by app instance (requires Application Insights SDK)
 
 ```kql
 requests
