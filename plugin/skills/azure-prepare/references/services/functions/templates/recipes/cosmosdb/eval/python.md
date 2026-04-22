@@ -6,6 +6,7 @@
 |----------|----------|--------|
 | Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
 | Filter by resource | `resource == "cosmos"` finds matches | ✅ PASS |
+| Template scaffolded | `cosmos-trigger-python-azd` | ✅ PASS |
 | Has trigger code | `@app.cosmos_db_trigger` decorator in output | ✅ PASS |
 | Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
 | Has RBAC | Cosmos DB Data Contributor role | ✅ PASS |
@@ -15,8 +16,8 @@
 ```text
 1. Agent calls: functions_template_get(language: "python")
 2. Agent scans templateList.triggers[] descriptions and resource field
-3. Agent selects: template where resource == "cosmos" OR description matches intent
-4. Agent calls: functions_template_get(language: "python", template: <selectedTemplateName>)
+3. Agent selects: template where resource == "cosmos" → cosmos-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "cosmos-trigger-python-azd")
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

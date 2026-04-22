@@ -6,6 +6,7 @@
 |----------|----------|--------|
 | Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
 | Filter by resource | `resource == "blob"` finds matches | ✅ PASS |
+| Template scaffolded | `blob-eventgrid-trigger-python-azd` | ✅ PASS |
 | Has trigger code | `@app.blob_trigger` decorator in output | ✅ PASS |
 | Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
 | Has RBAC | Appropriate role assignment | ✅ PASS |
@@ -15,8 +16,8 @@
 ```text
 1. Agent calls: functions_template_get(language: "python")
 2. Agent scans templateList.triggers[] descriptions and resource field
-3. Agent selects: template where resource == "blob" OR description matches intent
-4. Agent calls: functions_template_get(language: "python", template: <selectedTemplateName>)
+3. Agent selects: template where resource == "blob" → blob-eventgrid-trigger-python-azd
+4. Agent calls: functions_template_get(language: "python", template: "blob-eventgrid-trigger-python-azd")
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 
