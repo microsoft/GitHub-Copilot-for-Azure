@@ -4,7 +4,7 @@ description: "Compare and synchronize infrastructure artifacts — Draw.io diagr
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Infrastructure Sync
@@ -52,9 +52,7 @@ Compare and synchronize infrastructure artifacts to detect drift. Supports four 
 | `az resource list` | MCP resource listing unavailable | `--resource-group`, `--subscription` | Baseline inventory for quick mode |
 | `az resource show` | Need raw resource properties | `--ids` or `--name`, `--resource-group`, `--resource-type` | Useful for deep comparisons |
 | `az graph query` | Cross-resource-group or broad discovery | `-q`, `--subscriptions` | Good for large scopes |
-| `az deployment group what-if` | Validate Bicep against a resource group | `--resource-group`, `--template-file`, `--parameters` | Preferred CLI preview for RG deployments |
-| `az deployment sub what-if` | Validate subscription-scope Bicep | `--location`, `--template-file`, `--parameters` | Use for subscription deployments |
-
+| `bicep build` / `az bicep build` | Compile Bicep before comparison | `<file>` or `--file` | Use compiled template metadata to support drift mapping |
 ## When to Use This Skill
 
 - Check if a Draw.io diagram matches what's deployed in Azure

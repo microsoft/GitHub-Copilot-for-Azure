@@ -8,7 +8,7 @@ Canonical procedure for verifying Azure session before any Azure operations. Ref
 
 ## Procedure
 
-1. **Verify session**: Run `az account show` or `Get-AzContext` in the terminal, OR attempt a lightweight Azure MCP call (e.g., `mcp_azure_subscription_list`)
+1. **Verify session**: Run `az account show` or `Get-AzContext` in the terminal, OR attempt a lightweight Azure MCP call (e.g., `mcp_azure_mcp_subscription_list`)
 
 2. **If authenticated**:
    - Display the active subscription name and ID

@@ -37,7 +37,7 @@ Each resource type section includes:
 
 ### Microsoft.Web/serverfarms
 
-**MCP Tool**: `mcp_azure_appservice`
+**MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az appservice plan show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -50,7 +50,7 @@ Each resource type section includes:
 
 ### Microsoft.Web/sites
 
-**MCP Tool**: `mcp_azure_appservice`
+**MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az webapp show --ids <resourceId> -o json` + `az webapp config show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -66,7 +66,7 @@ Each resource type section includes:
 
 ### Microsoft.Web/sites/functions
 
-**MCP Tool**: `mcp_azure_appservice`
+**MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az functionapp show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -78,7 +78,7 @@ Each resource type section includes:
 
 ### Microsoft.Storage/storageAccounts
 
-**MCP Tool**: `mcp_azure_storage`
+**MCP Tool**: `mcp_azure_mcp_storage`
 **Fallback**: `az storage account show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -94,7 +94,7 @@ Each resource type section includes:
 
 ### Microsoft.Sql/servers
 
-**MCP Tool**: `mcp_azure_sql`
+**MCP Tool**: `mcp_azure_mcp_sql`
 **Fallback**: `az sql server show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -105,7 +105,7 @@ Each resource type section includes:
 
 ### Microsoft.Sql/servers/databases
 
-**MCP Tool**: `mcp_azure_sql`
+**MCP Tool**: `mcp_azure_mcp_sql`
 **Fallback**: `az sql db show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -119,7 +119,7 @@ Each resource type section includes:
 
 ### Microsoft.DocumentDB/databaseAccounts
 
-**MCP Tool**: `mcp_azure_cosmos`
+**MCP Tool**: `mcp_azure_mcp_cosmos`
 **Fallback**: `az cosmosdb show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -134,7 +134,7 @@ Each resource type section includes:
 
 ### Microsoft.Cache/redis
 
-**MCP Tool**: `mcp_azure_redis`
+**MCP Tool**: `mcp_azure_mcp_redis`
 **Fallback**: `az redis show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -147,7 +147,7 @@ Each resource type section includes:
 
 ### Microsoft.KeyVault/vaults
 
-**MCP Tool**: `mcp_azure_keyvault`
+**MCP Tool**: `mcp_azure_mcp_keyvault`
 **Fallback**: `az keyvault show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -161,7 +161,7 @@ Each resource type section includes:
 
 ### Microsoft.ServiceBus/namespaces
 
-**MCP Tool**: `mcp_azure_servicebus`
+**MCP Tool**: `mcp_azure_mcp_servicebus`
 **Fallback**: `az servicebus namespace show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -172,7 +172,7 @@ Each resource type section includes:
 
 ### Microsoft.EventHub/namespaces
 
-**MCP Tool**: `mcp_azure_eventhubs`
+**MCP Tool**: `mcp_azure_mcp_eventhubs`
 **Fallback**: `az eventhubs namespace show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |

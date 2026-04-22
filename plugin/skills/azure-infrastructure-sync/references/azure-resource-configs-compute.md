@@ -6,7 +6,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.Compute/virtualMachines
 
-**MCP Tool**: `mcp_azure_compute`
+**MCP Tool**: `mcp_azure_mcp_compute`
 **Fallback**: `az vm show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -25,7 +25,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.Compute/virtualMachineScaleSets
 
-**MCP Tool**: `mcp_azure_compute`
+**MCP Tool**: `mcp_azure_mcp_compute`
 **Fallback**: `az vmss show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -37,7 +37,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.ContainerService/managedClusters
 
-**MCP Tool**: `mcp_azure_aks`
+**MCP Tool**: `mcp_azure_mcp_aks`
 **Fallback**: `az aks show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -52,7 +52,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.App/managedEnvironments
 
-**MCP Tool**: `mcp_azure_containerapps`
+**MCP Tool**: `mcp_azure_mcp_containerapps`
 **Fallback**: `az containerapp env show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -62,7 +62,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.App/containerApps
 
-**MCP Tool**: `mcp_azure_containerapps`
+**MCP Tool**: `mcp_azure_mcp_containerapps`
 **Fallback**: `az containerapp show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -77,7 +77,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.ContainerRegistry/registries
 
-**MCP Tool**: `mcp_azure_acr`
+**MCP Tool**: `mcp_azure_mcp_acr`
 **Fallback**: `az acr show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -88,7 +88,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.Insights/components
 
-**MCP Tool**: `mcp_azure_applicationinsights`
+**MCP Tool**: `mcp_azure_mcp_applicationinsights`
 **Fallback**: `az monitor app-insights component show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -99,7 +99,7 @@ ARM property retrieval mapping for compute and container resources. Used by [azu
 
 ### Microsoft.OperationalInsights/workspaces
 
-**MCP Tool**: `mcp_azure_monitor`
+**MCP Tool**: `mcp_azure_mcp_monitor`
 **Fallback**: `az monitor log-analytics workspace show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
