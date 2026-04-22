@@ -123,13 +123,15 @@ Use `agent_definition_schema_get` with `schemaType: hosted` to retrieve the curr
 
 > **VNext Experience:** You MUST pass `enableVnextExperience = true` in the `metadata` field of `creationOptions`. This is required for vNext deployments.
 
-Use `agent_update` with this schema: `agent_update projectEndpoint=<project-endpoint> agentName=<agent-name> payload={...}`. Put the full agent request body inside `payload`.
+Use `agent_update` with the agent definition:
 
 > ⚠️ **Protocol version source of truth:** Do NOT copy the protocol version from `agent_definition_schema_get` examples. Use the protocol version declared by the agent source itself (for example, `agent.yaml` or `agent.manifest.yaml`).
 
 For ACA one:
-```text
-agent_update projectEndpoint=<project-endpoint> agentName=<agent-name> payload={
+```json
+{
+  "command": "agent_update",
+  "intent": "Update a hosted agent with a new docker image",
   "agentDefinition": {
     "kind": "hosted",
     "image": "<acr-name>.azurecr.io/<repository>:<tag>",
@@ -144,8 +146,10 @@ agent_update projectEndpoint=<project-endpoint> agentName=<agent-name> payload={
 ```
 
 For vNext one:
-```text
-agent_update projectEndpoint=<project-endpoint> agentName=<agent-name> payload={
+```json
+{
+  "command": "agent_update",
+  "intent": "Update a hosted agent with a new docker image",
   "agentDefinition": {
     "kind": "hosted",
     "image": "<acr-name>.azurecr.io/<repository>:<tag>",
