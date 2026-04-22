@@ -136,7 +136,7 @@ def data_stats(filepath: str) -> None:
         "gpt-4.1-mini":  12.0,
         "gpt-4.1":       25.0,
         "Ministral-3B":  8.0,
-        "gpt-oss-20b":   15.0,
+        "gpt-oss-20b-11": 15.0,
     }
     for model, cost_per_1m in cost_table.items():
         est_cost = (total_tokens / 1_000_000) * cost_per_1m

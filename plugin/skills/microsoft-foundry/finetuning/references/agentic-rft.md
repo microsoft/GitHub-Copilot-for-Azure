@@ -39,9 +39,9 @@ job = client.fine_tuning.jobs.create(
             "tools": tools,
             "max_episode_steps": 10,
             "hyperparameters": {
-                "eval_interval": 3,
-                "eval_samples": 5,
-                "compute_multiplier": 1.0,
+                "eval_interval": 5,
+                "eval_samples": 10,
+                "compute_multiplier": 1.5,
                 "reasoning_effort": "medium"
             }
         }

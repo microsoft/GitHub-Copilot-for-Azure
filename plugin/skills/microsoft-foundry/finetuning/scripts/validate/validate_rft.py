@@ -49,6 +49,11 @@ def validate_rft(filepath: str, expected_field: str | None = None) -> None:
                     errors.append(f"Line {line_num}: 'messages' must be a non-empty array")
                 elif not any(m.get("role") == "user" for m in msgs):
                     errors.append(f"Line {line_num}: 'messages' has no 'user' message")
+                elif msgs[-1].get("role") != "user":
+                    errors.append(
+                        f"Line {line_num}: Last message must be 'user' role for RFT "
+                        f"(found '{msgs[-1].get('role')}') — unlike SFT, the model generates its own response"
+                    )
 
             # Detect extra fields (grader fields) beyond 'messages'
             extra_fields = set(record.keys()) - {"messages"}
@@ -169,7 +174,7 @@ def validate_rft(filepath: str, expected_field: str | None = None) -> None:
     if total > 0:
         print(f"\n💡 RFT tips:")
         print(f"  • Ensure your training grader matches your eval grader (alignment gotcha)")
-        print(f"  • Start with reasoning_effort='medium', pass_rate_threshold=0.5")
+        print(f"  • Start with reasoning_effort='medium', pass_threshold=0.5")
         print(f"  • RFT is primarily for o-series models (o4-mini). Check Azure docs for the latest supported model list.")
 
     if not errors:

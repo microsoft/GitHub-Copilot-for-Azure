@@ -129,14 +129,33 @@ def sft_to_dpo(input_path, output_path, endpoint, api_key, base_model):
 
 
 def sft_to_rft(input_path, output_path):
-    """Convert SFT to RFT format (passthrough — same structure, different usage)."""
+    """Convert SFT to RFT format.
+
+    Strips assistant messages (RFT last message must be user) and adds a
+    placeholder grader field. The user must populate grader reference fields
+    (e.g., expected_answer) before training.
+    """
     count = 0
+    skipped = 0
     with open(output_path, "w", encoding="utf-8") as out:
         for line in open(input_path):
-            out.write(line)
+            ex = json.loads(line)
+            msgs = ex.get("messages", [])
+            # Keep only system + user messages; RFT last message must be user
+            rft_msgs = [m for m in msgs if m["role"] in ("system", "user")]
+            if not rft_msgs or rft_msgs[-1]["role"] != "user":
+                skipped += 1
+                continue
+            # Extract assistant content as a reference answer placeholder
+            asst_msgs = [m for m in msgs if m["role"] == "assistant"]
+            expected = asst_msgs[-1]["content"] if asst_msgs else ""
+            rft_entry = {"messages": rft_msgs, "expected_answer": expected}
+            out.write(json.dumps(rft_entry, ensure_ascii=False) + "\n")
             count += 1
-    print(f"Copied {count} examples to RFT JSONL → {output_path}")
-    print("Note: RFT uses the same data format as SFT. The grader is configured in the training job, not the data.")
+    print(f"Converted {count} examples to RFT JSONL → {output_path}")
+    if skipped:
+        print(f"  Skipped {skipped} examples (no user message)")
+    print("Note: Review 'expected_answer' fields and update your grader to use item.expected_answer.")
 
 
 def dpo_to_sft(input_path, output_path, system_prompt=None):
