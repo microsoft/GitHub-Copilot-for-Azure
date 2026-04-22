@@ -96,7 +96,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   });
 
   describe("Spring Boot to Container Apps Scenario", () => {
-    test("includes Spring Apps migration scenario", () => {
+    test("includes Spring Boot to Container Apps scenario", () => {
       expect(skill.content).toContain("Spring Boot");
       expect(skill.content).toContain("Container Apps");
     });
