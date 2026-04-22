@@ -5,7 +5,7 @@
 | Language | Manifest Templates | Eval | Status |
 |----------|-------------------|------|--------|
 | Python | 5 (Bicep + TF) | [✅](python.md) | ✅ Verified |
-| TypeScript | 2 (Bicep) | — | 📋 AZD template exists |
+| TypeScript | 2 (Bicep) | ✅ | ✅ Verified |
 | JavaScript | 2 (Bicep) | — | 📋 AZD template exists |
 | C# (.NET) | 4 (Bicep + TF) | — | 📋 AZD template exists |
 | Java | 2 (Bicep) | — | 📋 AZD template exists |
@@ -20,15 +20,17 @@
 | `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | HTTP templates found for all languages |
 | IaC Included | ✅ PASS | Bicep/Terraform infra/ included in projectFiles |
-| E2E Agent Test | ✅ PASS | 4 azure-functions calls, 5m 42s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls per language, templates retrieved and applied |
 
 ## Results
 
-| Test | Python |
-|------|--------|
-| Syntax Valid | ✅ |
-| Health Endpoint | ✅ |
-| HTTP Trigger | ✅ |
+| Test | Python | TypeScript |
+|------|--------|------------|
+| Syntax Valid | ✅ | ✅ |
+| Health Endpoint | ✅ | ✅ |
+| HTTP Trigger | ✅ | ✅ |
+| Code Indicator | ✅ `app.route` | ✅ `app.http` |
+| Template Scaffolded | `http-trigger-python-azd` | `http-trigger-typescript-azd` |
 
 ## Notes
 
@@ -38,4 +40,4 @@
 
 ## Test Date
 
-2026-04-17
+2026-04-22

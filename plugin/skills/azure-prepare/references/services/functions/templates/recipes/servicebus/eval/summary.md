@@ -5,7 +5,7 @@
 | Language | Manifest Templates | Eval | Status |
 |----------|-------------------|------|--------|
 | Python | 1 (Bicep) | ✅ | ✅ Verified |
-| TypeScript | 1 (Bicep) | — | 📋 AZD template exists |
+| TypeScript | 1 (Bicep) | ✅ | ✅ Verified |
 | JavaScript | 1 (Bicep) | — | 📋 AZD template exists |
 | C# (.NET) | 1 (Bicep) | — | 📋 AZD template exists |
 | Java | 1 (Bicep) | — | 📋 AZD template exists |
@@ -20,15 +20,18 @@
 | `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Service Bus Bicep + RBAC in projectFiles |
-| E2E Agent Test | ✅ PASS | 2 azure-functions calls, 8m 33s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls per language, templates retrieved and applied |
 
 ## Results
 
-| Test | Python |
-|------|--------|
-| Health | ✅ |
-| Queue message | ✅ |
-| Output binding | ✅ |
+| Test | Python | TypeScript |
+|------|--------|------------|
+| Health | ✅ | ✅ |
+| Queue message | ✅ | ✅ |
+| Output binding | ✅ | ✅ |
+| Code Indicator | ✅ `service_bus_queue_trigger` | ✅ `app.serviceBusQueue` |
+| Extra Indicator (IaC) | ✅ `Microsoft.ServiceBus` | ✅ `Microsoft.ServiceBus` |
+| Template Scaffolded | `servicebus-trigger-python-azd` | `servicebus-trigger-typescript-azd` |
 
 ## Notes
 
@@ -37,4 +40,4 @@
 
 ## Test Date
 
-2026-04-17
+2026-04-22

@@ -20,7 +20,7 @@
 | `functions_template_get` | ✅ PASS | 3 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Event Hubs Bicep + RBAC in projectFiles |
-| E2E Agent Test | ✅ PASS | 4 azure-functions calls, 4m 07s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls, template `eventhub-trigger-python-azd` retrieved and applied |
 
 ## Results
 
@@ -37,4 +37,4 @@
 
 ## Test Date
 
-2026-04-17
+2026-04-22

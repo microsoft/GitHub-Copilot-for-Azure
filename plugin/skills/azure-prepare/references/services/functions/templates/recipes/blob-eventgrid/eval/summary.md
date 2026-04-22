@@ -20,7 +20,7 @@
 | `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | EventGrid + Storage Bicep in projectFiles |
-| E2E Agent Test | ✅ PASS | 3 azure-functions calls, 4m 53s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls, template `blob-eventgrid-trigger-python-azd` retrieved and applied |
 
 ## IaC Validation
 
@@ -68,4 +68,4 @@
 
 ## Test Date
 
-2026-04-17
+2026-04-22

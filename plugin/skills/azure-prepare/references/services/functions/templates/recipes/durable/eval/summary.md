@@ -20,7 +20,7 @@
 | `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Durable Task Scheduler Bicep in projectFiles |
-| E2E Agent Test | ✅ PASS | 2 azure-functions calls, 4m 15s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls, template retrieved and applied |
 
 ## Results
 
@@ -39,4 +39,4 @@
 
 ## Test Date
 
-2026-04-17
+2026-04-22

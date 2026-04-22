@@ -5,7 +5,7 @@
 | Language | Manifest Templates | Eval | Status |
 |----------|-------------------|------|--------|
 | Python | 1 (Bicep) | ✅ | ✅ Verified |
-| TypeScript | 1 (Bicep) | — | 📋 AZD template exists |
+| TypeScript | 1 (Bicep) | ✅ | ✅ Verified |
 | C# (.NET) | 1 (Bicep) | — | 📋 AZD template exists |
 | Java | 3 (Bicep) | — | 📋 AZD template exists |
 | JavaScript | — | — | ⚠️ No AZD template |
@@ -20,15 +20,18 @@
 | `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Cosmos templates found via resource filter |
 | IaC Included | ✅ PASS | Cosmos Bicep module + RBAC in projectFiles |
-| E2E Agent Test | ✅ PASS | 3 azure-functions calls, 5m 00s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls per language, templates retrieved and applied |
 
 ## Results
 
-| Test | Python |
-|------|--------|
-| Health | ✅ |
-| Trigger fires | ✅ |
-| Change detected | ✅ |
+| Test | Python | TypeScript |
+|------|--------|------------|
+| Health | ✅ | ✅ |
+| Trigger fires | ✅ | ✅ |
+| Change detected | ✅ | ✅ |
+| Code Indicator | ✅ `cosmos_db_trigger` | ✅ `app.cosmosDB` |
+| Extra Indicator (IaC) | ✅ `Microsoft.DocumentDB` | ✅ `Microsoft.DocumentDB` |
+| Template Scaffolded | `cosmos-trigger-python-azd` | `cosmos-trigger-typescript-azd` |
 
 ## Notes
 
@@ -38,4 +41,4 @@
 
 ## Test Date
 
-2026-04-17
+2026-04-22

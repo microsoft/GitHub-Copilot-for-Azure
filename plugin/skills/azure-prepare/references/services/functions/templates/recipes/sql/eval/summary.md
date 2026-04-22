@@ -20,7 +20,7 @@
 | `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | SQL Server Bicep + RBAC in projectFiles |
-| E2E Agent Test | ✅ PASS | 3 azure-functions calls, 3m 43s, template retrieved and applied |
+| E2E Agent Test | ✅ PASS | 2 `azure-functions` calls, template `sql-trigger-python-azd` retrieved and applied |
 
 ## IaC Validation
 
@@ -75,4 +75,4 @@ ALTER ROLE db_datawriter ADD MEMBER [<function-app-name>];
 
 ## Test Date
 
-2026-04-17
+2026-04-22
