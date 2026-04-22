@@ -62,7 +62,7 @@ All OSS models require `trainingType: "globalStandard"` in the API request.
 | Model | Recommended Start | Best Found | Notes |
 |-------|------------------|------------|-------|
 | Ministral-3B | 5ep, lr=1.0 | 10ep, lr=0.5 | Small model, slow convergence |
-| gpt-oss-20b | 2ep, lr=0.3 | 2ep, lr=0.3 | lr=1.0 overfits quickly |
+| gpt-oss-20b-11 | 2ep, lr=0.3 | 2ep, lr=0.3 | lr=1.0 overfits quickly |
 | Llama-3.3-70B | 3ep, lr=0.3 | 5ep, lr=0.5 | lr=2.0 causes catastrophic degradation |
 | Qwen-3-32B | 3ep, lr=0.3 | 3ep, lr=0.3 | Most fragile — more data can hurt |
 

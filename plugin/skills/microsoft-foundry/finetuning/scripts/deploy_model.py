@@ -211,7 +211,8 @@ def main():
         delete_deployment(args.sub, args.rg, args.account, args.name)
         return
 
-    if args.wait:
+    if args.wait and not args.model_id:
+        # Wait-only mode: poll an existing deployment
         success = wait_for_deployment(args.sub, args.rg, args.account, args.name)
         sys.exit(0 if success else 1)
 
@@ -228,10 +229,10 @@ def main():
         sku = sku or auto_sku
         print(f"Auto-detected: format={model_format}, sku={sku}")
 
-    create_deployment(args.sub, args.rg, args.account, args.name,
+    created = create_deployment(args.sub, args.rg, args.account, args.name,
                       args.model_id, model_format, sku, args.capacity)
 
-    if args.wait:
+    if args.wait and created:
         wait_for_deployment(args.sub, args.rg, args.account, args.name)
 
 

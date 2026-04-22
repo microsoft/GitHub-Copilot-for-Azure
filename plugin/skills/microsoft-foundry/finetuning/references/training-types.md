@@ -30,7 +30,7 @@
 - Task has objectively verifiable answers (code execution, math, logic)
 - You can write a programmatic or LLM-based grader
 - You want to improve the model's reasoning, not just its outputs
-- **Critical**: RFT is extremely sensitive to grader quality. Train–val gap should be < 0.05.
+- **Critical**: RFT is extremely sensitive to grader quality. Train–val gap should be ≤ 0.05.
 
 ## Choosing a Path
 

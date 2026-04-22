@@ -23,7 +23,6 @@ import argparse
 import json
 import os
 import random
-import re
 import sys
 import time
 
@@ -73,7 +72,6 @@ def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
     """Run base model on data, score with grader, output threshold analysis."""
     # Sample if dataset is larger than n
     if len(data) > n:
-        random.seed(42)
         data = random.sample(data, n)
 
     print(f"Running {model} on {len(data)} examples...\n")

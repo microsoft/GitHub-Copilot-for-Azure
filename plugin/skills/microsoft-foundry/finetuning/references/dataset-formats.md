@@ -84,6 +84,6 @@ def grade(sample, item):
 
 ## Converting Between Formats
 
-- **SFT → RFT**: Data is compatible. Ensure assistant messages can serve as grader references.
+- **SFT → RFT**: Strip assistant messages (RFT last message must be `user`), add grader reference fields. Use `scripts/convert_dataset.py --format rft`.
 - **SFT → DPO**: Generate rejected responses (run base model on same prompts, intentionally degrade good outputs, or use human ranking).
 - **DPO → SFT**: Extract chosen responses from the preferred output.

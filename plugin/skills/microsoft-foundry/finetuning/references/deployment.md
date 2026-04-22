@@ -41,7 +41,7 @@ az cognitiveservices account deployment create \
 | Base model family | ARM REST `model.format` | CLI `--model-format` |
 |-------------------|------------------------|----------------------|
 | gpt-4.1-mini/nano | `"OpenAI"` | `"OpenAI"` |
-| gpt-oss-20b | `"Microsoft"` | `"OpenAI-OSS"` |
+| gpt-oss-20b-11 | `"Microsoft"` | `"OpenAI-OSS"` |
 | Ministral-3B | `"Mistral AI"` | `"OpenAI-OSS"` |
 | Llama-3.3-70B | `"Meta"` | `"OpenAI-OSS"` |
 | Qwen-3-32B | `"Alibaba"` | `"OpenAI-OSS"` |
