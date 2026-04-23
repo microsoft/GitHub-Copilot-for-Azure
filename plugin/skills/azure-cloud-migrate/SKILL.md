@@ -1,6 +1,6 @@
 ---
 name: azure-cloud-migrate
-description: "Assess and migrate workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions, K8s→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Functions, AWS to Azure, Lambda assessment, serverless to Azure, migrate from AWS, from GCP, Cloud Run to Container Apps, Kubernetes to Container Apps, k8s to ACA, GKE to Azure, EKS to Container Apps."
+description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions, K8s→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Functions, AWS to Azure, Lambda assessment, convert serverless to Azure, readiness report, from AWS, from GCP, Cloud Run to Container Apps, Kubernetes to Container Apps, k8s to ACA, GKE to Azure, EKS to Container Apps."
 license: MIT
 metadata:
   author: Microsoft

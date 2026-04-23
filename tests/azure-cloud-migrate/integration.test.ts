@@ -175,7 +175,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         expect(isSkillUsed).toBe(true);
       });
-    }, 300000); // 5 minutes timeout
+    }, migrationTestTimeoutMs);
 
     test("invokes skill for k8s manifest conversion", async () => {
       await withTestResult(async () => {
@@ -188,6 +188,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         expect(isSkillUsed).toBe(true);
       });
-    }, 300000); // 5 minutes timeout
+    }, migrationTestTimeoutMs);
   });
 });
