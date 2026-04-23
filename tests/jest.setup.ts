@@ -72,7 +72,7 @@ global.getFixturesPath = (skillName: string): string => {
 // per-worker JSON file in afterAll so globalTeardown can merge them.
 const testResults: Record<string, { isPass: boolean; message?: string; skillInvocationRate?: number }> = {};
 
-global.addTestResult = (data) => {
+global.setTestResult = (data) => {
   try {
     const state = expect.getState();
     const testName = state.currentTestName ?? "unknown";
