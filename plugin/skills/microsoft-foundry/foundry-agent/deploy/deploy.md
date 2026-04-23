@@ -125,36 +125,52 @@ Use `agent_definition_schema_get` with `schemaType: hosted` to retrieve the curr
 
 Use `agent_update` with the agent definition:
 
+> ⚠️ **Protocol version source of truth:** Do NOT copy the protocol version from `agent_definition_schema_get` examples. Use the protocol version declared by the agent source itself (for example, `agent.yaml` or `agent.manifest.yaml`).
+
 For ACA one:
 ```json
 {
-  "kind": "hosted",
-  "image": "<acr-name>.azurecr.io/<repository>:<tag>",
-  "cpu": "<cpu-cores>",
-  "memory": "<memory>",
-  "container_protocol_versions": [
-    { "protocol": "<protocol>", "version": "<version>" }
-  ],
-  "environment_variables": { "<var>": "<value>" }
+  "command": "agent_update",
+  "intent": "Update a hosted agent with a new docker image",
+  "parameters": {
+    "projectEndpoint": "<project-endpoint>",
+    "agentName": "<agent-name>",
+    "agentDefinition": {
+      "kind": "hosted",
+      "image": "<acr-name>.azurecr.io/<repository>:<tag>",
+      "cpu": "<cpu-cores>",
+      "memory": "<memory>",
+      "container_protocol_versions": [
+        { "protocol": "<protocol>", "version": "<version>" }
+      ],
+      "environment_variables": { "<var>": "<value>" }
+    }
+  }
 }
 ```
 
 For vNext one:
 ```json
 {
-   "agentDefinition": {
-    "kind": "hosted",
-    "image": "<acr-name>.azurecr.io/<repository>:<tag>",
-    "cpu": "<cpu-cores>",
-    "memory": "<memory>",
-    "container_protocol_versions": [
-      { "protocol": "<protocol>", "version": "<version>" }
-    ],
-    "environment_variables": { "<var>": "<value>" }
-  },
-  "creationOptions": {
-    "metadata": {
-      "enableVnextExperience": "true"
+  "command": "agent_update",
+  "intent": "Update a hosted agent with a new docker image",
+  "parameters": {
+    "projectEndpoint": "<project-endpoint>",
+    "agentName": "<agent-name>",
+    "agentDefinition": {
+      "kind": "hosted",
+      "image": "<acr-name>.azurecr.io/<repository>:<tag>",
+      "cpu": "<cpu-cores>",
+      "memory": "<memory>",
+      "container_protocol_versions": [
+        { "protocol": "<protocol>", "version": "<version>" }
+      ],
+      "environment_variables": { "<var>": "<value>" }
+    },
+    "creationOptions": {
+      "metadata": {
+        "enableVnextExperience": "true"
+      }
     }
   }
 }
