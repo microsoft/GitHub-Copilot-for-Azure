@@ -32,11 +32,11 @@ metadata:
 
 ## Output Directory
 
-All output goes to `<source-folder>-azure/` at workspace root. Never modify the source directory.
+All output goes to `<workspace-root-basename>-azure/` at workspace root, where `<workspace-root-basename>` is the name of the top-level workspace directory itself (NOT a subdirectory within it). Never modify the source directory.
 
 ## Steps
 
-1. **Create** `<source-folder>-azure/` at workspace root
+1. **Create** `<workspace-root-basename>-azure/` at workspace root
 2. **Assess** — Analyze source, map services, generate report using scenario-specific assessment guide
 3. **Migrate** — Convert code/config using scenario-specific migration guide
 4. **Ask User** — "Migration complete. Test locally or deploy to Azure?"
