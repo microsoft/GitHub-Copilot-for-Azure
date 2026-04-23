@@ -148,13 +148,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       expect(lowerResult.triggered).toBe(mixedResult.triggered);
     });
 
-    test("distinguishes between diagnostic and deployment keywords", () => {
+    test("distinguishes between troubleshooting and provisioning prompts", () => {
       const diagnostic = triggerMatcher.shouldTrigger("troubleshoot my container app");
-      const deployment = triggerMatcher.shouldTrigger("deploy my container app");
+      const provisioning = triggerMatcher.shouldTrigger("create a new container app");
       
-      // Diagnostic should trigger, deployment should not
+      // Troubleshooting should trigger, pure provisioning should not
       expect(diagnostic.triggered).toBe(true);
-      expect(deployment.triggered).toBe(false);
+      expect(provisioning.triggered).toBe(false);
     });
   });
 });
