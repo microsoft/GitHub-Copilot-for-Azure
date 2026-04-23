@@ -1,5 +1,9 @@
 # Deployment: Fargate to Container Apps
 
+## Prerequisites
+
+Azure CLI 2.53+ with `containerapp` extension, AWS CLI v2, Docker, ACR, Key Vault, Log Analytics
+
 ## Phase 1: Container Registry Migration
 
 ```bash
@@ -101,14 +105,18 @@ az role assignment create --assignee "$PRINCIPAL_ID" \
 # Option B: Access policies (if vault uses access policy mode)
 # az keyvault set-policy --name "$KEY_VAULT" --object-id "$PRINCIPAL_ID" --secret-permissions get list
 
-# Migrate secrets without writing them to disk
-# WARNING: Secret value is passed as a CLI argument, which may appear in shell
-# history or process listings. Run in a secure environment with history disabled.
+# Migrate secrets more safely: avoid passing the secret as a CLI argument.
+# Use a locked-down temporary file, import with --file, and remove it immediately.
+# Do not run this in shared, monitored, or recorded environments.
+umask 077
+secret_file="$(mktemp)"
+trap 'rm -f "$secret_file"' EXIT
+aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> \
+  --query SecretString --output text > "$secret_file"
 az keyvault secret set --vault-name "$KEY_VAULT" --name <secret-name> \
-  --value "$(
-    aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> \
-      --query SecretString --output text
-  )"
+  --file "$secret_file"
+rm -f "$secret_file"
+trap - EXIT
 
 # ACR pull access
 ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
@@ -129,14 +137,16 @@ az role assignment create --assignee $principalId `
 # Option B: Access policies (if vault uses access policy mode)
 # az keyvault set-policy --name $env:KEY_VAULT --object-id $principalId --secret-permissions get list
 
-# Migrate secrets without writing them to disk
-# WARNING: Secret value is passed as a CLI argument, which may appear in
-# transcripts, history, or CI/CD logs. Run in a secure environment.
-# Wrapped in a script block so $secretValue does not persist in session scope.
-& {
-    $secretValue = aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> `
-      --query SecretString --output text
-    az keyvault secret set --vault-name $env:KEY_VAULT --name <secret-name> --value $secretValue
+# Migrate secrets more safely: use a temp file instead of passing as CLI argument.
+# Do not run this in shared, monitored, or recorded environments.
+$secretFile = [System.IO.Path]::GetTempFileName()
+try {
+    aws secretsmanager get-secret-value --secret-id <secret-id> --region <region> `
+      --query SecretString --output text | Set-Content -Path $secretFile -NoNewline
+    az keyvault secret set --vault-name $env:KEY_VAULT --name <secret-name> `
+      --file $secretFile
+} finally {
+    Remove-Item -Path $secretFile -Force -ErrorAction SilentlyContinue
 }
 
 # ACR pull access
@@ -154,7 +164,7 @@ az containerapp create --name <app-name> -g "$RG" --environment "${RG}-env" \
   --cpu 0.5 --memory 1Gi --min-replicas 1 --max-replicas 10 \
   --user-assigned "$IDENTITY_ID" --registry-identity "$IDENTITY_ID" \
   --registry-server "${ACR_NAME}.azurecr.io" \
-  --secrets "db-pass=keyvaultref:${SECRET_URI},identityref:${IDENTITY_ID}" \
+  --secrets db-pass=keyvaultref:"${SECRET_URI}",identityref:"${IDENTITY_ID}" \
   --env-vars ENV=production DB_PASSWORD=secretref:db-pass
 ```
 
@@ -166,7 +176,7 @@ az containerapp create --name <app-name> -g $env:RG --environment "$($env:RG)-en
   --cpu 0.5 --memory 1Gi --min-replicas 1 --max-replicas 10 `
   --user-assigned $identityId --registry-identity $identityId `
   --registry-server "$($env:ACR_NAME).azurecr.io" `
-  --secrets "db-pass=keyvaultref:$secretUri,identityref:$identityId" `
+  --secrets "db-pass=keyvaultref:$($secretUri),identityref:$($identityId)" `
   --env-vars ENV=production DB_PASSWORD=secretref:db-pass
 ```
 
