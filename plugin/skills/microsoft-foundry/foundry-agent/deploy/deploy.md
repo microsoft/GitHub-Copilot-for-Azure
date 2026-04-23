@@ -176,6 +176,8 @@ For vNext one:
 }
 ```
 
+For vNext hosted agents, capture the instance identity `principal_id` from the agent creation response. You will need it to assign the minimum RBAC required for invocation before running invoke tests.
+
 ### Step 7: Start Agent Container
 
 Use `agent_container_control` with `action: start` to start the container.
@@ -192,9 +194,19 @@ Delegate status polling to a sub-agent. Provide the project endpoint, agent name
 
 ### Step 9: Test the Agent
 
-Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
+For a newly deployed vNext hosted agent, before invocation testing, first check whether the agent's instance identity already has the minimum RBAC required for invocation:
+- Required role: `Cognitive Services User`
+- Identity: the agent's instance identity (managed identity `principal_id` from the agent creation response)
+- Scope: the Azure AI Services resource (formerly Cognitive Services account)
+- Only the instance identity needs this role assignment. The blueprint identity does not need any role.
 
-If invocation testing fails for a newly deployed agent, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). A common cause is missing role assignments for the agent's managed identity. Do not treat the deployment as fully successful until the required roles are assigned and invocation succeeds.
+If this role assignment is missing, add it before invocation testing.
+
+If the current user account does not have permission to create this role assignment when it is needed, stop the deployment workflow here. Explain to the user that agent invocation requires the `Cognitive Services User` role on the instance identity at the Azure AI Services resource scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants that role.
+
+After this RBAC check is complete, read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
+
+If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
 
 > ⚠️ **DO NOT stop here.** Continue to Step 10 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
 
@@ -412,6 +424,8 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 | Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
 | Container start failed | Image not accessible or invalid configuration | Verify ACR image path, check cpu/memory values, confirm ACR permissions |
 | Container status: Failed | Runtime error in container | Check container logs, verify environment variables, ensure image runs correctly |
+| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that agent invocation requires `Cognitive Services User` on the instance identity at the Azure AI Services resource scope |
+| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the instance identity | Check whether `Cognitive Services User` is already assigned to the instance identity at the Azure AI Services resource scope; if missing, assign it, then retry invocation |
 | Permission denied | Insufficient Foundry project permissions | Verify Azure AI Owner or Contributor role on the project |
 | Schema fetch failed | Invalid project endpoint | Verify project endpoint URL format: `https://<resource>.services.ai.azure.com/api/projects/<project>` |
 

@@ -93,7 +93,7 @@ Use `./scripts/invoke_agent_response.py` for `responses` agents.
 
 Use `./scripts/invoke_agent_invocation.py` for `invocations` agents.
 
-If invocation testing fails for a newly deployed agent, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). A common cause is missing role assignments for the agent's managed identity. Do not treat deployment as fully successful until the required roles are assigned and invocation succeeds.
+If invocation fails with a permission-related error, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). For vNext hosted agents, verify that `Cognitive Services User` is assigned to the instance identity at the Azure AI Services resource scope.
 
 ### Step 3: Multi-Turn Conversations
 
@@ -118,7 +118,7 @@ Each invocation with the same `conversationId` continues the existing conversati
 | Container not running | Hosted agent container is stopped or failed | Use deploy skill to start the container with `agent_container_control` |
 | `agent_invoke` failed | MCP tool failure | Use the protocol-specific Python fallback script |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment is active, retry with simpler input |
-| Invocation failed after fresh deployment | The agent's managed identity may be missing required roles | Read and follow the troubleshoot skill, assign the required roles, then retry invocation |
+| Invocation failed with permission error | Missing or incorrect invocation RBAC for the instance identity | Read and follow the troubleshoot skill, verify `Cognitive Services User` on the instance identity at the Azure AI Services resource scope, then retry invocation |
 | Conversation ID invalid | Stale or non-existent conversation | Start a new conversation without `conversationId` |
 | Rate limit exceeded | Too many requests | Implement backoff and retry, or wait before sending next message |
 
