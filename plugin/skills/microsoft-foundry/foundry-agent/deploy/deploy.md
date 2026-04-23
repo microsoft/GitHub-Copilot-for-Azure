@@ -132,15 +132,19 @@ For ACA one:
 {
   "command": "agent_update",
   "intent": "Update a hosted agent with a new docker image",
-  "agentDefinition": {
-    "kind": "hosted",
-    "image": "<acr-name>.azurecr.io/<repository>:<tag>",
-    "cpu": "<cpu-cores>",
-    "memory": "<memory>",
-    "container_protocol_versions": [
-      { "protocol": "<protocol>", "version": "<version>" }
-    ],
-    "environment_variables": { "<var>": "<value>" }
+  "parameters": {
+    "projectEndpoint": "<project-endpoint>",
+    "agentName": "<agent-name>",
+    "agentDefinition": {
+      "kind": "hosted",
+      "image": "<acr-name>.azurecr.io/<repository>:<tag>",
+      "cpu": "<cpu-cores>",
+      "memory": "<memory>",
+      "container_protocol_versions": [
+        { "protocol": "<protocol>", "version": "<version>" }
+      ],
+      "environment_variables": { "<var>": "<value>" }
+    }
   }
 }
 ```
@@ -150,19 +154,23 @@ For vNext one:
 {
   "command": "agent_update",
   "intent": "Update a hosted agent with a new docker image",
-  "agentDefinition": {
-    "kind": "hosted",
-    "image": "<acr-name>.azurecr.io/<repository>:<tag>",
-    "cpu": "<cpu-cores>",
-    "memory": "<memory>",
-    "container_protocol_versions": [
-      { "protocol": "<protocol>", "version": "<version>" }
-    ],
-    "environment_variables": { "<var>": "<value>" }
-  },
-  "creationOptions": {
-    "metadata": {
-      "enableVnextExperience": "true"
+  "parameters": {
+    "projectEndpoint": "<project-endpoint>",
+    "agentName": "<agent-name>",
+    "agentDefinition": {
+      "kind": "hosted",
+      "image": "<acr-name>.azurecr.io/<repository>:<tag>",
+      "cpu": "<cpu-cores>",
+      "memory": "<memory>",
+      "container_protocol_versions": [
+        { "protocol": "<protocol>", "version": "<version>" }
+      ],
+      "environment_variables": { "<var>": "<value>" }
+    },
+    "creationOptions": {
+      "metadata": {
+        "enableVnextExperience": "true"
+      }
     }
   }
 }
