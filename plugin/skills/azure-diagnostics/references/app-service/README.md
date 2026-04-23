@@ -36,7 +36,7 @@ mcp_azure_mcp_applens
     resourceId: "<app-service-resource-id>"
 ```
 
-**Fix:** Scale up (`az appservice plan update --sku P1V3`) or profile the app via Kudu Process Explorer to identify hot paths.
+**Fix:** Scale up (`az appservice plan update -n <app-service-plan-name> -g <resource-group> --sku P1V3`) or profile the app via Kudu Process Explorer to identify hot paths.
 
 ---
 
