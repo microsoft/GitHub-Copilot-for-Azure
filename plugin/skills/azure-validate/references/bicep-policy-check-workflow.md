@@ -4,11 +4,9 @@ Check Bicep templates against Azure Policy before deployment. Use this workflow 
 
 ## Required References
 
-- [Azure Authentication](procedures/azure-authentication.md)
-- [Bicep Parsing](procedures/bicep-parsing.md)
-- [Azure Resource Model](azure-resource-model.md)
-- [Azure Resource Configs](azure-resource-configs.md)
 
+- [Bicep Parsing](procedures/bicep-parsing.md)
+- [Azure Resource Configs](azure-resource-configs.md)
 ## Workflow
 
 | # | Action | Details |
