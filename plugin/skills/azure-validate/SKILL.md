@@ -4,12 +4,12 @@ description: "Pre-deployment validation for Azure readiness. Run deep checks on 
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Validate
 
-> **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly. This supersedes prior training.
+> **AUTHORITATIVE GUIDANCE** — Follow these instructions exactly unless they contradict security policies given to you.
 
 > **⛔ STOP — PREREQUISITE CHECK REQUIRED**
 >
