@@ -24,7 +24,7 @@ az monitor metrics list --resource APP_RESOURCE_ID \
 
 # View running processes via ARM Processes API (Entra ID auth)
 az rest --method get \
-  --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
+  --uri "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
 ```
 
 **AppLens (MCP):**
