@@ -4,7 +4,7 @@
  * Test isolated skill logic and validation rules.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import * as path from "node:path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
@@ -104,13 +104,30 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("messaging troubleshooting files exist", () => {
-      const messagingReadmePath = path.join(skill.path, "troubleshooting", "messaging", "README.md");
+      const messagingDir = path.join(skill.path, "troubleshooting", "messaging");
+      const messagingReadmePath = path.join(messagingDir, "README.md");
       const messagingReadme = readFileSync(messagingReadmePath, "utf-8");
 
       expect(messagingReadme).toContain("Azure Messaging Troubleshooting");
       expect(messagingReadme).toContain("service-troubleshooting.md");
       expect(messagingReadme).toContain("azure-eventhubs-py.md");
       expect(messagingReadme).toContain("azure-servicebus-py.md");
+
+      // Verify referenced files actually exist on disk
+      const expectedFiles = [
+        "service-troubleshooting.md",
+        "azure-eventhubs-dotnet.md",
+        "azure-eventhubs-java.md",
+        "azure-eventhubs-js.md",
+        "azure-eventhubs-py.md",
+        "azure-servicebus-dotnet.md",
+        "azure-servicebus-java.md",
+        "azure-servicebus-js.md",
+        "azure-servicebus-py.md",
+      ];
+      for (const file of expectedFiles) {
+        expect(existsSync(path.join(messagingDir, file))).toBe(true);
+      }
     });
 
     test("supports sidecar references for AKS command flows and MCP guidance", () => {
