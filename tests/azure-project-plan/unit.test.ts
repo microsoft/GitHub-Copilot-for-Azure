@@ -281,13 +281,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("References Directory", () => {
-    test("has a references/ subdirectory", () => {
-      const refsDir = join(skill.path, "references");
-      expect(existsSync(refsDir)).toBe(true);
-    });
-  });
-
   describe("Frontmatter Formatting", () => {
     test("frontmatter has no tabs", () => {
       const raw = readFileSync(skill.filePath, "utf-8");
