@@ -297,8 +297,8 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
 
   try {
     // Before agent run starts, initialize the test result as if it failed.
-    // This ensures every test case has a result even when their agent run time out.
-    global.setTestResult({ isPass: false, message: "waiting for agent run to finish" });
+    // This ensures every test case has a result even when the agent run times out.
+    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
     await fn(ctx);
     global.setTestResult({ isPass: true, skillInvocationRate });
   } catch (e) {
