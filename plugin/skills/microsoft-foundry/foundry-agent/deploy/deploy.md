@@ -26,7 +26,7 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 | `agent_definition_schema_get` | Get JSON schema for agent definitions | `projectEndpoint` (required), `schemaType` (`prompt`, `hosted`, `tools`, `all`) |
 | `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName` |
 | `agent_get` | List all agents or get a specific agent | `projectEndpoint` (required), `agentName` (optional) |
-| `agent_delete` | Delete an agent with container cleanup | `projectEndpoint`, `agentName` (required) |
+| `agent_delete` | Delete an agent and clean up hosted-agent runtime resources | `projectEndpoint`, `agentName` (required) |
 
 ## Workflow: Hosted Agent Deployment
 

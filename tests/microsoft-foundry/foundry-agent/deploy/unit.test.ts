@@ -65,18 +65,19 @@ describe("deploy - Unit Tests", () => {
 
     test("documents MCP tools", () => {
       expect(deployContent).toContain("## MCP Tools");
+      expect(deployContent).toContain("agent_definition_schema_get");
       expect(deployContent).toContain("agent_update");
-      expect(deployContent).toContain("agent_container_control");
-      expect(deployContent).toContain("agent_container_status_get");
+      expect(deployContent).toContain("agent_get");
     });
 
     test("contains hosted agent workflow", () => {
       expect(deployContent).toContain("## Workflow: Hosted Agent Deployment");
     });
 
-    test("documents vNext as the default hosted deployment path", () => {
-      expect(deployContent).toMatch(/Use the vNext deployment flow by default/i);
-      expect(deployContent).toMatch(/skip Step 7 and Step 8/i);
+    test("documents the hosted deployment verification flow", () => {
+      expect(deployContent).toMatch(/Capture the instance identity `principal_id`/i);
+      expect(deployContent).toMatch(/Continue to Step 8/i);
+      expect(deployContent).toMatch(/hosted-agent requirements/i);
     });
 
     test("contains prompt agent workflow", () => {
@@ -172,7 +173,7 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/Step 2.*Evaluate/i);
     });
 
-    test("documents required invocation RBAC for vNext hosted agents", () => {
+    test("documents required invocation RBAC for hosted agents", () => {
       expect(deployContent).toContain("Cognitive Services User");
       expect(deployContent).toContain("principal_id");
       expect(deployContent).toMatch(/instance identity/i);
