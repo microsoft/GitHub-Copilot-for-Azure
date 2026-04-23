@@ -8,7 +8,7 @@ Troubleshoot and debug Foundry agents by collecting container or session logs, d
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (ACA), Hosted (vNext) |
 | MCP servers | `azure` |
-| Key MCP tools | `agent_get`, `agent_container_status_get` |
+| Key Foundry MCP tools | `agent_get`, `agent_container_status_get` |
 | Related skills | `trace` (telemetry analysis) |
 | Preferred query tool | `monitor_resource_log_query` (Azure MCP) — preferred over `azure-kusto` for App Insights |
 | CLI references | `az cognitiveservices agent logs`, `az cognitiveservices account connection` |

@@ -8,7 +8,7 @@ Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-t
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
 | MCP server | `azure` |
-| Key MCP tools | `agent_invoke`, `agent_container_status_get`, `agent_get` |
+| Key Foundry MCP tools | `agent_invoke`, `agent_container_status_get`, `agent_get` |
 | Conversation support | Single-turn and multi-turn (via `conversationId`) |
 | Session support | Sticky sessions for vNext hosted agents (via client-generated `sessionId`) |
 
@@ -66,6 +66,35 @@ Rules:
 
 This is different from `conversationId` which tracks conversation history — `sessionId` controls which compute instance handles the request.
 
+#### Fallback: Python Script When `agent_invoke` Fails
+
+If `agent_invoke` fails, use a protocol-specific Python script as a fallback. Use the deployed agent's actual protocol.
+Fallback scripts are available under `./scripts/invoke_agent_response.py` and `./scripts/invoke_agent_invocation.py`.
+
+Before running either script, prefer the user's project virtual environment if one already exists. If the project venv exists but is missing required packages, install the script dependencies into that same venv. If no project venv exists, create one first, then install dependencies from `./scripts/requirements.txt`.
+
+**Fallback script input schema:**
+
+**`responses` protocol**
+- `--project-endpoint` (required)
+- `--agent-name` (required)
+- `--input-text` (required)
+- `--isolation-key` (optional)
+
+**`invocations` protocol**
+- `--project-endpoint` (required)
+- `--agent-name` (required)
+- `--input-payload-json` (required)
+- `--api-version` (optional)
+
+For `invocations`, `--input-payload-json` MUST match the request parsing logic implemented by the agent code. Do not assume a universal schema. For example, if the agent parses `{"message": "..."}`, send that shape. If it parses `{"input": "..."}`, send that shape instead.
+
+Use `./scripts/invoke_agent_response.py` for `responses` agents.
+
+Use `./scripts/invoke_agent_invocation.py` for `invocations` agents.
+
+If invocation testing fails for a newly deployed agent, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). A common cause is missing role assignments for the agent's managed identity. Do not treat deployment as fully successful until the required roles are assigned and invocation succeeds.
+
 ### Step 3: Multi-Turn Conversations
 
 For follow-up messages, pass the `conversationId` from the previous response to `agent_invoke`. This maintains conversation context across turns.
@@ -87,7 +116,9 @@ Each invocation with the same `conversationId` continues the existing conversati
 |-------|-------|------------|
 | Agent not found | Invalid agent name or project endpoint | Use `agent_get` to list available agents and verify name |
 | Container not running | Hosted agent container is stopped or failed | Use deploy skill to start the container with `agent_container_control` |
+| `agent_invoke` failed | MCP tool failure | Use the protocol-specific Python fallback script |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment is active, retry with simpler input |
+| Invocation failed after fresh deployment | The agent's managed identity may be missing required roles | Read and follow the troubleshoot skill, assign the required roles, then retry invocation |
 | Conversation ID invalid | Stale or non-existent conversation | Start a new conversation without `conversationId` |
 | Rate limit exceeded | Too many requests | Implement backoff and retry, or wait before sending next message |
 

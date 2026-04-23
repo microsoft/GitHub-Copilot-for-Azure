@@ -8,7 +8,7 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 |----------|-------|
 | Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
 | MCP server | `azure` |
-| Key MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
+| Key Foundry MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
 | Container protocols | `a2a`, `responses`, `mcp` |
 | Supported languages | .NET, Node.js, Python, Go, Java |
@@ -31,7 +31,7 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 | `agent_container_status_get` | Check container running status | `projectEndpoint`, `agentName` (required); `agentVersion` |
 
 ## Workflow: Hosted Agent Deployment
-There are two types of hosted agent - ACA based and vNext. There is only one change in the deployment flow for vNext which is indicated in the steps below. You must use vNext experience only when user explicitly asks you to deploy the agent to vNext (or v2, or v-next, or similar words). For all other cases, use the ACA based deployment flow.
+There are two types of hosted agent - ACA based and vNext. There is only one change in the deployment flow for vNext which is indicated in the steps below. Use the vNext deployment flow by default. Only use the ACA based deployment flow when the user explicitly asks for ACA based deployment.
 
 
 ### Step 1: Detect and Scan Project
@@ -193,6 +193,8 @@ Delegate status polling to a sub-agent. Provide the project endpoint, agent name
 ### Step 9: Test the Agent
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about how to format messages for hosted agents for vNext experience.
+
+If invocation testing fails for a newly deployed agent, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). A common cause is missing role assignments for the agent's managed identity. Do not treat the deployment as fully successful until the required roles are assigned and invocation succeeds.
 
 > ⚠️ **DO NOT stop here.** Continue to Step 10 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
 
