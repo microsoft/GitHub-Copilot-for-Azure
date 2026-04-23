@@ -93,7 +93,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("DO NOT Activate table references correct redirect skills", () => {
       expect(skill.content).toContain("azure-project-scaffold");
-      expect(skill.content).toContain("azure-localdev");
+      expect(skill.content).toContain("azure-local-development");
       expect(skill.content).toContain("azure-project-verify");
       expect(skill.content).toContain("azure-prepare");
     });
@@ -122,7 +122,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## 2. Runtime & Framework");
     });
 
-    test("defines all 12 plan template sections", () => {
+    test("defines all 11 plan template sections", () => {
       expect(skill.content).toContain("## 1. Project Overview");
       expect(skill.content).toContain("## 2. Runtime & Framework");
       expect(skill.content).toContain("## 3. Test Runner & Configuration");
@@ -132,9 +132,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## 7. Database Constraints");
       expect(skill.content).toContain("## 8. Service Dependency Classification");
       expect(skill.content).toContain("## 9. Execution Checklist");
-      expect(skill.content).toContain("## 10. Test Suite Plan");
-      expect(skill.content).toContain("## 11. Files to Generate");
-      expect(skill.content).toContain("## 12. Next Steps");
+      expect(skill.content).toContain("## 10. Files to Generate");
+      expect(skill.content).toContain("## 11. Next Steps");
     });
 
     test("enforces ONLY .azure/project-plan.md before approval", () => {
