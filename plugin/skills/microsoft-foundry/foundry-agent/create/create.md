@@ -64,9 +64,9 @@ In non-interactive or YOLO mode, default to Python + `responses` + Microsoft Age
 
 ### Step 3: Browse and Select Sample
 
-List available samples using the GitHub API. The sample path depends on the selected language, protocol, and framework:
+List available samples using the GitHub API. First resolve the `sample_browse_path` (the browse root) from the selected language, protocol, and framework:
 
-| Selection | Sample Parent Path |
+| Selection | Sample Browse Path |
 |-----------|--------------------|
 | Python + Microsoft Agent Framework + `responses` | `samples/python/hosted-agents/agent-framework/responses/` |
 | Python + Microsoft Agent Framework + `invocations` | `samples/python/hosted-agents/agent-framework/invocations/` |
@@ -76,13 +76,13 @@ List available samples using the GitHub API. The sample path depends on the sele
 | C# + Microsoft Agent Framework + `invocations` | `samples/csharp/hosted-agents/agent-framework/invocations-echo-agent/` |
 | C# + Custom | `samples/csharp/hosted-agents/bring-your-own/{protocol}/` |
 
-Use the chosen lane to browse the repo:
+Use the chosen lane to browse the repo under `sample_browse_path`:
 
 ```
-GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/{sample_parent_path}
+GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/{sample_browse_path}
 ```
 
-If the user has specified what they want the agent to do, choose the most relevant or most simple sample under that lane. Only if the user has not given any preferences, present the sample directories to the user and help them choose based on their requirements (e.g., RAG, tools, multi-agent workflows, HITL).
+If the user has specified what they want the agent to do, choose the most relevant or most simple sample under that lane and record its exact `selected_sample_path`. Only if the user has not given any preferences, present the sample directories under `sample_browse_path` to the user and help them choose based on their requirements (e.g., RAG, tools, multi-agent workflows, HITL).
 
 If the requested combination does not have a real sample, say so clearly and suggest the nearest supported lane.
 
@@ -90,13 +90,13 @@ If the requested combination does not have a real sample, say so clearly and sug
 
 Download only the selected sample directory — do NOT clone the entire repo. Preserve the directory structure by creating subdirectories as needed.
 
-Use the exact `sample_path` selected in Step 3.
+Use the exact `selected_sample_path` selected in Step 3.
 
 **Using `gh` CLI (preferred if available):**
 ```bash
-gh api repos/microsoft-foundry/foundry-samples/contents/{sample_path} \
+gh api repos/microsoft-foundry/foundry-samples/contents/{selected_sample_path} \
   --jq '.[] | select(.type=="file") | .download_url' | while read url; do
-  filepath="${url##*/{sample_path}/}"
+  filepath="${url##*/{selected_sample_path}/}"
   mkdir -p "$(dirname "$filepath")"
   curl -sL "$url" -o "$filepath"
 done
@@ -104,9 +104,9 @@ done
 
 **Using curl (fallback):**
 ```bash
-curl -s "https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/{sample_path}" | \
+curl -s "https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/{selected_sample_path}" | \
   jq -r '.[] | select(.type=="file") | .path + "\t" + .download_url' | while IFS=$'\t' read path url; do
-    relpath="${path#{sample_path}/}"
+    relpath="${path#{selected_sample_path}/}"
     mkdir -p "$(dirname "$relpath")"
     curl -sL "$url" -o "$relpath"
   done

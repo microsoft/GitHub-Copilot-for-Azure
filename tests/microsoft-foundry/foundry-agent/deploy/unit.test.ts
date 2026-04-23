@@ -78,12 +78,22 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain("## Workflow: Hosted Agent Deployment");
     });
 
+    test("documents vNext as the default hosted deployment path", () => {
+      expect(deployContent).toMatch(/Use the vNext deployment flow by default/i);
+      expect(deployContent).toMatch(/skip Step 7 and Step 8/i);
+    });
+
     test("contains prompt agent workflow", () => {
       expect(deployContent).toContain("## Workflow: Prompt Agent Deployment");
     });
 
     test("contains error handling section", () => {
       expect(deployContent).toContain("## Error Handling");
+    });
+
+    test("lists invocations as a supported container protocol", () => {
+      expect(deployContent).toContain("`invocations`");
+      expect(deployContent).toMatch(/Invocation payload protocol/i);
     });
   });
 
@@ -164,6 +174,12 @@ describe("deploy - Unit Tests", () => {
     test("directs to observe skill Step 2 for evaluation", () => {
       expect(deployContent).toContain("observe skill");
       expect(deployContent).toMatch(/Step 2.*Evaluate/i);
+    });
+
+    test("documents required invocation RBAC for vNext hosted agents", () => {
+      expect(deployContent).toContain("Cognitive Services User");
+      expect(deployContent).toContain("principal_id");
+      expect(deployContent).toMatch(/instance identity/i);
     });
   });
 

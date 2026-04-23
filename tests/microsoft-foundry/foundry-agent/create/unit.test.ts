@@ -62,6 +62,17 @@ describe("create - Unit Tests", () => {
       expect(createContent).toContain("C#");
     });
 
+    test("documents both hosted-agent protocols", () => {
+      expect(createContent).toContain("responses");
+      expect(createContent).toContain("invocations");
+      expect(createContent).toContain("Protocol consistency");
+    });
+
+    test("distinguishes browse root from the selected sample path", () => {
+      expect(createContent).toContain("sample_browse_path");
+      expect(createContent).toContain("selected_sample_path");
+    });
+
     test("contains error handling section", () => {
       expect(createContent).toContain("## Error Handling");
     });

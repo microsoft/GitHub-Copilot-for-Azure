@@ -106,12 +106,12 @@ Each invocation with the same `conversationId` continues the existing conversati
 
 ## Agent Type Differences
 
-| Behavior | Prompt Agent | Hosted Agent |
-|----------|-------------|--------------|
-| Readiness | Immediate after creation | Requires running container |
-| Pre-check | `agent_get` to verify exists | `agent_container_status_get` for `Running` status |
-| Routing | Automatic | Optional `containerEndpoint` parameter |
-| Multi-turn | ✅ via `conversationId` | ✅ via `conversationId` |
+| Behavior | Prompt Agent | Hosted Agent (ACA) | Hosted Agent (vNext) |
+|----------|-------------|--------------------|----------------------|
+| Readiness | Immediate after creation | Requires running container | Immediate after deployment |
+| Pre-check | `agent_get` to verify exists | `agent_container_status_get` for `Running` status | No container status check needed |
+| Routing | Automatic | Optional `containerEndpoint` parameter | Sticky routing via required `sessionId` |
+| Multi-turn | ✅ via `conversationId` | ✅ via `conversationId` | ✅ via `conversationId` plus sticky `sessionId` |
 
 ## Error Handling
 

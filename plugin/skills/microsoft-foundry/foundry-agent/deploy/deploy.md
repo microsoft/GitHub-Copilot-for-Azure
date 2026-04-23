@@ -10,7 +10,7 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 | MCP server | `azure` |
 | Key Foundry MCP tools | `agent_update`, `agent_container_control`, `agent_container_status_get` |
 | CLI tools | `docker`, `az acr` (hosted agents only) |
-| Container protocols | `a2a`, `responses`, `mcp` |
+| Container protocols | `a2a`, `responses`, `invocations`, `mcp` |
 | Supported languages | .NET, Node.js, Python, Go, Java |
 
 ## When to Use This Skill
@@ -178,13 +178,15 @@ For vNext one:
 
 For vNext hosted agents, capture the instance identity `principal_id` from the agent creation response. You will need it to assign the minimum RBAC required for invocation before running invoke tests.
 
-### Step 7: Start Agent Container
+### Step 7: Start Agent Container (ACA Only)
 
-Use `agent_container_control` with `action: start` to start the container.
+For ACA based hosted agents, use `agent_container_control` with `action: start` to start the container.
 
-### Step 8: Verify Agent Status
+For vNext hosted agents, skip Step 7 and Step 8. Continue directly to Step 9 because the agent is ready immediately after deployment.
 
-Delegate status polling to a sub-agent. Provide the project endpoint, agent name, and instruct it to use `agent_container_status_get` repeatedly until the status is `Running` or `Failed`.
+### Step 8: Verify Agent Status (ACA Only)
+
+For ACA based hosted agents, delegate status polling to a sub-agent. Provide the project endpoint, agent name, and instruct it to use `agent_container_status_get` repeatedly until the status is `Running` or `Failed`.
 
 **Container status values:**
 - `Starting` — Container is initializing
@@ -396,6 +398,7 @@ Each test case should bundle one dataset with the evaluator list, thresholds, an
 |----------|-------------|
 | `a2a` | Agent-to-Agent protocol |
 | `responses` | OpenAI Responses API |
+| `invocations` | Invocation payload protocol for arbitrary request bodies and custom SSE behavior |
 | `mcp` | Model Context Protocol |
 
 ## Agent Management Operations
