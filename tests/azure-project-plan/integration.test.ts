@@ -293,7 +293,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "⚠️ Expected auto-chain to azure-project-scaffold after plan approval."
           );
         }
-        expect(typeof chained).toBe("boolean");
+        expect(chained).toBe(true);
       });
     }, planTestTimeoutMs);
 
