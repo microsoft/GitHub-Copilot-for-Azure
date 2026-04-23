@@ -30,7 +30,7 @@
 | P3v3 | 8 | 32 GB | 250 GB | ~$552 |
 | I1v2 | 2 | 8 GB | 1 TB | ~$460 |
 
-> 💡 **Tip:** Prices vary by region. Use the [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for exact figures.
+> 💡 **Tip:** Figures are representative for **Windows OS** in **Central US**, **as of 2026-04**. Prices vary by region, OS, and offer. Use the [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for exact figures.
 
 ## Decision Criteria
 
