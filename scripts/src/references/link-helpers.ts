@@ -40,7 +40,7 @@ function cleanTarget(rawTarget: string): string {
   return target.trim();
 }
 
-type LocalLink = {
+export type LocalLink = {
   /**
    * Line number at which the link exists in the given file.
    * The first line's line number is 1.

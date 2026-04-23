@@ -145,7 +145,7 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
     return {
       file: mdFile,
       line: item.line,
-      link: item.absPath,
+      link: item.link,
       reason: `Reference points to a directory, not a file: ${item.link}`,
     };
   }));
@@ -164,7 +164,7 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
       return {
         file: mdFile,
         line: item.line,
-        link: item.absPath,
+        link: item.link,
         reason: `Reference escapes skill directory → resolves to: ${rel}`,
       };
     } else {
@@ -203,11 +203,12 @@ function validateSkill(skillName: string): ValidationResult {
     const links = extractLocalLinks(current, skillDir);
 
     for (const link of links) {
+
       const normalizedLink = normalize(link.absPath).toLowerCase();
       if (!visited.has(normalizedLink)) {
         visited.add(normalizedLink);
         // Only follow markdown links
-        if (link.absPath.endsWith(".md")) {
+        if (link.exists && !link.isDirectory && link.absPath.endsWith(".md")) {
           queue.push(link.absPath);
         }
       }
