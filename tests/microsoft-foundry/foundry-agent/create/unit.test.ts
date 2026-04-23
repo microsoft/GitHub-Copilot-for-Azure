@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CREATE_MD = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/create/create.md"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/create/create.md"
 );
 
 describe("create - Unit Tests", () => {

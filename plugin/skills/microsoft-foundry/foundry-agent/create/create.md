@@ -135,7 +135,7 @@ Add the correct adapter package based on framework and language. Get the latest 
 
 | Framework | Package |
 |-----------|---------|
-| Microsoft Agent Framework | `azure-ai-agentserver-agentframework` |
+| Microsoft Agent Framework | `agent_framework_foundry_hosting` |
 | LangGraph | `azure-ai-agentserver-langgraph` |
 | Custom | `azure-ai-agentserver-core` |
 
@@ -143,7 +143,7 @@ Add the correct adapter package based on framework and language. Get the latest 
 
 | Framework | Package |
 |-----------|---------|
-| Microsoft Agent Framework | `Azure.AI.AgentServer.AgentFramework` |
+| Microsoft Agent Framework | `Microsoft.Agents.AI.Foundry.Hosting` |
 | Custom | `Azure.AI.AgentServer.Core` |
 
 Add the package to the project's dependency file (`requirements.txt`, `pyproject.toml`, or `.csproj`). For Python, also add `python-dotenv` if not present.
@@ -153,10 +153,10 @@ Add the package to the project's dependency file (`requirements.txt`, `pyproject
 Modify the project's main entrypoint to wrap the existing agent with the adapter. The approach differs by framework:
 
 **Microsoft Agent Framework (Python):**
-- Import `from_agent_framework` from the adapter package
-- Pass the agent instance (a `BaseAgent` subclass) to the adapter
+- Import `ResponsesHostServer` from the adapter package
+- Pass the agent instance (from `agent_framework` package) to the adapter
 - Call `.run()` on the adapter as the default entrypoint
-- The agent must implement both `run()` and `run_stream()` methods
+- The agent must implement the `run()` method
 
 **LangGraph (Python):**
 - Import `from_langgraph` from the adapter package
@@ -179,8 +179,8 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 ### Step B4: Configure Environment
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
-2. For Python: ensure the code uses `load_dotenv()` so Foundry-injected environment variables is available at runtime.
-3. If the project uses Azure credentials: ensure Python uses `azure.identity.aio.DefaultAzureCredential` (async version) for **local development**, not `azure.identity.DefaultAzureCredential`. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
+2. For Python: ensure the code uses `load_dotenv(override=False)` so Foundry-injected environment variables are available at runtime.
+3. If the project uses Azure credentials: ensure Python uses `azure.identity.DefaultAzureCredential` for **local development**. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
 
 ### Step B5: Create agent.yaml
 

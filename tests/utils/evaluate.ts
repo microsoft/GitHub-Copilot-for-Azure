@@ -311,7 +311,7 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
   }
 }
 
-export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
+export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string, toolCallBudget?: number): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
   if (shouldEarlyTerminateForInvokedSkill) {
     const earlyTerminateComment = `✅ ${skillName} is invoked as expected. Terminating the agent run early.`;
@@ -323,7 +323,7 @@ export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetad
     return true;
   }
 
-  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > maxToolCallBeforeSkillInvocationTerminate;
+  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > (toolCallBudget ?? maxToolCallBeforeSkillInvocationTerminate);
   if (shouldEarlyTerminateForTooLate) {
     agentMetadata.testComments.push(`⚠️ ${skillName} is not invoked within early tool calls. Terminating the agent run early.`);
     return true;

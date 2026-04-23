@@ -147,9 +147,11 @@ Get actual cost data from Azure Cost Management API (last 30 days). Use the [Cos
 
 > **Action Required**: Calculate `<START_DATE>` (30 days ago) and `<END_DATE>` (today) in ISO 8601 format.
 
-**Execute and save results to `output/cost-query-result<timestamp>.json`.**
+**Execute and save results to `output/cost-query-result<timestamp>.json`.** Always include the `--headers "ClientType=GitHubCopilotForAzure"` header in all Cost Management API requests.
 
 > 💡 **Tip:** Also run a cost-by-service query (grouping by `ServiceName`) to present the total bill breakdown alongside optimization recommendations. See [examples.md](../cost-query/examples.md).
+
+> ⚠️ **Warning:** Sequential queries to the same scope share the per-scope rate limit (4 requests/minute). If a 429 response is received, check all `x-ms-ratelimit-microsoft.costmanagement-*-retry-after` headers and do not send further requests until the longest retry-after duration has elapsed.
 
 ## Step 5: Validate Pricing
 
