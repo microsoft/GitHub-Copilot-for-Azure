@@ -68,7 +68,7 @@ export function softCheckPlanSkills(agentMetadata: AgentMetadata): void {
  */
 export function didAutoChainToScaffold(agentMetadata: AgentMetadata): boolean {
   if (isSkillInvoked(agentMetadata, "azure-project-scaffold")) return true;
-  // Fallback: check if assistant mentions scaffold as next step
+  // Fallback: check if assistant mentions scaffolding as next step
   const content = getAllAssistantMessages(agentMetadata);
-  return /azure-project-scaffold/i.test(content);
+  return /azure-project-scaffold|scaffold(ing)?\b/i.test(content);
 }
