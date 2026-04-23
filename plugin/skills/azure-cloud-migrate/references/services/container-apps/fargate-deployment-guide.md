@@ -191,6 +191,7 @@ az containerapp logs show --name <app-name> -g "$RG" --tail 100
 ```
 
 ```powershell
+$ErrorActionPreference = 'Stop'
 $fqdn = az containerapp show --name <app-name> -g $env:RG --query properties.configuration.ingress.fqdn -o tsv
 Invoke-WebRequest -Uri "https://$fqdn/health" -Method Head
 az containerapp logs show --name <app-name> -g $env:RG --tail 100
@@ -201,5 +202,5 @@ az containerapp logs show --name <app-name> -g $env:RG --tail 100
 | Issue | Solution |
 |-------|----------|
 | Image pull fails | Verify ACR role: `az role assignment list --assignee $(az identity show --ids <identity-resource-id> --query principalId -o tsv) --scope $(az acr show -n <acr-name> --query id -o tsv)` |
-| App won't start | Check logs: `az containerapp logs show --name <app> -g $RG --tail 100` |
+| App won't start | Check logs: `az containerapp logs show --name <app-name> -g <resource-group> --tail 100` |
 | Secret not accessible | Verify RBAC: `az role assignment list --assignee $(az identity show --ids <identity-resource-id> --query principalId -o tsv) --scope $(az keyvault show -n <vault-name> --query id -o tsv)` |

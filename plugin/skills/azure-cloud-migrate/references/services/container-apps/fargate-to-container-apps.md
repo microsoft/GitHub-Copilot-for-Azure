@@ -37,7 +37,7 @@ Guidance for migrating AWS Fargate (ECS) containerized workloads to Azure Contai
 1. **Assess** — Analyze ECS task definitions, IAM roles, VPC config → [fargate-assessment-guide.md](fargate-assessment-guide.md)
 2. **Migrate Images** — Pull from ECR, push to ACR
 3. **Map Services** — Convert AWS dependencies to Azure equivalents
-4. **Convert Config** — Transform task definitions to Container Apps YAML
+4. **Convert Config** — Transform task definitions to Container Apps CLI flags
 5. **Deploy** — Create Container Apps environment and deploy → [fargate-deployment-guide.md](fargate-deployment-guide.md)
 6. **Validate** — Health checks, scaling, monitoring
 
