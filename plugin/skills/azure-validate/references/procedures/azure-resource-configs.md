@@ -192,7 +192,3 @@ Each resource type section includes:
 | capacity | `sku.capacity` | |
 | publisherEmail | `properties.publisherEmail` | |
 | publisherName | `properties.publisherName` | |
-
-## Auto-Detection Rules
-
-See [azure-auto-detection-rules.md](azure-auto-detection-rules.md) for topology-based settings automatically applied during drift detection and remediation planning.
