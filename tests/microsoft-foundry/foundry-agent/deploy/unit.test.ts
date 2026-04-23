@@ -77,7 +77,7 @@ describe("deploy - Unit Tests", () => {
     test("documents the hosted deployment verification flow", () => {
       expect(deployContent).toMatch(/Capture the instance identity `principal_id`/i);
       expect(deployContent).toMatch(/Continue to Step 8/i);
-      expect(deployContent).toMatch(/hosted-agent requirements/i);
+      expect(deployContent).toMatch(/required hosted-agent session handling/i);
     });
 
     test("contains prompt agent workflow", () => {
