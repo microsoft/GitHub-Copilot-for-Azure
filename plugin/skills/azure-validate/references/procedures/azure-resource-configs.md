@@ -23,8 +23,8 @@ For all resource types with `skuName` / `skuTier` properties, extract from the t
 ## Resource Type Sub-References
 
 For additional resource types, see:
-- **Compute & Containers**: [azure-resource-configs-compute.md](azure-resource-configs-compute.md) — VM, VMSS, AKS, Container Apps, ACR, AppInsights, Log Analytics
-- **Network**: [azure-resource-configs-network.md](azure-resource-configs-network.md) — VNet, Subnet, NSG, Load Balancer, App Gateway, Public IP, NIC, Private Endpoint, VPN Gateway, Firewall, Bastion, Private DNS
+- **Compute & Containers** — VM, VMSS, AKS, Container Apps, ACR, AppInsights, Log Analytics
+- **Network** — VNet, Subnet, NSG, Load Balancer, App Gateway, Public IP, NIC, Private Endpoint, VPN Gateway, Firewall, Bastion, Private DNS
 
 ---
 
