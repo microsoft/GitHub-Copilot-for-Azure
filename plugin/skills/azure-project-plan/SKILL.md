@@ -193,8 +193,7 @@ When workspace empty and user hasn't specified details:
       "allowFreeformInput": false,
       "options": [
         { "label": "TypeScript", "description": "Node.js — Azure Functions v4 programming model", "recommended": true },
-        { "label": "Python", "description": "Azure Functions v2 programming model" },
-        { "label": "C# (.NET 10)", "description": "Isolated worker model" }
+        { "label": "C# (.NET 8)", "description": "Isolated worker model" }
       ]
     },
     {
