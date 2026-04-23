@@ -4,7 +4,7 @@ description: "Plan and design an Azure-centric project with user requirements ga
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Project Plan
