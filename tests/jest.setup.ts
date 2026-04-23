@@ -17,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Make utils available globally for convenience
-global.SKILLS_PATH = path.resolve(__dirname, "../plugin/skills");
+global.SKILLS_PATH = path.resolve(__dirname, "../output/skills");
 global.TESTS_PATH = __dirname;
 
 // Custom matcher: check if a skill should trigger on a prompt

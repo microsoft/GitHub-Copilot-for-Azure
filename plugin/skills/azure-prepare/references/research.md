@@ -23,12 +23,12 @@ After architecture planning, research each selected component to gather best pra
 | App Service | [App Service](services/app-service/README.md) | `azure-diagnostics`, `azure-observability`, `azure-nodejs-production` |
 | Azure Functions | [Functions](services/functions/README.md) | — |
 | Static Web Apps | [Static Web Apps](services/static-web-apps/README.md) | — |
-| AKS | [AKS](services/aks/README.md) | `azure-networking`, `azure-security-hardening` |
+| AKS | [AKS](services/aks/README.md) | `azure-networking` |
 | **Data** | | |
-| Azure SQL | [SQL Database](services/sql-database/README.md) | `azure-security` |
-| Cosmos DB | [Cosmos DB](services/cosmos-db/README.md) | `azure-security` |
+| Azure SQL | [SQL Database](services/sql-database/README.md) | — |
+| Cosmos DB | [Cosmos DB](services/cosmos-db/README.md) | — |
 | PostgreSQL | — | — |
-| Storage (Blob/Files) | [Storage](services/storage/README.md) | `azure-storage`, `azure-security-hardening` |
+| Storage (Blob/Files) | [Storage](services/storage/README.md) | `azure-storage` |
 | **Messaging** | | |
 | Service Bus | [Service Bus](services/service-bus/README.md) | — |
 | Event Grid | [Event Grid](services/event-grid/README.md) | — |
@@ -40,8 +40,8 @@ After architecture planning, research each selected component to gather best pra
 | Durable Functions | [Durable Functions](services/functions/durable.md), [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
 | Durable Task Scheduler | [Durable Task Scheduler](services/durable-task-scheduler/README.md) | — |
 | **Security & Identity** | | |
-| Key Vault | [Key Vault](services/key-vault/README.md) | `azure-security`, `azure-keyvault-expiration-audit` |
-| Managed Identity | — | `azure-security`, `entra-app-registration` |
+| Key Vault | [Key Vault](services/key-vault/README.md) | `azure-keyvault-expiration-audit` |
+| Managed Identity | — | `entra-app-registration` |
 | **Observability** | | |
 | Application Insights | [App Insights](services/app-insights/README.md) | `appinsights-instrumentation` (invoke for instrumentation) |
 | Log Analytics | — | `azure-observability`, `azure-kusto` |
@@ -60,6 +60,7 @@ Selected: Container Apps, Cosmos DB, Key Vault
 
 → Load: services/container-apps/README.md (overview)
   → If need Bicep: services/container-apps/bicep.md
+  → If need Terraform: services/container-apps/terraform.md
   → If need scaling: services/container-apps/scaling.md
   → If need health probes: services/container-apps/health-probes.md
 
@@ -80,10 +81,10 @@ Invoke related skills for specialized scenarios:
 | **Using GitHub Copilot SDK** | **Invoke `azure-hosted-copilot-sdk`** (scaffold + config, then resume azure-prepare) |
 | Using Azure Functions | Stay in **azure-prepare** — load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
 | PostgreSQL with passwordless auth | Handle directly without a separate skill |
-| Need detailed security hardening | `azure-security-hardening` |
+| Need detailed security hardening | Handle directly with service-specific security guidance and platform best practices |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
 | Building AI applications | `microsoft-foundry` |
-| Cost-sensitive deployment | `azure-cost-optimization` |
+| Cost-sensitive deployment | `azure-cost` |
 
 **Skill/Reference Invocation Pattern:**
 
@@ -101,13 +102,27 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 
 ## Common Research Patterns
 
-### Web Application + API + Database
+### Web Application + API + Database (Cosmos DB)
 
-1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
 2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
 3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
-5. Invoke: `azure-security-hardening` (security baseline)
+5. Review service-specific security guidance directly before generation
+
+### Container Apps + API + SQL Database
+
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
+2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
+4. Review [auth.md](services/sql-database/auth.md) directly for Entra-only auth configuration
+
+### App Service + API + SQL Database
+
+1. Load: [services/app-service/README.md](services/app-service/README.md) → [bicep.md](services/app-service/bicep.md)
+2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
+3. Load: [services/key-vault/README.md](services/key-vault/README.md)
+4. Review [auth.md](services/sql-database/auth.md) directly for Entra-only auth configuration
 
 ### Serverless Event-Driven
 
@@ -119,9 +134,9 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 ### AI Application
 
 1. Invoke: `microsoft-foundry` (AI patterns and best practices)
-2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md)
+2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md)
 3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
-4. Invoke: `azure-security` (API key management)
+4. Review Key Vault and Foundry references directly for API key management
 
 ### GitHub Copilot SDK Application
 
