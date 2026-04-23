@@ -69,9 +69,12 @@ This is different from `conversationId` which tracks conversation history — `s
 #### Fallback: Python Script When `agent_invoke` Fails
 
 If `agent_invoke` fails, use a protocol-specific Python script as a fallback. Use the deployed agent's actual protocol.
-Fallback scripts are available under `./scripts/invoke_agent_response.py` and `./scripts/invoke_agent_invocation.py`.
+Paths below are relative to this file:
+- [`scripts/invoke_agent_response.py`](scripts/invoke_agent_response.py)
+- [`scripts/invoke_agent_invocation.py`](scripts/invoke_agent_invocation.py)
+- [`scripts/requirements.txt`](scripts/requirements.txt)
 
-Before running either script, prefer the user's project virtual environment if one already exists. If the project venv exists but is missing required packages, install the script dependencies into that same venv. If no project venv exists, create one first, then install dependencies from `./scripts/requirements.txt`.
+Before running either script, prefer the user's project virtual environment if one already exists. If the project venv exists but is missing required packages, install the script dependencies into that same venv. If no project venv exists, create one first, then install dependencies from [`scripts/requirements.txt`](scripts/requirements.txt).
 
 **Fallback script input schema:**
 
@@ -89,9 +92,9 @@ Before running either script, prefer the user's project virtual environment if o
 
 For `invocations`, `--input-payload-json` MUST match the request parsing logic implemented by the agent code. Do not assume a universal schema. For example, if the agent parses `{"message": "..."}`, send that shape. If it parses `{"input": "..."}`, send that shape instead.
 
-Use `./scripts/invoke_agent_response.py` for `responses` agents.
+Use [`scripts/invoke_agent_response.py`](scripts/invoke_agent_response.py) for `responses` agents.
 
-Use `./scripts/invoke_agent_invocation.py` for `invocations` agents.
+Use [`scripts/invoke_agent_invocation.py`](scripts/invoke_agent_invocation.py) for `invocations` agents.
 
 If invocation fails with a permission-related error, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). For vNext hosted agents, verify that `Cognitive Services User` is assigned to the instance identity at the Azure AI Services resource scope.
 
