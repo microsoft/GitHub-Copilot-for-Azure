@@ -27,15 +27,6 @@ az rest --method get \
   --uri "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
 ```
 
-**AppLens (MCP):**
-```yaml
-mcp_azure_mcp_applens
-  intent: "diagnose high CPU on app service APP"
-  command: "diagnose"
-  parameters:
-    resourceId: "<app-service-resource-id>"
-```
-
 **Fix:** Scale up (`az appservice plan update -n <app-service-plan-name> -g <resource-group> --sku P1V3`) or profile the app via Kudu Process Explorer to identify hot paths.
 
 ---
