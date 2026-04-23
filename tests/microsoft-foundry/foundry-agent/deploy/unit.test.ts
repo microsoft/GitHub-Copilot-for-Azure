@@ -8,16 +8,9 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DEPLOY_MD = path.resolve(
-  __dirname,
-  "../../../../output/skills/microsoft-foundry/foundry-agent/deploy/deploy.md"
-);
 
 describe("deploy - Unit Tests", () => {
   let skill: LoadedSkill;
@@ -25,7 +18,10 @@ describe("deploy - Unit Tests", () => {
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
-    deployContent = fs.readFileSync(DEPLOY_MD, "utf-8");
+    deployContent = fs.readFileSync(
+      path.join(skill.path, "foundry-agent", "deploy", "deploy.md"),
+      "utf-8"
+    );
   });
 
   describe("Skill Metadata", () => {
