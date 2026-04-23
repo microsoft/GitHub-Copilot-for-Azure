@@ -56,9 +56,11 @@ az webapp log tail -n APP -g RG
 
 **KQL — Failed deployments:**
 ```kql
+// Replace <app-service-resource-id> with the full resource ID, for example:
+// /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>
 AppServicePlatformLogs
 | where TimeGenerated > ago(24h)
-| where Level == "Error" and _ResourceId contains "APP"
+| where Level == "Error" and _ResourceId == "<app-service-resource-id>"
 | project TimeGenerated, Level, Message
 | order by TimeGenerated desc
 ```
