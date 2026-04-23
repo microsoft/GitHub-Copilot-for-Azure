@@ -296,8 +296,11 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
   };
 
   try {
+    // Before agent run starts, initialize the test result as if it failed.
+    // This ensures every test case has a result even when their agent run time out.
+    global.setTestResult({ isPass: false, message: "waiting for agent run to finish" });
     await fn(ctx);
-    global.addTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -306,7 +309,7 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate });
     throw e;
   }
 }
