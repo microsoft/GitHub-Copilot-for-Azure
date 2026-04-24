@@ -71,8 +71,10 @@ Once you have the resource group:
    - Identity and access (Managed Identity, RBAC)
    - Dependencies and connections
 
-3. **Map relationships** by identifying:
-   - **Network connections**: VNet peering, subnet assignments, NSG rules, private endpoints
+3. **Map relationships** — run the per-resource-type probes in [procedures/relationship-discovery.md](references/procedures/relationship-discovery.md).
+
+   High-level relationship categories to look for (see the procedure for concrete `az` commands):
+    - **Network connections**: VNet peering, subnet assignments, NSG rules, private endpoints
    - **Data flow**: Apps → Databases, Functions → Storage, API Management → Backends
    - **Identity**: Managed identities connecting to resources
    - **Configuration**: App Settings pointing to Key Vaults, connection strings
@@ -125,10 +127,7 @@ Hand the resource model off to the renderer matching the user's requested format
    - Use `intent="get resource details"` for individual resource analysis
    - Use `command` parameter when you need specific Azure operations
 
-2. **File Creation**:
-   - Always create in workspace root or a `docs/` folder if it exists
-   - Use clear, descriptive filenames: `[rg-name]-architecture.md`
-   - Ensure Mermaid syntax is valid (test syntax mentally before output)
+2. **File Creation**: Defer to the format-specific workflow selected in Step 3 for output paths, filenames, and file formats. Do not invent alternative locations or extensions here.
 
 3. **Terminal (when needed)**:
    - Use Azure CLI for complex queries not available via MCP
@@ -145,7 +144,7 @@ Hand the resource model off to the renderer matching the user's requested format
 - ✅ Include configuration details in node labels
 - ✅ Group resources logically with subgraphs
 - ✅ Label all connections descriptively
-- ✅ Create a complete markdown file with diagram
+- ✅ Save the diagram to a file using the path/format dictated by the selected workflow
 
 **Never Do:**
 - ❌ Skip resources because they seem unimportant
@@ -169,16 +168,7 @@ Hand the resource model off to the renderer matching the user's requested format
 
 ## Output Format Specifications
 
-For format-specific syntax (Mermaid graph direction, Draw.io XML, stencil paths), see the renderer workflow selected in Step 3.
-
-### Markdown Structure
-- Use H1 for main title
-- Use H2 for major sections
-- Use H3 for subsections
-- Use tables for resource inventories
-- Use bullet lists for notes and recommendations
-- Use code blocks with `mermaid` language tag for mermaid diagrams
-
+For format-specific syntax (Mermaid graph direction, Draw.io XML, stencil paths), output file paths, filenames, and document structure, see the renderer workflow selected in Step 3. 
 ## Success Criteria
 
 A successful analysis includes:

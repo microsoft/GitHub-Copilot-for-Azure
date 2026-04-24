@@ -85,6 +85,8 @@ Resource Groups, VNets, and Subnets are containers. All use `container=1;collaps
 
 **Labels (required)**: Every edge MUST have a short descriptive `value`. Never leave `value=""`. Use the relationship type and direction as a guide (e.g., `"hosts"`, `"reads secrets"`, `"VNet integration"`, `"private link"`, `"backend pool"`, `"VNet peering"`).
 
+**Label length limit**: Edge labels MUST be ≤30 characters. Long labels crowd the diagram and collide with other edges. Truncate or rephrase: prefer terse relationship descriptors (`"reads secrets"`, `"blob storage"`, `"diagnostics"`) over full technical strings. If the full detail is needed, put it in a tooltip or a numbered legend below the diagram rather than inline on the edge.
+
 All edges: `rounded=1;orthogonalLoop=1;jettySize=auto;html=1;`
 
 **Style by relationship type:**
@@ -98,6 +100,12 @@ All edges: `rounded=1;orthogonalLoop=1;jettySize=auto;html=1;`
 | `routes` (routing) | `#0078D4` | 2 | `endArrow=block;endFill=1` |
 
 **Managed Identities**: Every Managed Identity (`Microsoft.ManagedIdentity/userAssignedIdentities`) MUST have at least one `depends` edge connecting it to the resource it is assigned to (e.g. the App Service, App Gateway, or VM that uses it). A Managed Identity with no edges is a diagram defect — it conveys no architectural information and appears as an orphaned icon.
+
+**Edge overlap prevention**: When multiple edges share the same source or target, routing through the same corridor produces overlapping lines that are unreadable. To reduce overlap:
+- **Spatial separation**: place resources with many connections (hub nodes) in an open position with distinct compass directions available for each peer — see [layout-rules.md](layout-rules.md) §3 Hub-and-spoke.
+- **Stagger parallel routes**: for two edges that would naturally follow the same path (e.g. both from Function App to different resources in the same column), shift one source/target resource at least 80px off-axis so the router assigns different segments.
+- **Never add explicit waypoints** (`<Array as="points">` or `exitX/entryX`) as a first resort — repositioning the node always produces cleaner output.
+- If layout alone cannot separate a dense cluster of edges, use `edgeStyle=elbowEdgeStyle;elbow=vertical;` on the lower-priority edge to force a different bend axis.
 
 ## 6. VNet Integration Special Case
 

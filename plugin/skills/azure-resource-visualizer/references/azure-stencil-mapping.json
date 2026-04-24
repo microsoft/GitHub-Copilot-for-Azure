@@ -12,6 +12,7 @@
     "Microsoft.ApiManagement/service uses integration/API_Management_Services.svg — ARM type is singular 'service' but the filename is PLURAL.",
     "There is no generic Event_Grid.svg. Use System_Topic.svg, Event_Grid_Topics.svg, or Event_Grid_Domains.svg depending on the sub-type.",
     "Microsoft.AppConfiguration/configurationStores uses img/lib/mscae/App_Configuration.svg — this icon does NOT exist anywhere in the azure2 library. Using any azure2 path (e.g. management_governance/Management_Groups.svg or management_governance/App_Configurations.svg) produces an empty/broken icon.",
+    "Microsoft.CognitiveServices/accounts (Azure AI / Cognitive Services) uses img/lib/azure2/ai_machine_learning/Cognitive_Services.svg — the category is ai_machine_learning (NOT ai_ml, NOT ai/, NOT cognitive_services/). Using ai_ml/ or any other category produces a broken icon.",
     "Always verify a path exists before using it. When in doubt, check https://github.com/jgraph/drawio/tree/dev/src/main/webapp/img/lib/azure2"
   ],
   "stencilLibrary": "azure2",
@@ -268,6 +269,13 @@
       "defaultWidth": 50,
       "defaultHeight": 50,
       "note": "Same ARM type covers both VPN and ExpressRoute gateways; differentiate via the resource's gatewayType property when labeling (e.g., 'ExpressRoute Gateway')."
+    },
+    "Microsoft.CognitiveServices/accounts": {
+      "imagePath": "img/lib/azure2/ai_machine_learning/Cognitive_Services.svg",
+      "label": "Cognitive Services",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "CATEGORY: ai_machine_learning — NOT ai_ml/, NOT ai/, NOT cognitive_services/. Also used as a fallback for Azure AI Foundry and Azure OpenAI when no dedicated stencil exists."
     },
     "Microsoft.ContainerRegistry/registries": {
       "imagePath": "img/lib/azure2/containers/Container_Registries.svg",

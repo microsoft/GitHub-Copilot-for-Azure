@@ -84,3 +84,5 @@ Every edge should connect to its nearest spatial neighbour:
 6. Using a central route table icon with radiating edges — add per-subnet route table icons instead.
 7. Building network pages as wide flat layouts (2 rows × 6+ columns) — use 3-column grids.
 8. Placing a tall legend panel on the right side, pushing width beyond the viewport.
+9. **Stacking nodes that share many connections in a single column** — this forces every edge to route through the same corridor, creating overlapping lines. Spread connection-heavy resources across at least two columns or rows.
+10. **Using long edge labels (>30 characters)** — long labels overlap adjacent edges and icons. Keep labels ≤30 characters; move extra detail to a legend.
