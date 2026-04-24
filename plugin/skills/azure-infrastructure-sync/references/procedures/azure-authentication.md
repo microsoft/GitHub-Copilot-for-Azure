@@ -5,7 +5,7 @@
 
 ## Procedure
 
-1. **Verify session**: Run attempt a lightweight Azure MCP call (e.g., `mcp_azure_mcp_subscription_list`), OR run `az account show` or `Get-AzContext` in the terminal
+1. **Verify session**: Run a lightweight Azure MCP call (e.g., `mcp_azure_mcp_subscription_list`), or run `az account show` or `Get-AzContext` in the terminal
 
 2. **If authenticated**:
    - Display the active subscription name and ID
