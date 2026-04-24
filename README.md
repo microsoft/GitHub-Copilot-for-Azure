@@ -125,7 +125,7 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 | **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
 | **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | No marketplace | `gemini-extension.json` | ✅ Onboarded|
 | **Cursor** | ✅ | ✅ | `plugin/hooks/cursor-hooks.json` |  `.cursor-plugin/marketplace.json` (exists only in azure-skills repo) |  ✅ `plugin/.cursor-plugin/plugin.json` | ✅ Onboarded. Hooks testing - WIP |
-| **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | 🔜 | TBD | 🔜 WIP |
+| **Codex** | ✅ | ✅ | ❌ Not yet supported by client(currently supports Bash-only) | [Claude-style marketplace](https://developers.openai.com/codex/plugins/build?install-scope=workspace#add-a-marketplace-from-the-cli) | ✅ `plugin/.claude-plugin/plugin.json` | ✅ Onboarded as local plugin (curated marketplace requires public MCP) |
 | **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ⚠️ MCP only |
 
 ## Contributing
