@@ -273,6 +273,8 @@ Apply these to both greenfield and brownfield projects:
 
 4. **Framework-specific best practices** — When using Microsoft Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
 
+5. **Deploy handoff** — After the agent has been created and local verification succeeds, explicitly tell the user that they can deploy the agent if they want, and ask them to say `deploy agent to foundry` to continue with the deploy sub-skill.
+
 ## Coding Tips
 
 Use these when generating or modifying project code:
