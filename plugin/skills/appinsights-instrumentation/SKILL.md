@@ -4,7 +4,7 @@ description: "Guidance for instrumenting webapps with Azure Application Insights
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.3"
+  version: "0.0.0-placeholder"
 ---
 
 # AppInsights Instrumentation Guide
