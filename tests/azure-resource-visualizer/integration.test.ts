@@ -120,4 +120,44 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       expect(hasDiagramFile).toBe(true);
     }), visualizerTestTimeoutMs);
   });
+
+  describe("draw-io-visualization", () => {
+    test("invokes azure-resource-visualizer skill for draw.io diagram prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Create a draw.io architecture diagram for my Azure resource group",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+
+    test("generates draw.io diagram file for a resource group", () => withTestResult(async () => {
+      let workspacePath: string | undefined;
+
+      const agentMetadata = await agent.run({
+        prompt: "Generate a draw.io diagram showing my Azure resource group architecture. Save the diagram as architecture.drawio in a <resource-group>-architecture/ subdirectory.",
+        nonInteractive: true,
+        followUp: FOLLOW_UP_PROMPT,
+        setup: async (workspace: string) => {
+          workspacePath = workspace;
+        }
+      });
+
+      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+      expect(workspacePath).toBeDefined();
+      const hasDrawioFile = doesWorkspaceFileIncludePattern(workspacePath!, /mxCell|mxGraph/i, /\.drawio$/i);
+
+      expect(isSkillUsed).toBe(true);
+      expect(hasDrawioFile).toBe(true);
+    }), visualizerTestTimeoutMs);
+  });
 });
