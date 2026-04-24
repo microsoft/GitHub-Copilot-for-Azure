@@ -90,12 +90,6 @@ POST {projectEndpoint}/agents/{agentName}/endpoint/protocols/invocations?api-ver
 
 3. Send a JSON body that matches what the agent code expects to parse on the `invocations` endpoint. The payload shape is defined by the agent implementation, not by a fixed protocol-level request schema.
 
-```json
-{
-  "message": "Hello"
-}
-```
-
 Example if the agent expects a `message` field:
 
 ```bash
