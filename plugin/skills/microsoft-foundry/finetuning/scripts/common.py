@@ -115,12 +115,3 @@ def upload_file(openai_client, filepath: str, purpose: str = "fine-tune") -> str
     openai_client.files.wait_for_processing(file_obj.id)
     print(f"   ✅ File ready")
     return file_obj.id
-
-
-def get_env(key: str, required: bool = True) -> str:
-    """Get environment variable, exit if required and missing."""
-    value = os.environ.get(key)
-    if required and not value:
-        print(f"❌ Environment variable {key} not set.")
-        sys.exit(1)
-    return value or ""

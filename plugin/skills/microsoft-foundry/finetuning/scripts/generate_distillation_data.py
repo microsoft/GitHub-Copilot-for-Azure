@@ -39,6 +39,8 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
 
+import openai
+
 
 def verify_deployment(client, model):
     """Verify a model deployment exists by sending a trivial request."""

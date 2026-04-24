@@ -27,7 +27,7 @@ import os
 import sys
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser
+from common import HelpOnErrorParser, get_clients
 
 
 def parquet_to_sft(input_path, output_path, user_col, assistant_col, system_prompt=None):
@@ -73,17 +73,11 @@ def parquet_to_sft(input_path, output_path, user_col, assistant_col, system_prom
     print(f"Converted {count} examples to SFT JSONL → {output_path}")
 
 
-def sft_to_dpo(input_path, output_path, endpoint, api_key, base_model):
+def sft_to_dpo(input_path, output_path, client, base_model):
     """Convert SFT to DPO by generating non-preferred responses from a base model.
 
     DPO format uses: input (system+user messages), preferred_output, non_preferred_output.
     """
-    import openai
-
-    client = openai.AzureOpenAI(
-        azure_endpoint=endpoint, api_key=api_key, api_version="2025-04-01-preview"
-    )
-
     with open(input_path) as inf:
         examples = [json.loads(l) for l in inf]
     count = 0
@@ -194,8 +188,13 @@ def main():
     parser.add_argument("--assistant-column", default="response", help="Column name for assistant output")
     parser.add_argument("--system-prompt", default=None, help="System prompt to prepend")
 
-    # DPO generation
-    parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"))
+    # DPO generation (needs API connection)
+    parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"),
+                        help="Project /v1/ URL (preferred)")
+    parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+                        help="Azure OpenAI endpoint (fallback)")
+    parser.add_argument("--project-endpoint", default=os.environ.get("AZURE_AI_PROJECT_ENDPOINT"),
+                        help="Azure AI project endpoint (Foundry SDK)")
     parser.add_argument("--api-key", default=os.environ.get("AZURE_OPENAI_API_KEY"))
     parser.add_argument("--base-model", default="gpt-4.1-mini", help="Base model for generating rejections")
 
@@ -212,10 +211,11 @@ def main():
                            args.assistant_column, args.system_prompt)
 
     elif args.format == "dpo":
-        if not args.endpoint or not args.api_key:
-            print("Error: --endpoint and --api-key required for DPO conversion")
-            sys.exit(1)
-        sft_to_dpo(args.input, args.output, args.endpoint, args.api_key, args.base_model)
+        client, method = get_clients(
+            base_url=args.base_url, azure_endpoint=args.endpoint,
+            project_endpoint=args.project_endpoint, api_key=args.api_key
+        )
+        sft_to_dpo(args.input, args.output, client, args.base_model)
 
     elif args.format == "rft":
         sft_to_rft(args.input, args.output)

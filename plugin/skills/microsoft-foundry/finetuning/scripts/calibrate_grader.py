@@ -177,6 +177,8 @@ def build_parser():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"), help="Project /v1/ endpoint URL")
+    parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+                        help="Azure OpenAI endpoint (fallback)")
     parser.add_argument("--api-key", default=os.environ.get("AZURE_OPENAI_API_KEY"), help="API key")
     parser.add_argument("--project-endpoint", default=os.environ.get("AZURE_AI_PROJECT_ENDPOINT"),
                         help="Azure AI project endpoint")
@@ -199,7 +201,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     random.seed(args.seed)
 
-    client, method = get_clients(base_url=args.base_url, project_endpoint=args.project_endpoint, api_key=args.api_key)
+    client, method = get_clients(base_url=args.base_url, azure_endpoint=args.endpoint, project_endpoint=args.project_endpoint, api_key=args.api_key)
 
     # Load data
     with open(args.data) as f:
