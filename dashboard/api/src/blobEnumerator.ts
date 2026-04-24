@@ -36,18 +36,20 @@ function createNode(): BlobTreeNode {
     return { files: [], children: {} };
 }
 
-function getContainerClient(containerName: string): ContainerClient {
+export function getCredential() {
     const clientId = process.env.AZURE_CLIENT_ID;
     const isDevEnvironment = process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development";
-    const credential = isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
-    const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
+    return isDevEnvironment ? new AzureCliCredential() : new ManagedIdentityCredential(clientId!);
+}
 
+function getContainerClient(containerName: string): ContainerClient {
+    const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
     if (!STORAGE_ACCOUNT_NAME) {
         throw new Error("STORAGE_ACCOUNT_NAME is not defined");
     }
     const blobServiceClient = new BlobServiceClient(
         `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
-        credential
+        getCredential()
     );
     return blobServiceClient.getContainerClient(containerName);
 }
@@ -58,15 +60,10 @@ function isExcluded(blobName: string): boolean {
 }
 
 /**
- * List top-level date prefixes (yyyy-mm-dd) in the integration-reports container
+ * List top-level date prefixes (yyyy-mm-dd) in a container
  * that fall within 30 days before or after today.
- * Uses hierarchical listing with "/" delimiter to efficiently enumerate only the
- * first-level virtual directories without downloading the full blob list.
- *
- * @returns An array of date strings within the ±30-day window, sorted in descending order.
  */
-export async function listDates(): Promise<string[]> {
-    const containerClient = getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME);
+export async function listDatePrefixes(containerClient: ContainerClient): Promise<string[]> {
     const now = new Date();
     const msPerDay = 24 * 60 * 60 * 1000;
     const minDate = new Date(now.getTime() - 30 * msPerDay);
@@ -76,7 +73,6 @@ export async function listDates(): Promise<string[]> {
 
     for await (const item of containerClient.listBlobsByHierarchy("/")) {
         if (item.kind === "prefix" && item.name) {
-            // item.name is "yyyy-mm-dd/", strip the trailing slash
             const dateStr = item.name.replace(/\/$/, "");
             const parsed = new Date(dateStr + "T00:00:00");
             if (!isNaN(parsed.getTime()) && parsed >= minDate && parsed <= maxDate) {
@@ -89,18 +85,10 @@ export async function listDates(): Promise<string[]> {
 }
 
 /**
- * Enumerate all blobs in the integration-reports container and categorize them
- * into a nested tree structure keyed by date at the top level, then by each
- * subsequent path segment (RUN_ID, skill-name, test-group/test-case, etc.).
- *
- * Blobs matching excluded filenames (token-usage.json, agent-metadata.json)
- * are filtered out.
- *
- * @param prefix - Optional prefix to scope the listing (e.g. a specific date "2025-03-01/").
- * @returns A BlobTree mapping date → nested path segments → files.
+ * Enumerate all blobs in a container and categorize them
+ * into a nested tree structure keyed by date at the top level.
  */
-export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
-    const containerClient = getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME);
+export async function enumerateBlobTree(containerClient: ContainerClient, prefix?: string): Promise<BlobTree> {
     const tree: BlobTree = {};
 
     for await (const blob of containerClient.listBlobsFlat({ prefix })) {
@@ -118,7 +106,6 @@ export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
             tree[date] = createNode();
         }
 
-        // Walk segments[1..n-1] as directory segments, place the file at the leaf.
         let current = tree[date];
         for (let i = 1; i < segments.length - 1; i++) {
             const seg = segments[i];
@@ -133,6 +120,36 @@ export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
     }
 
     return tree;
+}
+
+/**
+ * Download a blob's content as a UTF-8 string.
+ */
+export async function downloadBlobContent(containerClient: ContainerClient, blobPath: string): Promise<string> {
+    const blobClient = containerClient.getBlobClient(blobPath);
+    const response = await blobClient.download();
+    if (!response.readableStreamBody) {
+        return "";
+    }
+    const chunks: Buffer[] = [];
+    for await (const chunk of response.readableStreamBody) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString("utf-8");
+}
+
+// --- Integration-reports-specific wrappers ---
+
+export async function listDates(): Promise<string[]> {
+    return listDatePrefixes(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME));
+}
+
+export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
+    return enumerateBlobTree(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), prefix);
+}
+
+export async function getBlobContent(blobPath: string): Promise<string> {
+    return downloadBlobContent(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
 }
 
 const azureDeploySkillName = "azure-deploy";
@@ -190,43 +207,17 @@ export function getPerSkillReports(root: BlobTree, date: string): Record<string,
     return result;
 }
 
-/**
- * Get full content of a blob
- * @param blobPath Full blob path
- */
-export async function getBlobContent(blobPath: string): Promise<string> {
-    const containerClient = getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME);
-    const blobClient = containerClient.getBlobClient(blobPath);
-    const response = await blobClient.download();
-    if (!response.readableStreamBody) {
-        return "";
-    }
-    const chunks: Buffer[] = [];
-    for await (const chunk of response.readableStreamBody) {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks).toString("utf-8");
-}
-
 const NON_INTEGRATION_CONTAINER = "non-integration";
 const HEALTH_BLOB_PATH = "data/latest.json";
 
 /**
  * Read the non-integration health dashboard blob (data/latest.json)
  * from the "non-integration" container.
- *
- * @returns The parsed JSON content of the health blob.
  */
 export async function getHealthData(): Promise<unknown> {
-    const containerClient = getContainerClient(NON_INTEGRATION_CONTAINER);
-    const blobClient = containerClient.getBlobClient(HEALTH_BLOB_PATH);
-    const response = await blobClient.download();
-    if (!response.readableStreamBody) {
-        return null;
-    }
-    const chunks: Buffer[] = [];
-    for await (const chunk of response.readableStreamBody) {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+    const raw = await downloadBlobContent(
+        getContainerClient(NON_INTEGRATION_CONTAINER),
+        HEALTH_BLOB_PATH
+    );
+    return raw ? JSON.parse(raw) : null;
 }

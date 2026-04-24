@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEPLOY_MD = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/deploy/deploy.md"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/deploy/deploy.md"
 );
 
 describe("deploy - Unit Tests", () => {
