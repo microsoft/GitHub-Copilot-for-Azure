@@ -2,10 +2,10 @@
 
 ## Common Issues Matrix
 
-| Symptom | Likely Cause | Quick Fix |
+| Symptom | Likely Cause | Action |
 |---------|--------------|-----------|
 | High CPU / memory | Runaway process, inefficient code | Use Process Explorer via Kudu, scale up |
-| Deployment failure | Build error, locked files, quota | Check Kudu logs at `https://APP.scm.azurewebsites.net/api/deployments` |
+| Deployment failure | Build error, locked files, quota | Check Kudu logs at `https://APP.scm.azurewebsites.net/api/deployments` to look for details on build errors, locked files or lack of storage quota |
 | App crash / restart | Unhandled exception, OOM kill | Review Event Log and STDERR in Diagnose & Solve |
 | Slow responses | Downstream dependency, no caching | Enable request tracing, check dependency calls |
 | 502 / 503 errors | App not starting, port conflict | Check STDERR logs, verify startup command |
@@ -27,7 +27,7 @@ az rest --method get \
   --uri "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Web/sites/<app-name>/processes?api-version=2024-04-01"
 ```
 
-**Fix:** Scale up (`az appservice plan update -n <app-service-plan-name> -g <resource-group> --sku P1V3`) or profile the app via Kudu Process Explorer to identify hot paths.
+**Fix:** Scale up (`az appservice plan update -n <app-service-plan-name> -g <resource-group> --sku P1V3`) or profile the app via Kudu Process Explorer at `https://APP.scm.azurewebsites.net/ProcessExplorer/` to identify hot paths.
 
 ---
 
@@ -62,7 +62,7 @@ AppServicePlatformLogs
 |---------------|-------|-----|
 | `WEBSITE_RUN_FROM_PACKAGE=1` but no package | Missing zip deploy artifact | Redeploy with `az webapp deploy --src-path app.zip` |
 | `Error building on server` | Oryx build failure | Check build logs, pin runtime version |
-| `Locked file` during deploy | Files in use | Enable `MSDEPLOY_RENAME_LOCKED_FILES=1` |
+| `Locked file` during deploy | Files in use | Set an environment variable named `MSDEPLOY_RENAME_LOCKED_FILES=1` on the App Service resource to enable MSDeploy to rename locked files. |
 
 ---
 
@@ -149,9 +149,9 @@ az webapp config ssl show --certificate-name CERT -g RG
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `ERR_CERT_DATE_INVALID` | Certificate expired | Renew with `az webapp config ssl upload` or enable managed cert |
+| `ERR_CERT_DATE_INVALID` | Certificate expired | If certificate came from an external certificate authoriy renew with `az webapp config ssl upload` and upload a new certificate or enable managed certificates to allow Azure to provide a free TLS/SSL certificate  |
 | `DNS_PROBE_FINISHED_NXDOMAIN` | CNAME not configured | Add CNAME record pointing to `APP.azurewebsites.net` |
-| `SSL binding not found` | Missing SNI binding | `az webapp config ssl bind --certificate-thumbprint THUMB --ssl-type SNI` |
+| `SSL binding not found` | Missing SNI binding | Add the missing SNI binding using `az webapp config ssl bind --certificate-thumbprint THUMB --ssl-type SNI -n APP -g RG` |
 | Managed cert pending | DNS validation incomplete | Verify TXT record `asuid.DOMAIN` matches custom domain verification ID |
 
 ---
@@ -164,11 +164,11 @@ az webapp config ssl show --certificate-name CERT -g RG
 | `mcp_azure_mcp_appservice` | `get` | Get app config, stack, status |
 | `mcp_azure_mcp_appservice` | `get_app_settings` | Check env vars and connection strings |
 | `mcp_azure_mcp_appservice` | `get_deployment_slots` | Compare slot configurations |
-| `mcp_azure_mcp_applens` | `diagnose` | AI-powered root cause analysis |
+| `mcp_azure_mcp_appservice` | `diagnose` | AI-powered root cause analysis |
 | `mcp_azure_mcp_monitor` | `logs_query` | Run KQL against Log Analytics |
 | `mcp_azure_mcp_resourcehealth` | `get` | Check platform-level health status |
 
-> 💡 **Tip:** Start with `mcp_azure_mcp_applens` (`diagnose`) — it automatically runs relevant detectors and surfaces the most likely root cause before you dig into logs manually.
+> 💡 **Tip:** Start with `mcp_azure_mcp_appservice` (`diagnose`) — it automatically runs relevant detectors and surfaces the most likely root cause before you dig into logs manually.
 
 ---
 
