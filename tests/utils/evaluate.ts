@@ -129,6 +129,47 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
 }
 
 /**
+ * Checks that two value patterns exist in **different** files within the workspace.
+ * This verifies separation of concerns — e.g. the AcrPull role assignment is in a separate module from the Container App.
+ * @param workspace Path to a directory containing the files of interest.
+ * @param patternA First value pattern to match
+ * @param patternB Second value pattern — must be in a different file from patternA
+ * @param filePattern If provided, only files whose names match the pattern are considered
+ * @returns True if both patterns are found and they appear in different files
+ */
+export function arePatternsInSeparateFiles(workspace: string, patternA: RegExp, patternB: RegExp, filePattern?: RegExp): boolean {
+  let hasA = false;
+  let hasBNotA = false;
+
+  const scanDirectory = (dir: string): boolean => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        if (scanDirectory(fullPath)) return true;
+      } else if (entry.isFile()) {
+        if (filePattern && !entry.name.match(filePattern)) {
+          continue;
+        }
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          const matchesA = !!content.match(patternA);
+          const matchesB = !!content.match(patternB);
+          if (matchesA) hasA = true;
+          if (matchesB && !matchesA) hasBNotA = true;
+          if (hasA && hasBNotA) return true;
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+    return false;
+  };
+
+  return scanDirectory(workspace);
+}
+
+/**
  * Recursively list all files under a directory, returning paths relative to the root.
  * Paths are normalized to use forward slashes for cross-platform regex matching.
  */
