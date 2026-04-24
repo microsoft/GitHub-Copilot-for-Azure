@@ -6,7 +6,7 @@ GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and 
 - [VS Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azure-github-copilot)
 - [Visual Studio 2022](https://marketplace.visualstudio.com/items?itemName=github-copilot-azure.GitHubCopilotForAzure2022)
 - Visual Studio 2026 - included "in the box" as part of the "Azure & AI" workload
-- Claude - coming soon
+- [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)
 
 ## Usage
 
@@ -60,13 +60,20 @@ To manually install skills from the Command Palette, the following commands are 
 - `@azure: Install Azure Skills Locally` — installs to the current workspace folder, workspace-scoped
 - `@azure: Uninstall Azure Skills Globally` — removes globally installed skills
 
-#### Copilot CLI
+#### Copilot CLI and Claude Code
 
-To install the Azure plugin into Copilot CLI and Claude:
+To install the Azure plugin into Copilot CLI and Claude Code, either:
 
-1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`
-2. Install the plugin with `/plugin install azure@azure-skills`
-3. Update the plugin with `/plugin update azure@azure-skills`
+- Run `/plugin install azure@claude-plugins-official`, or
+- Run `/plugin` and search for "azure" in the marketplace
+
+![Claude Code plugin discovery showing the Azure plugin available for installation](resources/readme/azure-plugin-in-claude.png)
+
+To update the plugin:
+
+```
+/plugin update azure@claude-plugins-official
+```
 
 ## Sovereign Cloud Configuration
 
