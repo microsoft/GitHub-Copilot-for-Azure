@@ -144,7 +144,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let workspacePath: string | undefined;
 
       const agentMetadata = await agent.run({
-        prompt: "Generate a draw.io diagram showing my Azure resource group architecture. Save the diagram to an architecture.drawio file in the current working directory.",
+        prompt: "Generate a draw.io diagram showing my Azure resource group architecture. Save the diagram as architecture.drawio in a <resource-group>-architecture/ subdirectory.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         setup: async (workspace: string) => {
