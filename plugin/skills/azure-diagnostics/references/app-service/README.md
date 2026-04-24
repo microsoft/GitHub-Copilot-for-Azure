@@ -149,7 +149,7 @@ az webapp config ssl show --certificate-name CERT -g RG
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `ERR_CERT_DATE_INVALID` | Certificate expired | If certificate came from an external certificate authoriy renew with `az webapp config ssl upload` and upload a new certificate or enable managed certificates to allow Azure to provide a free TLS/SSL certificate  |
+| `ERR_CERT_DATE_INVALID` | Certificate expired | If certificate came from an external certificate authority, renew with `az webapp config ssl upload` and upload a new certificate or enable managed certificates to allow Azure to provide a free TLS/SSL certificate |
 | `DNS_PROBE_FINISHED_NXDOMAIN` | CNAME not configured | Add CNAME record pointing to `APP.azurewebsites.net` |
 | `SSL binding not found` | Missing SNI binding | Add the missing SNI binding using `az webapp config ssl bind --certificate-thumbprint THUMB --ssl-type SNI -n APP -g RG` |
 | Managed cert pending | DNS validation incomplete | Verify TXT record `asuid.DOMAIN` matches custom domain verification ID |
