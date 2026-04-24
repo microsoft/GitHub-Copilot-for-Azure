@@ -19,7 +19,7 @@ RISKY_PHRASES = [
 ]
 
 
-def validate_rft(filepath: str, expected_field: str | None = None) -> None:
+def validate_rft(filepath, expected_field=None):
     errors = []
     warnings = []
     total = 0

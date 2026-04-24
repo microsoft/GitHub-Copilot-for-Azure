@@ -19,20 +19,7 @@ import io
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser
-
-import openai
-
-
-def get_client(base_url=None, endpoint=None, api_key=None):
-    """Create client. Prefer /v1/ project URL (OpenAI) over Azure endpoint."""
-    if base_url:
-        return openai.OpenAI(base_url=base_url, api_key=api_key)
-    return openai.AzureOpenAI(
-        azure_endpoint=endpoint,
-        api_key=api_key,
-        api_version="2025-04-01-preview",
-    )
+from common import HelpOnErrorParser, get_clients
 
 
 def analyze_job(client, job_id, download_csv=None):
@@ -169,22 +156,20 @@ def analyze_job(client, job_id, download_csv=None):
 def main():
     parser = HelpOnErrorParser(description="Analyze fine-tuning training curves")
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"),
-                        help="Project /v1/ URL (preferred). Uses openai.OpenAI().")
+                        help="Project /v1/ URL (preferred)")
     parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-                        help="Azure OpenAI endpoint (fallback). Uses AzureOpenAI().")
+                        help="Azure OpenAI endpoint (fallback)")
+    parser.add_argument("--project-endpoint", default=os.environ.get("AZURE_AI_PROJECT_ENDPOINT"),
+                        help="Azure AI project endpoint (Foundry SDK)")
     parser.add_argument("--api-key", default=os.environ.get("AZURE_OPENAI_API_KEY"))
     parser.add_argument("--job-id", required=True, help="Fine-tuning job ID")
     parser.add_argument("--download-csv", help="Save results CSV to this path")
     args = parser.parse_args()
 
-    if not args.api_key:
-        print("Error: Set --api-key or AZURE_OPENAI_API_KEY")
-        sys.exit(1)
-    if not args.base_url and not args.endpoint:
-        print("Error: Set --base-url or --endpoint (or env vars OPENAI_BASE_URL / AZURE_OPENAI_ENDPOINT)")
-        sys.exit(1)
-
-    client = get_client(base_url=args.base_url, endpoint=args.endpoint, api_key=args.api_key)
+    client, method = get_clients(
+        base_url=args.base_url, azure_endpoint=args.endpoint,
+        project_endpoint=args.project_endpoint, api_key=args.api_key
+    )
     analyze_job(client, args.job_id, args.download_csv)
 
 

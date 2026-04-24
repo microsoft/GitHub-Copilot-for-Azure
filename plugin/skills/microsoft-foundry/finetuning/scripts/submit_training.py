@@ -191,6 +191,9 @@ def main():
             result = submit_dpo(client, args.model, train_id, val_id,
                                 args.epochs, args.lr, args.beta, args.suffix)
         elif args.use_rest:
+            if not args.endpoint:
+                print("Error: --use-rest requires --endpoint or AZURE_OPENAI_ENDPOINT")
+                sys.exit(1)
             result = submit_sft_rest(args.endpoint, args.api_key, args.model,
                                      train_id, val_id, args.epochs, args.lr, args.batch_size)
         else:
