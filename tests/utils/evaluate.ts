@@ -71,36 +71,35 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
  * @returns True if both patterns are found and they appear in different files
  */
 export function arePatternsInSeparateFiles(workspace: string, patternA: RegExp, patternB: RegExp, filePattern?: RegExp): boolean {
-  const filesWithA: string[] = [];
-  const filesWithB: string[] = [];
+  let hasA = false;
+  let hasBNotA = false;
 
-  const scanDirectory = (dir: string): void => {
+  const scanDirectory = (dir: string): boolean => {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory() && entry.name !== "node_modules") {
-        scanDirectory(fullPath);
+        if (scanDirectory(fullPath)) return true;
       } else if (entry.isFile()) {
         if (filePattern && !entry.name.match(filePattern)) {
           continue;
         }
         try {
           const content = fs.readFileSync(fullPath, "utf-8");
-          if (content.match(patternA)) filesWithA.push(fullPath);
-          if (content.match(patternB)) filesWithB.push(fullPath);
+          const matchesA = !!content.match(patternA);
+          const matchesB = !!content.match(patternB);
+          if (matchesA) hasA = true;
+          if (matchesB && !matchesA) hasBNotA = true;
+          if (hasA && hasBNotA) return true;
         } catch {
           // Skip files that can't be read as text
         }
       }
     }
+    return false;
   };
 
-  scanDirectory(workspace);
-
-  if (filesWithA.length === 0 || filesWithB.length === 0) return false;
-
-  // Check that at least one file with patternB is different from all files with patternA
-  return filesWithB.some(f => !filesWithA.includes(f));
+  return scanDirectory(workspace);
 }
 
 /**

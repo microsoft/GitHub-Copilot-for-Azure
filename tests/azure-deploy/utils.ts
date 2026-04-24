@@ -65,9 +65,9 @@ export function shouldEarlyTerminateForCompletedDeployment(agentMetadata: AgentM
 }
 
 export function shouldEarlyTerminateForAzdProvision(agentMetadata: AgentMetadata): boolean {
-  const hasCalledProvision = matchesCommand(agentMetadata, /azd\s+provision/i);
+  const hasCalledProvision = matchesCommand(agentMetadata, /azd\s+(provision|up)\b/i);
   if (hasCalledProvision) {
-    const commentToAdd = "✅ azd provision was called. Terminating early — infrastructure provisioning has started.";
+    const commentToAdd = "✅ azd provision/up was called. Terminating early — infrastructure provisioning has started.";
     if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
       agentMetadata.testComments.push(commentToAdd);
     }
