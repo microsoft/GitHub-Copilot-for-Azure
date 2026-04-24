@@ -41,7 +41,7 @@
       "requiresImageAspect1": true,
       "note": "Subnet.svg is natively wide (~16.998 x 10.175, ratio ~1.67:1) — NOT square. You MUST include imageAspect=1 in the style string when rendering the icon, otherwise it stretches vertically into a distorted square. When used as an isContainer, the icon is typically omitted in favor of the containerStyle, so aspect does not apply.",
       "isContainer": true,
-      "containerStyle": "rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=2 2;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontStyle=1;"
+      "containerStyle": "container=1;collapsible=0;pointerEvents=0;rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=2 2;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontStyle=1;"
     },
     "Microsoft.Sql/servers": {
       "imagePath": "img/lib/azure2/databases/SQL_Server.svg",
@@ -112,7 +112,7 @@
       "defaultHeight": 50,
       "note": "CATEGORY: web — NOT signalrservice/, NOT other/, NOT integration/. Filename is SINGULAR SignalR.svg (no plural form exists)."
     },
-    "Microsoft.Web/serverFarms": {
+    "Microsoft.Web/serverfarms": {
       "imagePath": "img/lib/azure2/app_services/App_Service_Plans.svg",
       "label": "App Service Plan",
       "defaultWidth": 50,
@@ -283,7 +283,7 @@
       "defaultWidth": 50,
       "defaultHeight": 50,
       "isContainer": true,
-      "containerStyle": "rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=5 5;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;fontSize=14;"
+      "containerStyle": "container=1;collapsible=0;pointerEvents=0;rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=5 5;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;fontSize=14;"
     },
     "Microsoft.Resources/resourceGroups": {
       "imagePath": "img/lib/azure2/general/Resource_Groups.svg",
@@ -291,7 +291,7 @@
       "defaultWidth": 50,
       "defaultHeight": 50,
       "isContainer": true,
-      "containerStyle": "rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontStyle=1;fontSize=14;"
+      "containerStyle": "container=1;collapsible=0;pointerEvents=0;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontStyle=1;fontSize=14;"
     }
   },
   "connectionStyles": {

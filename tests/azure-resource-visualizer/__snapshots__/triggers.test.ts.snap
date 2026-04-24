@@ -2,19 +2,18 @@
 
 exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Analyze Azure resource groups and generate architecture diagrams as Mermaid or Draw.io. Supports live Azure resource discovery, sketch/description-to-diagram conversion, and detailed relationship mapping. WHEN: create architecture diagram, visualize Azure resources, show resource relationships, generate Mermaid diagram, analyze resource group, diagram my resources, architecture visualization, resource topology, map Azure infrastructure, draw.io diagram, sketch to diagram, convert sketch to architecture, generate draw.io, create draw.io from azure. DO NOT USE FOR: comparing diagrams against live Azure or Bicep (use azure-infrastructure-sync), generating Bicep templates (use azure-iac-generator).",
+  "description": "Analyze Azure resource groups and generate detailed architecture diagrams as Mermaid or Draw.io. Supports live Azure resource discovery, sketch/description-to-diagram conversion, and detailed relationship mapping. WHEN: create architecture diagram, visualize Azure resources, show resource relationships, generate Mermaid diagram, analyze resource group, diagram my resources, architecture visualization, resource topology, map Azure infrastructure, draw.io diagram, sketch to diagram, convert sketch to architecture, generate draw.io, create draw.io from azure. DO NOT USE FOR: comparing diagrams against live Azure or Bicep, generating Bicep templates.",
   "extractedKeywords": [
     "against",
-    "aks",
     "analyze",
+    "app service",
     "architecture",
     "authentication",
     "azure",
-    "azure-iac-generator",
-    "azure-infrastructure-sync",
     "bicep",
     "cli",
     "comparing",
+    "container",
     "conversion",
     "convert",
     "create",
@@ -63,16 +62,15 @@ exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot ski
 exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
   "against",
-  "aks",
   "analyze",
+  "app service",
   "architecture",
   "authentication",
   "azure",
-  "azure-iac-generator",
-  "azure-infrastructure-sync",
   "bicep",
   "cli",
   "comparing",
+  "container",
   "conversion",
   "convert",
   "create",

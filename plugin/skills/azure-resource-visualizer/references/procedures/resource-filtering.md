@@ -20,7 +20,7 @@ Centralized exclusion lists for Azure resource discovery. Different skills filte
 | `Microsoft.Resources/deployments` | ✅ | ✅ | Deployment history |
 | `Microsoft.Resources/templateSpecs` | ✅ | ✅ | Template metadata |
 | `Microsoft.Authorization/*` | ✅ | ✅ | RBAC / Policy |
-| `Microsoft.Insights/components` (Application Insights) | ✅ | ❌ KEEP | Deployable; not architecture |
+| `Microsoft.Insights/components` (Application Insights) | ❌ KEEP | ❌ KEEP | Deployable; not architecture |
 | `Microsoft.Insights/actionGroups` | ✅ | ❌ KEEP | Deployable; not architecture |
 | `Microsoft.OperationalInsights/workspaces` (Log Analytics) | ✅ | ❌ KEEP | Deployable; not architecture |
 | `Microsoft.ManagedIdentity/userAssignedIdentities` | ❌ KEEP | ❌ KEEP | Explicitly created; used for resource authentication and RBAC |
