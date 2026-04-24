@@ -56,6 +56,8 @@ GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samp
 
 If the user has specified any information on what they want their agent to do, just choose the most relevant or most simple sample to start with. Only if user has not given any preferences, present the sample directories to the user and help them choose based on their requirements (e.g., RAG, tools, multi-agent workflows, HITL).
 
+> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples`. These samples includes Foundry Toolbox integration out of the box — no additional toolbox steps are needed. For toolbox details see [references/toolbox.md](references/toolbox.md).
+
 ### Step 4: Download Sample Files
 
 Download only the selected sample directory — do NOT clone the entire repo. Preserve the directory structure by creating subdirectories as needed.
@@ -228,6 +230,8 @@ Apply these to both greenfield and brownfield projects:
 1. **Logging** — Implement proper logging using the language's standard logging framework (Python `logging` module, .NET `ILogger`). Hosted agents stream container stdout/stderr logs to Foundry, so all log output is visible via the troubleshoot workflow. Use structured log levels (INFO, WARNING, ERROR) and include context like request IDs and agent names.
 
 2. **Framework-specific best practices** — When using Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
+
+3. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
 
 ## Error Handling
 
