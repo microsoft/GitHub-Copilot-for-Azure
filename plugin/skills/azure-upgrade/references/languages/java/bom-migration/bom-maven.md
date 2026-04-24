@@ -9,6 +9,8 @@ Run the `upgrade_bom.py` script located at `references/languages/java/scripts/up
 1. **Set/upgrade the BOM** — adds `azure-sdk-bom` if missing, or upgrades the version if already present.
 2. **Remove redundant explicit versions** — strips explicit `<version>` tags from individual Azure dependencies that are now managed by the BOM.
 
+The following invocation works identically in **bash** and **PowerShell**:
+
 ```bash
 # Path is relative to the skill directory (plugin/skills/azure-upgrade/)
 python3 ./references/languages/java/scripts/upgrade_bom.py <project_dir> <bom_version>
@@ -104,7 +106,7 @@ Do **not** strip versions from artifacts not managed by the BOM (verify each one
 
 ### Step 3 — Verify
 
-Run `mvn -q -DskipTests dependency:tree` and confirm:
+Run `mvn -q -DskipTests dependency:tree` (the same command works in both **bash** and **PowerShell**) and confirm:
 - `com.azure:azure-sdk-bom:pom:{bom_version}:import` appears in the managed dependencies.
 - All BOM-managed Azure artifacts resolve to versions from `{bom_version}`.
 

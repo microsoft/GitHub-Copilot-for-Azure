@@ -11,10 +11,10 @@ After BOM migration, verify:
 
 - [ ] No orphaned entries in `[versions]` (every version key must be referenced by at least one library or plugin).
 - [ ] `[bundles]` aliases match current `[libraries]` aliases (no stale references).
-- [ ] `build.gradle` uses `libs.<alias>` references — no raw `'group:artifact:version'` strings for Azure libraries.
+- [ ] `build.gradle` uses `libs.<alias>` references — no raw `"group:artifact:version"` strings for Azure libraries.
 
 ## Additional checks for programmatic settings.gradle catalog projects
 
 - [ ] No orphaned `version(...)` calls (every version must be referenced by at least one `library` or `plugin` entry).
 - [ ] `bundle(...)` aliases match current `library(...)` aliases (no stale references).
-- [ ] `build.gradle` uses `libs.<alias>` references — no raw `'group:artifact:version'` strings for Azure libraries.
+- [ ] `build.gradle` uses `libs.<alias>` references — no raw `"group:artifact:version"` strings for Azure libraries.

@@ -17,10 +17,14 @@ azureSdkBom = "{bom_version}"
 azure-sdk-bom = { group = "com.azure", name = "azure-sdk-bom", version.ref = "azureSdkBom" }
 ```
 
-In `build.gradle`:
+In `build.gradle` (Groovy DSL):
 ```groovy
-implementation enforcedPlatform(libs.azure.sdk.bom)   // Groovy
-implementation(enforcedPlatform(libs.azure.sdk.bom))   // Kotlin DSL
+implementation enforcedPlatform(libs.azure.sdk.bom)
+```
+
+In `build.gradle.kts` (Kotlin DSL):
+```kotlin
+implementation(enforcedPlatform(libs.azure.sdk.bom))
 ```
 
 ## Step 2 — Remove explicit versions from BOM-managed libraries

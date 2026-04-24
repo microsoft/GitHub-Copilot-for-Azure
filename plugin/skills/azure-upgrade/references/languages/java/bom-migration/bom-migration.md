@@ -6,8 +6,16 @@ How to add or upgrade `azure-sdk-bom` and clean up redundant versions across all
 
 The Maven and plain-Gradle flows are automated by `scripts/upgrade_bom.py` (Python 3.8+). Before picking a guide, verify Python is available:
 
+The following check works in both **bash** and **PowerShell 7+** (the `||` operator is supported in both):
+
 ```bash
 python3 --version || python --version
+```
+
+For Windows PowerShell 5.1, use:
+
+```powershell
+python3 --version; if ($LASTEXITCODE -ne 0) { python --version }
 ```
 
 - **Python available** → use the script as documented in [bom-maven.md](./bom-maven.md) / [bom-gradle.md](./bom-gradle.md).
@@ -18,6 +26,8 @@ The TOML and programmatic-catalog guides ([bom-gradle-toml.md](./bom-gradle-toml
 ## Determine the latest BOM version
 
 Resolve the target `azure-sdk-bom` version from the Azure SDK for Java source of truth before editing build files. This is mandatory: do not hardcode, guess, or reuse an illustrative version from another example. Versions below `1.3.0` are invalid for this migration flow.
+
+The following invocation works identically in **bash** and **PowerShell** (no shell-specific syntax):
 
 ```bash
 # Path is relative to the skill directory (plugin/skills/azure-upgrade/)
