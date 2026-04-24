@@ -296,8 +296,11 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
   };
 
   try {
+    // Before agent run starts, initialize the test result as if it failed.
+    // This ensures every test case has a result even when the agent run times out.
+    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
     await fn(ctx);
-    global.addTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -306,12 +309,12 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate });
     throw e;
   }
 }
 
-export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
+export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string, toolCallBudget?: number): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
   if (shouldEarlyTerminateForInvokedSkill) {
     const earlyTerminateComment = `✅ ${skillName} is invoked as expected. Terminating the agent run early.`;
@@ -323,7 +326,7 @@ export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetad
     return true;
   }
 
-  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > maxToolCallBeforeSkillInvocationTerminate;
+  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > (toolCallBudget ?? maxToolCallBeforeSkillInvocationTerminate);
   if (shouldEarlyTerminateForTooLate) {
     agentMetadata.testComments.push(`⚠️ ${skillName} is not invoked within early tool calls. Terminating the agent run early.`);
     return true;

@@ -17,7 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { doesWorkspaceFileIncludePattern, expectFiles, getToolCalls, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { doesWorkspaceFileIncludePattern, expectFiles, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -919,7 +919,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   describe("entra-sql-auth", () => {
     test("generates Entra-only SQL auth for ASP.NET Core EF Core app (not SQL admin password)", async () => {
       await withTestResult(async () => {
+        let workspacePath: string | undefined;
+
         const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+          },
           prompt:
             "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. " +
             "Then prepare it for Azure deployment. " +
@@ -927,42 +932,28 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
+          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) ||
             isSkillInvoked(metadata, "azure-validate"),
         });
 
         // Preconditions
+        expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        // Collect all file contents the agent wrote via create tool calls
-        const createCalls = getToolCalls(agentMetadata, "create");
-        const bicepContents = createCalls
-          .filter(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { path?: string } | undefined;
-            return args?.path?.endsWith(".bicep");
-          })
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          });
-        const bicepContent = bicepContents.join("\n");
-        expect(bicepContent.length).toBeGreaterThan(0);
+        // Verify Bicep files exist on disk (agent may use create tool or shell commands)
+        const bicepPattern = /\.bicep$/;
+        expectFiles(workspacePath!, [/infra\/.*\.bicep$/], []);
 
         // Must NOT use legacy SQL admin login/password auth
-        expect(/administratorLoginPassword/i.test(bicepContent)).toBe(false);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /administratorLoginPassword/i, bicepPattern)).toBe(false);
 
         // Must use Entra-only authentication
-        expect(/azureADOnlyAuthentication\s*:\s*true/i.test(bicepContent)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azureADOnlyAuthentication\s*:\s*true/i, bicepPattern)).toBe(true);
 
         // Connection string should use Active Directory auth (Default or Managed Identity)
-        const allFileContents = createCalls
-          .map(event => {
-            const args = (event.data as Record<string, unknown>).arguments as { file_text?: string };
-            return args?.file_text ?? "";
-          })
-          .join("\n");
-        expect(/Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i.test(allFileContents)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Authentication\s*=\s*Active\s+Directory\s+(Default|Managed\s+Identity)/i)).toBe(true);
       });
     });
   });

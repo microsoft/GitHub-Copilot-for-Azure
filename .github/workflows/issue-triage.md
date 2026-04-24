@@ -28,7 +28,6 @@ safe-outputs:
 
 engine:
   id: copilot
-  version: v1.0.20
 ---
 
 # Issue Triage
