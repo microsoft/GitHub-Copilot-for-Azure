@@ -196,9 +196,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           ).toBe(true);
         } else {
           // Plan may be in assistant message or tool output instead
-          const hasplan = allMessages.toLowerCase().includes("project overview") ||
+          const hasPlan = allMessages.toLowerCase().includes("project overview") ||
             allMessages.toLowerCase().includes("plan");
-          expect(hasplan).toBe(true);
+          expect(hasPlan).toBe(true);
         }
       });
     }, planTestTimeoutMs);
