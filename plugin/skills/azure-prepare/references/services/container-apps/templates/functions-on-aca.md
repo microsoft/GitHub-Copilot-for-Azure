@@ -71,6 +71,7 @@ param envId string
 param containerRegistryName string
 param imageName string
 param userAssignedIdentityId string
+param uamiClientId string
 param storageAccountName string
 
 resource funcApp 'Microsoft.App/containerApps@2024-03-01' = {
@@ -113,7 +114,7 @@ resource funcApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'AzureWebJobsStorage__clientId'
-              value: uamiClientId  // Required for UAMI — runtime defaults to system MI without this
+              value: uamiClientId
             }
             {
               name: 'FUNCTIONS_EXTENSION_VERSION'

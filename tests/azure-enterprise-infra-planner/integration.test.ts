@@ -21,7 +21,10 @@ import { softCheckSkill, isSkillInvoked, listFilesRecursive, shouldEarlyTerminat
 const SKILL_NAME = "azure-enterprise-infra-planner";
 const RUNS_PER_PROMPT = 1;
 const invocationRateThreshold = 0.8;
-const FOLLOW_UP_PROMPT = ["Go with recommended options. Assume all defaults to make the plan."];
+const FOLLOW_UP_PROMPT = [
+  "The resource list looks good, proceed with generating the plan.",
+  "Go with recommended options. Assume all defaults to make the plan."
+];
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -255,7 +258,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             testWorkspacePath = workspace;
             // Pre-create infra/ to guide IaC file placement per skill instructions
             fs.mkdirSync(path.join(workspace, "infra", "modules"), { recursive: true });
-          }
+          },
+          shouldEarlyTerminate: () => {
+            if (!testWorkspacePath) {
+              return false;
+            }
+            return fs.existsSync(path.join(testWorkspacePath, "infra", "main.bicep"));
+          },
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);

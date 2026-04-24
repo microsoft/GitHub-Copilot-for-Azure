@@ -18,6 +18,8 @@
     <a href="/" class="site-nav-link active" aria-current="page">Dashboard</a>
     <a href="/integration-tests.html" class="site-nav-link">Integration Tests</a>
     <a href="/nightly-runs.html" class="site-nav-link">Nightly Runs</a>
+    <a href="/performance-dashboard.html" class="site-nav-link">MSBench Performance Dashboard</a>
+    <a href="/msbench-nightly-runs.html" class="site-nav-link">MSBench Nightly Runs</a>
   </nav>
 
   <header class="dashboard-header">
@@ -79,6 +81,30 @@
 
       <section class="panel" id="panel-skill-invocation" role="region" aria-label="Skill Invocation Rates">
         <h2>Skill Invocation Rates</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-e2e-pass-rate" role="region" aria-label="End-to-End Pass Rate per Skill">
+        <h2>End-to-End Pass Rate per Skill</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-confidence-level" role="region" aria-label="Confidence Level per Skill">
+        <h2>Confidence Level per Skill</h2>
+        <div class="panel-status"></div>
+        <div class="panel-summary"></div>
+        <div class="panel-items"></div>
+        <p class="loading-text">Loading...</p>
+      </section>
+
+      <section class="panel" id="panel-deploy-retries" role="region" aria-label="Deploy Scenario Retries">
+        <h2>Deploy Scenario Retries</h2>
         <div class="panel-status"></div>
         <div class="panel-summary"></div>
         <div class="panel-items"></div>

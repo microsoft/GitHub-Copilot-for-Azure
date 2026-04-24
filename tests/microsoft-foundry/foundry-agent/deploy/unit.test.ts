@@ -8,16 +8,9 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DEPLOY_MD = path.resolve(
-  __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/deploy/deploy.md"
-);
 
 describe("deploy - Unit Tests", () => {
   let skill: LoadedSkill;
@@ -25,7 +18,10 @@ describe("deploy - Unit Tests", () => {
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
-    deployContent = fs.readFileSync(DEPLOY_MD, "utf-8");
+    deployContent = fs.readFileSync(
+      path.join(skill.path, "foundry-agent", "deploy", "deploy.md"),
+      "utf-8"
+    );
   });
 
   describe("Skill Metadata", () => {
@@ -69,13 +65,19 @@ describe("deploy - Unit Tests", () => {
 
     test("documents MCP tools", () => {
       expect(deployContent).toContain("## MCP Tools");
+      expect(deployContent).toContain("agent_definition_schema_get");
       expect(deployContent).toContain("agent_update");
-      expect(deployContent).toContain("agent_container_control");
-      expect(deployContent).toContain("agent_container_status_get");
+      expect(deployContent).toContain("agent_get");
     });
 
     test("contains hosted agent workflow", () => {
       expect(deployContent).toContain("## Workflow: Hosted Agent Deployment");
+    });
+
+    test("documents the hosted deployment verification flow", () => {
+      expect(deployContent).toMatch(/Capture the instance identity `principal_id`/i);
+      expect(deployContent).toMatch(/Continue to Step 8/i);
+      expect(deployContent).toMatch(/required hosted-agent session handling/i);
     });
 
     test("contains prompt agent workflow", () => {
@@ -84,6 +86,11 @@ describe("deploy - Unit Tests", () => {
 
     test("contains error handling section", () => {
       expect(deployContent).toContain("## Error Handling");
+    });
+
+    test("lists invocations as a supported container protocol", () => {
+      expect(deployContent).toContain("`invocations`");
+      expect(deployContent).toMatch(/Invocation payload protocol/i);
     });
   });
 
@@ -164,6 +171,12 @@ describe("deploy - Unit Tests", () => {
     test("directs to observe skill Step 2 for evaluation", () => {
       expect(deployContent).toContain("observe skill");
       expect(deployContent).toMatch(/Step 2.*Evaluate/i);
+    });
+
+    test("documents required invocation RBAC for hosted agents", () => {
+      expect(deployContent).toContain("Cognitive Services User");
+      expect(deployContent).toContain("principal_id");
+      expect(deployContent).toMatch(/instance identity/i);
     });
   });
 

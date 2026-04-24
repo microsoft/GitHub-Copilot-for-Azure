@@ -47,8 +47,9 @@ param containerRegistryName string
 param imageName string
 param userAssignedIdentityId string
 param uamiClientId string
-param serviceBusNamespace string = ''
-param queueName string = ''
+// Service Bus params — provided by servicebus recipe, omit if not using SB
+param serviceBusNamespace string
+param queueName string
 
 resource worker 'Microsoft.App/containerApps@2024-03-01' = {
   name: name

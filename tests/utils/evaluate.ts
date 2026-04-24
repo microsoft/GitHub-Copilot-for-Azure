@@ -214,6 +214,59 @@ export function getAllToolText(metadata: AgentMetadata): string {
 }
 
 /**
+ * Check if an MCP tool was called from a specific server
+ */
+export function isMcpToolCalled(metadata: AgentMetadata, mcpServerName: string, mcpToolNamePattern?: RegExp): boolean {
+  return metadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .some(event => {
+      const data = event.data as {
+        mcpServerName?: string;
+        mcpToolName?: string;
+      };
+
+      if (data.mcpServerName !== mcpServerName) {
+        return false;
+      }
+
+      // If pattern specified, require tool name to exist and match
+      if (mcpToolNamePattern) {
+        if (!data.mcpToolName) {
+          return false;
+        }
+        return mcpToolNamePattern.test(data.mcpToolName);
+      }
+
+      return true; // Server matches, no tool name pattern specified
+    });
+}
+
+/**
+ * Search for a keyword in both assistant messages AND tool execution data (reasoning)
+ */
+export function doesAssistantOrToolsIncludeKeyword(
+  metadata: AgentMetadata,
+  keyword: string,
+  options: { caseSensitive?: boolean } = {}
+): boolean {
+  const searchText = options.caseSensitive
+    ? keyword
+    : keyword.toLowerCase();
+
+  // Check assistant messages
+  const messages = getAllAssistantMessages(metadata);
+  const messageText = options.caseSensitive ? messages : messages.toLowerCase();
+  if (messageText.includes(searchText)) {
+    return true;
+  }
+
+  // Check tool calls and results (reasoning data)
+  const toolText = getAllToolText(metadata);
+  const toolSearchText = options.caseSensitive ? toolText : toolText.toLowerCase();
+  return toolSearchText.includes(searchText);
+}
+
+/**
  * Maximum number of tool calls allowed before invoking the expected skill.
  * If more than this number of tool calls are made before invoking the expected skill,
  * we consider the agent failed to invoke the skill.
@@ -243,8 +296,11 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
   };
 
   try {
+    // Before agent run starts, initialize the test result as if it failed.
+    // This ensures every test case has a result even when the agent run times out.
+    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
     await fn(ctx);
-    global.addTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -253,12 +309,12 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate });
     throw e;
   }
 }
 
-export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
+export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string, toolCallBudget?: number): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
   if (shouldEarlyTerminateForInvokedSkill) {
     const earlyTerminateComment = `✅ ${skillName} is invoked as expected. Terminating the agent run early.`;
@@ -270,7 +326,7 @@ export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetad
     return true;
   }
 
-  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > maxToolCallBeforeSkillInvocationTerminate;
+  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > (toolCallBudget ?? maxToolCallBeforeSkillInvocationTerminate);
   if (shouldEarlyTerminateForTooLate) {
     agentMetadata.testComments.push(`⚠️ ${skillName} is not invoked within early tool calls. Terminating the agent run early.`);
     return true;

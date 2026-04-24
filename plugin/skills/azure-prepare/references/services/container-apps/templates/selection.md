@@ -2,7 +2,7 @@
 
 **CRITICAL**: Check indicators IN ORDER before defaulting to web app.
 
-**Architecture**: All deployments start from a [base template](web-app.md) per stack.
+**Architecture**: All deployments start from an appropriate base template for the workload (e.g., [web-app.md](web-app.md), [api.md](api.md), [worker.md](worker.md)).
 Integrations are applied as [composable recipes](recipes/README.md) on top of the base.
 See [composition.md](recipes/composition.md) for the merge algorithm.
 

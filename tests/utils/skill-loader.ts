@@ -1,7 +1,7 @@
 /**
  * Skill Loader Utility
  * 
- * Loads and parses SKILL.md files from the plugin/skills directory.
+ * Loads and parses SKILL.md files from the output/skills directory.
  * Extracts frontmatter metadata and content.
  */
 
@@ -31,7 +31,7 @@ export interface LoadedSkill {
  */
 export async function loadSkill(skillName: string): Promise<LoadedSkill> {
   const skillPath = path.join(
-    global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills"),
+    global.SKILLS_PATH || path.resolve(__dirname, "../../output/skills"),
     skillName
   );
   const skillFile = path.join(skillPath, "SKILL.md");
@@ -59,7 +59,7 @@ export async function loadSkill(skillName: string): Promise<LoadedSkill> {
  * @returns Names of skills in azure plugin.
  */
 export function listSkills(): string[] {
-  const skillsDir = global.SKILLS_PATH || path.resolve(__dirname, "../../plugin/skills");
+  const skillsDir = global.SKILLS_PATH || path.resolve(__dirname, "../../output/skills");
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
   return items
     .filter((item) => item.isDirectory())

@@ -19,11 +19,11 @@ OUTPUT:
 ### Step 1: Select Base Template
 
 Choose the base template from [selection.md](../selection.md) based on the workload type.
-Copy the base template structure into the project directory.
+Use `-t <template-name>` when initializing new projects so the project starts from proven IaC. Only omit `-t` if you are inside an existing template directory.
 
 ```bash
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
-azd init -e "$ENV_NAME" --no-prompt
+azd init -t "<template-name-from-selection.md>" -e "$ENV_NAME" --no-prompt
 ```
 
 ### Step 2: Check if Recipes Needed

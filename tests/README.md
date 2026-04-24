@@ -117,9 +117,16 @@ npm run update:snapshots -- --testPathPatterns={skill-name}
 ### Setup (First Time)
 
 ```bash
+# From the repo root: install dependencies and build the plugin output
+npm install
+npm run build
+
+# Then install test dependencies
 cd tests
 npm install
 ```
+
+> **Note:** Tests run against the built output in `output/`. You must run `npm run build` from the repo root before running tests. Rebuild after making changes to skill files under `plugin/`.
 
 ### Commands
 
@@ -129,7 +136,7 @@ npm install
 | `npm run test:unit` | Run unit and trigger tests only (fast, no auth) |
 | `npm run test:integration` | Run integration tests (requires Copilot CLI auth, az auth, azd auth) |
 | `npm run test:integration -- azure-deploy` | Run integration tests for a specific skill |
-| `npm run test:integration -- azure-deploy static-web-apps-deploy` | Run integration tests for a specific describe group |
+| `npm run test:integration -- azure-deploy vanilla-static-web-apps-deploy` | Run integration tests for a specific describe group |
 | `npm run test:integration -- azure-deploy "creates simple containerized Node.js"` | Run a specific test |
 | `npm run test:skill -- azure-ai` | Run all tests for a specific skill |
 | `npm run test:ci` | Run tests for CI (excludes integration tests) |
@@ -356,7 +363,7 @@ This updates the Skills Coverage Grid in this README.
 | azure-cloud-migrate | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
 | azure-compute | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost-optimization | ✅ | ✅ | ✅ | ✅ | - |
+| azure-cost | ✅ | ✅ | ✅ | ✅ | - |
 | azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
 | azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
 | azure-enterprise-infra-planner | ✅ | ✅ | ✅ | ✅ | - |

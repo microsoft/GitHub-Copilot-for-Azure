@@ -29,7 +29,7 @@ Base Template (web-app, api, worker, job, etc.)
 | [cosmos](cosmos/README.md) | ✅ Cosmos account + DB + RBAC | ❌ | ✅ Available |
 | [servicebus](servicebus/README.md) | ✅ SB namespace + queue + RBAC | ✅ KEDA azure-servicebus | ✅ Available |
 | [redis](redis/README.md) | ✅ Redis cache + RBAC | ❌ | ✅ Available |
-| [acr](acr/README.md) | ✅ ACR + build task | ❌ | ✅ Available |
+| [acr](acr/README.md) | ✅ ACR + RBAC | ❌ | ✅ Available |
 | [postgres](postgres/README.md) | ✅ PostgreSQL Flexible + RBAC | ❌ | ✅ Available |
 
 ## How It Works
