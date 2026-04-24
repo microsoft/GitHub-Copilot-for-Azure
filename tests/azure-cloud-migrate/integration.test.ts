@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { expectFiles, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 /**
  * Find the -azure output directory. The skill may create it as a sibling
@@ -159,6 +159,34 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           /migration-status\.md$/,
           /migration-assessment-report\.md$/
         ], []);
+      });
+    }, migrationTestTimeoutMs);
+  });
+
+  describe("Spring Boot to Container Apps migration scenario", () => {
+    test("invokes skill for Spring Boot to ACA migration prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "I want to migrate my Spring Boot application from Azure Spring Apps to Azure Container Apps. Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+    test("invokes skill for Spring Boot containerization prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I containerize my Spring Boot JAR and deploy it to Azure Container Apps?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
       });
     }, migrationTestTimeoutMs);
   });
