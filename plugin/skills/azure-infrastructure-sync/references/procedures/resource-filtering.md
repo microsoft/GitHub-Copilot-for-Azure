@@ -12,7 +12,7 @@ Centralized exclusion lists for Azure resource discovery. Different skills filte
 | `Microsoft.Network/networkWatchers/connectionMonitors` | ✅ | ✅ | Auto-created child |
 | `Microsoft.AlertsManagement/smartDetectorAlertRules` | ✅ | ✅ | Auto-created |
 | `Microsoft.Portal/dashboards` | ✅ | ✅ | Portal UI artifact |
-| `microsoft.insights/autoscalesettings` (with `hidden-related:` tags) | ✅ | ✅ | Auto-created |
+| `Microsoft.Insights/autoscalesettings` (with `hidden-related:` tags) | ✅ | ✅ | Auto-created |
 | `Microsoft.Network/networkIntentPolicies` | ✅ | ✅ | Auto-created |
 | `Microsoft.Network/serviceEndpointPolicies` | ✅ | ✅ | Auto-created |
 | `Microsoft.Resources/deployments` | ✅ | ✅ | Deployment history |
