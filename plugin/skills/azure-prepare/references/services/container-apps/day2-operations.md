@@ -51,11 +51,17 @@ az containerapp logs show -n $APP -g $RG \
 Query historical logs via the Container Apps environment's Log Analytics workspace:
 
 ```kql
-ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "my-app"
+// Azure Monitor destination (new environments — default)
+ContainerAppConsoleLogs
+| where ContainerAppName == "my-app"
 | where TimeGenerated > ago(1h)
-| project TimeGenerated, Log_s, RevisionName_s
+| project TimeGenerated, Log, RevisionName
 | order by TimeGenerated desc
+
+// Log Analytics destination (legacy environments)
+// ContainerAppConsoleLogs_CL
+// | where ContainerAppName_s == "my-app"
+// | project TimeGenerated, Log_s, RevisionName_s
 ```
 
 ## Environment Variable Updates
@@ -76,6 +82,11 @@ az containerapp update -n $APP -g $RG \
 ### Bicep — Env Vars with Secret References
 
 ```bicep
+configuration: {
+  secrets: [
+    { name: 'db-password', value: dbPassword }  // or use keyVaultUrl + identity
+  ]
+}
 template: {
   containers: [
     {
@@ -104,7 +115,7 @@ az containerapp secret set -n $APP -g $RG \
   --secrets "db-password=keyvaultref:https://myvault.vault.azure.net/secrets/db-pwd,identityref:/subscriptions/.../userAssignedIdentities/my-id"
 ```
 
-> ⚠️ **Warning:** Avoid passing plaintext secrets on the command line — they may appear in shell history and process listings. Prefer Key Vault references or `--file` based approaches.
+> ⚠️ **Warning:** Avoid passing plaintext secrets on the command line — they may appear in shell history and process listings. Prefer Key Vault references. If you must use plaintext, use shell substitution like `--secrets "key=$(cat secret.txt)"` to avoid literals on the command line.
 
 > 💡 **Tip:** Use Key Vault references instead of plain-text secrets. The Container App pulls the latest value on each new revision or replica start.
 

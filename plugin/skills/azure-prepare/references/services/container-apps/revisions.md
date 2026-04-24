@@ -30,13 +30,15 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 ```
 
-> 💡 **Tip:** On first deployment, only one revision exists. Use `latestRevision: true` in Bicep. Configure traffic splitting via CLI after deploying additional revisions.
+> 💡 **Tip:** In Bicep/ARM deployments, you typically can't predictably target a specific new revision name. Use `latestRevision: true` in Bicep for initial deployment, then configure traffic splitting or labels via CLI after the new revision is created.
+
+> ⚠️ **Warning:** For blue/green workflows, you must first pin traffic to a named revision before deploying a new one. With `latestRevision: true, weight: 100`, new revisions automatically receive all traffic — there is no validation window.
 
 ## Traffic Splitting Patterns
 
 ### Blue/Green Deployment
 
-Route 100% to the current revision, deploy a new one, validate, then switch:
+Pin traffic to the current revision, deploy a new one, validate, then switch:
 
 ```bash
 # Deploy new revision and capture its name from the update output

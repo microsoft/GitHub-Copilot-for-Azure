@@ -88,10 +88,10 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
 3. Configure a managed or custom TLS certificate
 
 ```bash
-# Add custom domain with managed certificate
+# Register custom domain (hostname only — no cert provisioned yet)
 az containerapp hostname add -n $APP -g $RG --hostname app.contoso.com
 
-# Bind managed certificate
+# Bind managed certificate (provisions and attaches TLS cert)
 az containerapp hostname bind -n $APP -g $RG \
   --hostname app.contoso.com \
   --environment $ENV_NAME \
@@ -114,9 +114,11 @@ az containerapp hostname bind -n $APP -g $RG \
 
 Azure automatically provisions and renews TLS certificates for custom domains — no manual cert management required.
 
+> ⚠️ **Prerequisites:** Managed certificates require the app to be externally reachable with valid **public** DNS (CNAME or HTTP validation). They do **not** work for internal environments or apps behind private DNS. For private/internal scenarios, bring your own certificate via `az containerapp ssl upload`.
+
 ## IP Restrictions
 
-> ⚠️ **Warning:** IP restriction rules are evaluated by priority (lower number = higher priority). You can mix Allow and Deny rules — use explicit priorities to control evaluation order.
+> ⚠️ **Warning:** IP restriction rules are evaluated in **array order** (first match wins). The `priority` field does not exist in the Container Apps API — order your rules carefully in the array.
 
 Allow-only rules implicitly deny all traffic not matching any rule. Deny-only rules implicitly allow all other traffic.
 
@@ -131,14 +133,12 @@ configuration: {
         action: 'Allow'
         ipAddressRange: '203.0.113.0/24'
         description: 'Office network'
-        priority: 100
       }
       {
         name: 'allow-vpn'
         action: 'Allow'
         ipAddressRange: '198.51.100.0/24'
         description: 'VPN gateway'
-        priority: 200
       }
     ]
   }
