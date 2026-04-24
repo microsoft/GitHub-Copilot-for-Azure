@@ -35,17 +35,14 @@ resource redis 'Microsoft.Cache/redis@2024-03-01' = {
   }
 }
 
-// RBAC — Redis Cache Data Owner
-resource rbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(redis.id, principalId, 'e12a10f1-dcd0-4ee7-abb0-0b2e24e345e7')
-  scope: redis
+// Data access — Redis uses its own access policy system, not ARM roleAssignments
+resource accessPolicy 'Microsoft.Cache/redis/accessPolicyAssignments@2024-03-01' = {
+  parent: redis
+  name: guid(redis.id, principalId, 'data-owner')
   properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      'e12a10f1-dcd0-4ee7-abb0-0b2e24e345e7'
-    )
-    principalId: principalId
-    principalType: 'ServicePrincipal'
+    accessPolicyName: 'Data Owner'
+    objectId: principalId
+    objectIdAlias: 'appIdentity'
   }
 }
 
@@ -60,15 +57,21 @@ env: [
   { name: 'REDIS_HOSTNAME', value: redis.outputs.hostName }
   { name: 'REDIS_PORT', value: string(redis.outputs.sslPort) }
   { name: 'AZURE_CLIENT_ID', value: uami.outputs.clientId }
+  { name: 'REDIS_USER_OID', value: uami.outputs.principalId }  // objectId for Redis username
 ]
 ```
 
-## RBAC Roles
+## Access Policies
 
-| Role | GUID | Access |
-|------|------|--------|
-| Redis Cache Data Owner | `e12a10f1-dcd0-4ee7-abb0-0b2e24e345e7` | Read + write data |
-| Redis Cache Data Contributor | `e12a10f1-dcd0-4ee7-abb0-0b2e24e345c2` | Read-only data |
+Redis uses its own data access policy system (not ARM roleAssignments):
+
+| Policy | Access |
+|--------|--------|
+| Data Owner | Read + write data, manage access policies |
+| Data Contributor | Read + write data |
+| Data Reader | Read-only data |
+
+> ⚠️ **Do not use ARM `roleAssignments`** for Redis data access — those are control-plane only. Use `Microsoft.Cache/redis/accessPolicyAssignments` as shown above.
 
 ## SDK Connection (Node.js Example)
 
@@ -84,7 +87,7 @@ async function createRedisClient() {
   const { token } = await credential.getToken("https://redis.azure.com/.default");
   const client = createClient({
     url: `rediss://${process.env.REDIS_HOSTNAME}:${process.env.REDIS_PORT}`,
-    username: process.env.AZURE_CLIENT_ID,
+    username: process.env.REDIS_USER_OID,  // objectId (principalId), not clientId
     password: token,
   });
   await client.connect();
