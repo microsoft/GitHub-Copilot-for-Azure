@@ -20,6 +20,7 @@ metadata:
 5. Use the latest supported runtime for the target service
 6. Destructive actions require `ask_user` — [global-rules](references/services/functions/global-rules.md)
 7. **Report progress to user** — During long-running operations (deployments, image pushes), provide resource-level status updates so the user is never left waiting without feedback — see [workflow-details.md](references/workflow-details.md)
+8. **Audit service discovery in app code** — K8s DNS names (e.g., `http://order-service:3001`) do not resolve in Container Apps. During assessment, scan source code for hardcoded hostnames/ports in HTTP clients and flag them for env-var-driven URL injection
 
 ## Migration Scenarios
 
