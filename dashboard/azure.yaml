@@ -12,3 +12,7 @@ services:
     project: ./api
     language: ts
     host: function
+  sync:
+    project: ./sync
+    language: ts
+    host: function

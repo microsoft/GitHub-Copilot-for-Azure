@@ -258,7 +258,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             testWorkspacePath = workspace;
             // Pre-create infra/ to guide IaC file placement per skill instructions
             fs.mkdirSync(path.join(workspace, "infra", "modules"), { recursive: true });
-          }
+          },
+          shouldEarlyTerminate: () => {
+            if (!testWorkspacePath) {
+              return false;
+            }
+            return fs.existsSync(path.join(testWorkspacePath, "infra", "main.bicep"));
+          },
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
