@@ -12,40 +12,25 @@
 
 ### Authentication with File
 
-Even though file-based authentication is deprecated in the modern SDKs, preserve the existing logic when performing the upgrade.
+File-based authentication (e.g., `Azure.configure().authenticate(credentialFile)`) is **discouraged** under Azure's security-by-default posture: it relies on long-lived secrets stored on disk, which conflicts with the modern guidance to prefer managed identities, workload identity, or other credential types exposed by `DefaultAzureCredential`.
 
-Legacy code
+Do **not** emit a code sample that reproduces file-based authentication during the upgrade. Instead, when the legacy code uses `.authenticate(File)`, replace the authentication block in the migrated code with a `DefaultAzureCredential` (or another appropriate `TokenCredential`) and prepend a `TODO` comment that explains the change. For example:
+
 ```java
-final File credentialFile = new File(System.getenv("AZURE_AUTH_LOCATION"));
-Azure azure = Azure.configure()
-    .authenticate(credentialFile)
-    .withDefaultSubscription();
-```
-can be updated to read the JSON file via `ObjectMapper` from the Jackson library and authenticate with the `ClientSecretCredential` class.
-```java
-final File credentialFile = new File(System.getenv("AZURE_AUTH_LOCATION"));
-ObjectMapper mapper = new ObjectMapper();
-JsonNode credentialFileNode = mapper.readTree(credentialFile);
-String clientId = credentialFileNode.get("clientId").asText();
-String clientSecret = credentialFileNode.get("clientSecret").asText();
-String tenantId = credentialFileNode.get("tenantId").asText();
-String subscriptionId = credentialFileNode.get("subscriptionId").asText();
-
-AzureProfile profile = new AzureProfile(tenantId, subscriptionId, AzureEnvironment.AZURE);
-ClientSecretCredential credential = new ClientSecretCredentialBuilder()
-    .clientId(clientId)
-    .clientSecret(clientSecret)
-    .tenantId(tenantId)
-    .build();
-
+// TODO: The original code authenticated using a credential file (AZURE_AUTH_LOCATION),
+// which is discouraged because it relies on long-lived secrets on disk and conflicts
+// with Azure's security-by-default guidance. It has been replaced with
+// DefaultAzureCredential. This change alters the authentication mechanism, so the
+// resulting code path requires extra testing (local dev, CI, and target runtime
+// identities) before it is considered production-ready.
+TokenCredential credential = new DefaultAzureCredentialBuilder().build();
+AzureProfile profile = new AzureProfile(AzureEnvironment.AZURE);
 AzureResourceManager azure = AzureResourceManager.configure()
     .authenticate(credential, profile)
-    .withSubscription(subscriptionId);
+    .withDefaultSubscription();
 ```
 
-If Jackson is not included in the project, add a compatible version of `jackson-databind`.
-
-Handle `IOException` and other checked exceptions according to the project's standards.
+Keep the `TODO` comment in the migrated source so reviewers and downstream maintainers are aware that the authentication mechanism changed and that the new code path has not been exercised by the original tests.
 
 ### OKHttp Interceptors
 
