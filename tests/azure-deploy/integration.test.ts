@@ -670,7 +670,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Phase 1: ACR resource
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
         // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com\//i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate file from the Container App
