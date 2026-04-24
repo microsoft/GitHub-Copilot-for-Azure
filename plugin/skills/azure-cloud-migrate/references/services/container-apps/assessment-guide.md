@@ -53,7 +53,7 @@
    - **Alternative**: Use Dapr state management, bindings, or Azure PaaS services
 
 5. **Direct Kubernetes API calls from apps**
-   - **Why**: k8s API not exposed
+   - **Why**: Kubernetes API not exposed
    - **Alternative**: Use environment variables, service discovery via DNS, or Dapr
 
 ### Storage Considerations

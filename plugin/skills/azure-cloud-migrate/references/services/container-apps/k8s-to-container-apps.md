@@ -6,7 +6,7 @@ Detailed guidance for migrating containerized workloads from Kubernetes (GKE, EK
 
 | Kubernetes Source | Azure Equivalent |
 |-------------------|------------------|
-| GKE / EKS / Self-hosted K8s | Azure Container Apps |
+| GKE / EKS / Self-hosted Kubernetes | Azure Container Apps |
 | Docker Registry / GCR / ECR | Azure Container Registry (ACR) |
 | ConfigMap | Container Apps Environment Variables / Secrets |
 | Secret | Azure Key Vault + Key Vault references |
@@ -18,7 +18,7 @@ Detailed guidance for migrating containerized workloads from Kubernetes (GKE, EK
 
 ## Resource Mapping
 
-| K8s Resource | Container Apps Equivalent | Notes |
+| Kubernetes Resource | Container Apps Equivalent | Notes |
 |--------------|---------------------------|-------|
 | Deployment | Container App | One deployment → one Container App |
 | Service (type: LoadBalancer) | Ingress (external: true) | Public endpoint |
@@ -31,7 +31,7 @@ Detailed guidance for migrating containerized workloads from Kubernetes (GKE, EK
 
 ## Configuration Mapping
 
-| K8s Manifest | Container Apps CLI/Bicep | Example |
+| Kubernetes Manifest | Container Apps CLI/Bicep | Example |
 |--------------|--------------------------|---------|
 | `replicas: 3` | `--min-replicas 3 --max-replicas 3` | Static scaling |
 | `resources.requests.cpu` | `--cpu 0.5` | CPU cores (0.25-4.0) |
@@ -46,7 +46,7 @@ Detailed guidance for migrating containerized workloads from Kubernetes (GKE, EK
 
 Follow these phases sequentially:
 
-### Phase 1: Export K8s Resources
+### Phase 1: Export Kubernetes Resources
 - Use `kubectl get deployment,service,configmap,secret -o yaml` to export manifests
 - Document current configuration (replicas, resources, env vars)
 - Identify external dependencies (databases, message queues, storage)
@@ -86,7 +86,7 @@ See [deployment-guide.md](deployment-guide.md) for step-by-step deployment.
 Container Apps **does NOT support**:
 - StatefulSets (use Azure Database services instead)
 - DaemonSets (not applicable in serverless model)
-- K8s PV/PVC objects (use Azure Files/Blob Storage via Container Apps volume mounts instead)
+- Kubernetes PV/PVC objects (use Azure Files/Blob Storage via Container Apps volume mounts instead)
 - Custom CNI networking
 - Node affinity / pod affinity
 
@@ -102,4 +102,4 @@ For unsupported Kubernetes platform features, consider **Azure Kubernetes Servic
 4. **Enable Dapr** for service-to-service communication, state management, pub/sub
 5. **Configure health probes** to ensure reliability
 6. **Use scaling rules** based on HTTP concurrency or custom metrics
-7. **Never modify source K8s cluster** during migration
+7. **Never modify source Kubernetes cluster** during migration

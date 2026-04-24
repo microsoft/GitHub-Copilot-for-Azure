@@ -126,7 +126,7 @@ az role assignment create --assignee $PRINCIPAL_ID --role AcrPull --scope $ACR_I
 
 ## Phase 6: Deploy
 
-> ⚠️ **Warning: Service Discovery Changes** — In K8s, pods reach other services by short DNS name (e.g., `http://order-service:3001`). In Container Apps, internal services use HTTPS FQDNs (e.g., `https://order-service.internal.<env-domain>`). **Audit application code** for hardcoded K8s hostnames/ports in HTTP clients, proxy logic, or connection strings — these must be replaced with env-var-driven URLs that point to the Container Apps internal FQDN.
+> ⚠️ **Warning: Service Discovery Changes** — In Kubernetes, pods reach other services by short DNS name (e.g., `http://order-service:3001`). In Container Apps, internal services use HTTPS FQDNs (e.g., `https://order-service.internal.<env-domain>`). **Audit application code** for hardcoded Kubernetes hostnames/ports in HTTP clients, proxy logic, or connection strings — these must be replaced with env-var-driven URLs that point to the Container Apps internal FQDN.
 
 **Mapping:** `spec.containers[].image` → `template.containers[].image`; `spec.containers[].ports[].containerPort` → `ingress.targetPort`; `spec.replicas` → `scale.minReplicas`. Service types: ClusterIP → `external: false`; LoadBalancer/NodePort → `external: true`.
 
@@ -186,4 +186,4 @@ az containerapp logs show --name my-app --resource-group myapp-rg --follow
 | NSG blocking provisioning | If VNet-integrated, ensure NSG does **not** have a custom DenyAllInbound at low priority — it blocks Azure Load Balancer probes and VNet-internal traffic. The default rules (65000-65500) handle deny. Add explicit AllowAzureLoadBalancer rule |
 | SecretRef not found | `--env-vars KEY=secretref:name` requires `--secrets name=value` (or keyvaultref) in the **same** `az containerapp create` command |
 | ARM deployment locks | If a Bicep deployment is stuck with Container Apps InProgress, run `az deployment group cancel -g <rg> -n <deployment>` before attempting CLI updates or deletes |
-| Service-to-service timeout | K8s DNS names (`http://svc:port`) don't work in ACA. Ensure app code reads `ORDER_SERVICE_URL` (or equivalent) env var pointing to the internal FQDN |
+| Service-to-service timeout | Kubernetes DNS names (`http://svc:port`) don't work in ACA. Ensure app code reads `ORDER_SERVICE_URL` (or equivalent) env var pointing to the internal FQDN |
