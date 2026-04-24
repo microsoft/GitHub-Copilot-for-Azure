@@ -24,7 +24,7 @@ Choose the diagram format based on the user's request. If unspecified, default t
 | Trigger | Workflow |
 |---|---|
 | "sketch" / "whiteboard" / "description" | [sketch-to-diagram-workflow.md](references/sketch-to-diagram-workflow.md) |
-| "draw.io" / "drawio" / "rich diagram" | [azure-to-diagram-workflow.md](references/azure-to-diagram-workflow.md) |
+| "draw.io" / "drawio" / "rich diagram" | [drawio-diagram-workflow.md](references/drawio-diagram-workflow.md) |
 | "mermaid" / default | [mermaid-diagram-workflow.md](references/mermaid-diagram-workflow.md) |
 
 See also: [drawio-diagram-conventions.md](references/drawio-diagram-conventions.md) for Draw.io shape, stencil, and layout conventions.
@@ -34,19 +34,24 @@ See also: [drawio-diagram-conventions.md](references/drawio-diagram-conventions.
 1. **Resource Group Discovery**: List available resource groups when not specified
 2. **Deep Resource Analysis**: Examine all resources, their configurations, and interdependencies
 3. **Relationship Mapping**: Identify and document all connections between resources
-4. **Diagram Generation**: Create detailed, accurate Mermaid diagrams
-5. **Documentation Creation**: Produce clear markdown files with embedded diagrams
+4. **Diagram Generation**: Create detailed, accurate Mermaid or Draw.io diagrams
+5. **Documentation Creation**: Produce a rich output, either in a Draw.io diagram or in markdown files with embedded mermaid diagrams
 
 ## Workflow Process
 
+Steps 1 and 2 are the shared discovery procedure used by every renderer (Mermaid and Draw.io). Step 3 routes to the format-specific workflow.
+
 ### Step 1: Resource Group Selection
 
-If the user hasn't specified a resource group:
+> **Sketch/description input:** If the user provides a sketch, image, or text description instead of a live Azure scope, follow [references/sketch-to-diagram-workflow.md](references/sketch-to-diagram-workflow.md) for input analysis, clarification, and doc-check gating, then continue with Step 3.
 
-1. Use your tools to query available resource groups. If you do not have a tool for this, use `az`.
-2. Present a numbered list of resource groups with their locations
-3. Ask the user to select one by number or name
-4. Wait for user response before proceeding
+If the user hasn't specified a sketch or resource group:
+
+1. **Verify Azure session first** — see [procedures/azure-authentication.md](references/procedures/azure-authentication.md). **HARD GATE** — stop if not authenticated.
+2. Use your tools to query available resource groups. If you do not have a tool for this, use `az`.
+3. Present a numbered list of resource groups with their locations
+4. Ask the user to select one by number or name
+5. Wait for user response before proceeding
 
 If a resource group is specified, validate it exists and proceed.
 
@@ -73,26 +78,26 @@ Once you have the resource group:
    - **Configuration**: App Settings pointing to Key Vaults, connection strings
    - **Dependencies**: Parent-child relationships, required resources
 
+4. **Filter the resource list** by applying the "Exclude for Diagrams" column in [procedures/resource-filtering.md](references/procedures/resource-filtering.md). Remove auto-created, hidden, and non-architectural resources.
+
+5. **Check scope size**: If >50 resources remain after filtering, warn the user and offer to split by resource group or layer.
+
 > **Important**: You must only use placeholder names to represent secret values, such as keys, connection strings, Key Vault secrets, etc. Use meaningful placeholder names to represent each secret in the diagram. Never put secret values in the resource diagram.
 
 ### Step 3: Diagram Construction
 
-Build the diagram in the requested format. The requirements below (grouping, labels, relationships) apply to both Mermaid and Draw.io output.
+Hand the resource model off to the renderer matching the user's requested format. The format-specific workflow handles diagram construction and file saving.
 
-- **Mermaid**: Use `graph TB` (top-to-bottom) or `graph LR` (left-to-right). See [mermaid-diagram-workflow.md](references/mermaid-diagram-workflow.md) and [example-diagram.md](./assets/example-diagram.md).
-- **Draw.io**: Follow [azure-to-diagram-workflow.md](references/azure-to-diagram-workflow.md) and [drawio-diagram-conventions.md](references/drawio-diagram-conventions.md). Look up every icon in [azure-stencil-mapping.json](references/azure-stencil-mapping.json). Save `.drawio` XML to a file — never dump raw XML in chat.
+- **Mermaid** (default): [references/mermaid-diagram-workflow.md](references/mermaid-diagram-workflow.md)
+- **Draw.io**: [references/drawio-diagram-workflow.md](references/drawio-diagram-workflow.md)
 
-**Key Diagram Requirements:**
+**Key Diagram Requirements** (apply to both formats):
 
 - **Group by layer or purpose**: Network, Compute, Data, Security, Monitoring
-- **Include details**: SKUs, tiers, important settings in node labels (use `<br/>` for line breaks)
+- **Include details**: SKUs, tiers, important settings in node labels
 - **Label all connections**: Describe what flows between resources (data, identity, network)
 - **Use meaningful node IDs**: Abbreviations that make sense (APP, FUNC, SQL, KV)
-- **Visual hierarchy**: Subgraphs for logical grouping
-- **Connection types**:
-  - `-->` for data flow or dependencies
-  - `-.->` for optional/conditional connections
-  - `==>` for critical/primary paths
+- **Visual hierarchy**: Use subgraphs (Mermaid) or containers (Draw.io) for logical grouping
 
 **Resource Type Examples:**
 - App Service: Include plan tier (B1, S1, P1v2)
@@ -101,20 +106,6 @@ Build the diagram in the requested format. The requirements below (grouping, lab
 - Storage: Include redundancy (LRS, GRS, ZRS)
 - VNets: Include address space
 - Subnets: Include address range
-
-### Step 4: File Creation
-
-Create a subdirectory `[resource-group-name]-architecture/` and save `[resource-group-name]-architecture.drawio`(draw.io) or `[resource-group-name]-architecture.md`(mermaid) inside it.
-**For Mermaid output:** Use [template-architecture.md](./assets/template-architecture.md) as a template and use the followingg structure:
-
-1. **Header**: Resource group name, subscription, region
-2. **Summary**: Brief overview of the architecture (2-3 paragraphs)
-3. **Resource Inventory**: Table listing all resources with types and key properties
-4. **Architecture Diagram**: The complete Mermaid diagram
-5. **Relationship Details**: Explanation of key connections and data flows
-6. **Notes**: Any important observations, potential issues, or recommendations
-
-**For Draw.io output:** Do not present the diagram as complete until the file is confirmed saved. A companion `.md` summary may accompany it.
 
 ## Operating Guidelines
 
@@ -162,7 +153,7 @@ Create a subdirectory `[resource-group-name]-architecture/` and save `[resource-
 - ❌ Create incomplete or placeholder diagrams
 - ❌ Omit configuration details that affect architecture
 - ❌ Proceed without confirming resource group selection
-- ❌ Generate invalid Mermaid syntax
+- ❌ Generate invalid Mermaid or Draw.io syntax
 - ❌ Modify or delete Azure resources (read-only analysis)
 
 ### Edge Cases & Error Handling
@@ -178,12 +169,7 @@ Create a subdirectory `[resource-group-name]-architecture/` and save `[resource-
 
 ## Output Format Specifications
 
-### Mermaid Diagram Syntax
-- Use `graph TB` (top-to-bottom) for vertical layouts
-- Use `graph LR` (left-to-right) for horizontal layouts (better for wide architectures)
-- Subgraph syntax: `subgraph "Descriptive Name"`
-- Node syntax: `ID["Display Name<br/>Details"]`
-- Connection syntax: `SOURCE -->|"Label"| TARGET`
+For format-specific syntax (Mermaid graph direction, Draw.io XML, stencil paths), see the renderer workflow selected in Step 3.
 
 ### Markdown Structure
 - Use H1 for main title
@@ -191,7 +177,7 @@ Create a subdirectory `[resource-group-name]-architecture/` and save `[resource-
 - Use H3 for subsections
 - Use tables for resource inventories
 - Use bullet lists for notes and recommendations
-- Use code blocks with `mermaid` language tag for diagrams
+- Use code blocks with `mermaid` language tag for mermaid diagrams
 
 ## Success Criteria
 
@@ -199,10 +185,10 @@ A successful analysis includes:
 - ✅ Valid resource group identified
 - ✅ All resources discovered and analyzed
 - ✅ All significant relationships mapped
-- ✅ Detailed Mermaid diagram with proper grouping
-- ✅ Complete markdown file created
+- ✅ Detailed Mermaid or Draw.io diagram with proper grouping
+- ✅ Complete output file created (markdown for Mermaid, `.drawio` for Draw.io)
 - ✅ Clear, actionable documentation
-- ✅ Valid Mermaid syntax that renders correctly
+- ✅ Valid diagram syntax that renders correctly
 - ✅ Professional, architect-level output
 
 Your goal is to provide clarity and insight into Azure architectures, making complex resource relationships easy to understand through excellent visualization.

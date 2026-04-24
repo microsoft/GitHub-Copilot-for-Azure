@@ -1,29 +1,8 @@
 # Mermaid Diagram Workflow
 
-## Step 1: Resource Group Selection
+Generate a Mermaid architecture diagram from a resource model.
 
-If the user hasn't specified a resource group:
-
-1. Use your tools to query available resource groups. If you do not have a tool for this, use `az`.
-2. Present a numbered list of resource groups with their locations.
-3. Ask the user to select one by number or name.
-4. Wait for user response before proceeding.
-
-For bulk resource discovery across subscriptions, use Azure Resource Graph queries. See [azure-resource-graph.md](azure-resource-graph.md) for cross-subscription inventory patterns.
-
-## Step 2: Resource Discovery & Analysis
-
-1. **Query all resources** in the resource group using Azure MCP tools or `az`.
-2. **Analyze each resource** type and capture:
-   - Resource name and type, SKU/tier, location/region
-   - Network settings (VNets, subnets, private endpoints)
-   - Identity and access (Managed Identity, RBAC)
-   - Key configuration properties
-3. **Map relationships** by identifying:
-   - **Network**: VNet peering, subnet assignments, NSG rules, private endpoints
-   - **Data flow**: Apps → Databases, Functions → Storage, APIM → Backends
-   - **Identity**: Managed identities connecting to resources
-   - **Configuration**: App Settings → Key Vaults, connection strings
+> **Prerequisite:** Complete the discovery procedure in [../SKILL.md](../SKILL.md) (Steps 1–2) to produce a filtered resource inventory with mapped relationships.
 
 ## Step 3: Diagram Construction
 
