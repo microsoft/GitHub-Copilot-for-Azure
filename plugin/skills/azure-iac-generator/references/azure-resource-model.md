@@ -32,8 +32,9 @@ Each Azure environment is represented as a **resource model** — a JSON structu
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | string | Yes | Unique identifier within the model. Use a short slug (e.g., `vm-web-01`). |
-| `type` | string | Yes | Azure resource provider type (e.g., `Microsoft.Compute/virtualMachines`). |
+| `id` | string | Yes | **Canonical ARM resource ID** (for example, `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/virtualMachines/vm-web-01`). This is the primary key for matching resources across workflows. |
+| `localId` | string | No | Optional short slug for readability (for example, `vm-web-01`). Do not use as the canonical identifier. |
+| `type` | string | Yes | Azure resource provider type (for example, `Microsoft.Compute/virtualMachines`). Must align with `id`. |
 | `name` | string | Yes | Display name of the resource. |
 | `resourceGroup` | string | No | Resource group the resource belongs to. |
 | `location` | string | No | Azure region (e.g., `eastus`, `westeurope`). |
@@ -52,16 +53,16 @@ Each Azure environment is represented as a **resource model** — a JSON structu
 | `secures` | Security association | NSG secures Subnet |
 | `routes` | Traffic routing | Load Balancer routes to VM |
 
-## Usage by Skill
+## Usage by Workflow  
 
-- **azure-to-bicep**: Builds a resource model from live Azure resources; generates Bicep from it.
-- **azure-to-diagram**: Builds a resource model from live Azure resources; generates Draw.io XML from it.
-- **bicep-diagram-sync**: Parses both Bicep and Draw.io into resource models and compares them.
-- **bicep-policy-check**: Parses Bicep into a resource model to evaluate against Azure Policy.
-- **bicep-whatif**: Parses Bicep into a resource model and compares it against live Azure state.
-- **diagram-azure-sync**: Produces two resource models (diagram + live Azure) and compares them (quick or deep mode).
-- **diagram-to-bicep**: Parses Draw.io XML into a resource model; enriches it with configuration manifest; generates Bicep.
-- **sketch-to-diagram**: Produces a resource model from image analysis; generates Draw.io XML via stencil mapping.
+- **Azure to Bicep workflow**: Builds a resource model from live Azure resources; generates Bicep from it.  
+- **Azure to diagram workflow**: Builds a resource model from live Azure resources; generates Draw.io XML from it.  
+- **Bicep and diagram comparison workflow**: Parses both Bicep and Draw.io into resource models and compares them.  
+- **Bicep policy evaluation workflow**: Parses Bicep into a resource model to evaluate against Azure Policy.  
+- **Bicep what-if comparison workflow**: Parses Bicep into a resource model and compares it against live Azure state.  
+- **Diagram and Azure sync workflow**: Produces two resource models (diagram + live Azure) and compares them (quick or deep mode).  
+- **Diagram to Bicep workflow**: Parses Draw.io XML into a resource model; enriches it with configuration manifest; generates Bicep.  
+- **Sketch to diagram workflow**: Produces a resource model from image analysis; generates Draw.io XML via stencil mapping.  
 
 ## Common Azure Resource Types
 

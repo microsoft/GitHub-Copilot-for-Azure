@@ -19,15 +19,15 @@ All generated code must use current, supported versions. Stale defaults cause se
 
 ## Bicepparam Version Comments
 
-Always note the version choice in `.bicepparam` comments:
-
-```bicep
+Always note the version choice in `.bicepparam` comments. Treat the example below as a template only: look up the current supported runtime and support window at generation time rather than copying literal versions or dates from this document.  
+***bicep
 // Runtime stack for the App Service.
-//   DOTNET|10.0 → .NET 10 (LTS, supported until Nov 2028)
-//   NODE|22-lts → Node.js 22 LTS (supported until Apr 2027)
-//   PYTHON|3.13 → Python 3.13 (supported until Oct 2029)
-//   JAVA|21     → Java 21 LTS (supported until Sep 2028)
-param appServiceRuntimeStack = 'DOTNET|10.0'
+// Replace the placeholders below with the current supported values at generation time.
+// → (, supported until )
+// → (, supported until )
+// → (, supported until )
+// → (, supported until )
+param appServiceRuntimeStack = ''
 ```
 
 ## Hybrid Runtime Rule

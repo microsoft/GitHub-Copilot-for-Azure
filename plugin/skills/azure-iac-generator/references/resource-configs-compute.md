@@ -8,7 +8,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.Compute/virtualMachines
 
-**MCP Tool**: `mcp_azure_compute`
+**MCP Tool**: `mcp_azure_mcp_compute`
 **Fallback**: `az vm show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -27,7 +27,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.Compute/virtualMachineScaleSets
 
-**MCP Tool**: `mcp_azure_compute`
+**MCP Tool**: `mcp_azure_mcp_compute`
 **Fallback**: `az vmss show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -39,7 +39,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.Web/serverfarms
 
-**MCP Tool**: `mcp_azure_appservice`
+**MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az appservice plan show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -52,7 +52,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.Web/sites
 
-**MCP Tool**: `mcp_azure_appservice`
+**MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az webapp show --ids <resourceId> -o json` + `az webapp config show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -68,7 +68,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.Web/sites/functions
 
-**MCP Tool**: `mcp_azure_appservice`
+**MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az functionapp show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -80,7 +80,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.ContainerService/managedClusters
 
-**MCP Tool**: `mcp_azure_aks`
+**MCP Tool**: `mcp_azure_mcp_aks`
 **Fallback**: `az aks show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -95,7 +95,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.App/managedEnvironments
 
-**MCP Tool**: `mcp_azure_containerapps`
+**MCP Tool**: `mcp_azure_mcp_containerapps`
 **Fallback**: `az containerapp env show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -105,7 +105,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.App/containerApps
 
-**MCP Tool**: `mcp_azure_containerapps`
+**MCP Tool**: `mcp_azure_mcp_containerapps`
 **Fallback**: `az containerapp show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -120,7 +120,7 @@ Per-resource property retrieval for compute and container resource types.
 
 ### Microsoft.ContainerRegistry/registries
 
-**MCP Tool**: `mcp_azure_acr`
+**MCP Tool**: `mcp_azure_mcp_acr`
 **Fallback**: `az acr show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |

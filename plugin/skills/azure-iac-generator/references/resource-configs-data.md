@@ -8,7 +8,7 @@ Per-resource property retrieval for data and storage resource types.
 
 ### Microsoft.Storage/storageAccounts
 
-**MCP Tool**: `mcp_azure_storage`
+**MCP Tool**: `mcp_azure_mcp_storage`
 **Fallback**: `az storage account show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -24,7 +24,7 @@ Per-resource property retrieval for data and storage resource types.
 
 ### Microsoft.Sql/servers
 
-**MCP Tool**: `mcp_azure_sql`
+**MCP Tool**: `mcp_azure_mcp_sql`
 **Fallback**: `az sql server show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -35,7 +35,7 @@ Per-resource property retrieval for data and storage resource types.
 
 ### Microsoft.Sql/servers/databases
 
-**MCP Tool**: `mcp_azure_sql`
+**MCP Tool**: `mcp_azure_mcp_sql`
 **Fallback**: `az sql db show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -49,7 +49,7 @@ Per-resource property retrieval for data and storage resource types.
 
 ### Microsoft.DocumentDB/databaseAccounts
 
-**MCP Tool**: `mcp_azure_cosmos`
+**MCP Tool**: `mcp_azure_mcp_cosmos`
 **Fallback**: `az cosmosdb show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -64,7 +64,7 @@ Per-resource property retrieval for data and storage resource types.
 
 ### Microsoft.Cache/redis
 
-**MCP Tool**: `mcp_azure_redis`
+**MCP Tool**: `mcp_azure_mcp_redis`
 **Fallback**: `az redis show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |

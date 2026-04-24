@@ -13,9 +13,9 @@ Reverse-engineer live Azure resources or Draw.io diagrams into deployment-ready,
 
 ## Prerequisites
 
-- Authenticated Azure CLI session (`az login`)
 - Azure MCP and Bicep MCP servers available
 - For diagram source: a `.drawio` file in the workspace
+- For live Azure / `azure-to-bicep`: an authenticated Azure CLI session (`az login`) with access to the target subscription and resource group
 
 ## When to Use This Skill
 
@@ -34,7 +34,7 @@ Reverse-engineer live Azure resources or Draw.io diagrams into deployment-ready,
 
 ## Design Notes
 
-Named `azure-iac-generator` rather than `azure-bicep-generator` to accommodate future IaC tooling such as Terraform. Bicep is the only supported target today; Terraform support is reserved for a future iteration.
+Named `azure-iac-generator` rather than `azure-bicep-generator` to leave room for future expansion to additional Infrastructure as Code targets. Bicep is the only supported target today.
 
 ## Routing — MUST follow the matched workflow
 

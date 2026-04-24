@@ -8,7 +8,7 @@ Per-resource property retrieval for platform, security, and integration resource
 
 ### Microsoft.KeyVault/vaults
 
-**MCP Tool**: `mcp_azure_keyvault`
+**MCP Tool**: `mcp_azure_mcp_keyvault`
 **Fallback**: `az keyvault show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -22,7 +22,7 @@ Per-resource property retrieval for platform, security, and integration resource
 
 ### Microsoft.Insights/components
 
-**MCP Tool**: `mcp_azure_applicationinsights`
+**MCP Tool**: `mcp_azure_mcp_applicationinsights`
 **Fallback**: `az monitor app-insights component show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -33,7 +33,7 @@ Per-resource property retrieval for platform, security, and integration resource
 
 ### Microsoft.OperationalInsights/workspaces
 
-**MCP Tool**: `mcp_azure_monitor`
+**MCP Tool**: `mcp_azure_mcp_monitor`
 **Fallback**: `az monitor log-analytics workspace show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -43,7 +43,7 @@ Per-resource property retrieval for platform, security, and integration resource
 
 ### Microsoft.ServiceBus/namespaces
 
-**MCP Tool**: `mcp_azure_servicebus`
+**MCP Tool**: `mcp_azure_mcp_servicebus`
 **Fallback**: `az servicebus namespace show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
@@ -54,7 +54,7 @@ Per-resource property retrieval for platform, security, and integration resource
 
 ### Microsoft.EventHub/namespaces
 
-**MCP Tool**: `mcp_azure_eventhubs`
+**MCP Tool**: `mcp_azure_mcp_eventhubs`
 **Fallback**: `az eventhubs namespace show --ids <resourceId> -o json`
 
 | Property | ARM JSON Path | Notes |
