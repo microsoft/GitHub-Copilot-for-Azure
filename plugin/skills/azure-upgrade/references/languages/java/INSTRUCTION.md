@@ -14,7 +14,15 @@ Follow these steps:
     -E 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["'\''])' .
   ```
 
-  Commonly overlooked locations: `.ci/**/pom.xml`, `ci/**`, parent/BOM poms, `buildSrc/`, `gradle/libs.versions.toml`, `settings.gradle(.kts)`, `archetype-resources/`, sample sub-modules, Dockerfiles, shell/PowerShell scripts, and README snippets. Every hit must end up on the migration file list.
+  PowerShell equivalent (run from repo root):
+
+  ```powershell
+  Get-ChildItem -Path . -Recurse -File |
+    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules|out)[\\/]' } |
+    Select-String -Pattern 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["''])'
+  ```
+
+  Commonly overlooked locations:`.ci/**/pom.xml`, `ci/**`, parent/BOM poms, `buildSrc/`, `gradle/libs.versions.toml`, `settings.gradle(.kts)`, `archetype-resources/`, sample sub-modules, Dockerfiles, shell/PowerShell scripts, and README snippets. Every hit must end up on the migration file list.
 
 * **Adopt supported SDKs**: Replace the legacy dependencies with their modern equivalents in your `pom.xml` or `build.gradle`, following the migration guide to align feature parity and new SDK names.
 
@@ -70,7 +78,26 @@ Use these package-specific references:
     -type f \( -name 'pom.xml' -o -name '*.gradle' -o -name '*.gradle.kts' -o -name 'libs.versions.toml' \) -print
   ```
 
-  Pay special attention to files outside the root Maven/Gradle reactor — e.g. `.ci/**/pom.xml`, `ci/**`, `buildSrc/`, sample sub-modules, archetype resources — these are frequently missed because `mvn dependency:tree` on the root project never visits them.
+  PowerShell equivalent (run from repo root):
+
+  ```powershell
+  # 1. Legacy groupId / artifact references in ANY text file
+  Get-ChildItem -Path . -Recurse -File |
+    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules|out)[\\/]' } |
+    Select-String -Pattern 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["''])'
+
+  # 2. Legacy imports still in Java sources
+  Get-ChildItem -Path . -Recurse -File -Filter *.java |
+    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules|out)[\\/]' } |
+    Select-String -Pattern '^\s*import\s+com\.microsoft\.azure\.'
+
+  # 3. Every pom.xml and *.gradle(.kts) file in the repo — eyeball each for legacy coordinates
+  Get-ChildItem -Path . -Recurse -File -Include 'pom.xml','*.gradle','*.gradle.kts','libs.versions.toml' |
+    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules)[\\/]' } |
+    Select-Object -ExpandProperty FullName
+  ```
+
+  Pay special attention to files outside the root Maven/Gradle reactor— e.g. `.ci/**/pom.xml`, `ci/**`, `buildSrc/`, sample sub-modules, archetype resources — these are frequently missed because `mvn dependency:tree` on the root project never visits them.
 - If azure-sdk-bom is used, ensure **NO** explicit version dependencies for Azure libraries that are in azure-sdk-bom.
   E.g. Instead of `implementation 'com.azure.resourcemanager:azure-resourcemanager:2.60.0'`, we should use `implementation 'com.azure.resourcemanager:azure-resourcemanager'`.
   For Azure libraries in azure-sdk-bom, check https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml.

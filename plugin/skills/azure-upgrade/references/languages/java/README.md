@@ -6,31 +6,30 @@
 
 Upgrade all `com.microsoft.azure.*` to `com.azure.*` equivalents in one autonomous session.
 
-## References
+You are an expert Azure SDK migration agent. Generate a unique run identifier at the start (format: `azure-sdk-upgrade-YYYYMMDD-HHMMSS`) and use it throughout all phases.
 
-- [Rules and Workflow](./RULES.md) — success criteria, anti-excuse rules, workflow
-- [Migration Guidelines](./INSTRUCTION.md) — package mappings, code samples, validation
-- [Plan Template](./templates/PLAN_TEMPLATE.md) · [Progress Template](./templates/PROGRESS_TEMPLATE.md) · [Summary Template](./templates/SUMMARY_TEMPLATE.md)
+> ⚠️ **Lazy loading**: Do NOT pre-fetch the reference files listed below. Load each one **only when its workflow step is reached** or its trigger condition fires. Loading them upfront wastes context and causes premature decisions.
 
-## Workflow
+## Workflow (load references on demand)
 
-1. **Precheck** — Verify Maven/Gradle project, detect JDK/build tools, create `plan.md` from [Plan Template](./templates/PLAN_TEMPLATE.md). If git available, create branch `java-upgrade/{RUN_ID}`.
-2. **Plan** — Inventory deps, consult [Migration Guidelines](./INSTRUCTION.md), populate `plan.md`
-3. **Execute** — Create `progress.md` from [Progress Template](./templates/PROGRESS_TEMPLATE.md), migrate build config then source, build/test/fix, commit per step
-4. **Validate** — Create `summary.md` from [Summary Template](./templates/SUMMARY_TEMPLATE.md), apply [validation checklist](./INSTRUCTION.md#validation)
+Full procedure: per-phase files under [`./workflow/`](./workflow/) (load each one when entering that phase). Global rules apply to every step: [rules/execution-guidelines.md](./rules/execution-guidelines.md), [rules/efficiency.md](./rules/efficiency.md).
+
+1. **Precheck** ([workflow/phase-1-precheck.md](./workflow/phase-1-precheck.md)) — Verify Maven/Gradle project, detect JDK/build tools. If git available, create branch `java-upgrade/{RUN_ID}`. → load `./templates/PLAN_TEMPLATE.md` to create `plan.md`.
+   - Step-wise rules: [rules/execution-guidelines.md](./rules/execution-guidelines.md) (Output directory, Git, Wrapper preference).
+2. **Plan** ([workflow/phase-2-plan.md](./workflow/phase-2-plan.md)) — Inventory deps and populate `plan.md`. → load `./INSTRUCTION.md` for package mappings.
+   - Step-wise rules: [rules/upgrade-strategy.md](./rules/upgrade-strategy.md) (Incremental, Risk-first, Successor preference, Necessary/Meaningful steps).
+3. **Execute** ([workflow/phase-3-execute.md](./workflow/phase-3-execute.md)) — Migrate build config then source, build/test/fix, commit per step. → load `./templates/PROGRESS_TEMPLATE.md` to create `progress.md`; load `./rules/` before running builds/tests.
+   - Step-wise rules: [rules/review-code-changes.md](./rules/review-code-changes.md), [rules/upgrade-strategy.md](./rules/upgrade-strategy.md) (Automation tools, Temporary errors OK), [rules/execution-guidelines.md](./rules/execution-guidelines.md) (Template compliance, Git).
+4. **Validate** ([workflow/phase-4-summarize.md](./workflow/phase-4-summarize.md)) — Apply validation checklist. → load `./templates/SUMMARY_TEMPLATE.md` to create `summary.md`; load `./INSTRUCTION.md#validation`.
+   - Step-wise rules: [rules/upgrade-success-criteria.md](./rules/upgrade-success-criteria.md).
 
 ## Constraints
 
 - 100% test pass · no premature termination · incremental changes · review each step
-- Prefer wrappers (`mvnw`/`gradlew`) · see [Rules](./RULES.md)
+- Prefer wrappers (`mvnw`/`gradlew`)
 
 ## Examples
 
 ```
 "upgrade legacy azure sdk" → precheck → plan → execute → validate
 ```
-
-## Troubleshooting
-
-- **Build fails**: Debug, fix, rebuild — [Rules](./RULES.md)
-- **Test failures**: Iterative fix loop — [Rules](./RULES.md)
