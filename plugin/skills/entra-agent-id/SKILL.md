@@ -13,7 +13,7 @@ Create and manage OAuth 2.0-capable identities for AI agents using Microsoft Gra
 
 ## Before You Start
 
-Search the `microsoft-docs` MCP for current Agent ID documentation:
+Use the `mcp_azure_mcp_documentation` tool to search Microsoft Learn for current Agent ID documentation:
 - "Microsoft Entra Agent ID setup instructions"
 - "Microsoft Entra SDK for AgentID"
 
@@ -96,10 +96,11 @@ headers = {
 
 ### Step 1: Create Agent Identity Blueprint
 
-Use the typed endpoint. Sponsors must be **Users** at Blueprint creation.
+Use the typed endpoint. Sponsors must be **Users** at Blueprint creation. This snippet assumes the `requests` client and `headers` dict from the Python authentication block above.
 
 ```python
 import subprocess
+import requests
 
 user_id = subprocess.run(
     ["az", "ad", "signed-in-user", "show", "--query", "id", "-o", "tsv"],
