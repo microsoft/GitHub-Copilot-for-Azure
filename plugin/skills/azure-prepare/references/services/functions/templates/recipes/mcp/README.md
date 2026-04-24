@@ -1,6 +1,6 @@
 # MCP (Model Context Protocol) Recipe
 
-MCP tool endpoints for AI agent integration via JSON-RPC 2.0 over HTTP.
+MCP tool endpoints for AI agent integration via the JSON-RPC 2.0 protocol.
 
 ## Template Selection
 
@@ -9,20 +9,19 @@ Discover templates via MCP or CDN manifest where `resource == "mcp"` and `langua
 
 ## Protocol
 
-MCP uses **JSON-RPC 2.0** over HTTP with SSE for streaming:
+MCP uses the **JSON-RPC 2.0** protocol. Two template types with different transport support:
 
-- `POST /mcp` — tool invocation endpoint
-- Tools registered via `@app.mcp_tool()` decorator (Python) or equivalent
-- Returns structured JSON responses for AI agent consumption
+- **Extension-based** (`mcp-server-remote-*`) supports both Streamable HTTP and SSE transports
+- **Self-hosted** (`mcp-sdk-hosting-*`) — supports Streamable HTTP only
 
 See [MCP Specification](https://modelcontextprotocol.io/) for protocol details.
 
 ## Troubleshooting
 
-### Transport Mismatch (SSE vs Streamable HTTP)
+### Transport Mismatch
 
 **Cause:** Client and server using different transports — SSE client gets `404`/`405`, HTTP client gets unexpected `text/event-stream`.  
-**Solution:** Ensure client transport matches server. Most modern MCP SDKs default to Streamable HTTP; older examples use SSE. In VS Code `mcp.json`, set `"type": "sse"` or `"type": "http"` accordingly.
+**Solution:** Extension-based templates support both Streamable HTTP and SSE. Self-hosted templates support Streamable HTTP only. In VS Code `mcp.json`, set `"type": "sse"` or `"type": "http"` to match the server.
 
 ### Missing App Settings After Deploy
 
