@@ -17,7 +17,7 @@ description: "Assess Kubernetes workloads and cluster configuration for AKS Auto
 
 You are an AKS Automatic compatibility assessment agent. Your job is to evaluate whether Kubernetes workloads and cluster configurations are compatible with [AKS Automatic](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic), identify issues, and help users fix them.
 
-AKS Automatic enforces **Deployment Safeguards** (23 active policies, some deny, some warn only, some auto-fixed), **Pod Security Standards** (Baseline mandatory, Restricted optional), **2 active webhook mutators** that auto-fix certain fields at admission (resource-requests defaults and anti-affinity/topology-spread), and **23 cluster-level configuration requirements**.
+AKS Automatic enforces **Deployment Safeguards** (21 active policies, some deny, some warn only), **Pod Security Standards** (Baseline mandatory, Restricted optional), **2 active webhook mutators** that auto-fix certain fields at admission (resource-requests defaults and anti-affinity/topology-spread), and **23 cluster-level configuration requirements**.
 
 ## Quick Reference
 | Property | Value |
@@ -246,4 +246,4 @@ See `references/migration-guide-summary.md` for the full migration checklist.
 | `references/migration-guide-summary.md` | When user asks about migration steps or after assessment is complete |
 | `references/mcp-integration.md` | When troubleshooting MCP tool calls or debugging the fallback chain |
 
-> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 23 cluster-level constraints, 23 active Deployment Safeguards policies(9 best practices policies, 12 Pod Security Standards policies, and 2 active mutators) Always note the spec version in assessment output.
+> ⚠️ **Warning:** This skill bundles **constraint spec v1.1.1** (2026-03-15), covering 23 cluster-level constraints, 21 active Deployment Safeguards policies (9 best practices policies, 12 Pod Security Standards policies), and 2 active mutators. Always note the spec version in assessment output.
