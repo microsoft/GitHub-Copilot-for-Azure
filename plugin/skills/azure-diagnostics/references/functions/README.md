@@ -78,3 +78,10 @@ az rest --method get \
 
 Compare deployment timestamps against when errors started appearing in App Insights to identify if a deployment caused the issue.
 
+---
+
+## Additional References
+
+- [Trigger-Specific Troubleshooting](triggers.md) — HTTP, Timer, Queue, Blob, Service Bus, and Cosmos DB trigger diagnostics
+- [Durable Functions Troubleshooting](durable.md) — Stuck orchestrations, non-determinism, task hub conflicts, and retry/timer patterns
+
