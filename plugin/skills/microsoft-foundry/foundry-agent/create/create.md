@@ -22,6 +22,8 @@ Create new hosted agent applications for Microsoft Foundry, or convert existing 
 
 ## Workflow
 
+> Relative reference paths in this file are resolved from the directory containing `create.md`. For example, `./references/agentframework.md` means the file next to this document under `create/references/`, not a path relative to the runtime working directory.
+
 ### Step 1: Determine Scenario
 
 Check the user's workspace for existing agent project indicators:
