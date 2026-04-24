@@ -1,9 +1,6 @@
 # Azure Resource Metadata Model
 
-> **Canonical copy:** Shared resource-model schema used across Azure IaC and diagram skills. Keep local copies aligned when this schema changes.
 
-
-Shared internal representation used by AzVerify skills (sketch-to-diagram, diagram-to-bicep, diagram-azure-sync).
 
 ## Schema
 

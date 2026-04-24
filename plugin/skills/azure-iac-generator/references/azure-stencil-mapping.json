@@ -1,10 +1,4 @@
 {
-  "_canonicalCopy": {
-    "description": "Shared Azure stencil mapping copied into azure-iac-generator so diagram-parsing references resolve locally.",
-    "maintainers": [
-      "Azure IaC skills"
-    ]
-  },
   "resources": [
     {
       "type": "Microsoft.Compute/virtualMachines",

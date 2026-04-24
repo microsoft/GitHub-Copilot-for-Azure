@@ -1,6 +1,6 @@
 # Version Currency Rules
 
-> **Canonical copy:** Shared version-selection guidance for Azure IaC skills. Keep local copies aligned when this rule changes.
+version-selection guidance for Azure IaC skills. Keep local copies aligned when this rule changes.
 
 
 All generated code must use current, supported versions. Stale defaults cause security vulnerabilities, missing features, and end-of-life surprises.

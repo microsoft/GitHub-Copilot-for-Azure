@@ -14,4 +14,5 @@ Settings automatically applied based on diagram topology during Bicep generation
 | Private Endpoint exists in a subnet | Set `privateEndpointNetworkPolicies: "Disabled"` on that subnet |
 | VM exists without NIC in diagram | Auto-add NIC resource |
 | App Service exists without App Service Plan | Auto-add App Service Plan |
-| Subnet index N | Set `addressPrefix: "10.0.N.0/24"` (auto-increment) |
+| Subnet index N | Derive `addressPrefix` from the VNet `addressSpace` when present; otherwise require or prompt for a base CIDR before auto-assigning a non-overlapping subnet |  
+

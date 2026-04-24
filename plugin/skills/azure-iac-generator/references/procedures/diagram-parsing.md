@@ -1,15 +1,14 @@
 # Diagram Parsing Procedure
 
-> **Canonical copy:** Shared diagram-parsing procedure used by Azure IaC and diagram skills. Keep local copies aligned when this procedure changes.
-
-
 Parse a Draw.io XML file into a structured resource model. Referenced by all skills that consume Draw.io diagrams.
 
 ---
 
 ## Procedure
 
-1. **Load the stencil mapping** from [azure-stencil-mapping.json](../azure-stencil-mapping.json) (if available in this skill's references) or derive from the azure2 stencil convention, and build a **reverse lookup**: map each `imagePath` back to its Azure resource type (e.g., `img/lib/azure2/compute/Virtual_Machine.svg` → `Microsoft.Compute/virtualMachines`).
+1. **Load the stencil mapping** from [azure-stencil-mapping.json](../azure-stencil-mapping.json) (if available) or derive from the `azure2` stencil convention, and build **reverse lookups** that map supported Draw.io style identifiers back to Azure resource types:
+   - `image=<path>` → Azure resource type (for `image`-based cells)
+   - `shape=mxgraph.azure2...` → Azure resource type (for `shape`-based cells, using a normalized azure2 shape-key lookup)
 
 2. **Identify resource cells**: For each `mxCell` in the diagram XML:
    - If the style contains `image=<path>` and the path matches the reverse lookup → this is an Azure resource

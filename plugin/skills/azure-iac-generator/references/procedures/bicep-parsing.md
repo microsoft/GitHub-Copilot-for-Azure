@@ -1,7 +1,5 @@
 # Bicep Parsing Procedure
 
-> **Canonical copy:** Shared Bicep parsing procedure used by Azure IaC and comparison skills. Keep local copies aligned when this procedure changes.
-
 
 Parse Bicep templates into a structured resource model for comparison. Referenced by skills that analyze existing Bicep files.
 
@@ -15,7 +13,9 @@ Read the `.bicepparam` file and extract all parameter values. These are needed t
 
 ### 2. Read Template Files
 
-Read `main.bicep` and parse all `module` declarations to find referenced Bicep files. Module paths are relative to the file containing the `module` statement — they may reference files outside `modules/` (e.g., `'../shared/networking.bicep'` or `'br:myregistry.azurecr.io/bicep/networking:v1'`). Read each resolved module file recursively to discover nested module references.
+Read `main.bicep` and parse all `module` declarations to find referenced Bicep files. Module paths are relative to the file containing the `module` statement — they may reference files outside `modules/` (e.g., `'../shared/networking.bicep'`). Read each resolved module file recursively to discover nested module references.
+
+> **Registry modules** (`br:` references like `'br:myregistry.azurecr.io/bicep/networking:v1'`) are not local file paths. They require `bicep restore` to download into the local module cache before they can be read. If restoration is not possible, flag these modules as "external — cannot resolve locally" and skip recursive parsing for them.
 
 ### 3. Extract Resources
 

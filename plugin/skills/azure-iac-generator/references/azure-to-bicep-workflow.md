@@ -63,7 +63,7 @@ Follow [bicep-best-practices.md](bicep-best-practices.md) strictly. Call Bicep M
 | File | Contents |
 |---|---|
 | `main.bicep` | `targetScope = 'resourceGroup'`; all params with `@description()` and `@secure()` where needed; one `module` block per category; outputs for key endpoints/IDs |
-| `<scope>.bicepparam` | `using 'main.bicep'`; every param value matching current Azure config; 1-3 line comments per param (what it controls, alternatives with cost impact, version EOL dates); `readEnvironmentVariable()` for secrets |
+| `main.bicepparam` | `using 'main.bicep'`; every param value matching current Azure config; 1-3 line comments per param (what it controls, alternatives with cost impact, version EOL dates); `readEnvironmentVariable()` for secrets |
 | `modules/networking.bicep` | VNets, subnets, NSGs, private endpoints, NICs, firewalls |
 | `modules/compute.bicep` | VMs, App Services, Functions, Container Apps — follow the runtime defaulting rules in [version-currency.md](version-currency.md) |
 | `modules/data.bicep` | Storage, SQL, Cosmos DB, Redis, Key Vault |
