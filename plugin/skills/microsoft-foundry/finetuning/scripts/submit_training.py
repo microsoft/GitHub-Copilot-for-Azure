@@ -31,32 +31,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser
+from common import HelpOnErrorParser, get_clients, upload_file
 
-import openai
 import requests
-
-
-def get_client(base_url=None, endpoint=None, api_key=None):
-    """Create client. Prefer /v1/ project URL (OpenAI) over Azure endpoint."""
-    if base_url:
-        return openai.OpenAI(base_url=base_url, api_key=api_key)
-    return openai.AzureOpenAI(
-        azure_endpoint=endpoint,
-        api_key=api_key,
-        api_version="2025-04-01-preview",
-    )
-
-
-def upload_file(client, filepath):
-    """Upload a file and wait for processing."""
-    print(f"Uploading {filepath}...")
-    with open(filepath, "rb") as f:
-        result = client.files.create(purpose="fine-tune", file=f)
-    print(f"  File ID: {result.id}, waiting for processing...")
-    client.files.wait_for_processing(result.id)
-    print(f"  Ready.")
-    return result.id
 
 
 def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None, suffix=None):
@@ -125,12 +102,35 @@ def submit_rft(client, model, train_id, val_id, grader_source):
     return {"id": job.id, "status": job.status, "model": model, "method": "sdk-rft"}
 
 
+def submit_dpo(client, model, train_id, val_id, epochs=2, lr=1.0, beta=0.1, suffix=None):
+    """Submit DPO job."""
+    job = client.fine_tuning.jobs.create(
+        model=model,
+        training_file=train_id,
+        validation_file=val_id,
+        suffix=suffix or None,
+        method={
+            "type": "dpo",
+            "dpo": {
+                "hyperparameters": {
+                    "n_epochs": epochs,
+                    "beta": beta,
+                    "learning_rate_multiplier": lr,
+                },
+            },
+        },
+    )
+    return {"id": job.id, "status": job.status, "model": model, "method": "sdk-dpo"}
+
+
 def main():
     parser = HelpOnErrorParser(description="Submit fine-tuning jobs on Azure AI Foundry")
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"),
-                        help="Project /v1/ URL (preferred). Uses openai.OpenAI().")
+                        help="Project /v1/ URL (preferred)")
     parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-                        help="Azure OpenAI endpoint (fallback). Uses AzureOpenAI().")
+                        help="Azure OpenAI endpoint (fallback)")
+    parser.add_argument("--project-endpoint", default=os.environ.get("AZURE_AI_PROJECT_ENDPOINT"),
+                        help="Azure AI project endpoint (Foundry SDK)")
     parser.add_argument("--api-key", default=os.environ.get("AZURE_OPENAI_API_KEY"),
                         help="API key")
     parser.add_argument("--model", required=True, help="Base model name (e.g., gpt-4.1-mini)")
@@ -161,14 +161,10 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.api_key:
-        print("Error: Set --api-key or AZURE_OPENAI_API_KEY")
-        sys.exit(1)
-    if not args.base_url and not args.endpoint:
-        print("Error: Set --base-url or --endpoint (or env vars OPENAI_BASE_URL / AZURE_OPENAI_ENDPOINT)")
-        sys.exit(1)
-
-    client = get_client(base_url=args.base_url, endpoint=args.endpoint, api_key=args.api_key)
+    client, method = get_clients(
+        base_url=args.base_url, azure_endpoint=args.endpoint,
+        project_endpoint=args.project_endpoint, api_key=args.api_key
+    )
 
     # Resolve file IDs
     train_id = args.training_file_id
@@ -192,23 +188,8 @@ def main():
                 grader_source = f.read()
             result = submit_rft(client, args.model, train_id, val_id, grader_source)
         elif args.type == "dpo":
-            job = client.fine_tuning.jobs.create(
-                model=args.model,
-                training_file=train_id,
-                validation_file=val_id,
-                suffix=args.suffix or None,
-                method={
-                    "type": "dpo",
-                    "dpo": {
-                        "hyperparameters": {
-                            "n_epochs": args.epochs,
-                            "beta": args.beta,
-                            "learning_rate_multiplier": args.lr,
-                        },
-                    },
-                },
-            )
-            result = {"id": job.id, "status": job.status, "model": args.model, "method": "sdk-dpo"}
+            result = submit_dpo(client, args.model, train_id, val_id,
+                                args.epochs, args.lr, args.beta, args.suffix)
         elif args.use_rest:
             result = submit_sft_rest(args.endpoint, args.api_key, args.model,
                                      train_id, val_id, args.epochs, args.lr, args.batch_size)
