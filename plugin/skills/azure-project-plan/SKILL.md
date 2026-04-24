@@ -15,7 +15,7 @@ metadata:
 
 ---
 
-## 🎯 North Star: Approved Plan Fast
+## North Star: Approved Plan Fast
 
 > **Capture requirements → produce approved plan within minutes. No lengthy back-and-forth. After approval, auto-chain to `azure-project-scaffold`.**
 
