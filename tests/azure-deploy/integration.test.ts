@@ -446,7 +446,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Phase 1: ACR module
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
         // Phase 1: Container App with placeholder image and system-assigned managed identity
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /mcr\.microsoft\.com/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com([^A-Za-z0-9.-]|$)/i, bicepPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate module file from the Container App
         expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
