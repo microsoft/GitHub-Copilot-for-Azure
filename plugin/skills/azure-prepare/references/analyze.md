@@ -97,4 +97,10 @@ Converting an existing application to run on Azure.
 
 > ⚠️ **Critical**: The Functions `bicep.md` and `terraform.md` files are **REFERENCE DOCUMENTATION**, not templates to copy. Hand-writing infrastructure from these patterns results in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
-For other compute targets (Container Apps, App Service, Static Web Apps), load their respective README files in `services/` for guidance.
+For **Container Apps**, load the composition rules the same way:
+
+1. Load `services/container-apps/templates/selection.md` — decision tree for base template + recipe
+2. Load `services/container-apps/templates/recipes/composition.md` — the exact algorithm to follow
+3. Use `azd init -t <template>` to generate proven IaC — **NEVER hand-write Bicep/Terraform**
+
+For other compute targets (App Service, Static Web Apps), load their respective README files in `services/` for guidance.

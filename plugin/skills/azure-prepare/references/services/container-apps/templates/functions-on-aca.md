@@ -110,6 +110,10 @@ resource funcApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: 'managedidentity'
             }
             {
+              name: 'AzureWebJobsStorage__clientId'
+              value: uamiClientId  // Required for UAMI — runtime defaults to system MI without this
+            }
+            {
               name: 'FUNCTIONS_EXTENSION_VERSION'
               value: '~4'
             }
@@ -155,6 +159,7 @@ scale: {
           namespace: 'my-sb-namespace'
           messageCount: '5'
         }
+        identity: userAssignedIdentityId
       }
     }
   ]

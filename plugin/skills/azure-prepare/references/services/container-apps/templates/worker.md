@@ -46,6 +46,7 @@ param envId string
 param containerRegistryName string
 param imageName string
 param userAssignedIdentityId string
+param uamiClientId string
 param serviceBusNamespace string = ''
 param queueName string = ''
 
@@ -82,7 +83,7 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'QUEUE_NAME', value: queueName }
             {
               name: 'AZURE_CLIENT_ID'
-              value: '' // Set to UAMI client ID
+              value: uamiClientId
             }
           ]
         }
@@ -100,12 +101,7 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
                 queueName: queueName
                 messageCount: '5'
               }
-              auth: [
-                {
-                  secretRef: 'sb-connection'
-                  triggerParameter: 'connection'
-                }
-              ]
+              identity: userAssignedIdentityId
             }
           }
         ]
@@ -146,9 +142,12 @@ rules: [
     custom: {
       type: 'azure-eventhub'
       metadata: {
+        namespace: '<namespace>'
+        eventHubName: '<eventhub>'
         consumerGroup: '$Default'
         unprocessedEventThreshold: '64'
       }
+      identity: userAssignedIdentityId
     }
   }
 ]
@@ -163,9 +162,11 @@ rules: [
     custom: {
       type: 'azure-queue'
       metadata: {
+        accountName: '<storage-account>'
         queueName: '<queue>'
         queueLength: '5'
       }
+      identity: userAssignedIdentityId
     }
   }
 ]
