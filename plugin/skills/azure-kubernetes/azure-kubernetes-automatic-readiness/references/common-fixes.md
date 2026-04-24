@@ -73,6 +73,27 @@ spec:
 
 ---
 
+## `safeguard-allowed-seccomp-profiles` — Remove 'Unconfined' seccomp profile
+
+**Before:**
+```yaml
+spec:
+  securityContext:
+    seccompProfile:
+      type: Unconfined
+  containers:
+    - name: web
+```
+
+**After:**
+```yaml
+spec:
+  containers:
+    - name: web
+```
+
+---
+
 ## `safeguard-enforce-apparmor` — Add AppArmor annotation
 
 **Before:**
