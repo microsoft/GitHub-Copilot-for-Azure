@@ -51,7 +51,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Steps");
       expect(skill.content).toContain("## Migration Scenarios");
       expect(skill.content).toContain("## Output Directory");
-      expect(skill.content).toContain("<source-folder>-azure/");
+      expect(skill.content).toContain("<workspace-root-basename>-azure/");
     });
 
     test("references azure-prepare for post-migration", () => {
