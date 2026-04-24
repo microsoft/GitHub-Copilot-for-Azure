@@ -23,9 +23,9 @@ resource redis 'Microsoft.Cache/redis@2024-03-01' = {
   tags: tags
   properties: {
     sku: {
-      name: 'Basic'
+      name: 'Standard'
       family: 'C'
-      capacity: 0
+      capacity: 1
     }
     enableNonSslPort: false
     minimumTlsVersion: '1.2'
