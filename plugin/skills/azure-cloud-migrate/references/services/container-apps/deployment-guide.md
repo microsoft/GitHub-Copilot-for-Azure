@@ -77,19 +77,18 @@ az containerapp env create --name myapp-env --resource-group myapp-rg --location
 
 ## Phase 5: Secrets
 
-> **Warning**: The export step writes decoded secrets to a temporary file on disk. Ensure the file is securely deleted after upload (the scripts below handle this automatically via `shred`/`Remove-Item`).
+> **Tip**: Prefer piping decoded secret values directly to `az keyvault secret set --value` to avoid writing sensitive data to disk.
 
 ### Bash
 
 ```bash
 ACR_NAME="${ACR_NAME:-<acr>}"
 
-# Create Key Vault and migrate secrets
+# Create Key Vault and migrate secrets (pipe directly — no temp file)
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
-SECRET_FILE=$(mktemp)
-kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}' | base64 -d > "$SECRET_FILE"
-az keyvault secret set --vault-name myapp-kv --name password --file "$SECRET_FILE"
-shred -u "$SECRET_FILE" 2>/dev/null || rm -f "$SECRET_FILE"
+SECRET_VALUE=$(kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}' | base64 -d)
+az keyvault secret set --vault-name myapp-kv --name password --value "$SECRET_VALUE"
+unset SECRET_VALUE
 
 # Create managed identity and grant permissions
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
@@ -106,13 +105,12 @@ az role assignment create --assignee "$PRINCIPAL_ID" --role AcrPull --scope "$AC
 ```powershell
 $ACR_NAME = if ($env:ACR_NAME) { $env:ACR_NAME } else { "<acr>" }
 
-# Create Key Vault and migrate secrets
+# Create Key Vault and migrate secrets (pass directly — no temp file, no BOM issues)
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
-$SECRET_FILE = [System.IO.Path]::GetTempFileName()
 $secretValue = kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}'
-[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($secretValue)) | Out-File -FilePath $SECRET_FILE -Encoding utf8 -NoNewline
-az keyvault secret set --vault-name myapp-kv --name password --file $SECRET_FILE
-Remove-Item -Path $SECRET_FILE -Force
+$decodedSecretValue = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($secretValue))
+az keyvault secret set --vault-name myapp-kv --name password --value $decodedSecretValue
+Remove-Variable -Name decodedSecretValue, secretValue -ErrorAction SilentlyContinue
 
 # Create managed identity and grant permissions
 az identity create --name myapp-id --resource-group myapp-rg --location eastus
