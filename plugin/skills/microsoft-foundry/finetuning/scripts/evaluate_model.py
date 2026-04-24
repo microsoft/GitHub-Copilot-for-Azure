@@ -41,9 +41,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser
-
-import openai
+from common import HelpOnErrorParser, get_clients
 
 
 JUDGE_PROMPT = """You are evaluating the quality of a model's output for a given task.
@@ -74,18 +72,6 @@ Rate the output on two dimensions, each on a scale of 1-10:
 - 9-10: Clean and focused
 
 Return ONLY a JSON object: {{"correctness": <int>, "conciseness": <int>}}"""
-
-
-def get_project_client(base_url, api_key):
-    """For OpenAI-format endpoints (project /v1/ URLs). Uses openai.OpenAI, NOT AzureOpenAI."""
-    return openai.OpenAI(base_url=base_url, api_key=api_key)
-
-
-def get_azure_client(endpoint, api_key, api_version="2025-04-01-preview"):
-    """For standard Azure OpenAI endpoints."""
-    return openai.AzureOpenAI(
-        azure_endpoint=endpoint, api_key=api_key, api_version=api_version
-    )
 
 
 def load_test_data(filepath):
@@ -170,9 +156,11 @@ def grade_response(judge_client, judge_model, prompt, reference, output, max_ret
 def main():
     parser = HelpOnErrorParser(description="Evaluate a fine-tuned model with LLM judge")
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"),
-                        help="Project /v1/ URL (preferred). Uses openai.OpenAI().")
+                        help="Project /v1/ URL (preferred)")
     parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-                        help="Azure OpenAI endpoint (fallback). Uses AzureOpenAI().")
+                        help="Azure OpenAI endpoint (fallback)")
+    parser.add_argument("--project-endpoint", default=os.environ.get("AZURE_AI_PROJECT_ENDPOINT"),
+                        help="Azure AI project endpoint (Foundry SDK)")
     parser.add_argument("--api-key", default=os.environ.get("AZURE_OPENAI_API_KEY"))
     parser.add_argument("--deployment-name", required=True, help="Deployed model name")
     parser.add_argument("--test-file", required=True, help="Held-out test set (JSONL)")
@@ -191,27 +179,18 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.api_key:
-        print("Error: Set --api-key or AZURE_OPENAI_API_KEY")
-        sys.exit(1)
-
-    # Set up model client — prefer /v1/ project URL
-    if args.base_url:
-        model_client = get_project_client(args.base_url, args.api_key)
-    elif args.endpoint:
-        model_client = get_azure_client(args.endpoint, args.api_key)
-    else:
-        print("Error: Set --base-url or --endpoint (or env vars OPENAI_BASE_URL / AZURE_OPENAI_ENDPOINT)")
-        sys.exit(1)
+    # Set up model client via shared auth (supports /v1/, Foundry SDK, AzureOpenAI)
+    model_client, method = get_clients(
+        base_url=args.base_url, azure_endpoint=args.endpoint,
+        project_endpoint=args.project_endpoint, api_key=args.api_key
+    )
 
     # Set up judge client (defaults to same connection as model)
     judge_key = args.judge_api_key or args.api_key
     if args.judge_endpoint:
-        judge_client = get_azure_client(args.judge_endpoint, judge_key)
-    elif args.base_url:
-        judge_client = get_project_client(args.base_url, judge_key)
+        judge_client, _ = get_clients(azure_endpoint=args.judge_endpoint, api_key=judge_key)
     else:
-        judge_client = get_azure_client(args.endpoint, judge_key)
+        judge_client = model_client
 
     # Load data
     test_data = load_test_data(args.test_file)

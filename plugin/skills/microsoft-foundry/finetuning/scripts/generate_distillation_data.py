@@ -37,15 +37,7 @@ import re
 import sys
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser
-
-import openai
-
-
-def get_client(endpoint, api_key):
-    return openai.AzureOpenAI(
-        azure_endpoint=endpoint, api_key=api_key, api_version="2025-04-01-preview"
-    )
+from common import HelpOnErrorParser, get_clients
 
 
 def verify_deployment(client, model):
@@ -132,7 +124,12 @@ def grade_output(client, judge_model, output, retries=3):
 
 def main():
     parser = HelpOnErrorParser(description="Generate distillation training data from a teacher model")
-    parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"))
+    parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL"),
+                        help="Project /v1/ URL (preferred)")
+    parser.add_argument("--endpoint", default=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+                        help="Azure OpenAI endpoint (fallback)")
+    parser.add_argument("--project-endpoint", default=os.environ.get("AZURE_AI_PROJECT_ENDPOINT"),
+                        help="Azure AI project endpoint (Foundry SDK)")
     parser.add_argument("--api-key", default=os.environ.get("AZURE_OPENAI_API_KEY"))
     parser.add_argument("--teacher", required=True, help="Teacher model deployment name")
     parser.add_argument("--judge", default=None, help="Judge model (default: same as teacher)")
@@ -157,11 +154,10 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.endpoint or not args.api_key:
-        print("Error: Set --endpoint/--api-key or AZURE_OPENAI_ENDPOINT/AZURE_OPENAI_API_KEY")
-        sys.exit(1)
-
-    client = get_client(args.endpoint, args.api_key)
+    client, method = get_clients(
+        base_url=args.base_url, azure_endpoint=args.endpoint,
+        project_endpoint=args.project_endpoint, api_key=args.api_key
+    )
     judge = args.judge or args.teacher
 
     # Step 0: Verify deployments exist
