@@ -99,7 +99,7 @@ All modes produce a consistent drift report:
 |---|----------|------|--------|
 | 1 | vnet-web | Microsoft.Network/virtualNetworks | ✅ In Sync |
 | 2 | app-api | Microsoft.Web/sites | ⬜ Diagram Only |
-| 3 | redis-cache | Microsoft.Cache/redis | 🔷 Azure Only |
+| 3 | vm01 | Microsoft.Compute/virtualMachines | 🔷 Azure Only |
 
 Summary: 5 In Sync | 1 Diagram Only | 1 Azure Only
 ```
