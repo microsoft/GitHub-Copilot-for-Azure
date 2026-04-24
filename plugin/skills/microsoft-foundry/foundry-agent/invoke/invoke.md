@@ -64,6 +64,59 @@ This is different from `conversationId`, which tracks conversation history. `ses
 
 If invocation fails with a permission-related error, read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Verify that `Cognitive Services User` is assigned to the instance identity at the Azure AI Services resource scope.
 
+#### Fallback for Hosted Agents Using `invocations` Protocol Only
+
+Use this fallback only when the target hosted agent is deployed with the `invocations` protocol and `agent_invoke` does not work correctly for that agent. Do not use this fallback for prompt agents or hosted agents using the `responses` protocol.
+
+Use `az rest` for this fallback. Azure CLI injects the Entra bearer token automatically after `az login`.
+
+1. Call the hosted agent runtime endpoint directly:
+
+```text
+POST {projectEndpoint}/agents/{agentName}/endpoint/protocols/invocations?api-version=v1&session_id={sessionId}
+```
+
+- `projectEndpoint` — For example, `https://<resource>.services.ai.azure.com/api/projects/<project>`
+- `agentName` — The deployed hosted agent name
+- `sessionId` — A 25 character alphanumeric session ID. This enables sticky routing to the same compute instance and should be reused across turns in the same session.
+
+2. Send these required headers:
+
+| Header | Value | Notes |
+|--------|-------|-------|
+| `Authorization` | `Bearer {token}` | Required. When using `az rest`, Azure CLI adds this automatically if you pass `--resource https://ai.azure.com` |
+| `Content-Type` | `application/json` | Required |
+| `Foundry-Features` | `HostedAgents=V1Preview` | Required for this endpoint; requests can return `403` without it |
+
+3. Send a JSON body that matches what the agent code expects to parse on the `invocations` endpoint. The payload shape is defined by the agent implementation, not by a fixed protocol-level request schema.
+
+```json
+{
+  "message": "Hello"
+}
+```
+
+Example if the agent expects a `message` field:
+
+```bash
+az rest \
+  --method post \
+  --url "https://<resource>.services.ai.azure.com/api/projects/<project>/agents/<agentName>/endpoint/protocols/invocations?api-version=v1&session_id=<sessionId>" \
+  --resource "https://ai.azure.com" \
+  --headers "Foundry-Features=HostedAgents=V1Preview" "Content-Type=application/json" \
+  --body '{"message":"Hello"}'
+```
+
+Key notes:
+
+- This fallback applies only to hosted agents that implement the `invocations` protocol.
+- `api-version` must be `v1`, not a date-based API version.
+- The runtime path is `.../endpoint/protocols/invocations`, not `.../agents/{name}:invoke`.
+- The `Foundry-Features: HostedAgents=V1Preview` header is mandatory for this endpoint.
+- The JSON body must match the shape that the hosted agent implementation actually parses.
+- When using `az rest`, include `--resource https://ai.azure.com` so Azure CLI requests the correct token audience for Foundry.
+- Reuse the same `session_id` for multi-turn calls that must stay on the same compute instance.
+
 ### Step 3: Multi-Turn Conversations
 
 For follow-up messages, pass the `conversationId` from the previous response to `agent_invoke`. This maintains conversation context across turns.
@@ -86,6 +139,7 @@ Each invocation with the same `conversationId` continues the existing conversati
 | Agent not found | Invalid agent name or project endpoint | Use `agent_get` to list available agents and verify name |
 | Hosted agent not active | The requested hosted agent version is still provisioning or failed | Use `agent_get` to inspect version status, then follow the troubleshoot skill if it does not become `active` |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment is active, retry with simpler input |
+| `agent_invoke` fails for an `invocations` protocol hosted agent | Current MCP tool path does not work correctly for that protocol | Use the direct REST fallback in Step 2 against `.../endpoint/protocols/invocations` with `api-version=v1`, a sticky `session_id`, and `Foundry-Features: HostedAgents=V1Preview` |
 | Invocation failed with permission error | Missing or incorrect invocation RBAC for the instance identity | Read and follow the troubleshoot skill, verify `Cognitive Services User` on the instance identity at the Azure AI Services resource scope, then retry invocation |
 | Conversation ID invalid | Stale or non-existent conversation | Start a new conversation without `conversationId` |
 | Rate limit exceeded | Too many requests | Implement backoff and retry, or wait before sending next message |
