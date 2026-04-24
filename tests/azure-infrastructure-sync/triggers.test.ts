@@ -60,9 +60,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "How much am I spending on Azure this month?",
       "Show me my Azure billing summary",
 
-      // Azure service questions that are out of scope for infra drift/sync
-      "Troubleshoot Azure Redis latency",
-      "Azure Redis pricing",
+      // Service questions that are out of scope for infra drift/sync
+      "Troubleshoot cache latency in production",
+      "Managed cache pricing options",
     ];
 
     test.each(shouldNotTriggerPrompts)(

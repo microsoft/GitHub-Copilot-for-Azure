@@ -34,7 +34,7 @@ Compare Bicep templates against live Azure state without using ARM what-if. Pars
 |---|----------|------|--------|
 | 1 | vnet-web | Microsoft.Network/virtualNetworks | No Change |
 | 2 | app-api | Microsoft.Web/sites | Modify (SKU: B1 → S1) |
-| 3 | redis-new | Microsoft.Cache/redis | Create |
+| 3 | vm-01 | Microsoft.Compute/virtualMachines | Create |
 | 4 | old-storage | Microsoft.Storage/storageAccounts | Delete (Azure only) |
 
 Summary: 1 Create | 1 Modify | 1 Delete | 1 No Change

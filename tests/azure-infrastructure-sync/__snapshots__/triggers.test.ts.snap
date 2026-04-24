@@ -6,7 +6,6 @@ exports[`azure-infrastructure-sync - Trigger Tests Trigger Keywords Snapshot ski
   "extractedKeywords": [
     "analysis",
     "artifacts",
-    "authentication",
     "azure",
     "azure-resource-visualizer",
     "azure-validate",
@@ -42,7 +41,6 @@ exports[`azure-infrastructure-sync - Trigger Tests Trigger Keywords Snapshot ski
     "pre-deployment",
     "preview",
     "quick",
-    "redis",
     "resources",
     "supports",
     "sync",
@@ -60,7 +58,6 @@ exports[`azure-infrastructure-sync - Trigger Tests Trigger Keywords Snapshot ski
 [
   "analysis",
   "artifacts",
-  "authentication",
   "azure",
   "azure-resource-visualizer",
   "azure-validate",
@@ -96,7 +93,6 @@ exports[`azure-infrastructure-sync - Trigger Tests Trigger Keywords Snapshot ski
   "pre-deployment",
   "preview",
   "quick",
-  "redis",
   "resources",
   "supports",
   "sync",

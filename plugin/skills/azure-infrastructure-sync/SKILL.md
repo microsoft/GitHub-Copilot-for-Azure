@@ -11,6 +11,15 @@ metadata:
 
 Compare and synchronize infrastructure artifacts to detect drift. Supports four comparison modes across Draw.io diagrams, Bicep templates, and live Azure resources.
 
+## Workflow
+
+1. **Identify the comparison mode** — use the Routing tree below to pick: Diagram ↔ Azure (quick/deep), Bicep ↔ Diagram, or Bicep ↔ Azure.
+2. **Gather inputs** — confirm the `.drawio` file path, `.bicep` file path, and/or Azure subscription + resource group as needed for the mode.
+3. **Load the reference workflow** — follow the linked reference doc for the selected mode (see Workflow References below).
+4. **Run the comparison** — use MCP tools or CLI fallbacks to enumerate resources and compare against the artifact.
+5. **Present the drift report** — output a structured table using the Drift Report Format below.
+6. **Offer resolution options** — let the user choose to update the diagram, update Azure/Bicep, sync selectively, or report only.
+
 ## Quick Reference
 
 | Area | Primary MCP tools | CLI fallback | Best for |

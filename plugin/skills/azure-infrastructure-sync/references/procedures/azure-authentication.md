@@ -14,7 +14,7 @@
 3. **If NOT authenticated**:
    - Present this message:
 
-   ```
+   ```markdown
    ## Azure Authentication Required
 
    You need an active Azure session.
