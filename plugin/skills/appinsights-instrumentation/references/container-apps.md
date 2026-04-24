@@ -4,9 +4,13 @@ Observability guide for apps running in Azure Container Apps.
 
 ## Environment-Level Log Analytics
 
-By default, Container Apps environments use a Log Analytics workspace. Configure it at environment creation:
+By default, Container Apps environments use a Log Analytics workspace. Configure it at environment creation (`--logs-workspace-id` expects the workspace **Customer ID** (GUID), not the ARM resource ID):
 
 ```bash
+WORKSPACE_ID=$(az monitor log-analytics workspace show \
+  --resource-group <rg> --workspace-name <workspace-name> \
+  --query customerId -o tsv)
+
 WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys \
   --resource-group <rg> --workspace-name <workspace-name> \
   --query primarySharedKey -o tsv)
@@ -14,7 +18,7 @@ WORKSPACE_KEY=$(az monitor log-analytics workspace get-shared-keys \
 az containerapp env create \
   --name <env-name> \
   --resource-group <rg> \
-  --logs-workspace-id <workspace-id> \
+  --logs-workspace-id $WORKSPACE_ID \
   --logs-workspace-key $WORKSPACE_KEY \
   --logs-destination log-analytics
 ```
@@ -27,6 +31,8 @@ az containerapp env create \
 |-----------|---------|-----------|
 | `ContainerAppConsoleLogs_CL` | stdout/stderr from containers | Workspace default |
 | `ContainerAppSystemLogs_CL` | Platform events (scaling, restarts, image pulls) | Workspace default |
+
+> ⚠️ **Note:** The `_CL` suffix and `_s` column suffixes apply to the **Log Analytics** destination. Environments using the newer **Azure Monitor** destination use `ContainerAppConsoleLogs` / `ContainerAppSystemLogs` (no `_CL`, no `_s` suffixes). Check your environment's log destination to use the correct table name.
 
 System logs capture events outside your code—replica scheduling, health probe results, and revision activation. Console logs capture everything your app writes to stdout/stderr.
 
@@ -57,10 +63,14 @@ Set `APPLICATIONINSIGHTS_CONNECTION_STRING` as an environment variable on the co
 | Java | Agent JAR (manual) | Set `JAVA_TOOL_OPTIONS=-javaagent:/agent/applicationinsights-agent.jar` |
 
 ```bash
+# Store as a secret (recommended — keeps value out of az show output and portal config)
+az containerapp secret set -n <app-name> -g <rg> \
+  --secrets "appinsights-conn=<conn-string>"
+
 az containerapp update \
   --name <app-name> \
   --resource-group <rg> \
-  --set-env-vars "APPLICATIONINSIGHTS_CONNECTION_STRING=<conn-string>"
+  --set-env-vars "APPLICATIONINSIGHTS_CONNECTION_STRING=secretref:appinsights-conn"
 ```
 
 ## Distributed Tracing Across Microservices
@@ -77,10 +87,10 @@ Container Apps with multiple services need correlation. The OpenTelemetry SDK pr
 
 For apps using Dapr sidecars, Dapr generates tracing spans for service invocation, pub/sub, and state operations when tracing is configured. Note that `samplingRate: "1"` means 100% sampling — consider lowering for production workloads.
 
-Configure Dapr tracing in the environment:
+Configure Dapr tracing in the Container Apps environment. The YAML below represents the config spec — in ACA, apply it via `az containerapp env dapr-component set` or ARM/Bicep (not as a raw YAML file):
 
 ```yaml
-# dapr-config.yaml
+# Dapr tracing config spec (apply via CLI or Bicep, not raw kubectl)
 apiVersion: dapr.io/v1alpha1
 kind: Configuration
 metadata:
@@ -154,7 +164,7 @@ ContainerAppConsoleLogs_CL
 | render timechart
 ```
 
-### Request latency by revision (requires Application Insights SDK)
+### Request latency by instance (requires Application Insights SDK)
 
 ```kql
 requests
