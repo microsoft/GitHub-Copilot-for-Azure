@@ -34,7 +34,7 @@ dependencyResolutionManagement {
 }
 ```
 
-The `library()` call can also use the two-arg `module` form:
+The `library()` call can also use the two-arg `module` form (the same syntax applies to Kotlin DSL):
 ```groovy
 library("azure", "com.microsoft.azure:azure").versionRef("azureSdk")
 library("azure-inline", "com.microsoft.azure:azure").version("1.41.4")
@@ -104,7 +104,7 @@ After:
 library("azure-identity", "com.azure", "azure-identity").withoutVersion()
 ```
 
-For the two-arg module form:
+For the two-arg module form (the same syntax applies to Kotlin DSL):
 ```groovy
 // Before
 library("azure-identity", "com.azure:azure-identity").versionRef("azureIdentity")
@@ -138,7 +138,7 @@ library("azure-resourcemanager", "com.azure.resourcemanager", "azure-resourceman
 library("azure-storage-blob", "com.azure", "azure-storage-blob").withoutVersion()
 ```
 
-Then update `build.gradle` (Groovy DSL shown; Kotlin DSL is the same with parentheses around the argument, e.g. `implementation(libs.azure.resourcemanager)`):
+Then update `build.gradle` (Groovy DSL):
 ```groovy
 // Before
 implementation libs.azure
@@ -147,6 +147,17 @@ implementation libs.azure.storage
 // After
 implementation libs.azure.resourcemanager
 implementation libs.azure.storage.blob
+```
+
+Or `build.gradle.kts` (Kotlin DSL):
+```kotlin
+// Before
+implementation(libs.azure)
+implementation(libs.azure.storage)
+
+// After
+implementation(libs.azure.resourcemanager)
+implementation(libs.azure.storage.blob)
 ```
 
 ## Step 4 — Handle bundles
