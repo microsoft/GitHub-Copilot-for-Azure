@@ -52,6 +52,8 @@ RUN cd /home/site/wwwroot && npm install --production
 
 ```yaml
 name: my-functions-aca
+metadata:
+  template: container-apps-functions
 services:
   api:
     host: containerapp

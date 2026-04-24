@@ -14,7 +14,8 @@ Azure Container Registry build and push workflow for Container Apps.
 param name string
 param location string = resourceGroup().location
 param tags object = {}
-param principalId string
+param appPrincipalId string       // Container App MI — gets AcrPull only
+param deployerPrincipalId string  // CI/deployer MI — gets AcrPush
 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: name
@@ -26,30 +27,30 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   }
 }
 
-// RBAC — AcrPull for Container App
+// RBAC — AcrPull for Container App (least privilege — pull only)
 resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, principalId, '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+  name: guid(acr.id, appPrincipalId, '7f951dda-4ed3-4680-a7ca-43fe172d538d')
   scope: acr
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       '7f951dda-4ed3-4680-a7ca-43fe172d538d'
     )
-    principalId: principalId
+    principalId: appPrincipalId
     principalType: 'ServicePrincipal'
   }
 }
 
-// RBAC — AcrPush for build agent / deployer
+// RBAC — AcrPush for build agent / deployer (separate principal)
 resource acrPush 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, principalId, '8311e382-0749-4cb8-b61a-304f252e45ec')
+  name: guid(acr.id, deployerPrincipalId, '8311e382-0749-4cb8-b61a-304f252e45ec')
   scope: acr
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       '8311e382-0749-4cb8-b61a-304f252e45ec'
     )
-    principalId: principalId
+    principalId: deployerPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

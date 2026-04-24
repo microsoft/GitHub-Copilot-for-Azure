@@ -68,6 +68,7 @@ env: [
   { name: 'PGPORT', value: '5432' }
   { name: 'PGSSLMODE', value: 'require' }
   { name: 'AZURE_CLIENT_ID', value: uami.outputs.clientId }
+  { name: 'PGUSER', value: uami.outputs.name }  // Entra principal name configured as PG admin
 ]
 ```
 
@@ -89,7 +90,7 @@ token = credential.get_token("https://ossrdbms-aad.database.windows.net/.default
 conn = psycopg2.connect(
     host=os.environ["PGHOST"],
     database=os.environ["PGDATABASE"],
-    user=os.environ["AZURE_CLIENT_ID"],
+    user=os.environ["PGUSER"],
     password=token.token,
     sslmode="require",
 )
@@ -111,7 +112,7 @@ const token = await credential.getToken(
 const client = new Client({
   host: process.env.PGHOST,
   database: process.env.PGDATABASE,
-  user: process.env.AZURE_CLIENT_ID,
+  user: process.env.PGUSER,
   password: token.token,
   ssl: { rejectUnauthorized: true },
   port: 5432,
