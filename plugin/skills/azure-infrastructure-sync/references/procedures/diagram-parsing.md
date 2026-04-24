@@ -1,6 +1,5 @@
 # Diagram Parsing Procedure
 
-> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
 
 Parse a Draw.io XML file into a structured resource model. Referenced by all skills that consume Draw.io diagrams.
 

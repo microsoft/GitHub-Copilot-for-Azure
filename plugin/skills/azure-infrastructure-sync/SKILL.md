@@ -119,7 +119,6 @@ After presenting a drift report, offer:
 
 | Error | Cause | Remediation |
 |---|---|---|
-| Not authenticated | No Azure session | Run `az login` — see [azure-authentication.md](references/procedures/azure-authentication.md) |
 | Diagram file not found | Wrong path | Ask user for correct `.drawio` file path |
 | Bicep parse error | Invalid Bicep syntax | Run `bicep build` to identify syntax errors |
 | Draw.io MCP tool not found | MCP server not configured | Diagram updates output as `.drawio` XML file. Install Draw.io MCP for programmatic updates. |

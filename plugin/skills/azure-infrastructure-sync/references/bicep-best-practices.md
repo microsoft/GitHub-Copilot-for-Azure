@@ -1,6 +1,6 @@
 # Bicep Best Practices
 
-Mandatory rules for all Bicep generation in AzVerify skills. Before generating any Bicep, also call the Bicep MCP server's `get_bicep_best_practices` tool for the latest guidance.
+Mandatory rules for all Bicep generation. Before generating any Bicep, also call the Bicep MCP server's `get_bicep_best_practices` tool for the latest guidance.
 
 ---
 

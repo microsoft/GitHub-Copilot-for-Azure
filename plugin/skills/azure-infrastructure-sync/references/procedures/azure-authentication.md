@@ -1,14 +1,11 @@
 # Azure Authentication Check
 
-> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
-
-Canonical procedure for verifying Azure session before any Azure operations. Referenced by all skills that interact with Azure.
 
 ---
 
 ## Procedure
 
-1. **Verify session**: Run `az account show` or `Get-AzContext` in the terminal, OR attempt a lightweight Azure MCP call (e.g., `mcp_azure_mcp_subscription_list`)
+1. **Verify session**: Run attempt a lightweight Azure MCP call (e.g., `mcp_azure_mcp_subscription_list`), OR run `az account show` or `Get-AzContext` in the terminal
 
 2. **If authenticated**:
    - Display the active subscription name and ID

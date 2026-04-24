@@ -1,8 +1,6 @@
 # Azure Resource Metadata Model
 
-> **Canonical copy:** This shared reference is duplicated across Azure infrastructure skills. Keep parallel copies synchronized when updating shared guidance.
-
-Shared internal representation used by AzVerify skills (sketch-to-diagram, diagram-to-bicep, diagram-azure-sync).
+Standardized schema for representing Azure infrastructure as a JSON resource model. Used for comparison, drift detection, Bicep generation, and diagram generation.
 
 ## Schema
 
@@ -53,17 +51,6 @@ Each Azure environment is represented as a **resource model** — a JSON structu
 | `peers` | Bidirectional peering | VNet peers with VNet |
 | `secures` | Security association | NSG secures Subnet |
 | `routes` | Traffic routing | Load Balancer routes to VM |
-
-## Usage by Skill
-
-- **azure-to-bicep**: Builds a resource model from live Azure resources; generates Bicep from it.
-- **azure-to-diagram**: Builds a resource model from live Azure resources; generates Draw.io XML from it.
-- **bicep-diagram-sync**: Parses both Bicep and Draw.io into resource models and compares them.
-- **bicep-policy-check**: Parses Bicep into a resource model to evaluate against Azure Policy.
-- **bicep-whatif**: Parses Bicep into a resource model and compares it against live Azure state.
-- **diagram-azure-sync**: Produces two resource models (diagram + live Azure) and compares them (quick or deep mode).
-- **diagram-to-bicep**: Parses Draw.io XML into a resource model; enriches it with configuration manifest; generates Bicep.
-- **sketch-to-diagram**: Produces a resource model from image analysis; generates Draw.io XML via stencil mapping.
 
 ## Common Azure Resource Types
 
