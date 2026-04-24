@@ -118,4 +118,4 @@ Present a summary to the user including:
 - [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [Account Connection CLI Reference](https://learn.microsoft.com/en-us/cli/azure/cognitiveservices/account/connection?view=azure-cli-latest)
 - [KQL Quick Reference](https://learn.microsoft.com/azure/data-explorer/kusto/query/kql-quick-reference)
-- [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
+- [Foundry Samples](https://github.com/microsoft-foundry/foundry-samples)
