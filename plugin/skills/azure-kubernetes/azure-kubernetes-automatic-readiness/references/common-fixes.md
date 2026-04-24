@@ -176,13 +176,17 @@ spec:
 Remove the `host` field
 Example:
 ```yaml
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 8080
-  initialDelaySeconds: 15
-  periodSeconds: 20
-  failureThreshold: 3
+spec:
+  containers:
+  - name: my-container
+    image: nginx:v1.2.3
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 20
+      failureThreshold: 3
 ```
 
 ---
