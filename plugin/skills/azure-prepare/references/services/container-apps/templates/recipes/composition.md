@@ -39,7 +39,7 @@ IF recipes detected:
 ### Step 3: Add IaC Module (per recipe)
 
 **Bicep:**
-1. Copy recipe Bicep module into `infra/app/`
+1. Create recipe Bicep module in `infra/app/` based on the recipe's documented patterns
 2. Add module reference in `infra/main.bicep`:
    ```bicep
    module cosmos './app/cosmos.bicep' = {

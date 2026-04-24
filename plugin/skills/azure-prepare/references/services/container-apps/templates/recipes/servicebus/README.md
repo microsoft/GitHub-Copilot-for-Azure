@@ -85,7 +85,7 @@ scale: {
           queueName: sb.outputs.queueName
           messageCount: '5'
         }
-        identity: managedIdentityResourceId
+        identity: userAssignedIdentityId
       }
     }
   ]

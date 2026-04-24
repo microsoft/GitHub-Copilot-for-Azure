@@ -101,6 +101,6 @@ For **Container Apps**, load the composition rules the same way:
 
 1. Load `services/container-apps/templates/selection.md` — decision tree for base template + recipe
 2. Load `services/container-apps/templates/recipes/composition.md` — the exact algorithm to follow
-3. Use `azd init -t <template>` to generate proven IaC — **NEVER hand-write Bicep/Terraform**
+3. Use `azd init -t <template>` for **new projects only** to generate proven IaC — **NEVER hand-write Bicep/Terraform**
 
 For other compute targets (App Service, Static Web Apps), load their respective README files in `services/` for guidance.
