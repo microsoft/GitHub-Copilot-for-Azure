@@ -113,7 +113,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           fs.cpSync("./appinsights-instrumentation/resources/python-app/", workspace, { recursive: true });
         },
         prompt: "Instrument my Python web app with Application Insights in Azure Container App",
-        preserveWorkspace: true
       });
 
       const mentionsAppInsights = doesAssistantMessageIncludeKeyword(

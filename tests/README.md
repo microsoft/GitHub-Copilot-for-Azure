@@ -214,6 +214,14 @@ Test cases are grouped under the `describe` groups. It's commonly useful to use 
 
 To learn more about how the CLI options work, check out `tests/scripts/run-tests.js`.
 
+### Workspace Cleanup
+
+Each integration test creates a temporary workspace under `os.tmpdir()` (e.g., `%TEMP%\skill-test-*` on Windows). By default, these are **automatically deleted** in `afterEach` after the test completes (pass or fail).
+
+To preserve workspaces for debugging, set `preserveWorkspace: true` in the `agent.run()` call.
+
+> **Note:** If a test times out and Jest kills the worker, `afterEach` may not run, leaving orphaned `skill-test-*` folders in your temp directory. Clean these up manually if needed.
+
 ### Reading Test Output
 
 **Console output:**
