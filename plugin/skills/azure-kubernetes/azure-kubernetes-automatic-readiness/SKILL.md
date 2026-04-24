@@ -187,7 +187,7 @@ Per-issue format:
 **Deterministic fixes** (have `suggestedPatch` — generate YAML diff directly):
 - `safeguard-container-resource-requests` — add `resources.requests`
 - `safeguard-container-capabilities` — remove `capabilities.add`
-- `safeguard-allowed-seccomp-profiles` — add `seccompProfile: RuntimeDefault`
+- `safeguard-allowed-seccomp-profiles` — patch only when `seccompProfile.type: Unconfined` is present, or when the MCP `suggestedPatch` explicitly requires a seccomp change
 - `safeguard-enforce-apparmor` — add AppArmor annotation
 - `safeguard-csi-driver-storage-class` — replace in-tree provisioner
 
