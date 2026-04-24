@@ -5,7 +5,74 @@ import { type AgentMetadata } from "./agent-runner";
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
 /**
+ * Strip content that is not actually executed as shell commands.
+ * Removes bash heredoc bodies, shell comments, and PowerShell here-strings
+ * so that pattern matching only hits real commands.
+ */
+export function stripNonExecutableContent(command: string): string {
+  const lines = command.split("\n");
+  const result: string[] = [];
+  let heredocDelimiter: string | null = null;
+  let heredocAllowTabs = false;
+  let psHereStringCloser: string | null = null;
+
+  for (const line of lines) {
+    // Inside a bash heredoc — skip until closing delimiter.
+    // For `<<`, the delimiter must appear at column 0 with no surrounding whitespace.
+    // For `<<-`, only leading tabs are stripped before matching.
+    if (heredocDelimiter !== null) {
+      const closerLine = heredocAllowTabs ? line.replace(/^\t+/, "") : line;
+      if (closerLine === heredocDelimiter) {
+        heredocDelimiter = null;
+      }
+      continue;
+    }
+
+    // Inside a PowerShell here-string — skip until closing marker.
+    // PowerShell requires the closer ('@ or "@) at column 0, but may have
+    // trailing content on the same line (e.g., '@ + "extra").
+    if (psHereStringCloser !== null) {
+      if (line.startsWith(psHereStringCloser)) {
+        psHereStringCloser = null;
+      }
+      continue;
+    }
+
+    // Skip shell comment lines before heredoc detection to prevent
+    // commented examples like `# cat <<EOF` from entering heredoc mode
+    if (/^\s*#[^!]/.test(line) || /^\s*#$/.test(line)) {
+      continue;
+    }
+
+    // Detect bash heredoc opener: << or <<- followed by optional quotes around delimiter
+    const heredocMatch = line.match(/<<(-?)\s*['"]?([A-Za-z_][\w-]*)['"]?/);
+    if (heredocMatch) {
+      heredocAllowTabs = heredocMatch[1] === "-";
+      heredocDelimiter = heredocMatch[2];
+      // Keep the portion of the line before the heredoc (e.g., `cat > file`)
+      result.push(line.substring(0, line.indexOf("<<")));
+      continue;
+    }
+
+    // Detect PowerShell here-string openers: @' or @" (may appear mid-line after =)
+    const psMatch = line.match(/@(['"])\s*$/);
+    if (psMatch) {
+      psHereStringCloser = `${psMatch[1]}@`;
+      // Keep the portion before the here-string opener
+      result.push(line.substring(0, line.indexOf("@" + psMatch[1])));
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result.join("\n");
+}
+
+/**
  * Extract all shell command strings (powershell and bash) from agent metadata.
+ * Non-executable content (heredoc bodies, comments) is stripped so that
+ * pattern matching via {@link matchesCommand} only matches real commands.
  */
 function getShellCommands(metadata: AgentMetadata): string[] {
   return getToolCalls(metadata)
@@ -13,7 +80,7 @@ function getShellCommands(metadata: AgentMetadata): string[] {
     .map(event => {
       const data = event.data as Record<string, unknown>;
       const args = data.arguments as { command?: string } | undefined;
-      return args?.command ?? "";
+      return stripNonExecutableContent(args?.command ?? "");
     });
 }
 
@@ -214,6 +281,59 @@ export function getAllToolText(metadata: AgentMetadata): string {
 }
 
 /**
+ * Check if an MCP tool was called from a specific server
+ */
+export function isMcpToolCalled(metadata: AgentMetadata, mcpServerName: string, mcpToolNamePattern?: RegExp): boolean {
+  return metadata.events
+    .filter(event => event.type === "tool.execution_start")
+    .some(event => {
+      const data = event.data as {
+        mcpServerName?: string;
+        mcpToolName?: string;
+      };
+
+      if (data.mcpServerName !== mcpServerName) {
+        return false;
+      }
+
+      // If pattern specified, require tool name to exist and match
+      if (mcpToolNamePattern) {
+        if (!data.mcpToolName) {
+          return false;
+        }
+        return mcpToolNamePattern.test(data.mcpToolName);
+      }
+
+      return true; // Server matches, no tool name pattern specified
+    });
+}
+
+/**
+ * Search for a keyword in both assistant messages AND tool execution data (reasoning)
+ */
+export function doesAssistantOrToolsIncludeKeyword(
+  metadata: AgentMetadata,
+  keyword: string,
+  options: { caseSensitive?: boolean } = {}
+): boolean {
+  const searchText = options.caseSensitive
+    ? keyword
+    : keyword.toLowerCase();
+
+  // Check assistant messages
+  const messages = getAllAssistantMessages(metadata);
+  const messageText = options.caseSensitive ? messages : messages.toLowerCase();
+  if (messageText.includes(searchText)) {
+    return true;
+  }
+
+  // Check tool calls and results (reasoning data)
+  const toolText = getAllToolText(metadata);
+  const toolSearchText = options.caseSensitive ? toolText : toolText.toLowerCase();
+  return toolSearchText.includes(searchText);
+}
+
+/**
  * Maximum number of tool calls allowed before invoking the expected skill.
  * If more than this number of tool calls are made before invoking the expected skill,
  * we consider the agent failed to invoke the skill.
@@ -243,8 +363,11 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
   };
 
   try {
+    // Before agent run starts, initialize the test result as if it failed.
+    // This ensures every test case has a result even when the agent run times out.
+    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
     await fn(ctx);
-    global.addTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -253,12 +376,12 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.addTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate });
     throw e;
   }
 }
 
-export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string): boolean {
+export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetadata, skillName: string, toolCallBudget?: number): boolean {
   const shouldEarlyTerminateForInvokedSkill = isSkillInvoked(agentMetadata, skillName);
   if (shouldEarlyTerminateForInvokedSkill) {
     const earlyTerminateComment = `✅ ${skillName} is invoked as expected. Terminating the agent run early.`;
@@ -270,7 +393,7 @@ export function shouldEarlyTerminateForSkillInvocation(agentMetadata: AgentMetad
     return true;
   }
 
-  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > maxToolCallBeforeSkillInvocationTerminate;
+  const shouldEarlyTerminateForTooLate = getToolCalls(agentMetadata).length > (toolCallBudget ?? maxToolCallBeforeSkillInvocationTerminate);
   if (shouldEarlyTerminateForTooLate) {
     agentMetadata.testComments.push(`⚠️ ${skillName} is not invoked within early tool calls. Terminating the agent run early.`);
     return true;

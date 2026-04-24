@@ -8,18 +8,10 @@ A single ARG query returns the App Insights name, instrumentation key, connectio
 
 ```bash
 az graph query -q "
-  resources
-  | where type =~ 'microsoft.web/sites' and name == '<func-app-name>'
-  | project funcName=name, rg=resourceGroup
-  | join kind=inner (
-      resources
-      | where type =~ 'microsoft.insights/components'
-      | project appiName=name, rg=resourceGroup,
-               instrumentationKey=properties.InstrumentationKey,
-               connectionString=properties.ConnectionString,
-               workspaceId=properties.WorkspaceResourceId
-  ) on rg
-  | project funcName, appiName, instrumentationKey, connectionString, workspaceId
+resources | where type =~ 'microsoft.web/sites' and name == '<func-app-name>'
+| project funcName=name, rg=resourceGroup
+| join kind=inner (resources | where type =~ 'microsoft.insights/components' | project appiName=name, rg=resourceGroup, instrumentationKey=properties.InstrumentationKey, connectionString=properties.ConnectionString, workspaceId=properties.WorkspaceResourceId) on rg
+| project funcName, appiName, instrumentationKey, connectionString, workspaceId
 " -o json
 ```
 
