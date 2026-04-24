@@ -4,26 +4,21 @@
 
 When a user asks a broad question like "what happened in my AKS cluster?" or "check my AKS status", follow this systematic flow:
 
+1. Cluster health
+2. Recent events
+3. Node status
+4. Unhealthy pods
+5. All pods overview
+6. System pods health
+7. Activity log
+
 ```bash
-# 1. Cluster health
 az aks show -g <rg> -n <cluster> --query "provisioningState"
-
-# 2. Recent events
 kubectl get events -A --sort-by='.lastTimestamp' | head -40
-
-# 3. Node status
 kubectl get nodes -o wide
-
-# 4. Unhealthy pods
 kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
-
-# 5. All pods overview
 kubectl get pods -A -o wide
-
-# 6. System pods health
 kubectl get pods -n kube-system -o wide
-
-# 7. Activity log
 az monitor activity-log list -g <rg> --max-events 20 -o table
 ```
 
