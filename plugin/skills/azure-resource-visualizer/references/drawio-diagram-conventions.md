@@ -1,7 +1,5 @@
 # Draw.io Diagram Conventions
 
-Shared construction rules for all AzVerify skills that generate Draw.io diagrams. Skills reference this file instead of carrying duplicated rules.
-
 ---
 
 ## 1. Canvas Wrapper Format

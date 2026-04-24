@@ -70,7 +70,6 @@ Every edge should connect to its nearest spatial neighbour:
 **Key rules:**
 - Pair related subnets vertically (External above Internal for same service)
 - Size subnets to content: 1–3 icons ≈ 450×230px (not 560×380px)
-- Place ASPs, Managed Identities, and WAF Policies inside the parent subnet (not a row at VNet bottom)
 - Add per-subnet route table icons (36px, fontSize=9) instead of a central route table with radiating edges
 - Legend: horizontal bar below the VNet container, ~full-width × 170px; not a tall side panel
 - Page dimensions: `pageWidth="1800" pageHeight="1600"` for 12 subnets; never exceed `pageWidth="1900"`

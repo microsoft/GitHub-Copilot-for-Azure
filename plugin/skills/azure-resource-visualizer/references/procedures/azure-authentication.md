@@ -1,14 +1,11 @@
 # Azure Authentication Check
 
-> **Canonical copy** — this file is the single source of truth for the Azure authentication procedure. Referenced by all skills that interact with Azure; edit here, do not duplicate.
-
-Canonical procedure for verifying Azure session before any Azure operations. Referenced by all skills that interact with Azure.
 
 ---
 
 ## Procedure
 
-1. **Verify session**: Run `az account show` or `Get-AzContext` in the terminal, OR attempt a lightweight Azure MCP call (e.g., `mcp_azure_subscription_list`)
+1. **Verify session**: Run a lightweight Azure MCP call (e.g., `mcp_azure_mcp_subscription_list`), or run `az account show` or `Get-AzContext` in the terminal
 
 2. **If authenticated**:
    - Display the active subscription name and ID
@@ -17,7 +14,7 @@ Canonical procedure for verifying Azure session before any Azure operations. Ref
 3. **If NOT authenticated**:
    - Present this message:
 
-   ```
+   ```markdown
    ## Azure Authentication Required
 
    You need an active Azure session.

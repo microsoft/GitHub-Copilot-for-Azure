@@ -1,17 +1,24 @@
 {
-  "_canonicalCopy": "This file is the single source of truth for Azure stencil mappings. Referenced by multiple skills; edit here, do not duplicate.",
   "description": "Azure resource type to Draw.io stencil mappings. ALWAYS look up a resource type here before constructing any icon path. For resource types NOT listed here, derive the path from the azure2 convention: img/lib/azure2/<category>/<PascalCase_Resource_Name>.svg — but ONLY after confirming the file exists. Never guess the category from the ARM namespace: Microsoft.Web resources live in app_services/, not web/ or compute/. This file lists all known exceptions (wrong category, singular/plural surprises, non-existent files, fallback icons) and container styles.",
   "criticalWarnings": [
     "Microsoft.Web/* resources (App Services, App Service Plans, Function Apps) live in app_services/ — NOT in compute/ or web/",
     "App_Service_Plans.svg is in app_services/, NOT compute/. compute/ does not contain this file.",
+    "Microsoft.KeyVault/vaults lives in security/Key_Vaults.svg — there is no keyvault/ category in azure2.",
+    "Microsoft.ContainerService/managedClusters (AKS) uses containers/Kubernetes_Services.svg — filename is Kubernetes_Services, NOT Managed_Clusters.",
+    "Microsoft.SignalRService/signalR uses web/SignalR.svg (SINGULAR) — NOT other/, NOT integration/, no plural form exists.",
+    "Microsoft.ServiceBus/namespaces uses integration/Service_Bus.svg — filename is SINGULAR (Service_Bus, not Service_Buses).",
+    "Microsoft.Cache/redis uses databases/Cache_Redis.svg — NOT Redis_Cache.svg, Redis_Caches.svg, or Azure_Cache_for_Redis.svg.",
+    "Microsoft.DocumentDB/databaseAccounts uses databases/Azure_Cosmos_DB.svg — icon is named after the product, not the ARM namespace.",
+    "Microsoft.ApiManagement/service uses integration/API_Management_Services.svg — ARM type is singular 'service' but the filename is PLURAL.",
     "There is no generic Event_Grid.svg. Use System_Topic.svg, Event_Grid_Topics.svg, or Event_Grid_Domains.svg depending on the sub-type.",
-    "Microsoft.AppConfiguration/configurationStores uses img/lib/mscae/App_Configuration.svg — this icon does NOT exist in the azure2 library. Using any azure2 path (e.g. management_governance/Management_Groups.svg or management_governance/App_Configurations.svg) produces an empty/broken icon.",
+    "Microsoft.AppConfiguration/configurationStores uses img/lib/mscae/App_Configuration.svg — this icon does NOT exist anywhere in the azure2 library. Using any azure2 path (e.g. management_governance/Management_Groups.svg or management_governance/App_Configurations.svg) produces an empty/broken icon.",
     "Always verify a path exists before using it. When in doubt, check https://github.com/jgraph/drawio/tree/dev/src/main/webapp/img/lib/azure2"
   ],
   "stencilLibrary": "azure2",
-  "styleTemplate": "aspect=fixed;html=1;points=[];align=center;image;resizable=0;image={imagePath};",
+  "styleTemplate": "aspect=fixed;html=1;points=[];align=center;image;resizable=0;image={imagePath};verticalLabelPosition=bottom;verticalAlign=top;",  
+
   "iconNamingNotes": "Most icons use plural names (e.g., Virtual_Networks.svg, Load_Balancers.svg). The exceptions below use SINGULAR names — do not pluralize them. When unsure, check the draw.io azure2 stencil source at https://github.com/jgraph/drawio/tree/dev/src/main/webapp/img/lib/azure2",
-  "iconSizingNotes": "defaultWidth and defaultHeight define the mxCell bounding box. Do NOT add imageAspect=0 — it stretches non-square SVGs and distorts icons. For icons marked requiresImageAspect1=true (e.g. Application Insights), you MUST add imageAspect=1 to the style string to preserve the SVG's native non-square proportions. For all other icons, omit imageAspect entirely. Always use the exact defaultWidth and defaultHeight from this mapping; never calculate or approximate icon dimensions yourself. Most azure2 icons are square; non-square entries list an explicit defaultHeight.",
+  "iconSizingNotes": "defaultWidth and defaultHeight define the mxCell bounding box. Do NOT add imageAspect=0 — it stretches non-square SVGs and distorts icons. For icons marked requiresImageAspect1=true (e.g. Application Insights, Subnet), you MUST add imageAspect=1 to the style string to preserve the SVG's native non-square proportions. For all other icons, omit imageAspect entirely. Always use the exact defaultWidth and defaultHeight from this mapping; never calculate or approximate icon dimensions yourself. Most azure2 icons are square; non-square entries list an explicit defaultHeight.",
   "resourceTypes": {
     "_comment_singularExceptions": "These icons use SINGULAR names, breaking the usual plural pattern",
     "Microsoft.Compute/virtualMachines": {
@@ -31,6 +38,8 @@
       "label": "Subnet",
       "defaultWidth": 50,
       "defaultHeight": 50,
+      "requiresImageAspect1": true,
+      "note": "Subnet.svg is natively wide (~16.998 x 10.175, ratio ~1.67:1) — NOT square. You MUST include imageAspect=1 in the style string when rendering the icon, otherwise it stretches vertically into a distorted square. When used as an isContainer, the icon is typically omitted in favor of the containerStyle, so aspect does not apply.",
       "isContainer": true,
       "containerStyle": "rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=2 2;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontStyle=1;"
     },
@@ -52,8 +61,57 @@
       "defaultWidth": 50,
       "defaultHeight": 50
     },
+    "Microsoft.ServiceBus/namespaces": {
+      "imagePath": "img/lib/azure2/integration/Service_Bus.svg",
+      "label": "Service Bus",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "SINGULAR filename — Service_Bus.svg, NOT Service_Buses.svg. CATEGORY: integration."
+    },
+    "Microsoft.Cache/redis": {
+      "imagePath": "img/lib/azure2/databases/Cache_Redis.svg",
+      "label": "Redis Cache",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "UNUSUAL NAMING — filename is Cache_Redis.svg (NOT Redis_Cache.svg, Redis_Caches.svg, or Azure_Cache_for_Redis.svg). CATEGORY: databases."
+    },
+    "Microsoft.DocumentDB/databaseAccounts": {
+      "imagePath": "img/lib/azure2/databases/Azure_Cosmos_DB.svg",
+      "label": "Cosmos DB",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "Filename does NOT follow the ARM namespace (no 'DocumentDB' or 'DatabaseAccounts' in it). Uses the friendly product name 'Azure_Cosmos_DB.svg' (SINGULAR)."
+    },
+    "Microsoft.ApiManagement/service": {
+      "imagePath": "img/lib/azure2/integration/API_Management_Services.svg",
+      "label": "API Management",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "ARM type ends in singular 'service' but the icon filename is PLURAL — API_Management_Services.svg. CATEGORY: integration (NOT apimanagement/ or api/)."
+    },
 
     "_comment_wrongCategory": "These icons are in unexpected categories — the LLM would guess wrong",
+    "Microsoft.KeyVault/vaults": {
+      "imagePath": "img/lib/azure2/security/Key_Vaults.svg",
+      "label": "Key Vault",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "CATEGORY: security — NOT keyvault/, NOT identity/. The Microsoft.KeyVault ARM namespace is misleading; no 'keyvault' category exists in azure2."
+    },
+    "Microsoft.ContainerService/managedClusters": {
+      "imagePath": "img/lib/azure2/containers/Kubernetes_Services.svg",
+      "label": "AKS",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "CATEGORY: containers — NOT containerservice/. Filename is Kubernetes_Services.svg (product name), not Managed_Clusters.svg (ARM name). An identical copy also exists in compute/ — either path renders; prefer containers/."
+    },
+    "Microsoft.SignalRService/signalR": {
+      "imagePath": "img/lib/azure2/web/SignalR.svg",
+      "label": "SignalR",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "CATEGORY: web — NOT signalrservice/, NOT other/, NOT integration/. Filename is SINGULAR SignalR.svg (no plural form exists)."
+    },
     "Microsoft.Web/serverFarms": {
       "imagePath": "img/lib/azure2/app_services/App_Service_Plans.svg",
       "label": "App Service Plan",
@@ -165,6 +223,57 @@
       "defaultWidth": 50,
       "defaultHeight": 50,
       "note": "LIBRARY: mscae — NOT azure2. This icon does not exist anywhere in the azure2 library. Using any azure2 path produces a broken/empty icon. The correct path is img/lib/mscae/App_Configuration.svg (singular, not plural)."
+    },
+
+    "_comment_commonResources": "Common resources that follow the usual <category>/<PascalCase_Name>.svg plural convention — listed here so agents never have to guess.",
+    "Microsoft.Storage/storageAccounts": {
+      "imagePath": "img/lib/azure2/storage/Storage_Accounts.svg",
+      "label": "Storage Account",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/networkSecurityGroups": {
+      "imagePath": "img/lib/azure2/networking/Network_Security_Groups.svg",
+      "label": "NSG",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/loadBalancers": {
+      "imagePath": "img/lib/azure2/networking/Load_Balancers.svg",
+      "label": "Load Balancer",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/applicationGateways": {
+      "imagePath": "img/lib/azure2/networking/Application_Gateways.svg",
+      "label": "App Gateway",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/publicIPAddresses": {
+      "imagePath": "img/lib/azure2/networking/Public_IP_Addresses.svg",
+      "label": "Public IP",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/networkInterfaces": {
+      "imagePath": "img/lib/azure2/networking/Network_Interfaces.svg",
+      "label": "NIC",
+      "defaultWidth": 50,
+      "defaultHeight": 50
+    },
+    "Microsoft.Network/virtualNetworkGateways": {
+      "imagePath": "img/lib/azure2/networking/Virtual_Network_Gateways.svg",
+      "label": "VPN Gateway",
+      "defaultWidth": 50,
+      "defaultHeight": 50,
+      "note": "Same ARM type covers both VPN and ExpressRoute gateways; differentiate via the resource's gatewayType property when labeling (e.g., 'ExpressRoute Gateway')."
+    },
+    "Microsoft.ContainerRegistry/registries": {
+      "imagePath": "img/lib/azure2/containers/Container_Registries.svg",
+      "label": "Container Registry",
+      "defaultWidth": 50,
+      "defaultHeight": 50
     },
 
     "_comment_containers": "Container elements with special rendering styles",
