@@ -120,7 +120,8 @@ Discover Container Apps and their monitoring configuration:
 resources
 | where type == "microsoft.app/containerapps"
 | mv-expand container = properties.template.containers
-| mv-expand kind=outer envVar = container.env
+| mv-expand envVar = container.env
+| where isnotempty(envVar)
 | summarize hasAppInsights = countif(envVar.name == "APPLICATIONINSIGHTS_CONNECTION_STRING") by name, resourceGroup
 | where hasAppInsights == 0
 ```
