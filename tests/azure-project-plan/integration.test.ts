@@ -46,7 +46,7 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 const planTestTimeoutMs = 300000; // 5 minutes
 
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   // ──────────────────────────────────────────────────────────────────
