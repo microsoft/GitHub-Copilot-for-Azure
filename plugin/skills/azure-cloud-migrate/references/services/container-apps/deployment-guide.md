@@ -88,9 +88,7 @@ ACR_NAME="${ACR_NAME:-<acr>}"
 
 # Create Key Vault and migrate secrets (pipe directly — no temp file)
 az keyvault create --name myapp-kv --resource-group myapp-rg --location eastus
-SECRET_VALUE=$(kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}' | base64 -d)
-az keyvault secret set --vault-name myapp-kv --name password --value "$SECRET_VALUE"
-unset SECRET_VALUE
+az keyvault secret set --vault-name myapp-kv --name password --value "$(kubectl get secret mysecret -n <namespace> -o jsonpath='{.data.password}' | base64 -d)"
 
 # Create managed identity and grant permissions
 az identity create --name myapp-id --resource-group myapp-rg --location eastus

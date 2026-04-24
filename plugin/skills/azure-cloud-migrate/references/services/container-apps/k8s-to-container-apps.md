@@ -35,7 +35,7 @@ Detailed guidance for migrating containerized workloads from Kubernetes (GKE, EK
 |--------------|--------------------------|---------|
 | `replicas: 3` | `--min-replicas 3 --max-replicas 3` | Static scaling |
 | `resources.requests.cpu` | `--cpu 0.5` | CPU cores (0.25-4.0) |
-| `resources.requests.memory` | `--memory 1.0Gi` | Memory (0.5Gi-8Gi) |
+| `resources.requests.memory` | `--memory 1Gi` | Memory (0.5Gi-8Gi) |
 | `image: gcr.io/my-registry/app:v1` | `--image myacr.azurecr.io/app:v1` | After ACR import |
 | `env: - name: KEY, value: val` | `--env-vars KEY=val` | Environment variables |
 | `env: - name: SECRET, valueFrom: secretKeyRef` | `--secrets SECRET=keyvaultref:...` | Key Vault reference |
