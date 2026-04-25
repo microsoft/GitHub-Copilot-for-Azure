@@ -77,7 +77,9 @@ az bicep lint --file ./infra/main.bicep
 
 ### 6. Azure Policy Validation
 
-See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
+Use [Policy Validation Guide](../../policy-validation.md) for general subscription policy checks.
+
+If the deployment is Bicep-based and needs per-resource preflight compliance, also run the [Bicep Policy Check Workflow](../../bicep-policy-check-workflow.md).
 
 ## Checklist
 

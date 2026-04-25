@@ -1,5 +1,7 @@
 # Azure Policy Validation
 
+For Bicep-based preflight policy checks, use the deeper [Bicep Policy Check Workflow](bicep-policy-check-workflow.md).
+
 ## How to Validate Policies
 
 ### 1. Get Subscription ID

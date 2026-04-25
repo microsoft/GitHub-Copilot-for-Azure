@@ -48,6 +48,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Validate docker build before deploying to Container Apps",
       "Run validation checks for my containerized web application",
       "Verify my Container Apps deployment configuration",
+      // Policy compliance checks
+      "Check my Bicep against Azure Policy",
+      "Run policy compliance check before deployment",
+      "Check policy restrictions for my Bicep template",
+      "Azure policy bicep validation",
     ];
 
     test.each(shouldTriggerPrompts)(
