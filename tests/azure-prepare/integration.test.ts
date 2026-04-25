@@ -731,7 +731,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasPlanReadyForValidation(metadata) || hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
@@ -755,7 +754,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
@@ -781,7 +779,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
@@ -807,7 +804,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
@@ -849,7 +845,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             `The app can be found under ${ASPIRE_FUNCTIONS_SPARSE_PATH}.`,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
@@ -896,7 +891,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             `The app can be found under ${CONTAINER_BUILD_SPARSE_PATH}.`,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
@@ -932,7 +926,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           systemPrompt: SKIP_QUOTA_CHECK_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) ||
             isSkillInvoked(metadata, "azure-validate"),
@@ -974,7 +967,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use the eastus2 region and my current subscription.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
