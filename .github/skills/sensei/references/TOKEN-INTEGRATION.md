@@ -4,7 +4,7 @@ Sensei integrates with the token management system to ensure skills stay within 
 
 ## Token Budgets
 
-From the [skill-authoring](/.github/skills/skill-authoring) skill:
+Per the [agentskills.io specification](https://agentskills.io/specification):
 
 | File Type | Soft Limit | Hard Limit |
 |-----------|------------|------------|
@@ -63,11 +63,6 @@ Include in summary:
 
 ## Optimization Patterns
 
-For detailed optimization guidance, reference the [markdown-token-optimizer](/.github/skills/markdown-token-optimizer) skill:
-
-- [ANTI-PATTERNS.md](/.github/skills/markdown-token-optimizer/references/ANTI-PATTERNS.md) - Token-wasting patterns to avoid
-- [OPTIMIZATION-PATTERNS.md](/.github/skills/markdown-token-optimizer/references/OPTIMIZATION-PATTERNS.md) - Techniques to reduce tokens
-
 ### Quick Reference: Common Optimizations
 
 | Pattern | Savings | Example |
@@ -77,6 +72,9 @@ For detailed optimization guidance, reference the [markdown-token-optimizer](/.g
 | Remove filler words | 1-2 tokens each | "In order to" → "To" |
 | Consolidate lists | 5-10 tokens | Multiple bullets → single sentence |
 | Use abbreviations | 1-2 tokens | "Application Insights" → "App Insights" |
+| Move details to references | 50-200 tokens | Large tables → `references/` file |
+| Tables vs lists | 30 tokens per 5 items | Verbose list → compact table |
+| Inline code vs blocks | 10 tokens each | Code block → inline `backtick` |
 
 ## When to Apply Token Suggestions
 
@@ -120,5 +118,4 @@ Sensei captures token optimization suggestions but does **not** auto-apply them.
 
 ## Related Skills
 
-- [markdown-token-optimizer](/.github/skills/markdown-token-optimizer) - Token analysis and suggestions
-- [skill-authoring](/.github/skills/skill-authoring) - Skill writing guidelines and constraints
+- [CREATE.md](CREATE.md) - Skill creation guidelines and pre-submission checklist

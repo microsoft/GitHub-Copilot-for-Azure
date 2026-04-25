@@ -70,7 +70,7 @@ jobs:
               c.body.includes('Token Analysis Report')
             );
 
-            const footer = '\n\n---\n*Automated token analysis. See [skill authoring guidelines](.github/skills/skill-authoring/SKILL.md) for best practices.*';
+            const footer = '\n\n---\n*Automated token analysis. See [sensei skill guidelines](.github/skills/sensei/SKILL.md) for best practices.*';
             const body = '<details>' + report + '</details>' + footer;
 
             if (botComment) {
