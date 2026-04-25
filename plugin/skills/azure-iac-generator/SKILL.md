@@ -1,6 +1,6 @@
 ---
 name: azure-iac-generator
-description: "Generate deployment-ready Bicep templates from existing Azure environments or Draw.io architecture diagrams. Reverse-engineer live infrastructure into Infrastructure as Code. WHEN: generate bicep, azure to bicep, generate bicep from azure, bicep from diagram, diagram to bicep, create bicep templates from resources, export infrastructure as code, generate infrastructure code, reverse engineer azure, generate iac from azure. DO NOT USE FOR: creating new applications for Azure (use azure-prepare), deploying existing Bicep (use azure-validate then azure-deploy), comparing Bicep against live Azure (use azure-infrastructure-sync)."
+description: "Generate deployment-ready Bicep templates from existing Azure environments or Draw.io architecture diagrams. Reverse-engineer live infrastructure into Infrastructure as Code. WHEN: generate bicep, azure to bicep, generate bicep from azure, bicep from diagram, diagram to bicep, create bicep templates from resources, export infrastructure as code, generate infrastructure code, reverse engineer azure, generate iac from azure. DO NOT USE FOR: creating new applications(use azure-prepare), deploying existing resources (use azure-validate then azure-deploy), comparing environments (use azure-infrastructure-sync)."
 license: MIT
 metadata:
   author: Microsoft
