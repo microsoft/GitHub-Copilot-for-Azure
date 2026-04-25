@@ -93,7 +93,8 @@ def analyze_job(client, job_id, download_csv=None):
     for step, val, train in val_points:
         ratio = val / train if train and train > 0 else 0
         marker = " ← best" if step == best_step else ""
-        print(f"  {step:>6} {val:>10.4f} {train:>12.4f} {ratio:>8.2f}{marker}")
+        train_str = f"{train:12.4f}" if train is not None else "         N/A"
+        print(f"  {step:>6} {val:>10.4f} {train_str} {ratio:>8.2f}{marker}")
 
     print(f"\n  Best val_loss: {best_val:.4f} at step {best_step}")
     print(f"  Final val_loss: {final_val:.4f} at step {final_step}")
