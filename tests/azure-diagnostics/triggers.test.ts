@@ -58,6 +58,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "AKS upgrade failed and nodes are not coming back",
       "CoreDNS is failing in kube-system on my AKS cluster",
       "Check the health of my Azure resources",
+
+      // Messaging diagnostics
+      "Troubleshoot my event hub SDK connection failure",
+      "Service bus AMQP connection error, message lock lost",
       
       // Root cause analysis
       "Find root cause of errors in my app",
