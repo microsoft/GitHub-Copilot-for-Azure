@@ -189,6 +189,12 @@ def main():
     judge_key = args.judge_api_key or args.api_key
     if args.judge_endpoint:
         judge_client, _ = get_clients(azure_endpoint=args.judge_endpoint, api_key=judge_key)
+    elif args.judge_api_key:
+        # Different API key but same endpoint — create a new client with the judge key
+        judge_client, _ = get_clients(
+            base_url=args.base_url, azure_endpoint=args.endpoint,
+            project_endpoint=args.project_endpoint, api_key=judge_key
+        )
     else:
         judge_client = model_client
 
