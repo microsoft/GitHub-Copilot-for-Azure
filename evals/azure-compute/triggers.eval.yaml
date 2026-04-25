@@ -1,0 +1,1073 @@
+name: azure-compute-trigger-eval
+description: "Trigger routing evaluation for azure-compute — migrated from Jest trigger tests"
+type: capability
+tags:
+  type: trigger
+  skill: azure-compute
+environment:
+  skills:
+    - ../../plugin/skills/azure-compute
+config:
+  runs: 3
+  timeout: 120
+  executor: copilot-sdk
+  model: claude-sonnet-4
+scoring:
+  threshold: 0.8
+stimuli:
+  # Positive triggers — skill SHOULD be invoked
+  - name: "trigger-positive-which-azure-vm-should-i-use-for-my-web-server"
+    prompt: "Which Azure VM should I use for my web server?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-recommend-a-vm-size-for-my-database-workload"
+    prompt: "Recommend a VM size for my database workload"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-is-the-best-azure-vm-for-machine-learning-traini"
+    prompt: "What is the best Azure VM for machine learning training?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-compare-azure-vm-families-for-a-batch-processing-job"
+    prompt: "Compare Azure VM families for a batch processing job"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-recommend-an-azure-gpu-vm-for-deep-learning-compute-w"
+    prompt: "Recommend an Azure GPU VM for deep learning compute workloads"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-is-the-cheapest-azure-vm-size-for-a-devtest-envi"
+    prompt: "What is the cheapest Azure VM size for a dev/test environment?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-help-me-choose-the-best-azure-vm-family-between-d-ser"
+    prompt: "Help me choose the best Azure VM family between D-series and E-series"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-which-vm-family-is-best-for-a-memory-intensive-worklo"
+    prompt: "Which VM family is best for a memory-intensive workload?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-recommend-a-burstable-vm-for-my-lightweight-web-app"
+    prompt: "Recommend a burstable VM for my lightweight web app"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-azure-vm-should-i-pick-for-hpc-simulation"
+    prompt: "What Azure VM should I pick for HPC simulation?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-should-i-use-a-vm-scale-set-for-my-azure-web-tier"
+    prompt: "Should I use a VM Scale Set for my Azure web tier?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-do-i-autoscale-vms-behind-a-load-balancer-on-azur"
+    prompt: "How do I autoscale VMs behind a load balancer on Azure?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-recommend-a-vmss-configuration-for-horizontal-scaling"
+    prompt: "Recommend a VMSS configuration for horizontal scaling"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-whats-the-difference-between-vmss-flexible-and-unifor"
+    prompt: "What's the difference between VMSS Flexible and Uniform orchestration?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-should-i-use-a-single-vm-or-a-scale-set-for-my-api-ba"
+    prompt: "Should I use a single VM or a scale set for my API backend?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-do-i-set-up-autoscale-for-azure-virtual-machine-s"
+    prompt: "How do I set up autoscale for Azure Virtual Machine Scale Sets?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-recommend-vm-sizes-for-a-scale-set-with-load-balancin"
+    prompt: "Recommend VM sizes for a scale set with load balancing"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-much-does-an-azure-vm-cost-per-hour"
+    prompt: "How much does an Azure VM cost per hour?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-give-me-a-cost-estimate-for-a-d4s-v5-vm-in-east-us"
+    prompt: "Give me a cost estimate for a D4s v5 VM in East US"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-compare-azure-vm-pricing-tiers-for-compute-optimized"
+    prompt: "Compare Azure VM pricing tiers for compute-optimized sizes"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-is-the-cheapest-azure-vm-for-running-a-small-web"
+    prompt: "What is the cheapest Azure VM for running a small website?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-estimate-monthly-cost-for-an-azure-vm-scale-set-with"
+    prompt: "Estimate monthly cost for an Azure VM scale set with autoscale"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-much-does-a-standardd4sv5-azure-vm-cost-per-hour"
+    prompt: "How much does a Standard_D4s_v5 Azure VM cost per hour in East US?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-i-cant-connect-to-my-azure-vm-via-rdp"
+    prompt: "I can't connect to my Azure VM via RDP"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-rdp-to-my-azure-vm-shows-a-black-screen"
+    prompt: "RDP to my Azure VM shows a black screen"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-rdp-connection-times-out-on-port-3389"
+    prompt: "Azure VM RDP connection times out on port 3389"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-i-get-an-internal-error-when-trying-to-rdp-to-my-azur"
+    prompt: "I get an internal error when trying to RDP to my Azure VM"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-ssh-connection-to-my-azure-vm-is-refused"
+    prompt: "SSH connection to my Azure VM is refused"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-i-cant-ssh-into-my-azure-linux-vm-anymore"
+    prompt: "I can't SSH into my Azure Linux VM anymore"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-permission-denied-publickey-when-connecting-to-azure"
+    prompt: "Permission denied publickey when connecting to Azure VM via SSH"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-ssh-to-my-azure-vm-hangs-troubleshoot-connectivity-is"
+    prompt: "SSH to my Azure VM hangs, troubleshoot connectivity issue"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-my-azure-vm-is-unreachable-after-updating-nsg-rules"
+    prompt: "My Azure VM is unreachable after updating NSG rules"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-troubleshoot-why-i-cant-reach-my-vm-on-port-3389"
+    prompt: "Troubleshoot why I can't reach my VM on port 3389"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-has-no-public-ip-and-i-cant-connect"
+    prompt: "Azure VM has no public IP and I can't connect"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-nsg-is-blocking-connectivity-to-my-azure-vm-troublesh"
+    prompt: "NSG is blocking connectivity to my Azure VM, troubleshoot port access"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-windows-firewall-blocking-rdp-cant-connect-to-my-azur"
+    prompt: "Windows Firewall blocking RDP, can't connect to my Azure VM"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-iptables-is-blocking-ssh-on-my-azure-linux-vm"
+    prompt: "iptables is blocking SSH on my Azure Linux VM"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-guest-os-firewall-blocking-cant-connect-to-my-azure-v"
+    prompt: "Guest OS firewall blocking, can't connect to my Azure VM"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-do-i-reset-the-password-on-my-azure-vm"
+    prompt: "How do I reset the password on my Azure VM?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-credentials-did-not-work-need-to-reset-password-on-az"
+    prompt: "Credentials did not work, need to reset password on Azure VM"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-permission-denied-password-troubleshoot-azure-vm-conn"
+    prompt: "Permission denied password, troubleshoot Azure VM connectivity"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-access-denied-need-to-reset-password"
+    prompt: "Azure VM access denied, need to reset password"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-i-need-to-troubleshoot-my-azure-vm-agent-run-command"
+    prompt: "I need to troubleshoot my Azure VM agent, Run Command is not working"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-do-i-access-azure-serial-console-to-troubleshoot"
+    prompt: "How do I access Azure Serial Console to troubleshoot connectivity on my VM?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-agent-not-responding-i-cant-connect-via-run"
+    prompt: "Azure VM agent not responding, I can't connect via Run Command"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-remote-desktop-service-stopped-cant-connect-to-my-azu"
+    prompt: "Remote Desktop service stopped, can't connect to my Azure VM"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-rdp-disabled-on-my-azure-vm-troubleshoot-connectivity"
+    prompt: "RDP disabled on my Azure VM, troubleshoot connectivity"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-rdp-port-changed-from-3389-on-my-azure-vm-cant-connec"
+    prompt: "RDP port changed from 3389 on my Azure VM, can't connect"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-rdp-certificate-expired-troubleshoot-connect"
+    prompt: "Azure VM RDP certificate expired, troubleshoot connectivity error"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-licensing-error-cant-connect-via-remote-desk"
+    prompt: "Azure VM licensing error, can't connect via Remote Desktop"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-azure-vm-connectivity-issue-after-reboot"
+    prompt: "Azure VM connectivity issue after reboot"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # Negative triggers — skill should NOT be invoked
+  - name: "trigger-negative-what-is-the-weather-today"
+    prompt: "What is the weather today?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-write-a-poem"
+    prompt: "Help me write a poem"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-explain-quantum-computing"
+    prompt: "Explain quantum computing"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-with-aws-ec2-instances"
+    prompt: "Help me with AWS EC2 instances"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-configure-my-postgresql-database"
+    prompt: "Configure my PostgreSQL database"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-how-do-i-write-a-python-web-scraper"
+    prompt: "How do I write a Python web scraper?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-set-up-a-kubernetes-cluster-with-helm"
+    prompt: "Set up a Kubernetes cluster with Helm"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-create-a-serverless-function-with-aws-lambda"
+    prompt: "Create a serverless function with AWS Lambda"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-what-is-docker-compose-and-how-does-it-work"
+    prompt: "What is Docker Compose and how does it work?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-configure-nginx-as-a-reverse-proxy"
+    prompt: "Help me configure nginx as a reverse proxy"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-deploy-my-nodejs-app-to-azure"
+    prompt: "Deploy my Node.js app to Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

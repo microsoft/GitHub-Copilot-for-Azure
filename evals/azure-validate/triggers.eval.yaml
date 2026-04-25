@@ -1,0 +1,410 @@
+name: azure-validate-trigger-eval
+description: "Trigger routing evaluation for azure-validate — migrated from Jest trigger tests"
+type: capability
+tags:
+  type: trigger
+  skill: azure-validate
+environment:
+  skills:
+    - ../../plugin/skills/azure-validate
+config:
+  runs: 3
+  timeout: 120
+  executor: copilot-sdk
+  model: claude-sonnet-4
+scoring:
+  threshold: 0.8
+stimuli:
+  # Positive triggers — skill SHOULD be invoked
+  - name: "trigger-positive-check-if-my-app-is-ready-to-deploy-to-azure"
+    prompt: "Check if my app is ready to deploy to Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-validate-my-azureyaml-configuration"
+    prompt: "Validate my azure.yaml configuration"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-run-preflight-checks-before-azure-deployment"
+    prompt: "Run preflight checks before Azure deployment"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-troubleshoot-deployment-errors"
+    prompt: "Troubleshoot deployment errors"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-verify-my-infrastructure-configuration-before-deployi"
+    prompt: "Verify my infrastructure configuration before deploying"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-is-my-app-ready-for-azure-deployment"
+    prompt: "Is my app ready for Azure deployment?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-validate-my-bicep-configuration"
+    prompt: "Validate my Bicep configuration"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-validate-my-bicep-template-before-deploying-to-azure"
+    prompt: "Validate my Bicep template before deploying to Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-check-my-deployment-permissions-before-running-azd-up"
+    prompt: "Check my deployment permissions before running azd up"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-verify-my-bicep-files-are-valid-before-provisioning"
+    prompt: "Verify my Bicep files are valid before provisioning"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-run-pre-deployment-validation-checks-on-my-azure-infr"
+    prompt: "Run pre-deployment validation checks on my Azure infrastructure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-validate-my-azure-functions-app-before-deploying"
+    prompt: "Validate my Azure Functions app before deploying"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-check-if-my-function-app-is-ready-for-azure-deploymen"
+    prompt: "Check if my function app is ready for Azure deployment"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-validate-my-serverless-function-deployment-configurat"
+    prompt: "Validate my serverless function deployment configuration"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-check-the-rbac-role-assignments-in-my-bicep-before-de"
+    prompt: "Check the RBAC role assignments in my Bicep before deploying"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-verify-managed-identity-permissions-in-my-infrastruct"
+    prompt: "Verify managed identity permissions in my infrastructure code"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-review-role-assignments-in-my-terraform-before-azure"
+    prompt: "Review role assignments in my Terraform before Azure deployment"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # Negative triggers — skill should NOT be invoked
+  - name: "trigger-negative-what-is-the-weather-today"
+    prompt: "What is the weather today?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-write-a-poem"
+    prompt: "Help me write a poem"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-explain-quantum-computing"
+    prompt: "Explain quantum computing"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-with-aws-s3-bucket-naming"
+    prompt: "Help me with AWS S3 bucket naming"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-what-is-the-best-pizza-topping"
+    prompt: "What is the best pizza topping?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-how-do-i-use-docker"
+    prompt: "How do I use Docker?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

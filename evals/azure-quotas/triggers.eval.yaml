@@ -1,0 +1,444 @@
+name: azure-quotas-trigger-eval
+description: "Trigger routing evaluation for azure-quotas — migrated from Jest trigger tests"
+type: capability
+tags:
+  type: trigger
+  skill: azure-quotas
+environment:
+  skills:
+    - ../../plugin/skills/azure-quotas
+config:
+  runs: 3
+  timeout: 120
+  executor: copilot-sdk
+  model: claude-sonnet-4
+scoring:
+  threshold: 0.8
+stimuli:
+  # Positive triggers — skill SHOULD be invoked
+  - name: "trigger-positive-how-do-i-check-my-azure-quota-limits"
+    prompt: "How do I check my Azure quota limits?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-are-the-service-limits-for-my-azure-subscription"
+    prompt: "What are the service limits for my Azure subscription?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-check-current-usage-for-my-compute-quota"
+    prompt: "Check current usage for my compute quota"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-i-need-to-request-a-quota-increase-for-vms-in-east-us"
+    prompt: "I need to request a quota increase for VMs in East US"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-my-deployment-failed-with-a-quota-exceeded-error"
+    prompt: "My deployment failed with a quota exceeded error"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-do-i-validate-deployment-capacity-before-provisio"
+    prompt: "How do I validate deployment capacity before provisioning?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-help-me-select-a-region-based-on-quota-availability"
+    prompt: "Help me select a region based on quota availability"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-compare-quotas-across-regions-for-standardd4sv3"
+    prompt: "Compare quotas across regions for Standard_D4s_v3"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-is-the-provisioning-limit-for-public-ip-addresse"
+    prompt: "What is the provisioning limit for public IP addresses?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-check-regional-capacity-for-container-apps"
+    prompt: "Check regional capacity for Container Apps"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-many-vcpus-do-i-have-available-in-my-subscription"
+    prompt: "How many vCPUs do I have available in my subscription?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-i-need-to-check-azure-quotas-before-deploying-my-infr"
+    prompt: "I need to check Azure quotas before deploying my infrastructure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-me-my-current-azure-resource-usage-vs-limits"
+    prompt: "Show me my current Azure resource usage vs limits"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-do-i-increase-my-vm-quota-in-west-us-2"
+    prompt: "How do I increase my VM quota in West US 2?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # Negative triggers — skill should NOT be invoked
+  - name: "trigger-negative-what-is-the-weather-today"
+    prompt: "What is the weather today?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-write-a-poem"
+    prompt: "Help me write a poem"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-explain-quantum-computing"
+    prompt: "Explain quantum computing"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-how-do-i-optimize-my-azure-costs"
+    prompt: "How do I optimize my Azure costs?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-set-up-aws-lambda-functions"
+    prompt: "Help me set up AWS Lambda functions"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-configure-monitoring-for-my-application"
+    prompt: "Configure monitoring for my application"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-how-do-i-troubleshoot-my-container-app"
+    prompt: "How do I troubleshoot my container app?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-what-role-should-i-assign-to-my-managed-identity"
+    prompt: "What role should I assign to my managed identity?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-show-me-my-azure-billing-information"
+    prompt: "Show me my Azure billing information"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-write-a-bicep-template-for-a-storage-account"
+    prompt: "Help me write a Bicep template for a storage account"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-how-do-i-configure-azure-key-vault-secrets"
+    prompt: "How do I configure Azure Key Vault secrets?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-quotas
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

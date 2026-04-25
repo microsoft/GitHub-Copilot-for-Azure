@@ -1,0 +1,325 @@
+name: azure-hosted-copilot-sdk-trigger-eval
+description: "Trigger routing evaluation for azure-hosted-copilot-sdk — migrated from Jest trigger tests"
+type: capability
+tags:
+  type: trigger
+  skill: azure-hosted-copilot-sdk
+environment:
+  skills:
+    - ../../plugin/skills/azure-hosted-copilot-sdk
+config:
+  runs: 3
+  timeout: 120
+  executor: copilot-sdk
+  model: claude-sonnet-4
+scoring:
+  threshold: 0.8
+stimuli:
+  # Positive triggers — skill SHOULD be invoked
+  - name: "trigger-positive-build-a-copilot-sdk-app-and-deploy-it"
+    prompt: "Build a Copilot SDK app and deploy it"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-create-a-new-copilot-sdk-service"
+    prompt: "Create a new copilot SDK service"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-scaffold-a-copilot-powered-app-on-azure"
+    prompt: "Scaffold a copilot-powered app on Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-build-with-the-github-copilot-sdk-and-host-it"
+    prompt: "Build with the GitHub Copilot SDK and host it"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-build-a-copilot-sdk-app-with-my-own-azure-model"
+    prompt: "Build a Copilot SDK app with my own Azure model"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-create-a-copilot-app-using-my-azure-openai-model"
+    prompt: "Create a copilot app using my Azure OpenAI model"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-set-up-a-copilot-service-with-byom-and-defaultazurecr"
+    prompt: "Set up a copilot service with BYOM and DefaultAzureCredential"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-build-a-copilot-app-that-uses-a-self-hosted-model-on"
+    prompt: "Build a copilot app that uses a self-hosted model on Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-deploy-a-copilot-sdk-app-with-my-own-endpoint"
+    prompt: "Deploy a copilot SDK app with my own endpoint"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-create-a-copilot-app-and-bring-your-own-model-from-az"
+    prompt: "Create a copilot app and bring your own model from Azure OpenAI"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # Negative triggers — skill should NOT be invoked
+  - name: "trigger-negative-what-is-the-weather-today"
+    prompt: "What is the weather today?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-write-a-poem"
+    prompt: "Help me write a poem"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-explain-quantum-computing"
+    prompt: "Explain quantum computing"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-with-aws-lambda"
+    prompt: "Help me with AWS Lambda"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-how-do-i-use-google-cloud-platform"
+    prompt: "How do I use Google Cloud Platform?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-write-a-python-script-to-parse-json"
+    prompt: "Write a Python script to parse JSON"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-set-up-a-postgresql-database-with-read-replicas"
+    prompt: "Set up a PostgreSQL database with read replicas"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-configure-a-vnet-peering-between-two-subscriptions"
+    prompt: "Configure a VNet peering between two subscriptions"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-hosted-copilot-sdk
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

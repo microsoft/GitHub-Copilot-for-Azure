@@ -1,0 +1,1039 @@
+name: azure-cost-trigger-eval
+description: "Trigger routing evaluation for azure-cost — migrated from Jest trigger tests"
+type: capability
+tags:
+  type: trigger
+  skill: azure-cost
+environment:
+  skills:
+    - ../../plugin/skills/azure-cost
+config:
+  runs: 3
+  timeout: 120
+  executor: copilot-sdk
+  model: claude-sonnet-4
+scoring:
+  threshold: 0.8
+stimuli:
+  # Positive triggers — skill SHOULD be invoked
+  - name: "trigger-positive-what-are-my-azure-costs-this-month"
+    prompt: "What are my Azure costs this month?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-me-cost-breakdown-by-service-for-my-subscription"
+    prompt: "Show me cost breakdown by service for my subscription"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-query-azure-spending-for-the-last-30-days"
+    prompt: "Query Azure spending for the last 30 days"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-much-did-i-spend-on-storage-last-month"
+    prompt: "How much did I spend on storage last month?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-me-a-cost-breakdown-by-resource-group"
+    prompt: "Show me a cost breakdown by resource group"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-me-actual-vs-amortized-cost-for-my-subscription"
+    prompt: "Show me actual vs amortized cost for my subscription"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-are-my-top-cost-drivers-in-azure"
+    prompt: "What are my top cost drivers in Azure?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-will-my-azure-costs-be-next-month"
+    prompt: "What will my Azure costs be next month?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-forecast-my-azure-spending-for-the-rest-of-the-quarte"
+    prompt: "Forecast my Azure spending for the rest of the quarter"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-predict-my-subscription-costs-for-the-next-90-days"
+    prompt: "Predict my subscription costs for the next 90 days"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-me-projected-costs-for-this-billing-period"
+    prompt: "Show me projected costs for this billing period"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-estimate-my-azure-bill-for-next-month"
+    prompt: "Estimate my Azure bill for next month"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-much-will-i-spend-on-azure-by-end-of-year"
+    prompt: "How much will I spend on Azure by end of year?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-my-forecast-for-azure-costs-going-forward"
+    prompt: "Show my forecast for Azure costs going forward"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-can-i-optimize-my-azure-costs"
+    prompt: "How can I optimize my Azure costs?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-reduce-my-azure-spending"
+    prompt: "Reduce my Azure spending"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-cost-savings-in-my-azure-subscription"
+    prompt: "Find cost savings in my Azure subscription"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-analyze-my-azure-costs-and-find-savings"
+    prompt: "Analyze my Azure costs and find savings"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-orphaned-resources-in-my-subscription"
+    prompt: "Find orphaned resources in my subscription"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-list-unused-azure-resources-i-can-delete"
+    prompt: "List unused Azure resources I can delete"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-unattached-disks-as-orphaned-resources"
+    prompt: "Find unattached disks as orphaned resources"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-resources-wasting-money"
+    prompt: "Find resources wasting money"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-what-resources-can-i-safely-delete-to-save-costs"
+    prompt: "What resources can I safely delete to save costs?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-rightsize-my-azure-vms"
+    prompt: "Rightsize my Azure VMs"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-overprovisioned-resources"
+    prompt: "Find overprovisioned resources"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-generate-an-azure-cost-optimization-report"
+    prompt: "Generate an Azure cost optimization report"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-analyze-my-azure-spending"
+    prompt: "Analyze my Azure spending"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-audit-my-azure-subscription-for-cost-savings"
+    prompt: "Audit my Azure subscription for cost savings"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-where-am-i-overspending-in-azure"
+    prompt: "Where am I overspending in Azure?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-show-me-my-biggest-azure-cost-drivers"
+    prompt: "Show me my biggest Azure cost drivers"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-optimize-my-redis-costs"
+    prompt: "Optimize my Redis costs"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-how-can-i-reduce-my-storage-costs"
+    prompt: "How can I reduce my storage costs?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-unused-storage-accounts"
+    prompt: "Find unused storage accounts"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-optimize-my-app-service-costs"
+    prompt: "Optimize my App Service costs"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-reduce-waste-in-my-azure-environment"
+    prompt: "Reduce waste in my Azure environment"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-find-resources-im-paying-for-but-not-using"
+    prompt: "Find resources I'm paying for but not using"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-identify-idle-resources"
+    prompt: "Identify idle resources"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-positive-clean-up-unused-azure-resources"
+    prompt: "Clean up unused Azure resources"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: positive
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # Negative triggers — skill should NOT be invoked
+  - name: "trigger-negative-deploy-a-new-vm-to-azure"
+    prompt: "Deploy a new VM to Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-set-up-an-aws-budget"
+    prompt: "Set up an AWS budget"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-write-a-python-script"
+    prompt: "Write a Python script"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-write-a-poem"
+    prompt: "Help me write a poem"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-what-is-the-weather-today"
+    prompt: "What is the weather today?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-explain-quantum-computing"
+    prompt: "Explain quantum computing"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-what-is-machine-learning"
+    prompt: "What is machine learning?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-help-me-set-up-a-new-virtual-network"
+    prompt: "Help me set up a new virtual network"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-create-a-new-storage-account"
+    prompt: "Create a new storage account"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-provision-infrastructure-with-bicep"
+    prompt: "Provision infrastructure with Bicep"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-why-is-my-app-crashing"
+    prompt: "Why is my app crashing?"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-troubleshoot-connection-issues"
+    prompt: "Troubleshoot connection issues"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-my-container-app-wont-start"
+    prompt: "My Container App won't start"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-set-up-rbac-for-my-subscription"
+    prompt: "Set up RBAC for my subscription"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-configure-key-vault"
+    prompt: "Configure Key Vault"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-audit-security-compliance"
+    prompt: "Audit security compliance"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-set-up-application-insights"
+    prompt: "Set up Application Insights"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-monitor-my-app-performance"
+    prompt: "Monitor my app performance"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-configure-alerts-for-errors"
+    prompt: "Configure alerts for errors"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-view-logs-for-my-function-app"
+    prompt: "View logs for my Function App"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-deploy-my-app-to-azure"
+    prompt: "Deploy my app to Azure"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "trigger-negative-price-a-new-storage-account-for-me"
+    prompt: "Price a new storage account for me"
+    tags:
+      type: trigger
+      tier: full
+      cost: free
+      polarity: negative
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-cost
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
