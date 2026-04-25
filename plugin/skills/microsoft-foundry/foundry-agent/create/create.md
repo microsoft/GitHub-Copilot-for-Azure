@@ -88,6 +88,8 @@ If the user has specified what they want the agent to do, choose the most releva
 
 If the requested combination does not have a real sample, say so clearly and suggest the nearest supported lane.
 
+> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples`. These samples includes Foundry Toolbox integration out of the box — no additional toolbox steps are needed. For toolbox details see [references/toolbox.md](references/toolbox.md).
+
 ### Step 4: Download Sample Files
 
 Download only the selected sample directory — do NOT clone the entire repo. Preserve the directory structure by creating subdirectories as needed.
@@ -293,6 +295,8 @@ When running in non-interactive mode (e.g., YOLO mode), skip selection prompts a
 - **Framework** — `Microsoft Agent Framework`
 
 If the user's request clearly requires another supported lane, use that lane instead of forcing the defaults.
+
+3. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
 
 ## Error Handling
 
