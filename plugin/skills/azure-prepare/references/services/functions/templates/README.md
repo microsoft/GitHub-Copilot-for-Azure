@@ -58,12 +58,17 @@ functions_template_get(
 
 ### Step 4: Write All Files
 
-Write every file from BOTH arrays:
+> Write files directly from the MCP tool output — CLI scaffolding tools produce incomplete projects missing IaC, RBAC, and managed identity configuration. NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found in MCP.
 
-- `functionFiles[]` — function source code
-- `projectFiles[]` — IaC, azure.yaml, host.json, dependencies
+Each array entry contains `{ path, content }`. For every entry in BOTH arrays:
 
-> **Create parent directories first** — template file paths include subdirectories (e.g., `infra/main.bicep`, `.azure/config.json`). Create all unique parent directories before writing files to avoid "parent directory does not exist" errors.
+1. **Create directories** — extract the parent directory from each `path` (e.g., `infra/` from `infra/main.bicep`, `.azure/` from `.azure/config.json`). Create all unique parent directories first.
+2. **Write the file** — use the `path` as the file path and `content` as the file body. Write every file exactly as specified.
+
+| Array | Contains | Action |
+|-------|----------|--------|
+| `functionFiles[]` | Function source code, infra, and config files | Write all — these are the trigger/binding code and IaC |
+| `projectFiles[]` | host.json, dependencies, settings files | Write all — these are runtime configuration |
 
 **PRESERVE generated IaC security patterns** — keep RBAC, managed identity, and security config intact. When composing multiple templates, merge additively (see [composition.md](recipes/composition.md)).
 

@@ -30,7 +30,10 @@ OUTPUT: Complete project ready for `azd up`
 
 6. TRIM unused demo code (keep AzureWebJobsStorage)
 
-7. WRITE all files from functionFiles[] AND projectFiles[]
+7. WRITE files — for each entry { path, content } in functionFiles[] AND projectFiles[]:
+      a. Create parent directories from path
+      b. Write content to path
+      NEVER hand-write Bicep/Terraform and use azd init -t/func init/func new as fallback when composing multiple recipes and required templates are not found
 
 8. DEPLOY: azd up --no-prompt
 ```

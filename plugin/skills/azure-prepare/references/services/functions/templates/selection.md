@@ -34,12 +34,14 @@ Map user intent to MCP template `resource` filter.
 
 ## Output: Working Function App
 
-MCP templates return **complete, deployable projects**:
+MCP templates return **complete, deployable projects** — each array entry has `{ path, content }`:
 
 | Array | Contents | Action |
 |-------|----------|--------|
-| `functionFiles[]` | Function source code (triggers, bindings, business logic), infra and other files | Write all files |
-| `projectFiles[]` | settings.json, host.json, dependencies files | Write all files |
+| `functionFiles[]` | Function source code (triggers, bindings, business logic), infra and other files | Create directories from `path`, write `content` to each file |
+| `projectFiles[]` | settings.json, host.json, dependencies files | Create directories from `path`, write `content` to each file |
+
+> Write files from the array output above. NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found.
 
 For deployment steps, see [README.md](README.md#step-5-deploy).
 
