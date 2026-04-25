@@ -1,6 +1,6 @@
 ---
 name: azure-cloud-migrate
-description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions, Fargate→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, Cloud Run to Container Apps, Fargate to Container Apps, ECS to Container Apps."
+description: "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports Lambda→Functions, Fargate→Container Apps, Kubernetes→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Functions, AWS to Azure, Lambda assessment, convert serverless, readiness report, from AWS, from GCP, Cloud Run migration, Fargate to ACA, ECS to Container Apps, Kubernetes to ACA, GKE to Azure, EKS to Container Apps."
 license: MIT
 metadata:
   author: Microsoft
@@ -19,6 +19,8 @@ metadata:
 4. Use `mcp_azure_mcp_get_azure_bestpractices` and `mcp_azure_mcp_documentation` MCP tools
 5. Use the latest supported runtime for the target service
 6. Destructive actions require `ask_user` — [global-rules](references/services/functions/global-rules.md)
+7. **Report progress to user** — During long-running operations (deployments, image pushes), provide resource-level status updates so the user is never left waiting without feedback — see [workflow-details.md](references/workflow-details.md)
+8. **Audit service discovery in app code** — Kubernetes DNS names (e.g., `http://order-service:3001`) do not resolve in Container Apps. During assessment, scan source code for hardcoded hostnames/ports in HTTP clients and flag them for env-var-driven URL injection
 
 ## Migration Scenarios
 
@@ -26,6 +28,7 @@ metadata:
 |--------|--------|-----------|
 | AWS Lambda | Azure Functions | [lambda-to-functions.md](references/services/functions/lambda-to-functions.md) ([assessment](references/services/functions/assessment.md), [code-migration](references/services/functions/code-migration.md)) |
 | AWS Fargate (ECS) | Azure Container Apps | [fargate-to-container-apps.md](references/services/container-apps/fargate-to-container-apps.md) ([assessment](references/services/container-apps/fargate-assessment-guide.md), [deployment](references/services/container-apps/fargate-deployment-guide.md)) |
+| Kubernetes (GKE/EKS/Self-hosted) | Azure Container Apps | [k8s-to-container-apps.md](references/services/container-apps/k8s-to-container-apps.md) |
 | GCP Cloud Run | Azure Container Apps | [cloudrun-to-container-apps.md](references/services/container-apps/cloudrun-to-container-apps.md) |
 
 > No matching scenario? Use `mcp_azure_mcp_documentation` and `mcp_azure_mcp_get_azure_bestpractices` tools.

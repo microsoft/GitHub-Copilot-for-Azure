@@ -2,12 +2,13 @@
 
 exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports AWS Lambda→Functions, Fargate→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Azure Functions, migrate AWS to Azure, Lambda migration assessment, convert serverless to Azure, migration readiness report, migrate from AWS, migrate from GCP, Cloud Run to Container Apps, Fargate to Container Apps, ECS to Container Apps.",
+  "description": "Assess and migrate cross-cloud workloads to Azure with migration reports and code conversion. Supports Lambda→Functions, Fargate→Container Apps, Kubernetes→Container Apps, Cloud Run→Container Apps. WHEN: migrate Lambda to Functions, AWS to Azure, Lambda assessment, convert serverless, readiness report, from AWS, from GCP, Cloud Run migration, Fargate to ACA, ECS to Container Apps, Kubernetes to ACA, GKE to Azure, EKS to Container Apps.",
   "extractedKeywords": [
     "apps",
     "assess",
     "assessment",
     "azure",
+    "cli",
     "cloud",
     "code",
     "container",
@@ -19,6 +20,7 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill des
     "from",
     "function",
     "functions",
+    "kubernetes",
     "lambda",
     "mcp",
     "migrate",
@@ -42,6 +44,7 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill key
   "assess",
   "assessment",
   "azure",
+  "cli",
   "cloud",
   "code",
   "container",
@@ -53,6 +56,7 @@ exports[`azure-cloud-migrate - Trigger Tests Trigger Keywords Snapshot skill key
   "from",
   "function",
   "functions",
+  "kubernetes",
   "lambda",
   "mcp",
   "migrate",
