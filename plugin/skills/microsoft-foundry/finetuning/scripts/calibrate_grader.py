@@ -217,4 +217,4 @@ if __name__ == "__main__":
     if args.tools:
         tools_schema = json.loads(args.tools)
 
-    scores, threshold = calibrate(client, args.model, data, grade_fn, tools_schema, args.n)
+    calibrate(client, args.model, data, grade_fn, tools_schema, args.n)

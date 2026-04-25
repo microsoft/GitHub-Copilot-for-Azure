@@ -18,11 +18,11 @@ const FINETUNING_DIR = path.resolve(
 );
 
 describe("finetuning - Unit Tests", () => {
-  let _skill: LoadedSkill;
+  let parentSkill: LoadedSkill;
   let skillContent: string;
 
   beforeAll(async () => {
-    _skill = await loadSkill(SKILL_NAME);
+    parentSkill = await loadSkill(SKILL_NAME);
     skillContent = fs.readFileSync(
       path.join(FINETUNING_DIR, "SKILL.md"),
       "utf-8"
@@ -30,6 +30,10 @@ describe("finetuning - Unit Tests", () => {
   });
 
   describe("Skill Structure", () => {
+    test("parent skill loads successfully", () => {
+      expect(parentSkill).toBeDefined();
+    });
+
     test("SKILL.md exists in finetuning sub-skill", () => {
       expect(fs.existsSync(path.join(FINETUNING_DIR, "SKILL.md"))).toBe(true);
     });
