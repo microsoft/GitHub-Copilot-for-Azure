@@ -10,7 +10,8 @@ Each Azure environment is represented as a **resource model** — a JSON structu
 {
   "resources": [
     {
-      "id": "<unique-identifier>",
+      "id": "/subscriptions/<sub>/resourceGroups/<rg>/providers/<provider>/<type>/<name>",
+      "localId": "<optional-short-slug>",
       "type": "<Azure-resource-type>",
       "name": "<resource-name>",
       "resourceGroup": "<resource-group-name>",
@@ -19,7 +20,7 @@ Each Azure environment is represented as a **resource model** — a JSON structu
       "tags": {},
       "relationships": [
         {
-          "targetId": "<id-of-related-resource>",
+          "targetId": "/subscriptions/<sub>/resourceGroups/<rg>/providers/<provider>/<type>/<related-name>",
           "type": "<relationship-type>"
         }
       ]
