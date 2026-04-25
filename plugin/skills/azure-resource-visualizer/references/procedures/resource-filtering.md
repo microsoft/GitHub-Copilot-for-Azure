@@ -19,8 +19,8 @@ Centralized exclusion lists for Azure resource discovery. Different skills filte
 | `Microsoft.Resources/templateSpecs` | ✅ | ✅ | Template metadata |
 | `Microsoft.Authorization/*` | ✅ | ✅ | RBAC / Policy |
 | `Microsoft.Insights/components` (Application Insights) | ❌ KEEP | ❌ KEEP | Relevant for both Bicep and diagrams |
-| `Microsoft.Insights/actionGroups` | ✅ | ❌ KEEP | Deployable; not architecture |
-| `Microsoft.OperationalInsights/workspaces` (Log Analytics) | ✅ | ❌ KEEP | Deployable; not architecture |
+| `Microsoft.Insights/actionGroups` | ✅ | ❌ KEEP | Deployable; not architecture. **Also skip edges pointing to action groups** — do not include them as relationship targets in diagrams. |
+| `Microsoft.OperationalInsights/workspaces` (Log Analytics) | ❌ KEEP | ❌ KEEP | Relevant for diagrams when diagnostic routing is shown |
 | `Microsoft.ManagedIdentity/userAssignedIdentities` | ❌ KEEP | ❌ KEEP | Explicitly created; used for resource authentication and RBAC |
 | Diagnostic settings (child resources) | ✅ | ❌ KEEP | Deployable as child |
 | Resources with ALL tag keys starting with `hidden-` | ✅ | ✅ | Fully Azure-managed |

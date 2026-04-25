@@ -1,8 +1,8 @@
 # Draw.io Layout Rules
 
-## 1. Screen-fit target
+## 1. Width target
 
-Diagrams must fit within a **1900×1000 viewport** (full-HD landscape) with no horizontal scrolling on the Architecture Overview page.
+Diagrams must not exceed **1900px width** — horizontal scrolling is not acceptable. Vertical scrolling is fine for tall diagrams. Avoid unnecessary empty space; size containers to their content (see anti-pattern #4 in §6).
 
 ## 2. Layout Patterns
 
