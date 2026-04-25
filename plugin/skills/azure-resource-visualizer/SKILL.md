@@ -1,6 +1,6 @@
 ---
 name: azure-resource-visualizer
-description: "Analyze Azure resource groups and generate detailed architecture diagrams as Mermaid or Draw.io. Supports live Azure resource discovery, sketch/description-to-diagram conversion, and detailed relationship mapping. WHEN: create architecture diagram, visualize Azure resources, show resource relationships, generate Mermaid diagram, analyze resource group, diagram my resources, architecture visualization, resource topology, map Azure infrastructure, draw.io diagram, sketch to diagram, convert sketch to architecture, generate draw.io, create draw.io from azure. DO NOT USE FOR: comparing diagrams against live Azure or Bicep, generating Bicep templates."
+description: "Analyze Azure resource groups and generate detailed architecture diagrams as Mermaid or Draw.io. Supports live Azure resource discovery, sketch/description-to-diagram conversion, and detailed relationship mapping. WHEN: create architecture diagram, visualize Azure resources, show resource relationships, generate Mermaid diagram, analyze resource group, diagram my resources, architecture visualization, resource topology, map Azure infrastructure, draw.io diagram, sketch to diagram, convert sketch to architecture, generate draw.io, create draw.io from azure. DO NOT USE FOR: IaC-generation, drift detection, cost analysis, security assessment, performance tuning"
 license: MIT
 metadata:
   author: Microsoft
@@ -45,7 +45,7 @@ Steps 1 and 2 are the shared discovery procedure used by every renderer (Mermaid
 
 > **Sketch/description input:** If the user provides a sketch, image, or text description instead of a live Azure scope, follow [references/sketch-to-diagram-workflow.md](references/sketch-to-diagram-workflow.md) for input analysis, clarification, and doc-check gating, then continue with Step 3.
 
-If the user hasn't specified a sketch or resource group:
+If the user hasn't provided a sketch, image, or text description and hasn't specified a resource group:
 
 1. **Verify Azure session first** — see [procedures/azure-authentication.md](references/procedures/azure-authentication.md). **HARD GATE** — stop if not authenticated.
 2. Use your tools to query available resource groups. If you do not have a tool for this, use `az`.

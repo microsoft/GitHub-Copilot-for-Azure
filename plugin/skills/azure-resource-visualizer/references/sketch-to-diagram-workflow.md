@@ -14,7 +14,7 @@ Convert rough sketches, whiteboard photos, or text descriptions into Draw.io arc
 | 2 | **Ask Clarifying Questions** | If resource types are ambiguous (e.g., "database" without specifying SQL vs Cosmos), ask the user. List assumptions for confirmation. |
 | 3 | **Validate Architecture** | Check that the architecture makes sense: required companion resources exist (e.g., App Service Plan for App Service), networking is consistent. |
 | 4 | **Verify Against Docs** | **HARD GATE — Always required, no exceptions.** Fetch the relevant Microsoft Learn documentation for every resource type and connection pattern in the diagram. Confirm placement, relationships, and constraints are correct (e.g., NIC must reside inside a subnet, Private Endpoint is inbound-only). Document any issues found. |
-| 5 | **Generate Draw.io Diagram** | Follow [drawio-diagram-workflow.md](drawio-diagram-workflow.md) from its Generate step. Save the `.drawio` file before presenting. |
+| 5 | **Generate Diagram** | Determine the target format: if the user requested Draw.io, follow [drawio-diagram-workflow.md](drawio-diagram-workflow.md) from its Generate step and save the `.drawio` file. If Mthe user requested Mermaid of didn't define a preference, follow [mermaid-diagram-workflow.md](mermaid-diagram-workflow.md) from its Generate step and save the `.md` file. Save the output file before presenting. |
 | 6 | **Verify Completeness** | Cross-check every resource in the model against the generated XML. Every resource must have an `mxCell`. Every relationship must have an edge. |
 | 7 | **Present Doc-Check Results** | **HARD GATE — Always required.** Before showing the diagram, present a summary of what was verified against Microsoft documentation, any corrections made, and any assumptions that still require the user's confirmation. Use the format in the [Doc-Check Report](#doc-check-report) section below. |
 | 8 | **Ask User to Verify** | **HARD GATE — Always required.** Explicitly ask: *"Please review the diagram and the documentation notes above. Does this match your intended architecture? Should any resources or connections be changed?"* Do not consider the task complete until the user confirms or requests changes. |
@@ -42,6 +42,12 @@ If all resources are correct, say so explicitly. If corrections were made, descr
 
 ## Output
 
-- `<project-name>-architecture.drawio` — The Draw.io diagram file
+One of the following, based on the requested format:
+
+- `<project-name>-architecture.md` — Mermaid diagram 
+- `<project-name>-architecture.drawio` — Draw.io diagram 
+
+Plus, in both cases:
+
 - Documentation check report presented in chat
 - Explicit user confirmation received before task is considered complete
