@@ -1,6 +1,6 @@
 ---
 name: azure-iac-generator
-description: "Generate deployment-ready Bicep templates from existing Azure environments or Draw.io architecture diagrams. Reverse-engineer live infrastructure into Infrastructure as Code. WHEN: generate bicep, azure to bicep, generate bicep from azure, bicep from diagram, diagram to bicep, create bicep templates from resources, export infrastructure as code, generate infrastructure code, reverse engineer azure, generate iac from azure. DO NOT USE FOR: creating new applications(use azure-prepare), deploying existing resources (use azure-validate then azure-deploy), comparing environments (use azure-infrastructure-sync)."
+description: "Generate deployment-ready Bicep templates from existing Azure environments or Draw.io architecture diagrams. Reverse-engineer live infrastructure into Infrastructure as Code. WHEN: generate bicep, azure to bicep, generate bicep from azure, bicep from diagram, diagram to bicep, create bicep templates from resources, export infrastructure as code, generate infrastructure code, reverse engineer azure, generate iac from azure. DO NOT USE FOR: creating new applications, deploying existing resources, comparing environments."
 license: MIT
 metadata:
   author: Microsoft
@@ -65,7 +65,7 @@ User request
 ├── modules/                   # One file per resource category (only if resources exist)
 │   ├── networking.bicep       # VNets, subnets, NSGs, private endpoints
 │   ├── compute.bicep          # VMs, App Services, Functions, Container Apps
-│   ├── data.bicep             # SQL, Cosmos DB, Storage, Redis
+│   ├── data.bicep             # SQL, Cosmos DB, Storage, Redis, Key Vault
 │   ├── identity.bicep         # Managed identities, role assignments
 │   └── monitoring.bicep       # App Insights, Log Analytics
 └── dependencies/              # Out-of-scope external dependencies (if any)

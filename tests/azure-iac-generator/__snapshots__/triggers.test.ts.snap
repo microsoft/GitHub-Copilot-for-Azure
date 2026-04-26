@@ -2,18 +2,13 @@
 
 exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Generate deployment-ready Bicep templates from existing Azure environments or Draw.io architecture diagrams. Reverse-engineer live infrastructure into Infrastructure as Code. WHEN: generate bicep, azure to bicep, generate bicep from azure, bicep from diagram, diagram to bicep, create bicep templates from resources, export infrastructure as code, generate infrastructure code, reverse engineer azure, generate iac from azure. DO NOT USE FOR: creating new applications for Azure (use azure-prepare), deploying existing Bicep (use azure-validate then azure-deploy), comparing Bicep against live Azure (use azure-infrastructure-sync).",
+  "description": "Generate deployment-ready Bicep templates from existing Azure environments or Draw.io architecture diagrams. Reverse-engineer live infrastructure into Infrastructure as Code. WHEN: generate bicep, azure to bicep, generate bicep from azure, bicep from diagram, diagram to bicep, create bicep templates from resources, export infrastructure as code, generate infrastructure code, reverse engineer azure, generate iac from azure. DO NOT USE FOR: creating new applications, deploying existing resources, comparing environments.",
   "extractedKeywords": [
-    "against",
     "app service",
     "applications",
     "architecture",
     "authentication",
     "azure",
-    "azure-deploy",
-    "azure-infrastructure-sync",
-    "azure-prepare",
-    "azure-validate",
     "bicep",
     "cli",
     "code",
@@ -40,6 +35,7 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill des
     "identity",
     "infrastructure",
     "into",
+    "key vault",
     "keyvault",
     "live",
     "mcp",
@@ -52,8 +48,6 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill des
     "sql",
     "storage",
     "templates",
-    "terraform",
-    "then",
     "when",
   ],
   "name": "azure-iac-generator",
@@ -62,16 +56,11 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill des
 
 exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
 [
-  "against",
   "app service",
   "applications",
   "architecture",
   "authentication",
   "azure",
-  "azure-deploy",
-  "azure-infrastructure-sync",
-  "azure-prepare",
-  "azure-validate",
   "bicep",
   "cli",
   "code",
@@ -98,6 +87,7 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill key
   "identity",
   "infrastructure",
   "into",
+  "key vault",
   "keyvault",
   "live",
   "mcp",
@@ -110,8 +100,6 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill key
   "sql",
   "storage",
   "templates",
-  "terraform",
-  "then",
   "when",
 ]
 `;

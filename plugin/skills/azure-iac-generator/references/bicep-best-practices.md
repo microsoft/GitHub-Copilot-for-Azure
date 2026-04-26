@@ -22,7 +22,7 @@ Mandatory rules for all Bicep generation. Before generating any Bicep, also call
 
 ## Bicepparam Comment Guidelines
 
-Keep comments to 1-3 lines per parameter. Cover:
+If comments are needed, keep comments to max 1-3 lines per parameter. Cover:
 - What the setting controls (plain language)
 - 2-3 common alternatives with cost/capacity impact
 - Security consequences where applicable

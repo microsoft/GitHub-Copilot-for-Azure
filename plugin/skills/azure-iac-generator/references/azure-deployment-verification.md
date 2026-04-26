@@ -12,7 +12,7 @@ Any skill that generates or modifies Bicep for deployment MUST run these checks 
 
 1. After generating or modifying Bicep files, run every applicable rule category below against the generated code and the `.bicepparam` values.
 2. Present results as a checklist (see "Output Format" at the end).
-3. **Errors** must be fixed automatically where possible, or presented with a concrete fix. Do not present generated code that has known errors.
+3. **Errors** must be fixed automatically. If automatic fixing is not possible, notify the user and present the issue with a concrete recommended fix. Do not present generated code that has known unfixed errors.
 4. **Warnings** are informational — present them so the user can decide.
 
 ---

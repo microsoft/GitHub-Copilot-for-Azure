@@ -46,15 +46,35 @@ If extraction fails for a resource, log a warning and continue with list-level d
 
 ## Step 6 — Analyze Dependencies
 
-**Internal** (within scope): Map App Service → Plan, PE → target, NIC → VM, NSG → Subnet, Diagnostic → Log Analytics. Apply [auto-detection-rules.md](auto-detection-rules.md).
+Classify references between resources into two distinct buckets:
 
-**External** (outside scope): Identify references to resources in other resource groups/subscriptions (VNet peering, shared Log Analytics, external Key Vault, external DNS zones). Record: resource ID, type, required action, depended-on-by.
+- **Internal** (within scope) — populate the `relationships` array on each resource in the model per [azure-resource-model.md](azure-resource-model.md), using its defined relationship types:
+  - `contains` (e.g., VNet → Subnet)
+  - `depends` (e.g., App Service → Plan, NIC → VM)
+  - `connects` (e.g., Diagnostic → Log Analytics, PE → target)
+  - `secures` (e.g., NSG → Subnet)
+  - `peers` (e.g., VNet → VNet)
+  - `routes` (e.g., Load Balancer → backend)
+
+  Apply [auto-detection-rules.md](auto-detection-rules.md).
+
+- **External** (outside scope) — references to resources in other resource groups/subscriptions (VNet peering, shared Log Analytics, external Key Vault, external DNS zones). These are NOT model relationships; they are tracked as a separate list that feeds the `dependencies/` folder in Step 10. Record each as: resource ID, type, required action, depended-on-by.
 
 ## Step 7 — Create Output Folder
 
 Create a folder named after the scope (e.g., resource group name). All generated files go inside this folder. **Never** write files to the repository root.
 
-## Step 8 — Generate Modular Bicep (HARD GATE)
+## Step 8 — Merge Existing Bicepparam (if present)
+
+If a `.bicepparam` file already exists in the output folder from a previous run, parse it per [bicep-parsing.md](procedures/bicep-parsing.md) and apply the merge rules below. If no existing file is present, skip this step.
+
+1. Read all existing parameter values.
+2. For parameters that exist in both the existing file and the new generation: **keep the existing value** (the user may have customized it).
+3. For new parameters: add with generated defaults and comments.
+4. For parameters that no longer apply: comment them out with a `// REMOVED:` prefix rather than deleting them.
+5. Always preserve user comments.
+
+## Step 9 — Generate Modular Bicep (HARD GATE)
 
 **MUST use modules.** `main.bicep` contains ONLY `param`, `module`, and `output` statements — no inline resource declarations.
 
@@ -74,7 +94,7 @@ Only create module files that have resources. Each module receives only the para
 
 Apply the runtime defaulting and comment rules from [version-currency.md](version-currency.md). That file is the single source of truth for supported-versus-EOL handling.
 
-## Step 9 — Generate Dependencies Folder
+## Step 10 — Generate Dependencies Folder
 
 If external dependencies were found in Step 6, create `dependencies/` with:
 - `dependencies/README.md` — table of external dependencies (resource, type, required action, owner)
@@ -82,9 +102,9 @@ If external dependencies were found in Step 6, create `dependencies/` with:
 
 If no external dependencies exist, skip this step.
 
-## Step 10 — Run Verification (HARD GATE)
+## Step 11 — Run Verification (HARD GATE)
 
-Apply **all** rules from [azure-deployment-verification.md](azure-deployment-verification.md): SKU dependencies, resource compatibility, networking, security, version currency. Auto-fix errors where possible. Present results as:
+Apply **all** rules from [azure-deployment-verification.md](azure-deployment-verification.md): SKU dependencies, resource compatibility, networking, security, version currency. Automatically fix errors. If automatic fixing is not possible, notify the user and present the issue with a concrete recommended fix. Present results as:
 
 ```
 ## Pre-Deployment Verification
@@ -93,7 +113,7 @@ Apply **all** rules from [azure-deployment-verification.md](azure-deployment-ver
 
 Do NOT present output with known unfixed errors.
 
-## Step 11 — Generate README.md
+## Step 12 — Generate README.md
 
 Write `README.md` inside the output folder containing:
 1. **Original request** — the user's exact prompt
@@ -105,6 +125,6 @@ Write `README.md` inside the output folder containing:
 7. **Deploy commands** — `az deployment group create` and `New-AzResourceGroupDeployment` examples
 8. **Next steps** — populate secrets, review `dependencies/`, post-deploy validation
 
-## Step 12 — Present Summary
+## Step 13 — Present Summary
 
 Show in chat: resource count, file count, verification results, and the path to the generated folder. Do NOT echo full Bicep content — only paths and summaries.

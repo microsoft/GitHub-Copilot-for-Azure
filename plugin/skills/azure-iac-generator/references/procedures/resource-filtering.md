@@ -19,25 +19,28 @@ Use this table during Azure-to-Bicep discovery to remove resources that should n
 
 ## Exclusion Table
 
-| Resource Type | Exclude for Diagrams | Exclude for Bicep | Rationale |
-|---|---|---|---|
-| `Microsoft.Network/networkWatchers` | ✅ | ✅ | Auto-created by Azure |
-| `Microsoft.Network/networkWatchers/connectionMonitors` | ✅ | ✅ | Auto-created child |
-| `Microsoft.AlertsManagement/smartDetectorAlertRules` | ✅ | ✅ | Auto-created |
-| `Microsoft.Portal/dashboards` | ✅ | ✅ | Portal UI artifact |
-| `Microsoft.Insights/autoscalesettings` (with `hidden-related:` tags) | ✅ | ✅ | Auto-created |
-| `Microsoft.Network/networkIntentPolicies` | ✅ | ✅ | Auto-created |
-| `Microsoft.Network/serviceEndpointPolicies` | ✅ | ✅ | Auto-created |
-| `Microsoft.Resources/deployments` | ✅ | ✅ | Deployment history |
-| `Microsoft.Resources/templateSpecs` | ✅ | ✅ | Template metadata |
-| `Microsoft.Authorization/*` | ✅ | ✅ | RBAC / Policy |
-| `Microsoft.Insights/components` (Application Insights) | ✅ | ❌ KEEP | Deployable; not architecture |
-| `Microsoft.Insights/actionGroups` | ✅ | ❌ KEEP | Deployable; not architecture |
-| `Microsoft.OperationalInsights/workspaces` (Log Analytics) | ✅ | ❌ KEEP | Deployable; not architecture |
-| `Microsoft.ManagedIdentity/userAssignedIdentities` | ❌ KEEP | ❌ KEEP | Explicitly created; used for resource authentication and RBAC |
-| Diagnostic settings (child resources) | ✅ | ❌ KEEP | Deployable as child |
-| Resources with ALL tag keys starting with `hidden-` | ✅ | ✅ | Fully Azure-managed |
-| Resources with `hidden-related:` tag prefixes | ✅ | Check individually | May be Azure-managed |
+| Resource Type | Exclude for Bicep | Rationale |
+|---|---|---|
+| `Microsoft.Network/networkWatchers` | ✅ | Auto-created by Azure |
+| `Microsoft.Network/networkWatchers/connectionMonitors` | ✅ | Auto-created child |
+| `Microsoft.AlertsManagement/smartDetectorAlertRules` | ✅ | Auto-created |
+| `Microsoft.Portal/dashboards` | ✅ | Portal UI artifact |
+| `Microsoft.Insights/autoscalesettings` (with `hidden-related:` tags) | ✅ | Auto-created |
+| `Microsoft.Network/networkIntentPolicies` | ✅ | Auto-created |
+| `Microsoft.Network/serviceEndpointPolicies` | ✅ | Auto-created |
+| `Microsoft.Resources/deployments` | ✅ | Deployment history |
+| `Microsoft.Resources/templateSpecs` | ✅ | Template metadata |
+| `Microsoft.Authorization/policyAssignments` | ✅ | Policy — service-managed |
+| `Microsoft.Authorization/policyDefinitions` | ✅ | Policy — service-managed |
+| `Microsoft.Authorization/roleAssignments` (scoped to a user-assigned managed identity) | ❌ KEEP | Required for the identity to function; emit alongside the identity |
+| `Microsoft.Authorization/roleAssignments` (all other scopes) | ✅ | RBAC assignments not tied to deployable identities are out of scope |
+| `Microsoft.Insights/components` (Application Insights) | ❌ KEEP | Deployable infrastructure |
+| `Microsoft.Insights/actionGroups` | ❌ KEEP | Deployable infrastructure |
+| `Microsoft.OperationalInsights/workspaces` (Log Analytics) | ❌ KEEP | Deployable infrastructure |
+| `Microsoft.ManagedIdentity/userAssignedIdentities` | ❌ KEEP | Explicitly created; used for resource authentication and RBAC |
+| Diagnostic settings (child resources) | ❌ KEEP | Deployable as child |
+| Resources with ALL tag keys starting with `hidden-` | ✅ | Fully Azure-managed |
+| Resources with `hidden-related:` tag prefixes | Check individually | May be Azure-managed |
 
 ## Application Rules
 

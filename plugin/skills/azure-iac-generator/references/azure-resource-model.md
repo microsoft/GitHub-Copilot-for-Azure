@@ -57,13 +57,7 @@ Each Azure environment is represented as a **resource model** — a JSON structu
 ## Usage by Workflow  
 
 - **Azure to Bicep workflow**: Builds a resource model from live Azure resources; generates Bicep from it.  
-- **Azure to diagram workflow**: Builds a resource model from live Azure resources; generates Draw.io XML from it.  
-- **Bicep and diagram comparison workflow**: Parses both Bicep and Draw.io into resource models and compares them.  
-- **Bicep policy evaluation workflow**: Parses Bicep into a resource model to evaluate against Azure Policy.  
-- **Bicep what-if comparison workflow**: Parses Bicep into a resource model and compares it against live Azure state.  
-- **Diagram and Azure sync workflow**: Produces two resource models (diagram + live Azure) and compares them (quick or deep mode).  
 - **Diagram to Bicep workflow**: Parses Draw.io XML into a resource model; enriches it with configuration manifest; generates Bicep.  
-- **Sketch to diagram workflow**: Produces a resource model from image analysis; generates Draw.io XML via stencil mapping.  
 
 ## Common Azure Resource Types
 
