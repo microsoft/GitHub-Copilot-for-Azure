@@ -24,6 +24,7 @@ import {
   isSkillInvoked,
   shouldEarlyTerminateForSkillInvocation,
   doesWorkspaceFileIncludePattern,
+  expectFiles,
   withTestResult,
 } from "../utils/evaluate";
 
@@ -168,6 +169,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           });
 
           expect(workspacePath).toBeDefined();
+          // Assert main.bicep is written under the requested my-app/ folder,
+          // not at the workspace root (which the skill explicitly forbids).
+          expectFiles(
+            workspacePath!,
+            [/\/my-app\/main\.bicep$/],
+            [/^(?!.*\/my-app\/).*\/main\.bicep$/]
+          );
           const hasMainBicep = doesWorkspaceFileIncludePattern(
             workspacePath!,
             /targetScope|module\s+\w+|param\s+\w+/,
@@ -199,6 +207,14 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           });
 
           expect(workspacePath).toBeDefined();
+          // Assert files land under my-app/ with a modules/ subfolder, and that
+          // no .bicep files (other than the diagram source) are written at the
+          // workspace root.
+          expectFiles(
+            workspacePath!,
+            [/\/my-app\/main\.bicep$/, /\/my-app\/modules\/.+\.bicep$/],
+            [/^(?!.*\/my-app\/).*\/main\.bicep$/]
+          );
           // main.bicep should reference modules, not declare resources directly
           const mainBicepUsesModules = doesWorkspaceFileIncludePattern(
             workspacePath!,
@@ -249,6 +265,13 @@ describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
           });
 
           expect(workspacePath).toBeDefined();
+          // Assert the .bicepparam file is written under my-app/, not at the
+          // workspace root.
+          expectFiles(
+            workspacePath!,
+            [/\/my-app\/.+\.bicepparam$/],
+            [/^(?!.*\/my-app\/).*\.bicepparam$/]
+          );
           const hasBicepparam = doesWorkspaceFileIncludePattern(
             workspacePath!,
             /using\s+['"].*main\.bicep['"]/,
