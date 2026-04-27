@@ -70,5 +70,12 @@ describe("invoke - Unit Tests", () => {
       expect(invokeContent).not.toContain("Hosted Agent (ACA)");
       expect(invokeContent).not.toContain("Hosted Agent (vNext)");
     });
+
+    test("documents required hosted-agent invocation RBAC", () => {
+      expect(invokeContent).toContain("Azure AI User");
+      expect(invokeContent).toContain("Cognitive Services OpenAI User");
+      expect(invokeContent).toMatch(/both hosted-agent identities/i);
+      expect(invokeContent).toMatch(/Foundry account \/ Cognitive Services account scope/i);
+    });
   });
 });

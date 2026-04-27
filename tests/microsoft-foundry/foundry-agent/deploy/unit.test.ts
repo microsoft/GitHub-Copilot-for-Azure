@@ -75,7 +75,8 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("documents the hosted deployment verification flow", () => {
-      expect(deployContent).toMatch(/Capture the instance identity `principal_id`/i);
+      expect(deployContent).toMatch(/Capture the per-agent identity from the agent creation response/i);
+      expect(deployContent).toMatch(/project-level agent identity from the project resource/i);
       expect(deployContent).toMatch(/Continue to Step 8/i);
       expect(deployContent).toMatch(/required hosted-agent session handling/i);
     });
@@ -174,9 +175,11 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("documents required invocation RBAC for hosted agents", () => {
-      expect(deployContent).toContain("Cognitive Services User");
-      expect(deployContent).toContain("principal_id");
-      expect(deployContent).toMatch(/instance identity/i);
+      expect(deployContent).toContain("Azure AI User");
+      expect(deployContent).toContain("Cognitive Services OpenAI User");
+      expect(deployContent).toContain("Per-agent identity from the agent creation response");
+      expect(deployContent).toContain("Project-level agent identity from the project resource");
+      expect(deployContent).toMatch(/Foundry account \/ Cognitive Services account, not the project/i);
     });
   });
 
