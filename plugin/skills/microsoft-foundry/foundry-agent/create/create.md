@@ -56,7 +56,7 @@ GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/samp
 
 If the user has specified any information on what they want their agent to do, just choose the most relevant or most simple sample to start with. Only if user has not given any preferences, present the sample directories to the user and help them choose based on their requirements (e.g., RAG, tools, multi-agent workflows, HITL).
 
-> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples. These samples include Foundry Toolbox integration out of the box — no additional toolbox steps are needed. For toolbox details see [references/toolbox.md](references/toolbox.md).
+> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples. These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource and must configure its endpoint/auth as described in [references/toolbox.md](references/toolbox.md) (see Step 1).
 
 ### Step 4: Download Sample Files
 
