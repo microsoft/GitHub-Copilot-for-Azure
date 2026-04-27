@@ -56,16 +56,29 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   describe("Should NOT Trigger", () => {
     // Prompts that should NOT trigger this skill
     const shouldNotTriggerPrompts: string[] = [
-      // Unrelated topics
-      "What is the weather today?",
-      "Help me write a poem",
-      "Explain quantum computing",
-      "Write me a unit test in Python",
-      "Summarize this article for me",
+      // Other cloud providers 
+      "Describe my AWS S3 buckets",
+      "Check my AWS Lambda functions",
+      "Show my DigitalOcean droplets",
 
-      // Non-cloud topics
-      "How do I set up a local PostgreSQL database?",
-      "What is the best way to structure a Node.js project?",
+      // Cost optimization (use azure-cost)
+      "Optimize my cloud spending",
+      "Reduce my monthly bill",
+
+      // Deployment (use azure-deploy)
+      "Deploy this app to production",
+      "Provision new infrastructure",
+      "Create a new web app",
+
+      // Code generation
+      "Write a Python sorting algorithm",
+      "Fix the null pointer exception",
+      "Debug this JavaScript error",
+
+      // Other Azure operations 
+      "Generate a template",
+      "Configure RBAC permissions",
+      "Compare my dev and prod environments"
     ];
 
     test.each(shouldNotTriggerPrompts)(

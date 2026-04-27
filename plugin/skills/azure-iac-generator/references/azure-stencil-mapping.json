@@ -99,6 +99,82 @@
     {
       "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
       "imagePath": "img/lib/azure2/identity/Managed_Identities.svg"
+    },
+    {
+      "type": "Microsoft.Sql/managedInstances",
+      "imagePath": "img/lib/azure2/databases/SQL_Managed_Instance.svg"
+    },
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "imagePath": "img/lib/azure2/integration/API_Management_Services.svg"
+    },
+    {
+      "type": "Microsoft.SignalRService/signalR",
+      "imagePath": "img/lib/azure2/web/SignalR.svg"
+    },
+    {
+      "type": "Microsoft.Web/sites[functionapp]",
+      "imagePath": "img/lib/azure2/compute/Function_Apps.svg"
+    },
+    {
+      "type": "Microsoft.EventGrid/systemTopics",
+      "imagePath": "img/lib/azure2/integration/System_Topic.svg"
+    },
+    {
+      "type": "Microsoft.EventGrid/topics",
+      "imagePath": "img/lib/azure2/integration/Event_Grid_Topics.svg"
+    },
+    {
+      "type": "Microsoft.EventGrid/domains",
+      "imagePath": "img/lib/azure2/integration/Event_Grid_Domains.svg"
+    },
+    {
+      "type": "Microsoft.Communication/communicationServices",
+      "imagePath": "img/lib/azure2/other/Azure_Communication_Services.svg"
+    },
+    {
+      "type": "Microsoft.Communication/emailServices",
+      "imagePath": "img/lib/azure2/other/Azure_Communication_Services.svg"
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "imagePath": "img/lib/azure2/other/Container_App_Environments.svg"
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "imagePath": "img/lib/azure2/networking/NAT.svg"
+    },
+    {
+      "type": "Microsoft.AppConfiguration/configurationStores",
+      "imagePath": "img/lib/mscae/App_Configuration.svg"
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "imagePath": "img/lib/azure2/networking/Network_Interfaces.svg"
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "imagePath": "img/lib/azure2/networking/Virtual_Network_Gateways.svg"
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "imagePath": "img/lib/azure2/ai_machine_learning/Cognitive_Services.svg"
+    },
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "imagePath": "img/lib/azure2/general/Resource_Groups.svg"
+    },
+    {
+      "type": "Microsoft.Web/sites/functions",
+      "imagePath": "img/lib/azure2/compute/Function_Apps.svg"
+    },
+    {
+      "type": "Microsoft.Network/azureFirewalls",
+      "imagePath": "img/lib/azure2/networking/Firewalls.svg"
+    },
+    {
+      "type": "Microsoft.Network/bastionHosts",
+      "imagePath": "img/lib/azure2/networking/Bastions.svg"
     }
   ]
 }

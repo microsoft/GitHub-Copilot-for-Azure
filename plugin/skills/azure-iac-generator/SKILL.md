@@ -4,7 +4,7 @@ description: "Generate deployment-ready Bicep templates from existing Azure envi
 license: MIT
 metadata:
   author: Microsoft
-  version: "0.0.0-placeholder"
+  version: "1.0.0"
 ---
 
 # Azure IaC Generator

@@ -6,9 +6,15 @@ Parse a Draw.io XML file into a structured resource model. Referenced by all ski
 
 ## Procedure
 
-1. **Load the stencil mapping** from [azure-stencil-mapping.json](../azure-stencil-mapping.json) (if available) or derive from the `azure2` stencil convention, and build **reverse lookups** that map supported Draw.io style identifiers back to Azure resource types:
+1. **Load the stencil mapping** from [azure-stencil-mapping.json](../azure-stencil-mapping.json) and build **reverse lookups** that map supported Draw.io style identifiers back to Azure resource types:
    - `image=<path>` → Azure resource type (for `image`-based cells)
    - `shape=mxgraph.azure2...` → Azure resource type (for `shape`-based cells, using a normalized azure2 shape-key lookup)
+
+   **If an icon's path is NOT in the mapping**, do not skip the cell. Infer the Azure service directly from the icon path itself:
+   - Paths follow the convention `img/lib/azure2/<category>/<Resource_Name>.svg` (or `img/lib/mscae/<Resource_Name>.svg`).
+   - Use the SVG filename (e.g. `Azure_Functions.svg`, `Front_Door.svg`, `Firewalls.svg`) plus the `<category>` segment to identify the Azure service, then map it to the most appropriate `Microsoft.<Provider>/<resourceType>` ARM type.
+   - Examples: `…/networking/Firewalls.svg` → `Microsoft.Network/azureFirewalls`; `…/networking/Bastions.svg` → `Microsoft.Network/bastionHosts`; `…/web/Front_Door_and_CDN_Profiles.svg` → `Microsoft.Cdn/profiles`.
+   - If the filename is ambiguous or no plausible ARM type can be inferred, record the cell as an `unknown` resource (preserving its `id`, `value`, and `image` path) and surface it in the output so the user can resolve it — never silently drop it.
 
 2. **Identify resource cells**: For each `mxCell` in the diagram XML:
    - If the style contains `image=<path>` and the path matches the reverse lookup → this is an Azure resource
