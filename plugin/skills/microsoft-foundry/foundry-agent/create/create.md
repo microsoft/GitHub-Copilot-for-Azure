@@ -277,6 +277,8 @@ Apply these to both greenfield and brownfield projects:
 
 5. **Deploy handoff** — After the agent has been created and local verification succeeds, explicitly tell the user that they can deploy the agent if they want, and ask them to say `deploy agent to foundry` to continue with the deploy sub-skill.
 
+6. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
+
 ## Coding Tips
 
 Use these when generating or modifying project code:
@@ -295,8 +297,6 @@ When running in non-interactive mode (e.g., YOLO mode), skip selection prompts a
 - **Framework** — `Microsoft Agent Framework`
 
 If the user's request clearly requires another supported lane, use that lane instead of forcing the defaults.
-
-3. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
 
 ## Error Handling
 
