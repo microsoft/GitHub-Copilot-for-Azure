@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const snapshotPath = path.resolve(__dirname, "../fixtures/azure-mcp-tool-names.snapshot.json");
-const skillsRoot = path.resolve(__dirname, "../../plugin/skills");
+const skillsRoot = path.resolve(__dirname, "../../output/skills");
 
 // Two naming conventions for Azure MCP tool references in skill markdown:
 //   mcp_azure_mcp_<tool>  — GitHub Copilot MCP tool reference format

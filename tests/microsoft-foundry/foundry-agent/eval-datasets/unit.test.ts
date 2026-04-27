@@ -14,11 +14,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATASETS_MD = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/eval-datasets/eval-datasets.md"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/eval-datasets/eval-datasets.md"
 );
 const REFERENCES_PATH = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/eval-datasets/references"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/eval-datasets/references"
 );
 
 describe("eval-datasets - Unit Tests", () => {
@@ -112,7 +112,7 @@ describe("eval-datasets - Unit Tests", () => {
       const metadataContractContent = fs.readFileSync(
         path.resolve(
           __dirname,
-          "../../../../plugin/skills/microsoft-foundry/references/agent-metadata-contract.md"
+          "../../../../output/skills/microsoft-foundry/references/agent-metadata-contract.md"
         ),
         "utf-8"
       );

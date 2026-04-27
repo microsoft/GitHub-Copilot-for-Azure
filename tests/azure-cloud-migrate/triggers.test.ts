@@ -24,6 +24,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   describe("Should Trigger", () => {
     // Prompts that SHOULD trigger this skill - cloud migration workflows
     const shouldTriggerPrompts: string[] = [
+      // AWS Lambda → Azure Functions
       "How do I migrate my AWS Lambda functions to Azure Functions?",
       "I want to migrate from AWS to Azure",
       "Can you do a Lambda migration assessment for my project?",
@@ -40,6 +41,15 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "assess Cloud Run to Container Apps migration",
       "I want to migrate my Cloud Run service to Azure",
       "help me move from Google Cloud Run to Container Apps",
+      // Kubernetes → Azure Container Apps
+      "migrate Kubernetes to Container Apps",
+      "convert k8s manifests to Azure Container Apps",
+      "move from GKE to Azure Container Apps",
+      "migrate from EKS to Azure Container Apps",
+      "migrate k8s deployments to Azure",
+      "k8s to ACA migration assessment",
+      "I want to migrate my GKE workload to Azure",
+      "help me move from Kubernetes to Container Apps",
     ];
 
     test.each(shouldTriggerPrompts)(

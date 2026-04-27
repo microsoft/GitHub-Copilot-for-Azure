@@ -5,7 +5,7 @@ license: MIT
 compatibility: python3.8+
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Upgrade

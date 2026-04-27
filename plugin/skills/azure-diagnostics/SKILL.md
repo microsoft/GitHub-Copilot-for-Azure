@@ -4,7 +4,7 @@ description: "Debug Azure production issues on Azure using AppLens, Azure Monito
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Diagnostics
@@ -53,14 +53,14 @@ Activate this skill when user wants to:
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
-| **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](aks-troubleshooting/aks-troubleshooting.md) |
+| **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md) |
 
 ---
 
 ## Routing
 
 - Keep Container Apps and Function Apps diagnostics in this parent skill.
-- Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](aks-troubleshooting/aks-troubleshooting.md).
+- Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md).
 
 ---
 
@@ -71,13 +71,10 @@ Activate this skill when user wants to:
 ```bash
 # Check resource health
 az resource show --ids RESOURCE_ID
-
 # View activity log
 az monitor activity-log list -g RG --max-events 20
-
 # Container Apps logs
 az containerapp logs show --name APP -g RG --follow
-
 # Function App logs (query App Insights traces)
 az monitor app-insights query --apps APP-INSIGHTS -g RG \
   --analytics-query "traces | where timestamp > ago(1h) | order by timestamp desc | take 50"

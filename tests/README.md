@@ -117,9 +117,16 @@ npm run update:snapshots -- --testPathPatterns={skill-name}
 ### Setup (First Time)
 
 ```bash
+# From the repo root: install dependencies and build the plugin output
+npm install
+npm run build
+
+# Then install test dependencies
 cd tests
 npm install
 ```
+
+> **Note:** Tests run against the built output in `output/`. You must run `npm run build` from the repo root before running tests. Rebuild after making changes to skill files under `plugin/`.
 
 ### Commands
 
