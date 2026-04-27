@@ -88,9 +88,11 @@ export interface AgentMetadata {
   toolCounts: Record<string, number>;
 
   /**
-   * Map from skill name to the sorted, deduped list of files read from that skill's
-   * directory (i.e., paths under `output/skills/<skillName>/`) during the run.
-   * Populated from observed `read_file` tool invocations.
+   * Map from skill name to the sorted, deduped list of files under that skill's
+   * directory (i.e., paths under `output/skills/<skillName>/`) that were referenced
+   * by tool invocations during the run.
+   * Populated from tool arguments that reference files in a skill directory, and may
+   * also include a synthesized `SKILL.md` entry for `skill` tool calls.
    */
   skillFiles: Record<string, string[]>;
 }
@@ -184,7 +186,16 @@ function extractSkillDirPaths(args: unknown, skillDirectory: string): string[] {
   }
 
   // Fallback: scan serialized args for any occurrence of the skill directory
-  const serialized = typeof args === "string" ? args : JSON.stringify(args ?? "");
+  let serialized: string;
+  if (typeof args === "string") {
+    serialized = args;
+  } else {
+    try {
+      serialized = JSON.stringify(args ?? "");
+    } catch {
+      serialized = String(args ?? "");
+    }
+  }
   const normalizedSerialized = serialized.replace(/\\\\/g, "/").replace(/\\/g, "/");
   const needle = normalizedDir + "/";
   let searchFrom = 0;
@@ -234,8 +245,13 @@ function computeToolAndSkillStats(
         const v = (args as Record<string, unknown>).skill;
         if (typeof v === "string") skillName = v;
       } else if (typeof args === "string") {
-        const m = (args as string).match(/"skill"\s*:\s*"([^"]+)"/);
-        if (m) skillName = m[1];
+        const stringArgs = args.trim();
+        const m = stringArgs.match(/"skill"\s*:\s*"([^"]+)"/);
+        if (m) {
+          skillName = m[1];
+        } else if (stringArgs) {
+          skillName = stringArgs;
+        }
       }
       if (skillName) {
         (skillFilesSet[skillName] ??= new Set()).add(`${normalizedSkillDir}/${skillName}/SKILL.md`);
