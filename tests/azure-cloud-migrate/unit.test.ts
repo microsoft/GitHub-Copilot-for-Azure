@@ -96,6 +96,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("AWS Fargate to Container Apps Scenario", () => {
+    test("includes Fargate migration scenario", () => {
+      expect(skill.content).toContain("Fargate");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references fargate-to-container-apps guide", () => {
+      expect(skill.content).toContain("fargate-to-container-apps.md");
+    });
+
+    test("includes AWS Fargate source in scenario table", () => {
+      expect(skill.content).toContain("AWS Fargate");
+    });
+  });
+
   describe("Kubernetes to Container Apps Scenario", () => {
     test("includes Kubernetes migration scenario", () => {
       expect(skill.content).toContain("Kubernetes");

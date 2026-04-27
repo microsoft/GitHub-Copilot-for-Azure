@@ -41,6 +41,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "assess Cloud Run to Container Apps migration",
       "I want to migrate my Cloud Run service to Azure",
       "help me move from Google Cloud Run to Container Apps",
+      // Fargate to Container Apps triggers
+      "migrate Fargate to Azure Container Apps",
+      "Fargate to Container Apps migration assessment",
+      "convert AWS Fargate workloads to Azure",
+      "move ECS Fargate containers to Azure Container Apps",
+      "migrate ECS on Fargate to Container Apps",
+      "assess AWS Fargate for Azure migration",
+      "replatform Fargate to Container Apps",
       // Kubernetes → Azure Container Apps
       "migrate Kubernetes to Container Apps",
       "convert k8s manifests to Azure Container Apps",
