@@ -113,7 +113,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     // Strip XML comments so that TODO/migration notes referencing the legacy
     // group ID don't cause false positives.
     const stripXmlComments = (src: string): string =>
-      src.replace(/<!--[\s\S]*?-->/g, "");
+      src.replace(/<!--[\s\S]*?(?:-->|$)/g, "");
 
     // Strip Java line and block comments so behavioral-change notes that
     // mention legacy identifiers (e.g. AZURE_AUTH_LOCATION,
