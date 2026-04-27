@@ -8,8 +8,8 @@ Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. U
 |----------|-------|
 | **Toolbox Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox |
 | **Hosted Agent + Toolbox + Agent Framework SDK** — default | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox |
-| **Toolbox Samples (other frameworks)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox |
-| **Hosted Agent + Toolbox (BYO)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox |
+| **Toolbox Samples — Python** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox, https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses |
+| **Toolbox Samples — C# (.NET)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/toolbox |
 | **Supported Tool Types & Auth** | https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/toolbox/SUPPORTED_TOOLBOX_TOOLS.md |
 
 ## Workflow
@@ -41,14 +41,16 @@ Otherwise, ask: _"Do you have an existing Foundry Toolbox, or should I help crea
 | Method | When to use | References |
 |--------|-------------|------------|
 | **azd** — preferred | AI can generate `agent.manifest.yaml` and run `azd provision` | [Toolbox docs — azd tab](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox), sample [`agent.manifest.yaml`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox/agent.manifest.yaml) |
-| **SDK (Python, .NET, JS)** | AI can generate code to create toolbox programmatically | [Toolbox docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox), [`sample_toolboxes_crud.py`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/toolbox/sample_toolboxes_crud.py) |
+| **SDK (Python, .NET, JS)** | AI can generate code to create toolbox programmatically | [Toolbox docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox), Python: [`sample_toolboxes_crud.py`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/toolbox/sample_toolboxes_crud.py), C#: [`csharp/toolbox/crud-sample/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/toolbox/crud-sample) |
 | **REST API** | AI can generate HTTP calls | [Toolbox docs — REST API tab](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox) |
 | **Foundry Toolkit (VS Code)** — manual | Direct user to create via VS Code extension | [Foundry Toolkit](https://aka.ms/foundrytk), [Toolbox docs — VS Code tab](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox) |
 | **Foundry Portal** — manual | Direct user to create via portal UI | [Toolbox docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox) |
 
 ### Step 2: Generate Agent Code with Toolbox
 
-The sample repo provides four integration patterns. Read the sample code and adapt it to the user's project.
+The sample repo provides integration patterns for both Python and C#. Read the sample code and adapt it to the user's project.
+
+**Python samples:**
 
 | Pattern | When to use | Hosted Agent Sample | Standalone Sample |
 |---------|-------------|--------------------|---------|
@@ -57,8 +59,14 @@ The sample repo provides four integration patterns. Read the sample code and ada
 | **Copilot SDK** | GitHub Copilot SDK with toolbox tools | — | [`toolbox/copilot-sdk/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/copilot-sdk) |
 | **Bring Your Own (generic MCP)** | Any framework or custom code | [`bring-your-own/responses/toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox) | — |
 
-**Notes:** (apply to all patterns):
-- Auth: Use an `httpx.Auth` subclass that injects a bearer token with scope `https://ai.azure.com/.default` on every request.
+**C# (.NET) samples:**
+
+| Pattern | When to use | Sample |
+|---------|-------------|--------|
+| **Agent Framework (MAF)** — recommended | Default choice for .NET hosted agents | [`csharp/toolbox/maf/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/toolbox/maf) |
+
+**Notes:** (apply to all patterns, both Python and C#):
+- Auth: Inject a bearer token with scope `https://ai.azure.com/.default` on every request (Python: `httpx.Auth` subclass; C#: `DefaultAzureCredential` + `BearerTokenAuthenticationPolicy`).
 - Header: Always include `Foundry-Features: Toolboxes=V1Preview`.
 - MCP client: Pass `load_prompts=False` — the toolbox endpoint does not support `prompts/list`.
 - Endpoint: Construct from `{project_endpoint}/toolboxes/{toolbox_name}/mcp?api-version=v1`.
