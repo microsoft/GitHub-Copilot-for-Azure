@@ -113,7 +113,14 @@ function build() {
     .pipe(dest("output"));
 
   pipeline.on("end", () => {
-    generateChangelog();
+    try {
+      generateChangelog();
+    } catch (err) {
+      const error =
+        err instanceof Error ? err : new Error(String(err));
+      log.error("Failed to generate CHANGELOG.md after writing output/.", error);
+      throw error;
+    }
   });
 
   return pipeline;
