@@ -1,6 +1,6 @@
 ---
 name: entra-agent-id
-description: "Guides Microsoft Entra Agent ID setup, agent identity provisioning, and OAuth 2.0 token exchange via Microsoft Graph. USE FOR: create Agent Identity Blueprint, BlueprintPrincipal, register AI agent identity, agent OAuth authentication, Agent Identity sponsors, Workload Identity Federation for agents, fmi_path token exchange, OBO for agents, cross-tenant agent identity, Microsoft Entra SDK for AgentID sidecar, polyglot agent auth, Microsoft.Identity.Web.AgentIdentities. DO NOT USE FOR: standard Entra app registration (use entra-app-registration), Azure RBAC (use azure-rbac), Key Vault secrets, Microsoft Foundry agent authoring (use microsoft-foundry)."
+description: "Provision Microsoft Entra Agent Identity Blueprints, BlueprintPrincipals, and per-instance Agent Identities via Microsoft Graph, and configure OAuth 2.0 token exchange (fmi_path, OBO, cross-tenant) including the Microsoft Entra SDK for AgentID sidecar. USE FOR: Agent Identity Blueprint, BlueprintPrincipal, agent OAuth, fmi_path token exchange, agent OBO, Workload Identity Federation for agents, polyglot agent auth, Microsoft.Identity.Web.AgentIdentities. DO NOT USE FOR: standard Entra app registration (use entra-app-registration), Azure RBAC (use azure-rbac), Microsoft Foundry agent authoring (use microsoft-foundry)."
 license: MIT
 metadata:
   author: Microsoft
@@ -10,6 +10,37 @@ metadata:
 # Microsoft Entra Agent ID
 
 Create and manage OAuth 2.0-capable identities for AI agents using Microsoft Graph. Every agent instance gets a distinct identity, audit trail, and independently-scoped permission grants.
+
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| Service | Microsoft Entra Agent ID |
+| API | Microsoft Graph (`https://graph.microsoft.com/v1.0`) |
+| Required role | Agent Identity Developer, Agent Identity Administrator, or Application Administrator |
+| Object model | Blueprint (application) → BlueprintPrincipal (SP) → Agent Identity (SP) |
+| Runtime exchange | Two-step `fmi_path` exchange (autonomous and OBO) |
+| .NET helper | `Microsoft.Identity.Web.AgentIdentities` |
+| Polyglot helper | Microsoft Entra SDK for AgentID (sidecar container) |
+
+## When to Use This Skill
+
+- Provisioning a new Agent Identity Blueprint and BlueprintPrincipal
+- Creating per-instance Agent Identities under a Blueprint
+- Configuring credentials (FIC, Managed Identity, or client secret) on the Blueprint
+- Implementing the two-step `fmi_path` runtime token exchange (autonomous or OBO)
+- Cross-tenant agent token flows
+- Deploying the Microsoft Entra SDK for AgentID sidecar for polyglot agents (Python, Node, Go, Java)
+- Granting per-Agent-Identity application (`appRoleAssignments`) or delegated (`oauth2PermissionGrants`) permissions
+- Diagnosing Agent ID errors such as `AADSTS82001`, `AADSTS700211`, or `PropertyNotCompatibleWithAgentIdentity`
+
+## MCP Tools
+
+| Tool | Use |
+|------|-----|
+| `mcp_azure_mcp_documentation` | Search Microsoft Learn for current Agent ID setup, Graph API shapes, and SDK configuration |
+
+There is no dedicated Agent Identity MCP server today. This skill guides direct Microsoft Graph API calls (PowerShell or Python `requests`). Use `mcp_azure_mcp_documentation` to verify request bodies and endpoints against current docs before running.
 
 ## Before You Start
 
@@ -311,7 +342,8 @@ After admin consent, tokens may not include new claims for 30–120 seconds — 
 | [references/runtime-token-exchange.md](references/runtime-token-exchange.md) | Two-step `fmi_path` exchange: autonomous + OBO, cross-tenant |
 | [references/oauth2-token-flow.md](references/oauth2-token-flow.md) | MI + WIF (production) and client secret (local dev) |
 | [references/obo-blueprint-setup.md](references/obo-blueprint-setup.md) | Configuring the Blueprint as an OAuth2 API for OBO |
-| [references/sdk-sidecar.md](references/sdk-sidecar.md) | Microsoft Entra SDK for AgentID — polyglot container auth |
+| [references/sdk-sidecar.md](references/sdk-sidecar.md) | Microsoft Entra SDK for AgentID — architecture, configuration, endpoints |
+| [references/sdk-sidecar-deployment.md](references/sdk-sidecar-deployment.md) | SDK code patterns (Python/TypeScript), Docker/Kubernetes manifests, security, troubleshooting |
 | [references/known-limitations.md](references/known-limitations.md) | Documented gaps organized by category |
 
 ### External Links

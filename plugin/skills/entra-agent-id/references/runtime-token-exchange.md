@@ -37,7 +37,7 @@ def get_parent_token(tenant_id: str, blueprint_app_id: str,
         TOKEN_URL.format(tenant=tenant_id), data=data,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())["access_token"]
 ```
 
@@ -92,7 +92,7 @@ def exchange_autonomous(tenant_id: str, agent_identity_app_id: str,
         TOKEN_URL.format(tenant=tenant_id), data=data,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
 ```
 
@@ -121,7 +121,7 @@ def exchange_obo(tenant_id: str, agent_identity_app_id: str,
         TOKEN_URL.format(tenant=tenant_id), data=data,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
 ```
 
