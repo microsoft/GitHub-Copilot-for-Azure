@@ -6,7 +6,7 @@ Check Bicep templates against Azure Policy before deployment. Use this workflow 
 
 
 - [Bicep Parsing](procedures/bicep-parsing.md)
-- [Azure Resource Configs](azure-resource-configs.md)
+- [Azure Resource Configs](procedures/azure-resource-configs.md)
 ## Workflow
 
 | # | Action | Details |
