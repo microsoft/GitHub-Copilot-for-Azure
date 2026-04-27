@@ -45,6 +45,10 @@ az webapp config hostname add -n $APP -g $RG --hostname www.contoso.com
 # Create managed certificate (free)
 az webapp config ssl create -n $APP -g $RG --hostname www.contoso.com
 
+# Capture certificate thumbprint
+THUMBPRINT=$(az webapp config ssl list -n $APP -g $RG \
+  --query "[?contains(hostNames, 'www.contoso.com')].thumbprint | [0]" -o tsv)
+
 # Bind the certificate
 az webapp config ssl bind -n $APP -g $RG \
   --certificate-thumbprint $THUMBPRINT --ssl-type SNI
