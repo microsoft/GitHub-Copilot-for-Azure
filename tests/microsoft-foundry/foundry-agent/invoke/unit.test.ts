@@ -74,7 +74,8 @@ describe("invoke - Unit Tests", () => {
     test("documents required hosted-agent invocation RBAC", () => {
       expect(invokeContent).toContain("Azure AI User");
       expect(invokeContent).toContain("Cognitive Services OpenAI User");
-      expect(invokeContent).toMatch(/both hosted-agent identities/i);
+      expect(invokeContent).toMatch(/per-agent identity/i);
+      expect(invokeContent).toMatch(/project-level agent identity/i);
       expect(invokeContent).toMatch(/Foundry account \/ Cognitive Services account scope/i);
     });
   });
