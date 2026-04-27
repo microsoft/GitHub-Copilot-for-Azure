@@ -168,12 +168,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         { cwd: pytestDir, encoding: "utf8" }
       );
 
-      if (result.status !== 0) {
-        // Surface pytest output so failures are diagnosable from Jest output.
-        throw new Error(
-          `pytest failed (exit ${result.status}):\n${result.stdout}\n${result.stderr}`
-        );
-      }
+      expect(result.status).toBe(0);
     }, 60_000);
   });
 });

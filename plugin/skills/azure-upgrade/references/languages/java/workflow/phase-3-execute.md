@@ -1,6 +1,6 @@
 # Phase 3: Execute Upgrade Plan
 
-Load this file when executing Phase 3. Refer back to [`../rules/`](../rules/) for success criteria and strategy, and [`../rules/troubleshooting.md`](../rules/troubleshooting.md) when failures occur.
+Load this file when executing Phase 3. Refer back to [`upgrade-success-criteria`](../rules/upgrade-success-criteria.md) and [`upgrade-strategy`](../rules/upgrade-strategy.md) for success criteria and strategy, and [`../rules/troubleshooting.md`](../rules/troubleshooting.md) when failures occur.
 
 ## 1. Initialize
 

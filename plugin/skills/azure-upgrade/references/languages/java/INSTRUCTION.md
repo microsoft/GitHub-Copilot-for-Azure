@@ -18,7 +18,7 @@ Follow these steps:
 
   ```powershell
   Get-ChildItem -Path . -Recurse -File |
-    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules|out)[\\/]' } |
+    Where-Object { $_.FullName -notmatch '(\\|/)(\.git|target|build|node_modules|out)(\\|/)' } |
     Select-String -Pattern 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["''])'
   ```
 
@@ -83,17 +83,17 @@ Use these package-specific references:
   ```powershell
   # 1. Legacy groupId / artifact references in ANY text file
   Get-ChildItem -Path . -Recurse -File |
-    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules|out)[\\/]' } |
+    Where-Object { $_.FullName -notmatch '(\\|/)(\.git|target|build|node_modules|out)(\\|/)' } |
     Select-String -Pattern 'com\.microsoft\.azure(\.|:)|microsoft-azure-|azure-eventhubs-eph|azure-keyvault(:|["''])'
 
   # 2. Legacy imports still in Java sources
   Get-ChildItem -Path . -Recurse -File -Filter *.java |
-    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules|out)[\\/]' } |
+    Where-Object { $_.FullName -notmatch '(\\|/)(\.git|target|build|node_modules|out)(\\|/)' } |
     Select-String -Pattern '^\s*import\s+com\.microsoft\.azure\.'
 
   # 3. Every pom.xml and *.gradle(.kts) file in the repo — eyeball each for legacy coordinates
   Get-ChildItem -Path . -Recurse -File -Include 'pom.xml','*.gradle','*.gradle.kts','libs.versions.toml' |
-    Where-Object { $_.FullName -notmatch '[\\/](\.git|target|build|node_modules)[\\/]' } |
+    Where-Object { $_.FullName -notmatch '(\\|/)(\.git|target|build|node_modules)(\\|/)' } |
     Select-Object -ExpandProperty FullName
   ```
 

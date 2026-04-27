@@ -1,6 +1,6 @@
 # Phase 4: Summarize & Validate
 
-Load this file when executing Phase 4. Refer back to [`../rules/`](../rules/) for success criteria and strategy, and [`../rules/troubleshooting.md`](../rules/troubleshooting.md) when failures occur.
+Load this file when executing Phase 4. Refer back to [`upgrade-success-criteria`](../rules/upgrade-success-criteria.md) and [`upgrade-strategy`](../rules/upgrade-strategy.md) for success criteria and strategy, and [`../rules/troubleshooting.md`](../rules/troubleshooting.md) when failures occur.
 
 1. Create `.github/java-upgrade/{RUN_ID}/summary.md` from the Summary Template — replace placeholders and follow HTML-comment instructions to populate final results.
 2. Apply the validation checklist from the Migration Guidelines:

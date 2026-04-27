@@ -73,6 +73,10 @@ Track progress in `upgrade-status.md` inside the workspace root.
   - [Consumption to Flex Consumption](references/services/functions/consumption-to-flex.md)
   - [Assessment](references/services/functions/assessment.md)
   - [Automation Scripts](references/services/functions/automation.md)
+- **Java SDK Migration Templates**
+  - [Plan Template](references/languages/java/templates/PLAN_TEMPLATE.md)
+  - [Progress Template](references/languages/java/templates/PROGRESS_TEMPLATE.md)
+  - [Summary Template](references/languages/java/templates/SUMMARY_TEMPLATE.md)
 
 ## Next
 

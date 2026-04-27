@@ -12,7 +12,7 @@ You are an expert Azure SDK migration agent. Generate a unique run identifier at
 
 ## Workflow (load references on demand)
 
-Full procedure: per-phase files under [`./workflow/`](./workflow/) (load each one when entering that phase). Global rules apply to every step: [rules/execution-guidelines.md](./rules/execution-guidelines.md), [rules/efficiency.md](./rules/efficiency.md).
+Full procedure: per-phase files under `./workflow/` (load each one when entering that phase). Global rules apply to every step: [rules/execution-guidelines.md](./rules/execution-guidelines.md), [rules/efficiency.md](./rules/efficiency.md).
 
 1. **Precheck** ([workflow/phase-1-precheck.md](./workflow/phase-1-precheck.md)) — Verify Maven/Gradle project, detect JDK/build tools. If git available, create branch `java-upgrade/{RUN_ID}`. → load `./templates/PLAN_TEMPLATE.md` to create `plan.md`.
    - Step-wise rules: [rules/execution-guidelines.md](./rules/execution-guidelines.md) (Output directory, Git, Wrapper preference).

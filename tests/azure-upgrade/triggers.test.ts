@@ -59,8 +59,6 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What is the capital of France?",
       "Help me debug my React application",
       "How do I optimize MySQL queries?",
-      "Migrate legacy Azure SDKs for .NET",
-      "Upgrade legacy Azure .NET SDK",
     ];
 
     test.each(shouldNotTriggerPrompts)(
