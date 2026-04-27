@@ -1,6 +1,6 @@
 # Sketch-to-Diagram Workflow
 
-Convert rough sketches, whiteboard photos, or text descriptions into Draw.io architecture diagrams with Azure stencils.
+Convert rough sketches, whiteboard photos, or text descriptions into Azure architecture diagrams (Mermaid or Draw.io).
 
 > **Context:** This workflow replaces live-Azure discovery (Steps 1–2 in [../SKILL.md](../SKILL.md)) when the input is a sketch, image, or description instead of an existing Azure scope. Once the resource model is built and validated here, hand off to [drawio-diagram-workflow.md](drawio-diagram-workflow.md) or [mermaid-diagram-workflow.md](mermaid-diagram-workflow.md) for rendering.
 
@@ -15,7 +15,7 @@ Convert rough sketches, whiteboard photos, or text descriptions into Draw.io arc
 | 3 | **Validate Architecture** | Check that the architecture makes sense: required companion resources exist (e.g., App Service Plan for App Service), networking is consistent. |
 | 4 | **Verify Against Docs** | **HARD GATE — Always required, no exceptions.** Fetch the relevant Microsoft Learn documentation for every resource type and connection pattern in the diagram. Confirm placement, relationships, and constraints are correct (e.g., NIC must reside inside a subnet, Private Endpoint is inbound-only). Document any issues found. |
 | 5 | **Generate Diagram** | Determine the target format: if the user requested Draw.io, follow [drawio-diagram-workflow.md](drawio-diagram-workflow.md) from its Generate step and save the `.drawio` file. If the user requested Mermaid or didn't define a preference, follow [mermaid-diagram-workflow.md](mermaid-diagram-workflow.md) from its Generate step and save the `.md` file. Save the output file before presenting. |
-| 6 | **Verify Completeness** | Cross-check every resource in the model against the generated XML. Every resource must have an `mxCell`. Every relationship must have an edge. |
+| 6 | **Verify Completeness** | Cross-check every resource in the model against the generated output. For Draw.io: every resource must have an `mxCell` and every relationship must have an edge in the XML. For Mermaid: every resource must appear as a node and every relationship must appear as a link. |
 | 7 | **Present Doc-Check Results** | **HARD GATE — Always required.** Before showing the diagram, present a summary of what was verified against Microsoft documentation, any corrections made, and any assumptions that still require the user's confirmation. Use the format in the [Doc-Check Report](#doc-check-report) section below. |
 | 8 | **Ask User to Verify** | **HARD GATE — Always required.** Explicitly ask: *"Please review the diagram and the documentation notes above. Does this match your intended architecture? Should any resources or connections be changed?"* Do not consider the task complete until the user confirms or requests changes. |
 
