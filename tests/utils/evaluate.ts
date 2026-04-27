@@ -61,6 +61,19 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
   return scanDirectory(workspace);
 }
 
+export type SeparateFilesPatternResult =
+  | { isSeparate: true }
+  | {
+      isSeparate: false;
+      reason: "pattern-not-found";
+      missingPatterns: Array<"patternA" | "patternB">;
+    }
+  | {
+      isSeparate: false;
+      reason: "same-file";
+      filePaths: string[];
+    };
+
 /**
  * Checks that two value patterns exist in **different** files within the workspace.
  * This verifies patterns that must exist in different files — e.g. the AcrPull role assignment and the Container App must be in separate bicep modules so they can be provisioned separately to avoid cyclic dependency.
@@ -68,18 +81,28 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
  * @param patternA First value pattern to match
  * @param patternB Second value pattern — must be in a different file from patternA
  * @param filePattern If provided, only files whose names match the pattern are considered
- * @returns True if both patterns are found and they appear in different files
+ * @returns Whether the patterns were found in separate files, or why they were not
  */
-export function arePatternsInSeparateFiles(workspace: string, patternA: RegExp, patternB: RegExp, filePattern?: RegExp): boolean {
+export function arePatternsInSeparateFiles(
+  workspace: string,
+  patternA: RegExp,
+  patternB: RegExp,
+  filePattern?: RegExp,
+): SeparateFilesPatternResult {
   let hasA = false;
-  let hasBNotA = false;
+  let hasB = false;
+  let hasBInDifferentFileFromA = false;
+  const sameFileMatches = new Set<string>();
 
-  const scanDirectory = (dir: string): boolean => {
+  const scanDirectory = (dir: string): SeparateFilesPatternResult | undefined => {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory() && entry.name !== "node_modules") {
-        if (scanDirectory(fullPath)) return true;
+        const nestedResult = scanDirectory(fullPath);
+        if (nestedResult) {
+          return nestedResult;
+        }
       } else if (entry.isFile()) {
         if (filePattern && !entry.name.match(filePattern)) {
           continue;
@@ -88,18 +111,56 @@ export function arePatternsInSeparateFiles(workspace: string, patternA: RegExp, 
           const content = fs.readFileSync(fullPath, "utf-8");
           const matchesA = !!content.match(patternA);
           const matchesB = !!content.match(patternB);
-          if (matchesA) hasA = true;
-          if (matchesB && !matchesA) hasBNotA = true;
-          if (hasA && hasBNotA) return true;
+
+          if (matchesA) {
+            hasA = true;
+          }
+          if (matchesB) {
+            hasB = true;
+          }
+          if (matchesA && matchesB) {
+            sameFileMatches.add(fullPath);
+          }
+          if (matchesB && !matchesA) {
+            hasBInDifferentFileFromA = true;
+          }
+
+          if (hasA && hasBInDifferentFileFromA) {
+            return { isSeparate: true };
+          }
         } catch {
           // Skip files that can't be read as text
         }
       }
     }
-    return false;
+    return undefined;
   };
 
-  return scanDirectory(workspace);
+  const result = scanDirectory(workspace);
+  if (result) {
+    return result;
+  }
+
+  const missingPatterns: Array<"patternA" | "patternB"> = [];
+  if (!hasA) {
+    missingPatterns.push("patternA");
+  }
+  if (!hasB) {
+    missingPatterns.push("patternB");
+  }
+  if (missingPatterns.length > 0) {
+    return {
+      isSeparate: false,
+      reason: "pattern-not-found",
+      missingPatterns,
+    };
+  }
+
+  return {
+    isSeparate: false,
+    reason: "same-file",
+    filePaths: Array.from(sameFileMatches),
+  };
 }
 
 /**

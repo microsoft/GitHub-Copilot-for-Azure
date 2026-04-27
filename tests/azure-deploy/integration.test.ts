@@ -413,7 +413,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com($|[^A-Za-z0-9.-])/i, bicepPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate module file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
+        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toEqual({ isSeparate: true });
       });
     }, deployTestTimeoutMs);
 
@@ -449,7 +449,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com([^A-Za-z0-9.-]|$)/i, bicepPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate module file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
+        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toEqual({ isSeparate: true });
       });
     }, deployTestTimeoutMs);
 
@@ -674,7 +674,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toBe(true);
+        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toEqual({ isSeparate: true });
       });
     }, deployTestTimeoutMs);
 
@@ -711,7 +711,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toBe(true);
+        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toEqual({ isSeparate: true });
       });
     }, deployTestTimeoutMs);
 
@@ -748,7 +748,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toBe(true);
+        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toEqual({ isSeparate: true });
       });
     }, deployTestTimeoutMs);
   });
@@ -933,7 +933,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com($|[^A-Za-z0-9.-])/i, bicepPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
         // Phase 2: AcrPull role assignment in a separate module file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
+        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toEqual({ isSeparate: true });
       });
     }, brownfieldTestTimeoutMs);
 
