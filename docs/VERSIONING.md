@@ -1,77 +1,43 @@
-# Automatic Versioning with semantic-release
+# Automatic Versioning with Nerdbank.GitVersioning
 
-This repository uses [semantic-release](https://github.com/semantic-release/semantic-release) to automatically manage version numbers for plugin files based on commit message conventions.
+This repository uses [Nerdbank.GitVersioning (NBGV)](https://github.com/dotnet/Nerdbank.GitVersioning) to automatically manage version numbers for plugin and skill files based on git commit history.
 
 ## How It Works
 
-- **Version Source**: Versions are calculated based on commit message conventions (conventional commits)
-- **Simple Updates**: Plugin versions update when PRs contain any changes to the `plugin/` folder  
-- **Semantic Versioning**: Automatically determines patch, minor, or major version bumps
-- **CI-Driven**: All version updates happen automatically via GitHub Actions
-- **Consistent Versioning**: All plugin files maintain the same version number across the repository
-- **Automatic Changelog**: Release notes are automatically generated and maintained in `plugin/CHANGELOG.md`
+- **Version Source**: Versions are calculated from the git commit height since `version.json` was introduced, filtered by path
+- **Path-Filtered Heights**: Each component (plugin, individual skills) has its own `version.json` with `pathFilters: ["."]` so only commits touching that directory increment its version
+- **Build-Time Stamping**: The Gulp build (`npm run build`) stamps versions into output files at build time
+- **Consistent Versioning**: All plugin manifest files (`.plugin/plugin.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`) share the same version
 
 ## Files Managed
 
-The following files have their versions automatically updated:
+The following files have their versions automatically stamped at build time:
 - `plugin/.claude-plugin/plugin.json`
+- `plugin/.cursor-plugin/plugin.json`
 - `plugin/.plugin/plugin.json`
-- `plugin/CHANGELOG.md` (automatically generated release notes)
-
-## Version Calculation Rules
-
-Versions are calculated based on **commit message conventions**:
-- **fix:** commits → PATCH release (1.0.1)
-- **feat:** commits → MINOR release (1.1.0)  
-- **BREAKING CHANGE:** commits → MAJOR release (2.0.0)
-- **chore:**, **docs:**, etc. → No release
-
-### Commit Examples:
-- `fix: resolve skill loading issue` → 1.0.1
-- `feat: add new Azure AI skill` → 1.1.0
-- `feat!: change skill interface` → 2.0.0
-
-## Configuration Files
-
-- `.releaserc.json` - Semantic-release configuration with changelog generation
-- `package.json` - npm dependencies and scripts
-- `scripts/src/update-plugin-version.ts` - TypeScript version update script
+- `plugin/skills/*/SKILL.md` (each skill gets its own version)
 
 ## Changelog Generation
 
-Release notes are automatically generated based on conventional commit messages and written to `plugin/CHANGELOG.md`. The changelog includes:
-- **Features** - commits with `feat:` prefix
-- **Bug Fixes** - commits with `fix:` prefix  
-- **Breaking Changes** - commits with `BREAKING CHANGE:` or `!` suffix
-- **Performance Improvements** - commits with `perf:` prefix
+The `CHANGELOG.md` is automatically generated at build time by the Gulp pipeline. It includes merged PRs that:
+- Touch the `plugin/` directory
+- Have titles starting with `fix:`, `feat:`, or `feature:`
 
-The changelog is updated with each release and committed along with the version files.
+Each entry is associated with the NBGV height-based version (`{major}.{minor}.{height}`) of the commit that introduced it.
+
+## Version Calculation
+
+Versions follow the format `{major}.{minor}.{height}` where:
+- `major.minor` comes from the component's `version.json`
+- `height` is the number of first-parent commits touching that component's directory since `version.json` was introduced
 
 ## CI/CD Integration
 
-The GitHub Actions workflow `.github/workflows/update-plugin-versions.yml` automatically updates plugin versions whenever a PR is merged into the main branch **that contains any changes to the plugin folder**. This ensures that:
-- Any changes to files under `plugin/` folder result in version increments
-- Changes outside the plugin folder don't trigger version updates
-- Version numbers stay synchronized across all environments  
-- No manual version management is required
+The GitHub Actions workflow `publish-to-marketplace.yml` automatically:
+1. Runs `npm run build` to produce versioned output in `output/`
+2. Syncs the output to `microsoft/skills` and `microsoft/azure-skills` marketplace repos
 
 ### Files That Trigger Version Updates:
-- ✅ Any file under `plugin/` folder
-- ❌ Any file outside `plugin/` folder
-
-### Example Scenarios:
-- **PR updates skill files** → Version bumps ✅
-- **PR updates README.md only** → No version change ❌
-
-## Troubleshooting
-
-### Dependencies missing
-```bash
-npm ci
-```
-
-### Version not updating after PR merge
-1. Check the GitHub Actions workflow logs
-2. Ensure the PR contained changes to files under `plugin/` 
-3. Verify commit messages follow conventional format
-4. Run `npm run release -- --dry-run` to test locally
+- ✅ Any file under `plugin/` folder (for plugin version)
+- ✅ Any file under a skill's directory (for that skill's version)
+- ❌ Files outside tracked paths don't affect versions
