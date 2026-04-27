@@ -63,7 +63,7 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
 
 /**
  * Checks that two value patterns exist in **different** files within the workspace.
- * This verifies separation of concerns — e.g. the AcrPull role assignment is in a separate module from the Container App.
+ * This verifies patterns that must exist in different files — e.g. the AcrPull role assignment and the Container App must be in separate bicep modules so they can be provisioned separately to avoid cyclic dependency.
  * @param workspace Path to a directory containing the files of interest.
  * @param patternA First value pattern to match
  * @param patternB Second value pattern — must be in a different file from patternA
