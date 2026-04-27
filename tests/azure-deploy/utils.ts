@@ -65,12 +65,44 @@ export function shouldEarlyTerminateForCompletedDeployment(agentMetadata: AgentM
 }
 
 export function shouldEarlyTerminateForAzdProvision(agentMetadata: AgentMetadata): boolean {
-  const hasCalledProvision = matchesCommand(agentMetadata, /azd\s+(provision|up)\b/i);
-  if (hasCalledProvision) {
-    const commentToAdd = "✅ azd provision/up was called. Terminating early — infrastructure provisioning has started.";
+  const hasStartedAzdUp = matchesCommand(agentMetadata, /azd\s+up\b/i);
+  if (hasStartedAzdUp) {
+    const commentToAdd = "✅ azd up started running. Terminating early — end-to-end provisioning/deployment has started.";
+    if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
+      agentMetadata.testComments.push(commentToAdd);
+    }
+    return true;
+  }
+
+  // For azd provision, terminate only after at least one matching tool call completed.
+  const azdProvisionCallIds = new Set(
+    agentMetadata.events
+      .filter((event) => event.type === "tool.execution_start")
+      .filter((event) => {
+        if (event.data.toolName !== "bash" && event.data.toolName !== "powershell") {
+          return false;
+        }
+        const args = event.data.arguments as { command?: string } | undefined;
+        return /azd\s+provision\b/i.test(args?.command ?? "");
+      })
+      .map((event) => event.data.toolCallId)
+      .filter((toolCallId): toolCallId is string => typeof toolCallId === "string"),
+  );
+
+  const hasCompletedAzdProvision =
+    azdProvisionCallIds.size > 0
+    && agentMetadata.events.some((event) =>
+      event.type === "tool.execution_complete"
+      && typeof event.data.toolCallId === "string"
+      && azdProvisionCallIds.has(event.data.toolCallId)
+    );
+
+  if (hasCompletedAzdProvision) {
+    const commentToAdd = "✅ At least one azd provision command completed. Terminating early.";
     if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
       agentMetadata.testComments.push(commentToAdd);
     }
   }
-  return hasCalledProvision;
+
+  return hasCompletedAzdProvision;
 }
