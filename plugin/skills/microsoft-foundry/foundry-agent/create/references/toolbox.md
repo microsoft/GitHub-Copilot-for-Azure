@@ -57,7 +57,7 @@ The sample repo provides integration patterns for both Python and C#. Read the s
 | **Agent Framework (MAF)** — recommended | Default choice for hosted agents | [`04-foundry-toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox) | [`toolbox/maf/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/maf) |
 | **LangGraph** | User already uses LangGraph | — | [`toolbox/langgraph/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/langgraph) |
 | **Copilot SDK** | GitHub Copilot SDK with toolbox tools | — | [`toolbox/copilot-sdk/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/copilot-sdk) |
-| **Bring Your Own (generic MCP)** | Any framework or custom code | [`bring-your-own/responses/toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox) | — |
+| **Bring Your Own (generic MCP)** | Any framework or custom code | [`bring-your-own/responses/bring-your-own-toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox) | — |
 
 **C# (.NET) samples:**
 
