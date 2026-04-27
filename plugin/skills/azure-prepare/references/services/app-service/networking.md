@@ -10,7 +10,8 @@ VNet integration, Private Endpoints, Access Restrictions, and Hybrid Connections
 | Private Endpoints (inbound) | ❌ | ❌ | ✅ | ✅ |
 | Access Restrictions | ✅ | ✅ | ✅ | ✅ |
 | Hybrid Connections | ❌ | 25 | 200 | 200 |
-| Service Endpoints | ❌ | ✅ | ✅ | ✅ |
+| Access to service-endpoint-protected resources | ❌ | ✅ | ✅ | ✅ |
+> Note: Service endpoints are configured on VNets/subnets and downstream services (e.g., Storage, SQL). App Service accesses them via VNet integration rather than enabling service endpoints directly on the app.
 
 ## VNet Integration (Outbound)
 
@@ -96,7 +97,7 @@ resource dnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-
 }
 ```
 
-> ⚠️ **Warning:** Private Endpoints require Premium (P1v3+) or Isolated tier. The private DNS zone `privatelink.azurewebsites.net` must be linked to the VNet for name resolution.
+> ⚠️ **Warning:** Private Endpoints require Basic (B1+) or higher tier. The private DNS zone `privatelink.azurewebsites.net` must be linked to the VNet for name resolution.
 
 ## Access Restrictions
 
@@ -128,7 +129,7 @@ siteConfig: {
 
 ## Hybrid Connections
 
-Connect to on-premises resources without VPN. Requires Standard tier or higher. Uses Hybrid Connection Manager (HCM) agent on-premises relaying through Azure Relay.
+Connect to on-premises resources without VPN. Requires Basic tier or higher. Uses Hybrid Connection Manager (HCM) agent on-premises relaying through Azure Relay.
 
 > ⚠️ **Warning:** Each Hybrid Connection maps to a single host:port endpoint. Standard tier supports 25; Premium/Isolated support 200.
 

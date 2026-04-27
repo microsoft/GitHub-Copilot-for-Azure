@@ -2,18 +2,18 @@
 
 ## SKU Comparison Matrix
 
-| Feature | Free (F1) | Basic (B1-B3) | Standard (S1-S3) | Premium (P1v3-P3v3) | Isolated (I1v2-I3v2) |
+| Feature | Free (F1) | Basic (B1-B3) | Standard (S1-S3) | Premium (P0v3-P3v3 and P1Mv3-P5Mv3;P0v4-P3v4 and P1Mv4-P5Mv4) | Isolated (I1v2-I6v2) |
 |---------|:-:|:-:|:-:|:-:|:-:|
 | **Custom domains** | ❌ | ✅ | ✅ | ✅ | ✅ |
 | **TLS/SSL bindings** | ❌ | ✅ (SNI) | ✅ (SNI + IP) | ✅ (SNI + IP) | ✅ (SNI + IP) |
 | **Deployment slots** | ❌ | ❌ | 5 | 20 | 20 |
 | **Auto-scale** | ❌ | ❌ | ✅ (10 inst.) | ✅ (30 inst.) | ✅ (100 inst.) |
-| **VNet integration** | ❌ | ❌ | ✅ | ✅ | ✅ (ASE is in VNet) |
-| **Private endpoints** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **VNet integration** | ❌ | ✅ | ✅ | ✅ | ✅ (ASE is in VNet) |
+| **Private endpoints** | ❌ | ✅ | ✅ | ✅ | ✅ |
 | **Always On** | ❌ | ✅ | ✅ | ✅ | ✅ |
 | **Backup/Restore** | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Hybrid Connections** | ❌ | ❌ | 25 | 200 | 200 |
-| **Traffic Manager** | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Hybrid Connections** | ❌ | 5 | 25 | 200 | 200 |
+| **Traffic Manager** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **SLA** | None | None | 99.95% | 99.95% | 99.95% |
 
 ## Pricing Overview
@@ -58,9 +58,9 @@ Key features unlocked at each tier:
 
 | Upgrade Path | Features Gained |
 |-------------|-----------------|
-| Free → Basic | Custom domains, TLS/SSL, Always On |
-| Basic → Standard | Deployment slots, auto-scale, VNet integration, backups |
-| Standard → Premium | Private endpoints, more slots (20), higher scale (30 inst.) |
+| Free → Basic | Custom domains, TLS/SSL, Always On, VNet Integration, Private Endpoints, Hybrid Connections (5) |
+| Basic → Standard | Deployment slots, auto-scale, backups |
+| Standard → Premium | More slots (20), higher scale (30 inst.) |
 | Premium → Isolated | Full network isolation (ASE), dedicated infrastructure |
 
 ## Bicep — App Service Plan with SKU
@@ -110,6 +110,6 @@ Scale up (change SKU) vs scale out (add instances):
 |----------|----------------|--------|
 | Personal blog / prototype | F1 or B1 | Minimal cost, no SLA needed |
 | Team dev/test | B1-B2 | Always On, custom domain |
-| Production API | S1-S2 | Auto-scale, slots, VNet |
-| Enterprise with compliance | P1v3+ | Private endpoints, 20 slots |
+| Production API | P0v3/P0v4-P2v3/P2v4 | Auto-scale, slots, VNet |
+| Enterprise with compliance | P1v3+/P1v4+ | Private endpoints, 20 slots, 30 instances |
 | Regulated / multi-tenant SaaS | I1v2+ | Full network isolation |
