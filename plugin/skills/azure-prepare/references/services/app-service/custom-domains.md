@@ -78,6 +78,25 @@ resource managedCert 'Microsoft.Web/certificates@2022-09-01' = {
 }
 ```
 
+Then run a follow-up Bicep deployment to enable SNI and bind the managed certificate to the hostname:
+
+```bicep
+resource managedCert 'Microsoft.Web/certificates@2022-09-01' existing = {
+  name: 'www.contoso.com'
+}
+
+resource customDomainTlsBinding 'Microsoft.Web/sites/hostNameBindings@2022-09-01' = {
+  parent: webApp
+  name: 'www.contoso.com'
+  properties: {
+    siteName: webApp.name
+    hostNameType: 'Verified'
+    sslState: 'SniEnabled'
+    thumbprint: managedCert.properties.thumbprint
+  }
+}
+```
+
 > ⚠️ **Warning:** Managed certificate creation requires the DNS records to be in place first. The hostname binding must exist before requesting the certificate.
 
 ## Terraform — Custom Domain with Managed Certificate
