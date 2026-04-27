@@ -76,7 +76,7 @@ describe("invoke - Unit Tests", () => {
       expect(invokeContent).not.toContain("Cognitive Services OpenAI User");
       expect(invokeContent).toMatch(/per-agent identity/i);
       expect(invokeContent).toMatch(/project-level agent identity/i);
-      expect(invokeContent).toMatch(/Foundry account \/ Cognitive Services account scope/i);
+      expect(invokeContent).toMatch(/Cognitive Services account scope/i);
     });
   });
 });

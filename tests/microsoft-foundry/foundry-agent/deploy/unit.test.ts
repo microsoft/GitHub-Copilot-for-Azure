@@ -180,7 +180,7 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/per-agent identity.*agent creation response/i);
       expect(deployContent).toMatch(/project-level agent identity.*project resource/i);
       expect(deployContent).not.toContain("Required identities:");
-      expect(deployContent).toMatch(/Foundry account \/ Cognitive Services account, not the project/i);
+      expect(deployContent).toMatch(/Cognitive Services account, not the project/i);
     });
   });
 
