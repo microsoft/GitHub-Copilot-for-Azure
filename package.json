@@ -4,8 +4,9 @@
   "private": true,
   "description": "GitHub Copilot plugin for Azure",
   "scripts": {
+    "build": "gulp",
     "tokens": "cd scripts && npm run tokens --",
-    "verify-local": "cd scripts && npm run verify-local",
+    "verify-local": "echo 'Removed: use npm run build + copilot --plugin-dir ./output instead' && exit 1",
     "test": "cd scripts && npm test",
     "test:skills": "cd tests && npm test --",
     "test:skills:integration": "cd tests && npm run test:integration --",
@@ -18,11 +19,20 @@
     "node": ">=22.14.0"
   },
   "devDependencies": {
-    "semantic-release": "^25.0.3",
-    "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/release-notes-generator": "^14.1.0",
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/exec": "^7.1.0",
-    "@semantic-release/git": "^10.0.1"
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/fancy-log": "^2.0.2",
+    "@types/gulp": "^4.0.18",
+    "@types/node": "^22.0.0",
+    "@types/vinyl": "^2.0.12",
+    "fancy-log": "^2.0.0",
+    "gulp": "^5.0.1",
+    "nerdbank-gitversioning": "^3.9.50",
+    "semantic-release": "^25.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
   }
 }

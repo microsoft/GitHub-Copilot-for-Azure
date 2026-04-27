@@ -901,6 +901,71 @@ button.header-status-pill {
   color: var(--color-fail);
 }
 
+/* === Deploy Scenario Retries Table === */
+
+.deploy-retries-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  margin-top: 4px;
+}
+
+.deploy-retries-table th {
+  text-align: left;
+  padding: 4px 8px;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.deploy-retries-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.deploy-retries-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.deploy-retries-row-warn {
+  background: color-mix(in srgb, var(--color-warn) 10%, transparent);
+}
+
+.deploy-retries-row-fail {
+  background: color-mix(in srgb, var(--color-fail) 10%, transparent);
+}
+
+.deploy-retries-name {
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.deploy-retries-num-col {
+  font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  text-align: right;
+  white-space: nowrap;
+  padding-left: 1.5rem !important;
+}
+
+.deploy-retries-nonzero {
+  color: var(--color-warn);
+  font-weight: 700;
+}
+
+.deploy-retries-fail {
+  color: var(--color-fail);
+  font-weight: 700;
+}
+
+.deploy-retries-zero {
+  color: var(--color-text-muted);
+}
+
 /* === Responsive === */
 @media (max-width: 480px) {
   .panel-grid {

@@ -194,6 +194,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
 
       - name: Install azd
         uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2
@@ -250,6 +252,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build plugin output
+        run: |
+          cd ..
+          npm ci --ignore-scripts
+          npm run build
       
       # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
       # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
