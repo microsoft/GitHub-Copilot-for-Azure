@@ -36,10 +36,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata.description).toMatch(/WHEN:/i);
     });
 
-    test("description covers both recommendation and troubleshooting", () => {
+    test("description covers recommendation, troubleshooting, and EMM", () => {
       const desc = skill.metadata.description.toLowerCase();
       expect(desc).toMatch(/recommend|vm size|pricing/);
       expect(desc).toMatch(/troubleshoot|can't connect|rdp|ssh/);
+      expect(desc).toMatch(/essential machine management|emm|machine enrollment/);
     });
 
     test("description mentions VM and VMSS keywords", () => {
@@ -81,6 +82,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("routes to capacity-reservation", () => {
       expect(skill.content).toContain("capacity-reservation.md");
       expect(skill.content).toContain("Capacity Reservation");
+    });
+
+    test("routes to essential-machine-management", () => {
+      expect(skill.content).toContain("essential-machine-management.md");
+      expect(skill.content).toContain("Essential Machine Management");
     });
 
     test("documents when to use this skill", () => {
@@ -1132,6 +1138,147 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("key concepts table documents billing model", () => {
       expect(crContent).toContain("Charges begin as soon as the reservation is created");
+    });
+  });
+
+  describe("Essential Machine Management Workflow", () => {
+    let emmContent: string;
+
+    beforeAll(async () => {
+      const agentFile = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/essential-machine-management/essential-machine-management.md"
+      );
+      emmContent = await fs.readFile(agentFile, "utf-8");
+    });
+
+    test("file exists and has content", () => {
+      expect(emmContent).toBeDefined();
+      expect(emmContent.length).toBeGreaterThan(500);
+    });
+
+    test("contains expected sections", () => {
+      expect(emmContent).toContain("## Routing");
+      expect(emmContent).toContain("## Browse Enrolled Subscriptions");
+      expect(emmContent).toContain("## Offboard a Subscription");
+      expect(emmContent).toContain("## Troubleshooting");
+      expect(emmContent).toContain("## Error Handling");
+    });
+
+    test("routing covers enable, overview, prerequisites, browse, offboard, and troubleshoot", () => {
+      expect(emmContent).toContain("Enable / onboard / enroll");
+      expect(emmContent).toContain("What is EMM");
+      expect(emmContent).toContain("Prerequisites");
+      expect(emmContent).toContain("View enrolled subscriptions");
+      expect(emmContent).toContain("Offboard");
+      expect(emmContent).toContain("Troubleshoot");
+    });
+
+    test("routing links to all reference files", () => {
+      expect(emmContent).toContain("references/emm-enable-flow.md");
+      expect(emmContent).toContain("references/emm-enable-flow-portal.md");
+      expect(emmContent).toContain("references/emm-overview.md");
+      expect(emmContent).toContain("references/emm-prerequisites.md");
+    });
+
+    test("browse section documents the EMM status API endpoint", () => {
+      expect(emmContent).toContain("Microsoft.ManagedOps/managedOps/default");
+      expect(emmContent).toContain("api-version=2025-07-28-preview");
+    });
+
+    test("browse section documents response interpretation", () => {
+      expect(emmContent).toContain("provisioningState: Succeeded");
+      expect(emmContent).toContain("Subscription is enrolled");
+      expect(emmContent).toContain("404");
+      expect(emmContent).toContain("Subscription is not enrolled");
+    });
+
+    test("error handling covers common failures", () => {
+      expect(emmContent).toContain("Permission denied during enable");
+      expect(emmContent).toContain("UAMI role check fails");
+      expect(emmContent).toContain("RP not registered");
+      expect(emmContent).toContain("Cross-subscription workspace error");
+    });
+
+    test("defaults to Copilot-guided flow", () => {
+      expect(emmContent).toContain("Default to the Copilot-guided flow");
+    });
+
+    test("notes EMM is in public preview", () => {
+      expect(emmContent).toContain("public preview");
+    });
+  });
+
+  describe("EMM Reference Files", () => {
+    const emmRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/essential-machine-management/references"
+    );
+
+    const emmReferenceFiles = [
+      "emm-enable-flow.md",
+      "emm-enable-flow-portal.md",
+      "emm-overview.md",
+      "emm-prerequisites.md",
+    ];
+
+    test.each(emmReferenceFiles)(
+      "EMM reference %s exists and has content",
+      async (file) => {
+        const content = await fs.readFile(
+          path.join(emmRefsDir, file),
+          "utf-8"
+        );
+        expect(content).toBeDefined();
+        expect(content.length).toBeGreaterThan(100);
+      }
+    );
+
+    test("emm-enable-flow.md documents Copilot-guided steps", async () => {
+      const content = await fs.readFile(
+        path.join(emmRefsDir, "emm-enable-flow.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Step 1");
+      expect(content).toContain("Step 2");
+      expect(content).toMatch(/role/i);
+      expect(content).toMatch(/UAMI|managed identity/i);
+    });
+
+    test("emm-enable-flow.md documents role validation with assignedTo pattern", async () => {
+      const content = await fs.readFile(
+        path.join(emmRefsDir, "emm-enable-flow.md"),
+        "utf-8"
+      );
+      expect(content).toContain("assignedTo");
+      expect(content).toContain("roleDefinitions");
+    });
+
+    test("emm-prerequisites.md documents required roles", async () => {
+      const content = await fs.readFile(
+        path.join(emmRefsDir, "emm-prerequisites.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Essential Machine Management Administrator/i);
+      expect(content).toMatch(/Managed Identity Operator/i);
+      expect(content).toMatch(/Resource Policy Contributor/i);
+    });
+
+    test("emm-prerequisites.md documents required resource providers", async () => {
+      const content = await fs.readFile(
+        path.join(emmRefsDir, "emm-prerequisites.md"),
+        "utf-8"
+      );
+      expect(content).toContain("Microsoft.ManagedOps");
+    });
+
+    test("emm-overview.md documents features and tiers", async () => {
+      const content = await fs.readFile(
+        path.join(emmRefsDir, "emm-overview.md"),
+        "utf-8"
+      );
+      expect(content).toMatch(/Essential/i);
+      expect(content).toMatch(/monitor|update|security/i);
     });
   });
 
