@@ -156,14 +156,14 @@ az webapp config ssl show --certificate-name CERT -g RG
 
 ---
 
-## MCP Tools for App Service Diagnostics
+## AZ CLI or MCP Tools for App Service Diagnostics
 
-| MCP Tool | Command | Use When |
+| Tool | Command | Use When |
 |----------|---------|----------|
-| `mcp_azure_mcp_appservice` | `list` | List all web apps in subscription |
-| `mcp_azure_mcp_appservice` | `get` | Get app config, stack, status |
-| `mcp_azure_mcp_appservice` | `get_app_settings` | Check env vars and connection strings |
-| `mcp_azure_mcp_appservice` | `get_deployment_slots` | Compare slot configurations |
+| `Azure CLI` | `az webapp list` | List all web apps in subscription |
+| `Azure CLI` | `az webapp show -n APP -g RG` | Get app config, stack, status |
+| `Azure CLI` | `az webapp config appsettings list -n APP -g RG` | Check env vars and connection strings |
+| `Azure CLI` | `az webapp deployment slot list -n APP -g RG` | Compare slot configurations |
 | `mcp_azure_mcp_appservice` | `diagnose` | AI-powered root cause analysis |
 | `mcp_azure_mcp_monitor` | `logs_query` | Run KQL against Log Analytics |
 | `mcp_azure_mcp_resourcehealth` | `get` | Check platform-level health status |
