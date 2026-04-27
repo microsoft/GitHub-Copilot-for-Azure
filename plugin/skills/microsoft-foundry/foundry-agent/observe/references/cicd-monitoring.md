@@ -23,7 +23,7 @@ Use repository secrets for the selected environment's project endpoint and Azure
 
 *"Would you like to set up continuous evaluations to monitor your agent's quality in production?"*
 
-Continuous evaluation uses Foundry-native MCP tools to automatically assess agent responses on an ongoing basis — no external pipelines required. This catches regressions that emerge **after** deployment from changing data, user patterns, or upstream service drift.
+Continuous evaluation uses Foundry-native MCP tools to automatically assess agent responses on an ongoing basis — no additional CI/CD pipeline setup is needed for this option. This catches regressions that emerge **after** deployment from changing data, user patterns, or upstream service drift.
 
 ### Enable Continuous Evaluation
 
