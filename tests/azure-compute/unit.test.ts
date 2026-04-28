@@ -78,6 +78,11 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("VM Troubleshooter");
     });
 
+    test("routes to capacity-reservation", () => {
+      expect(skill.content).toContain("capacity-reservation.md");
+      expect(skill.content).toContain("Capacity Reservation");
+    });
+
     test("documents when to use this skill", () => {
       expect(skill.content).toContain("## When to Use This Skill");
     });
@@ -158,8 +163,15 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(recommenderContent).toContain("retail-prices-api.md");
     });
 
-    test("Step 5: documents recommendation presentation format", () => {
-      expect(recommenderContent).toContain("### Step 5: Present Recommendations");
+    test("Step 5: documents quota validation gate", () => {
+      expect(recommenderContent).toContain("### Step 5: Validate Quota Availability");
+      expect(recommenderContent).toContain("GATE");
+      expect(recommenderContent).toContain("review");
+      expect(recommenderContent).toContain("vm-quotas.md");
+    });
+
+    test("Step 6: documents recommendation presentation format", () => {
+      expect(recommenderContent).toContain("### Step 6: Present Recommendations");
       expect(recommenderContent).toContain("2–3 options");
       expect(recommenderContent).toContain("Hosting Model");
       expect(recommenderContent).toContain("VM Size");
@@ -167,8 +179,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(recommenderContent).toContain("Trade-off");
     });
 
-    test("Step 6: documents next steps", () => {
-      expect(recommenderContent).toContain("### Step 6: Offer Next Steps");
+    test("Step 7: documents next steps", () => {
+      expect(recommenderContent).toContain("### Step 7: Offer Next Steps");
       expect(recommenderContent).toContain("Azure Pricing Calculator");
     });
 
@@ -202,6 +214,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(recommenderContent).toContain("../../references/vm-families.md");
       expect(recommenderContent).toContain("../../references/retail-prices-api.md");
       expect(recommenderContent).toContain("../../references/vmss-guide.md");
+      expect(recommenderContent).toContain("../../references/vm-quotas.md");
     });
   });
 
@@ -324,11 +337,18 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     let vmFamiliesContent: string;
     let retailPricesApiContent: string;
     let vmssGuideContent: string;
+    let vmQuotasContent: string;
     let cannotConnectContent: string;
+    let crOverviewContent: string;
+    let crAssociationContent: string;
 
     const troubleshooterRefsDir = path.join(
       SKILLS_PATH,
       "azure-compute/workflows/vm-troubleshooter/references"
+    );
+    const crRefsDir = path.join(
+      SKILLS_PATH,
+      "azure-compute/workflows/capacity-reservation/references"
     );
 
     const subReferenceFiles = [
@@ -359,8 +379,20 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         path.join(refsDir, "vmss-guide.md"),
         "utf-8"
       );
+      vmQuotasContent = await fs.readFile(
+        path.join(refsDir, "vm-quotas.md"),
+        "utf-8"
+      );
       cannotConnectContent = await fs.readFile(
         path.join(troubleshooterRefsDir, "cannot-connect-to-vm.md"),
+        "utf-8"
+      );
+      crOverviewContent = await fs.readFile(
+        path.join(crRefsDir, "capacity-reservation-overview.md"),
+        "utf-8"
+      );
+      crAssociationContent = await fs.readFile(
+        path.join(crRefsDir, "association-disassociation.md"),
         "utf-8"
       );
     });
@@ -380,9 +412,24 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(vmssGuideContent.length).toBeGreaterThan(100);
     });
 
+    test("vm-quotas reference file exists and has content", () => {
+      expect(vmQuotasContent).toBeDefined();
+      expect(vmQuotasContent.length).toBeGreaterThan(100);
+    });
+
     test("cannot-connect-to-vm reference file exists and has content", () => {
       expect(cannotConnectContent).toBeDefined();
       expect(cannotConnectContent.length).toBeGreaterThan(100);
+    });
+
+    test("capacity-reservation-overview reference exists and has content", () => {
+      expect(crOverviewContent).toBeDefined();
+      expect(crOverviewContent.length).toBeGreaterThan(100);
+    });
+
+    test("association-disassociation reference exists and has content", () => {
+      expect(crAssociationContent).toBeDefined();
+      expect(crAssociationContent.length).toBeGreaterThan(100);
     });
 
     test("cannot-connect-to-vm acts as index and links to all sub-references", () => {
@@ -1001,4 +1048,91 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       }
     );
   });
+
+  describe("Capacity Reservation Workflow", () => {
+    let crContent: string;
+
+    beforeAll(async () => {
+      const agentFile = path.join(
+        SKILLS_PATH,
+        "azure-compute/workflows/capacity-reservation/capacity-reservation.md"
+      );
+      crContent = await fs.readFile(agentFile, "utf-8");
+    });
+
+    test("file exists and has content", () => {
+      expect(crContent).toBeDefined();
+      expect(crContent.length).toBeGreaterThan(500);
+    });
+
+    test("contains expected sections", () => {
+      expect(crContent).toContain("## When to Use This Workflow");
+      expect(crContent).toContain("## Workflow");
+      expect(crContent).toContain("## Error Handling");
+      expect(crContent).toContain("## Key Concepts");
+    });
+
+    test("documents proactive suggestion patterns", () => {
+      expect(crContent).toContain("proactively suggest");
+      expect(crContent).toContain("Deployment failure is unacceptable");
+      expect(crContent).toContain("Known scale-out events");
+      expect(crContent).toContain("In-demand SKUs");
+    });
+
+    test("Step 1: documents requirements gathering", () => {
+      expect(crContent).toContain("### Step 1: Gather Requirements");
+      expect(crContent).toContain("Region");
+      expect(crContent).toContain("VM size(s)");
+      expect(crContent).toContain("Quantity");
+      expect(crContent).toContain("Availability Zone(s)");
+      expect(crContent).toContain("Resource group");
+    });
+
+    test("Step 1: quantity must always be asked", () => {
+      expect(crContent).toContain("Always ask — do not infer");
+    });
+
+    test("Step 1: zones should not be inferred", () => {
+      expect(crContent).toContain("Do not pick a zone on the user's behalf");
+    });
+
+    test("Step 2: documents CRG and reservation creation", () => {
+      expect(crContent).toContain("### Step 2: Create Capacity Reservation Group and Reservation");
+      expect(crContent).toContain("az capacity reservation group create");
+      expect(crContent).toContain("az capacity reservation create");
+    });
+
+    test("Step 3: documents verification", () => {
+      expect(crContent).toContain("### Step 3: Verify Reservation");
+      expect(crContent).toContain("az capacity reservation show");
+    });
+
+    test("Step 4: documents next steps", () => {
+      expect(crContent).toContain("### Step 4: Offer Next Steps");
+    });
+
+    test("documents managing existing reservations", () => {
+      expect(crContent).toContain("## Managing Existing Reservations");
+      expect(crContent).toContain("Associate a VM or VMSS");
+      expect(crContent).toContain("Disassociate a VM or VMSS");
+      expect(crContent).toContain("Find a matching CRG");
+    });
+
+    test("error handling covers common failures", () => {
+      expect(crContent).toContain("SKU not available in region/zone");
+      expect(crContent).toContain("Quota exceeded");
+      expect(crContent).toContain("Insufficient platform capacity");
+      expect(crContent).toContain("Duplicate SKU + zone in CRG");
+    });
+
+    test("references local workflow reference files", () => {
+      expect(crContent).toContain("references/capacity-reservation-overview.md");
+      expect(crContent).toContain("references/association-disassociation.md");
+    });
+
+    test("key concepts table documents billing model", () => {
+      expect(crContent).toContain("Charges begin as soon as the reservation is created");
+    });
+  });
+
 });

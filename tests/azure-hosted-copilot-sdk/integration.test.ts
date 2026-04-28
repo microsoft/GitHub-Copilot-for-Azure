@@ -97,7 +97,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = await measureInvocationRate(agent, SKILL_NAME, {
           setup: setupCopilotSdkApp,
           prompt: "Deploy this app to Azure",
-          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
+          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME, 10),
         }, "existing-sdk-deploy", RUNS_PER_PROMPT);
         if (rate >= 0) {
           setSkillInvocationRate(rate);
@@ -112,7 +112,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = await measureInvocationRate(agent, SKILL_NAME, {
           setup: setupCopilotSdkApp,
           prompt: "Add a new feature to this app that summarizes pull requests",
-          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
+          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME, 10),
         }, "existing-sdk-modify", RUNS_PER_PROMPT);
         if (rate >= 0) {
           setSkillInvocationRate(rate);

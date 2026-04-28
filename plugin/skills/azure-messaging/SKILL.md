@@ -4,7 +4,7 @@ description: "Troubleshoot and resolve issues with Azure Messaging SDKs for Even
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.4"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Messaging SDK Troubleshooting

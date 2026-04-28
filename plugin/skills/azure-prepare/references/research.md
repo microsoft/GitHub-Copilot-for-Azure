@@ -60,6 +60,7 @@ Selected: Container Apps, Cosmos DB, Key Vault
 
 → Load: services/container-apps/README.md (overview)
   → If need Bicep: services/container-apps/bicep.md
+  → If need Terraform: services/container-apps/terraform.md
   → If need scaling: services/container-apps/scaling.md
   → If need health probes: services/container-apps/health-probes.md
 
@@ -103,7 +104,7 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 
 ### Web Application + API + Database (Cosmos DB)
 
-1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
 2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
 3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
@@ -111,7 +112,7 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 
 ### Container Apps + API + SQL Database
 
-1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md), [scaling.md](services/container-apps/scaling.md)
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
 2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
 3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Review [auth.md](services/sql-database/auth.md) directly for Entra-only auth configuration
@@ -133,7 +134,7 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 ### AI Application
 
 1. Invoke: `microsoft-foundry` (AI patterns and best practices)
-2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md)
+2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md)
 3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
 4. Review Key Vault and Foundry references directly for API key management
 

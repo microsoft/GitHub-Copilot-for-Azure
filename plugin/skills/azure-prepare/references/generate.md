@@ -89,6 +89,20 @@ project-root/
 └── azure.yaml (AZD only)
 ```
 
+### Directory Creation
+
+> ⚠️ **Warning:** The `create` tool fails with `Parent directory does not exist` when intermediate directories are missing. Always create the full directory tree before writing files.
+
+**Before creating nested files** (e.g., `src/frontend/src/App.jsx`), create all parent directories first:
+
+```bash
+mkdir -p src/frontend/src src/api
+```
+
+- Use **absolute paths** in `mkdir -p` when the working directory may differ from the project root
+- Create directories for **all components** in a single command before writing any files
+- Do **not** rely on the `create` tool to create parent directories — it will not
+
 ### Security Requirements
 
 - No hardcoded secrets

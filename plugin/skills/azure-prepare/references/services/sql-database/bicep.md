@@ -9,6 +9,8 @@
 ```bicep
 param principalId string
 param principalName string
+@allowed(['User', 'Group', 'Application'])
+param principalType string = 'User'
 
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: '${resourcePrefix}-sql-${uniqueHash}'
@@ -16,7 +18,7 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   properties: {
     administrators: {
       administratorType: 'ActiveDirectory'
-      principalType: 'User'
+      principalType: principalType
       login: principalName
       sid: principalId
       tenantId: subscription().tenantId
@@ -57,6 +59,8 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2022-05-01-previe
 az ad signed-in-user show --query "{id:id, name:displayName}" -o json
 ```
 
+> ⚠️ **Warning:** If deploying from CI/CD with a service principal, set `principalType` to `'Application'`. The default `'User'` only works for interactive (human) deployments. Mismatched `principalType` causes `UnmatchedPrincipalType` errors during provisioning.
+
 2. Set as azd environment variables:
 ```bash
 PRINCIPAL_INFO=$(az ad signed-in-user show --query "{id:id, name:displayName}" -o json)
@@ -65,6 +69,37 @@ azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
 ```
 
 > 💡 **Tip:** Set these variables immediately after `azd init` to avoid deployment failures. The Bicep `principalId` and `principalName` parameters will automatically use these environment variables.
+
+## ⚠️ MANDATORY: Connection String with Entra Auth Parameter
+
+> **CRITICAL:** When outputting SQL connection strings in Bicep (e.g., in App Service `connectionStrings` or as outputs), ALWAYS include an `Authentication` parameter. Use `Authentication=Active Directory Default` for general scenarios or `Authentication=Active Directory Managed Identity` when a user-assigned managed identity with a specific `User Id` is required. A bare `Server=tcp:...;Database=...;` connection string without this parameter will not authenticate via Entra ID and the app will fail to connect.
+
+**Correct pattern in Bicep (Active Directory Default):**
+
+```bicep
+connectionStrings: [
+  {
+    name: 'DefaultConnection'
+    connectionString: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${sqlDatabase.name};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;'
+    type: 'SQLAzure'
+  }
+]
+```
+
+**With user-assigned managed identity:**
+
+```bicep
+connectionStrings: [
+  {
+    name: 'DefaultConnection'
+    connectionString: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${sqlDatabase.name};Authentication=Active Directory Managed Identity;User Id=${uamiClientId};Encrypt=True;TrustServerCertificate=False;'
+    type: 'SQLAzure'
+  }
+]
+```
+
+> ❌ **DO NOT** generate connection strings without an `Authentication=Active Directory Default` or `Authentication=Active Directory Managed Identity` parameter.
+> ❌ **DO NOT** use manual `AccessToken` assignment or `DefaultAzureCredential().GetToken()` in application code as an alternative to the connection string parameter.
 
 ## Serverless Configuration
 
@@ -133,6 +168,7 @@ hooks:
 **Copy the pre-built scripts** — Read [scripts/grant-sql-access.sh](scripts/grant-sql-access.sh) and [scripts/grant-sql-access.ps1](scripts/grant-sql-access.ps1) and write them verbatim to the project's `scripts/` folder. Do not regenerate them from scratch.
 
 Key behaviours of the scripts:
+- Installs the `rdbms-connect` Azure CLI extension if not already present (required for `az sql db query`)
 - Loads `azd env get-values` safely (no `eval`)
 - Grants `db_datareader` + `db_datawriter` by default (idempotent)
 - Set `SQL_GRANT_DDLADMIN=true` in the azd env to also grant `db_ddladmin` (needed for EF Core migrations)

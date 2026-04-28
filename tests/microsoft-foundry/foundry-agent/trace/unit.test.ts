@@ -14,11 +14,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TRACE_MD = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/trace/trace.md"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/trace/trace.md"
 );
 const REFERENCES_PATH = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/trace/references"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/trace/references"
 );
 
 describe("trace - Unit Tests", () => {

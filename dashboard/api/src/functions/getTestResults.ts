@@ -32,6 +32,14 @@ export interface SkillStats {
     passedTests: TestCase[];
     /** Average Confidence extracted from SKILL-REPORT.md files (0–100), or null if not available. */
     averageConfidence: number | null;
+    /**
+     * Maps sanitised test-case directory names to the number of deployment retries
+     * recorded for that test case within a single agent run.
+     * A retry is counted each time a deploy command (azd up, azd deploy, terraform apply)
+     * is invoked after the first attempt within the same agent session.
+     * Populated only for the azure-deploy skill; skill-invocation tests are excluded.
+     */
+    scenarioDeployRetryCounts?: Record<string, number>;
 }
 
 export type SkillTestResults = Record<string, SkillStats>;
@@ -77,6 +85,80 @@ function collectSkillReportPaths(
     for (const child of Object.values(node.children)) {
         collectSkillReportPaths(child, skillName, results);
     }
+}
+
+const AGENT_METADATA_JSON = "agent-metadata.json";
+
+/**
+ * Regex matching deploy commands that constitute a deployment attempt:
+ * azd up, azd deploy, terraform apply.
+ */
+const DEPLOY_COMMAND_PATTERN = /\bazd\s+(?:up|deploy)\b|\bterraform\s+apply\b/i;
+
+/**
+ * Collect agent-metadata.json blob paths for each scenario test case directory
+ * under the given skill node.
+ *
+ * The agent-metadata.json file is excluded from blob enumeration, so its path
+ * is derived from any other file present in the same directory.
+ *
+ * The "skill-invocation" group is excluded.
+ *
+ * @param skillNode  BlobTreeNode for the skill (e.g. azure-deploy)
+ * @param results    Accumulates testCaseDirName → list of agent-metadata.json blob paths
+ */
+function collectAgentMetadataPaths(
+    skillNode: BlobTreeNode,
+    results: Map<string, string[]>,
+): void {
+    for (const [groupName, groupNode] of Object.entries(skillNode.children)) {
+        if (groupName === "skill-invocation") continue;
+
+        // Level 2: test-case directories under a test-group directory
+        for (const [testCaseName, testCaseNode] of Object.entries(groupNode.children)) {
+            // Derive the agent-metadata.json path from any sibling file in the directory
+            const anchor = testCaseNode.files[0];
+            if (!anchor) continue;
+            const jsonPath = anchor.blobName.replace(/\/[^/]+$/, `/${AGENT_METADATA_JSON}`);
+            if (!results.has(testCaseName)) {
+                results.set(testCaseName, []);
+            }
+            results.get(testCaseName)!.push(jsonPath);
+        }
+    }
+}
+
+/**
+ * Parse an agent-metadata.json string and count deployment retries.
+ *
+ * A retry is any deploy command invocation after the first within the session.
+ * Counts tool.execution_start events for powershell/bash tools whose command
+ * matches azd up, azd deploy, or terraform apply.
+ *
+ * Returns null when the input cannot be parsed or contains no events array,
+ * so callers can distinguish invalid/unreadable files from a genuine 0-retry run.
+ * @returns max(0, deployInvocations - 1), or null for invalid input
+ */
+function countDeployRetries(raw: string): number | null {
+    let parsed: { events?: Array<{ type: string; data?: { toolName?: string; arguments?: { command?: string } } }> };
+    try {
+        parsed = JSON.parse(raw);
+    } catch {
+        return null;
+    }
+    if (!Array.isArray(parsed.events)) return null;
+
+    let deployCount = 0;
+    for (const event of parsed.events) {
+        if (event.type !== "tool.execution_start") continue;
+        const toolName = event.data?.toolName;
+        if (toolName !== "powershell" && toolName !== "bash") continue;
+        const command = event.data?.arguments?.command ?? "";
+        if (DEPLOY_COMMAND_PATTERN.test(command)) {
+            deployCount++;
+        }
+    }
+    return Math.max(0, deployCount - 1);
 }
 
 /**
@@ -178,11 +260,17 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     // Structure: date -> runId -> skillName -> (files | children with testResults.json)
     const pathsBySkill = new Map<string, string[]>();
     const reportPathsBySkill = new Map<string, string[]>();
+    // Collect agent-metadata.json paths for deploy scenario retry counting
+    const agentMetadataPathsByTestCase = new Map<string, string[]>();
 
     for (const runNode of Object.values(dateNode.children)) {
         for (const [skillName, skillNode] of Object.entries(runNode.children)) {
             collectTestResultPaths(skillNode, skillName, pathsBySkill);
             collectSkillReportPaths(skillNode, skillName, reportPathsBySkill);
+
+            if (skillName === "azure-deploy") {
+                collectAgentMetadataPaths(skillNode, agentMetadataPathsByTestCase);
+            }
         }
     }
 
@@ -226,6 +314,37 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     }
     await Promise.all(reportFetchTasks);
 
+    // Fetch agent-metadata.json files for azure-deploy scenario retry counts
+    const deployRetryTotals = new Map<string, number>();
+    const deployRetryRunCounts = new Map<string, number>();
+    const retryFetchTasks: Promise<void>[] = [];
+    for (const [testCaseName, paths] of agentMetadataPathsByTestCase) {
+        for (const blobPath of paths) {
+            retryFetchTasks.push(
+                getBlobContent(blobPath).then((raw) => {
+                    const retries = countDeployRetries(raw);
+                    if (retries === null) return; // invalid/unreadable — don't skew the average
+                    deployRetryTotals.set(
+                        testCaseName,
+                        (deployRetryTotals.get(testCaseName) ?? 0) + retries,
+                    );
+                    deployRetryRunCounts.set(
+                        testCaseName,
+                        (deployRetryRunCounts.get(testCaseName) ?? 0) + 1,
+                    );
+                }).catch(() => { /* skip unreadable files */ }),
+            );
+        }
+    }
+    await Promise.all(retryFetchTasks);
+
+    // Average retries per run to avoid inflating counts when a scenario fires across multiple runs
+    const deployRetryCounts = new Map<string, number>();
+    for (const [testCaseName, total] of deployRetryTotals) {
+        const runCount = deployRetryRunCounts.get(testCaseName) ?? 1;
+        deployRetryCounts.set(testCaseName, total / runCount);
+    }
+
     // Compute statistics per skill
     const skillTestResults: SkillTestResults = {};
     for (const [skillName, results] of rawBySkill) {
@@ -233,6 +352,9 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         const confValues = confidenceBySkill.get(skillName);
         if (confValues && confValues.length > 0) {
             stats.averageConfidence = confValues.reduce((a, b) => a + b, 0) / confValues.length;
+        }
+        if (skillName === "azure-deploy" && deployRetryCounts.size > 0) {
+            stats.scenarioDeployRetryCounts = Object.fromEntries(deployRetryCounts);
         }
         skillTestResults[skillName] = stats;
     }

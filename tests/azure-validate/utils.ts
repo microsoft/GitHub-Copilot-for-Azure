@@ -1,5 +1,5 @@
 import { type AgentMetadata } from "../utils/agent-runner";
-import { getToolCalls } from "../utils/evaluate";
+import { getToolCalls, matchesCommand } from "../utils/evaluate";
 
 /**
  * Validation command patterns that indicate the agent is performing
@@ -12,7 +12,17 @@ const VALIDATION_COMMAND_PATTERNS = [
   /terraform\s+validate/,
 ];
 
-const SHELL_TOOL_NAMES = ["powershell", "bash"];
+/**
+ * Deployment command patterns that indicate the agent is executing
+ * a deployment rather than stopping at validation. Tests that expect
+ * the agent to terminate at validation can use {@link hasDeploymentCommand}
+ * in `shouldEarlyTerminate` to abort immediately instead of waiting
+ * for a 20-minute timeout.
+ */
+const DEPLOYMENT_COMMAND_PATTERNS = [
+  /azd\s+up\b/,
+  /azd\s+deploy\b/,
+];
 
 /**
  * Check if any shell tool call (powershell or bash) contains a validation command
@@ -22,13 +32,19 @@ const SHELL_TOOL_NAMES = ["powershell", "bash"];
  * once a validation command has been issued, without waiting for deployment.
  */
 export function hasValidationCommand(metadata: AgentMetadata): boolean {
-  const shellCalls = getToolCalls(metadata).filter(event => SHELL_TOOL_NAMES.includes(event.data.toolName));
-  return shellCalls.some(event => {
-    const data = event.data as Record<string, unknown>;
-    const args = data.arguments as { command?: string } | undefined;
-    const cmd = args?.command ?? "";
-    return VALIDATION_COMMAND_PATTERNS.some(pattern => pattern.test(cmd));
-  });
+  return VALIDATION_COMMAND_PATTERNS.some(p => matchesCommand(metadata, p));
+}
+
+/**
+ * Check if any shell tool call contains a deployment command
+ * (`azd up` or `azd deploy`).
+ *
+ * Use in `shouldEarlyTerminate` alongside {@link hasValidationCommand}
+ * so that tests fail fast when the agent skips validation and jumps
+ * straight to deployment.
+ */
+export function hasDeploymentCommand(metadata: AgentMetadata): boolean {
+  return DEPLOYMENT_COMMAND_PATTERNS.some(p => matchesCommand(metadata, p));
 }
 
 /**

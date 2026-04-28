@@ -194,9 +194,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
 
       - name: Install azd
-        uses: Azure/setup-azd@c495e71ba59e44bfaaac10a32c8ee90d191ca4a3 # v2
+        uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2
 
       - name: Log in with Azure (Federated Credentials)
         run: |
@@ -230,7 +232,7 @@ jobs:
           done &
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -250,6 +252,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build plugin output
+        run: |
+          cd ..
+          npm ci --ignore-scripts
+          npm run build
       
       # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
       # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
