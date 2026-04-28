@@ -31,8 +31,17 @@ from common import HelpOnErrorParser, get_clients
 
 
 def load_grader(grader_path):
-    """Load and compile a Python grader file. Returns the grade() function."""
-    # WARNING: executes arbitrary code from grader_path — must be a trusted local file
+    """Load and compile a Python grader file. Returns the grade() function.
+
+    SECURITY: This executes the grader file as Python code. Only load grader
+    files that you wrote or reviewed — never load untrusted files from the
+    internet or unknown sources. The grader runs with the same permissions as
+    this script.
+    """
+    grader_path = os.path.abspath(grader_path)
+    if not os.path.isfile(grader_path):
+        print(f"❌ Grader file not found: {grader_path}")
+        sys.exit(1)
     with open(grader_path, encoding="utf-8") as f:
         source = f.read()
     namespace = {}
@@ -113,7 +122,11 @@ def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
         time.sleep(0.5)  # Rate limiting
 
     # Analysis
-    avg = sum(scores) / len(scores)
+    scored = [s for s in scores if s is not None]
+    if not scored:
+        print("\n❌ No examples were scored successfully. Check model access and data format.")
+        return [], None
+    avg = sum(scored) / len(scored)
     print(f"\n{'='*60}")
     print(f"  BASE MODEL GRADER CALIBRATION ({len(scores)} examples)")
     print(f"  Average score: {avg:.1%}")
@@ -126,7 +139,7 @@ def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
     best_distance = float("inf")
 
     for threshold in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0]:
-        pass_rate = sum(1 for s in scores if s >= threshold) / len(scores)
+        pass_rate = sum(1 for s in scored if s >= threshold) / len(scored)
         fail_rate = 1 - pass_rate
 
         if 0.25 <= fail_rate <= 0.50:

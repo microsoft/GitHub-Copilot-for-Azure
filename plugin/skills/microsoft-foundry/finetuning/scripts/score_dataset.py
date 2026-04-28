@@ -156,7 +156,7 @@ def main():
     all_avgs = []
     for ex in examples:
         scores = ex.get("scores", {})
-        if any(v > 0 for v in scores.values()):
+        if scores and any(v > 0 for v in scores.values()):
             avg = sum(scores.values()) / len(scores)
             ex["avg_score"] = avg
             all_avgs.append(avg)

@@ -53,8 +53,15 @@ def _make_token_provider():
     credential = DefaultAzureCredential()
 
     def get_token():
-        token = credential.get_token(_AZURE_COGSERVICES_SCOPE)
-        return token.token
+        try:
+            token = credential.get_token(_AZURE_COGSERVICES_SCOPE)
+            return token.token
+        except Exception as e:
+            raise RuntimeError(
+                f"Azure AD authentication failed: {e}\n"
+                "Ensure you're logged in (az login) or have valid "
+                "AZURE_CLIENT_ID/AZURE_TENANT_ID/AZURE_CLIENT_SECRET set."
+            ) from e
 
     return get_token
 
