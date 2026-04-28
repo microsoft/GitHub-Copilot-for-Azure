@@ -379,6 +379,74 @@ body:has(.it-dashboard) {
     color: var(--color-pass);
 }
 
+/* ── Token usage table ──────────────────── */
+
+.it-token-table-wrap {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.it-token-table-title {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.it-token-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", monospace;
+}
+
+.it-token-table th,
+.it-token-table td {
+    padding: 4px 8px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.it-token-table th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.it-token-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.it-token-col-name {
+    max-width: 420px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+}
+
+.it-token-col-num {
+    text-align: right !important;
+    white-space: nowrap;
+    min-width: 64px;
+    color: var(--color-text);
+}
+
+.it-token-total {
+    font-weight: 700;
+}
+
+.it-token-totals-row td {
+    border-top: 2px solid var(--color-border);
+    border-bottom: none !important;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
 /* ── Responsive ─────────────────────────── */
 
 @media (max-width: 768px) {
