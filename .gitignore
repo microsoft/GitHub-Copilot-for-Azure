@@ -355,4 +355,4 @@ dashboard/dist/
 dashboard/**/dist/
 
 # C# DevKit (VS Code extension) language server cache files
-.lscache
+*.lscache
