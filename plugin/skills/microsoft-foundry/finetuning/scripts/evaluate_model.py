@@ -81,7 +81,7 @@ def load_test_data(filepath):
     reference from each example so per-example system prompts are preserved.
     """
     data = []
-    with open(filepath) as f:
+    with open(filepath, encoding="utf-8") as f:
         for i, line in enumerate(f):
             ex = json.loads(line)
             msgs = ex["messages"]
@@ -266,7 +266,7 @@ def main():
         ],
     }
 
-    with open(args.output, "w") as f:
+    with open(args.output, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     print(f"\nDetailed results saved to {args.output}")
 

@@ -185,7 +185,7 @@ def main():
         if not args.grader_file:
             print("Error: --grader-file required for RFT")
             sys.exit(1)
-        with open(args.grader_file) as f:
+        with open(args.grader_file, encoding="utf-8") as f:
             grader_source = f.read()
         result = submit_rft(client, args.model, train_id, val_id, grader_source)
     elif args.type == "dpo":
@@ -218,7 +218,7 @@ def main():
 
     # Save job info
     outfile = f"ft_job_{result['id']}.json"
-    with open(outfile, "w") as f:
+    with open(outfile, "w", encoding="utf-8") as f:
         json.dump({**result, "epochs": args.epochs, "lr": args.lr,
                     "batch_size": args.batch_size, "train_file": train_id,
                     "val_file": val_id}, f, indent=2)

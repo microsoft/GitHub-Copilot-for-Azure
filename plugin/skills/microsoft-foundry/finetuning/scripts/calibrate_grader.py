@@ -33,7 +33,7 @@ from common import HelpOnErrorParser, get_clients
 def load_grader(grader_path):
     """Load and compile a Python grader file. Returns the grade() function."""
     # WARNING: executes arbitrary code from grader_path — must be a trusted local file
-    with open(grader_path) as f:
+    with open(grader_path, encoding="utf-8") as f:
         source = f.read()
     namespace = {}
     exec(compile(source, grader_path, "exec"), namespace)
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     client, method = get_clients(base_url=args.base_url, azure_endpoint=args.endpoint, project_endpoint=args.project_endpoint, api_key=args.api_key)
 
     # Load data
-    with open(args.data) as f:
+    with open(args.data, encoding="utf-8") as f:
         data = [json.loads(line) for line in f]
     print(f"Loaded {len(data)} examples from {args.data}")
 

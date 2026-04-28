@@ -126,7 +126,7 @@ def main():
 
     # Load data
     examples = []
-    with open(args.input) as f:
+    with open(args.input, encoding="utf-8") as f:
         for line in f:
             ex = json.loads(line)
             msgs = ex.get("messages", [])

@@ -178,7 +178,7 @@ def main():
 
     # Step 1: Generate or load prompts
     if args.prompts_file:
-        with open(args.prompts_file) as pf:
+        with open(args.prompts_file, encoding="utf-8") as pf:
             prompts = [line.strip() for line in pf if line.strip()]
         print(f"Loaded {len(prompts)} prompts from {args.prompts_file}")
     else:

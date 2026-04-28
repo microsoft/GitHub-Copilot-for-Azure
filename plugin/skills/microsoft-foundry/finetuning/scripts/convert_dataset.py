@@ -78,7 +78,7 @@ def sft_to_dpo(input_path, output_path, client, base_model):
 
     DPO format uses: input (system+user messages), preferred_output, non_preferred_output.
     """
-    with open(input_path) as inf:
+    with open(input_path, encoding="utf-8") as inf:
         examples = [json.loads(l) for l in inf]
     count = 0
 
@@ -132,7 +132,7 @@ def sft_to_rft(input_path, output_path):
     count = 0
     skipped = 0
     with open(output_path, "w", encoding="utf-8") as out:
-        with open(input_path) as inf:
+        with open(input_path, encoding="utf-8") as inf:
             for line in inf:
                 ex = json.loads(line)
                 msgs = ex.get("messages", [])
@@ -157,7 +157,7 @@ def dpo_to_sft(input_path, output_path, system_prompt=None):
     """Extract chosen responses from DPO format to SFT format."""
     count = 0
     with open(output_path, "w", encoding="utf-8") as f:
-        with open(input_path) as inf:
+        with open(input_path, encoding="utf-8") as inf:
             for line in inf:
                 ex = json.loads(line)
                 input_messages = ex["input"]["messages"]
