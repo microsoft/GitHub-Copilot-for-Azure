@@ -9,7 +9,6 @@ Adapted from foundry-ft agent with critical additions from our platform gotchas:
 import argparse
 import json
 import sys
-import re
 from collections import Counter
 
 
