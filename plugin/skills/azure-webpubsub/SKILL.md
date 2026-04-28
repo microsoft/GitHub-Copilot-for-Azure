@@ -4,7 +4,7 @@ description: "Choose runtime/path for Web PubSub. WHEN: Web PubSub, upstream, ne
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Web PubSub
