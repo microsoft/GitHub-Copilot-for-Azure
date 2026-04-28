@@ -262,118 +262,73 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
-  describe("Standard Agent Setup Reference", () => {
-    let setupContent: string;
+  describe("Private Network Sub-Skill References", () => {
+    let intakeContent: string;
+    let templateIndexContent: string;
+    let scaffoldContent: string;
+    let adaptationContent: string;
 
     beforeAll(async () => {
       const fs = await import("fs/promises");
       const path = await import("path");
-      const setupPath = path.join(
+      const refBase = path.join(
         SKILLS_PATH,
-        "microsoft-foundry/references/standard-agent-setup.md"
+        "microsoft-foundry/resource/private-network/references"
       );
-      setupContent = await fs.readFile(setupPath, "utf-8");
+      intakeContent = await fs.readFile(path.join(refBase, "intake.md"), "utf-8");
+      templateIndexContent = await fs.readFile(path.join(refBase, "template-index.md"), "utf-8");
+      scaffoldContent = await fs.readFile(path.join(refBase, "scaffold.md"), "utf-8");
+      adaptationContent = await fs.readFile(path.join(refBase, "custom-template-adaptation.md"), "utf-8");
     });
 
-    test("has standard agent setup reference file", () => {
-      expect(setupContent).toBeDefined();
-      expect(setupContent.length).toBeGreaterThan(100);
+    test("intake.md exists and has tiered structure", () => {
+      expect(intakeContent).toContain("Tier 1");
+      expect(intakeContent).toContain("Tier 2");
+      expect(intakeContent).toContain("Tier 3");
     });
 
-    test("contains mandatory Learn docs link", () => {
-      expect(setupContent).toContain("MANDATORY");
-      expect(setupContent).toContain("https://learn.microsoft.com");
+    test("intake.md contains approach determination", () => {
+      expect(intakeContent).toContain("OFFICIAL");
+      expect(intakeContent).toContain("ADAPT");
+      expect(intakeContent).toContain("EXTEND");
     });
 
-    test("documents basic vs standard setup types", () => {
-      expect(setupContent).toContain("Basic");
-      expect(setupContent).toContain("Standard");
-      expect(setupContent).toContain("Capability Host");
+    test("intake.md contains Learn validation section", () => {
+      expect(intakeContent).toContain("Validate Against Learn");
+      expect(intakeContent).toContain("microsoft_docs_fetch");
     });
 
-    test("contains standard setup connections table", () => {
-      expect(setupContent).toContain("Azure Cosmos DB");
-      expect(setupContent).toContain("Azure Storage");
-      expect(setupContent).toContain("Azure AI Search");
+    test("template-index.md contains GitHub repo URLs", () => {
+      expect(templateIndexContent).toContain("github.com/microsoft-foundry/foundry-samples");
+      expect(templateIndexContent).toContain("infrastructure-setup-bicep");
+      expect(templateIndexContent).toContain("infrastructure-setup-terraform");
     });
 
-    test("documents prerequisites for RBAC and quota", () => {
-      expect(setupContent).toContain("Owner");
-      expect(setupContent).toContain("roleAssignments/write");
-      expect(setupContent).toContain("quota");
+    test("template-index.md instructs to fetch directory listing", () => {
+      expect(templateIndexContent).toContain("directory listing");
     });
 
-    test("contains Bicep template link", () => {
-      expect(setupContent).toContain("Bicep");
-      expect(setupContent).toContain("github.com");
+    test("scaffold.md references all three paths", () => {
+      expect(scaffoldContent).toContain("OFFICIAL");
+      expect(scaffoldContent).toContain("ADAPT");
+      expect(scaffoldContent).toContain("EXTEND");
     });
 
-    test("warns about async capability host provisioning", () => {
-      expect(setupContent).toContain("asynchronous");
-      expect(setupContent).toContain("poll");
+    test("scaffold.md links to template-index and custom-template-adaptation", () => {
+      expect(scaffoldContent).toContain("template-index.md");
+      expect(scaffoldContent).toContain("custom-template-adaptation.md");
     });
 
-    test("contains post-deployment steps", () => {
-      expect(setupContent).toContain("Deploy a model");
-      expect(setupContent).toContain("Create the agent");
+    test("custom-template-adaptation.md contains gap analysis instructions", () => {
+      expect(adaptationContent).toContain("Read");
+      expect(adaptationContent).toContain("Analyze");
+      expect(adaptationContent).toContain("Present");
+      expect(adaptationContent).toContain("Wait");
+    });
+
+    test("custom-template-adaptation.md contains retry safety warning", () => {
+      expect(adaptationContent).toContain("legionservicelink");
     });
   });
 
-  describe("Private Network Standard Agent Setup Reference", () => {
-    let privateContent: string;
-
-    beforeAll(async () => {
-      const fs = await import("fs/promises");
-      const path = await import("path");
-      const privatePath = path.join(
-        SKILLS_PATH,
-        "microsoft-foundry/references/private-network-standard-agent-setup.md"
-      );
-      privateContent = await fs.readFile(privatePath, "utf-8");
-    });
-
-    test("has private network setup reference file", () => {
-      expect(privateContent).toBeDefined();
-      expect(privateContent.length).toBeGreaterThan(100);
-    });
-
-    test("contains mandatory Learn docs link", () => {
-      expect(privateContent).toContain("MANDATORY");
-      expect(privateContent).toContain("https://learn.microsoft.com");
-    });
-
-    test("references standard agent setup as base", () => {
-      expect(privateContent).toContain("standard-agent-setup.md");
-    });
-
-    test("documents subnet requirements", () => {
-      expect(privateContent).toContain("Agent Subnet");
-      expect(privateContent).toContain("Private Endpoint Subnet");
-      expect(privateContent).toContain("Microsoft.App/environments");
-    });
-
-    test("contains critical networking constraints", () => {
-      expect(privateContent).toContain("must be in the same region");
-      expect(privateContent).toContain("exclusive to one Foundry account");
-    });
-
-    test("warns about existing VNet subnet pre-creation", () => {
-      expect(privateContent).toContain("ensure both subnets exist before deployment");
-    });
-
-    test("contains Bicep template link", () => {
-      expect(privateContent).toContain("Bicep");
-      expect(privateContent).toContain("github.com");
-    });
-
-    test("warns about async capability host provisioning", () => {
-      expect(privateContent).toContain("asynchronous");
-      expect(privateContent).toContain("Poll deployment status");
-    });
-
-    test("contains post-deployment steps", () => {
-      expect(privateContent).toContain("Deploy a model");
-      expect(privateContent).toContain("Create the agent");
-    });
-  });
 });

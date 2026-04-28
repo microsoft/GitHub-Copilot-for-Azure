@@ -69,6 +69,7 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill descr
     "troubleshoot",
     "validation",
     "versioning",
+    "vnet",
     "workflows",
     "yaml",
   ],
@@ -143,6 +144,7 @@ exports[`microsoft-foundry - Trigger Tests Trigger Keywords Snapshot skill keywo
   "troubleshoot",
   "validation",
   "versioning",
+  "vnet",
   "workflows",
   "yaml",
 ]
