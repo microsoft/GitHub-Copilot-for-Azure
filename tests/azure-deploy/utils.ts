@@ -74,7 +74,7 @@ export function shouldEarlyTerminateForAzdProvision(agentMetadata: AgentMetadata
     return true;
   }
 
-  // For azd provision, terminate only after at least one matching tool call completed.
+  // For azd provision, terminate only after at least one matching tool call completed successfully.
   const azdProvisionCallIds = new Set(
     agentMetadata.events
       .filter((event) => event.type === "tool.execution_start")
