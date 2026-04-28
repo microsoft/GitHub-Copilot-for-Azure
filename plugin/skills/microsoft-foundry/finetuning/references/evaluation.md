@@ -14,7 +14,7 @@ Use the **Azure AI Evaluation SDK** (`azure-ai-evaluation`) for all evaluation.
 
 | Layer | Purpose | Grader Type | When |
 |-------|---------|-------------|------|
-| **Task-specific** (primary) | Measure FT improvement | `ScoreModelGrader`, `PythonGrader`, `StringCheckGrader` | Every eval |
+| **Task-specific** (primary) | Measure FT improvement | `AzureOpenAIScoreModelGrader`, `AzureOpenAIPythonGrader`, `AzureOpenAIStringCheckGrader` | Every eval |
 | **General quality** (guardrail) | Verify model didn't degrade | `CoherenceEvaluator`, `FluencyEvaluator` | Spot-check only |
 
 Generic built-in evaluators (Coherence, Fluency, TaskAdherence) are guardrails, not metrics — they often show no difference between base and fine-tuned models even when domain-specific evaluation reveals clear improvement.
