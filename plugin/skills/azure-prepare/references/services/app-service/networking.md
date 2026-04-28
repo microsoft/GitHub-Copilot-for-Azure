@@ -4,13 +4,13 @@ VNet integration, Private Endpoints, Access Restrictions, and Hybrid Connections
 
 ## Feature Availability by SKU
 
-| Feature | Free/Basic | Standard | Premium | Isolated |
-|---------|:-:|:-:|:-:|:-:|
-| VNet integration (outbound) | ❌ | ✅ | ✅ | ✅ (native) |
-| Private Endpoints (inbound) | ❌ | ❌ | ✅ | ✅ |
-| Access Restrictions | ✅ | ✅ | ✅ | ✅ |
-| Hybrid Connections | ❌ | 25 | 200 | 200 |
-| Access to service-endpoint-protected resources | ❌ | ✅ | ✅ | ✅ |
+| Feature | Free | Basic | Standard | Premium | Isolated |
+|---------|:-:|:-:|:-:|:-:|:-:|
+| VNet integration (outbound) | ❌ | ✅ | ✅ | ✅ | ✅ (native) |
+| Private Endpoints (inbound) | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Access Restrictions | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Hybrid Connections | ❌ | 5 | 25 | 200 | 200 |
+| Access to service-endpoint-protected resources | ❌ | ✅ | ✅ | ✅ | ✅ |
 > Note: Service endpoints are configured on VNets/subnets and downstream services (e.g., Storage, SQL). App Service accesses them via VNet integration rather than enabling service endpoints directly on the app.
 
 ## VNet Integration (Outbound)

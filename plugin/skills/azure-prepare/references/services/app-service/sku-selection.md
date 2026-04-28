@@ -66,7 +66,7 @@ Key features unlocked at each tier:
 ## Bicep — App Service Plan with SKU
 
 ```bicep
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
+resource appServicePlan 'Microsoft.Web/serverfarms@2025-03-01' = {
   name: planName
   location: location
   sku: {
