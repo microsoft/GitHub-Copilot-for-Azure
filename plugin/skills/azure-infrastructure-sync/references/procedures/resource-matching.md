@@ -12,7 +12,7 @@ Apply rules in order. Stop at the first match.
 |---|------|--------|
 | 1 | Type AND name match (case-insensitive) | **In Sync** |
 | 2 | Type matches AND only ONE resource of that type exists in EACH model | **In Sync (name differs)** — report both names |
-| 3 | Type matches AND multiple exist → name has case-insensitive substring match or Levenshtein distance ≤ 3 | **In Sync (name differs)** |
+| 3 | Type matches AND multiple exist → name has case-insensitive substring match, OR Levenshtein distance ≤ 2 and both names are ≥ 8 characters | **In Sync (name differs)** |
 | 4 | Exists in Model A only | **Model A Only** (e.g., "Diagram Only", "Bicep Only", "Azure Only") |
 | 5 | Exists in Model B only | **Model B Only** |
 
