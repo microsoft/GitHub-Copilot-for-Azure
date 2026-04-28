@@ -6,6 +6,9 @@ Supports three connection methods in order of preference:
 2. Foundry SDK with DefaultAzureCredential (no API key needed, cloud-native)
 3. Azure OpenAI endpoint (classic)
 
+AAD tokens are auto-refreshed via azure.identity for long-running scripts
+(monitor_training.py, generate_distillation_data.py, etc.).
+
 Usage:
     from common import get_clients, upload_file
 
@@ -25,6 +28,9 @@ import os
 import sys
 
 
+_AZURE_COGSERVICES_SCOPE = "https://cognitiveservices.azure.com/.default"
+
+
 class HelpOnErrorParser(argparse.ArgumentParser):
     """ArgumentParser that prints full help when arguments are invalid.
     
@@ -37,6 +43,22 @@ class HelpOnErrorParser(argparse.ArgumentParser):
         self.exit(2, f"\nerror: {message}\n")
 
 
+def _make_token_provider():
+    """Create an auto-refreshing AAD token provider for long-running scripts.
+    
+    Returns a callable that the OpenAI SDK calls before each request to get
+    a fresh token. Tokens are cached and refreshed ~5 min before expiry.
+    """
+    from azure.identity import DefaultAzureCredential
+    credential = DefaultAzureCredential()
+
+    def get_token():
+        token = credential.get_token(_AZURE_COGSERVICES_SCOPE)
+        return token.token
+
+    return get_token
+
+
 def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_key=None):
     """Initialize and return OpenAI-compatible client.
 
@@ -44,6 +66,9 @@ def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_k
     1. Project /v1/ endpoint with openai.OpenAI() (simplest, preferred)
     2. Foundry SDK with AIProjectClient.get_openai_client() (no API key needed)
     3. Azure OpenAI endpoint with openai.AzureOpenAI() (classic)
+
+    When using DefaultAzureCredential (no API key), tokens are auto-refreshed
+    so long-running scripts won't fail with 401 after ~60 min.
 
     Returns: (openai_client, method_name)
     """
@@ -53,18 +78,30 @@ def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_k
 
     if base_url:
         import openai
-        # If no API key, try DefaultAzureCredential for token-based auth
         if not api_key:
             try:
-                from azure.identity import DefaultAzureCredential
-                credential = DefaultAzureCredential()
-                token = credential.get_token("https://cognitiveservices.azure.com/.default")
-                client = openai.OpenAI(base_url=base_url, api_key=token.token)
-                print(f"✅ Connected via /v1/ project endpoint (DefaultAzureCredential)")
+                token_provider = _make_token_provider()
+                token_provider()  # verify it works
+                # Use a custom httpx auth class that refreshes the token on each request
+                import httpx
+
+                class _AzureADAuth(httpx.Auth):
+                    def __init__(self, provider):
+                        self._provider = provider
+
+                    def auth_flow(self, request):
+                        request.headers["Authorization"] = f"Bearer {self._provider()}"
+                        yield request
+
+                client = openai.OpenAI(
+                    base_url=base_url,
+                    api_key="aad",  # required by SDK but overridden by auth
+                    http_client=httpx.Client(auth=_AzureADAuth(token_provider)),
+                )
+                print(f"✅ Connected via /v1/ project endpoint (DefaultAzureCredential, auto-refresh)")
                 return client, "project-v1-aad"
             except Exception as e:
                 print(f"⚠️ No API key and DefaultAzureCredential failed: {e}")
-                # Fall through to Method 2/3
         else:
             client = openai.OpenAI(base_url=base_url, api_key=api_key)
             print(f"✅ Connected via /v1/ project endpoint")
@@ -87,15 +124,30 @@ def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_k
 
     # Method 3: Azure OpenAI endpoint
     azure_endpoint = azure_endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
-    if azure_endpoint and api_key:
+    if azure_endpoint:
         import openai
-        client = openai.AzureOpenAI(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
-            api_version="2025-04-01-preview",
-        )
-        print(f"✅ Connected via Azure OpenAI endpoint")
-        return client, "azure-openai"
+        if api_key:
+            client = openai.AzureOpenAI(
+                azure_endpoint=azure_endpoint,
+                api_key=api_key,
+                api_version="2025-04-01-preview",
+            )
+            print(f"✅ Connected via Azure OpenAI endpoint")
+            return client, "azure-openai"
+        else:
+            # No API key — use DefaultAzureCredential with auto-refresh
+            try:
+                token_provider = _make_token_provider()
+                token_provider()  # verify it works
+                client = openai.AzureOpenAI(
+                    azure_endpoint=azure_endpoint,
+                    azure_ad_token_provider=token_provider,
+                    api_version="2025-04-01-preview",
+                )
+                print(f"✅ Connected via Azure OpenAI endpoint (DefaultAzureCredential, auto-refresh)")
+                return client, "azure-openai-aad"
+            except Exception as e:
+                print(f"⚠️ DefaultAzureCredential failed for Azure endpoint: {e}")
 
     print("❌ No valid connection method. Set one of:")
     print("   OPENAI_BASE_URL (preferred)")

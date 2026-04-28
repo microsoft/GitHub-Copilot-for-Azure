@@ -56,7 +56,7 @@ def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size
     return {"id": job.id, "status": job.status, "model": model, "method": "sdk"}
 
 
-def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None):
+def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None, suffix=None):
     """Submit SFT job via REST API (fallback for models like gpt-oss-20b)."""
     url = f"{endpoint}/openai/fine_tuning/jobs?api-version=2025-04-01-preview"
     body = {
@@ -69,6 +69,8 @@ def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0
     }
     if batch_size:
         body["hyperparameters"]["batch_size"] = batch_size
+    if suffix:
+        body["suffix"] = suffix
 
     resp = requests.post(url, headers={
         "Content-Type": "application/json",
@@ -179,36 +181,37 @@ def main():
         sys.exit(1)
 
     # Submit
-    try:
-        if args.type == "rft":
-            if not args.grader_file:
-                print("Error: --grader-file required for RFT")
-                sys.exit(1)
-            with open(args.grader_file) as f:
-                grader_source = f.read()
-            result = submit_rft(client, args.model, train_id, val_id, grader_source)
-        elif args.type == "dpo":
-            result = submit_dpo(client, args.model, train_id, val_id,
-                                args.epochs, args.lr, args.beta, args.suffix)
-        elif args.use_rest:
-            if not args.endpoint or not args.api_key:
-                print("Error: --use-rest requires --endpoint and --api-key (REST does not support DefaultAzureCredential)")
-                sys.exit(1)
-            result = submit_sft_rest(args.endpoint, args.api_key, args.model,
-                                     train_id, val_id, args.epochs, args.lr, args.batch_size)
-        else:
+    if args.type == "rft":
+        if not args.grader_file:
+            print("Error: --grader-file required for RFT")
+            sys.exit(1)
+        with open(args.grader_file) as f:
+            grader_source = f.read()
+        result = submit_rft(client, args.model, train_id, val_id, grader_source)
+    elif args.type == "dpo":
+        result = submit_dpo(client, args.model, train_id, val_id,
+                            args.epochs, args.lr, args.beta, args.suffix)
+    elif args.use_rest:
+        if not args.endpoint or not args.api_key:
+            print("Error: --use-rest requires --endpoint and --api-key (REST does not support DefaultAzureCredential)")
+            sys.exit(1)
+        result = submit_sft_rest(args.endpoint, args.api_key, args.model,
+                                 train_id, val_id, args.epochs, args.lr, args.batch_size, args.suffix)
+    else:
+        # SFT via SDK with REST fallback for OSS models
+        try:
             result = submit_sft_sdk(client, args.model, train_id, val_id,
                                     args.epochs, args.lr, args.batch_size, args.suffix)
-    except Exception as e:
-        if "does not support fine-tuning with Standard TrainingType" in str(e):
-            if not args.endpoint or not args.api_key:
-                print(f"SDK failed for {args.model}. REST fallback requires --endpoint and --api-key.")
-                sys.exit(1)
-            print(f"SDK failed for {args.model}, falling back to REST API...")
-            result = submit_sft_rest(args.endpoint, args.api_key, args.model,
-                                     train_id, val_id, args.epochs, args.lr, args.batch_size)
-        else:
-            raise
+        except Exception as e:
+            if "does not support fine-tuning with Standard TrainingType" in str(e):
+                if not args.endpoint or not args.api_key:
+                    print(f"SDK failed for {args.model}. REST fallback requires --endpoint and --api-key.")
+                    sys.exit(1)
+                print(f"SDK failed for {args.model}, falling back to REST API...")
+                result = submit_sft_rest(args.endpoint, args.api_key, args.model,
+                                         train_id, val_id, args.epochs, args.lr, args.batch_size, args.suffix)
+            else:
+                raise
 
     print(f"\nJob submitted successfully:")
     print(json.dumps(result, indent=2))

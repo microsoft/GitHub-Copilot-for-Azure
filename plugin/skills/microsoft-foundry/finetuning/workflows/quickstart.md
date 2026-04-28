@@ -79,8 +79,10 @@ for ex in test_examples:
 ```python
 import time
 
-train = client.files.create(file=open("train.jsonl", "rb"), purpose="fine-tune")
-val = client.files.create(file=open("val.jsonl", "rb"), purpose="fine-tune")
+with open("train.jsonl", "rb") as f:
+    train = client.files.create(file=f, purpose="fine-tune")
+with open("val.jsonl", "rb") as f:
+    val = client.files.create(file=f, purpose="fine-tune")
 
 for _ in range(30):
     if client.files.retrieve(train.id).status == "processed" and client.files.retrieve(val.id).status == "processed":

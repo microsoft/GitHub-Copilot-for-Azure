@@ -71,6 +71,10 @@ def run_model(client, model, messages, tools_schema=None, max_retries=3):
 
 def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
     """Run base model on data, score with grader, output threshold analysis."""
+    if not data:
+        print("No examples to evaluate. Check your data file.")
+        return [], None
+
     # Sample if dataset is larger than n
     if len(data) > n:
         data = random.sample(data, n)
