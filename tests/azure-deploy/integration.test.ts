@@ -175,9 +175,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          takeScreenshot: {
-            predicate: (agentMetadata) => hasDeployLinks(agentMetadata)
-          }
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
