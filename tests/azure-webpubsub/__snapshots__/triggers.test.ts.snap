@@ -1,0 +1,47 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`azure-webpubsub - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "Choose runtime/path for Web PubSub. WHEN: Web PubSub, upstream, negotiate, Socket.IO, realtime, streaming.",
+  "extractedKeywords": [
+    "azure",
+    "choose",
+    "cli",
+    "identity",
+    "mcp",
+    "monitor",
+    "negotiate",
+    "path",
+    "pubsub",
+    "realtime",
+    "runtime",
+    "socket",
+    "streaming",
+    "upstream",
+    "webpubsub",
+    "when",
+  ],
+  "name": "azure-webpubsub",
+}
+`;
+
+exports[`azure-webpubsub - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "azure",
+  "choose",
+  "cli",
+  "identity",
+  "mcp",
+  "monitor",
+  "negotiate",
+  "path",
+  "pubsub",
+  "realtime",
+  "runtime",
+  "socket",
+  "streaming",
+  "upstream",
+  "webpubsub",
+  "when",
+]
+`;
