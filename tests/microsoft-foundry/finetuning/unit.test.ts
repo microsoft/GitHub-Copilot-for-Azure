@@ -184,12 +184,85 @@ describe("finetuning - Unit Tests", () => {
 
   describe("Parent Skill References Finetuning", () => {
     test("parent SKILL.md contains finetuning sub-skill entry", () => {
-      const parentSkill = fs.readFileSync(
+      const parentSkillContent = fs.readFileSync(
         path.resolve(FINETUNING_DIR, "..", "SKILL.md"),
         "utf-8"
       );
-      expect(parentSkill).toContain("finetuning");
-      expect(parentSkill).toContain("fine-tun");
+      expect(parentSkillContent).toContain("finetuning");
+      expect(parentSkillContent).toContain("fine-tun");
+    });
+  });
+
+  describe("Python Script Quality", () => {
+    const scriptsDir = path.join(FINETUNING_DIR, "scripts");
+
+    test("all Python scripts have encoding on text-mode open() calls", () => {
+      const getAllPyFiles = (dir: string): string[] => {
+        const results: string[] = [];
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            results.push(...getAllPyFiles(full));
+          } else if (entry.name.endsWith(".py")) {
+            results.push(full);
+          }
+        }
+        return results;
+      };
+
+      const pyFiles = getAllPyFiles(scriptsDir);
+      const issues: string[] = [];
+      for (const filepath of pyFiles) {
+        const content = fs.readFileSync(filepath, "utf-8");
+        const filename = path.relative(scriptsDir, filepath);
+        const lines = content.split("\n");
+        lines.forEach((line: string, i: number) => {
+          if (
+            line.includes("open(") &&
+            !line.includes("encoding") &&
+            !line.includes('"rb"') &&
+            !line.includes('"wb"') &&
+            !line.includes("purpose=") &&
+            !line.trim().startsWith("#")
+          ) {
+            issues.push(`${filename}:${i + 1}: ${line.trim()}`);
+          }
+        });
+      }
+      expect(issues).toEqual([]);
+    });
+
+    test("all scripts use common.get_clients() not custom client creation", () => {
+      const pyFiles = fs.readdirSync(scriptsDir)
+        .filter((f: string) => f.endsWith(".py") && f !== "common.py");
+
+      const issues: string[] = [];
+      for (const file of pyFiles) {
+        const content = fs.readFileSync(path.join(scriptsDir, file), "utf-8");
+        // Check for custom client creation patterns that should use common.py
+        if (
+          content.includes("openai.AzureOpenAI(") ||
+          content.includes("openai.OpenAI(") ||
+          /def get_client\(/.test(content)
+        ) {
+          issues.push(`${file}: contains custom client creation (should use common.get_clients())`);
+        }
+      }
+      expect(issues).toEqual([]);
+    });
+
+    test("SKILL.md script table matches actual script files", () => {
+      const skillContent = fs.readFileSync(
+        path.join(FINETUNING_DIR, "SKILL.md"),
+        "utf-8"
+      );
+      // Extract script names from SKILL.md table
+      const scriptRefs = skillContent.match(/`scripts\/[\w/.]+\.py`/g) || [];
+      for (const ref of scriptRefs) {
+        const scriptPath = ref.replace(/`/g, "");
+        const fullPath = path.join(FINETUNING_DIR, scriptPath);
+        expect(fs.existsSync(fullPath)).toBe(true);
+      }
     });
   });
 });
