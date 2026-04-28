@@ -927,8 +927,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
-          followUpTimeout: brownfieldTestTimeoutMs,
-          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
+          followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
