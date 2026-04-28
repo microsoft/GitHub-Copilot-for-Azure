@@ -91,5 +91,95 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       setSkillInvocationRate(rate);
       expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
     }));
+
+    test("invokes entra-agent-id for Agent Identity Blueprint with sponsor prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Create a new Microsoft Entra Agent Identity Blueprint with a user sponsor and its required BlueprintPrincipal",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+
+    test("invokes entra-agent-id for per-instance Agent Identity creation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Register a new per-instance agent identity service principal under an existing Agent Identity Blueprint via Microsoft Graph",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+
+    test("invokes entra-agent-id for OBO runtime authentication prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Implement on-behalf-of token exchange so my agent can call Microsoft Graph as the signed-in user using its Agent Identity",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+
+    test("invokes entra-agent-id for per-Agent-Identity permission grant prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "Grant User.Read.All application permission to a specific Agent Identity service principal, scoped per agent instance not to the BlueprintPrincipal",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+
+    test("invokes entra-agent-id for AADSTS82001 troubleshooting prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
+      let invocationCount = 0;
+      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
+        const agentMetadata = await agent.run({
+          prompt: "My Agent Identity token exchange is failing with AADSTS82001 — what is the correct grant type and fmi_path usage?",
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          invocationCount += 1;
+        }
+      }
+      const rate = invocationCount / RUNS_PER_PROMPT;
+      setSkillInvocationRate(rate);
+      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
   });
 });
