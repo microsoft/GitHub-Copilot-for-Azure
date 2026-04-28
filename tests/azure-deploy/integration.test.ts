@@ -161,7 +161,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const FOLLOW_UP_PROMPT = ["Go with recommended options and proceed with Azure deployment."];
   // Static Web Apps (SWA)
   describe("vanilla-static-web-apps-deploy", () => {
-    test("creates whiteboard application", async () => {
+    test("creates whiteboard application with bicep", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
 
@@ -174,7 +174,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: {
+            predicate: (agentMetadata) => hasDeployLinks(agentMetadata)
+          }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -186,7 +189,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, deployTestTimeoutMs);
 
-    test("creates static portfolio website", async () => {
+    test("creates static portfolio website with bicep", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
 
@@ -199,7 +202,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -228,7 +232,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -253,7 +258,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -470,7 +476,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -495,7 +502,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -523,7 +531,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -548,7 +557,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -776,7 +786,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -811,7 +822,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -845,7 +857,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -879,7 +892,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -915,7 +929,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1064,7 +1079,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1098,7 +1114,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1132,7 +1149,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1166,7 +1184,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1200,7 +1219,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);

@@ -118,6 +118,15 @@ export interface AgentRunConfig {
    * Number of milliseconds as timeout for follow ups.
    */
   followUpTimeout?: number;
+
+  /**
+   * Whether to take a screenshot of the application after the agent work.
+   * The predicate function will be called with the agentMetadata. If the return value is true, the agent runner will attempt to take a screenshot of the app. Otherwise, no screenshot will be taken.
+   * If undefined, the agent runner won't attempt to take a screenshot.
+   */
+  takeScreenshot?: {
+    predicate: (agentMetadata: AgentMetadata) => boolean
+  };
 }
 
 interface KeywordOptions {
@@ -517,7 +526,7 @@ export function useAgentRunner() {
       const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
       if (process.env.DEBUG && isTest()) {
         cliArgs.push("--log-dir");
-        cliArgs.push(buildLogFilePath());
+        cliArgs.push(buildTestCaseDirPath());
       }
 
       const client = new CopilotClient({
@@ -655,6 +664,34 @@ export function useAgentRunner() {
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
 
+      if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
+        // Resume the session so it can take a completely set of skills and mcp servers.
+        // Use playwright mcp server to take a screenshot.
+        const screenshotTimeout = 180000; // 3 minutes
+        const screenshotPath = path.join(buildTestCaseDirPath(), `app-snapshot.jpg`);
+        const playwrightSession = await client.resumeSession(session.sessionId, {
+          mcpServers: {
+            playwright: {
+              command: "npx",
+              args: [
+                "@playwright/mcp@latest"
+              ],
+              tools: ["*"]
+            }
+          },
+          onPermissionRequest: approveAll
+        });
+        await playwrightSession.sendAndWait({
+          prompt: `Use playwright mcp tools to take a screenshot of the deployed app. Save the screenshot to this directory at this file location ${screenshotPath}`
+        }, screenshotTimeout);
+
+        // Check if screenshot was successfully created
+        const screenshotExists = fs.existsSync(screenshotPath);
+        agentMetadata.testComments.push(
+          `Screenshot attempt: ${screenshotExists ? "✓ app-snapshot.jpg created successfully" : "✗ app-snapshot.jpg not found after screenshot attempt"}`
+        );
+      }
+
       return agentMetadata;
     } catch (error) {
       // Mark as complete to stop event processing
@@ -767,16 +804,17 @@ export function getIntegrationSkipReason(): string | undefined {
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
+const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
 
-function buildShareFilePath(): string {
-  const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
-}
-
-function buildLogFilePath(): string {
-  const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+function buildTestCaseDirPath(): string {
   return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName());
 }
+
+function buildShareFilePath(): string {
+  const testCaseArtifactsDir = buildTestCaseDirPath();
+  return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+}
+
 
 function isTest(): boolean {
   try {
