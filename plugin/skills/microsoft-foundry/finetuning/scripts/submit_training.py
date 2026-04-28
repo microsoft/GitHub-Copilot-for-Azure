@@ -81,7 +81,10 @@ def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0
         data = resp.json()
         return {"id": data["id"], "status": data["status"], "model": model, "method": "rest"}
     else:
-        raise RuntimeError(f"REST submission failed ({resp.status_code}): {resp.text}")
+        raise RuntimeError(
+            f"REST submission failed ({resp.status_code}): "
+            f"{resp.json().get('error', {}).get('message', 'Unknown error')}"
+        )
 
 
 def submit_rft(client, model, train_id, val_id, grader_source):
