@@ -89,20 +89,21 @@ export function shouldEarlyTerminateForAzdProvision(agentMetadata: AgentMetadata
       .filter((toolCallId): toolCallId is string => typeof toolCallId === "string"),
   );
 
-  const hasCompletedAzdProvision =
+  const hasSuccessfulAzdProvision =
     azdProvisionCallIds.size > 0
     && agentMetadata.events.some((event) =>
       event.type === "tool.execution_complete"
       && typeof event.data.toolCallId === "string"
+      && event.data.success === true
       && azdProvisionCallIds.has(event.data.toolCallId)
     );
 
-  if (hasCompletedAzdProvision) {
-    const commentToAdd = "✅ At least one azd provision command completed. Terminating early.";
+  if (hasSuccessfulAzdProvision) {
+    const commentToAdd = "✅ At least one azd provision command completed successfully. Terminating early.";
     if (!agentMetadata.testComments.some((testComment) => testComment === commentToAdd)) {
       agentMetadata.testComments.push(commentToAdd);
     }
   }
 
-  return hasCompletedAzdProvision;
+  return hasSuccessfulAzdProvision;
 }
