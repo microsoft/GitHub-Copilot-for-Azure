@@ -665,7 +665,7 @@ export function useAgentRunner() {
       }
 
       if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
-        // Resume the session so it can take a completely set of skills and mcp servers.
+        // Resume the session so it can take a different set of skills and mcp servers.
         // Use playwright mcp server to take a screenshot.
         const screenshotTimeout = 180000; // 3 minutes
         const screenshotPath = path.join(buildTestCaseDirPath(), "app-snapshot.jpg");
@@ -674,7 +674,7 @@ export function useAgentRunner() {
             playwright: {
               command: "npx",
               args: [
-                "@playwright/mcp@latest"
+                "@playwright/mcp@0.0.71"
               ],
               tools: ["*"]
             }
