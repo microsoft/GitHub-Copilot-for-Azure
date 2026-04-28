@@ -86,6 +86,10 @@ Every agent source folder should keep Foundry-specific state under `.foundry/`:
 - `datasets/` and `evaluators/` are local cache folders. Reuse them when they are current, and ask before refreshing or overwriting them.
 - See [Agent Metadata Contract](references/agent-metadata-contract.md) for the canonical schema and workflow rules.
 
+## Agent: Setup References
+
+- [Standard Agent Setup](references/standard-agent-setup.md) - Standard capability-host setup with customer-managed data, search, and AI Services resources.
+
 ## Agent: Project Context Resolution
 
 Agent skills should run this step **only when they need configuration values they don't already have**. If a value (for example, agent root, environment, project endpoint, or agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.

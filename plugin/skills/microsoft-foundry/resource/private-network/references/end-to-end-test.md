@@ -84,9 +84,8 @@ Create agent, thread, send message, verify response, cleanup. This exercises all
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
 
-endpoint = "https://<ai-account>.services.ai.azure.com"
-project = "<project-name>"
-client = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential(), project_name=project)
+endpoint = "https://<ai-account>.services.ai.azure.com/api/projects/<project-name>"
+client = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
 agents = client.agents
 
 agent = agents.create_agent(model="<deployment-name>", name="vnet-test", instructions="Reply with 'OK'")

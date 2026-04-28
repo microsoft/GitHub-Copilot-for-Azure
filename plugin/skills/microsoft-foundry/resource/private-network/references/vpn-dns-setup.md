@@ -45,7 +45,8 @@ Example: if subnets `.0.0/24`, `.1.0/24`, `.2.0/24` are in use → use `192.168.
 | Parameter | Source |
 |-----------|--------|
 | `vnetName` | From main deployment |
-| `resourceGroupName` | From main deployment |
+| `vnetResourceGroup` | Resource group containing the VNet (omit if same as deployment RG) |
+| `resourceGroupName` | Resource group for this deployment |
 | `gatewaySubnetCidr` | Computed in step 1 |
 | `dnsResolverSubnetCidr` | Computed in step 1 |
 | `suffix` | From main deployment (or generate unique) |
@@ -65,6 +66,7 @@ Template: [vpn-dns-setup.bicep](vpn-dns-setup.bicep)
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `vnetName` | Yes | — | Name of the existing VNet |
+| `vnetResourceGroup` | No | Deployment RG | Resource group of the existing VNet (for BYO VNets in a different RG) |
 | `aadTenantId` | Yes | — | Entra ID tenant ID for VPN auth |
 | `suffix` | Yes | — | Unique suffix for resource naming |
 | `gatewaySubnetCidr` | Yes | — | GatewaySubnet CIDR (computed from VNet) |

@@ -5,7 +5,7 @@ license: MIT
 allowed-tools: Read, Write, Bash, AskUserQuestion, microsoft_docs_search, microsoft_docs_fetch
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.0.0"
 ---
 
 # Microsoft Foundry Private Networking

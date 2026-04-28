@@ -11,9 +11,13 @@
 @description('Name of the existing VNet from the Foundry deployment')
 param vnetName string
 
+@description('Resource group of the existing VNet. Defaults to the deployment resource group.')
+param vnetResourceGroup string = resourceGroup().name
+
 // ── Existing VNet ──
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = {
   name: vnetName
+  scope: resourceGroup(vnetResourceGroup)
 }
 
 var location = vnet.location
@@ -33,7 +37,9 @@ param aadTenantId string
 @description('Unique suffix for resource naming')
 param suffix string
 
-// AAD constants for Azure Public cloud
+// AAD constants for Azure Public cloud only.
+// Sovereign clouds (AzureUSGovernment, AzureChinaCloud) require different audience/issuer values.
+// The intake step (az cloud show) warns users before reaching this template.
 var aadAudience = 'c632b3df-fb67-4d84-bdcf-b95ad541b5c8'
 var aadIssuer = 'https://sts.windows.net/${aadTenantId}/'
 var aadTenant = 'https://login.microsoftonline.com/${aadTenantId}/'
