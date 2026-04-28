@@ -668,7 +668,7 @@ export function useAgentRunner() {
         // Resume the session so it can take a completely set of skills and mcp servers.
         // Use playwright mcp server to take a screenshot.
         const screenshotTimeout = 180000; // 3 minutes
-        const screenshotPath = path.join(buildTestCaseDirPath(), `app-snapshot.jpg`);
+        const screenshotPath = path.join(buildTestCaseDirPath(), "app-snapshot.jpg");
         const playwrightSession = await client.resumeSession(session.sessionId, {
           mcpServers: {
             playwright: {
@@ -814,7 +814,6 @@ function buildShareFilePath(): string {
   const testCaseArtifactsDir = buildTestCaseDirPath();
   return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
 }
-
 
 function isTest(): boolean {
   try {
