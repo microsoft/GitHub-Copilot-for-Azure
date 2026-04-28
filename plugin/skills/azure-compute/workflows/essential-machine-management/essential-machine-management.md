@@ -72,7 +72,7 @@ To scan multiple subscriptions, use `azure-subscription_list` to list available 
 
 ## Offboard a Subscription
 
-To disable EMM for a subscription, follow the steps in [EMM Enable Flow — Disable EMM (Offboard)](references/emm-enable-flow.md#disable-emm-offboard).
+To disable EMM for a subscription, follow the "Disable EMM (Offboard)" section in [EMM Enable Flow](references/emm-enable-flow.md).
 
 > ⚠️ **Warning:** When you disable a subscription, machines no longer use consolidated pricing. Pricing reverts to standard per-service pricing which may increase costs. Existing VM configurations are not removed — disable unneeded services manually.
 
