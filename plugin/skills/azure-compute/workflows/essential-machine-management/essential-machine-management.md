@@ -13,8 +13,10 @@ Essential Machine Management simplifies onboarding and configuration of manageme
 ```text
 User intent?
 ├─ Enable / onboard / enroll subscription for EMM
-│  ├─ Copilot-guided (default) → Load [EMM Enable Flow](references/emm-enable-flow.md)
-│  └─ Via Portal UI → Load [EMM Enable Flow (Portal)](references/emm-enable-flow-portal.md)
+│  └─ Copilot-guided (default) → Load [EMM Enable Flow](references/emm-enable-flow.md)
+│
+├─ User explicitly asks for portal guidance
+│  └─ Load [EMM Enable Flow (Portal)](references/emm-enable-flow-portal.md)
 │
 ├─ What is EMM / features / pricing / tiers
 │  └─ Load [EMM Overview](references/emm-overview.md)
@@ -34,15 +36,14 @@ User intent?
 
 | Signal | Reference |
 | ------ | --------- |
-| "enable EMM", "onboard subscription", "enroll VMs", "set up machine management" | [EMM Enable Flow](references/emm-enable-flow.md) or [Portal](references/emm-enable-flow-portal.md) |
+| "enable EMM", "onboard subscription", "enroll VMs", "set up machine management" | [EMM Enable Flow](references/emm-enable-flow.md) |
+| User explicitly mentions "portal", "Azure portal", "portal UI" | [EMM Enable Flow (Portal)](references/emm-enable-flow-portal.md) |
 | "what is EMM", "features", "pricing", "tiers", "what does EMM include" | [EMM Overview](references/emm-overview.md) |
 | "permissions", "roles", "prerequisites", "managed identity for EMM" | [EMM Prerequisites](references/emm-prerequisites.md) |
 
-> 💡 **Tip:** Default to the Copilot-guided flow unless the user explicitly asks for portal guidance.
+> ⚠️ **Important:** Only route to the portal guide when the user explicitly mentions "portal". All other enable requests use the Copilot-guided flow.
 
 ## Browse Enrolled Subscriptions
-
-### Copilot-Guided (Default)
 
 Query the EMM resource on each subscription to check enrollment status:
 
@@ -69,19 +70,9 @@ To scan multiple subscriptions, use `azure-subscription_list` to list available 
 | Subscription | Status | SKU | Services Enabled |
 ```
 
-### Via Portal
-
-- **Portal path:** Compute infrastructure → Monitoring+Operations → Essential Machine Management (Preview)
-- The browse view shows subscription name, status, policy assignment, and deployment link
-- Commands available: Enable, View Compliance, Offboard
-
 ## Offboard a Subscription
 
-To disable EMM for a subscription:
-
-1. Navigate to the EMM browse view in the portal
-2. Select the enrolled subscription
-3. Click **Offboard** and confirm
+To disable EMM for a subscription, follow the steps in [EMM Enable Flow — Disable EMM (Offboard)](references/emm-enable-flow.md#disable-emm-offboard).
 
 > ⚠️ **Warning:** When you disable a subscription, machines no longer use consolidated pricing. Pricing reverts to standard per-service pricing which may increase costs. Existing VM configurations are not removed — disable unneeded services manually.
 
