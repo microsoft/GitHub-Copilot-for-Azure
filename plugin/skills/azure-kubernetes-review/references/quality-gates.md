@@ -73,5 +73,5 @@ When Linkerd/Istio detected, evaluate impact on probe failures, security context
 - Do not request or output secrets (tokens, keys)
 - Do not use other scripts; follow this skill's instructions and template only
 - Do not use existing reports as sources
-- Place temporary files in `<reportOutputPath>/<clusterName> - <yyyymmddhhmm>/`
+- Place temporary files in `<dirname(reportOutputPath)>/<clusterName> - <yyyymmddhhmm>/`
 - Save temporary files in JSON format

@@ -1,6 +1,5 @@
 ---
 name: azure-kubernetes-review
-display-name: Azure Kubernetes Service Review
 license: MIT
 metadata:
   author: johnbilliris
@@ -70,13 +69,15 @@ See [Quality Gates & Decision Logic](./references/quality-gates.md) for full rul
 
 One Markdown file at `reportOutputPath`: `Azure Kubernetes Service Review - <clusterName> - <yyyymmddhhmm>.md`
 
-## Guardrails
+`reportOutputPath` is the full file path for the final Markdown report, not a directory.
 
-- Do not skip execution of any checklist, matrix, detector or workflow step. 
-- ALL diagnostics detectors MUST be run to surface evidence and findings. Do not skip or cherry-pick based on expected outcomes. Do not skip even if they are expected to return no findings. Do not skip even if you think it would be inefficient.
-- Do not request or output secrets (tokens, keys).
-- Follow this skill's instructions and [template](./assets/aks-audit-report-template.md) only — no other scripts or existing reports
-- Place temporary files in `<reportOutputPath>/<clusterName> - <yyyymmddhhmm>/`
+## Guardrails
+
+- Do not skip execution of any checklist, matrix, detector or workflow step. 
+- ALL diagnostics detectors MUST be run to surface evidence and findings. Do not skip or cherry-pick based on expected outcomes. Do not skip even if they are expected to return no findings. Do not skip even if you think it would be inefficient.
+- Do not request or output secrets (tokens, keys).
+- Follow this skill's instructions and [template](./assets/aks-audit-report-template.md) only — no other scripts or existing reports
+- Place temporary files in `<dirname(reportOutputPath)>/<clusterName> - <yyyymmddhhmm>/`
 
 ## References
 

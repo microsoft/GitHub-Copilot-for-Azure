@@ -43,7 +43,7 @@ The report combines Azure platform evidence (`az`), Kubernetes evidence (`kubect
 
 ## Executive Summary
 
-Provide an Executive Summary consisting of two paragraphs; the first paragrah will contain the key areas where the AKS cluster shows strength and best practices. The second paragraph will itemise the top 5 area requiring attention.
+Provide an Executive Summary consisting of two paragraphs; the first paragraph will contain the key areas where the AKS cluster shows strength and best practices. The second paragraph will itemise the top 5 area requiring attention.
 
 | Metric | Value |
 |---|---|
