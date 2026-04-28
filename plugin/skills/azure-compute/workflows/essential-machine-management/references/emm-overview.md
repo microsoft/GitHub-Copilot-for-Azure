@@ -38,7 +38,7 @@ When you enable a subscription for EMM, all VMs and Arc-enabled servers in that 
 - **Subscription-level scope:** Enables for all VMs in a subscription at once
 - **No VM exclusion:** Currently no ability to exclude individual VMs
 - **Existing services preserved:** If a VM already has Update Manager with a maintenance schedule, it keeps that schedule
-- **Portal-only during preview:** No CLI/API-only enrollment flow is officially supported yet
+- **REST API available:** Official docs focus on the portal experience, but a REST API (`Microsoft.ManagedOps`) is available and used by the Copilot-guided flow
 - **Resource type:** `Microsoft.ManagedOps/ManagedOps`
 
 ## Documentation Links
