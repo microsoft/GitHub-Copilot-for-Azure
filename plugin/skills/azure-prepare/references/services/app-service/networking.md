@@ -55,6 +55,17 @@ resource webApp 'Microsoft.Web/sites@2024-11-01' = {
 }
 ```
 
+### CLI - VNet Integration
+
+```bash
+# Configure virtual network integration 
+az webapp vnet-integration add --resource-group RG --name APP --vnet VNET --subnet SUBNET
+
+# Update app configuration to route all outbound traffic through the virtual network integration
+az resource update --resource-group RG --name APP --resource-type "Microsoft.Web/sites" --set properties.outboundVnetRouting.allTraffic=true
+```
+
+
 > 💡 **Tip:** Set `outboundVnetRouting.allTraffic: true` to route ALL outbound traffic through the VNet. Without this, only RFC1918 traffic is routed through the VNet.
 
 ## Private Endpoints (Inbound)
@@ -97,6 +108,23 @@ resource dnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-
 }
 ```
 
+### CLI - Private Endpoint
+
+```bash
+# Retrieve web app resource id
+id=$(az webapp list --resource-group RG --query '[].[id]' --output tsv)
+
+# Create Private Endpoint
+az network private-endpoint create --connection-name CONNECTIONNAME --name private-endpoint --private-connection-resource-id $id --resource-group RG --subnet SUBNET --group-id sites --vnet-name VNET
+
+# Create Private DNS Zone
+az network private-dns zone create --resource-group RG --name "privatelink.azurewebsites.net"
+
+# Link the DNS Zone to virtual network
+az network private-dns link vnet create --resource-group RG --zone-name "privatelink.azurewebsites.net" --name dns-link --virtual-network VNET --registration-enabled false
+
+```
+
 > ⚠️ **Warning:** Private Endpoints require Basic (B1+) or higher tier. The private DNS zone `privatelink.azurewebsites.net` must be linked to the VNet for name resolution.
 
 ## Access Restrictions
@@ -123,6 +151,19 @@ siteConfig: {
   ]
   scmIpSecurityRestrictionsUseMain: true
 }
+```
+
+### CLI - Access Restrictions
+
+```bash
+# Add restriction to allow traffic from set range used by the office
+az webapp config access-restriction add --resource-group RG --name APP --rule-name 'allow-office' --action Allow --ip-address 203.0.113.0/24 --priority 100
+
+# Add restriction to deny access from any other address range
+az webapp config access-restriction add --resource-group RG --name APP --rule-name 'deny-all' --action Deny --ipAddress Any --priority 2147483647
+
+# Set SCM Site (Kudu) to use same access restrictions as main site
+az webapp config access-restriction set -g RG -n APP --use-same-restrictions-for-scm-site true
 ```
 
 > 💡 **Tip:** Always restrict the SCM/Kudu site too. Use `scmIpSecurityRestrictionsUseMain: true` to inherit main site rules, or define separate SCM rules.
