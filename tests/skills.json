@@ -13,6 +13,7 @@
         "azure-enterprise-infra-planner",
         "azure-hosted-copilot-sdk",
         "azure-kubernetes",
+        "azure-kubernetes-review",
         "azure-kusto",
         "azure-messaging",
         "azure-prepare",
