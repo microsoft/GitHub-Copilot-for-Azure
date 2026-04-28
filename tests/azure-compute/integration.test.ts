@@ -62,7 +62,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     };
   }
 
-  describe("skill-invocation", () => {
+  describe("11skill-invocation11", () => {
     test("routes web workload recommendation prompt to vm-recommender", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         const result = await expectPromptToInvokeWorkflow(

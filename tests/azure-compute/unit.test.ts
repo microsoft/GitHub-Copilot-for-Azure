@@ -1176,7 +1176,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("routing links to all reference files", () => {
       expect(emmContent).toContain("references/emm-enable-flow.md");
-      expect(emmContent).toContain("references/emm-enable-flow-portal.md");
+      expect(emmContent).toContain("references/emm-enable-flow-portal-guidance.md");
       expect(emmContent).toContain("references/emm-overview.md");
       expect(emmContent).toContain("references/emm-prerequisites.md");
     });
@@ -1200,8 +1200,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(emmContent).toContain("Cross-subscription workspace error");
     });
 
-    test("defaults to Copilot-guided flow", () => {
-      expect(emmContent).toContain("Default to the Copilot-guided flow");
+    test("defaults to Copilot-guided flow and requires explicit portal mention", () => {
+      expect(emmContent).toContain("Only route to the portal guide when the user explicitly mentions");
     });
 
     test("notes EMM is in public preview", () => {
@@ -1217,7 +1217,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     const emmReferenceFiles = [
       "emm-enable-flow.md",
-      "emm-enable-flow-portal.md",
+      "emm-enable-flow-portal-guidance.md",
       "emm-overview.md",
       "emm-prerequisites.md",
     ];

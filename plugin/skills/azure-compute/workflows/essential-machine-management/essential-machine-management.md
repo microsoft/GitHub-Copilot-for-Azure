@@ -16,7 +16,7 @@ User intent?
 │  └─ Copilot-guided (default) → Load [EMM Enable Flow](references/emm-enable-flow.md)
 │
 ├─ User explicitly asks for portal guidance
-│  └─ Load [EMM Enable Flow (Portal)](references/emm-enable-flow-portal.md)
+│  └─ Load [EMM Enable Flow (Portal)](references/emm-enable-flow-portal-guidance.md)
 │
 ├─ What is EMM / features / pricing / tiers
 │  └─ Load [EMM Overview](references/emm-overview.md)
@@ -37,7 +37,7 @@ User intent?
 | Signal | Reference |
 | ------ | --------- |
 | "enable EMM", "onboard subscription", "enroll VMs", "set up machine management" | [EMM Enable Flow](references/emm-enable-flow.md) |
-| User explicitly mentions "portal", "Azure portal", "portal UI" | [EMM Enable Flow (Portal)](references/emm-enable-flow-portal.md) |
+| User explicitly mentions "portal", "Azure portal", "portal UI" | [EMM Enable Flow (Portal)](references/emm-enable-flow-portal-guidance.md) |
 | "what is EMM", "features", "pricing", "tiers", "what does EMM include" | [EMM Overview](references/emm-overview.md) |
 | "permissions", "roles", "prerequisites", "managed identity for EMM" | [EMM Prerequisites](references/emm-prerequisites.md) |
 
