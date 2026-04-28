@@ -112,7 +112,7 @@ resource dnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-
 
 ```bash
 # Retrieve web app resource id
-id=$(az webapp list --resource-group RG --query '[].[id]' --output tsv)
+id=$(az webapp show --name APP --resource-group RG --query id --output tsv)
 
 # Create Private Endpoint
 az network private-endpoint create --connection-name CONNECTIONNAME --name private-endpoint --private-connection-resource-id $id --resource-group RG --subnet SUBNET --group-id sites --vnet-name VNET
