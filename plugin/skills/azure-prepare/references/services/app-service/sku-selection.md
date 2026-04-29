@@ -36,18 +36,16 @@
 
 ```
 Production workload?
+Production workload?
 ├─ No → Free (F1) or Basic (B1) for dev/test
 └─ Yes
-   Need deployment slots or auto-scale?
+   Need deployment slots, auto-scale, VNET integration or Private Endpoints?
    ├─ No → Basic (B1-B3) if budget-constrained
    └─ Yes
-      Need VNet integration or private endpoints?
-      ├─ No → Standard (S1-S3)
-      └─ Yes
          Need network isolation (dedicated ASE)?
          ├─ Yes → Isolated (I1v2+)
          └─ No
-            Need private endpoints?
+            Need more deployment slots (20), instances (30)?
             ├─ Yes → Premium (P1v3+)
             └─ No → Standard (S1+) with VNet integration
 ```
