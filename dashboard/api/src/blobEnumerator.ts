@@ -1,6 +1,6 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import type { BlobEntry, BlobTree, BlobTreeNode } from "../../shared/blobTree";
+import type { BlobEntry, BlobTree, BlobTreeNode } from "./shared/blobTree";
 
 const INTEGRATION_REPORTS_CONTAINER_NAME = "integration-reports";
 
