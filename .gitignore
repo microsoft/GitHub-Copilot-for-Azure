@@ -347,6 +347,9 @@ x86/
 # Gulp build output
 output/
 
+# Generated at build time
+plugin/CHANGELOG.md
+
 dashboard/.azure/
 dashboard/dist/
 dashboard/**/dist/

@@ -1,132 +1,146 @@
-# Pre-Migration Assessment for Spring Boot to Azure Container Apps
+# Kubernetes to Azure Container Apps - Assessment Guide
 
-## Local State Assessment
+## Compatibility Matrix
 
-| Issue | Impact | Solution |
-|-------|--------|----------|
-| Singleton patterns | Multiple instances may run during updates | Refactor to stateless design |
-| In-memory sessions | Lost during restarts/scaling | Migrate to Azure Cache for Redis |
-| Local caching | Not shared across replicas | Use Azure Cache for Redis with Spring Data Redis |
-| File-based state | Lost on restart | Migrate to Azure Cosmos DB, Azure SQL, or Azure Storage |
+### Kubernetes → Container Apps Resource Mapping
 
-**State Migration Options:**
-- **Azure Cache for Redis**: Session data, distributed caching
-- **Azure Cosmos DB**: NoSQL data, document storage
-- **Azure SQL/MySQL/PostgreSQL**: Relational data
-- **Azure Storage Blobs**: Unstructured data, serialized objects
+| Kubernetes Concept | Container Apps Equivalent | Supported | Notes |
+|-------------------|--------------------------|-----------|-------|
+| Deployment | Container App | ✅ Yes | One-to-one mapping for stateless workloads |
+| Service (ClusterIP) | Internal ingress | ✅ Yes | Set `ingress.external: false` |
+| Service (LoadBalancer) | External ingress | ✅ Yes | Set `ingress.external: true` |
+| Ingress | Built-in ingress with custom domain | ✅ Yes | Supports TLS, traffic splitting |
+| ConfigMap | Environment variables | ✅ Yes | Inline or from secrets |
+| Secret | Secrets (Key Vault refs preferred) | ✅ Yes | Use managed identity for Key Vault |
+| CronJob | Container Apps Job (scheduled) | ✅ Yes | Cron expression syntax |
+| Job | Container Apps Job (manual/event) | ✅ Yes | One-time or event-triggered |
+| HPA | Built-in scaling rules | ✅ Yes | HTTP, TCP, KEDA-compatible scalers |
+| PersistentVolumeClaim | Azure Files mount | ⚠️ Limited | EmptyDir and Azure Files only; no block storage |
+| DaemonSet | N/A | ❌ No | Consider sidecar containers or external agents |
+| StatefulSet | N/A | ❌ No | Use external state (Cosmos DB, Redis, SQL) |
+| Custom CRDs / Operators | N/A | ❌ No | Evaluate if Dapr components can replace |
+| NetworkPolicy | VNet NSG rules | ⚠️ Limited | Configure at Environment subnet level |
 
-## File System Usage
+### Resource Limits
 
-| Pattern | Container Apps Solution |
-|---------|------------------------|
-| Temporary files | Ephemeral storage (automatic, deleted on restart) |
-| Shared persistent data | Azure Files storage mounts |
-| Static content serving | Azure Blob Storage + Azure CDN |
-| User uploads | Azure Blob Storage with Azure Function triggers |
+| Resource | Kubernetes (typical) | Container Apps Maximum | Migration Impact |
+|----------|---------------------|----------------------|------------------|
+| CPU per container | Up to 64+ vCPU | 4 vCPU | Split large containers |
+| Memory per container | Up to 256+ GiB | 8 GiB | Redesign memory-intensive workloads |
+| Replicas per app | 1000+ | 300 per revision | Validate scale requirements |
+| Request timeout | Configurable (hours+) | 240 seconds default | Redesign long-running requests |
+| Startup probe timeout | Configurable | 240 seconds | Optimize startup time |
+| Containers per pod/app | 10+ | Up to 10 sidecars | Init + sidecar containers supported |
 
-## Platform Compatibility
+## Unsupported Patterns
 
-### Supported Java Versions
-- **For Spring Boot 2.x source apps**: Java 8 or 11 supported for assessment
-- **For Spring Boot 3.x target apps**: Java 17 or 21 required (verify with `java -version`)
+### Critical Blockers
 
-### Spring Boot Version Requirements
-- **Recommended target**: Spring Boot 3.x (requires Java 17+)
-- **Supported source**: Spring Boot 2.x on Java 8/11 → plan upgrade to Java 17+ and follow [Spring Boot 3.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide)
+1. **StatefulSets with persistent storage**
+   - **Why**: Container Apps is designed for stateless workloads
+   - **Alternative**: Migrate state to Azure Cosmos DB, Azure SQL, Redis, or Storage
 
-### Spring Cloud Compatibility
-- Verify Spring Cloud version matches Spring Boot 3.x requirements
-- See [Spring Cloud versions](https://spring.io/projects/spring-cloud#overview)
+2. **DaemonSets for node-level agents**
+   - **Why**: No node-level access in managed environment
+   - **Alternative**: Use Azure Monitor agents, Dapr components, or sidecar containers
 
-## External Resources Inventory
+3. **Privileged containers or host networking**
+   - **Why**: Security isolation in managed platform
+   - **Alternative**: Redesign to avoid host-level access
 
-Inventory all external dependencies. See [spring-dependency-patterns.md](spring-dependency-patterns.md) for configuration examples (databases, message brokers, caches).
+4. **Custom CRDs and Operators**
+   - **Why**: No Kubernetes API server access
+   - **Alternative**: Use Dapr state management, bindings, or Azure PaaS services
 
-### Identity Providers
+5. **Direct Kubernetes API calls from apps**
+   - **Why**: Kubernetes API not exposed
+   - **Alternative**: Use environment variables, service discovery via DNS, or Dapr
 
-| Provider | Configuration |
-|----------|---------------|
-| OAuth2 | Spring Security reference docs |
-| Auth0 | Auth0 Spring Security documentation |
-| PingFederate | Spring Security SAML 2.0/OIDC docs, PingIdentity docs |
-| Microsoft Entra ID | Update redirect URIs to new Container Apps FQDN |
+### Storage Considerations
 
-## Scheduled Jobs Assessment
-
-| Job Type | Container Apps Solution |
-|----------|------------------------|
-| Unix cron jobs | Azure Container Apps Jobs (ephemeral) |
-| Spring Batch tasks | Azure Container Apps Jobs |
-| Quartz scheduler | Long-running app (handle scale-out race conditions) |
-| Scheduled @Scheduled methods | Long-running app (handle multiple instances) |
-
-## Configuration & Secrets
-
-### Port Configuration
-- Default: 8080
-- Change via `server.port` or `SERVER_PORT` environment variable
-- Configure in Container Apps ingress settings
-
-### Secrets Checklist
-1. Inventory all secrets in application.properties/application.yml
-2. Document database passwords, API keys, connection strings
-3. Plan migration to Azure Key Vault
-4. Update app to use Key Vault references or environment variables
-
-### Certificates
-- Run `keytool -list -v -keystore <path>` to document SSL certificates
-- Plan migration to Azure Key Vault or Container Apps managed certificates
-
-## Deployment Architecture
-
-**Document current state:**
-- Number of instances
-- CPU per instance (vCPU)
-- RAM per instance (GiB)
-- Regional distribution
-- Uptime requirements/SLA
-
-**Container Apps Limits:**
-- Max 4 vCPU per container
-- Max 8 GiB RAM per container
-- Max 300 replicas per revision
+- **EmptyDir**: Supported (ephemeral storage)
+- **Azure Files**: Supported via volume mounts
+- **Persistent Block Storage**: Not supported (migrate to Azure Blob, SQL, Cosmos DB)
 
 ## Assessment Checklist
 
-- [ ] Identified all local state and planned migration to external storage
-- [ ] Reviewed file system usage and selected storage solution
-- [ ] Verified Java version compatibility (17+ for Spring Boot 3.x target; 8/11 for source assessment only)
-- [ ] Confirmed Spring Boot 3.x or planned upgrade
-- [ ] Inventoried databases (MySQL, PostgreSQL, MongoDB, Cosmos DB)
-- [ ] Inventoried message brokers (ActiveMQ, IBM MQ, Azure Service Bus)
-- [ ] Inventoried external caches (Redis)
-- [ ] Documented identity providers (OAuth2, SAML, Entra ID)
-- [ ] Identified scheduled jobs and selected execution model
-- [ ] Listed all configuration secrets for Key Vault migration
-- [ ] Documented SSL certificates
-- [ ] Recorded current deployment architecture (instances, CPU, RAM)
-- [ ] Reviewed logging configuration (console vs. file)
-- [ ] Identified APM tools (Application Insights, custom agents)
+### 1. Workload Inventory
 
-## Complexity Guidelines
+- List all Deployments, StatefulSets, DaemonSets in target namespaces
+- Identify workload types: API, background worker, CronJob, StatefulSet
+- Document current resource requests/limits (CPU, memory)
+- Note replica counts (min, max, typical)
 
-**Low Complexity:**
-- Stateless Spring Boot app with external database
-- No scheduled jobs or simple @Scheduled tasks
-- Standard Java version (11, 17, 21)
-- OAuth2/SAML authentication
+### 2. Network Configuration
 
-**Medium Complexity:**
-- In-memory session state requiring Redis migration
-- File system writes requiring Azure Files or Blob Storage
-- Spring Boot 2.x requiring upgrade to 3.x
-- Message broker integration (ActiveMQ, Service Bus)
-- Scheduled jobs requiring Jobs configuration
+- **Service Types**: ClusterIP (internal) vs LoadBalancer (external)
+- **Ingress**: Document hostnames, TLS certificates, path routing rules
+- **Service Mesh**: Document if using Istio, Linkerd (consider migrating to Dapr)
+- **NetworkPolicies**: List egress/ingress rules (map to NSG rules or VNet integration)
 
-**High Complexity:**
-- Multiple stateful components (local cache, sessions, file storage)
-- Custom JVM agents or APM integrations
-- Java 8 requiring upgrade to 11+
-- Complex scheduled jobs with coordination requirements
-- Multi-region deployment with traffic distribution
-- Custom identity provider federation
+### 3. Storage and State
+
+- **PersistentVolumeClaims**: List volumes, sizes, access modes (ReadWriteOnce, ReadWriteMany)
+- **StatefulSets**: Document state storage patterns (candidates for external state migration)
+- **EmptyDir/Temp Storage**: Note usage patterns (supported in Container Apps)
+- **ConfigMaps/Secrets**: Count and categorize (migrate inline or to Key Vault)
+
+### 4. Scaling and Performance
+
+- **HPA**: Document scaling metrics (CPU, memory, custom metrics)
+- **Min/Max Replicas**: Verify within Container Apps limits (0-300)
+- **Startup Time**: Measure pod startup latency (must be <240s)
+- **Request Patterns**: Long-running requests (>240s) need redesign
+
+### 5. Dependencies
+
+- **Internal Services**: List service-to-service calls (use internal DNS in Container Apps)
+- **External Services**: Databases, APIs, message queues, storage
+- **Authentication**: Service accounts, RBAC roles (map to managed identities)
+- **Observability**: Logging, metrics, tracing (migrate to Azure Monitor, App Insights)
+
+### 6. CI/CD and Deployment
+
+- **Pipeline Tools**: kubectl, Helm, Kustomize, ArgoCD, Flux
+- **Image Registries**: Docker Hub, GCR, ECR, private registries (migrate to ACR)
+- **Deployment Strategy**: Rolling update, blue/green, canary (Container Apps supports traffic splitting)
+
+## Complexity Assessment Guidelines
+
+### Low Complexity
+- Stateless Deployments with ClusterIP or LoadBalancer Services
+- Simple environment variables (no complex ConfigMaps)
+- No persistent storage or external state already in use
+- Standard HTTP/gRPC ingress
+- No service mesh dependencies
+
+### Medium Complexity
+- Multiple Deployments with inter-service communication
+- ConfigMaps and Secrets requiring Key Vault migration
+- HPA with custom metrics (need KEDA scaler mapping)
+- CronJobs (map to Container Apps Jobs)
+- Ingress with TLS and custom domains
+
+### High Complexity
+- StatefulSets requiring state migration to external services
+- Service mesh (Istio/Linkerd) requiring Dapr migration
+- Custom CRDs or Operators (need redesign)
+- NetworkPolicies requiring VNet/NSG configuration
+- Large-scale deployments (>100 replicas, need architecture review)
+- Workloads exceeding Container Apps resource limits (>4 vCPU, >8 GiB)
+
+## Assessment Report Structure
+
+Generate `k8s-migration-assessment.md` with:
+
+1. **Executive Summary**: Cluster name, namespace(s), workload count, complexity (Low/Medium/High), estimated timeline, Azure cost
+2. **Current State**: Deployment inventory, resource usage, scaling config, storage usage, networking topology
+3. **Compatibility Analysis**: Supported workloads, blockers, redesign requirements (StatefulSets, DaemonSets, CRDs)
+4. **Azure Target**: Required resources (resource group, Container Apps Environment, ACR, Key Vault, Log Analytics, VNet if needed)
+5. **Migration Plan**:
+   - State migration strategy (databases, caches, storage)
+   - Image migration approach (ACR import, rebuild)
+   - IaC generation plan (Bicep templates per Deployment)
+   - Deployment sequence (dependencies first, then consumers)
+6. **Risk Assessment**: Blockers, feature gaps, performance considerations, downtime estimate
+7. **Validation Tests**: Smoke tests, integration tests, performance benchmarks

@@ -29,10 +29,10 @@ This migration enables you to move existing Spring Boot applications from Azure 
 
 Assess your Spring Boot application for migration readiness:
 
-- **Local State**: Check for in-memory sessions, singletons, file-based state → [assessment-guide.md](assessment-guide.md#local-state-assessment)
-- **File System**: Identify file writes, temp files, shared storage needs → [assessment-guide.md](assessment-guide.md#file-system-usage)
-- **Platform Compatibility**: Verify Java 17+, Spring Boot 3.x support → [assessment-guide.md](assessment-guide.md#platform-compatibility)
-- **External Resources**: Inventory databases, message brokers, caches → [assessment-guide.md](assessment-guide.md#external-resources-inventory)
+- **Local State**: Check for in-memory sessions, singletons, file-based state → [spring-assessment-guide.md](spring-assessment-guide.md#local-state-assessment)
+- **File System**: Identify file writes, temp files, shared storage needs → [spring-assessment-guide.md](spring-assessment-guide.md#file-system-usage)
+- **Platform Compatibility**: Verify Java 17+, Spring Boot 3.x support → [spring-assessment-guide.md](spring-assessment-guide.md#platform-compatibility)
+- **External Resources**: Inventory databases, message brokers, caches → [spring-assessment-guide.md](spring-assessment-guide.md#external-resources-inventory)
 
 ## Migration Workflow
 
@@ -43,7 +43,7 @@ Assess your Spring Boot application for migration readiness:
 4. **Deploy** — Deploy container to Azure Container Apps
 5. **Optimize** — Add Spring Cloud components (Config, Eureka, Gateway)
 
-See [deployment-guide.md](deployment-guide.md) for detailed phase-by-phase instructions.
+See [spring-deployment-guide.md](spring-deployment-guide.md) for detailed phase-by-phase instructions.
 
 ## Key Differences from Azure Spring Apps
 

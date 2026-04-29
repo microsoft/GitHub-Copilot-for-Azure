@@ -51,6 +51,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("## Steps");
       expect(skill.content).toContain("## Migration Scenarios");
       expect(skill.content).toContain("## Output Directory");
+      expect(skill.content).toContain("<workspace-root-basename>-azure/");
     });
 
     test("references azure-prepare for post-migration", () => {
@@ -107,6 +108,36 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("includes Azure Spring Apps source in scenario table", () => {
       expect(skill.content).toContain("Azure Spring Apps");
+    });
+  });
+
+  describe("AWS Fargate to Container Apps Scenario", () => {
+    test("includes Fargate migration scenario", () => {
+      expect(skill.content).toContain("Fargate");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references fargate-to-container-apps guide", () => {
+      expect(skill.content).toContain("fargate-to-container-apps.md");
+    });
+
+    test("includes AWS Fargate source in scenario table", () => {
+      expect(skill.content).toContain("AWS Fargate");
+    });
+  });
+
+  describe("Kubernetes to Container Apps Scenario", () => {
+    test("includes Kubernetes migration scenario", () => {
+      expect(skill.content).toContain("Kubernetes");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references k8s-to-container-apps guide", () => {
+      expect(skill.content).toContain("k8s-to-container-apps.md");
+    });
+
+    test("includes GKE/EKS sources in scenario table", () => {
+      expect(skill.content).toMatch(/GKE|EKS|Kubernetes/);
     });
   });
 });
