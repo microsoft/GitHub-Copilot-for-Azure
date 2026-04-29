@@ -36,7 +36,6 @@
 
 ```
 Production workload?
-Production workload?
 ├─ No → Free (F1) or Basic (B1) for dev/test
 └─ Yes
    Need deployment slots, auto-scale, VNET integration or Private Endpoints?
