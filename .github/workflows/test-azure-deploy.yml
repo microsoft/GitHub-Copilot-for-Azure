@@ -158,6 +158,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Install Playwright browsers
+      - name: Install Playwright Browsers
+        run: |
+          npm install --no-save @playwright/mcp@0.0.71
+          npx playwright install --with-deps chromium
+
       - name: Build plugin output
         run: |
           cd ..

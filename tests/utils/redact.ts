@@ -3,6 +3,7 @@ const SECRET_PATTERNS = [
   /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWT
   /Bearer\s+[A-Za-z0-9_\-.~+/]{20,}/gi, // Bearer tokens
   /gh[pousr]_[A-Za-z0-9_]{36,}/g, // GitHub tokens
+  /sig\s{0,2}=\s{0,2}[a-zA-Z0-9%+/=_\-.]{20,}/g // Azure SAS
 ];
 
 // Key=value style secrets (including JSON-style properties). Capture the key + separator as group 1

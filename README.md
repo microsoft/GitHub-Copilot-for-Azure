@@ -6,7 +6,7 @@ GitHub Copilot for Azure is a set of extensions for Visual Studio, VS Code, and 
 - [VS Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azure-github-copilot)
 - [Visual Studio 2022](https://marketplace.visualstudio.com/items?itemName=github-copilot-azure.GitHubCopilotForAzure2022)
 - Visual Studio 2026 - included "in the box" as part of the "Azure & AI" workload
-- Claude - coming soon
+- [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)
 
 ## Usage
 
@@ -62,11 +62,26 @@ To manually install skills from the Command Palette, the following commands are 
 
 #### Copilot CLI
 
-To install the Azure plugin into Copilot CLI and Claude:
+To install the Azure plugin into Copilot CLI:
 
 1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`
 2. Install the plugin with `/plugin install azure@azure-skills`
 3. Update the plugin with `/plugin update azure@azure-skills`
+
+#### Claude Code
+
+To install the Azure plugin into Claude Code, either:
+
+- Run `/plugin install azure@claude-plugins-official`, or
+- Run `/plugin` and search for "azure" in the marketplace
+
+![Claude Code plugin discovery showing the Azure plugin available for installation](resources/readme/azure-plugin-in-claude.png)
+
+To update the plugin:
+
+```
+/plugin update azure@claude-plugins-official
+```
 
 ## Sovereign Cloud Configuration
 
@@ -125,7 +140,7 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 | **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
 | **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | No marketplace | `gemini-extension.json` | ✅ Onboarded|
 | **Cursor** | ✅ | ✅ | `plugin/hooks/cursor-hooks.json` |  `.cursor-plugin/marketplace.json` (exists only in azure-skills repo) |  ✅ `plugin/.cursor-plugin/plugin.json` | ✅ Onboarded. Hooks testing - WIP |
-| **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | 🔜 | TBD | 🔜 WIP |
+| **Codex** | ✅ | ✅ | ❌ Not yet supported by client (currently supports Bash-only) | [Claude-style marketplace](https://developers.openai.com/codex/plugins/build?install-scope=workspace#add-a-marketplace-from-the-cli) | ✅ `plugin/.claude-plugin/plugin.json` | ✅ Onboarded as local plugin (curated marketplace requires public MCP) |
 | **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ⚠️ MCP only |
 
 ## Contributing
