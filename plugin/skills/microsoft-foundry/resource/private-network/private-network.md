@@ -3,9 +3,6 @@ name: private-network
 description: "Answer questions about and deploy Microsoft Foundry with network isolation. Covers BYO VNet, Managed VNet, hybrid patterns, private endpoints, and Bicep deployment. WHEN: 'Foundry networking', 'BYO VNet vs managed VNet', 'deploy Foundry in private VNet', 'private endpoints for Foundry'. DO NOT USE FOR: generic Azure networking without Foundry."
 license: MIT
 allowed-tools: Read, Write, Bash, AskUserQuestion, microsoft_docs_search, microsoft_docs_fetch
-metadata:
-  author: Microsoft
-  version: "1.0.0"
 ---
 
 # Microsoft Foundry Private Networking
