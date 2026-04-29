@@ -775,6 +775,13 @@ export function useAgentRunner() {
       await session.send({ prompt: config.prompt });
       await done;
 
+      // Send follow-up prompts before aggregating stats so tool/skill/token
+      // counts include events emitted during follow-up turns.
+      for (const followUpPrompt of config.followUp ?? []) {
+        isComplete = false;
+        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+      }
+
       // Extract token usage from assistant.usage events
       const tokenUsage: TokenUsage = {
         inputTokens: 0,
@@ -834,12 +841,6 @@ export function useAgentRunner() {
           `${tokenUsage.apiCallCount} API calls | ` +
           `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
         );
-      }
-
-      // Send follow-up prompts
-      for (const followUpPrompt of config.followUp ?? []) {
-        isComplete = false;
-        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
 
       if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
