@@ -23,13 +23,7 @@ azd init --template azure-samples/copilot-sdk-service
 
 ## Getting Current Examples
 
-Use **context7** MCP tools as the PRIMARY way to get SDK documentation and code examples:
-
-1. Call `context7-resolve-library-id` with `libraryName: "copilot-sdk"` to find the library ID
-2. Call `context7-query-docs` with the resolved ID and a query matching the user's goal
-3. Select the most relevant snippets for the user's scenario
-
-> 💡 **Tip:** Fall back to `github-mcp-server-get_file_contents` with `owner: "github"`, `repo: "copilot-sdk"` to read files directly from the repo.
+Use `github-mcp-server-get_file_contents` with `owner: "github"`, `repo: "copilot-sdk"` to read files directly from the repo and get current SDK documentation and code examples.
 
 ## Three Model Paths
 

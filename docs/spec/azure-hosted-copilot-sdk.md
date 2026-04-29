@@ -69,7 +69,6 @@ The local development scripts (`scripts/src/local/`) have been replaced by the G
 - Test suite: triggers, unit, and integration tests
 - Test infrastructure: `evaluate.ts` shared helpers, `regression-detectors.ts`
 - Local dev tooling: `setup`, `verify`, `test` commands
-- MCP server entry for Context7
 - Specialized routing in `azure-prepare` to delegate to `azure-hosted-copilot-sdk`
 
 **Not included:**
