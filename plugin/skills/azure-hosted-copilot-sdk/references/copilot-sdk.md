@@ -31,7 +31,7 @@ If the **context7** MCP server is available, it can also be used to query SDK do
 2. Call `context7-query-docs` with the resolved ID and a query matching the user's goal
 3. Select the most relevant snippets for the user's scenario
 
-> 💡 **Tip:** If context7 is not installed, instruct the user to add it. For a quick one-off use: `npx @upstash/context7-mcp@latest`. To persist it, add `@upstash/context7-mcp` as an entry in their MCP server configuration file.
+> 💡 **Tip:** If context7 is not installed, instruct the user to add it. For a quick one-off use: `npx -y @upstash/context7-mcp@latest`. To persist it, add `@upstash/context7-mcp` as an entry in their MCP server configuration file.
 
 ## Three Model Paths
 
