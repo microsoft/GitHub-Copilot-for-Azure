@@ -9,7 +9,7 @@
         "watch": "tsc -w",
         "prestart": "npm run build",
         "start": "func start",
-        "dev": "npm run build; func start --port 7071",
+        "dev": "npm run build && func start --port 7071",
         "test": "echo \"No tests yet\""
     },
     "dependencies": {
