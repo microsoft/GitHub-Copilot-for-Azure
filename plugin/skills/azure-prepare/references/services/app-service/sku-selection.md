@@ -38,15 +38,15 @@
 Production workload?
 ├─ No → Free (F1) or Basic (B1) for dev/test
 └─ Yes
-   Need deployment slots, auto-scale, VNET integration or Private Endpoints?
-   ├─ No → Basic (B1-B3) if budget-constrained
+   Need deployment slots, auto-scale, or backups?
+   ├─ No → Basic (B1-B3) if budget-constrained (supports VNet integration and Private Endpoints)
    └─ Yes
-         Need network isolation (dedicated ASE)?
-         ├─ Yes → Isolated (I1v2+)
-         └─ No
-            Need more deployment slots (20), instances (30)?
-            ├─ Yes → Premium (P1v3+)
-            └─ No → Standard (S1+) with VNet integration
+          Need network isolation (dedicated ASE)?
+          ├─ Yes → Isolated (I1v2+)
+          └─ No
+             Need more than 5 deployment slots or more than 10 instances?
+             ├─ Yes → Premium (P1v3+)
+             └─ No → Standard (S1-S3) with Private Endpoints and VNet integration
 ```
 
 ## Feature Unlock Summary
@@ -107,6 +107,6 @@ Scale up (change SKU) vs scale out (add instances):
 |----------|----------------|--------|
 | Personal blog / prototype | F1 or B1 | Minimal cost, no SLA needed |
 | Team dev/test | B1-B2 | Always On, custom domain |
-| Production API | P0v3/P0v4-P2v3/P2v4 | Auto-scale, slots, VNet |
+| Production API | S1-S3 (P0v3/P0v4+ for higher scale/perf) | Auto-scale, slots, VNet |
 | Enterprise with compliance | P1v3+/P1v4+ | Private endpoints, 20 slots, 30 instances |
 | Regulated / multi-tenant SaaS | I1v2+ | Full network isolation |

@@ -187,7 +187,7 @@ az webapp config access-restriction set -g RG -n APP --use-same-restrictions-for
 
 Connect to on-premises resources without VPN. Requires Basic tier or higher. Uses Hybrid Connection Manager (HCM) agent on-premises relaying through Azure Relay.
 
-> ⚠️ **Warning:** Each Hybrid Connection maps to a single host:port endpoint. Basic tier suports 5; Standard tier supports 25; Premium/Isolated support 200.
+> ⚠️ **Warning:** Each Hybrid Connection maps to a single host:port endpoint. Basic tier supports 5; Standard tier supports 25; Premium/Isolated support 200.
 
 ## Troubleshooting
 
