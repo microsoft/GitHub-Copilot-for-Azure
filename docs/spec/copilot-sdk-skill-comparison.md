@@ -77,7 +77,7 @@
 | Progressive disclosure | ❌ Entire file loads at once | ✅ Frontmatter → SKILL.md → refs on demand |
 | Token efficiency | ~4,000 tokens per activation | ~500 tokens initially, ~1,000 per ref as needed |
 | Routing logic | None (pure reference doc) | Step 1 routing table: scaffold / deploy / integrate / model config |
-| MCP tool usage | None | ✅ `github-mcp-server-get_file_contents` |
+| MCP tool usage | None | ✅ `github-mcp-server-get_file_contents`, `context7-*` |
 | Skill chaining | None | ✅ Chains to `azure-prepare`, `azure-validate`, `azure-deploy` |
 | Anti-triggers (DO NOT USE FOR) | None | ✅ Excludes Copilot Extensions, Foundry agents, general web apps |
 

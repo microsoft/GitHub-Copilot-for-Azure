@@ -19,6 +19,7 @@ Read the template via MCP for reference implementation:
 
 `github-mcp-server-get_file_contents` with `owner: "azure-samples"`, `repo: "copilot-sdk-service"`. Read `AGENTS.md` first.
 
+Use context7 tools (`context7-resolve-library-id` → `context7-query-docs`) for current SDK API examples. If context7 is not available, instruct the user to install it: `npx @upstash/context7-mcp@latest`.
 
 ## Integration Steps
 
