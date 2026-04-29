@@ -8,29 +8,29 @@
 /.github/workflows/ @microsoft/ghcp4a
 
 # Plugin skills owners
-/plugin/skills/airunway-aks-setup/ @jongio
-/plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @jongio
-/plugin/skills/azure-ai/ @charris-msft @jongio
-/plugin/skills/azure-aigateway/ @azaslonov @jongio
-/plugin/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT @jongio
-/plugin/skills/azure-compliance/ @saikoumudi @jongio
-/plugin/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21 @jongio
-/plugin/skills/azure-cost/ @saikoumudi @jongio
-/plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk @jongio
-/plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi @jongio
-/plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @jongio
-/plugin/skills/azure-hosted-copilot-sdk/ @jongio
-/plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @jongio
-/plugin/skills/azure-kusto/ @saikoumudi @jongio
-/plugin/skills/azure-messaging/ @kashifkhan @jongio
-/plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan @jongio
-/plugin/skills/azure-quotas/ @rakal-dyh @jongio
-/plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman @jongio
-/plugin/skills/azure-resource-lookup/ @charris-msft @jongio
-/plugin/skills/azure-resource-visualizer/ @tmeschter @jongio
-/plugin/skills/azure-storage/ @charris-msft @jongio
-/plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @jongio
-/plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan @jongio
-/plugin/skills/entra-agent-id/ @ArLucaID @jongio
-/plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan @jongio
-/plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @jongio @anchenyi @XiaofuHuang
+/plugin/skills/airunway-aks-setup/ @microsoft/ghcp4a @jongio
+/plugin/skills/appinsights-instrumentation/ @microsoft/ghcp4a @JasonYeMSFT @jongio
+/plugin/skills/azure-ai/ @microsoft/ghcp4a @charris-msft @jongio
+/plugin/skills/azure-aigateway/ @microsoft/ghcp4a @azaslonov @jongio
+/plugin/skills/azure-cloud-migrate/ @microsoft/ghcp4a @saikoumudi @MadhuraBharadwaj-MSFT @jongio
+/plugin/skills/azure-compliance/ @microsoft/ghcp4a @saikoumudi @jongio
+/plugin/skills/azure-compute/ @microsoft/ghcp4a @alex-thompson @rakal-dyh @joybb @rmmue21 @jongio
+/plugin/skills/azure-cost/ @microsoft/ghcp4a @saikoumudi @jongio
+/plugin/skills/azure-deploy/ @microsoft/ghcp4a @tmeschter @wbreza @kvenkatrajan @paulyuk @jongio
+/plugin/skills/azure-diagnostics/ @microsoft/ghcp4a @tmeschter @saikoumudi @jongio
+/plugin/skills/azure-enterprise-infra-planner/ @microsoft/ghcp4a @Jbrocket @micha31r @arunrab @jongio
+/plugin/skills/azure-hosted-copilot-sdk/ @microsoft/ghcp4a @jongio
+/plugin/skills/azure-kubernetes/ @microsoft/ghcp4a @saikoumudi @chandraneel @gambtho @jongio
+/plugin/skills/azure-kusto/ @microsoft/ghcp4a @saikoumudi @jongio
+/plugin/skills/azure-messaging/ @microsoft/ghcp4a @kashifkhan @jongio
+/plugin/skills/azure-prepare/ @microsoft/ghcp4a @tmeschter @wbreza @kvenkatrajan @jongio
+/plugin/skills/azure-quotas/ @microsoft/ghcp4a @rakal-dyh @jongio
+/plugin/skills/azure-rbac/ @microsoft/ghcp4a @JasonYeMSFT @msalaman @jongio
+/plugin/skills/azure-resource-lookup/ @microsoft/ghcp4a @charris-msft @jongio
+/plugin/skills/azure-resource-visualizer/ @microsoft/ghcp4a @tmeschter @jongio
+/plugin/skills/azure-storage/ @microsoft/ghcp4a @charris-msft @jongio
+/plugin/skills/azure-upgrade/ @microsoft/ghcp4a @MadhuraBharadwaj-MSFT @saikoumudi @jongio
+/plugin/skills/azure-validate/ @microsoft/ghcp4a @wbreza @tmeschter @kvenkatrajan @jongio
+/plugin/skills/entra-agent-id/ @microsoft/ghcp4a @ArLucaID @jongio
+/plugin/skills/entra-app-registration/ @microsoft/ghcp4a @JasonYeMSFT @kvenkatrajan @jongio
+/plugin/skills/microsoft-foundry/ @microsoft/ghcp4a @ankitbko @tendau @XOEEst @jongio @anchenyi @XiaofuHuang
