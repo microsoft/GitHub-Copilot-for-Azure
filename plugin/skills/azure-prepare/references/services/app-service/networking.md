@@ -160,7 +160,7 @@ siteConfig: {
 az webapp config access-restriction add --resource-group RG --name APP --rule-name 'allow-office' --action Allow --ip-address 203.0.113.0/24 --priority 100
 
 # Add restriction to deny access from any other address range
-az webapp config access-restriction add --resource-group RG --name APP --rule-name 'deny-all' --action Deny --ipAddress Any --priority 2147483647
+az webapp config access-restriction add --resource-group RG --name APP --rule-name 'deny-all' --action Deny --ip-address Any --priority 2147483647
 
 # Set SCM Site (Kudu) to use same access restrictions as main site
 az webapp config access-restriction set -g RG -n APP --use-same-restrictions-for-scm-site true
