@@ -4,16 +4,16 @@ Orchestrate the full eval-driven optimization cycle for a Foundry agent. This sk
 
 ## When to Use This Skill
 
-USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run batch evaluation, analyze eval results, why did my eval fail, cluster failures, improve agent quality, optimize agent prompt, compare agent versions, re-evaluate after changes, set up CI/CD evals, agent monitoring, eval-driven optimization.
+USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run batch evaluation, analyze eval results, why did my eval fail, cluster failures, improve agent quality, optimize agent prompt, compare agent versions, re-evaluate after changes, set up CI/CD evals, agent monitoring, eval-driven optimization, set up continuous monitoring, production quality monitoring, why are eval scores dropping.
 
-> ⚠️ **DO NOT manually call** `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, or `prompt_optimize` **without reading this skill first.** This skill defines required pre-checks, environment selection, cache reuse, artifact persistence, and multi-step orchestration that the raw tools do not enforce.
+> ⚠️ **DO NOT manually call** `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, or `continuous_eval_create` **without reading this skill first.** This skill defines required pre-checks, environment selection, cache reuse, artifact persistence, and multi-step orchestration that the raw tools do not enforce.
 
 ## Quick Reference
 
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key Foundry MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
+| Key MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `evaluation_get`, `prompt_optimize`, `agent_update`, `continuous_eval_create`, `continuous_eval_get`, `continuous_eval_delete` |
 | Prerequisite | Agent deployed and running (use [deploy skill](../deploy/deploy.md)) |
 | Local cache | `.foundry/agent-metadata.yaml`, `.foundry/evaluators/`, `.foundry/datasets/`, `.foundry/results/` |
 
@@ -27,7 +27,8 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | "Why did my eval fail?" / "Analyze results" | [Step 3: Analyze](references/analyze-results.md) |
 | "Improve my agent" / "Optimize prompt" | [Step 4: Optimize](references/optimize-deploy.md) |
 | "Compare agent versions" | [Step 5: Compare](references/compare-iterate.md) |
-| "Set up CI/CD evals" | [Step 6: CI/CD](references/cicd-monitoring.md) |
+| "Set up CI/CD evals" | [Step 6: CI/CD & Monitoring](references/cicd-monitoring.md) |
+| "Enable continuous monitoring" / "Set up production monitoring" / "Evaluation results dropping" | [Continuous Eval](references/continuous-eval.md) |
 
 > ⚠️ **Important:** Before running any evaluation (Step 2), always resolve the selected agent root and environment, then inspect `.foundry/agent-metadata.yaml` plus `.foundry/evaluators/` and `.foundry/datasets/`. If the cache is missing, stale, or the user wants to refresh it, route through [Step 1: Auto-Setup](references/deploy-and-setup.md) first — even if the user only asked to "evaluate."
 
@@ -52,7 +53,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 7. Re-evaluate (same env + same test case)
 8. Compare versions -> decide which to keep
 9. Loop to next category or finish
-10. Prompt: enable CI/CD evals and continuous production monitoring
+10. Prompt: enable CI/CD pipeline evals and/or continuous production monitoring
 ```
 
 ## Behavioral Rules
@@ -107,3 +108,4 @@ promptText: |
 | "Analyze production traces" / "Search conversations" / "Find errors in App Insights" | [trace skill](../trace/trace.md) |
 | "Debug hosted agent issues" / "Hosted-agent logs" | [troubleshoot skill](../troubleshoot/troubleshoot.md) |
 | "Deploy or redeploy agent" | [deploy skill](../deploy/deploy.md) |
+| "Enable continuous evaluation" / "Set up ongoing monitoring" | [Continuous Eval](references/continuous-eval.md) (reference within this skill) |
