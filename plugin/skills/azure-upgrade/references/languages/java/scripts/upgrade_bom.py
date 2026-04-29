@@ -395,11 +395,10 @@ def _handle_gradle(project_dir: str, bom_version: str, gradle_cmd: str | None) -
     else:
         print("[upgrade_bom] No existing azure-sdk-bom entry found — adding via AddPlatformDependency.")
 
-    # Set up OpenRewrite: create rewrite.yml + inject plugin temporarily
-    yml_path = _create_rewrite_yml(project_dir, bom_version, has_bom=has_bom)
-    injected = _inject_gradle_rewrite_plugin(build_file)
-
     try:
+        # Set up OpenRewrite: create rewrite.yml + inject plugin temporarily
+        yml_path = _create_rewrite_yml(project_dir, bom_version, has_bom=has_bom)
+        injected = _inject_gradle_rewrite_plugin(build_file)
         rc = _run_gradle_openrewrite(gradle, project_dir)
     finally:
         if os.path.isfile(yml_path):

@@ -14,7 +14,29 @@
 
 File-based authentication (e.g., `Azure.configure().authenticate(credentialFile)`) is **discouraged** under Azure's security-by-default posture: it relies on long-lived secrets stored on disk, which conflicts with the modern guidance to prefer managed identities, workload identity, or other credential types exposed by `DefaultAzureCredential`.
 
-Do **not** emit a code sample that reproduces file-based authentication during the upgrade. Instead, when the legacy code uses `.authenticate(File)`, replace the authentication block in the migrated code with a `DefaultAzureCredential` (or another appropriate `TokenCredential`) and prepend a `TODO` comment that explains the change. For example:
+#### Detect: legacy file-based authentication patterns
+
+Treat **any** of the following shapes in the legacy code as file-based authentication that must be replaced (not migrated). Triggers include `AZURE_AUTH_LOCATION`, `.authenticate(File)`, `ApplicationTokenCredentials.fromFile`, or any code path that reads `clientId` / `clientSecret` / `tenant` from disk and feeds them into a credential builder.
+
+```java
+// Shape A: direct File overload
+Azure azure = Azure.authenticate(new File(System.getenv("AZURE_AUTH_LOCATION")))
+                   .withDefaultSubscription();
+
+// Shape B: configure() chain with a File
+File credFile = new File(authFilePath);
+Azure azure = Azure.configure()
+    .withLogLevel(LogLevel.BASIC)
+    .authenticate(credFile)
+    .withDefaultSubscription();
+
+// Shape C: ApplicationTokenCredentials.fromFile(...)
+ApplicationTokenCredentials creds =
+    ApplicationTokenCredentials.fromFile(new File(authFile));
+Azure azure = Azure.authenticate(creds).withSubscription(subscriptionId);
+```
+
+Do **not** emit a code sample that reproduces any of the above during the upgrade — including a "modernized" variant that parses the same file with Jackson and feeds it into `ClientSecretCredentialBuilder`. Instead, replace the authentication block in the migrated code with a `DefaultAzureCredential` (or another appropriate `TokenCredential`) and prepend a `TODO` comment that explains the change. For example:
 
 ```java
 // TODO: The original code authenticated using a credential file (AZURE_AUTH_LOCATION),
