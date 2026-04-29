@@ -379,6 +379,45 @@ body:has(.it-dashboard) {
     color: var(--color-pass);
 }
 
+/* ── View agentMetadata button ──────────── */
+
+.it-view-agent-metadata {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 4px;
+}
+
+.it-view-agent-metadata-btn {
+    padding: 2px 8px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.it-view-agent-metadata-btn:hover:not(:disabled) {
+    background: var(--color-focus);
+    color: #fff;
+    border-color: var(--color-focus);
+}
+
+.it-view-agent-metadata-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.it-view-agent-metadata-error {
+    font-size: 0.6875rem;
+    color: var(--color-fail);
+}
+
 /* ── Responsive ─────────────────────────── */
 
 @media (max-width: 768px) {
