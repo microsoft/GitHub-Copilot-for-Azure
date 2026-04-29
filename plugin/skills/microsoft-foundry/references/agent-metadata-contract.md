@@ -115,7 +115,7 @@ environments:
 
 1. Auto-discover agent roots by searching for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
 2. If exactly one agent root is found, use it. If multiple roots are found, require the user to choose one.
-3. Inside the selected agent root, select the metadata file in this order: explicit file/path from the user or workflow, then `.foundry/agent-metadata.<env>.yaml` when an explicit environment is already known and that file exists, then `.foundry/agent-metadata.yaml`.
+3. Inside the selected agent root, select the metadata file in this order: explicit file/path from the user or workflow, then `.foundry/agent-metadata.<env>.yaml` when an explicit environment is already known and that file exists, then `.foundry/agent-metadata.yaml`. If `.foundry/agent-metadata.yaml` is absent, use the only matching sidecar file when exactly one `.foundry/agent-metadata.<env>.yaml` file exists; if multiple sidecar files exist and no explicit file/path was provided, require the user to choose the metadata file.
 4. Resolve environment in this order: explicit user choice, then the file's only environment when the selected metadata file is single-environment, then remembered session choice, then `defaultEnvironment`.
 5. Keep the selected agent root, metadata file, and environment visible in every deploy, eval, dataset, and trace summary.
 6. Once an agent root is selected, use only that root's `.foundry/` folders and source tree for local evaluation, dataset, trace, deploy, and prompt-optimization context. Do not merge sibling agent folders.
