@@ -1,9 +1,49 @@
 import { useEffect, useState } from "react";
+import type { BlobTree, BlobTreeNode } from "../../api/src/blobEnumerator";
 
 interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
+}
+
+async function openAgentMetadataLinks(date: string, testName: string): Promise<void> {
+    const res = await fetch(`/api/data/${encodeURIComponent(date)}`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const tree = (await res.json()) as BlobTree;
+    const dateNode = tree[date];
+    if (!dateNode) throw new Error("No data for this date.");
+
+    const targetFolder = `/${formatTestName(testName)}/`;
+    const matches: string[] = [];
+    const walk = (node: BlobTreeNode): void => {
+        for (const file of node.files) {
+            if (
+                file.blobName.includes(targetFolder) &&
+                /\/agent-metadata-[^/]+\.md$/.test(file.blobName)
+            ) {
+                matches.push(file.blobName);
+            }
+        }
+        for (const child of Object.values(node.children)) {
+            walk(child);
+        }
+    };
+    walk(dateNode);
+
+    if (matches.length === 0) {
+        throw new Error("No agentMetadata files found for this test case.");
+    }
+    for (const blobName of matches) {
+        // Note: when there are multiple matches, the browser may block attempts
+        // to open the new page after the first one.
+        // The user may unblock pop ups from this website or open them individually.
+        window.open(
+            `/nightly-runs.html?file=${encodeURIComponent(blobName)}`,
+            "_blank",
+            "noopener,noreferrer",
+        );
+    }
 }
 
 interface SkillStats {
@@ -209,6 +249,10 @@ function App() {
                                         {ft.message && (
                                             <span className="it-failed-message">{ft.message}</span>
                                         )}
+                                        <ViewAgentMetadataButton
+                                            date={selectedDate!}
+                                            testName={ft.testName}
+                                        />
                                     </li>
                                 ))}
                             </ul>
@@ -235,6 +279,10 @@ function App() {
                                                 rate: {formatRate(pt.skillInvocationRate)}
                                             </span>
                                         )}
+                                        <ViewAgentMetadataButton
+                                            date={selectedDate!}
+                                            testName={pt.testName}
+                                        />
                                     </li>
                                 ))}
                             </ul>
@@ -243,6 +291,36 @@ function App() {
                 )}
             </div>
         </div>
+    );
+}
+
+function ViewAgentMetadataButton({ date, testName }: { date: string; testName: string }) {
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+    const onClick = async () => {
+        setBusy(true);
+        setErr(null);
+        try {
+            await openAgentMetadataLinks(date, testName);
+        } catch (e) {
+            setErr((e as Error).message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <span className="it-view-agent-metadata">
+            <button
+                className="it-view-agent-metadata-btn"
+                onClick={onClick}
+                disabled={busy}
+            >
+                {busy ? "Loading\u2026" : "view agentMetadata"}
+            </button>
+            {err && <span className="it-view-agent-metadata-error">{err}</span>}
+        </span>
     );
 }
 
