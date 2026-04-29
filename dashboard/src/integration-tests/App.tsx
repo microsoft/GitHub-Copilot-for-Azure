@@ -304,7 +304,7 @@ function ViewAgentMetadataButton({ date, testName }: { date: string; testName: s
         try {
             await openAgentMetadataLinks(date, testName);
         } catch (e) {
-            setErr((e as Error).message);
+            setErr(e instanceof Error ? e.message : String(e));
         } finally {
             setBusy(false);
         }
