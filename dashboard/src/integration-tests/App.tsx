@@ -6,15 +6,6 @@ interface TestCase {
     skillInvocationRate?: number;
 }
 
-interface TestTokenUsage {
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens: number;
-    cacheWriteTokens: number;
-    totalTokens: number;
-    runCount: number;
-}
-
 interface SkillStats {
     skillInvocationTestsPassed: number;
     skillInvocationTestsFailed: number;
@@ -24,7 +15,6 @@ interface SkillStats {
     otherTestsFailed: number;
     failedTests: TestCase[];
     passedTests: TestCase[];
-    tokenUsageByTest?: Record<string, TestTokenUsage>;
 }
 
 type SkillTestResults = Record<string, SkillStats>;
@@ -32,12 +22,6 @@ type SkillTestResults = Record<string, SkillStats>;
 function formatRate(rate: number | null): string {
     if (rate === null) return "N/A";
     return `${(rate * 100).toFixed(1)}%`;
-}
-
-function formatTokenCount(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-    return String(n);
 }
 
 function formatTestName(name: string): string {
@@ -180,51 +164,6 @@ function App() {
                                                 </div>
                                             </div>
                                         </div>
-                                        {stats.tokenUsageByTest && Object.keys(stats.tokenUsageByTest).length > 0 && (() => {
-                                            const rows = Object.entries(stats.tokenUsageByTest)
-                                                .sort((a, b) => b[1].totalTokens - a[1].totalTokens);
-                                            const totals = rows.reduce(
-                                                (acc, [, u]) => ({
-                                                    inputTokens: acc.inputTokens + u.inputTokens,
-                                                    outputTokens: acc.outputTokens + u.outputTokens,
-                                                    totalTokens: acc.totalTokens + u.totalTokens,
-                                                }),
-                                                { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-                                            );
-                                            return (
-                                                <div className="it-token-table-wrap">
-                                                    <h3 className="it-token-table-title">Token Usage</h3>
-                                                    <table className="it-token-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Test</th>
-                                                                <th className="it-token-col-num">Input</th>
-                                                                <th className="it-token-col-num">Output</th>
-                                                                <th className="it-token-col-num">Total</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {rows.map(([testName, u]) => (
-                                                                <tr key={testName}>
-                                                                    <td className="it-token-col-name" title={testName}>{testName}</td>
-                                                                    <td className="it-token-col-num">{formatTokenCount(u.inputTokens)}</td>
-                                                                    <td className="it-token-col-num">{formatTokenCount(u.outputTokens)}</td>
-                                                                    <td className="it-token-col-num it-token-total">{formatTokenCount(u.totalTokens)}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                        <tfoot>
-                                                            <tr className="it-token-totals-row">
-                                                                <td>Total</td>
-                                                                <td className="it-token-col-num">{formatTokenCount(totals.inputTokens)}</td>
-                                                                <td className="it-token-col-num">{formatTokenCount(totals.outputTokens)}</td>
-                                                                <td className="it-token-col-num it-token-total">{formatTokenCount(totals.totalTokens)}</td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    </table>
-                                                </div>
-                                            );
-                                        })()}
                                     </section>
                                 );
                             })}
