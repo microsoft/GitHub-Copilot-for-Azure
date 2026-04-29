@@ -63,3 +63,6 @@ Endpoint should return 200 OK when healthy.
 - [Bicep Patterns](bicep.md)
 - [Deployment Slots](deployment-slots.md)
 - [Auto-Scaling](scaling.md)
+- [Networking](networking.md)
+- [SKU Selection](sku-selection.md)
+- [Custom Domains](custom-domains.md)
