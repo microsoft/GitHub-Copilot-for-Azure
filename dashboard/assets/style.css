@@ -1008,10 +1008,6 @@ button.header-status-pill {
   white-space: nowrap;
 }
 
-.itoken-total-col {
-  font-weight: 700;
-}
-
 .itoken-in,
 .itoken-out {
   color: var(--color-text-muted);
@@ -1019,16 +1015,6 @@ button.header-status-pill {
 
 .itoken-total {
   font-weight: 700;
-  color: var(--color-text);
-}
-
-.itoken-totals-row td {
-  border-top: 2px solid var(--color-border);
-  border-bottom: none !important;
-  font-weight: 700;
-}
-
-.itoken-totals-label {
   color: var(--color-text);
 }
 

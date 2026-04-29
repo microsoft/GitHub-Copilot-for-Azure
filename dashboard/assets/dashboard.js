@@ -1849,7 +1849,7 @@ function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
   } else {
     // Table
     const table = el("table", "itoken-table");
-    table.setAttribute("aria-label", "Integration test token usage");
+    table.setAttribute("aria-label", "Integration test average token usage");
 
     const thead = el("thead");
     const headerRow = el("tr");
@@ -1899,7 +1899,7 @@ function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
   const fakeCategory = {
     status: rows.length === 0 ? "skip" : "pass",
     summary: { total: rows.length, passed: rows.length, failed: 0, warnings: 0, skipped: 0 },
-    items: [],
+    items: rows.map(function (r) { return { name: r.testName, status: "pass" }; }),
   };
 
   setupCollapsible(section, fakeCategory, "integration-token-usage");
