@@ -32,6 +32,12 @@
 
 > 💡 **Tip:** Figures are representative for **Windows OS** in **Central US**, **as of 2026-04**. Prices vary by region, OS, and offer. Use the [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for exact figures.
 
+### Save by using Reserved Instances and Savings Plans
+
+Cost savings can be made on Premium V3, Premium V4 and Isolated V2 plans by committing to reserved instances for 1 or 3 year terms, details can found at [https://learn.microsoft.com/azure/cost-management-billing/reservations/prepay-app-service](https://learn.microsoft.com/azure/cost-management-billing/reservations/prepay-app-service).
+
+Alternatively cost savings can be made using [Azure Savings plans](https://learn.microsoft.com/en-us/azure/cost-management-billing/savings-plan/).
+
 ## Decision Criteria
 
 ```
