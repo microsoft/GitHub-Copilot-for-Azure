@@ -209,18 +209,6 @@ def _handle_maven(project_dir: str, bom_version: str, mvn_cmd: str | None) -> in
 def _detect_gradle(project_dir: str) -> str:
     if sys.platform == "win32":
         wrapper = os.path.join(project_dir, "gradlew.bat")
-    else:
-        wrapper = os.path.join(project_dir, "gradlew")
-    if os.path.isfile(wrapper) and os.access(wrapper, os.X_OK):
-        return wrapper
-    return "gradle"
-
-
-def _find_gradle_build_file(project_dir: str) -> str | None:
-    for name in ("build.gradle", "build.gradle.kts"):
-def _detect_gradle(project_dir: str) -> str:
-    if sys.platform == "win32":
-        wrapper = os.path.join(project_dir, "gradlew.bat")
         if os.path.isfile(wrapper):
             return wrapper
     else:
@@ -241,6 +229,11 @@ def _detect_gradle(project_dir: str) -> str:
             if os.access(wrapper, os.X_OK):
                 return wrapper
     return "gradle"
+
+
+def _find_gradle_build_file(project_dir: str) -> str | None:
+    for name in ("build.gradle", "build.gradle.kts"):
+        path = os.path.join(project_dir, name)
         if os.path.isfile(path):
             return path
     return None
