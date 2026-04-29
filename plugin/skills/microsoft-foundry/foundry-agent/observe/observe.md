@@ -46,10 +46,10 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
    -> ask: "Run an evaluation to identify optimization opportunities?"
 2. Evaluate (batch eval run)
 3. Download and cluster failures
-4. Pick a category or test suite to optimize
+4. Pick a category or evaluation suite to optimize
 5. Optimize prompt
 6. Deploy new version (after user sign-off)
-7. Re-evaluate (same env + same test suite)
+7. Re-evaluate (same env + same evaluation suite)
 8. Compare versions -> decide which to keep
 9. Loop to next category or finish
 10. Prompt: enable CI/CD evals and continuous production monitoring
@@ -60,7 +60,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 1. **Keep context visible.** Restate the selected agent root, metadata file, and environment in setup, evaluation, and result summaries.
 2. **Stay inside the selected agent root.** Once the agent root is resolved, inspect only that folder's `.foundry/` cache and source tree when suggesting tools, datasets, evaluators, or prompt optimizations. Do not merge sibling agent folders.
 3. **Reuse cache before regenerating.** Prefer existing `.foundry/evaluators/` and `.foundry/datasets/` when they match the active environment. Ask before refreshing or overwriting them.
-4. **Start with smoke suites.** Run test suites tagged `tier=smoke` before broader `tier=regression` or `tier=coverage` suites unless the user explicitly chooses otherwise.
+4. **Start with smoke suites.** Run evaluation suites tagged `tier=smoke` before broader `tier=regression` or `tier=coverage` suites unless the user explicitly chooses otherwise.
 5. **Auto-poll in background.** After creating eval runs or starting containers, poll in a background terminal. Only surface the final result.
 6. **Confirm before changes.** Show diff/summary before modifying agent code, refreshing cache, or deploying. Wait for sign-off.
 7. **Prompt for next steps.** After each step, present options. Never assume the path forward.

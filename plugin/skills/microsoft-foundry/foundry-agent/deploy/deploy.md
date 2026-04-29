@@ -290,9 +290,9 @@ The local filename must start with the selected environment's Foundry agent name
 
 Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
 
-### 6. Persist Artifacts and Test Suites
+### 6. Persist Artifacts and Evaluation Suites
 
-Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update test suites in the selected metadata file for the selected environment:
+Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
 
 ```text
 .foundry/
@@ -309,7 +309,7 @@ Each evaluation suite should bundle one dataset with the evaluator list, thresho
 
 ### 7. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and evaluation-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
 
 - **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.

@@ -136,17 +136,17 @@ Use `evaluationSuites[]` as the canonical schema. If the selected environment st
 
 When a workflow writes metadata, rewrite the selected metadata file so the target environment contains only `evaluationSuites[]`. Do not keep older `testSuites[]` or legacy `testCases[]` in the rewritten block.
 
-## Test-Suite Guidance
+## Evaluation-Suite Guidance
 
-Use `tags` as a freeform key/value map on each test suite. Suggested keys:
+Use `tags` as a freeform key/value map on each evaluation suite. Suggested keys:
 
 | Tag Key | Example Values | Typical Use |
 |---------|----------------|-------------|
 | `tier` | `smoke`, `regression`, `coverage` | Suggested run order / breadth |
-| `purpose` | `baseline`, `safety`, `tools`, `quality` | Why the suite exists |
+| `purpose` | `baseline`, `safety`, `tools`, `quality`, `regression` | Why the suite exists |
 | `stage` | `seed`, `traces`, `curated`, `prod` | Dataset lifecycle alignment |
 
-Each test suite should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep the local cache filename versioned (for example, `...-v3.jsonl`). Persist the local `datasetFile` and remote `datasetUri` together so every test suite can resolve both the cache artifact and the Foundry-registered dataset. Add a `tags` map to each suite (for example, `tier: smoke`, `purpose: baseline`) so workflows can group or filter suites without a fixed priority enum. Local dataset filenames should start with the selected environment's Foundry `agentName` from the selected metadata file, followed by stage and version suffixes, so related cache files stay grouped by agent. If `agentName` already encodes the environment (for example, `support-agent-dev`), do not append the environment key again. Keep `datasets/`, `evaluators/`, and `results/` shared at the `.foundry/` root even when multiple metadata files exist. Use test-suite IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
+Each evaluation suite should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep the local cache filename versioned (for example, `...-v3.jsonl`). Persist the local `datasetFile` and remote `datasetUri` together so every evaluation suite can resolve both the cache artifact and the Foundry-registered dataset. Add a `tags` map to each suite (for example, `tier: smoke`, `purpose: baseline`) so workflows can group or filter suites without a fixed priority enum. Local dataset filenames should start with the selected environment's Foundry `agentName` from the selected metadata file, followed by stage and version suffixes, so related cache files stay grouped by agent. If `agentName` already encodes the environment (for example, `support-agent-dev`), do not append the environment key again. Keep `datasets/`, `evaluators/`, and `results/` shared at the `.foundry/` root even when multiple metadata files exist. Use evaluation-suite IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
 
 ## Sync Guidance
 

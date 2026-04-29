@@ -128,7 +128,7 @@ Produce a prioritized action table:
 
 ## Step 5 — Dive Into Category
 
-When the user wants to inspect a specific cluster, display the individual rows: test-suite ID, input query, the agent's original response, evaluator scores, and failure reason. Let the user confirm which category or test suite to optimize.
+When the user wants to inspect a specific cluster, display the individual rows: evaluation-suite ID, input query, the agent's original response, evaluator scores, and failure reason. Let the user confirm which category or evaluation suite to optimize.
 
 ## Next Steps
 

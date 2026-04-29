@@ -6,11 +6,11 @@
 - Selected `.foundry/agent-metadata*.yaml` file loaded for the active agent root
 - Evaluators configured (from [Step 1](deploy-and-setup.md) or `.foundry/evaluators/`)
 - Local test dataset available (from the selected agent root's `.foundry/datasets/`)
-- Test suite selected from the environment's `evaluationSuites[]`
+- Evaluation suite selected from the environment's `evaluationSuites[]`
 
 ## Run Evaluation
 
-Use **`evaluation_agent_batch_eval_create`** to run the selected test suite's evaluators against the selected environment's agent.
+Use **`evaluation_agent_batch_eval_create`** to run the selected evaluation suite's evaluators against the selected environment's agent.
 
 ### Required Parameters
 
@@ -19,7 +19,7 @@ Use **`evaluation_agent_batch_eval_create`** to run the selected test suite's ev
 | `projectEndpoint` | Azure AI Project endpoint from the selected metadata file |
 | `agentName` | Agent name for the selected environment |
 | `agentVersion` | Agent version (string, for example `"1"`) |
-| `evaluatorNames` | Array of evaluator names from the selected test suite |
+| `evaluatorNames` | Array of evaluator names from the selected evaluation suite |
 
 ### Test Data Options
 
@@ -37,7 +37,7 @@ Before setting `deploymentName`, use **`model_deployment_get`** to list the sele
 |-----------|-------------|
 | `deploymentName` | Required for quality evaluators (the LLM-judge model) |
 | `evaluationId` | Pass existing eval group ID to group runs for comparison |
-| `evaluationName` | Name for a new evaluation group; include environment and test-suite ID |
+| `evaluationName` | Name for a new evaluation group; include environment and evaluation-suite ID |
 
 > **Important:** Use `evaluationId` on `evaluation_agent_batch_eval_create` (not `evalId`) to group runs. Run suites tagged `tier=smoke` first unless the user chooses a broader suite tag or a specific suite.
 
