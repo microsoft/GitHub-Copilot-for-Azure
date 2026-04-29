@@ -1872,11 +1872,17 @@ function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
       tdTest.setAttribute("title", row.testName);
 
       const tdTokens = el("td", "itoken-num-col");
-      tdTokens.appendChild(el("span", "itoken-in", formatTokenCount(row.inputTokens)));
+      const spanIn = el("span", "itoken-in", formatTokenCount(row.inputTokens));
+      spanIn.setAttribute("title", row.inputTokens.toLocaleString());
+      const spanOut = el("span", "itoken-out", formatTokenCount(row.outputTokens));
+      spanOut.setAttribute("title", row.outputTokens.toLocaleString());
+      const spanTotal = el("span", "itoken-total", formatTokenCount(row.totalTokens));
+      spanTotal.setAttribute("title", row.totalTokens.toLocaleString());
+      tdTokens.appendChild(spanIn);
       tdTokens.appendChild(document.createTextNode(" / "));
-      tdTokens.appendChild(el("span", "itoken-out", formatTokenCount(row.outputTokens)));
+      tdTokens.appendChild(spanOut);
       tdTokens.appendChild(document.createTextNode(" / "));
-      tdTokens.appendChild(el("span", "itoken-total", formatTokenCount(row.totalTokens)));
+      tdTokens.appendChild(spanTotal);
 
       tr.appendChild(tdTest);
       tr.appendChild(tdTokens);
