@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext, Timer } from "@a
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import { listMsbenchDates, enumerateMsbenchBlobs, getMsbenchBlobContent } from "../msbenchBlobEnumerator";
-import type { BlobTreeNode } from "../../../shared/blobTree";
+import type { BlobTreeNode } from "../shared/blobTree";
 
 const MSBENCH_STORAGE_ACCOUNT = process.env.MSBENCH_STORAGE_ACCOUNT;
 const EVAL_TABLE_NAME = process.env.MSBENCH_EVAL_TABLE_NAME;

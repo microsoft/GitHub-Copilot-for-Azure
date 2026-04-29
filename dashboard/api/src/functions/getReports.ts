@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import { enumerateBlobs, getBlobContent, } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
-import type { BlobTree, BlobTreeNode } from "../../../shared/blobTree";
+import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 
 /**
  * Recursively collect all blob paths matching the SKILL-REPORT pattern from a tree node.
