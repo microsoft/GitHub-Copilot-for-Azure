@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
-import type { BlobEntry, BlobTree, BlobTreeNode } from "../../api/src/blobEnumerator";
+import type { BlobEntry, BlobTree, BlobTreeNode } from "../../shared/blobTree";
 
 /**
  * Recursively collect all .md files from a blob tree node.

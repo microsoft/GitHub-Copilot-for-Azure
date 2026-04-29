@@ -1,5 +1,6 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
-import { BlobTree, listDatePrefixes, enumerateBlobTree, downloadBlobContent, getCredential } from "./blobEnumerator";
+import { listDatePrefixes, enumerateBlobTree, downloadBlobContent, getCredential } from "./blobEnumerator";
+import type { BlobTree } from "../../shared/blobTree";
 
 const MSBENCH_STORAGE_ACCOUNT = process.env.MSBENCH_STORAGE_ACCOUNT;
 const MSBENCH_REPORTS_CONTAINER_NAME = process.env.MSBENCH_REPORTS_CONTAINER;

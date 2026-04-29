@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
-import type { BlobEntry, BlobTree, BlobTreeNode } from "../../api/src/blobEnumerator";
+import type { BlobEntry, BlobTree, BlobTreeNode } from "../../shared/blobTree";
 
 interface FileSection {
     label: string;

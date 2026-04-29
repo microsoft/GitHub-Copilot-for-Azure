@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { BlobTree, BlobTreeNode } from "../../api/src/blobEnumerator";
+import type { BlobTree, BlobTreeNode } from "../../shared/blobTree";
 
 interface TestCase {
     testName: string;
