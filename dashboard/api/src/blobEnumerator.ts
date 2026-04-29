@@ -43,7 +43,7 @@ export function getCredential() {
 }
 
 function getContainerClient(containerName: string): ContainerClient {
-    const STORAGE_ACCOUNT_NAME = "strdashboarddevveobvk";
+    const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
     if (!STORAGE_ACCOUNT_NAME) {
         throw new Error("STORAGE_ACCOUNT_NAME is not defined");
     }
