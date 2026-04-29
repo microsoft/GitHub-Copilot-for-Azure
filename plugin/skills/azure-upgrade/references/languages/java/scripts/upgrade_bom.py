@@ -419,7 +419,7 @@ def _handle_gradle(project_dir: str, bom_version: str, gradle_cmd: str | None) -
         injected = _inject_gradle_rewrite_plugin(build_file)
         rc = _run_gradle_openrewrite(gradle, project_dir)
     finally:
-        if os.path.isfile(yml_path):
+        if yml_path and os.path.isfile(yml_path):
             os.remove(yml_path)
             print(f"[upgrade_bom] Removed {yml_path}")
         if injected:
