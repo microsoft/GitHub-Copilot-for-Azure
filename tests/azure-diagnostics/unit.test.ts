@@ -4,7 +4,7 @@
  * Test isolated skill logic and validation rules.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import * as path from "node:path";
 import { loadSkill, LoadedSkill } from "../utils/skill-loader";
 
@@ -88,15 +88,50 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("links to Azure Kubernetes troubleshooting reference", () => {
-      expect(skill.content).toContain("aks-troubleshooting/aks-troubleshooting.md");
+      expect(skill.content).toContain("troubleshooting/aks/aks-troubleshooting.md");
     });
 
     test("routes AKS incidents to the troubleshooting guide", () => {
       expect(skill.content).toContain("Route active AKS incidents");
     });
 
+    test("links to messaging troubleshooting reference", () => {
+      expect(skill.content).toContain("troubleshooting/messaging/README.md");
+    });
+
+    test("routes messaging incidents to the troubleshooting guide", () => {
+      expect(skill.content).toContain("Route Azure Messaging SDK troubleshooting");
+    });
+
+    test("messaging troubleshooting files exist", () => {
+      const messagingDir = path.join(skill.path, "troubleshooting", "messaging");
+      const messagingReadmePath = path.join(messagingDir, "README.md");
+      const messagingReadme = readFileSync(messagingReadmePath, "utf-8");
+
+      expect(messagingReadme).toContain("Azure Messaging Troubleshooting");
+      expect(messagingReadme).toContain("service-troubleshooting.md");
+      expect(messagingReadme).toContain("azure-eventhubs-py.md");
+      expect(messagingReadme).toContain("azure-servicebus-py.md");
+
+      // Verify referenced files actually exist on disk
+      const expectedFiles = [
+        "service-troubleshooting.md",
+        "azure-eventhubs-dotnet.md",
+        "azure-eventhubs-java.md",
+        "azure-eventhubs-js.md",
+        "azure-eventhubs-py.md",
+        "azure-servicebus-dotnet.md",
+        "azure-servicebus-java.md",
+        "azure-servicebus-js.md",
+        "azure-servicebus-py.md",
+      ];
+      for (const file of expectedFiles) {
+        expect(existsSync(path.join(messagingDir, file))).toBe(true);
+      }
+    });
+
     test("supports sidecar references for AKS command flows and MCP guidance", () => {
-      const troubleshootingSkillPath = path.join(skill.path, "aks-troubleshooting", "aks-troubleshooting.md");
+      const troubleshootingSkillPath = path.join(skill.path, "troubleshooting", "aks", "aks-troubleshooting.md");
       const troubleshootingContent = readFileSync(troubleshootingSkillPath, "utf-8");
 
       expect(troubleshootingContent).toContain("references/command-flows.md");
@@ -105,7 +140,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("documents AKS-MCP preference and lightweight discovery guidance", () => {
-      const aksMcpReferencePath = path.join(skill.path, "aks-troubleshooting", "references", "aks-mcp.md");
+      const aksMcpReferencePath = path.join(skill.path, "troubleshooting", "aks", "references", "aks-mcp.md");
       const aksMcpReference = readFileSync(aksMcpReferencePath, "utf-8");
 
       expect(aksMcpReference).toContain("mcp_azure_mcp_aks");

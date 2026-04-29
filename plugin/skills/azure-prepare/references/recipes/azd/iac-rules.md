@@ -39,8 +39,25 @@ Before finalizing generated guidance:
 |-------------|---------|
 | Location | `./infra/` folder |
 | Entry point | `main.bicep` with `targetScope = 'subscription'` |
-| Parameters | `main.parameters.json` |
+| Parameters | `main.parameters.json` (ARM JSON — see format below) |
 | Modules | `./infra/modules/*.bicep` with `targetScope = 'resourceGroup'` |
+
+## Parameter File Format
+
+`main.parameters.json` uses ARM JSON syntax. Do **not** use `.bicepparam` syntax (`using`, `param`, `readEnvironmentVariable()`) in this file — `azd` will fail with a JSON parse error.
+
+```json
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "${AZURE_ENV_NAME}" },
+    "location": { "value": "${AZURE_LOCATION}" }
+  }
+}
+```
+
+Use `azd env set` to supply values. During `azd provision`, azd substitutes `${VAR}` placeholders with values from the environment.
 
 ## Naming Convention
 

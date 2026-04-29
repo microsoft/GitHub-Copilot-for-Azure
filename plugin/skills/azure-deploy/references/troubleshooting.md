@@ -112,6 +112,8 @@ azd env set STORAGE_SKU <user-provided-value>
 3. **If no mapping exists**, add one to `infra/main.parameters.json`:
 ```json
 {
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
   "parameters": {
     "storageAccountSku": {
       "value": "${STORAGE_SKU}"
@@ -119,6 +121,8 @@ azd env set STORAGE_SKU <user-provided-value>
   }
 }
 ```
+
+> ⚠️ **Warning:** `main.parameters.json` uses ARM JSON syntax. Do **not** use `.bicepparam` syntax (`using`, `param`, `readEnvironmentVariable()`) in this file — `azd` will fail with a JSON parse error.
 
 Then ask the user for the desired value and set the environment variable:
 ```bash
@@ -158,7 +162,38 @@ azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID $(az identity list --re
 azd env set MANAGED_IDENTITY_CLIENT_ID $(az identity list --resource-group <resource-group-name> --query "[0].clientId" -o tsv)
 ```
 
+**PowerShell:**
+```powershell
+# Set the container registry endpoint
+azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT (az acr list --resource-group <resource-group-name> --query "[0].loginServer" -o tsv)
+
+# Set the managed identity resource ID
+azd env set AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID (az identity list --resource-group <resource-group-name> --query "[0].id" -o tsv)
+
+# Set the managed identity client ID
+azd env set MANAGED_IDENTITY_CLIENT_ID (az identity list --resource-group <resource-group-name> --query "[0].clientId" -o tsv)
+```
+
 Then retry deployment:
 ```bash
 azd deploy --no-prompt
 ```
+
+## Container Apps — RBAC Propagation Timeout
+
+**Symptom:** During `azd up`, infrastructure provisions successfully but the Container App revision creation times out (~900s). Container App shows `provisioningState: Failed` with no active revision.
+
+**Cause:** The managed identity's `AcrPull` role assignment hasn't propagated before the Container App attempts to pull the image from ACR. Azure RBAC propagation can take 1–5 minutes.
+
+**Solution:**
+
+1. Verify the `AcrPull` role exists on the ACR for the Container App's managed identity (see [AZD Errors — Container App Revision Timeout](recipes/azd/errors.md#container-app-revision-timeout))
+2. If missing, assign it manually with `--assignee-principal-type ServicePrincipal`
+3. Wait 2–5 minutes for RBAC propagation before retrying
+4. Set `AZURE_CONTAINER_REGISTRY_ENDPOINT` env var
+5. Run `azd deploy --no-prompt`; if it still fails, wait a little longer and retry with backoff until propagation completes
+
+**Prevention:**
+
+- Include `AcrPull` role assignment in Bicep with `principalType: 'ServicePrincipal'`
+- Use `azd provision` + `azd deploy` (separate steps) instead of `azd up` to allow propagation time

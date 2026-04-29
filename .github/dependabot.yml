@@ -10,10 +10,13 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      minor-and-patch:
+      minor:
         update-types:
           - "minor"
-          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-patch"
     open-pull-requests-limit: 10
 
   # npm ecosystem — scripts/
@@ -23,10 +26,13 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      minor-and-patch:
+      minor:
         update-types:
           - "minor"
-          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-patch"
     open-pull-requests-limit: 5
 
   # npm ecosystem — tests/
@@ -36,10 +42,13 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      minor-and-patch:
+      minor:
         update-types:
           - "minor"
-          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-patch"
     open-pull-requests-limit: 5
 
   # GitHub Actions — keep SHA-pinned actions up to date
@@ -48,4 +57,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-patch"
     open-pull-requests-limit: 10

@@ -29,11 +29,49 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
   parent: storageAccount
   name: 'default'
+  properties: {
+    isVersioningEnabled: true
+  }
+}
+
+resource managementPolicies 'Microsoft.Storage/storageAccounts/managementPolicies@2023-05-01' = {
+  parent: storageAccount
+  name: 'default'
+  properties: {
+    policy: {
+      rules: [
+        {
+          enabled: true
+          name: 'deleteBlobVersionsAfter30Days'
+          type: 'Lifecycle'
+          definition: {
+            filters: {
+              blobTypes: [
+                'blockBlob'
+              ]
+            }
+            actions: {
+              version: {
+                delete: {
+                  daysAfterCreationGreaterThan: 30
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
 }
 
 resource integrationReportsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobServices
   name: 'integration-reports'
+}
+
+resource nonIntegrationContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobServices
+  name: 'non-integration'
 }
 
 resource storageBlobDataReaderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {

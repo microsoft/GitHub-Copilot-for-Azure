@@ -4,7 +4,7 @@ description: "Guidelines for writing Agent Skills that comply with the agentskil
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Skill Authoring Guide
@@ -23,7 +23,7 @@ This skill provides guidance for writing Agent Skills that comply with the [agen
 - `name`: 1-64 chars, lowercase + hyphens, match directory
 - `description`: 1-1024 chars, ≤60 words, explain WHAT and WHEN
 - Use `WHEN:` with quoted trigger phrases (preferred over `USE FOR:`)
-- Do NOT use `DO NOT USE FOR:` (keyword contamination on Sonnet)
+- Avoid `DO NOT USE FOR:` unless the skill has trigger overlap with a broader skill (see [frontmatter guidelines](references/guidelines/frontmatter.md))
 - Use inline double-quoted strings (not `>-` folded scalars)
 - SKILL.md: <500 tokens (soft), <5000 (hard)
 - references/*.md: <1000 tokens each

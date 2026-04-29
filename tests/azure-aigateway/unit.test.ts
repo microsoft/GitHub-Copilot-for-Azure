@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SKILL_NAME = "azure-aigateway";
-const SKILLS_PATH = path.resolve(__dirname, "../../plugin/skills");
+const SKILLS_PATH = path.resolve(__dirname, "../../output/skills");
 const REFERENCES_PATH = path.join(SKILLS_PATH, "azure-aigateway/references");
 
 describe(`${SKILL_NAME} - Unit Tests`, () => {

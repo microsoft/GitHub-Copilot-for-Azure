@@ -344,6 +344,15 @@ UpgradeLog*.XML
 x64/
 x86/
 
+# Gulp build output
+output/
+
+# Generated at build time
+plugin/CHANGELOG.md
+
 dashboard/.azure/
 dashboard/dist/
 dashboard/**/dist/
+
+# C# DevKit (VS Code extension) language server cache files
+*.lscache

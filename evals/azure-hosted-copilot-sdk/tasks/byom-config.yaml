@@ -22,5 +22,8 @@ expected:
   output_not_contains:
     - "error"
     - "failed"
+    - "apiKey"
+    - "AZURE_OPENAI_API_KEY"
+    - "AZURE_OPENAI_KEY"
   behavior:
     max_tool_calls: 10

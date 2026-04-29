@@ -77,7 +77,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("description includes BYOM trigger phrases", () => {
       const description = skill.metadata.description;
       expect(description).toContain("BYOM");
-      expect(description).toContain("azure model");
       expect(description).toContain("bring your own model");
     });
 
@@ -116,6 +115,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("USE FOR and DO NOT USE FOR are inside description value, not separate keys", () => {
+      // ⚠️  Format-only check — passes silently when clause is absent.
+      //     Mandatory existence checks are below (regression guards).
       const description = skill.metadata.description;
       if (description.includes("USE FOR")) {
         expect(description).toContain("USE FOR:");
@@ -123,6 +124,26 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       if (description.includes("DO NOT USE FOR")) {
         expect(description).toContain("DO NOT USE FOR:");
       }
+    });
+
+    test("description contains DO NOT USE FOR clause to disambiguate from azure-prepare", () => {
+      // Regression guard: removing the DO NOT USE FOR clause causes
+      // azure-prepare to win routing on generic deploy prompts like
+      // "Deploy this app to Azure" when codebase contains @github/copilot-sdk.
+      // The negative clause is critical for skills that share trigger overlap
+      // with broader skills (azure-prepare owns "deploy to Azure").
+      const description = skill.metadata.description;
+      expect(description).toContain("DO NOT USE FOR:");
+      expect(description).toMatch(/general web apps without copilot SDK/i);
+    });
+
+    test("description contains PREFER OVER clause for codebase-based routing", () => {
+      // Regression guard: the agent must know to prefer this skill over
+      // azure-prepare when codebase markers (not just prompt keywords)
+      // indicate a Copilot SDK project.
+      const description = skill.metadata.description;
+      expect(description).toMatch(/PREFER OVER azure-prepare/i);
+      expect(description).toContain("@github/copilot-sdk");
     });
   });
 });

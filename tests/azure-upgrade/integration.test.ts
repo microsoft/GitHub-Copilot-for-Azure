@@ -50,7 +50,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const agentMetadata = await agent.run({
         prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan",
         nonInteractive: true,
-        followUp: ["Go with recommended options."],
+        followUp: ["Continue with recommended options until complete."],
         shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
       });
 
@@ -62,7 +62,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const agentMetadata = await agent.run({
         prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption",
         nonInteractive: true,
-        followUp: ["Go with recommended options."],
+        followUp: ["Continue with recommended options until complete."],
         shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
       });
 

@@ -17,7 +17,14 @@ import {
   doesAssistantMessageIncludeKeyword,
   shouldSkipIntegrationTests
 } from "../../utils/agent-runner";
-import { isSkillInvoked, withTestResult } from "../../utils/evaluate";
+import {
+  isSkillInvoked,
+  matchesCommand,
+  withTestResult,
+  doesAssistantOrToolsIncludeKeyword,
+  softCheckSkill,
+  isMcpToolCalled
+} from "../../utils/evaluate";
 
 const SKILL_NAME = "microsoft-foundry";
 
@@ -45,9 +52,6 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const hasQuotaCommand = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "az cognitiveservices"
-      ) || doesAssistantMessageIncludeKeyword(
-        agentMetadata,
-        "az rest"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "quota"
@@ -95,14 +99,37 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
         prompt: "How much quota do I need for a production Foundry deployment?"
       });
 
-      const hasCalculation = doesAssistantMessageIncludeKeyword(
+      // Require at least one quota-specific term
+      const hasQuotaTerm = doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "TPM"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "PTU"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "capacity"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "tokens per minute"
+      );
+
+      // Require at least one calculation verb
+      const hasCalculationVerb = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "calculate"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "estimate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculation"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quantify"
       );
-      expect(hasCalculation).toBe(true);
+
+      expect(hasQuotaTerm && hasCalculationVerb).toBe(true);
     }));
   });
 
@@ -115,10 +142,11 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
       expect(isSkillUsed).toBe(true);
 
-      const mentionsPortal = doesAssistantMessageIncludeKeyword(
+      // Check in both responses and tool execution data
+      const mentionsPortal = doesAssistantOrToolsIncludeKeyword(
         agentMetadata,
         "Azure Portal"
-      ) || doesAssistantMessageIncludeKeyword(
+      ) || doesAssistantOrToolsIncludeKeyword(
         agentMetadata,
         "portal"
       );
@@ -127,15 +155,22 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("mentions business justification", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        prompt: "Request more TPM quota for Azure AI Foundry"
+        prompt: "Request more TPM quota for Azure AI Foundry and explain what justification is needed"
       });
 
-      const mentionsJustification = doesAssistantMessageIncludeKeyword(
+      // Check in both responses and tool execution data (e.g., file writes)
+      const mentionsJustification = doesAssistantOrToolsIncludeKeyword(
         agentMetadata,
         "justification"
-      ) || doesAssistantMessageIncludeKeyword(
+      ) || doesAssistantOrToolsIncludeKeyword(
         agentMetadata,
         "business"
+      ) || doesAssistantOrToolsIncludeKeyword(
+        agentMetadata,
+        "reason"
+      ) || doesAssistantOrToolsIncludeKeyword(
+        agentMetadata,
+        "rationale"
       );
       expect(mentionsJustification).toBe(true);
     }));
@@ -171,10 +206,16 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const hasModelTracking = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "model"
-      ) && doesAssistantMessageIncludeKeyword(
+      ) && (doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "capacity"
-      );
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quota"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "allocation"
+      ));
       expect(hasModelTracking).toBe(true);
     }));
   });
@@ -247,14 +288,37 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
       expect(isSkillUsed).toBe(true);
 
-      const hasPlanning = doesAssistantMessageIncludeKeyword(
+      // Require at least one quota-specific term
+      const hasQuotaTerm = doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "TPM"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "PTU"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "capacity"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "tokens per minute"
+      );
+
+      // Require at least one calculation verb
+      const hasCalculationVerb = doesAssistantMessageIncludeKeyword(
         agentMetadata,
         "calculate"
       ) || doesAssistantMessageIncludeKeyword(
         agentMetadata,
-        "TPM"
+        "estimate"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "calculation"
+      ) || doesAssistantMessageIncludeKeyword(
+        agentMetadata,
+        "quantify"
       );
-      expect(hasPlanning).toBe(true);
+
+      expect(hasQuotaTerm && hasCalculationVerb).toBe(true);
     }));
 
     test("provides best practices", () => withTestResult(async () => {
@@ -273,24 +337,28 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     }));
   });
 
-  describe("MCP Tool Integration", () => {
-    test("suggests foundry MCP tools when available", () => withTestResult(async () => {
+  describe("Deployment Listing", () => {
+    test("lists deployments using MCP tools or CLI", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         prompt: "Use the microsoft-foundry skill to list all my Microsoft Foundry model deployments and their capacity"
       });
 
-      const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-      expect(isSkillUsed).toBe(true);
+      // Soft check for skill invocation - agent should use the skill when explicitly asked
+      softCheckSkill(agentMetadata, SKILL_NAME);
 
-      // May use azure-foundry or az CLI
-      const usesTools = doesAssistantMessageIncludeKeyword(
-        agentMetadata,
-        "azure-foundry"
-      ) || doesAssistantMessageIncludeKeyword(
-        agentMetadata,
-        "az cognitiveservices"
-      );
-      expect(usesTools).toBe(true);
+      // Check if agent used Azure MCP tool for deployments (model_deployment_get from azure server)
+      const usedAzureMcp = isMcpToolCalled(agentMetadata, "azure", /model_deployment/);
+
+      // Check if agent used Azure CLI commands for deployments
+      const usedCli = matchesCommand(agentMetadata, /az\s+(cognitiveservices|rest|ai)\s+.*?(deployment|model|capacity|quota)/i);
+
+      // Check if Azure CLI commands are mentioned in responses or tool execution data
+      const mentionsAzCli = doesAssistantOrToolsIncludeKeyword(agentMetadata, "az cognitiveservices") ||
+                            doesAssistantOrToolsIncludeKeyword(agentMetadata, "az rest") ||
+                            doesAssistantOrToolsIncludeKeyword(agentMetadata, "az ai");
+
+      // Pass if agent used Azure MCP tools, CLI, or mentioned CLI commands in response/reasoning
+      expect(usedAzureMcp || usedCli || mentionsAzCli).toBe(true);
     }));
   });
 

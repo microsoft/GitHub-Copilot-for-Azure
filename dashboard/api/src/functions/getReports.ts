@@ -1,8 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
-
-const SKILL_REPORT_PATTERN = /^test-run-.*-SKILL-REPORT\.md$/;
+import { SKILL_REPORT_PATTERN } from "../skillReport";
 
 /**
  * Recursively collect all blob paths matching the SKILL-REPORT pattern from a tree node.

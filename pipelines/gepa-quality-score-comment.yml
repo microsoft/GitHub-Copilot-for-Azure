@@ -1,0 +1,107 @@
+name: GEPA Quality Score Comment
+
+on:
+  workflow_run:
+    workflows: ["GEPA Skill Quality Score"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  actions: read
+
+jobs:
+  comment:
+    name: Post Quality Score Comment
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Download score artifact
+        id: download
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gepa-quality-scores
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Resolve PR number
+        id: pr
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('score-results.json')) {
+              core.info('No gepa-quality-scores artifact found — skipping comment.');
+              core.setOutput('number', '');
+              return;
+            }
+            const prs = context.payload.workflow_run.pull_requests;
+            if (!prs || prs.length === 0) {
+              core.info('No PR associated (fork or direct push) — skipping comment.');
+              core.setOutput('number', '');
+              return;
+            }
+            core.setOutput('number', prs[0].number.toString());
+
+      - name: Comment on PR
+        if: steps.pr.outputs.number != ''
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('score-results.json', 'utf8'));
+            const items = Array.isArray(results) ? results : [results];
+            const prNumber = parseInt('${{ steps.pr.outputs.number }}', 10);
+
+            const marker = '<!-- gepa-quality-score -->';
+            let body = marker + '\n## 📊 GEPA Skill Quality Scores\n\n';
+            body += '| Skill | Quality | Triggers | Tests |\n';
+            body += '|-------|---------|----------|-------|\n';
+
+            for (const r of items) {
+              if (r.error) {
+                body += `| ${r.skill} | ❌ ERROR | - | - |\n`;
+                continue;
+              }
+              const q = r.quality_score.toFixed(2);
+              const t = r.trigger_accuracy !== null ? r.trigger_accuracy.toFixed(2) : 'N/A';
+              const tests = `${r.has_triggers_test ? 'T' : '-'}${r.has_integration_test ? 'I' : '-'}${r.has_unit_test ? 'U' : '-'}`;
+              const icon = r.quality_score >= 0.8 ? '✅' : r.quality_score >= 0.5 ? '⚠️' : '❌';
+              body += `| ${r.skill} | ${icon} ${q} | ${t} | ${tests} |\n`;
+            }
+
+            const passing = items.filter(r => (r.quality_score || 0) >= 0.8).length;
+            body += `\n**${passing}/${items.length}** skills at quality ≥ 0.80\n`;
+            body += '\n<details><summary>How to improve</summary>\n\n';
+            body += '```bash\n';
+            body += '# Score a specific skill\n';
+            body += 'python .github/skills/sensei/scripts/gepa/auto_evaluator.py score --skill <name> --skills-dir plugin/skills --tests-dir tests\n\n';
+            body += '# Optimize a skill with GEPA\n';
+            body += 'python .github/skills/sensei/scripts/gepa/auto_evaluator.py optimize --skill <name> --skills-dir plugin/skills --tests-dir tests\n';
+            body += '```\n</details>';
+
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                comment_id: existing.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body,
+              });
+            }
