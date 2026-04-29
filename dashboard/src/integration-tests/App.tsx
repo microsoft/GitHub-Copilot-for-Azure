@@ -7,10 +7,31 @@ interface TestCase {
     skillInvocationRate?: number;
 }
 
+// Cache /api/data/{date} responses keyed by encoded date so repeated lookups
+// (e.g. clicking the agentMetadata button on multiple test cases for the
+// same date) reuse a single network request.
+const blobTreeCache = new Map<string, Promise<BlobTree>>();
+
+function fetchBlobTree(date: string): Promise<BlobTree> {
+    const key = encodeURIComponent(date);
+    let cached = blobTreeCache.get(key);
+    if (!cached) {
+        cached = fetch(`/api/data/${key}`)
+            .then((res) => {
+                if (!res.ok) throw new Error(`API error: ${res.status}`);
+                return res.json() as Promise<BlobTree>;
+            })
+            .catch((err) => {
+                blobTreeCache.delete(key);
+                throw err;
+            });
+        blobTreeCache.set(key, cached);
+    }
+    return cached;
+}
+
 async function openAgentMetadataLinks(date: string, testName: string): Promise<void> {
-    const res = await fetch(`/api/data/${encodeURIComponent(date)}`);
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const tree = (await res.json()) as BlobTree;
+    const tree = await fetchBlobTree(date);
     const dateNode = tree[date];
     if (!dateNode) throw new Error("No data for this date.");
 
