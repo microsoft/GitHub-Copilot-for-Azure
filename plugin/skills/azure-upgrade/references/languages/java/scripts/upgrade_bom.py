@@ -218,7 +218,29 @@ def _detect_gradle(project_dir: str) -> str:
 
 def _find_gradle_build_file(project_dir: str) -> str | None:
     for name in ("build.gradle", "build.gradle.kts"):
-        path = os.path.join(project_dir, name)
+def _detect_gradle(project_dir: str) -> str:
+    if sys.platform == "win32":
+        wrapper = os.path.join(project_dir, "gradlew.bat")
+        if os.path.isfile(wrapper):
+            return wrapper
+    else:
+        wrapper = os.path.join(project_dir, "gradlew")
+        if os.path.isfile(wrapper):
+            if not os.access(wrapper, os.X_OK):
+                try:
+                    mode = os.stat(wrapper).st_mode
+                    os.chmod(wrapper, mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                    print(f"[upgrade_bom] Added executable bit to {wrapper}.")
+                except OSError as exc:
+                    print(
+                        f"[upgrade_bom] WARNING: gradlew exists at {wrapper} but is not "
+                        f"executable and chmod failed ({exc}); falling back to 'gradle'.",
+                        file=sys.stderr,
+                    )
+                    return "gradle"
+            if os.access(wrapper, os.X_OK):
+                return wrapper
+    return "gradle"
         if os.path.isfile(path):
             return path
     return None
