@@ -220,8 +220,6 @@ Each integration test creates a temporary workspace under `os.tmpdir()` (e.g., `
 
 To preserve workspaces for debugging, set `preserveWorkspace: true` in the `agent.run()` call.
 
-> **Note:** If a test times out and Jest kills the worker, `afterEach` may not run, leaving orphaned `skill-test-*` folders in your temp directory. Clean these up manually if needed.
-
 ### Reading Test Output
 
 **Console output:**
