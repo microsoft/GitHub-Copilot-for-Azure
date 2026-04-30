@@ -273,14 +273,19 @@ describe("finetuning - Unit Tests", () => {
         const lines = content.split("\n");
         lines.forEach((line: string, i: number) => {
           // Flag resp.json().get() in error paths (print/raise after failed status check)
-          // Safe patterns: wrapped in try/except, or using _safe_error_msg()
+          // Safe patterns: wrapped in try/except (same line or preceding 3 lines), or using _safe_error_msg()
           if (
             line.includes("resp.json().get(") &&
             !line.trim().startsWith("#") &&
             !line.includes("try:") &&
             !line.includes("_safe_error_msg")
           ) {
-            issues.push(`${filename}:${i + 1}: bare resp.json() may raise JSONDecodeError on non-JSON responses — use try/except or _safe_error_msg()`);
+            // Check preceding 3 lines for a try: block
+            const precedingLines = lines.slice(Math.max(0, i - 3), i);
+            const inTryBlock = precedingLines.some((pl: string) => pl.trim().startsWith("try:"));
+            if (!inTryBlock) {
+              issues.push(`${filename}:${i + 1}: bare resp.json() may raise JSONDecodeError on non-JSON responses — use try/except or _safe_error_msg()`);
+            }
           }
         });
       }

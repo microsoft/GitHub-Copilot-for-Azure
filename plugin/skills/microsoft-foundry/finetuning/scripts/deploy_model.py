@@ -133,7 +133,10 @@ def wait_for_deployment(sub, rg, account, name, timeout=600, poll_interval=15):
         token = get_arm_token()
         resp = requests.get(url, headers={"Authorization": f"Bearer {token}"})
         if resp.status_code == 200:
-            state = resp.json().get("properties", {}).get("provisioningState", "Unknown")
+            try:
+                state = resp.json().get("properties", {}).get("provisioningState", "Unknown")
+            except (ValueError, KeyError):
+                state = "Unknown"
             print(f"  Status: {state}")
             if state == "Succeeded":
                 return True
@@ -166,7 +169,11 @@ def list_deployments(sub, rg, account):
         print(f"❌ Failed to list deployments ({resp.status_code}): {_safe_error_msg(resp)}")
         return
 
-    deployments = resp.json().get("value", [])
+    try:
+        deployments = resp.json().get("value", [])
+    except (ValueError, KeyError):
+        print(f"❌ Failed to parse deployment list: {resp.text[:200]}")
+        return
     if not deployments:
         print("No deployments found.")
         return
