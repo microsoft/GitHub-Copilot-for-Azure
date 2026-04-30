@@ -39,7 +39,7 @@ az rest --method GET --url "https://graph.microsoft.com/v1.0/me" --query id -o t
 GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&$filter=assignedTo('{objectId}')
 ```
 
-> 💡 **Tip:** The `assignedTo` filter scopes results to the current user's assignments — this works even without `Microsoft.Authorization/roleAssignments/read` permission at subscription level.
+> 💡 **Tip:** The `assignedTo` filter is self-scoped — it allows the user to query their own role assignments without needing `Microsoft.Authorization/roleAssignments/read`. However, a 403 will still occur if the user has no role on the subscription at all.
 
 **Step 2c: Get all role definitions on the subscription**
 
