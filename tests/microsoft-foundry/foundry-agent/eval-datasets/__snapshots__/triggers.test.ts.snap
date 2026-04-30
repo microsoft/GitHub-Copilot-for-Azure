@@ -76,6 +76,7 @@ exports[`eval-datasets - Trigger Tests Trigger Keywords Snapshot skill descripti
     "troubleshoot",
     "upload",
     "validation",
+    "vnet",
     "yaml",
   ],
   "name": "microsoft-foundry",
@@ -156,6 +157,7 @@ exports[`eval-datasets - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "troubleshoot",
   "upload",
   "validation",
+  "vnet",
   "yaml",
 ]
 `;

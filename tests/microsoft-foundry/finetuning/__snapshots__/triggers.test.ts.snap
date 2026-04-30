@@ -76,6 +76,7 @@ exports[`finetuning - Trigger Tests Trigger Keywords Snapshot skill description 
     "troubleshoot",
     "upload",
     "validation",
+    "vnet",
     "yaml",
   ],
   "name": "microsoft-foundry",
@@ -156,6 +157,7 @@ exports[`finetuning - Trigger Tests Trigger Keywords Snapshot skill keywords mat
   "troubleshoot",
   "upload",
   "validation",
+  "vnet",
   "yaml",
 ]
 `;

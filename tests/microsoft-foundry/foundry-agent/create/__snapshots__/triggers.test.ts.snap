@@ -76,6 +76,7 @@ exports[`create - Trigger Tests Trigger Keywords Snapshot skill description trig
     "troubleshoot",
     "upload",
     "validation",
+    "vnet",
     "yaml",
   ],
   "name": "microsoft-foundry",
@@ -156,6 +157,7 @@ exports[`create - Trigger Tests Trigger Keywords Snapshot skill keywords match s
   "troubleshoot",
   "upload",
   "validation",
+  "vnet",
   "yaml",
 ]
 `;

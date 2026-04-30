@@ -76,6 +76,7 @@ exports[`microsoft-foundry:resource/create - Trigger Tests Trigger Keywords Snap
     "troubleshoot",
     "upload",
     "validation",
+    "vnet",
     "yaml",
   ],
 }
@@ -155,6 +156,7 @@ exports[`microsoft-foundry:resource/create - Trigger Tests Trigger Keywords Snap
   "troubleshoot",
   "upload",
   "validation",
+  "vnet",
   "yaml",
 ]
 `;
