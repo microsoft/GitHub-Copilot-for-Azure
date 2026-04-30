@@ -70,6 +70,7 @@ exports[`eval-datasets - Trigger Tests Trigger Keywords Snapshot skill descripti
     "troubleshoot",
     "validation",
     "versioning",
+    "vnet",
     "workflows",
     "yaml",
   ],
@@ -145,6 +146,7 @@ exports[`eval-datasets - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "troubleshoot",
   "validation",
   "versioning",
+  "vnet",
   "workflows",
   "yaml",
 ]

@@ -70,6 +70,7 @@ exports[`deploy - Trigger Tests Trigger Keywords Snapshot skill description trig
     "troubleshoot",
     "validation",
     "versioning",
+    "vnet",
     "workflows",
     "yaml",
   ],
@@ -145,6 +146,7 @@ exports[`deploy - Trigger Tests Trigger Keywords Snapshot skill keywords match s
   "troubleshoot",
   "validation",
   "versioning",
+  "vnet",
   "workflows",
   "yaml",
 ]
