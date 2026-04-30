@@ -78,10 +78,19 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("AZURE_CONTAINER_REGISTRY_NAME");
     });
 
-    test("documents .foundry workspace standard", () => {
+    test("documents .foundry workspace standard and metadata sidecars", () => {
       expect(skill.content).toContain(".foundry/agent-metadata.yaml");
+      expect(skill.content).toContain("agent-metadata.prod.yaml");
+      expect(skill.content).toContain("selected metadata file");
       expect(skill.content).toContain("defaultEnvironment");
       expect(skill.content).toContain("Agent Metadata Contract");
+    });
+
+    test("documents testSuites/testCases migration to evaluationSuites", () => {
+      expect(skill.content).toContain("older `testSuites[]`");
+      expect(skill.content).toContain("legacy `testCases[]`");
+      expect(skill.content).toContain("normalize each entry in memory");
+      expect(skill.content).toContain("persist only `evaluationSuites[]`");
     });
 
   });

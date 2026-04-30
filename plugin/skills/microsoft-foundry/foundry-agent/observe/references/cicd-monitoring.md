@@ -11,13 +11,14 @@ CI/CD evals run batch evaluations as part of your deployment pipeline, catching 
 If yes, generate a GitHub Actions workflow (for example, `.github/workflows/agent-eval.yml`) that:
 
 1. Triggers on push to `main` or on pull request
-2. Reads test-case definitions from `.foundry/agent-metadata.yaml`
-3. Reads evaluator definitions from `.foundry/evaluators/` and test datasets from `.foundry/datasets/`
-4. Runs `evaluation_agent_batch_eval_create` against the newly deployed agent version
-5. Fails the workflow if any evaluator score falls below the configured thresholds for the selected environment/test case
-6. Posts a summary as a PR comment or workflow annotation
+2. Accepts a metadata-file input or environment variable such as `FOUNDRY_METADATA_FILE` and defaults it to `.foundry/agent-metadata.yaml`
+3. Reads evaluation-suite definitions from the selected metadata file (for example, `.foundry/agent-metadata.prod.yaml` for prod CI)
+4. Reads evaluator definitions from `.foundry/evaluators/` and test datasets from `.foundry/datasets/`
+5. Runs `evaluation_agent_batch_eval_create` against the newly deployed agent version
+6. Fails the workflow if any evaluator score falls below the configured thresholds for the environment and evaluation suite resolved from that metadata file
+7. Posts a summary as a PR comment or workflow annotation
 
-Use repository secrets for the selected environment's project endpoint and Azure credentials. Confirm the workflow file with the user before committing.
+Use repository secrets for the selected environment's project endpoint and Azure credentials, and keep the metadata filename explicit in the workflow so prod rollouts do not depend on the local/dev default file. Confirm the workflow file with the user before committing.
 
 ## Option 2 — Continuous Production Monitoring (Post-Deploy)
 
