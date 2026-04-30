@@ -406,12 +406,12 @@ function AppSnapshotPreview({ date, testName }: { date: string; testName: string
     }
 
     const url = `/api/fetch?path=${encodeURIComponent(blobName)}`;
-    console.log("snapshot url", url);
+    const viewerUrl = `/image-viewer.html?path=${encodeURIComponent(blobName)}`;
     return (
         <div className="it-app-snapshot">
             <a
                 className="it-app-snapshot-link"
-                href={url}
+                href={viewerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="Open snapshot in new tab"
