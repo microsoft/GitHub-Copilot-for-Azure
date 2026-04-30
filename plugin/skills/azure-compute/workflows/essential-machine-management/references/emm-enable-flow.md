@@ -86,10 +86,12 @@ Store the full UAMI resource ID: `/subscriptions/<sub>/resourceGroups/<rg>/provi
 
 Ask the user for a **Log Analytics workspace** and an **Azure Monitor workspace**. Offer to create new ones if needed.
 
-| Resource | MCP Tool | Purpose |
-| -------- | -------- | ------- |
-| Log Analytics workspace | `azure-monitor` | List existing workspaces or create new |
-| Azure Monitor workspace | `azure-monitor` | List existing workspaces or create new |
+| Resource | CLI Command | Purpose |
+| -------- | ----------- | ------- |
+| Log Analytics workspace (list) | `az monitor log-analytics workspace list --subscription <subId> -o table` | List existing workspaces |
+| Log Analytics workspace (create) | `az monitor log-analytics workspace create --workspace-name <name> --resource-group <rg> --subscription <subId> --location <location>` | Create new workspace |
+| Azure Monitor workspace (list) | `az resource list --resource-type "Microsoft.Monitor/accounts" --subscription <subId> -o table` | List existing workspaces |
+| Azure Monitor workspace (create) | `az resource create --resource-type "Microsoft.Monitor/accounts" --name <name> --resource-group <rg> --subscription <subId> --location <location> --properties "{}"` | Create new workspace |
 
 > ⚠️ **Warning:** If workspaces are in a **different subscription** than the target:
 > - Register `Microsoft.ManagedOps` RP in the workspace subscription
