@@ -98,10 +98,23 @@ describe("observe - Unit Tests", () => {
     });
 
     test("warns to check for existing evaluators before evaluation", () => {
-      expect(observeContent).toContain(".foundry/agent-metadata.yaml");
+      expect(observeContent).toContain(".foundry/agent-metadata*.yaml");
+      expect(observeContent).toContain("selected metadata file");
       expect(observeContent).toContain(".foundry/evaluators/");
       expect(observeContent).toContain(".foundry/datasets/");
       expect(observeContent).toMatch(/auto-setup|Auto-Setup/i);
+    });
+
+    test("scopes local observe context to the selected agent root", () => {
+      const setupContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "deploy-and-setup.md"),
+        "utf-8"
+      );
+
+      expect(observeContent).toMatch(/selected agent root/i);
+      expect(observeContent).toMatch(/Do \*\*not\*\* merge .*sibling agent folders/i);
+      expect(setupContent).toMatch(/selected agent root only/i);
+      expect(setupContent).toMatch(/Do \*\*not\*\* merge sibling agent folders/i);
     });
   });
 
@@ -174,13 +187,32 @@ describe("observe - Unit Tests", () => {
     });
 
     test("includes artifact persistence structure", () => {
-      expect(setupContent).toContain(".foundry/agent-metadata.yaml");
+      expect(setupContent).toContain("agent-metadata.yaml");
+      expect(setupContent).toContain("agent-metadata.prod.yaml");
+      expect(setupContent).toContain("selected metadata file");
       expect(setupContent).toContain(".foundry/evaluators/");
       expect(setupContent).toContain(".foundry/datasets/");
       expect(setupContent).toContain("datasetUri");
       expect(setupContent).toContain(".yaml");
       expect(setupContent).toContain(".jsonl");
       expect(setupContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
+    });
+
+    test("uses evaluationSuites metadata with tags as the primary schema", () => {
+      expect(observeContent).toContain("evaluationSuites[]");
+      expect(setupContent).toMatch(/evaluation suites/i);
+      expect(setupContent).toContain("tags");
+      expect(setupContent).toContain("tier: smoke");
+    });
+
+    test("documents testSuites/testCases compatibility and migration on write", () => {
+      expect(observeContent).toContain("older `testSuites[]`");
+      expect(observeContent).toContain("legacy `testCases[]`");
+      expect(observeContent).toContain("rewrite that environment to `evaluationSuites[]`");
+      expect(setupContent).toContain("older `testSuites[]`");
+      expect(setupContent).toContain("legacy `testCases[]`");
+      expect(setupContent).toContain("replace that list with `evaluationSuites[]`");
+      expect(setupContent).toContain("map `priority` to `tags.tier`");
     });
 
     test("uses the seed dataset guide as the canonical registration flow", () => {
@@ -229,7 +261,7 @@ describe("observe - Unit Tests", () => {
       expect(observeContent).toContain(".foundry/evaluators/");
       expect(observeContent).toContain(".foundry/datasets/");
       expect(observeContent).toContain(".foundry/results/");
-      expect(observeContent).toContain("P0");
+      expect(observeContent).toContain("tier=smoke");
     });
 
     test("documents evalId versus evaluationId guardrail", () => {

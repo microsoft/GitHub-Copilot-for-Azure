@@ -33,7 +33,7 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 ### Step 1: Detect and Scan Project
 
-Get the project path from the project context (see Common: Project Context Resolution). Detect the project type by checking for these files:
+Get the project path from the selected agent root in the project context (see Common: Project Context Resolution). Detect the project type by checking for these files. Do **not** scan sibling agent folders.
 
 | Project Type | Detection Files |
 |--------------|-----------------|
@@ -44,7 +44,7 @@ Get the project path from the project context (see Common: Project Context Resol
 | Java (Maven) | `pom.xml` |
 | Java (Gradle) | `build.gradle` |
 
-Delegate an environment variable scan to a sub-agent. Provide the project path and project type. Search source files for these patterns:
+Delegate an environment variable scan to a sub-agent. Provide the selected agent root path and project type. Search source files inside that folder only for these patterns:
 
 | Project Type | Patterns to Search |
 |--------------|--------------------|
@@ -143,19 +143,20 @@ Use `agent_update` with the agent definition:
 }
 ```
 
-Capture the instance identity `principal_id` from the agent creation response. You will need it to assign the minimum RBAC required for invocation before running invoke tests.
+Capture the per-agent identity from the agent creation response, then retrieve the project-level agent identity from the project resource after creation. You will need both identities to assign the minimum RBAC required for invocation before running invoke tests.
 
 ### Step 7: Test the Agent
 
-For a newly deployed hosted agent, before invocation testing, first check whether the agent's instance identity already has the minimum RBAC required for invocation:
-- Required role: `Cognitive Services User`
-- Identity: the agent's instance identity (managed identity `principal_id` from the agent creation response)
-- Scope: the Azure AI Services resource (formerly Cognitive Services account)
-- Only the instance identity needs this role assignment. The blueprint identity does not need any role.
+For a newly deployed hosted agent, before invocation testing, first check whether the per-agent identity and project-level agent identity already have the minimum RBAC required for invocation.
 
-If this role assignment is missing, add it before invocation testing.
+Required role assignment:
+- `Azure AI User`
 
-If the current user account does not have permission to create this role assignment when it is needed, stop the deployment workflow here. Explain to the user that agent invocation requires the `Cognitive Services User` role on the instance identity at the Azure AI Services resource scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants that role.
+Required scope: the Cognitive Services account, not the project.
+
+Check existing assignments before creating any new assignment. If the required role assignment is missing for either identity, assign it before invocation testing.
+
+If the current user account does not have permission to create a missing role assignment, stop the deployment workflow here. Explain to the user that hosted-agent invocation requires `Azure AI User` on the per-agent identity and project-level agent identity at the Cognitive Services account scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants the missing role.
 
 After this RBAC check is complete, read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about required hosted-agent session handling.
 
@@ -220,17 +221,17 @@ python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRI
 
 ## Document Deployment Context
 
-After a successful deployment, persist the deployment context to `<agent-root>/.foundry/agent-metadata.yaml` under the selected environment so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
+After a successful deployment, persist the deployment context to the selected metadata file under `<agent-root>/.foundry/` so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. Local/dev flows should default to `agent-metadata.yaml`; prod or CI-targeted flows can point at `agent-metadata.prod.yaml` or another explicit sidecar file. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
 
 | Metadata Field | Purpose | Example |
 |----------------|---------|---------|
 | `environments.<env>.projectEndpoint` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
 | `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
 | `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
-| `environments.<env>.testCases[]` | Evaluation bundles for datasets, evaluators, and thresholds | `smoke-core`, `trace-regressions` |
-| `environments.<env>.testCases[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
+| `environments.<env>.evaluationSuites[]` | Evaluation bundles for datasets, evaluators, tags, and thresholds | `smoke-core`, `trace-regression-suite` |
+| `environments.<env>.evaluationSuites[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
 
-If `agent-metadata.yaml` already exists, merge the selected environment instead of overwriting other environments or cached test cases without confirmation.
+If the selected metadata file is a preferred single-environment file, update only that one environment block and leave sibling metadata files untouched. If the selected metadata file is a legacy multi-environment file, merge the selected environment instead of overwriting other environments or cached evaluation suites without confirmation. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite that environment to `evaluationSuites[]` when you persist deployment metadata.
 
 ## After Deployment — Auto-Create Evaluators & Dataset
 
@@ -281,21 +282,22 @@ Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/g
 - Coverage distribution targets and generation rules
 - Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
 - Foundry registration steps (blob upload + `evaluation_dataset_create`)
-- Metadata updates for `agent-metadata.yaml` and `manifest.json`
+- Metadata updates for the selected metadata file and `manifest.json`
 
 Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
 
-The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
+The local filename must start with the selected environment's Foundry agent name (`agentName` in the selected metadata file) before adding stage, environment, or version suffixes.
 
 Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
 
-### 6. Persist Artifacts and Test Cases
+### 6. Persist Artifacts and Evaluation Suites
 
-Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update test cases in `agent-metadata.yaml` for the selected environment:
+Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
 
 ```text
 .foundry/
   agent-metadata.yaml
+  agent-metadata.prod.yaml
   evaluators/
     <name>.yaml
   datasets/
@@ -303,11 +305,11 @@ Save evaluator definitions, local datasets, and evaluation outputs under `.found
   results/
 ```
 
-Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one `P0` smoke test case after deployment.
+Each evaluation suite should bundle one dataset with the evaluator list, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: seed`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one smoke suite after deployment. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
 
 ### 7. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and evaluation-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
 
 - **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.
@@ -375,8 +377,8 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 | ACR build log crash | `UnicodeEncodeError` when `az acr build` streams remote logs | The remote build continues independently — do not assume failure. Get the `<run-id>` from the earlier `az acr build` output and check status with `az acr task show-run -r <acr-name> --run-id <run-id> --query status`. |
 | Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
 | Hosted agent not running after creation | Provisioning failed or the image is not usable | Verify ACR image path, check cpu/memory values, confirm ACR permissions, then inspect hosted-agent logs with the troubleshoot skill |
-| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that agent invocation requires `Cognitive Services User` on the instance identity at the Azure AI Services resource scope |
-| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the instance identity | Check whether `Cognitive Services User` is already assigned to the instance identity at the Azure AI Services resource scope; if missing, assign it, then retry invocation |
+| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that hosted-agent invocation requires `Azure AI User` on the per-agent identity and project-level agent identity at the Cognitive Services account scope |
+| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the per-agent identity or project-level agent identity | Check whether `Azure AI User` is assigned to the per-agent identity and project-level agent identity at the Cognitive Services account scope; assign missing role assignments, then retry invocation |
 | Permission denied | Insufficient Foundry project permissions | Verify Azure AI Owner or Contributor role on the project |
 | Schema fetch failed | Invalid project endpoint | Verify project endpoint URL format: `https://<resource>.services.ai.azure.com/api/projects/<project>` |
 

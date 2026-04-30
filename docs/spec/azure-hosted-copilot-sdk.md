@@ -69,7 +69,7 @@ The local development scripts (`scripts/src/local/`) have been replaced by the G
 - Test suite: triggers, unit, and integration tests
 - Test infrastructure: `evaluate.ts` shared helpers, `regression-detectors.ts`
 - Local dev tooling: `setup`, `verify`, `test` commands
-- MCP server entry for Context7
+- Optional context7 MCP server usage (not pre-configured; users must install `@upstash/context7-mcp` separately)
 - Specialized routing in `azure-prepare` to delegate to `azure-hosted-copilot-sdk`
 
 **Not included:**

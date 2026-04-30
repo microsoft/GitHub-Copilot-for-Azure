@@ -1,9 +1,32 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
+import { enumerateBlobs, getBlobContent } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
+import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 
 const TEST_RESULTS_FILENAME = "testResults.json";
+const TOKEN_SUMMARY_FILENAME = "token-summary.jsonl";
+
+/** A single record from a token-summary.jsonl file */
+interface TokenSummaryRecord {
+    testName: string;
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+}
+
+/** Aggregated token usage for one non-skill-invocation test */
+export interface TestTokenUsage {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    /** inputTokens + outputTokens */
+    totalTokens: number;
+    /** Number of agent runs contributing to these totals */
+    runCount: number;
+}
 
 /** Shape of a single test case entry inside testResults.json */
 interface TestCaseResult {
@@ -40,6 +63,11 @@ export interface SkillStats {
      * Populated only for the azure-deploy skill; skill-invocation tests are excluded.
      */
     scenarioDeployRetryCounts?: Record<string, number>;
+    /**
+     * Total token usage per non-skill-invocation test, keyed by sanitised test name.
+     * Summed across all agent runs for the selected date.
+     */
+    tokenUsageByTest?: Record<string, TestTokenUsage>;
 }
 
 export type SkillTestResults = Record<string, SkillStats>;
@@ -64,6 +92,65 @@ function collectTestResultPaths(
     for (const child of Object.values(node.children)) {
         collectTestResultPaths(child, skillName, results);
     }
+}
+
+/**
+ * Sanitize a test name the same way agent-runner.ts does when naming directories.
+ * Used to match token-summary.jsonl entries (which contain the sanitised name)
+ * against skill-invocation test entries (which use the raw Jest name).
+ */
+function sanitizeTestName(name: string): string {
+    return name
+        .replace(/[<>:"/\\|?*]/g, "-")
+        .replace(/\s+/g, "_")
+        .replace(/-+/g, "-")
+        .replace(/_+/g, "_")
+        .substring(0, 200);
+}
+
+/**
+ * Collect token-summary.jsonl blob paths for a skill.
+ * The file lives at the skill level for most skills and at the test-group level
+ * for azure-deploy (which uses an extra directory tier).
+ */
+function collectTokenSummaryPaths(
+    skillNode: BlobTreeNode,
+    skillName: string,
+    results: Map<string, string[]>,
+): void {
+    for (const file of skillNode.files) {
+        if (file.name === TOKEN_SUMMARY_FILENAME) {
+            if (!results.has(skillName)) results.set(skillName, []);
+            results.get(skillName)!.push(file.blobName);
+        }
+    }
+    for (const child of Object.values(skillNode.children)) {
+        for (const file of child.files) {
+            if (file.name === TOKEN_SUMMARY_FILENAME) {
+                if (!results.has(skillName)) results.set(skillName, []);
+                results.get(skillName)!.push(file.blobName);
+            }
+        }
+    }
+}
+
+/**
+ * Parse a token-summary.jsonl string into individual token records.
+ */
+function parseTokenSummaryJsonl(raw: string): TokenSummaryRecord[] {
+    const records: TokenSummaryRecord[] = [];
+    for (const line of raw.trim().split("\n")) {
+        if (!line.trim()) continue;
+        try {
+            const parsed = JSON.parse(line);
+            if (parsed && typeof parsed.testName === "string") {
+                records.push(parsed as TokenSummaryRecord);
+            }
+        } catch {
+            // skip invalid lines
+        }
+    }
+    return records;
 }
 
 /**
@@ -260,6 +347,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     // Structure: date -> runId -> skillName -> (files | children with testResults.json)
     const pathsBySkill = new Map<string, string[]>();
     const reportPathsBySkill = new Map<string, string[]>();
+    const tokenSummaryPathsBySkill = new Map<string, string[]>();
     // Collect agent-metadata.json paths for deploy scenario retry counting
     const agentMetadataPathsByTestCase = new Map<string, string[]>();
 
@@ -267,6 +355,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         for (const [skillName, skillNode] of Object.entries(runNode.children)) {
             collectTestResultPaths(skillNode, skillName, pathsBySkill);
             collectSkillReportPaths(skillNode, skillName, reportPathsBySkill);
+            collectTokenSummaryPaths(skillNode, skillName, tokenSummaryPathsBySkill);
 
             if (skillName === "azure-deploy") {
                 collectAgentMetadataPaths(skillNode, agentMetadataPathsByTestCase);
@@ -312,7 +401,6 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
             );
         }
     }
-    await Promise.all(reportFetchTasks);
 
     // Fetch agent-metadata.json files for azure-deploy scenario retry counts
     const deployRetryTotals = new Map<string, number>();
@@ -336,7 +424,24 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
             );
         }
     }
-    await Promise.all(retryFetchTasks);
+
+    // Fetch token-summary.jsonl files and parse them per skill
+    const tokenRecordsBySkill = new Map<string, TokenSummaryRecord[]>();
+    const tokenFetchTasks: Promise<void>[] = [];
+    for (const [skillName, paths] of tokenSummaryPathsBySkill) {
+        tokenRecordsBySkill.set(skillName, []);
+        for (const blobPath of paths) {
+            tokenFetchTasks.push(
+                getBlobContent(blobPath).then((raw) => {
+                    const records = parseTokenSummaryJsonl(raw);
+                    tokenRecordsBySkill.get(skillName)!.push(...records);
+                }).catch(() => { /* skip unreadable files */ }),
+            );
+        }
+    }
+
+    // Run all fetch batches concurrently — they are fully independent of each other
+    await Promise.all([...reportFetchTasks, ...retryFetchTasks, ...tokenFetchTasks]);
 
     // Average retries per run to avoid inflating counts when a scenario fires across multiple runs
     const deployRetryCounts = new Map<string, number>();
@@ -356,6 +461,46 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         if (skillName === "azure-deploy" && deployRetryCounts.size > 0) {
             stats.scenarioDeployRetryCounts = Object.fromEntries(deployRetryCounts);
         }
+
+        // Build token usage table, excluding skill-invocation tests
+        const tokenRecords = tokenRecordsBySkill.get(skillName);
+        if (tokenRecords && tokenRecords.length > 0) {
+            // Collect sanitised names of skill-invocation tests so we can exclude them
+            const siTestNames = new Set<string>(
+                [...stats.passedTests, ...stats.failedTests]
+                    .filter((t) => t.skillInvocationRate !== undefined)
+                    .map((t) => sanitizeTestName(t.testName)),
+            );
+
+            const tokenUsageByTest: Record<string, TestTokenUsage> = {};
+            for (const record of tokenRecords) {
+                if (siTestNames.has(record.testName)) continue;
+                const existing = tokenUsageByTest[record.testName];
+                if (existing) {
+                    existing.inputTokens += record.inputTokens ?? 0;
+                    existing.outputTokens += record.outputTokens ?? 0;
+                    existing.cacheReadTokens += record.cacheReadTokens ?? 0;
+                    existing.cacheWriteTokens += record.cacheWriteTokens ?? 0;
+                    existing.totalTokens += (record.inputTokens ?? 0) + (record.outputTokens ?? 0);
+                    existing.runCount++;
+                } else {
+                    const inp = record.inputTokens ?? 0;
+                    const out = record.outputTokens ?? 0;
+                    tokenUsageByTest[record.testName] = {
+                        inputTokens: inp,
+                        outputTokens: out,
+                        cacheReadTokens: record.cacheReadTokens ?? 0,
+                        cacheWriteTokens: record.cacheWriteTokens ?? 0,
+                        totalTokens: inp + out,
+                        runCount: 1,
+                    };
+                }
+            }
+            if (Object.keys(tokenUsageByTest).length > 0) {
+                stats.tokenUsageByTest = tokenUsageByTest;
+            }
+        }
+
         skillTestResults[skillName] = stats;
     }
 

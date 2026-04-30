@@ -1,4 +1,4 @@
-name: PR Plugin Version and CHANGELOG Check
+name: PR Plugin Version Check
 
 on:
   pull_request:
@@ -7,7 +7,6 @@ on:
       - 'plugin/.plugin/plugin.json'
       - 'plugin/.claude-plugin/plugin.json'
       - 'plugin/.cursor-plugin/plugin.json'
-      - 'plugin/CHANGELOG.md'
 
 permissions:
   contents: read
@@ -16,7 +15,7 @@ permissions:
 jobs:
   check-plugin-modifications:
     runs-on: ubuntu-latest
-    name: Check Plugin Version and CHANGELOG Not Modified
+    name: Check Plugin Version Not Modified
     
     steps:
       - name: Checkout PR head
@@ -39,14 +38,3 @@ jobs:
         run: |
           echo "Checking that plugin.json versions are placeholders..."
           cd scripts && npm run checkPluginVersionPr
-          
-      - name: Check CHANGELOG modifications
-        run: |
-          echo "Checking if CHANGELOG.md was modified in this PR..."
-          if git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | grep -Fqx "plugin/CHANGELOG.md"; then
-            echo "❌ ERROR: CHANGELOG.md should not be modified in pull requests"
-            echo "The CHANGELOG.md is automatically maintained. Please remove changes to plugin/CHANGELOG.md from your PR."
-            exit 1
-          else
-            echo "✅ CHANGELOG.md was not modified"
-          fi

@@ -75,7 +75,8 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("documents the hosted deployment verification flow", () => {
-      expect(deployContent).toMatch(/Capture the instance identity `principal_id`/i);
+      expect(deployContent).toMatch(/Capture the per-agent identity from the agent creation response/i);
+      expect(deployContent).toMatch(/project-level agent identity from the project resource/i);
       expect(deployContent).toMatch(/Continue to Step 8/i);
       expect(deployContent).toMatch(/required hosted-agent session handling/i);
     });
@@ -142,6 +143,11 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
     });
 
+    test("scopes deploy scanning and cache usage to the selected agent root", () => {
+      expect(deployContent).toMatch(/selected agent root/i);
+      expect(deployContent).toMatch(/Do \*\*not\*\* scan sibling agent folders/i);
+    });
+
     test("uses the seed dataset guide as the canonical registration flow", () => {
       expect(deployContent).toContain("Generate Seed Evaluation Dataset");
       expect(deployContent).toMatch(/single source of truth for seed dataset registration/i);
@@ -174,19 +180,30 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("documents required invocation RBAC for hosted agents", () => {
-      expect(deployContent).toContain("Cognitive Services User");
-      expect(deployContent).toContain("principal_id");
-      expect(deployContent).toMatch(/instance identity/i);
+      expect(deployContent).toContain("Azure AI User");
+      expect(deployContent).not.toContain("Cognitive Services OpenAI User");
+      expect(deployContent).toMatch(/per-agent identity.*agent creation response/i);
+      expect(deployContent).toMatch(/project-level agent identity.*project resource/i);
+      expect(deployContent).not.toContain("Required identities:");
+      expect(deployContent).toMatch(/Cognitive Services account, not the project/i);
     });
   });
 
   describe("Document Deployment Context", () => {
-    test("persists deployment context to agent-metadata.yaml", () => {
+    test("persists deployment context to the selected metadata file", () => {
       expect(deployContent).toContain("projectEndpoint");
       expect(deployContent).toContain("agentName");
       expect(deployContent).toContain("azureContainerRegistry");
-      expect(deployContent).toContain("testCases[]");
+      expect(deployContent).toContain("evaluationSuites[]");
       expect(deployContent).toContain("datasetUri");
+      expect(deployContent).toContain("tags");
+      expect(deployContent).toContain("tier: smoke");
+      expect(deployContent).toContain("selected metadata file");
+      expect(deployContent).toContain("agent-metadata.prod.yaml");
+      expect(deployContent).toContain("single-environment file");
+      expect(deployContent).toContain("older `testSuites[]`");
+      expect(deployContent).toContain("legacy `testCases[]`");
+      expect(deployContent).toContain("rewrite that environment to `evaluationSuites[]`");
     });
   });
 });

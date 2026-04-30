@@ -1,36 +1,10 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
+import type { BlobEntry, BlobTree, BlobTreeNode } from "./shared/blobTree";
 
 const INTEGRATION_REPORTS_CONTAINER_NAME = "integration-reports";
 
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
-
-export interface BlobEntry {
-    /**
-     * Name of the last segment in the blob path
-     */
-    name: string;
-    /**
-     * Full blob path
-     */
-    blobName: string
-};
-
-/**
- * A nested tree node representing a segment of a blob path.
- * Directories have children; leaf nodes have a `blobName` pointing to the full blob path.
- */
-export interface BlobTreeNode {
-    /** Files directly in this path segment (leaf blobs). */
-    files: BlobEntry[];
-    /** Child path segments, keyed by segment name. */
-    children: Record<string, BlobTreeNode>;
-}
-
-/**
- * Top-level structure: date string (yyyy-mm-dd) → nested tree of path segments.
- */
-export type BlobTree = Record<string, BlobTreeNode>;
 
 function createNode(): BlobTreeNode {
     return { files: [], children: {} };
