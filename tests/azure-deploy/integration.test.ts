@@ -33,8 +33,8 @@ if (skipTests && skipReason) {
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;
-const deployTestTimeoutMs = 1800000;
-const brownfieldTestTimeoutMs = 2700000;
+const deployTestTimeoutMs = 40 * 60 * 1000; // 40 minutes
+const brownfieldTestTimeoutMs = 55 * 60 * 1000; // 55 minutes
 
 const pseudoRandomResourceGroupNameSystemPromptModifier = {
   mode: "append" as const,

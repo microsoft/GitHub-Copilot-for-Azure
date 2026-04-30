@@ -42,6 +42,7 @@ exports[`azure-quotas - Trigger Tests Trigger Keywords Snapshot skill descriptio
     "validation",
     "vcpu",
     "vcpus",
+    "vnet",
     "when",
   ],
   "name": "azure-quotas",
@@ -88,6 +89,7 @@ exports[`azure-quotas - Trigger Tests Trigger Keywords Snapshot skill keywords m
   "validation",
   "vcpu",
   "vcpus",
+  "vnet",
   "when",
 ]
 `;
