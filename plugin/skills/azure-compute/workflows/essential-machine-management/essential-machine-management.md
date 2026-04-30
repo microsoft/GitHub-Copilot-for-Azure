@@ -64,7 +64,7 @@ When enrolled, the response includes:
 - **Workspaces** — Log Analytics and Azure Monitor workspace resource IDs
 - **Created by / date** — who enrolled and when (in `systemData`)
 
-To scan multiple subscriptions, use `azure-subscription_list` to list available subscriptions, then query each one. Report results as a table:
+To scan multiple subscriptions, use `mcp_azure_mcp_subscription_list` to list available subscriptions, then query each one. Report results as a table:
 
 ```text
 | Subscription | Status | SKU | Services Enabled |

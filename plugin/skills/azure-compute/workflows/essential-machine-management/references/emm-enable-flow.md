@@ -19,7 +19,7 @@ Ask the user which subscription to enable EMM for. Use MCP tools to list subscri
 
 | MCP Tool | Purpose |
 | -------- | ------- |
-| `azure-subscription_list` | List available subscriptions |
+| `mcp_azure_mcp_subscription_list` | List available subscriptions |
 
 Store the selected `subscriptionId` and `tenant` for all subsequent steps.
 
