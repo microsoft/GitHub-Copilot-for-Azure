@@ -1165,7 +1165,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             nonInteractive: true,
             followUp: FOLLOW_UP_PROMPT,
             systemPrompt: FAST_TEMPLATE_PROMPT,
-            preserveWorkspace: true,
             shouldEarlyTerminate: shouldTerminateMcp,
           });
 

@@ -151,7 +151,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -177,7 +176,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -207,7 +205,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -233,7 +230,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -263,7 +259,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -288,7 +283,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -313,7 +307,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -341,7 +334,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -375,7 +367,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
@@ -411,7 +402,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
@@ -451,7 +441,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -477,7 +466,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -506,7 +494,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -532,7 +519,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
@@ -561,7 +547,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -586,7 +571,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -611,7 +595,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
         });
 
@@ -639,7 +622,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
@@ -676,7 +658,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
@@ -713,7 +694,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
         });
 
@@ -1206,3 +1186,4 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
   });
 });
+
