@@ -214,6 +214,12 @@ Test cases are grouped under the `describe` groups. It's commonly useful to use 
 
 To learn more about how the CLI options work, check out `tests/scripts/run-tests.js`.
 
+### Local Workspace Cleanup
+
+Each integration test creates a temporary workspace under `os.tmpdir()` (e.g., `%TEMP%\skill-test-*` on Windows). By default, these are **automatically deleted** in `afterEach` after the test completes (pass or fail).
+
+To preserve workspaces for debugging, set `preserveWorkspace: true` in the `agent.run()` call.
+
 ### Reading Test Output
 
 **Console output:**
