@@ -13,7 +13,7 @@ Package: `azure-eventhub` | [README](https://github.com/Azure/azure-sdk-for-pyth
 
 ## Retry Configuration
 
-> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](auth-best-practices.md) for production patterns.
 
 ```python
 from azure.eventhub import EventHubProducerClient
@@ -32,7 +32,7 @@ client = EventHubProducerClient(
 
 ## Consumer Client Retry Configuration
 
-> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](auth-best-practices.md) for production patterns.
 
 Under heavy load, tune the retry policy on `EventHubConsumerClient` to reduce timeouts:
 

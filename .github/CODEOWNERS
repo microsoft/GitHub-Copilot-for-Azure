@@ -31,5 +31,6 @@
 /plugin/skills/azure-storage/ @charris-msft @jongio
 /plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @jongio
 /plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan @jongio
+/plugin/skills/entra-agent-id/ @ArLucaID @jongio
 /plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan @jongio
 /plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @jongio @anchenyi @XiaofuHuang

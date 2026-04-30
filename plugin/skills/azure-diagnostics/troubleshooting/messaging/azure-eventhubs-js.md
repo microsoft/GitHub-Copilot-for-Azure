@@ -43,7 +43,7 @@ localStorage.debug = "azure:*:info";
 
 Package: `@azure/eventhubs-checkpointstore-blob`
 
-> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](../auth-best-practices.md) for production patterns.
+> **Auth:** `DefaultAzureCredential` is for local development. See [auth-best-practices.md](auth-best-practices.md) for production patterns.
 
 ```javascript
 const { BlobCheckpointStore } = require("@azure/eventhubs-checkpointstore-blob");

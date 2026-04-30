@@ -58,6 +58,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "AKS upgrade failed and nodes are not coming back",
       "CoreDNS is failing in kube-system on my AKS cluster",
       "Check the health of my Azure resources",
+
+      // Messaging diagnostics
+      "Troubleshoot my event hub SDK connection failure",
+      "Service bus AMQP connection error, message lock lost",
       
       // Root cause analysis
       "Find root cause of errors in my app",
@@ -148,13 +152,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       expect(lowerResult.triggered).toBe(mixedResult.triggered);
     });
 
-    test("distinguishes between diagnostic and deployment keywords", () => {
+    test("distinguishes between troubleshooting and provisioning prompts", () => {
       const diagnostic = triggerMatcher.shouldTrigger("troubleshoot my container app");
-      const deployment = triggerMatcher.shouldTrigger("deploy my container app");
+      const provisioning = triggerMatcher.shouldTrigger("create a new container app");
       
-      // Diagnostic should trigger, deployment should not
+      // Troubleshooting should trigger, pure provisioning should not
       expect(diagnostic.triggered).toBe(true);
-      expect(deployment.triggered).toBe(false);
+      expect(provisioning.triggered).toBe(false);
     });
   });
 });
