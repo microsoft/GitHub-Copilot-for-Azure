@@ -97,19 +97,27 @@ export async function enumerateBlobTree(containerClient: ContainerClient, prefix
 }
 
 /**
- * Download a blob's content as a UTF-8 string.
+ * Download a blob's content as a Buffer.
  */
-export async function downloadBlobContent(containerClient: ContainerClient, blobPath: string): Promise<string> {
+export async function downloadBlobBuffer(containerClient: ContainerClient, blobPath: string): Promise<Buffer> {
     const blobClient = containerClient.getBlobClient(blobPath);
     const response = await blobClient.download();
     if (!response.readableStreamBody) {
-        return "";
+        return Buffer.alloc(0);
     }
     const chunks: Buffer[] = [];
     for await (const chunk of response.readableStreamBody) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
-    return Buffer.concat(chunks).toString("utf-8");
+    return Buffer.concat(chunks);
+}
+
+/**
+ * Download a blob's content as a UTF-8 string.
+ */
+export async function downloadBlobContent(containerClient: ContainerClient, blobPath: string): Promise<string> {
+    const buffer = await downloadBlobBuffer(containerClient, blobPath);
+    return buffer.toString("utf-8");
 }
 
 // --- Integration-reports-specific wrappers ---
@@ -124,6 +132,10 @@ export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
 
 export async function getBlobContent(blobPath: string): Promise<string> {
     return downloadBlobContent(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
+}
+
+export async function getBlobBuffer(blobPath: string): Promise<Buffer> {
+    return downloadBlobBuffer(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
 }
 
 const azureDeploySkillName = "azure-deploy";
