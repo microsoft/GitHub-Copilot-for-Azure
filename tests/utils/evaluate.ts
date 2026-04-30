@@ -446,8 +446,14 @@ const maxToolCallBeforeSkillInvocationTerminate = 3;
  * Helper context passed to the test function inside `withTestResult`.
  */
 interface WithTestResultContext {
+  /**
+   * Sets the skill vocation rate in the test results indicating how many attempts successfully invoked a skill of interest.
+   */
   setSkillInvocationRate: (rate: number) => void;
-  setScreenshotFlag: () => void;
+  /**
+   * Sets the screenshot flag in the test result indicating the test case expects a screenshot of a deployed website.
+   */
+  expectScreenshot: () => void;
 }
 
 /**
@@ -463,7 +469,7 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     setSkillInvocationRate: (rate: number) => {
       skillInvocationRate = rate;
     },
-    setScreenshotFlag: () => {
+    expectScreenshot: () => {
       expectsScreenshot = true;
     }
   };

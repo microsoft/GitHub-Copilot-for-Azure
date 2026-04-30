@@ -103,7 +103,7 @@ export async function downloadBlobBuffer(containerClient: ContainerClient, blobP
     const blobClient = containerClient.getBlobClient(blobPath);
     const response = await blobClient.download();
     if (!response.readableStreamBody) {
-        return Buffer.alloc(0);
+        throw new Error(`Blob download did not return a readable stream for path: ${blobPath}`);
     }
     const chunks: Buffer[] = [];
     for await (const chunk of response.readableStreamBody) {
