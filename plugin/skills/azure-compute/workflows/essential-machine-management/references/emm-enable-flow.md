@@ -188,7 +188,7 @@ DELETE /subscriptions/{subscriptionId}/providers/Microsoft.ManagedOps/managedOps
 
 | Error | Cause | Remediation |
 | ----- | ----- | ----------- |
-| 403 on role check | User lacks permissions to read role assignments | User needs Reader or higher on the subscription |
+| 403 on role check | User has no RBAC role assignment on the subscription (the `assignedTo` filter is self-scoped and does not require `roleAssignments/read`, but the user must have at least one role on the subscription) | Inform user they lack Owner or Contributor role on this subscription and cannot proceed with EMM enrollment |
 | Missing required roles | User missing EMM Administrator, Managed Identity Operator, or Resource Policy Contributor | Guide user to assign missing roles, then re-validate |
 | UAMI lacks Contributor | Managed identity missing Contributor role | Assign Contributor to the UAMI at subscription scope |
 | RP registration failed | Insufficient permissions to register providers | User needs Contributor or Owner on the subscription |
