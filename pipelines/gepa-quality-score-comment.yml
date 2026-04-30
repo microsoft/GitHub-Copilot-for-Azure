@@ -52,8 +52,38 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const results = JSON.parse(fs.readFileSync('score-results.json', 'utf8'));
-            const items = Array.isArray(results) ? results : [results];
+
+            // The score-results.json artifact originates from a workflow that ran on a
+            // pull_request (potentially from a fork) and is therefore UNTRUSTED.
+            // Every field must be sanitized before being interpolated into Markdown
+            // to prevent table-injection / comment-spoofing.
+            const MAX_ITEMS = 200;
+            const MAX_FIELD_LEN = 100;
+
+            function sanitizeMd(input) {
+              if (typeof input !== 'string') return 'N/A';
+              // Strip table-breaking, code-fence, and HTML-ish characters; clamp length.
+              const cleaned = input.replace(/[\r\n|`<>]/g, ' ').trim().slice(0, MAX_FIELD_LEN);
+              return cleaned.length > 0 ? cleaned : 'N/A';
+            }
+
+            function finiteNumber(v) {
+              return typeof v === 'number' && Number.isFinite(v) ? v : null;
+            }
+
+            let raw;
+            try {
+              raw = JSON.parse(fs.readFileSync('score-results.json', 'utf8'));
+            } catch (e) {
+              core.warning(`Could not parse score-results.json: ${e.message}`);
+              return;
+            }
+
+            const items = (Array.isArray(raw) ? raw : [raw]).filter(
+              r => r && typeof r === 'object' && !Array.isArray(r)
+            );
+            const truncated = items.length > MAX_ITEMS;
+            const limited = truncated ? items.slice(0, MAX_ITEMS) : items;
             const prNumber = parseInt('${{ steps.pr.outputs.number }}', 10);
 
             const marker = '<!-- gepa-quality-score -->';
@@ -61,20 +91,27 @@ jobs:
             body += '| Skill | Quality | Triggers | Tests |\n';
             body += '|-------|---------|----------|-------|\n';
 
-            for (const r of items) {
+            let passing = 0;
+            for (const r of limited) {
+              const skill = sanitizeMd(r.skill);
               if (r.error) {
-                body += `| ${r.skill} | ❌ ERROR | - | - |\n`;
+                body += `| ${skill} | ❌ ERROR | - | - |\n`;
                 continue;
               }
-              const q = r.quality_score.toFixed(2);
-              const t = r.trigger_accuracy !== null ? r.trigger_accuracy.toFixed(2) : 'N/A';
+              const qs = finiteNumber(r.quality_score);
+              const ta = finiteNumber(r.trigger_accuracy);
+              const q = qs !== null ? qs.toFixed(2) : 'N/A';
+              const t = ta !== null ? ta.toFixed(2) : 'N/A';
               const tests = `${r.has_triggers_test ? 'T' : '-'}${r.has_integration_test ? 'I' : '-'}${r.has_unit_test ? 'U' : '-'}`;
-              const icon = r.quality_score >= 0.8 ? '✅' : r.quality_score >= 0.5 ? '⚠️' : '❌';
-              body += `| ${r.skill} | ${icon} ${q} | ${t} | ${tests} |\n`;
+              const icon = qs === null ? '❓' : qs >= 0.8 ? '✅' : qs >= 0.5 ? '⚠️' : '❌';
+              if (qs !== null && qs >= 0.8) passing++;
+              body += `| ${skill} | ${icon} ${q} | ${t} | ${tests} |\n`;
             }
 
-            const passing = items.filter(r => (r.quality_score || 0) >= 0.8).length;
-            body += `\n**${passing}/${items.length}** skills at quality ≥ 0.80\n`;
+            body += `\n**${passing}/${limited.length}** skills at quality ≥ 0.80\n`;
+            if (truncated) {
+              body += `\n_Note: ${items.length - MAX_ITEMS} additional row(s) omitted._\n`;
+            }
             body += '\n<details><summary>How to improve</summary>\n\n';
             body += '```bash\n';
             body += '# Score a specific skill\n';
