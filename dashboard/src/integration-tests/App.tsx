@@ -5,6 +5,7 @@ interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
+    expectsScreenshot?: boolean;
 }
 
 // Cache /api/data/{date} responses keyed by encoded date so repeated lookups
@@ -290,7 +291,7 @@ function App() {
                                             date={selectedDate!}
                                             testName={ft.testName}
                                         />
-                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && (
+                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && ft.expectsScreenshot !== false && (
                                             <AppSnapshotPreview
                                                 date={selectedDate!}
                                                 testName={ft.testName}
@@ -326,7 +327,7 @@ function App() {
                                             date={selectedDate!}
                                             testName={pt.testName}
                                         />
-                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && (
+                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && pt.expectsScreenshot !== false && (
                                             <AppSnapshotPreview
                                                 date={selectedDate!}
                                                 testName={pt.testName}

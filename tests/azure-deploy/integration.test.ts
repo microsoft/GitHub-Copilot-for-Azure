@@ -140,7 +140,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Static Web Apps (SWA)
   describe("vanilla-static-web-apps-deploy", () => {
     test("creates whiteboard application with bicep", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -166,7 +167,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website with bicep", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -196,7 +198,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // App Service
   describe("vanilla-app-service-deploy", () => {
     test("creates discussion board", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -222,7 +225,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -440,7 +444,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Terraform - Static Web Apps
   describe("terraform-static-web-apps-deploy", () => {
     test("creates whiteboard application with Terraform", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -466,7 +471,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website with Terraform infrastructure", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -495,7 +501,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Terraform - App Service
   describe("terraform-app-service-deploy", () => {
     test("creates discussion board with Terraform", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -521,7 +528,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API using Terraform", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -741,7 +749,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("brownfield-dotnet", () => {
     test("deploys eShop", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
 
         const agentMetadata = await agent.run({
@@ -774,7 +783,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys MvcMovie 90", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
         const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
 
@@ -810,7 +820,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire azure functions", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
 
         const agentMetadata = await agent.run({
@@ -845,7 +856,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire client apps integration", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
 
         const agentMetadata = await agent.run({
@@ -1033,7 +1045,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("brownfield-javascript", () => {
     test("deploys nodejs-demoapp", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const NODEJS_DEMOAPP_REPO = "https://github.com/benc-uk/nodejs-demoapp.git";
 
         const agentMetadata = await agent.run({
@@ -1066,7 +1079,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with javascript", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const ASPIRE_JAVASCRIPT_SPARSE_PATH = "samples/aspire-with-javascript";
 
         const agentMetadata = await agent.run({
@@ -1101,7 +1115,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with node", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const ASPIRE_NODE_SPARSE_PATH = "samples/aspire-with-node";
 
         const agentMetadata = await agent.run({
@@ -1138,7 +1153,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("brownfield-python", () => {
     test("deploys flask calculator", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const FLASK_CALCULATOR_REPO = "https://github.com/UltiRequiem/flask-calculator.git";
 
         const agentMetadata = await agent.run({
@@ -1171,7 +1187,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with python", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ setScreenshotFlag }) => {
+        setScreenshotFlag();
         const ASPIRE_PYTHON_SPARSE_PATH = "samples/aspire-with-python";
 
         const agentMetadata = await agent.run({

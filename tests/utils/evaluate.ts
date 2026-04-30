@@ -131,15 +131,15 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
 export type SeparateFilesPatternResult =
   | { isSeparate: true }
   | {
-      isSeparate: false;
-      reason: "pattern-not-found";
-      missingPatterns: Array<"patternA" | "patternB">;
-    }
+    isSeparate: false;
+    reason: "pattern-not-found";
+    missingPatterns: Array<"patternA" | "patternB">;
+  }
   | {
-      isSeparate: false;
-      reason: "same-file";
-      filePaths: string[];
-    };
+    isSeparate: false;
+    reason: "same-file";
+    filePaths: string[];
+  };
 
 /**
  * Checks that two value patterns exist in **different** files within the workspace.
@@ -447,6 +447,7 @@ const maxToolCallBeforeSkillInvocationTerminate = 3;
  */
 interface WithTestResultContext {
   setSkillInvocationRate: (rate: number) => void;
+  setScreenshotFlag: () => void;
 }
 
 /**
@@ -457,19 +458,26 @@ interface WithTestResultContext {
  */
 export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise<void> | void): Promise<void> {
   let skillInvocationRate: number | undefined;
-
+  let expectsScreenshot: boolean = false;
   const ctx: WithTestResultContext = {
     setSkillInvocationRate: (rate: number) => {
       skillInvocationRate = rate;
     },
+    setScreenshotFlag: () => {
+      expectsScreenshot = true;
+    }
   };
 
   try {
     // Before agent run starts, initialize the test result as if it failed.
     // This ensures every test case has a result even when the agent run times out.
-    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
+    global.setTestResult({
+      isPass: false,
+      message: "agent run did not finish; test likely timed out or was terminated before completion",
+      expectsScreenshot: false
+    });
     await fn(ctx);
-    global.setTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate, expectsScreenshot });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -478,7 +486,7 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.setTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate, expectsScreenshot });
     throw e;
   }
 }
