@@ -182,55 +182,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
 
-        describe("content-assertion", () => {
-          test("Blueprint creation prompt produces typed Graph endpoint, BlueprintPrincipal step, and sponsors@odata.bind", () => withTestResult(async () => {
-            const agentMetadata = await agent.run({
-              prompt: "Walk me through creating a Microsoft Entra Agent Identity Blueprint with a user sponsor using Microsoft Graph. Include the BlueprintPrincipal step and the exact request body shape."
-            });
-
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            expect(mentionsBlueprintCreation(agentMetadata)).toBe(true);
-            expect(mentionsBlueprintPrincipalStep(agentMetadata)).toBe(true);
-            expect(mentionsSponsorsBinding(agentMetadata)).toBe(true);
-          }));
-
-          test("Per-instance Agent Identity prompt uses microsoft.graph.agentIdentity and references the parent Blueprint", () => withTestResult(async () => {
-            const agentMetadata = await agent.run({
-              prompt: "Show me the Microsoft Graph request to create a per-instance Agent Identity service principal under an existing Blueprint, including how to reference the Blueprint."
-            });
-
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            expect(mentionsAgentIdentityCreation(agentMetadata)).toBe(true);
-            expect(mentionsBlueprintBackreference(agentMetadata)).toBe(true);
-          }));
-
-          test("fmi_path exchange prompt describes the two-step exchange with client_credentials and /.default", () => withTestResult(async () => {
-            const agentMetadata = await agent.run({
-              prompt: "Show me the two-step fmi_path token exchange so an Agent Identity gets its own Microsoft Graph access token. Include the grant type and scopes."
-            });
-
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            expect(mentionsFmiPathExchange(agentMetadata)).toBe(true);
-          }));
-
-          test("Auth guidance prompt steers toward client_credentials / Connect-MgGraph (not DefaultAzureCredential)", () => withTestResult(async () => {
-            const agentMetadata = await agent.run({
-              prompt: "What credential should I use to call the Microsoft Entra Agent Identity APIs in Microsoft Graph?"
-            });
-
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            expect(recommendsSupportedAuth(agentMetadata)).toBe(true);
-          }));
-
-          test("Permission grant prompt uses appRoleAssignments or oauth2PermissionGrants on the Agent Identity SP", () => withTestResult(async () => {
-            const agentMetadata = await agent.run({
-              prompt: "Grant User.Read.All application permission to a specific Agent Identity service principal."
-            });
-
-            softCheckSkill(agentMetadata, SKILL_NAME);
-            expect(mentionsPerAgentPermissionGrant(agentMetadata)).toBe(true);
-          }));
-        });
         softCheckSkill(agentMetadata, SKILL_NAME);
         if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
           invocationCount += 1;
@@ -239,6 +190,56 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       const rate = invocationCount / RUNS_PER_PROMPT;
       setSkillInvocationRate(rate);
       expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+    }));
+  });
+
+  describe("content-assertion", () => {
+    test("Blueprint creation prompt produces typed Graph endpoint, BlueprintPrincipal step, and sponsors@odata.bind", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Walk me through creating a Microsoft Entra Agent Identity Blueprint with a user sponsor using Microsoft Graph. Include the BlueprintPrincipal step and the exact request body shape."
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(mentionsBlueprintCreation(agentMetadata)).toBe(true);
+      expect(mentionsBlueprintPrincipalStep(agentMetadata)).toBe(true);
+      expect(mentionsSponsorsBinding(agentMetadata)).toBe(true);
+    }));
+
+    test("Per-instance Agent Identity prompt uses microsoft.graph.agentIdentity and references the parent Blueprint", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Show me the Microsoft Graph request to create a per-instance Agent Identity service principal under an existing Blueprint, including how to reference the Blueprint."
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(mentionsAgentIdentityCreation(agentMetadata)).toBe(true);
+      expect(mentionsBlueprintBackreference(agentMetadata)).toBe(true);
+    }));
+
+    test("fmi_path exchange prompt describes the two-step exchange with client_credentials and /.default", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Show me the two-step fmi_path token exchange so an Agent Identity gets its own Microsoft Graph access token. Include the grant type and scopes."
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(mentionsFmiPathExchange(agentMetadata)).toBe(true);
+    }));
+
+    test("Auth guidance prompt steers toward client_credentials / Connect-MgGraph (not DefaultAzureCredential)", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "What credential should I use to call the Microsoft Entra Agent Identity APIs in Microsoft Graph?"
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(recommendsSupportedAuth(agentMetadata)).toBe(true);
+    }));
+
+    test("Permission grant prompt uses appRoleAssignments or oauth2PermissionGrants on the Agent Identity SP", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Grant User.Read.All application permission to a specific Agent Identity service principal."
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(mentionsPerAgentPermissionGrant(agentMetadata)).toBe(true);
     }));
   });
 });
