@@ -26,6 +26,14 @@ from common import HelpOnErrorParser
 
 import requests
 
+
+def _safe_error_msg(resp):
+    """Extract error message from response, handling non-JSON bodies (HTML 502/503)."""
+    try:
+        return resp.json().get("error", {}).get("message", resp.text[:200])
+    except (ValueError, KeyError):
+        return resp.text[:200] if resp.text else "Unknown error"
+
 # Default Azure resource coordinates — override with env vars or args
 DEFAULT_SUB = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
 DEFAULT_RG = os.environ.get("AZURE_RESOURCE_GROUP", "")
@@ -112,8 +120,7 @@ def create_deployment(sub, rg, account, name, model_id, model_format, sku, capac
         print(f"✅ Deployment '{name}' created (format={model_format}, sku={sku}, capacity={capacity})")
         return True
     else:
-        error_msg = resp.json().get("error", {}).get("message", resp.text[:200]) if resp.text else "Unknown error"
-        print(f"❌ Deployment failed ({resp.status_code}): {error_msg}")
+        print(f"❌ Deployment failed ({resp.status_code}): {_safe_error_msg(resp)}")
         return False
 
 
@@ -147,8 +154,7 @@ def delete_deployment(sub, rg, account, name):
     if resp.status_code in (200, 202, 204):
         print(f"✅ Deployment '{name}' deleted.")
     else:
-        error_msg = resp.json().get("error", {}).get("message", resp.text[:200]) if resp.text else "Unknown error"
-        print(f"❌ Delete failed ({resp.status_code}): {error_msg}")
+        print(f"❌ Delete failed ({resp.status_code}): {_safe_error_msg(resp)}")
 
 
 def list_deployments(sub, rg, account):
@@ -157,8 +163,7 @@ def list_deployments(sub, rg, account):
     url = arm_url(sub, rg, account)
     resp = requests.get(url, headers={"Authorization": f"Bearer {token}"})
     if resp.status_code != 200:
-        error_msg = resp.json().get("error", {}).get("message", resp.text[:200]) if resp.text else "Unknown error"
-        print(f"❌ Failed to list deployments ({resp.status_code}): {error_msg}")
+        print(f"❌ Failed to list deployments ({resp.status_code}): {_safe_error_msg(resp)}")
         return
 
     deployments = resp.json().get("value", [])

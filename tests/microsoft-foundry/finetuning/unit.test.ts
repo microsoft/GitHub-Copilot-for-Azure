@@ -251,6 +251,42 @@ describe("finetuning - Unit Tests", () => {
       expect(issues).toEqual([]);
     });
 
+    test("no bare resp.json() in error handling paths (JSONDecodeError risk)", () => {
+      const getAllPyFiles = (dir: string): string[] => {
+        const results: string[] = [];
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            results.push(...getAllPyFiles(full));
+          } else if (entry.name.endsWith(".py")) {
+            results.push(full);
+          }
+        }
+        return results;
+      };
+
+      const pyFiles = getAllPyFiles(scriptsDir);
+      const issues: string[] = [];
+      for (const filepath of pyFiles) {
+        const content = fs.readFileSync(filepath, "utf-8");
+        const filename = path.relative(scriptsDir, filepath);
+        const lines = content.split("\n");
+        lines.forEach((line: string, i: number) => {
+          // Flag resp.json().get() in error paths (print/raise after failed status check)
+          // Safe patterns: wrapped in try/except, or using _safe_error_msg()
+          if (
+            line.includes("resp.json().get(") &&
+            !line.trim().startsWith("#") &&
+            !line.includes("try:") &&
+            !line.includes("_safe_error_msg")
+          ) {
+            issues.push(`${filename}:${i + 1}: bare resp.json() may raise JSONDecodeError on non-JSON responses — use try/except or _safe_error_msg()`);
+          }
+        });
+      }
+      expect(issues).toEqual([]);
+    });
+
     test("SKILL.md script table matches actual script files", () => {
       const skillContent = fs.readFileSync(
         path.join(FINETUNING_DIR, "SKILL.md"),

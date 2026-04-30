@@ -81,9 +81,12 @@ def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0
         data = resp.json()
         return {"id": data["id"], "status": data["status"], "model": model, "method": "rest"}
     else:
+        try:
+            err_msg = resp.json().get('error', {}).get('message', 'Unknown error')
+        except (ValueError, KeyError):
+            err_msg = resp.text[:200] if resp.text else "Unknown error"
         raise RuntimeError(
-            f"REST submission failed ({resp.status_code}): "
-            f"{resp.json().get('error', {}).get('message', 'Unknown error')}"
+            f"REST submission failed ({resp.status_code}): {err_msg}"
         )
 
 
