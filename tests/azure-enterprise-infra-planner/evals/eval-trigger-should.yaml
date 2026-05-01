@@ -1,0 +1,85 @@
+name: azure-enterprise-infra-planner-eval-trigger-should
+description: |
+  Trigger accuracy — prompts that SHOULD invoke azure-enterprise-infra-planner.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: trigger-should-multi-service-workload
+    prompt: "Plan Azure infrastructure for a multi-service workload"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-realtime-chat
+    prompt: "What Azure resources do I need for a real-time chat application?"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-bicep-gen
+    prompt: "Generate Bicep templates for my Azure workload"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-terraform-webapp
+    prompt: "Generate Terraform for a web app with database and cache"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-genai-backend
+    prompt: "Deploy a GenAI backend with Azure OpenAI and supporting services"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-chatbot-openai
+    prompt: "Plan infrastructure for a chatbot service using Azure OpenAI"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-saas-multitenant
+    prompt: "Build a SaaS platform on Azure with multi-tenant isolation"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+
+  - name: trigger-should-multi-env
+    prompt: "Plan dev staging and production Azure environments for our new system"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
