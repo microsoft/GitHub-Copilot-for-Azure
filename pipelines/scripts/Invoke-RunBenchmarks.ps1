@@ -6,8 +6,9 @@
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The script retrieves a GitHub PAT from KeyVault, clones the msbench-benchmarks repo,
-    installs MSBench CLI, and invokes for each model:
+    The run requires both a GitHub PAT retrieved from KeyVault and the CAPI integration
+    credentials/environment variables expected by MSBench for the selected agent. The script
+    clones the msbench-benchmarks repo, installs MSBench CLI, and invokes for each model:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model> --no-wait
 
     Run IDs are extracted from the output and set as the pipeline output variable RUN_IDS.
