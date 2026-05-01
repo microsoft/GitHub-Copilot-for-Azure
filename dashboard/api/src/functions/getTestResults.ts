@@ -33,6 +33,7 @@ interface TestCaseResult {
     isPass: boolean;
     message?: string;
     skillInvocationRate?: number;
+    expectsScreenshot?: boolean;
 }
 
 /** The raw testResults.json file: test-name → result */
@@ -42,6 +43,7 @@ interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
+    expectsScreenshot?: boolean;
 }
 
 export interface SkillStats {
@@ -301,12 +303,14 @@ function computeSkillStats(allResults: RawTestResults[]): SkillStats {
                     testName,
                     message: tc.message,
                     skillInvocationRate: tc.skillInvocationRate,
+                    expectsScreenshot: tc.expectsScreenshot,
                 });
             } else {
                 passedTests.push({
                     testName,
                     message: tc.message,
                     skillInvocationRate: tc.skillInvocationRate,
+                    expectsScreenshot: tc.expectsScreenshot,
                 });
             }
         }
