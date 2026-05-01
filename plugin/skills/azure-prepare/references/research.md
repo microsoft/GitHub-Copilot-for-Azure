@@ -59,6 +59,8 @@ For each selected service, load the README.md first, then load specific files as
 Selected: Container Apps, Cosmos DB, Key Vault
 
 → Load: services/container-apps/README.md (overview)
+  → If need templates: services/container-apps/templates/selection.md
+  → Follow: services/container-apps/templates/recipes/composition.md
   → If need Bicep: services/container-apps/bicep.md
   → If need Terraform: services/container-apps/terraform.md
   → If need scaling: services/container-apps/scaling.md
@@ -104,7 +106,7 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 
 ### Web Application + API + Database (Cosmos DB)
 
-1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
+1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [templates/selection.md](services/container-apps/templates/selection.md), [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
 2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
 3. Load: [services/key-vault/README.md](services/key-vault/README.md)
 4. Invoke: `azure-observability` (monitoring setup)
