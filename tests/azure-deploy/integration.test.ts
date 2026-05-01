@@ -152,6 +152,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -177,6 +178,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -206,6 +208,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -231,6 +234,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -259,7 +263,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -283,7 +288,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -307,7 +313,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -334,7 +341,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -367,7 +375,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -402,7 +411,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -442,6 +452,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -467,6 +478,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -495,6 +507,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -520,6 +533,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
           takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
@@ -547,7 +561,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -571,7 +586,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -595,7 +611,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -622,7 +639,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -658,7 +676,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -694,7 +713,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
