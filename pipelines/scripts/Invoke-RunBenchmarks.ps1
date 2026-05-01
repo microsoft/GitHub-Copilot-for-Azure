@@ -65,7 +65,7 @@
 
     $vaultName = "kv-msbench-eval-azuremcp"
     $secretNameGhPAT = "azure-eval-gh-pat"
-    $secretNameCAPIID= "azure-mcp-eval-capi-id"
+    $secretNameCAPIID = "azure-mcp-eval-capi-id"
     $secretNameCAPIHMAC = "azure-mcp-eval-capi-hmac"
 
     # --- Retrieve GitHub PAT from KeyVault ---
@@ -77,6 +77,12 @@
 
         if (!$pat) {
             throw "Secret $secretNameGhPAT not found in KeyVault $vaultName."
+        }
+        if (!$capiId) {
+            throw "Secret $secretNameCAPIID not found in KeyVault $vaultName."
+        }
+        if (!$capiHmac) {
+            throw "Secret $secretNameCAPIHMAC not found in KeyVault $vaultName."
         }
 
         $env:GITHUB_MCP_SERVER_TOKEN = $pat
