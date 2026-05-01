@@ -9,6 +9,12 @@ Adapted from foundry-ft agent with critical additions from our platform gotchas:
 import argparse
 import json
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 from collections import Counter
 
 

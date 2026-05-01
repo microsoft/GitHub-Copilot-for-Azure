@@ -35,6 +35,12 @@ import os
 import random
 import re
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
@@ -48,7 +54,7 @@ def verify_deployment(client, model):
         client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": "Hi"}],
-            max_tokens=1,
+            max_completion_tokens=1,
         )
         return True
     except openai.NotFoundError:
@@ -79,7 +85,7 @@ def teacher_generate(client, model, system_prompt, prompt, retries=3):
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
-                max_tokens=1024,
+                max_completion_tokens=1024,
             )
             return resp.choices[0].message.content
         except Exception as e:
@@ -104,6 +110,16 @@ QUALITY_PROMPT = """Rate this AI-generated text on quality dimensions (1-10 each
 Return ONLY JSON: {{"accuracy": <int>, "quality": <int>, "task_fit": <int>}}"""
 
 
+def _clamp_score(v, default=0):
+    """Clamp a judge score to [1, 10]. Returns `default` for missing/non-numeric values."""
+    if v is None:
+        return default
+    try:
+        return max(1, min(10, int(v)))
+    except (ValueError, TypeError):
+        return default
+
+
 def grade_output(client, judge_model, output, retries=3):
     for attempt in range(retries):
         try:
@@ -111,13 +127,13 @@ def grade_output(client, judge_model, output, retries=3):
                 model=judge_model,
                 messages=[{"role": "user", "content": QUALITY_PROMPT.format(output=output)}],
                 temperature=0.0,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
-            text = resp.choices[0].message.content.strip()
+            text = (resp.choices[0].message.content or "").strip()
             match = re.search(r'\{[^}]+\}', text)
             if match:
                 scores = json.loads(match.group())
-                return {k: int(v) for k, v in scores.items()}
+                return {k: _clamp_score(v) for k, v in scores.items()}
         except Exception:
             if attempt < retries - 1:
                 time.sleep(2)

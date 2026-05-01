@@ -6,6 +6,12 @@ token estimates, role distribution, and rough cost estimates.
 """
 import json
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 from collections import Counter
 
 
@@ -128,19 +134,6 @@ def data_stats(filepath: str) -> None:
             print(f"  • '{field}' — in {count}/{len(records)} records")
         print(f"Unique grader values: {unique}/{len(grader_values)}")
         print(f"Avg grader value length: {avg_val_len:.0f} chars")
-
-    # Cost estimates per model family
-    print(f"\n💰 Cost Estimates (1 epoch):")
-    cost_table = {
-        "gpt-4.1-nano":  3.0,
-        "gpt-4.1-mini":  12.0,
-        "gpt-4.1":       25.0,
-        "Ministral-3B":  8.0,
-        "gpt-oss-20b": 15.0,
-    }
-    for model, cost_per_1m in cost_table.items():
-        est_cost = (total_tokens / 1_000_000) * cost_per_1m
-        print(f"  {model:20s}: ~${est_cost:.2f}/epoch  (~${est_cost * 2:.2f} for 2 epochs)")
 
     # Dataset size guidance
     print(f"\n📊 Dataset size guidance:")

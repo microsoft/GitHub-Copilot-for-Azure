@@ -18,6 +18,12 @@ import csv
 import io
 import os
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
 
@@ -100,9 +106,11 @@ def analyze_job(client, job_id, download_csv=None):
     print(f"  Final val_loss: {final_val:.4f} at step {final_step}")
 
     # Overfitting detection
-    if final_val > best_val * 1.2:
+    if best_val > 0 and final_val > best_val * 1.2:
         pct = (final_val - best_val) / best_val * 100
         print(f"\n  ⚠️  OVERFITTING DETECTED: Final val_loss is {pct:.0f}% above best.")
+    elif best_val == 0 and final_val > 0:
+        print(f"\n  ⚠️  Best val_loss was 0.0; final val_loss is {final_val:.4f} — possible overfitting from a near-perfect early checkpoint.")
     elif final_train and final_val / final_train > 1.5:
         ratio = final_val / final_train
         print(f"\n  ⚠️  MODERATE OVERFITTING: val/train ratio = {ratio:.2f}")
@@ -116,9 +124,9 @@ def analyze_job(client, job_id, download_csv=None):
         cps = client.fine_tuning.jobs.checkpoints.list(job_id)
         if cps.data:
             for cp in sorted(cps.data, key=lambda c: c.step_number):
-                vl = cp.metrics.valid_loss if cp.metrics and cp.metrics.valid_loss else None
+                vl = cp.metrics.valid_loss if cp.metrics and cp.metrics.valid_loss is not None else None
                 model_id = cp.fine_tuned_model_checkpoint or "N/A"
-                vl_str = f"{vl:.4f}" if vl else "N/A"
+                vl_str = f"{vl:.4f}" if vl is not None else "N/A"
                 available_checkpoints.append((cp.step_number, vl, model_id))
                 print(f"    Step {cp.step_number}: val_loss={vl_str}, model={model_id}")
         else:
@@ -127,7 +135,7 @@ def analyze_job(client, job_id, download_csv=None):
         print(f"    Could not retrieve checkpoints: {e}")
 
     # Recommend the best deployable checkpoint
-    if available_checkpoints and final_val > best_val * 1.2:
+    if available_checkpoints and best_val > 0 and final_val > best_val * 1.2:
         # Find the checkpoint with the lowest val_loss, or nearest to best_step
         best_cp = None
         if any(vl is not None for _, vl, _ in available_checkpoints):
@@ -145,7 +153,7 @@ def analyze_job(client, job_id, download_csv=None):
 
         if best_cp:
             cp_step, cp_vl, cp_model = best_cp
-            vl_info = f" (val_loss={cp_vl:.4f})" if cp_vl else ""
+            vl_info = f" (val_loss={cp_vl:.4f})" if cp_vl is not None else ""
             print(f"\n  🎯 Recommended checkpoint: step {cp_step}{vl_info}")
             print(f"     Model ID: {cp_model}")
             print(f"     (Best val_loss was at step {best_step}, nearest deployable checkpoint is step {cp_step})")

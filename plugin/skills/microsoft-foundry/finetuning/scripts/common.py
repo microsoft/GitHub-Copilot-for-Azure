@@ -28,6 +28,12 @@ import os
 import sys
 
 
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 _AZURE_COGSERVICES_SCOPE = "https://cognitiveservices.azure.com/.default"
 
 

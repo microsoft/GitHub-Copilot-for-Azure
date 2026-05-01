@@ -25,6 +25,12 @@ Usage:
 import json
 import os
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
@@ -79,7 +85,14 @@ def sft_to_dpo(input_path, output_path, client, base_model):
     DPO format uses: input (system+user messages), preferred_output, non_preferred_output.
     """
     with open(input_path, encoding="utf-8") as inf:
-        examples = [json.loads(l) for l in inf]
+        examples = []
+        for ln, raw in enumerate(inf, 1):
+            if not raw.strip():
+                continue
+            try:
+                examples.append(json.loads(raw))
+            except json.JSONDecodeError as e:
+                print(f"  ⚠️ Skipping malformed JSON on line {ln}: {e}")
     count = 0
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -98,11 +111,17 @@ def sft_to_dpo(input_path, output_path, client, base_model):
                     model=base_model,
                     messages=gen_msgs,
                     temperature=1.0,  # High temp for diversity
-                    max_tokens=2048,
+                    max_completion_tokens=2048,
                 )
                 rejected_content = resp.choices[0].message.content
             except Exception as e:
                 print(f"  Skipping example {i}: {e}")
+                continue
+
+            if not rejected_content:
+                # None or empty — content filter, finish=length with no text, etc.
+                # Skip rather than emit a DPO entry with null content (trainer rejects).
+                print(f"  Skipping example {i}: base model returned no content")
                 continue
 
             # Build DPO entry with correct format
@@ -133,8 +152,15 @@ def sft_to_rft(input_path, output_path):
     skipped = 0
     with open(output_path, "w", encoding="utf-8") as out:
         with open(input_path, encoding="utf-8") as inf:
-            for line in inf:
-                ex = json.loads(line)
+            for ln, line in enumerate(inf, 1):
+                if not line.strip():
+                    continue
+                try:
+                    ex = json.loads(line)
+                except json.JSONDecodeError as e:
+                    print(f"  ⚠️ Skipping malformed JSON on line {ln}: {e}")
+                    skipped += 1
+                    continue
                 msgs = ex.get("messages", [])
                 # Keep only system + user messages; RFT last message must be user
                 rft_msgs = [m for m in msgs if m["role"] in ("system", "user")]
@@ -158,8 +184,14 @@ def dpo_to_sft(input_path, output_path, system_prompt=None):
     count = 0
     with open(output_path, "w", encoding="utf-8") as f:
         with open(input_path, encoding="utf-8") as inf:
-            for line in inf:
-                ex = json.loads(line)
+            for ln, line in enumerate(inf, 1):
+                if not line.strip():
+                    continue
+                try:
+                    ex = json.loads(line)
+                except json.JSONDecodeError as e:
+                    print(f"  ⚠️ Skipping malformed JSON on line {ln}: {e}")
+                    continue
                 input_messages = ex["input"]["messages"]
                 chosen_messages = ex["preferred_output"]
 

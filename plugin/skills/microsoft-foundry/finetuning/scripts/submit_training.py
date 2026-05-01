@@ -30,13 +30,19 @@ import json
 import os
 import sys
 
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients, upload_file
 
 import requests
 
 
-def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None, suffix=None):
+def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None, suffix=None, training_type="globalStandard"):
     """Submit SFT job using the Python SDK."""
     hp = {"n_epochs": epochs, "learning_rate_multiplier": lr}
     if batch_size:
@@ -48,6 +54,9 @@ def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size
         validation_file=val_id,
         method={"type": "supervised"},
         hyperparameters=hp,
+        # Azure-specific: passed via extra_body since the OpenAI SDK has no
+        # top-level trainingType kwarg.
+        extra_body={"trainingType": training_type},
     )
     if suffix:
         kwargs["suffix"] = suffix
@@ -56,7 +65,7 @@ def submit_sft_sdk(client, model, train_id, val_id, epochs=2, lr=1.0, batch_size
     return {"id": job.id, "status": job.status, "model": model, "method": "sdk"}
 
 
-def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None, suffix=None):
+def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0, batch_size=None, suffix=None, training_type="globalStandard"):
     """Submit SFT job via REST API (fallback for models like gpt-oss-20b)."""
     url = f"{endpoint}/openai/fine_tuning/jobs?api-version=2025-04-01-preview"
     body = {
@@ -65,7 +74,7 @@ def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0
         "validation_file": val_id,
         "method": {"type": "supervised"},
         "hyperparameters": {"n_epochs": epochs, "learning_rate_multiplier": lr},
-        "trainingType": "globalStandard",
+        "trainingType": training_type,
     }
     if batch_size:
         body["hyperparameters"]["batch_size"] = batch_size
@@ -75,10 +84,17 @@ def submit_sft_rest(endpoint, api_key, model, train_id, val_id, epochs=2, lr=1.0
     resp = requests.post(url, headers={
         "Content-Type": "application/json",
         "api-key": api_key,
-    }, json=body)
+    }, json=body, timeout=(10, 60))
 
     if resp.status_code in (200, 201):
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError:
+            raise RuntimeError(
+                f"REST submission returned {resp.status_code} but body was not JSON: {resp.text[:200]}"
+            )
+        if "id" not in data or "status" not in data:
+            raise RuntimeError(f"REST response missing 'id' or 'status' fields: {data}")
         return {"id": data["id"], "status": data["status"], "model": model, "method": "rest"}
     else:
         try:
@@ -165,7 +181,12 @@ def main():
 
     # REST fallback
     parser.add_argument("--use-rest", action="store_true",
-                        help="Force REST API (needed for gpt-oss-20b)")
+                        help="Force REST API (needed for gpt-oss-20b and other OSS models)")
+    parser.add_argument("--training-type", choices=["globalStandard", "developerTier", "standard"],
+                        default="globalStandard",
+                        help="Azure training tier (default: globalStandard). developerTier is ~50%% off "
+                             "globalStandard with lower quotas. OSS models (gpt-oss-20b, Ministral, "
+                             "Llama, Qwen) only support globalStandard.")
 
     args = parser.parse_args()
 
@@ -202,20 +223,29 @@ def main():
             print("Error: --use-rest requires --endpoint and --api-key (REST does not support DefaultAzureCredential)")
             sys.exit(1)
         result = submit_sft_rest(args.endpoint, args.api_key, args.model,
-                                 train_id, val_id, args.epochs, args.lr, args.batch_size, args.suffix)
+                                 train_id, val_id, args.epochs, args.lr, args.batch_size, args.suffix,
+                                 args.training_type)
     else:
         # SFT via SDK with REST fallback for OSS models
         try:
             result = submit_sft_sdk(client, args.model, train_id, val_id,
-                                    args.epochs, args.lr, args.batch_size, args.suffix)
+                                    args.epochs, args.lr, args.batch_size, args.suffix,
+                                    args.training_type)
         except Exception as e:
-            if "does not support fine-tuning with Standard TrainingType" in str(e):
+            err_str = str(e).lower()
+            # Match a wider set of "use REST instead" signals than the original
+            # exact-string comparison: Azure changes error text periodically.
+            if ("trainingtype" in err_str
+                    or "globalstandard" in err_str
+                    or "global_standard" in err_str
+                    or "does not support fine-tuning" in err_str):
                 if not args.endpoint or not args.api_key:
                     print(f"SDK failed for {args.model}. REST fallback requires --endpoint and --api-key.")
                     sys.exit(1)
                 print(f"SDK failed for {args.model}, falling back to REST API...")
                 result = submit_sft_rest(args.endpoint, args.api_key, args.model,
-                                         train_id, val_id, args.epochs, args.lr, args.batch_size, args.suffix)
+                                         train_id, val_id, args.epochs, args.lr, args.batch_size, args.suffix,
+                                         args.training_type)
             else:
                 raise
 

@@ -20,6 +20,12 @@ Usage:
 import os
 import subprocess
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser
@@ -114,7 +120,7 @@ def create_deployment(sub, rg, account, name, model_id, model_format, sku, capac
     resp = requests.put(url, headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-    }, json=body)
+    }, json=body, timeout=(10, 120))
 
     if resp.status_code in (200, 201):
         print(f"✅ Deployment '{name}' created (format={model_format}, sku={sku}, capacity={capacity})")
@@ -131,7 +137,12 @@ def wait_for_deployment(sub, rg, account, name, timeout=600, poll_interval=15):
 
     while time.time() - start < timeout:
         token = get_arm_token()
-        resp = requests.get(url, headers={"Authorization": f"Bearer {token}"})
+        try:
+            resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=(10, 60))
+        except requests.exceptions.RequestException as e:
+            print(f"  ⚠️ Polling error: {e} — retrying in {poll_interval}s")
+            time.sleep(poll_interval)
+            continue
         if resp.status_code == 200:
             try:
                 state = resp.json().get("properties", {}).get("provisioningState", "Unknown")
@@ -153,7 +164,7 @@ def delete_deployment(sub, rg, account, name):
     """Delete a deployment."""
     token = get_arm_token()
     url = arm_url(sub, rg, account, name)
-    resp = requests.delete(url, headers={"Authorization": f"Bearer {token}"})
+    resp = requests.delete(url, headers={"Authorization": f"Bearer {token}"}, timeout=(10, 60))
     if resp.status_code in (200, 202, 204):
         print(f"✅ Deployment '{name}' deleted.")
     else:
@@ -164,7 +175,7 @@ def list_deployments(sub, rg, account):
     """List all deployments."""
     token = get_arm_token()
     url = arm_url(sub, rg, account)
-    resp = requests.get(url, headers={"Authorization": f"Bearer {token}"})
+    resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=(10, 60))
     if resp.status_code != 200:
         print(f"❌ Failed to list deployments ({resp.status_code}): {_safe_error_msg(resp)}")
         return

@@ -8,6 +8,12 @@ Adapted from foundry-ft agent with additional checks from our platform gotchas:
 import json
 import sys
 
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 VALID_ROLES = {"system", "user", "assistant", "tool"}
 
 

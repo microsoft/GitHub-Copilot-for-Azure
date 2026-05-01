@@ -26,6 +26,12 @@ import json
 import os
 import re
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -59,6 +65,21 @@ DEFAULT_DIMENSIONS = {
 }
 
 
+def _clamp_score(v, default=0):
+    """Clamp a judge score to [1, 10]. Returns `default` for missing/non-numeric values.
+
+    LLM judges occasionally return out-of-range integers (e.g., 15) or non-numeric
+    strings ("high"). 0 is the sentinel for "missing/failed" so callers can filter
+    via `score > 0`.
+    """
+    if v is None:
+        return default
+    try:
+        return max(1, min(10, int(v)))
+    except (ValueError, TypeError):
+        return default
+
+
 def score_example(client, model, user_content, assistant_content, dimensions):
     """Score a single training example."""
     dims_text = "\n".join(f"**{k}** (1-10): {v}" for k, v in dimensions.items())
@@ -77,13 +98,13 @@ def score_example(client, model, user_content, assistant_content, dimensions):
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.0,
-                max_tokens=200,
+                max_completion_tokens=200,
             )
-            text = resp.choices[0].message.content.strip()
+            text = (resp.choices[0].message.content or "").strip()
             match = re.search(r'\{[^}]+\}', text)
             if match:
                 scores = json.loads(match.group())
-                return {k: int(scores.get(k, 0)) for k in dimensions}
+                return {k: _clamp_score(scores.get(k)) for k in dimensions}
         except Exception:
             if attempt < 2:
                 time.sleep(2)
@@ -127,8 +148,14 @@ def main():
     # Load data
     examples = []
     with open(args.input, encoding="utf-8") as f:
-        for line in f:
-            ex = json.loads(line)
+        for i, line in enumerate(f):
+            if not line.strip():
+                continue
+            try:
+                ex = json.loads(line)
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Skipping malformed JSON on line {i+1}: {e}")
+                continue
             msgs = ex.get("messages", [])
             user = next((m["content"] for m in msgs if m["role"] == "user"), "")
             asst = next((m["content"] for m in msgs if m["role"] == "assistant"), "")
@@ -166,7 +193,13 @@ def main():
         print(f"  Mean:   {sum(all_avgs)/len(all_avgs):.1f}")
         print(f"  Min:    {min(all_avgs):.1f}")
         print(f"  Max:    {max(all_avgs):.1f}")
-        print(f"  Median: {sorted(all_avgs)[len(all_avgs)//2]:.1f}")
+        sorted_avgs = sorted(all_avgs)
+        n_avgs = len(sorted_avgs)
+        if n_avgs % 2 == 1:
+            median = sorted_avgs[n_avgs // 2]
+        else:
+            median = (sorted_avgs[n_avgs // 2 - 1] + sorted_avgs[n_avgs // 2]) / 2
+        print(f"  Median: {median:.1f}")
 
     # Filter and write
     kept = 0

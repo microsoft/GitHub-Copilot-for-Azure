@@ -24,6 +24,12 @@ import json
 import os
 import random
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -222,7 +228,14 @@ if __name__ == "__main__":
 
     # Load data
     with open(args.data, encoding="utf-8") as f:
-        data = [json.loads(line) for line in f]
+        data = []
+        for ln, line in enumerate(f, 1):
+            if not line.strip():
+                continue
+            try:
+                data.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Skipping malformed JSON on line {ln}: {e}")
     print(f"Loaded {len(data)} examples from {args.data}")
 
     # Load grader

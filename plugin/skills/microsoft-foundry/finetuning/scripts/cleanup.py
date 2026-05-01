@@ -23,6 +23,12 @@ Usage:
 import argparse
 import os
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -31,9 +37,8 @@ from common import HelpOnErrorParser, get_clients
 
 def list_deployments(client):
     """List fine-tuned model deployments. Returns deployment info from jobs."""
-    jobs = client.fine_tuning.jobs.list(limit=100)
     deployments = []
-    for job in jobs:
+    for job in _iter_all_jobs(client):
         if job.fine_tuned_model and job.status == "succeeded":
             deployments.append({
                 "job_id": job.id,
@@ -43,6 +48,29 @@ def list_deployments(client):
                 "tokens": job.trained_tokens,
             })
     return deployments
+
+
+def _iter_all_jobs(client, page_size=100):
+    """Yield every fine-tuning job, paginating through the API.
+
+    The OpenAI/Azure SDK's `jobs.list(limit=N)` returns at most N jobs with no
+    auto-paging. Users with >100 jobs would otherwise miss older jobs entirely.
+    """
+    after = None
+    while True:
+        kwargs = {"limit": page_size}
+        if after:
+            kwargs["after"] = after
+        page = client.fine_tuning.jobs.list(**kwargs)
+        items = list(page)
+        if not items:
+            break
+        for job in items:
+            yield job
+        if len(items) < page_size:
+            break
+        # Cursor-based paging: use last job's id as `after`
+        after = items[-1].id
 
 
 def list_files(client):
@@ -63,9 +91,8 @@ def list_files(client):
 
 def list_jobs(client):
     """List fine-tuning jobs."""
-    jobs = client.fine_tuning.jobs.list(limit=100)
     result = []
-    for job in jobs:
+    for job in _iter_all_jobs(client):
         result.append({
             "id": job.id,
             "status": job.status,

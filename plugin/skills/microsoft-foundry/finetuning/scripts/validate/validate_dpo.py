@@ -9,6 +9,12 @@ import json
 import sys
 
 
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 def validate_dpo(filepath: str) -> None:
     errors = []
     warnings = []

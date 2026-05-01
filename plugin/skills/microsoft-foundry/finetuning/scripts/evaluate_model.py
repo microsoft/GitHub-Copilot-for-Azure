@@ -38,6 +38,12 @@ import json
 import os
 import re
 import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -74,6 +80,22 @@ Rate the output on two dimensions, each on a scale of 1-10:
 Return ONLY a JSON object: {{"correctness": <int>, "conciseness": <int>}}"""
 
 
+def _clamp_score(v, default=0):
+    """Clamp a judge score to [1, 10]. Returns `default` for missing/non-numeric values.
+
+    LLM judges occasionally return out-of-range integers (e.g., 15) or non-numeric
+    strings ("high"). Without clamping, these distort aggregate scores or crash
+    `int()`. We use 0 as a sentinel for "missing/failed" so callers can filter via
+    `score > 0`.
+    """
+    if v is None:
+        return default
+    try:
+        return max(1, min(10, int(v)))
+    except (ValueError, TypeError):
+        return default
+
+
 def load_test_data(filepath):
     """Load held-out test set. Expects JSONL with 'messages' array.
 
@@ -83,8 +105,17 @@ def load_test_data(filepath):
     data = []
     with open(filepath, encoding="utf-8") as f:
         for i, line in enumerate(f):
-            ex = json.loads(line)
-            msgs = ex["messages"]
+            if not line.strip():
+                continue
+            try:
+                ex = json.loads(line)
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Skipping malformed JSON on line {i+1}: {e}")
+                continue
+            msgs = ex.get("messages")
+            if not isinstance(msgs, list):
+                print(f"⚠️ Skipping example {i}: missing or invalid 'messages' list")
+                continue
             prompt = next((m["content"] for m in msgs if m["role"] == "user"), None)
             reference = next((m["content"] for m in msgs if m["role"] == "assistant"), None)
             if not prompt:
@@ -112,9 +143,15 @@ def generate_response(client, deployment, prompt, system_prompt=None, max_retrie
                 model=deployment,
                 messages=messages,
                 temperature=0.0,
-                max_tokens=2048,
+                max_completion_tokens=2048,
             )
-            return resp.choices[0].message.content
+            content = resp.choices[0].message.content
+            if content is None:
+                # Content filter or empty completion — surface as an error sentinel
+                # so the aggregate filter at line ~`.startswith("ERROR:")` skips it.
+                finish = getattr(resp.choices[0], "finish_reason", "unknown")
+                return f"ERROR: empty content (finish_reason={finish})"
+            return content
         except Exception as e:
             if attempt < max_retries - 1:
                 time.sleep(3 * (attempt + 1))
@@ -133,16 +170,16 @@ def grade_response(judge_client, judge_model, prompt, reference, output, max_ret
                 model=judge_model,
                 messages=[{"role": "user", "content": judge_input}],
                 temperature=0.0,
-                max_tokens=200,
+                max_completion_tokens=200,
             )
-            text = resp.choices[0].message.content.strip()
+            text = (resp.choices[0].message.content or "").strip()
             # Extract JSON from response
             match = re.search(r'\{[^}]+\}', text)
             if match:
                 scores = json.loads(match.group())
                 return {
-                    "correctness": int(scores.get("correctness", 0)),
-                    "conciseness": int(scores.get("conciseness", 0)),
+                    "correctness": _clamp_score(scores.get("correctness")),
+                    "conciseness": _clamp_score(scores.get("conciseness")),
                 }
         except Exception as e:
             if attempt < max_retries - 1:
