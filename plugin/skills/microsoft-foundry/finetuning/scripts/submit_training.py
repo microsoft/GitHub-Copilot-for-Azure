@@ -35,7 +35,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients, upload_file
 

@@ -33,7 +33,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 _AZURE_COGSERVICES_SCOPE = "https://cognitiveservices.azure.com/.default"
 
 
@@ -166,8 +166,7 @@ def get_clients(base_url=None, azure_endpoint=None, project_endpoint=None, api_k
     print("   OPENAI_BASE_URL (preferred)")
     print("   AZURE_AI_PROJECT_ENDPOINT (Foundry SDK)")
     print("   AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_KEY")
-    sys.exit(1)
-    return None, "none"  # unreachable, satisfies static analysis
+    raise SystemExit(1)
 
 
 def upload_file(openai_client, filepath: str, purpose: str = "fine-tune") -> str:

@@ -43,7 +43,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -153,10 +153,9 @@ def generate_response(client, deployment, prompt, system_prompt=None, max_retrie
                 return f"ERROR: empty content (finish_reason={finish})"
             return content
         except Exception as e:
-            if attempt < max_retries - 1:
-                time.sleep(3 * (attempt + 1))
-            else:
+            if attempt >= max_retries - 1:
                 return f"ERROR: {e}"
+            time.sleep(3 * (attempt + 1))
     return "ERROR: max retries exceeded"
 
 

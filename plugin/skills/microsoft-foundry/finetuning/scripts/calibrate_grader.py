@@ -29,7 +29,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -88,7 +88,7 @@ def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
     """Run base model on data, score with grader, output threshold analysis."""
     if not data:
         print("No examples to evaluate. Check your data file.")
-        return [], None
+        return
 
     # Sample if dataset is larger than n
     if len(data) > n:
@@ -131,7 +131,7 @@ def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
     scored = [s for s in scores if s is not None]
     if not scored:
         print("\n❌ No examples were scored successfully. Check model access and data format.")
-        return [], None
+        return
     avg = sum(scored) / len(scored)
     print(f"\n{'='*60}")
     print(f"  BASE MODEL GRADER CALIBRATION ({len(scores)} examples)")
@@ -185,8 +185,6 @@ def calibrate(client, model, data, grade_fn, tools_schema=None, n=30):
     for bucket, count in buckets.items():
         bar = "█" * count
         print(f"    {bucket}: {count:3d} {bar}")
-
-    return scores, best_threshold
 
 
 def build_parser():

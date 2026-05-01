@@ -40,7 +40,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
@@ -89,11 +89,10 @@ def teacher_generate(client, model, system_prompt, prompt, retries=3):
             )
             return resp.choices[0].message.content
         except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(2 * (attempt + 1))
-            else:
+            if attempt >= retries - 1:
                 print(f"  Failed after {retries} attempts: {e}")
                 return None
+            time.sleep(2 * (attempt + 1))
     return None
 
 
