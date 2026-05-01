@@ -1,0 +1,263 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-enterprise-infra-planner/integration.test.ts
+# Migration: Jest → Vally (Batch 3A — Complex/Smaller)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Jest notes:
+# - RUNS_PER_PROMPT = 1 (all tests run once per prompt)
+# - All invocation tests use nonInteractive: true with followUp prompts:
+#   ["The resource list looks good, proceed with generating the plan.",
+#    "Go with recommended options. Assume all defaults to make the plan."]
+#   Vally multi-turn via messages[] if supported; documented in comments.
+# - Quality test 1 checks .azure/infrastructure-plan.json structure (meta, plan.resources, inputs)
+# - Quality test 2 checks infra/*.bicep files including main.bicep
+#   Jest setup: fs.mkdirSync(path.join(workspace, "infra", "modules"), { recursive: true })
+# - listFilesRecursive used to find Bicep files → mapped to file-exists graders
+
+name: azure-enterprise-infra-planner-integration-eval
+description: |
+  Integration evaluation for azure-enterprise-infra-planner skill — migrated from Jest
+  integration tests. Tests skill routing for enterprise VM infrastructure, DR topology,
+  Terraform IaC, VMSS/WAF, backup/compliance, and multi-region prompts (1 run, 80%
+  threshold), plus plan JSON generation and Bicep file output validation.
+
+tags:
+  type: integration
+  skill: azure-enterprise-infra-planner
+
+environment:
+  skills:
+    - "../../plugin/skills/azure-enterprise-infra-planner"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── hardened-3-tier-vm ──
+  # Jest: "invokes skill for hardened 3-tier VM infrastructure prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Jest followUp: ["The resource list looks good, proceed with generating the plan.",
+  #   "Go with recommended options. Assume all defaults to make the plan."]
+  - name: "Hardened 3-tier VM infrastructure"
+    prompt: "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── multi-region-dr-topology ──
+  # Jest: "invokes skill for multi-region DR topology prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Jest followUp: (same as above)
+  - name: "Multi-region DR topology"
+    prompt: "Configure a site recovery plan for disaster failover from East to West Azure region, replicate major VM workloads, and automate DNS failbacks."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── terraform-iac-generation ──
+  # Jest: "invokes skill for Terraform IaC generation prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Jest followUp: (same as above)
+  - name: "Terraform IaC generation"
+    prompt: "Spin up Linux VMs for each tier using Terraform, automate patch management via Azure Automation, and log traffic between subnets for compliance."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── vmss-waf-encryption ──
+  # Jest: "invokes skill for VMSS with WAF and encryption prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Jest followUp: (same as above)
+  - name: "VMSS with WAF and encryption"
+    prompt: "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── backup-compliance ──
+  # Jest: "invokes skill for backup and compliance prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Jest followUp: (same as above)
+  - name: "Backup and compliance"
+    prompt: "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── secure-multi-region-3-tier ──
+  # Jest: "invokes skill for secure multi-region 3-tier prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Jest followUp: (same as above)
+  - name: "Secure multi-region 3-tier stack"
+    prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier."
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # response-quality
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── plan-json-generation ──
+  # Jest: "generates infrastructure-plan.json with expected resources"
+  # Assertions: isSkillInvoked + fs.existsSync(.azure/infrastructure-plan.json) +
+  #   plan has meta (planId, status, version) + plan.resources array with
+  #   name/type/location/reasoning fields + networking + compute resources +
+  #   plan.overallReasoning + plan.validation
+  # Jest followUp: ["The resource list looks good, proceed with generating the plan.",
+  #   "Go with recommended options. Assume all defaults to make the plan."]
+  # Jest setup: preserveWorkspace: true, includeSkills: [SKILL_NAME]
+  - name: "Generates infrastructure-plan.json"
+    prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan."
+    # followUp (Jest): ["The resource list looks good, proceed with generating the plan.",
+    #   "Go with recommended options. Assume all defaults to make the plan."]
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── bicep-file-generation ──
+  # Jest: "generates Bicep files from approved plan"
+  # Assertions: isSkillInvoked + listFilesRecursive finds *.bicep under infra/ +
+  #   main.bicep exists under infra/
+  # Jest followUp: ["The resource list looks good, proceed with generating the plan.",
+  #   "Go with recommended options. Assume all defaults to make the plan.",
+  #   "Looks good! Let's make Bicep now."]
+  # Jest setup: fs.mkdirSync(infra/modules, { recursive: true }), preserveWorkspace: true
+  # Vally note: workspace pre-creation of infra/modules handled by environment.commands
+  #   if supported; otherwise the skill should create it.
+  - name: "Generates Bicep files from plan"
+    prompt: "Spin up a policy-driven backup for SAP workloads, ensure encrypted and compressed backups, and provide audit logs for all recovery tests. Assume all defaults to make the plan."
+    # followUp (Jest): ["The resource list looks good, proceed with generating the plan.",
+    #   "Go with recommended options. Assume all defaults to make the plan.",
+    #   "Looks good! Let's make Bicep now."]
+    # environment:
+    #   commands:
+    #     - "mkdir -p infra/modules"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: files
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      - type: file-exists
+        config:
+          path: "**/infra/**/*.bicep"
+      - type: file-exists
+        config:
+          path: "**/infra/main.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

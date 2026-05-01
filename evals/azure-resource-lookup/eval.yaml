@@ -1,0 +1,219 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-resource-lookup/integration.test.ts
+# Migration: Jest → Vally (Batch 3A — Complex/Smaller)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Jest notes:
+# - 7 tests total, all single-run (no invocation rate measurement)
+# - Tests use doesAssistantMessageIncludeKeyword for keyword validation
+# - Final test uses isSkillInvoked for skill invocation check
+# - Requires: az login && az account set --subscription <sub>
+# - Prompts sourced from Azure MCP Server README, especially App Service
+#   and cross-subscription queries that struggle
+
+name: azure-resource-lookup-integration-eval
+description: |
+  Integration evaluation for azure-resource-lookup skill — migrated from Jest integration
+  tests. Tests cross-subscription resource queries, orphaned resource discovery, tag
+  compliance, App Service listings, resource health, and skill invocation (1 run, 80%
+  threshold). No invocation rate — all single-run keyword validation tests.
+
+tags:
+  type: integration
+  skill: azure-resource-lookup
+
+environment:
+  skills:
+    - "../../plugin/skills/azure-resource-lookup"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # Cross-subscription resource queries (ARG sweet spot)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── cross-subscription-inventory ──
+  # Jest: "handles cross-subscription resource inventory"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "resource")
+  - name: "Cross-subscription resource inventory"
+    prompt: "How many resources do I have by type across all subscriptions?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-contains
+        config:
+          substring: "resource"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resources-by-location ──
+  # Jest: "finds resources by location"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "location")
+  - name: "Resources by location"
+    prompt: "Show me resources by location across subscriptions"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-contains
+        config:
+          substring: "location"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Orphaned resource discovery
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── orphaned-disks ──
+  # Jest: "finds orphaned disks"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "disk")
+  - name: "Find orphaned disks"
+    prompt: "Find orphaned or unattached disks in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-contains
+        config:
+          substring: "disk"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Tag compliance queries
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── missing-tags ──
+  # Jest: "finds resources missing tags"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "tag")
+  - name: "Resources missing tags"
+    prompt: "Find resources missing required tags in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      - type: output-contains
+        config:
+          substring: "tag"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # App Service prompts (known to struggle per test results)
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── list-websites ──
+  # Jest: "lists websites in subscription"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "web") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "app") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "site")
+  - name: "List websites in subscription"
+    prompt: "List the websites in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      # Jest used OR logic across "web", "app", "site" — any match passes.
+      # output-contains with the broadest common substring; Vally evaluates
+      # at least one should match for a correct response.
+      - type: output-contains
+        config:
+          substring: "web"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Resource health queries
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── resource-health-status ──
+  # Jest: "checks resource health status"
+  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "health") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "available") ||
+  #   doesAssistantMessageIncludeKeyword(agentMetadata, "resource")
+  - name: "Resource health status"
+    prompt: "Find resources in unhealthy or degraded state"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: output
+    graders:
+      # Jest used OR logic across "health", "available", "resource" — any match passes.
+      - type: output-contains
+        config:
+          substring: "resource"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Skill invocation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  # ── skill-invoked-for-listing ──
+  # Jest: "skill should be invoked for resource listing prompts"
+  # Assertions: isSkillInvoked(agentMetadata, "azure-resource-lookup")
+  - name: "Skill invoked for resource listing"
+    prompt: "List the websites in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
