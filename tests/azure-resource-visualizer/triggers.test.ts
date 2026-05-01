@@ -51,6 +51,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Show the resource topology",
       "Map my Azure infrastructure",
       "Map Azure resources",
+
+      // Draw.io diagram requests
+      "Create a draw.io diagram of my Azure resources",
+      "Generate a draw.io architecture diagram",
+      "Create draw.io from azure",
+      "Generate draw.io for my resource group",
+      "Create a rich diagram of my Azure infrastructure",
     ];
 
     test.each(shouldTriggerPrompts)(
