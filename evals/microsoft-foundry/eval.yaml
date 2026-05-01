@@ -1,0 +1,273 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/microsoft-foundry/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: microsoft-foundry-integration-eval
+description: |
+  Integration evaluation for microsoft-foundry skill — migrated from Jest integration tests.
+  Tests skill routing for Foundry model deployment, RAG apps, RBAC, CI/CD,
+  managed identity, agent lifecycle, and dataset operations
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: microsoft-foundry
+
+environment:
+  skills:
+    - ../../plugin/skills/microsoft-foundry
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── ai-model-deployment-prompt ──
+  # Jest: "invokes microsoft-foundry skill for AI model deployment prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "AI model deployment from Foundry catalog"
+    prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── rag-application-prompt ──
+  # Jest: "invokes microsoft-foundry skill for RAG application prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "RAG application with knowledge indexes"
+    prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── rbac-role-assignment-prompt ──
+  # Jest: "invokes microsoft-foundry skill for RBAC role assignment prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "RBAC role assignment on Foundry project"
+    prompt: "Grant a user the Azure AI User role on my Foundry project"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── service-principal-cicd-prompt ──
+  # Jest: "invokes microsoft-foundry skill for service principal CI/CD prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service principal for Foundry CI/CD"
+    prompt: "Create a service principal for my Foundry CI/CD pipeline"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── managed-identity-roles-prompt ──
+  # Jest: "invokes microsoft-foundry skill for managed identity roles prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Managed identity roles for Foundry project"
+    prompt: "Set up managed identity roles for my Foundry project to access Azure Storage"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── audit-role-assignments-prompt ──
+  # Jest: "invokes microsoft-foundry skill for audit role assignments prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Audit Foundry project role assignments"
+    prompt: "Who has access to my Foundry project? List all role assignments"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── developer-permissions-prompt ──
+  # Jest: "invokes microsoft-foundry skill for developer permissions prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Assign project manager role in Foundry"
+    prompt: "Make Bob a project manager in my Azure AI Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── validate-permissions-prompt ──
+  # Jest: "invokes microsoft-foundry skill for validate permissions prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Validate model deployment permissions"
+    prompt: "Can I deploy models to my Foundry project? Check my permissions"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── agent-lifecycle-prompt ──
+  # Jest: "invokes microsoft-foundry skill for agent lifecycle prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Build and deploy a Foundry agent"
+    prompt: "Help me build and deploy a Foundry agent"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── trace-to-dataset-prompt ──
+  # Jest: "invokes microsoft-foundry skill for trace-to-dataset prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Create eval dataset from agent traces"
+    prompt: "Create an evaluation dataset from my Foundry agent traces"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── dataset-versioning-prompt ──
+  # Jest: "invokes microsoft-foundry skill for dataset versioning prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Version eval dataset and compare regressions"
+    prompt: "Version my Foundry evaluation dataset and compare regressions"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

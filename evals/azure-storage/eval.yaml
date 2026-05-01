@@ -1,0 +1,96 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-storage/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-storage-integration-eval
+description: |
+  Integration evaluation for azure-storage skill — migrated from Jest integration tests.
+  Tests skill routing for blob storage upload, access tiers, and SDK usage prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-storage
+
+environment:
+  skills:
+    - ../../plugin/skills/azure-storage
+
+config:
+  runs: 5
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── blob-storage-prompt ──
+  # Jest: "invokes azure-storage skill for blob storage prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Blob storage upload and container management"
+    prompt: "How do I upload files to Azure Blob Storage and manage containers?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-storage
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-tiers-prompt ──
+  # Jest: "invokes azure-storage skill for storage tiers prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Storage access tiers guidance"
+    prompt: "What are the different Azure Storage access tiers and when should I use them?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-storage
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── blob-sdk-usage-prompt ──
+  # Jest: "invokes azure-storage skill for blob SDK usage prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Blob SDK upload and download"
+    prompt: "How do I upload and download blobs from Azure Blob Storage in my application?"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-storage
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

@@ -1,0 +1,80 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-upgrade/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# NOTE: azure-upgrade has NO invocation rate (no RUNS_PER_PROMPT).
+# Jest tests use single-run expect(isSkillInvoked(...)).toBe(true).
+# Mapped to runs: 1, threshold: 1.0 (must pass every time).
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-upgrade-integration-eval
+description: |
+  Integration evaluation for azure-upgrade skill — migrated from Jest integration tests.
+  Tests skill routing for Azure Functions Consumption-to-Flex migration prompts.
+  Single-run evaluation (no invocation rate) — skill must be invoked on every run.
+
+tags:
+  type: integration
+  skill: azure-upgrade
+
+environment:
+  skills:
+    - ../../plugin/skills/azure-upgrade
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  # ── consumption-to-flex-migration-prompt ──
+  # Jest: "invokes azure-upgrade skill for Functions Consumption to Flex migration prompt"
+  # Assertions: softCheckSkill + expect(isSkillInvoked(...)).toBe(true)
+  # Note: Jest used nonInteractive + followUp — omitted (agent runner specifics)
+  - name: "Functions Consumption to Flex migration"
+    prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── upgrade-hosting-plan-prompt ──
+  # Jest: "invokes azure-upgrade skill for upgrading Functions plan prompt"
+  # Assertions: softCheckSkill + expect(isSkillInvoked(...)).toBe(true)
+  # Note: Jest used nonInteractive + followUp — omitted (agent runner specifics)
+  - name: "Upgrade Functions hosting plan to Flex"
+    prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption"
+    tags:
+      type: integration
+      tier: full
+      cost: free
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
