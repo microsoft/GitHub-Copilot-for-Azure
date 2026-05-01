@@ -173,6 +173,7 @@ is_azure_skills_path() {
     local p="$1"
     [[ "$p" == *".copilot/installed-plugins/azure-skills/azure/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
+    [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
     [[ "$p" == *".agents/skills/"* ]] && return 0
     return 1

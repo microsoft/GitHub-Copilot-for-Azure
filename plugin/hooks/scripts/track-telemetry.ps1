@@ -142,7 +142,7 @@ function Get-ToolInputPath {
 
 # Azure-skills path patterns per client (used for SKILL.md and file-reference matching)
 $pathPatternCopilot = '\.copilot/installed-plugins/azure-skills/azure/skills/'
-$pathPatternClaude = '\.claude/plugins/cache/azure-skills/azure/[0-9.]+/skills/'
+$pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
 $pathPatternAgentsSkills = '\.agents/skills/'
 
