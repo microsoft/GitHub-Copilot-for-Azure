@@ -1,4 +1,78 @@
 import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
+import { argsString } from "../utils/evaluate";
+
+/**
+ * Tool names whose `arguments.command` carries the actual script body.
+ */
+const SHELL_TOOL_NAMES = ["bash", "powershell"];
+
+/**
+ * Tool name fragments used to detect file-write/edit calls. Matches the
+ * convention used by `tests/utils/regression-detectors.ts`.
+ */
+const WRITE_TOOL_FRAGMENTS = ["create", "edit", "write"];
+
+/**
+ * File extensions that should also be searched for the patterns below
+ * (Python, PowerShell, shell). Matched case-insensitively against any
+ * `path` / `filePath` / `file_path` / `target_file` argument on a
+ * file-write tool call.
+ */
+const SCRIPT_EXTENSIONS = [".py", ".ps1", ".sh"];
+
+function extractFilePath(args: unknown): string {
+  if (!args || typeof args !== "object") return "";
+  const record = args as Record<string, unknown>;
+  for (const key of ["filePath", "file_path", "path", "target_file", "uri"]) {
+    const value = record[key];
+    if (typeof value === "string") return value;
+  }
+  return "";
+}
+
+function isScriptFile(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return SCRIPT_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+/**
+ * Collect the bodies of any Python (`.py`), PowerShell (`.ps1`), or shell
+ * (`.sh`) scripts the agent produced — either as `bash` / `powershell`
+ * tool invocations, or as file-write tool calls targeting one of those
+ * extensions.
+ */
+function getScriptContent(agentMetadata: AgentMetadata): string {
+  const parts: string[] = [];
+
+  for (const event of agentMetadata.events) {
+    if (event.type !== "tool.execution_start") continue;
+    const data = event.data as { toolName?: string; arguments?: unknown };
+    const toolName = data.toolName ?? "";
+
+    if (SHELL_TOOL_NAMES.includes(toolName)) {
+      const args = data.arguments as { command?: string } | undefined;
+      if (args?.command) parts.push(args.command);
+      continue;
+    }
+
+    if (WRITE_TOOL_FRAGMENTS.some((fragment) => toolName.toLowerCase().includes(fragment))) {
+      const filePath = extractFilePath(data.arguments);
+      if (filePath && isScriptFile(filePath)) {
+        parts.push(argsString(event));
+      }
+    }
+  }
+
+  return parts.join("\n");
+}
+
+/**
+ * Combined haystack for all pattern helpers below: assistant messages plus
+ * any Python/PowerShell/shell script bodies the agent wrote or executed.
+ */
+function getSearchableContent(agentMetadata: AgentMetadata): string {
+  return `${getAllAssistantMessages(agentMetadata)}\n${getScriptContent(agentMetadata)}`;
+}
 
 /**
  * The Blueprint creation flow MUST mention the typed Graph endpoint
@@ -88,27 +162,27 @@ function anyPatternMatches(content: string, patterns: readonly RegExp[]): boolea
 }
 
 export function mentionsBlueprintCreation(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), BLUEPRINT_CREATE_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), BLUEPRINT_CREATE_PATTERNS);
 }
 
 export function mentionsBlueprintPrincipalStep(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), BLUEPRINT_PRINCIPAL_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), BLUEPRINT_PRINCIPAL_PATTERNS);
 }
 
 export function mentionsSponsorsBinding(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), SPONSORS_BINDING_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), SPONSORS_BINDING_PATTERNS);
 }
 
 export function mentionsAgentIdentityCreation(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), AGENT_IDENTITY_CREATE_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), AGENT_IDENTITY_CREATE_PATTERNS);
 }
 
 export function mentionsBlueprintBackreference(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), BLUEPRINT_BACKREF_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), BLUEPRINT_BACKREF_PATTERNS);
 }
 
 export function mentionsFmiPathExchange(agentMetadata: AgentMetadata): boolean {
-  const content = getAllAssistantMessages(agentMetadata);
+  const content = getSearchableContent(agentMetadata);
   return (
     anyPatternMatches(content, FMI_PATH_PATTERNS) &&
     anyPatternMatches(content, CLIENT_CREDENTIALS_PATTERNS) &&
@@ -117,9 +191,9 @@ export function mentionsFmiPathExchange(agentMetadata: AgentMetadata): boolean {
 }
 
 export function recommendsSupportedAuth(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), SUPPORTED_AUTH_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), SUPPORTED_AUTH_PATTERNS);
 }
 
 export function mentionsPerAgentPermissionGrant(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), PERMISSION_GRANT_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), PERMISSION_GRANT_PATTERNS);
 }
