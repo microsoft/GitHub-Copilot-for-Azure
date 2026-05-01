@@ -13,7 +13,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | Property | Value |
 |----------|-------|
 | MCP server | `azure` |
-| Key Foundry MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update` |
+| Key Foundry MCP tools | `evaluator_catalog_get`, `evaluation_agent_batch_eval_create`, `evaluator_catalog_create`, `evaluation_comparison_create`, `prompt_optimize`, `agent_update`, `agent_optimization_start`, `agent_optimization_get`, `agent_optimization_list` |
 | Prerequisite | Agent deployed and running (use [deploy skill](../deploy/deploy.md)) |
 | Local cache | `.foundry/agent-metadata.yaml`, `.foundry/evaluators/`, `.foundry/datasets/`, `.foundry/results/` |
 
@@ -26,6 +26,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | "Evaluate my agent" / "Run an eval" | [Step 1: Auto-Setup Evaluators](references/deploy-and-setup.md) first if `.foundry/evaluators/` or `.foundry/datasets/` cache is missing, stale, or the user requests refresh, then [Step 2: Evaluate](references/evaluate-step.md) |
 | "Why did my eval fail?" / "Analyze results" | [Step 3: Analyze](references/analyze-results.md) |
 | "Improve my agent" / "Optimize prompt" | [Step 4: Optimize](references/optimize-deploy.md) |
+| "Run optimization candidate search" / "Tune with optimization job" | [Step 4: Optimize](references/optimize-deploy.md) + [Optimization Candidate Jobs](references/optimize-candidate-jobs.md) |
 | "Compare agent versions" | [Step 5: Compare](references/compare-iterate.md) |
 | "Set up CI/CD evals" | [Step 6: CI/CD](references/cicd-monitoring.md) |
 
@@ -71,6 +72,10 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 12. **Use a two-phase evaluator strategy.** Phase 1 is built-in only: `relevance`, `task_adherence`, `intent_resolution`, `indirect_attack`, and `builtin.tool_call_accuracy` when the agent uses tools. Generate seed datasets with `query` and `expected_behavior` so Phase 2 can reuse or create targeted custom evaluators only after the first run exposes gaps.
 13. **Account for LLM judge knowledge cutoff.** When the agent uses real-time data sources (web search, Bing Grounding, live APIs), the LLM judge's training cutoff means it cannot verify current facts. Custom evaluators that score factual accuracy or behavioral adherence will produce systematic false negatives - flagging the agent's real-time data as "fabricated" or "beyond knowledge cutoff." Mitigations: (a) instruct the evaluator prompt to accept sourced claims it cannot verify, (b) use `expected_behavior` rubrics that describe the shape of a good answer rather than specific facts, (c) flag suspected knowledge-cutoff false negatives in the failure analysis rather than treating them as real failures.
 14. **Show Data Viewer deeplinks (for VS Code runtime only).** Append a Data Viewer deeplink immediately after reference to a dataset file or evaluation result file in your response. Format: "[Open in Data Viewer](vscode://ms-windows-ai-studio.windows-ai-studio/open_data_viewer?file=<file_path>&source=microsoft-foundry-skill) for details and perform analysis". This applies to files in `.foundry/datasets/`, `.foundry/results/`.
+15. **Treat optimization jobs as suggestion-only.** When using `agent_optimization_*` tools, present candidate configs/results as recommendations and never auto-apply candidate instructions or settings.
+16. **Use the optimization reference.** For optimization-job tools, workflow steps, and errors, follow [Optimization Candidate Jobs](references/optimize-candidate-jobs.md).
+17. **Block invalid optimization starts.** Never call `agent_optimization_start` until both prerequisites are satisfied: (a) exactly one valid dataset mode is resolved (`datasetJson` or `trainDatasetName` + `trainDatasetVersion`) and (b) evaluators are selected and confirmed with the user after `evaluator_catalog_get` (and `evaluator_catalog_create` only if needed).
+18. **Always ask evaluator preference explicitly for optimization jobs.** Before finalizing `evaluators`, ask the user which evaluator option they want (built-in only, existing custom, mixed, or create new custom). Do not silently pick defaults when the user has not answered.
 
 ## Two-Phase Evaluator Strategy
 
