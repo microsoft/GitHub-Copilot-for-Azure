@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'">
+    <title>Image Viewer</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #1e1e1e;
+        }
+
+        .iv-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .iv-image {
+            max-width: 100%;
+            max-height: 100vh;
+            object-fit: contain;
+            display: block;
+        }
+
+        .iv-error {
+            color: #ddd;
+            font-family: system-ui, -apple-system, sans-serif;
+            text-align: center;
+        }
+
+        .iv-error a {
+            color: #4ea1ff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="iv-container" id="container">
+        <p class="iv-error" id="error" hidden>
+            Missing <code>path</code> query parameter.
+        </p>
+    </div>
+    <script type="module" src="/src/image-viewer/main.ts"></script>
+</body>
+
+</html>

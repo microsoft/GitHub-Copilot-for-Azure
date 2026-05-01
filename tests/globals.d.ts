@@ -9,7 +9,7 @@ declare global {
   var TESTS_PATH: string;
   function getSkillPath(skillName: string): string;
   function getFixturesPath(skillName: string): string;
-  function setTestResult(data: { isPass: boolean, message?: string, skillInvocationRate?: number }): void;
+  function setTestResult(data: { isPass: boolean, message?: string, skillInvocationRate?: number, expectsScreenshot: boolean }): void;
 
   namespace jest {
     interface Matchers<R> {

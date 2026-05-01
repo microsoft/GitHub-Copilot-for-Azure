@@ -418,6 +418,46 @@ body:has(.it-dashboard) {
     color: var(--color-fail);
 }
 
+/* ── App snapshot preview ───────────────── */
+
+.it-app-snapshot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    width: 100%;
+}
+
+.it-app-snapshot-empty {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.it-app-snapshot-link {
+    display: inline-block;
+    line-height: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.it-app-snapshot-link:hover {
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.25);
+}
+
+.it-app-snapshot-img {
+    display: block;
+    max-width: 200px;
+    max-height: 140px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    cursor: zoom-in;
+}
+
 /* ── Responsive ─────────────────────────── */
 
 @media (max-width: 768px) {

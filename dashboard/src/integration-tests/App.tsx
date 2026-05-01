@@ -5,6 +5,7 @@ interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
+    expectsScreenshot?: boolean;
 }
 
 // Cache /api/data/{date} responses keyed by encoded date so repeated lookups
@@ -30,19 +31,16 @@ function fetchBlobTree(date: string): Promise<BlobTree> {
     return cached;
 }
 
-async function openAgentMetadataLinks(date: string, testName: string): Promise<void> {
-    const tree = await fetchBlobTree(date);
-    const dateNode = tree[date];
-    if (!dateNode) throw new Error("No data for this date.");
-
+function findTestCaseBlobs(
+    dateNode: BlobTreeNode,
+    testName: string,
+    pattern: RegExp,
+): string[] {
     const targetFolder = `/${formatTestName(testName)}/`;
     const matches: string[] = [];
     const walk = (node: BlobTreeNode): void => {
         for (const file of node.files) {
-            if (
-                file.blobName.includes(targetFolder) &&
-                /\/agent-metadata-[^/]+\.md$/.test(file.blobName)
-            ) {
+            if (file.blobName.includes(targetFolder) && pattern.test(file.blobName)) {
                 matches.push(file.blobName);
             }
         }
@@ -51,6 +49,15 @@ async function openAgentMetadataLinks(date: string, testName: string): Promise<v
         }
     };
     walk(dateNode);
+    return matches;
+}
+
+async function openAgentMetadataLinks(date: string, testName: string): Promise<void> {
+    const tree = await fetchBlobTree(date);
+    const dateNode = tree[date];
+    if (!dateNode) throw new Error("No data for this date.");
+
+    const matches = findTestCaseBlobs(dateNode, testName, /\/agent-metadata-[^/]+\.md$/);
 
     if (matches.length === 0) {
         throw new Error("No agentMetadata files found for this test case.");
@@ -66,6 +73,16 @@ async function openAgentMetadataLinks(date: string, testName: string): Promise<v
         );
     }
 }
+
+async function findAppSnapshotBlob(date: string, testName: string): Promise<string | null> {
+    const tree = await fetchBlobTree(date);
+    const dateNode = tree[date];
+    if (!dateNode) return null;
+    const found = findTestCaseBlobs(dateNode, testName, /\/app-snapshot\.jpe?g$/i);
+    return found[0] ?? null;
+}
+
+const AZURE_DEPLOY_SKILL = "azure-deploy";
 
 interface SkillStats {
     skillInvocationTestsPassed: number;
@@ -274,6 +291,13 @@ function App() {
                                             date={selectedDate!}
                                             testName={ft.testName}
                                         />
+                                        {/* Show the preview for legacy items which don't the flag set */}
+                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && ft.expectsScreenshot !== false && (
+                                            <AppSnapshotPreview
+                                                date={selectedDate!}
+                                                testName={ft.testName}
+                                            />
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -304,6 +328,13 @@ function App() {
                                             date={selectedDate!}
                                             testName={pt.testName}
                                         />
+                                        {/* Show the preview for legacy items which don't the flag set */}
+                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && pt.expectsScreenshot !== false && (
+                                            <AppSnapshotPreview
+                                                date={selectedDate!}
+                                                testName={pt.testName}
+                                            />
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -342,6 +373,61 @@ function ViewAgentMetadataButton({ date, testName }: { date: string; testName: s
             </button>
             {err && <span className="it-view-agent-metadata-error">{err}</span>}
         </span>
+    );
+}
+
+function AppSnapshotPreview({ date, testName }: { date: string; testName: string }) {
+    const [blobName, setBlobName] = useState<string | null | undefined>(undefined);
+    const [imgFailed, setImgFailed] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        setBlobName(undefined);
+        setImgFailed(false);
+        findAppSnapshotBlob(date, testName)
+            .then((found) => {
+                if (!cancelled) setBlobName(found);
+            })
+            .catch(() => {
+                if (!cancelled) setBlobName(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [date, testName]);
+
+    if (blobName === undefined) {
+        return <div className="it-app-snapshot it-app-snapshot-empty">Loading snapshot&hellip;</div>;
+    }
+
+    if (blobName === null || imgFailed) {
+        return (
+            <div className="it-app-snapshot it-app-snapshot-empty">
+                Snapshot not available
+            </div>
+        );
+    }
+
+    const url = `/api/fetch?path=${encodeURIComponent(blobName)}`;
+    const viewerUrl = `/image-viewer.html?path=${encodeURIComponent(blobName)}`;
+    return (
+        <div className="it-app-snapshot">
+            <a
+                className="it-app-snapshot-link"
+                href={viewerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open snapshot in new tab"
+            >
+                <img
+                    className="it-app-snapshot-img"
+                    src={url}
+                    alt={`App snapshot for ${formatTestName(testName)}`}
+                    loading="lazy"
+                    onError={() => setImgFailed(true)}
+                />
+            </a>
+        </div>
     );
 }
 
