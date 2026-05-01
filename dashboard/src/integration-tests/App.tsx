@@ -291,6 +291,7 @@ function App() {
                                             date={selectedDate!}
                                             testName={ft.testName}
                                         />
+                                        {/* Show the preview for legacy items which don't the flag set */}
                                         {detailsPanelSkill === AZURE_DEPLOY_SKILL && ft.expectsScreenshot !== false && (
                                             <AppSnapshotPreview
                                                 date={selectedDate!}
@@ -327,6 +328,7 @@ function App() {
                                             date={selectedDate!}
                                             testName={pt.testName}
                                         />
+                                        {/* Show the preview for legacy items which don't the flag set */}
                                         {detailsPanelSkill === AZURE_DEPLOY_SKILL && pt.expectsScreenshot !== false && (
                                             <AppSnapshotPreview
                                                 date={selectedDate!}
