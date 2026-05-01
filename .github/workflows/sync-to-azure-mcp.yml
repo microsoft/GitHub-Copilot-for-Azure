@@ -1,0 +1,122 @@
+name: Sync skill references to Azure MCP repo
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-to-azure-mcp:
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the current repo
+      - name: Checkout current repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          path: source-repo
+
+      # 2. Generate allowed-skill-names.json and allowed-plugin-file-references.json
+      - name: Generate JSON files
+        run: |
+          python3 - <<'EOF'
+          import json
+          import os
+
+          skills_dir = "source-repo/plugin/skills"
+
+          # Get sorted list of skill directory names
+          skill_names = sorted([
+              d for d in os.listdir(skills_dir)
+              if os.path.isdir(os.path.join(skills_dir, d))
+          ])
+
+          # Get sorted list of reference file paths (Windows-style backslash separators)
+          # Exclude SKILL.md, version.json, and license files
+          excluded_filenames = {"SKILL.md", "version.json", "LICENSE", "LICENSE.txt", "LICENSE.md"}
+          reference_files = []
+          for skill in skill_names:
+              skill_path = os.path.join(skills_dir, skill)
+              for root, dirs, files in os.walk(skill_path):
+                  dirs.sort()
+                  for filename in sorted(files):
+                      if filename in excluded_filenames:
+                          continue
+                      full_path = os.path.join(root, filename)
+                      rel_path = os.path.relpath(full_path, skills_dir)
+                      # Convert to Windows-style backslash separators
+                      rel_path = rel_path.replace("/", "\\")
+                      reference_files.append(rel_path)
+
+          # Write allowed-skill-names.json
+          with open("allowed-skill-names.json", "w") as f:
+              json.dump(skill_names, f, indent=2)
+              f.write("\n")
+
+          # Write allowed-plugin-file-references.json
+          with open("allowed-plugin-file-references.json", "w") as f:
+              json.dump(reference_files, f, indent=2)
+              f.write("\n")
+
+          print(f"Generated {len(skill_names)} skill names and {len(reference_files)} reference file paths.")
+          EOF
+
+      # 3. Clone microsoft/mcp and create feature branch
+      - name: Clone microsoft/mcp and create feature branch
+        env:
+          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+        run: |
+          gh repo clone microsoft/mcp mcp-repo -- --branch main --single-branch
+
+          cd mcp-repo
+          BRANCH_NAME="sync/azure-skills-references-${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+
+      # 4. Copy generated JSON files to the target location in microsoft/mcp
+      - name: Copy JSON files to target repo
+        run: |
+          TARGET_DIR="mcp-repo/servers/Azure.Mcp.Server/src/Resources"
+          cp allowed-skill-names.json "$TARGET_DIR/allowed-skill-names.json"
+          cp allowed-plugin-file-references.json "$TARGET_DIR/allowed-plugin-file-references.json"
+
+      # 5. Commit and push changes
+      - name: Commit and push changes
+        id: commit
+        working-directory: mcp-repo
+        env:
+          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -- \
+            servers/Azure.Mcp.Server/src/Resources/allowed-skill-names.json \
+            servers/Azure.Mcp.Server/src/Resources/allowed-plugin-file-references.json
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Sync skill references from GitHub-Copilot-for-Azure"
+            git push origin "$BRANCH_NAME"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 6. Create Pull Request in microsoft/mcp
+      - name: Create Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+        run: |
+          cd mcp-repo
+          gh pr create \
+            --repo "microsoft/mcp" \
+            --base "main" \
+            --head "$BRANCH_NAME" \
+            --title "Sync skill references from GitHub-Copilot-for-Azure (run ${{ github.run_id }})" \
+            --body "Automated sync of \`allowed-skill-names.json\` and \`allowed-plugin-file-references.json\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
