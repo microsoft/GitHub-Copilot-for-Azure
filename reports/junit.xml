@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="68" failures="0" errors="0" time="7.425">
+  <testsuite name="finetuning - Trigger Tests" errors="0" failures="0" skipped="0" timestamp="2026-04-28T02:15:21" time="5.914" tests="22">
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Fine-tune gpt-4.1-mini on my dataset&quot;" time="0.006">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;I want to do supervised fine-tuning on Azure AI Foundry&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;How do I create training data for fine-tuning?&quot;" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Submit a reinforcement fine-tuning job with a Python grader&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;I need to calibrate my RFT grader for fine-tuning&quot;" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Deploy my fine-tuned model&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Train a custom model on my JSONL dataset&quot;" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Distill gpt-4.1-mini into nano using fine-tuning on Foundry&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Check my fine-tuning training job status&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;My fine-tuning training job is not working&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should Trigger" name="triggers on: &quot;Upload a large training file for fine-tuning&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the weather today?&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Help me write a poem&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Explain quantum computing&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;Set up a Kubernetes cluster&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;What is the capital of France?&quot;" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Should NOT Trigger" name="does not trigger on: &quot;How do I cook pasta?&quot;" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Trigger Keywords Snapshot" name="skill keywords match snapshot" time="0.002">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Trigger Keywords Snapshot" name="skill description triggers match snapshot" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Edge Cases" name="handles empty prompt" time="0">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Edge Cases" name="handles very long prompt" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Trigger Tests › Edge Cases" name="is case insensitive" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="finetuning - Unit Tests" errors="0" failures="0" skipped="0" timestamp="2026-04-28T02:15:21" time="6.031" tests="46">
+    <testcase classname="finetuning - Unit Tests › Skill Structure" name="parent skill loads successfully" time="0.005">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Skill Structure" name="SKILL.md exists in finetuning sub-skill" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Skill Structure" name="has references directory" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Skill Structure" name="has workflows directory" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Skill Structure" name="has scripts directory" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="has substantive content" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="is under token hard limit" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="contains workflow routing table" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="contains reference routing table" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="contains script references" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="mentions all three training types" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › SKILL.md Content" name="includes rules section" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: training-types.md" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: hyperparameters.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: dataset-formats.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: grader-design.md" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: reward-hacking.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: agentic-rft.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: deployment.md" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: training-curves.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: evaluation.md" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: vision-fine-tuning.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: large-file-uploads.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="reference file exists: platform-gotchas.md" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="workflow file exists: quickstart.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="workflow file exists: full-pipeline.md" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="workflow file exists: dataset-creation.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="workflow file exists: iterative-training.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="workflow file exists: diagnose-poor-results.md" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: submit_training.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: monitor_training.py" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: calibrate_grader.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: check_training.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: deploy_model.py" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: evaluate_model.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: convert_dataset.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: generate_distillation_data.py" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: score_dataset.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: cleanup.py" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Referenced Files Exist" name="script file exists: common.py" time="0">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Reference Files Token Limits" name="all reference files under 2000 token hard limit" time="0.008">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Reference Files Token Limits" name="all workflow files under 2000 token hard limit" time="0.003">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Parent Skill References Finetuning" name="parent SKILL.md contains finetuning sub-skill entry" time="0.001">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Python Script Quality" name="all Python scripts have encoding on text-mode open() calls" time="0.028">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Python Script Quality" name="all scripts use common.get_clients() not custom client creation" time="0.008">
+    </testcase>
+    <testcase classname="finetuning - Unit Tests › Python Script Quality" name="SKILL.md script table matches actual script files" time="0.003">
+    </testcase>
+  </testsuite>
+</testsuites>
