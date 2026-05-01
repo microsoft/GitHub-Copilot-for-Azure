@@ -79,19 +79,24 @@ function getScriptContent(agentMetadata: AgentMetadata): string {
 }
 
 /**
- * Combined haystack for all pattern helpers below: assistant messages plus
- * any Python/PowerShell/shell script bodies the agent wrote or executed.
+ * Combined haystack for all pattern helpers below: assistant prose plus any
+ * Python/PowerShell/shell script bodies the agent wrote or executed. The
+ * helpers exported below all assert that the relevant Graph token / API
+ * fragment appears somewhere in the agent's externally observable output —
+ * a token that shows up only inside a generated `.py` / `.ps1` / `.sh`
+ * counts as evidence, not just conversational mention.
  */
 function getSearchableContent(agentMetadata: AgentMetadata): string {
   return `${getAllAssistantMessages(agentMetadata)}\n${getScriptContent(agentMetadata)}`;
 }
 
 /**
- * The Blueprint creation flow MUST mention the typed Graph endpoint
+ * The Blueprint creation flow MUST surface the typed Graph endpoint
  * (microsoft.graph.agentIdentityBlueprint) — there is no other canonical
  * way to refer to the Blueprint API. The negative lookahead excludes
  * `agentIdentityBlueprintPrincipal` so this matches only the Blueprint
- * itself.
+ * itself. Evidence is accepted from either assistant prose or any
+ * Python/PowerShell/shell script the agent wrote or executed.
  */
 const BLUEPRINT_CREATE_PATTERNS: readonly RegExp[] = [
   /microsoft\.graph\.agentIdentityBlueprint(?!Principal)/i,
@@ -101,7 +106,8 @@ const BLUEPRINT_CREATE_PATTERNS: readonly RegExp[] = [
  * Creating a Blueprint does NOT auto-create its service principal. Skipping
  * the BlueprintPrincipal step produces:
  *   400: The Agent Blueprint Principal for the Agent Blueprint does not exist.
- * Any correct Blueprint walkthrough must surface this step.
+ * Any correct Blueprint walkthrough must surface this step in either prose
+ * or generated scripts.
  */
 const BLUEPRINT_PRINCIPAL_PATTERNS: readonly RegExp[] = [
   /microsoft\.graph\.agentIdentityBlueprintPrincipal/i,
