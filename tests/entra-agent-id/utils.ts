@@ -15,15 +15,27 @@ const WRITE_TOOL_FRAGMENTS = ["create", "edit", "write"];
 /**
  * File extensions that should also be searched for the patterns below
  * (Python, PowerShell, shell). Matched case-insensitively against any
- * `path` / `filePath` / `file_path` / `target_file` argument on a
- * file-write tool call.
+ * `filePath` / `file_path` / `file` / `path` / `target_file` / `uri`
+ * argument on a file-write tool call.
  */
 const SCRIPT_EXTENSIONS = [".py", ".ps1", ".sh"];
 
 function extractFilePath(args: unknown): string {
-  if (!args || typeof args !== "object") return "";
-  const record = args as Record<string, unknown>;
-  for (const key of ["filePath", "file_path", "path", "target_file", "uri"]) {
+  let record: Record<string, unknown> | undefined;
+  if (args && typeof args === "object") {
+    record = args as Record<string, unknown>;
+  } else if (typeof args === "string") {
+    try {
+      const parsed: unknown = JSON.parse(args);
+      if (parsed && typeof parsed === "object") {
+        record = parsed as Record<string, unknown>;
+      }
+    } catch {
+      /* ignore non-JSON string args */
+    }
+  }
+  if (!record) return "";
+  for (const key of ["filePath", "file_path", "file", "path", "target_file", "uri"]) {
     const value = record[key];
     if (typeof value === "string") return value;
   }
