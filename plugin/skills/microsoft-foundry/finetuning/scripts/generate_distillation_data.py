@@ -43,7 +43,7 @@ except (AttributeError, OSError):
     pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser, get_clients
+from common import HelpOnErrorParser, get_clients, _clamp_score
 
 import openai
 
@@ -107,16 +107,6 @@ QUALITY_PROMPT = """Rate this AI-generated text on quality dimensions (1-10 each
 **Task-fit** (1-10): Does it match the requested format and purpose?
 
 Return ONLY JSON: {{"accuracy": <int>, "quality": <int>, "task_fit": <int>}}"""
-
-
-def _clamp_score(v, default=0):
-    """Clamp a judge score to [1, 10]. Returns `default` for missing/non-numeric values."""
-    if v is None:
-        return default
-    try:
-        return max(1, min(10, int(v)))
-    except (ValueError, TypeError):
-        return default
 
 
 def grade_output(client, judge_model, output, retries=3):

@@ -37,6 +37,22 @@ except (AttributeError, OSError):
 _AZURE_COGSERVICES_SCOPE = "https://cognitiveservices.azure.com/.default"
 
 
+def _clamp_score(v, default=0):
+    """Clamp a judge score to [1, 10]. Returns `default` for missing/non-numeric values.
+
+    LLM judges occasionally return out-of-range integers (e.g., 15) or non-numeric
+    strings ("high"). Without clamping, these distort aggregate scores or crash
+    `int()`. We use 0 as a sentinel for "missing/failed" so callers can filter via
+    `score > 0`.
+    """
+    if v is None:
+        return default
+    try:
+        return max(1, min(10, int(v)))
+    except (ValueError, TypeError):
+        return default
+
+
 class HelpOnErrorParser(argparse.ArgumentParser):
     """ArgumentParser that prints full help when arguments are invalid.
     

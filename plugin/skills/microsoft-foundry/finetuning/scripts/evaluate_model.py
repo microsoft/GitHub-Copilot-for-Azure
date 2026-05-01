@@ -47,7 +47,7 @@ except (AttributeError, OSError):
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import HelpOnErrorParser, get_clients
+from common import HelpOnErrorParser, get_clients, _clamp_score
 
 
 JUDGE_PROMPT = """You are evaluating the quality of a model's output for a given task.
@@ -78,22 +78,6 @@ Rate the output on two dimensions, each on a scale of 1-10:
 - 9-10: Clean and focused
 
 Return ONLY a JSON object: {{"correctness": <int>, "conciseness": <int>}}"""
-
-
-def _clamp_score(v, default=0):
-    """Clamp a judge score to [1, 10]. Returns `default` for missing/non-numeric values.
-
-    LLM judges occasionally return out-of-range integers (e.g., 15) or non-numeric
-    strings ("high"). Without clamping, these distort aggregate scores or crash
-    `int()`. We use 0 as a sentinel for "missing/failed" so callers can filter via
-    `score > 0`.
-    """
-    if v is None:
-        return default
-    try:
-        return max(1, min(10, int(v)))
-    except (ValueError, TypeError):
-        return default
 
 
 def load_test_data(filepath):
