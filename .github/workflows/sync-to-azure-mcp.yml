@@ -73,7 +73,7 @@ jobs:
           gh repo clone microsoft/mcp mcp-repo -- --branch main --single-branch
 
           cd mcp-repo
-          BRANCH_NAME="sync/azure-skills-references-${{ github.run_id }}"
+          BRANCH_NAME="sync/azure-skills-references"
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
 
@@ -103,20 +103,40 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Sync skill references from GitHub-Copilot-for-Azure"
-            git push origin "$BRANCH_NAME"
+            git push --force origin "$BRANCH_NAME"
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # 6. Create Pull Request in microsoft/mcp
-      - name: Create Pull Request
+      # 6. Create or update Pull Request in microsoft/mcp
+      - name: Create or update Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
         run: |
           cd mcp-repo
-          gh pr create \
+          PR_TITLE="Sync skill references from GitHub-Copilot-for-Azure"
+          PR_BODY="Automated sync of \`allowed-skill-names.json\` and \`allowed-plugin-file-references.json\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
+
+          EXISTING_PR=$(gh pr list \
             --repo "microsoft/mcp" \
-            --base "main" \
             --head "$BRANCH_NAME" \
-            --title "Sync skill references from GitHub-Copilot-for-Azure (run ${{ github.run_id }})" \
-            --body "Automated sync of \`allowed-skill-names.json\` and \`allowed-plugin-file-references.json\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
+            --base "main" \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing PR #$EXISTING_PR"
+            gh pr edit "$EXISTING_PR" \
+              --repo "microsoft/mcp" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+          else
+            echo "Creating new PR"
+            gh pr create \
+              --repo "microsoft/mcp" \
+              --base "main" \
+              --head "$BRANCH_NAME" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+          fi
