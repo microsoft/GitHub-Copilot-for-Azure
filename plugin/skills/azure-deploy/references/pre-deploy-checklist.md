@@ -315,6 +315,20 @@ This check is **required** when ALL of the following are true:
      --image <acr-login-server>/<image>:<tag>
    ```
 
+   **PowerShell:**
+   ```powershell
+   az acr build --registry <acr-name> --image <image>:<tag> ./src/<service>
+   az containerapp registry set `
+     --name <app-name> `
+     --resource-group rg-<env-name> `
+     --server <acr-login-server> `
+     --identity system
+   az containerapp update `
+     --name <app-name> `
+     --resource-group rg-<env-name> `
+     --image "<acr-login-server>/<image>:<tag>"
+   ```
+
 #### RBAC Health Check (Both Paths)
 
 The following Steps A–C are identical for Bicep (AZD) and Terraform.
