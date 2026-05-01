@@ -38,7 +38,9 @@
             "claude-opus-4.5-autodev-test",
             "gpt-5.2-codex-autodev-test",
             "gpt-5.2-autodev-test",
-            "gemini-2.5-pro-autodev-test"
+            "gemini-2.5-pro-autodev-test",
+            "claude-opus-4.7",
+            "gpt-5.5"
         ),
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
         [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
@@ -56,28 +58,35 @@
         throw "Model parameter is required."
     }
 
-    $vaultName = "kv-msbench-eval-azuremcp"
-    $secretName = "azure-eval-gh-pat"
-
     Write-Host "Benchmark: $Benchmark"
     Write-Host "Models: $($Model -join ', ')"
     Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
 
+    $vaultName = "kv-msbench-eval-azuremcp"
+    $secretNameGhPAT = "azure-eval-gh-pat"
+    $secretNameCAPIID= "azure-mcp-eval-capi-id"
+    $secretNameCAPIHMAC = "azure-mcp-eval-capi-hmac"
+
     # --- Retrieve GitHub PAT from KeyVault ---
     try {
-        Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
-        $pat = az keyvault secret show --vault-name $vaultName --name $secretName --query value -o tsv
+        Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretNameGhPAT"
+        $pat = az keyvault secret show --vault-name $vaultName --name $secretNameGhPAT --query value -o tsv
+        $capiId = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIID --query value -o tsv
+        $capiHmac = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIHMAC --query value -o tsv
 
         if (!$pat) {
-            throw "Secret $secretName not found in KeyVault $vaultName."
+            throw "Secret $secretNameGhPAT not found in KeyVault $vaultName."
         }
 
         $env:GITHUB_MCP_SERVER_TOKEN = $pat
-        
-        # Log the PAT as a secret variable to avoid exposing it in logs
+        $env:CAPI_INTEGRATION_ID = $capiId
+        $env:CAPI_HMAC_KEY = $capiHmac
+        # Log the secrets as secret variables to avoid exposing them in logs
         if ($pipelineRun) {
             Write-Host "##vso[task.setsecret]$pat"
+            Write-Host "##vso[task.setsecret]$capiId"
+            Write-Host "##vso[task.setsecret]$capiHmac"
         }
     }
     catch {
@@ -162,7 +171,7 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--env", "GITHUB_MCP_SERVER_TOKEN",
+            "--env", "GITHUB_MCP_SERVER_TOKEN CAPI_INTEGRATION_ID CAPI_HMAC_KEY",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait"
