@@ -272,19 +272,67 @@ azd up --no-prompt
 
 ### Container Apps + ACR — Pre-Deploy RBAC Health Check
 
-> **⛔ MANDATORY**: If the plan includes Container Apps that pull images from ACR using a managed identity, you **MUST** use this two-phase flow: `azd provision` → RBAC health check → `azd deploy`. **Do not use `azd up` for this scenario**, because `azd up` combines provisioning and deployment and can skip the required propagation gate. You must confirm the `AcrPull` role assignment has propagated **before** running `azd deploy`. Skipping this check causes the Container App revision to time out (~900 seconds) waiting for image pull permission — a known Azure RBAC propagation delay.
+> **⛔ MANDATORY**: If the plan includes Container Apps that pull images from ACR using a managed identity, you **MUST** use a two-phase flow with an `AcrPull` RBAC propagation gate **between** provisioning and image deployment. Skipping the gate causes the Container App revision to time out (~900 seconds) waiting for image pull permission — a known Azure RBAC propagation delay.
+>
+> The exact phase-1/phase-2 commands depend on whether the infra is **Bicep** (managed by `azd`) or **Terraform** (managed by `terraform`). Pick the matching path below.
 
 This check is **required** when ALL of the following are true:
-- `azure.yaml` includes a Container App service
-- The Bicep template assigns an `AcrPull` role for the Container App's managed identity on ACR using the two-phase deployment pattern
-- Infrastructure was just provisioned with `azd provision` and application deployment has not yet started
+- The plan includes a Container App service that pulls images from ACR
+- The infra (Bicep or Terraform) assigns an `AcrPull` role for the Container App's managed identity on ACR using the two-phase deployment pattern
+- Phase 1 has just completed and the real application image has not yet been pushed/deployed
 
-> 💡 **Two-phase Bicep pattern:** With the recommended two-phase deployment pattern, `azd provision` succeeds immediately because the Container App is provisioned with a public placeholder image (not an ACR image). The AcrPull role assignment is deployed in a separate module with no circular dependency. `azd deploy` then configures the registry/identity link (the equivalent CLI step is `az containerapp registry set --name <app-name> --resource-group rg-<environment-name> --server <acr-login-server> --identity system`) and pushes the real image via the Azure API — but the AcrPull role still needs time to propagate before this succeeds.
+> 📦 **Placeholder image:** Both paths use `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest` as the public phase-1 placeholder so the Container App can be provisioned before the real image exists in ACR.
 
-**Required flow for this scenario:**
+#### Path A — Bicep (AZD)
+
+> 💡 **Two-phase Bicep pattern:** `azd provision` succeeds immediately because the Container App is provisioned with a public placeholder image (not an ACR image). The `AcrPull` role assignment is deployed in a separate module with no circular dependency. `azd deploy` then configures the registry/identity link (the equivalent CLI step is `az containerapp registry set --name <app-name> --resource-group rg-<env-name> --server <acr-login-server> --identity system`) and pushes the real image via the Azure API — but the `AcrPull` role still needs time to propagate before this succeeds.
+
+> ⛔ **Do not use `azd up` for this scenario.** `azd up` combines provisioning and deployment and skips the propagation gate.
+
+**Required flow:**
 1. Run `azd provision`
-2. Complete the RBAC health check in this section
-3. Run `azd deploy`
+2. Complete the RBAC health check (Steps A–C below)
+3. Run `azd deploy --no-prompt`
+
+#### Path B — Terraform (CLI)
+
+> 💡 **Two-phase Terraform pattern:** `terraform apply` succeeds immediately because the Container App is provisioned with a public placeholder image (not an ACR image) and **no `registry` block**. The `AcrPull` role assignment is a separate `azurerm_role_assignment` resource that depends on the Container App's system-assigned identity, so there is no circular dependency. The post-apply CLI step then builds and pushes the real image with `az acr build`, configures the registry/identity link with `az containerapp registry set --name <app-name> --resource-group rg-<env-name> --server <acr-login-server> --identity system`, and switches the revision to the real image with `az containerapp update --image <acr-login-server>/<image>:<tag>` — but the `AcrPull` role still needs time to propagate before these succeed.
+
+**Required flow:**
+1. Run `terraform apply` (provisions ACR, Container App with placeholder image, and `AcrPull` role assignment)
+2. Complete the RBAC health check (Steps A–C below)
+3. Build, push, and switch to the real image:
+   ```bash
+   az acr build --registry <acr-name> --image <image>:<tag> ./src/<service>
+   az containerapp registry set \
+     --name <app-name> \
+     --resource-group rg-<env-name> \
+     --server <acr-login-server> \
+     --identity system
+   az containerapp update \
+     --name <app-name> \
+     --resource-group rg-<env-name> \
+     --image <acr-login-server>/<image>:<tag>
+   ```
+
+   **PowerShell:**
+   ```powershell
+   az acr build --registry <acr-name> --image <image>:<tag> ./src/<service>
+   az containerapp registry set `
+     --name <app-name> `
+     --resource-group rg-<env-name> `
+     --server <acr-login-server> `
+     --identity system
+   az containerapp update `
+     --name <app-name> `
+     --resource-group rg-<env-name> `
+     --image "<acr-login-server>/<image>:<tag>"
+   ```
+
+#### RBAC Health Check (Both Paths)
+
+The following Steps A–C are identical for Bicep (AZD) and Terraform.
+
 **Step A — Get the Container App's managed identity principal ID:**
 
 ```bash
@@ -368,7 +416,7 @@ for ($attempt = 1; $attempt -le 5; $attempt++) {
 }
 ```
 
-Only after this check confirms `AcrPull` has propagated should you run `azd deploy --no-prompt`.
+Only after this check confirms `AcrPull` has propagated should you run **Path A** `azd deploy --no-prompt` or **Path B** `az acr build` / `az containerapp registry set` / `az containerapp update`.
 
 > 💡 **Tip:** If `AcrPull` is missing entirely, assign it manually using the steps in [Container App Revision Timeout](recipes/azd/errors.md#container-app-revision-timeout), then re-run the poll loop above.
 

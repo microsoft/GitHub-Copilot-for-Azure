@@ -12,6 +12,7 @@ export default defineConfig({
                 "nightly-runs": resolve(__dirname, "nightly-runs.html"),
                 "performance-dashboard": resolve(__dirname, "performance-dashboard.html"),
                 "msbench-nightly-runs": resolve(__dirname, "msbench-nightly-runs.html"),
+                "image-viewer": resolve(__dirname, "image-viewer.html"),
             },
         },
         outDir: "dist",
