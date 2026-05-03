@@ -163,7 +163,7 @@ resource siteConfig 'Microsoft.Web/sites/config@2023-12-01' = {
 | Runtime env (auto-injected) | App Settings | Map GAE-specific vars |
 | `GAE_APPLICATION` | `WEBSITE_SITE_NAME` | Auto-injected by App Service |
 | `PORT` | `PORT` | Auto-injected by App Service |
-| `GOOGLE_CLOUD_PROJECT` | `AZURE_SUBSCRIPTION_ID` | Map project → subscription context |
+| `GOOGLE_CLOUD_PROJECT` | (no equivalent) | GCP project IDs identify a runtime environment; Azure subscription IDs are a tooling/billing context, not a runtime equivalent. Use App Service `WEBSITE_RESOURCE_GROUP` or rely on `DefaultAzureCredential` to discover the subscription at runtime if needed. |
 
 ## CI/CD Migration
 

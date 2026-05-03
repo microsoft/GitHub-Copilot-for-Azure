@@ -31,7 +31,7 @@ Detailed guidance for migrating Heroku applications to Azure App Service.
 
 | Heroku Dyno Type | App Service Plan | Notes |
 |-------------------|------------------|-------|
-| Free / Eco | Free (F1) | Dev/test only, 60 min/day limit |
+| Free / Eco | Free (F1) | Dev/test only — F1 has shared compute with quota limits (CPU minutes), not equivalent to Heroku's 60 min/day cap. See [App Service Free SKU limits](https://learn.microsoft.com/azure/app-service/overview-hosting-plans#how-much-do-i-pay-for-the-free-and-shared-tiers) |
 | Basic | Basic (B1) | No auto-scale, no slots |
 | Standard-1X (512 MB) | Standard (S1) | Auto-scale, slots, custom domains |
 | Standard-2X (1 GB) | Standard (S2) | More memory |
@@ -85,7 +85,7 @@ Heroku worker dynos have no direct App Service equivalent. Migration paths:
 | `REDIS_URL` | App Setting | Azure Cache connection string or managed identity |
 | `SECRET_KEY` | Key Vault reference | `@Microsoft.KeyVault(SecretUri=...)` |
 | `API_KEY` (third-party) | Key Vault reference | Store in Key Vault |
-| `NODE_ENV` / `RAILS_ENV` | App Setting | `WEBSITES_NODE_DEFAULT_VERSION`, etc. |
+| `NODE_ENV` / `RAILS_ENV` | App Setting | Add as a regular App Setting (e.g., `NODE_ENV=production`) — controls runtime behavior. Do NOT confuse with `WEBSITES_NODE_DEFAULT_VERSION`, which controls the Node.js engine version on Windows App Service. |
 | `PORT` | Auto-injected | App Service sets `PORT` automatically |
 | Feature flags | App Configuration | Feature management support built-in |
 
@@ -125,6 +125,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for azure/login@v2 OIDC token request
+      contents: read    # Required to checkout the repo
     steps:
       - uses: actions/checkout@v4
       - uses: azure/login@v2
@@ -137,6 +140,8 @@ jobs:
           app-name: '<app-name>'
           slot-name: 'staging'
 ```
+
+> ⚠️ Without the `permissions:` block, `azure/login@v2`'s OIDC token request fails with HTTP 403.
 
 ## Review Apps → Deployment Slots
 

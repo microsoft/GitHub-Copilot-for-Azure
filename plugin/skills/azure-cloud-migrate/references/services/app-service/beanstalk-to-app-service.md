@@ -40,7 +40,8 @@ Detailed guidance for migrating AWS Elastic Beanstalk applications to Azure App 
 |--------------------|---------------------------|
 | Node.js 20 | Node 20 LTS |
 | Node.js 18 | Node 18 LTS |
-| Python 3.11 / 3.12 | Python 3.12 |
+| Python 3.11 | Python 3.11 |
+| Python 3.12 | Python 3.12 |
 | Java 17 (Corretto) | Java 17 (Microsoft Build of OpenJDK) |
 | Java 21 (Corretto) | Java 21 (Microsoft Build of OpenJDK) |
 | .NET 8 on Linux | .NET 8 |
@@ -60,7 +61,7 @@ Beanstalk `.ebextensions/` YAML configs map to Bicep and App Settings:
 | `files` (config files) | Deployment package or Blob Storage | Include in app deployment |
 | `commands` / `container_commands` | Startup command or deployment script | `az webapp config set --startup-file` |
 | `Resources` (CloudFormation) | Bicep modules | Equivalent Azure resources |
-| `services` (sysvinit) | WebJobs or Always On | Background processing |
+| `services` (sysvinit) | WebJobs (continuous) or Azure Functions | Background processing — App Service "Always On" only prevents idle unload; it is NOT a replacement for sysvinit-style background services |
 
 ### Example: `.ebextensions/` → Bicep
 
@@ -96,7 +97,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
 | Parameter groups | Server parameters |
 | Subnet groups | VNet integration + private endpoints |
 | IAM authentication | Microsoft Entra authentication |
-| RDS Proxy | Built-in connection pooling (PgBouncer for PostgreSQL) |
+| RDS Proxy | Azure Database for PostgreSQL Flexible Server (built-in PgBouncer) |
 
 > 💡 **Tip:** Use Azure Database Migration Service (DMS) for data migration from RDS.
 

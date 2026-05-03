@@ -22,9 +22,9 @@ Always use `ask_user` before:
 
 ## Best Practices
 
-- Always use `mcp_azure_mcp_get_bestpractices` tool before generating Azure code
+- Always use `mcp_azure_mcp_get_azure_bestpractices` tool before generating Azure code
 - Prefer managed identity over connection strings or API keys
-- **Always use the latest supported runtime stack** — check [App Service supported runtimes](https://learn.microsoft.com/en-us/azure/app-service/configure-language-nodejs) for the newest GA version
+- **Always use the latest supported runtime stack** — see the App Service [language overview](https://learn.microsoft.com/azure/app-service/overview-supported-languages) for the supported stacks page per language
 - Follow Azure naming conventions
 - Use Premium v3 or Standard plans for production workloads
 - Enable health checks and diagnostic logging from day one
@@ -36,7 +36,7 @@ Always use `ask_user` before:
 - **Storage accounts**: Use identity-based connections with `DefaultAzureCredential`
 - **Databases**: Use Microsoft Entra authentication for Azure SQL and PostgreSQL Flexible Server
 - **Key Vault**: Use Key Vault references in App Settings (`@Microsoft.KeyVault(SecretUri=...)`)
-- **Application Insights**: Set `disableLocalAuth: true`. Use managed identity for telemetry ingestion
+- **Application Insights**: Configure ingestion via the connection string app setting (`APPLICATIONINSIGHTS_CONNECTION_STRING`). Use managed identity for management-plane access (querying, configuring components), not for telemetry ingestion
 - **DefaultAzureCredential with UAMI**: Always pass `managedIdentityClientId` explicitly:
   ```javascript
   const credential = new DefaultAzureCredential({

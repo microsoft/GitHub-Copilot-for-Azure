@@ -5,7 +5,7 @@ Migrate source platform web application code to Azure App Service.
 ## Prerequisites
 
 - Assessment report completed
-- Best practices loaded via `mcp_azure_mcp_get_bestpractices` tool
+- Best practices loaded via `mcp_azure_mcp_get_azure_bestpractices` tool
 
 ## Rules
 
@@ -17,7 +17,7 @@ Migrate source platform web application code to Azure App Service.
 
 ## Steps
 
-1. **Load Best Practices** — Use `mcp_azure_mcp_get_bestpractices` tool for App Service guidance
+1. **Load Best Practices** — Use `mcp_azure_mcp_get_azure_bestpractices` tool for App Service guidance
 2. **Create Project Structure** — Set up the project inside the output directory
 3. **Migrate Application Code** — Adapt source code for App Service runtime
 4. **Update Dependencies** — Replace platform-specific SDKs with Azure equivalents
@@ -48,7 +48,7 @@ Use a Dockerfile when the app requires custom system dependencies or multi-proce
 FROM node:20-slim
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 COPY . .
 EXPOSE 8080
 CMD ["node", "server.js"]
@@ -84,20 +84,28 @@ appInsights.setup(process.env.APPLICATIONINSIGHTS_CONNECTION_STRING)
 const { DefaultAzureCredential } = require('@azure/identity');
 const { Client } = require('pg');
 
-const credential = new DefaultAzureCredential({
-  managedIdentityClientId: process.env.AZURE_CLIENT_ID
-});
-const token = await credential.getToken('https://ossrdbms-aad.database.windows.net/.default');
+async function main() {
+  const credential = new DefaultAzureCredential({
+    managedIdentityClientId: process.env.AZURE_CLIENT_ID
+  });
+  const token = await credential.getToken('https://ossrdbms-aad.database.windows.net/.default');
 
-const client = new Client({
-  host: process.env.PGHOST,
-  database: process.env.PGDATABASE,
-  user: process.env.PGUSER,
-  password: token.token,
-  ssl: { rejectUnauthorized: true },
-  port: 5432
-});
+  const client = new Client({
+    host: process.env.PGHOST,
+    database: process.env.PGDATABASE,
+    user: process.env.PGUSER,
+    password: token.token,
+    ssl: { rejectUnauthorized: true },
+    port: 5432
+  });
+  await client.connect();
+  // ... use client
+}
+
+main().catch(console.error);
 ```
+
+> ⚠️ Wrap in `async function main()` — top-level `await` is not supported in CommonJS or many Node.js entrypoints. For ESM, top-level await works only with `"type": "module"` in `package.json`.
 
 ## Static Assets & CDN
 
