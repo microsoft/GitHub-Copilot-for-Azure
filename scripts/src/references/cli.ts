@@ -16,8 +16,9 @@
  */
 
 import { dirname, resolve, relative, normalize } from "node:path";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { extractLocalLinks, extractRemoteLinks } from "./link-helpers.js";
 import { fileURLToPath } from "node:url";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
@@ -29,6 +30,20 @@ function getRepoRoot(): string {
 
 const REPO_ROOT = getRepoRoot();
 let SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
+
+const FILTERED_REMOTE_HOSTS = new Set<string>([]);
+const FILTERED_REMOTE_HOST_SUFFICES: string[] = [];
+
+function shouldPrintRemoteHost(host: string): boolean {
+  const normalizedHost = host.toLowerCase().replace(/:\d+$/, "");
+  if (FILTERED_REMOTE_HOSTS.has(normalizedHost)) {
+    return false;
+  }
+  if (FILTERED_REMOTE_HOST_SUFFICES.some(s => host.endsWith(s))) {
+    return false;
+  }
+  return true;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,51 +59,20 @@ interface OrphanedFile {
   reason: string;     // Human-readable explanation
 }
 
+interface RemoteLinkDetail {
+  file: string;
+  line: number;
+  link: string;
+  protocol: "http" | "https";
+  host: string;
+  path: string;
+}
+
 interface ValidationResult {
   skill: string;
   issues: LinkIssue[];
   orphanedFiles: OrphanedFile[];
-}
-
-// ── Link extraction ──────────────────────────────────────────────────────────
-
-/**
- * Regex that captures local markdown link targets.
- *
- * Matches:
- *   [text](target)             – inline links
- *   [text](target#anchor)      – inline links with fragment
- *   [text](target "title")     – inline links with title
- *
- * Skips:
- *   https:// and http:// URLs
- *   mailto: links
- *   mdc: protocol links (Nuxt Content / internal protocol)
- *   Pure fragment links (#anchor-only)
- */
-const LINK_RE = /\[(?:[^\]]*)\]\(([^)]+)\)/g;
-
-function isIgnoredLink(rawTarget: string): boolean {
-  const trimmed = rawTarget.trim();
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return true;
-  if (trimmed.startsWith("mailto:")) return true;
-  if (trimmed.startsWith("mdc:")) return true;
-  if (trimmed.startsWith("vscode://")) return true;
-  if (trimmed.startsWith("#")) return true; // pure fragment
-  return false;
-}
-
-/**
- * Strip fragment identifiers (`#…`) and optional titles (`"…"`) from a link
- * target so we are left with just the file/dir path.
- */
-function cleanTarget(rawTarget: string): string {
-  let target = rawTarget.trim();
-  // Remove optional title ("title" or 'title') at the end
-  target = target.replace(/\s+["'][^"']*["']\s*$/, "");
-  // Remove fragment
-  target = target.replace(/#.*$/, "");
-  return target.trim();
+  remoteLinks: RemoteLinkDetail[];
 }
 
 // ── Markdown file discovery ──────────────────────────────────────────────────
@@ -162,122 +146,89 @@ function findReferenceFiles(skillDir: string): string[] {
 
 // ── Validation logic ─────────────────────────────────────────────────────────
 
-/**
- * Extract all local markdown links from a file that need to be followed for
- * orphan detection. Returns resolved absolute paths.
- */
-function extractLocalLinks(mdFile: string, _skillDir: string): string[] {
-  const links: string[] = [];
-  const content = readFileSync(mdFile, "utf-8");
-  const lines = content.split("\n");
-
-  for (const line of lines) {
-    let match: RegExpExecArray | null;
-    LINK_RE.lastIndex = 0;
-
-    while ((match = LINK_RE.exec(line)) !== null) {
-      const rawTarget = match[1];
-      if (isIgnoredLink(rawTarget)) continue;
-
-      const target = cleanTarget(rawTarget);
-      if (target === "") continue;
-
-      const fileDir = dirname(mdFile);
-      const resolved = resolve(fileDir, target);
-
-      // Only include links that exist and are files (not directories)
-      if (existsSync(resolved)) {
-        try {
-          if (!statSync(resolved).isDirectory()) {
-            links.push(resolved);
-          }
-        } catch {
-          // skip if stat fails
-        }
-      }
-    }
-  }
-
-  return links;
-}
-
-function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
+function validateFile(mdFile: string, skillDir: string): {
+  issues: LinkIssue[];
+  remoteLinks: RemoteLinkDetail[];
+} {
+  // Local links
+  const localLinks = extractLocalLinks(mdFile, skillDir);
+  const remoteLinks = extractRemoteLinks(mdFile, skillDir);
   const issues: LinkIssue[] = [];
-  const content = readFileSync(mdFile, "utf-8");
-  const lines = content.split("\n");
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    let match: RegExpExecArray | null;
-    LINK_RE.lastIndex = 0;
+  // Check 1: find all references that don't exist
+  issues.push(...localLinks.filter((item) => {
+    return !item.exists;
+  }).map((item) => {
+    return {
+      file: mdFile,
+      line: item.line,
+      link: item.link,
+      reason: `Target does not exist: ${item.link}`,
+    };
+  }));
 
-    while ((match = LINK_RE.exec(line)) !== null) {
-      const rawTarget = match[1];
-      if (isIgnoredLink(rawTarget)) continue;
+  // Check 2: find all references that are directories
+  issues.push(...localLinks.filter((item) => {
+    return item.exists && item.isDirectory;
+  }).map((item) => {
+    return {
+      file: mdFile,
+      line: item.line,
+      link: item.link,
+      reason: `Reference points to a directory, not a file: ${item.link}`,
+    };
+  }));
 
-      const target = cleanTarget(rawTarget);
-      if (target === "") continue; // pure fragment after cleaning
+  // Check 3: find all references outside the skills directory
+  issues.push(...localLinks.map((item) => {
+    const normalizedResolved = normalize(item.absPath).toLowerCase();
+    const normalizedSkillDir = normalize(skillDir).toLowerCase();
 
-      const fileDir = dirname(mdFile);
-      const resolved = resolve(fileDir, target);
+    const insideSkill = normalizedResolved.startsWith(normalizedSkillDir + "\\")
+      || normalizedResolved.startsWith(normalizedSkillDir + "/")
+      || normalizedResolved === normalizedSkillDir;
 
-      // ── Check 1: Does the target exist? ──────────────────────────────────
-      if (!existsSync(resolved)) {
-        issues.push({
-          file: mdFile,
-          line: i + 1,
-          link: rawTarget,
-          reason: `Target does not exist: ${target}`,
-        });
-        continue; // no point checking containment if it doesn't exist
-      }
-
-      // ── Check 2: Is the target a directory? ────────────────────────────
-      try {
-        if (statSync(resolved).isDirectory()) {
-          issues.push({
-            file: mdFile,
-            line: i + 1,
-            link: rawTarget,
-            reason: `Reference points to a directory, not a file: ${target}`,
-          });
-          continue;
-        }
-      } catch {
-        // skip if stat fails
-      }
-
-      // ── Check 3: Is the target inside the skill's directory? ────────────
-      const normalizedResolved = normalize(resolved).toLowerCase();
-      const normalizedSkillDir = normalize(skillDir).toLowerCase();
-
-      const insideSkill = normalizedResolved.startsWith(normalizedSkillDir + "\\")
-        || normalizedResolved.startsWith(normalizedSkillDir + "/")
-        || normalizedResolved === normalizedSkillDir;
-
-      if (!insideSkill) {
-        const rel = relative(SKILLS_DIR, resolved).replace(/\\/g, "/");
-        issues.push({
-          file: mdFile,
-          line: i + 1,
-          link: rawTarget,
-          reason: `Reference escapes skill directory → resolves to: ${rel}`,
-        });
-      }
+    if (!insideSkill) {
+      const rel = relative(SKILLS_DIR, item.absPath).replace(/\\/g, "/");
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        reason: `Reference escapes skill directory → resolves to: ${rel}`,
+      };
+    } else {
+      return undefined;
     }
-  }
+  }).filter((issue) => issue !== undefined));
 
-  return issues;
+  return {
+    issues,
+    remoteLinks: remoteLinks.filter((item) => {
+      return shouldPrintRemoteHost(item.host);
+    }).map((item) => {
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        protocol: item.protocol,
+        host: item.host,
+        path: item.path,
+      };
+    })
+  };
 }
 
 function validateSkill(skillName: string): ValidationResult {
   const skillDir = resolve(SKILLS_DIR, skillName);
   const mdFiles = findMarkdownFiles(skillDir);
   const issues: LinkIssue[] = [];
+  const remoteLinks: RemoteLinkDetail[] = [];
 
   // Validate all markdown files for link issues
   for (const mdFile of mdFiles) {
-    issues.push(...validateFile(mdFile, skillDir));
+    const result = validateFile(mdFile, skillDir);
+    issues.push(...result.issues);
+    remoteLinks.push(...result.remoteLinks);
   }
 
   // Track visited files for orphan detection
@@ -298,12 +249,13 @@ function validateSkill(skillName: string): ValidationResult {
     const links = extractLocalLinks(current, skillDir);
 
     for (const link of links) {
-      const normalizedLink = normalize(link).toLowerCase();
+
+      const normalizedLink = normalize(link.absPath).toLowerCase();
       if (!visited.has(normalizedLink)) {
         visited.add(normalizedLink);
         // Only follow markdown links
-        if (link.endsWith(".md")) {
-          queue.push(link);
+        if (link.exists && !link.isDirectory && link.absPath.endsWith(".md")) {
+          queue.push(link.absPath);
         }
       }
     }
@@ -324,7 +276,7 @@ function validateSkill(skillName: string): ValidationResult {
     }
   }
 
-  return { skill: skillName, issues, orphanedFiles };
+  return { skill: skillName, issues, orphanedFiles, remoteLinks };
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -502,6 +454,18 @@ function main(): void {
       for (const orphan of result.orphanedFiles) {
         console.log(`     ${formatPath(orphan.file)}`);
         console.log(`       ${orphan.reason}`);
+      }
+    }
+
+    if (result.remoteLinks.length > 0) {
+      console.log(`     🌐 Remote links (${result.remoteLinks.length})`);
+      for (const remote of result.remoteLinks) {
+        const loc = `${formatPath(remote.file)}:${remote.line}`;
+        console.log(`       ${loc}`);
+        console.log(`         URL: ${remote.link}`);
+        console.log(`         Protocol: ${remote.protocol}`);
+        console.log(`         Host: ${remote.host}`);
+        console.log(`         Path: ${remote.path}`);
       }
     }
   }
