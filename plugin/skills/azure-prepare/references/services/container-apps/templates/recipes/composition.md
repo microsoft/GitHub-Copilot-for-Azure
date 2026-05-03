@@ -38,6 +38,15 @@ IF recipes detected:
 
 ### Step 3: Add IaC Module (per recipe)
 
+Read the recipe's README for IaC patterns, env vars, RBAC roles, and scaling rules:
+
+- [recipes/acr/README.md](acr/README.md) — Container Registry build + push
+- [recipes/cosmos/README.md](cosmos/README.md) — Cosmos DB NoSQL
+- [recipes/dapr/README.md](dapr/README.md) — Dapr components (state, pub/sub, invocation)
+- [recipes/postgres/README.md](postgres/README.md) — PostgreSQL Flexible Server
+- [recipes/redis/README.md](redis/README.md) — Redis cache / state store
+- [recipes/servicebus/README.md](servicebus/README.md) — Service Bus messaging + KEDA scaling
+
 **Bicep:**
 1. Create recipe Bicep module in `infra/app/` based on the recipe's documented patterns
 2. Add module reference in `infra/main.bicep`:

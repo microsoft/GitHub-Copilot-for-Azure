@@ -9,6 +9,8 @@ See [composition.md](recipes/composition.md) for the merge algorithm.
 Container Apps hosts **any** containerised app — any language, any framework, any SDK.
 Event-driven processing with triggers/bindings uses [Functions on Container Apps](functions-on-aca.md).
 
+### Part A — Pick the Base Template
+
 ```
 1. Is this event-driven with Functions triggers/bindings?
    Indicators: BlobTrigger, ServiceBusTrigger, EventHubTrigger,
@@ -36,20 +38,31 @@ Event-driven processing with triggers/bindings uses [Functions on Container Apps
                /api/ routes, Express/FastAPI/ASP.NET controllers
    └─► YES → API template (see api.md)
 
-6. Does it use Dapr?
-   Indicators: dapr.io/enabled annotation, Dapr SDK imports,
-               state store, pub/sub, service invocation
-   └─► YES → Use appropriate base + dapr recipe (recipes/dapr/)
+6. DEFAULT → Web app template (see web-app.md)
+```
 
-7. Does it need a database?
-   Indicators: Cosmos DB, PostgreSQL, Redis, SQL
-   └─► YES → Use appropriate base + database recipe
+### Part B — Layer Integration Recipes
 
-8. Does it use messaging?
-   Indicators: Service Bus, Event Hubs, Storage Queues
-   └─► YES → Use appropriate base + messaging recipe
+After selecting the base template, check if the app needs any integration recipes.
+Recipes are additive — apply each one independently on top of the base.
+See [composition.md](recipes/composition.md) for the merge algorithm.
 
-9. DEFAULT → Web app template (see web-app.md)
+```
+Does it use Dapr?
+  Indicators: dapr.io/enabled annotation, Dapr SDK imports,
+              state store, pub/sub, service invocation
+  └─► YES → Add dapr recipe (recipes/dapr/README.md)
+
+Does it need a database?
+  Indicators: Cosmos DB, PostgreSQL, Redis, SQL
+  └─► YES → Add database recipe (recipes/cosmos/, recipes/postgres/, or recipes/redis/)
+
+Does it use messaging?
+  Indicators: Service Bus, Event Hubs, Storage Queues
+  └─► YES → Add messaging recipe (recipes/servicebus/README.md)
+
+Does it build/push container images?
+  └─► YES → Add ACR recipe (recipes/acr/README.md)
 ```
 
 ## Recipe Index
