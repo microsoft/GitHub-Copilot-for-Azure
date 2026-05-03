@@ -1,6 +1,6 @@
 ---
 name: azure-diagnostics
-description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors."
+description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter."
 license: MIT
 metadata:
   author: Microsoft
@@ -22,9 +22,12 @@ Activate this skill when user wants to:
 - Fix image pull, cold start, or health probe issues
 - Investigate why Azure resources are failing
 - Find root cause of application errors
+- Troubleshoot App Service issues (high CPU, deployment failures, crashes, slow responses, TLS/custom domains)
+- Respond to prompts like "troubleshoot app service", "app service high CPU", or "app service deployment failure"
 - Troubleshoot Azure Function Apps (invocation failures, timeouts, binding errors)
 - Find the App Insights or Log Analytics workspace linked to a Function App
 - Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
+- Troubleshoot Azure Messaging SDK issues (Event Hubs, Service Bus connection failures, AMQP errors, message lock issues)
 
 ## Rules
 
@@ -52,8 +55,10 @@ Activate this skill when user wants to:
 | Service | Common Issues | Reference |
 |---------|---------------|-----------|
 | **Container Apps** | Image pull failures, cold starts, health probes, port mismatches | [container-apps/](references/container-apps/README.md) |
+| **App Service** | High CPU, deployment failures, crashes, slow responses, TLS/custom domains | [app-service/](references/app-service/README.md) |
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
 | **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md) |
+| **Messaging** | Event Hubs & Service Bus SDK errors, AMQP failures, message lock, connectivity | [Messaging Troubleshooting](troubleshooting/messaging/README.md) |
 
 ---
 
@@ -61,6 +66,7 @@ Activate this skill when user wants to:
 
 - Keep Container Apps and Function Apps diagnostics in this parent skill.
 - Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md).
+- Route Azure Messaging SDK troubleshooting (Event Hubs, Service Bus) to [Messaging Troubleshooting](troubleshooting/messaging/README.md).
 
 ---
 
@@ -140,4 +146,6 @@ az monitor activity-log list -g RG --max-events 20
 
 - [KQL Query Library](references/kql-queries.md)
 - [Azure Resource Graph Queries](references/azure-resource-graph.md)
+- [App Service Troubleshooting](references/app-service/README.md)
 - [Function Apps Troubleshooting](references/functions/README.md)
+- [Messaging Troubleshooting](troubleshooting/messaging/README.md)

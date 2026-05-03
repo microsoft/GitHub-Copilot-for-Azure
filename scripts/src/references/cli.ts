@@ -17,7 +17,7 @@
 
 import { dirname, resolve, relative, normalize } from "node:path";
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { extractLocalLinks } from "./link-helpers.js";
+import { extractLocalLinks, extractRemoteLinks } from "./link-helpers.js";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
@@ -30,6 +30,20 @@ function getRepoRoot(): string {
 
 const REPO_ROOT = getRepoRoot();
 let SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
+
+const FILTERED_REMOTE_HOSTS = new Set<string>([]);
+const FILTERED_REMOTE_HOST_SUFFICES: string[] = [];
+
+function shouldPrintRemoteHost(host: string): boolean {
+  const normalizedHost = host.toLowerCase().replace(/:\d+$/, "");
+  if (FILTERED_REMOTE_HOSTS.has(normalizedHost)) {
+    return false;
+  }
+  if (FILTERED_REMOTE_HOST_SUFFICES.some(s => host.endsWith(s))) {
+    return false;
+  }
+  return true;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,10 +59,20 @@ interface OrphanedFile {
   reason: string;     // Human-readable explanation
 }
 
+interface RemoteLinkDetail {
+  file: string;
+  line: number;
+  link: string;
+  protocol: "http" | "https";
+  host: string;
+  path: string;
+}
+
 interface ValidationResult {
   skill: string;
   issues: LinkIssue[];
   orphanedFiles: OrphanedFile[];
+  remoteLinks: RemoteLinkDetail[];
 }
 
 // ── Markdown file discovery ──────────────────────────────────────────────────
@@ -122,8 +146,13 @@ function findReferenceFiles(skillDir: string): string[] {
 
 // ── Validation logic ─────────────────────────────────────────────────────────
 
-function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
+function validateFile(mdFile: string, skillDir: string): {
+  issues: LinkIssue[];
+  remoteLinks: RemoteLinkDetail[];
+} {
+  // Local links
   const localLinks = extractLocalLinks(mdFile, skillDir);
+  const remoteLinks = extractRemoteLinks(mdFile, skillDir);
   const issues: LinkIssue[] = [];
 
   // Check 1: find all references that don't exist
@@ -172,17 +201,34 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
     }
   }).filter((issue) => issue !== undefined));
 
-  return issues;
+  return {
+    issues,
+    remoteLinks: remoteLinks.filter((item) => {
+      return shouldPrintRemoteHost(item.host);
+    }).map((item) => {
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        protocol: item.protocol,
+        host: item.host,
+        path: item.path,
+      };
+    })
+  };
 }
 
 function validateSkill(skillName: string): ValidationResult {
   const skillDir = resolve(SKILLS_DIR, skillName);
   const mdFiles = findMarkdownFiles(skillDir);
   const issues: LinkIssue[] = [];
+  const remoteLinks: RemoteLinkDetail[] = [];
 
   // Validate all markdown files for link issues
   for (const mdFile of mdFiles) {
-    issues.push(...validateFile(mdFile, skillDir));
+    const result = validateFile(mdFile, skillDir);
+    issues.push(...result.issues);
+    remoteLinks.push(...result.remoteLinks);
   }
 
   // Track visited files for orphan detection
@@ -230,7 +276,7 @@ function validateSkill(skillName: string): ValidationResult {
     }
   }
 
-  return { skill: skillName, issues, orphanedFiles };
+  return { skill: skillName, issues, orphanedFiles, remoteLinks };
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -408,6 +454,18 @@ function main(): void {
       for (const orphan of result.orphanedFiles) {
         console.log(`     ${formatPath(orphan.file)}`);
         console.log(`       ${orphan.reason}`);
+      }
+    }
+
+    if (result.remoteLinks.length > 0) {
+      console.log(`     🌐 Remote links (${result.remoteLinks.length})`);
+      for (const remote of result.remoteLinks) {
+        const loc = `${formatPath(remote.file)}:${remote.line}`;
+        console.log(`       ${loc}`);
+        console.log(`         URL: ${remote.link}`);
+        console.log(`         Protocol: ${remote.protocol}`);
+        console.log(`         Host: ${remote.host}`);
+        console.log(`         Path: ${remote.path}`);
       }
     }
   }

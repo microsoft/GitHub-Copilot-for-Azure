@@ -1775,6 +1775,142 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
   createItemFilter(section);
 }
 
+// ── Integration Test Token Usage Panel ─────────────────────────────────────
+
+/**
+ * Format a token count as a short string: 12.3K, 1.2M, or plain number.
+ * @param {number} n
+ * @returns {string}
+ */
+function formatTokenCount(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return String(n);
+}
+
+/**
+ * Fetch the latest integration test results and render a table of token
+ * usage per non-skill-invocation test, sorted by total tokens descending.
+ */
+async function loadIntegrationTestTokenUsage() {
+  const section = document.getElementById("panel-integration-token-usage");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderIntegrationTokenUsagePanel(section, [], null);
+      return;
+    }
+
+    // Flatten tokenUsageByTest across all skills, computing per-run averages
+    const rows = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const byTest = stats.tokenUsageByTest;
+      if (!byTest) continue;
+      for (const [testName, usage] of Object.entries(byTest)) {
+        const runCount = usage.runCount || 1;
+        rows.push({
+          skillName,
+          testName,
+          inputTokens: Math.round((usage.inputTokens || 0) / runCount),
+          outputTokens: Math.round((usage.outputTokens || 0) / runCount),
+          totalTokens: Math.round((usage.totalTokens || 0) / runCount),
+        });
+      }
+    }
+
+    // Sort by total tokens descending
+    rows.sort(function (a, b) { return b.totalTokens - a.totalTokens; });
+
+    renderIntegrationTokenUsagePanel(section, rows, latestDate);
+  } catch {
+    renderIntegrationTokenUsagePanel(section, [], null);
+  }
+}
+
+/**
+ * Populate and finalise the integration test token usage panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, testName:string, inputTokens:number, outputTokens:number, totalTokens:number}>} rows
+ * @param {string|null} dateLabel
+ */
+function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  if (rows.length === 0) {
+    itemsEl.appendChild(el("p", "no-data-message", "No token usage data available."));
+  } else {
+    // Table
+    const table = el("table", "itoken-table");
+    table.setAttribute("aria-label", "Integration test average token usage");
+
+    const thead = el("thead");
+    const headerRow = el("tr");
+    const thTest = el("th", undefined, "Test");
+    thTest.setAttribute("scope", "col");
+    const thTokens = el("th", "itoken-num-col", "In / Out / Total");
+    thTokens.setAttribute("scope", "col");
+    headerRow.appendChild(thTest);
+    headerRow.appendChild(thTokens);
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = el("tbody");
+    for (const row of rows) {
+      const tr = el("tr");
+      tr.setAttribute("data-item-status", "pass");
+
+      const tdTest = el("td", "itoken-name-col");
+      tdTest.textContent = row.testName;
+      tdTest.setAttribute("title", row.testName);
+
+      const tdTokens = el("td", "itoken-num-col");
+      const spanIn = el("span", "itoken-in", formatTokenCount(row.inputTokens));
+      spanIn.setAttribute("title", row.inputTokens.toLocaleString());
+      const spanOut = el("span", "itoken-out", formatTokenCount(row.outputTokens));
+      spanOut.setAttribute("title", row.outputTokens.toLocaleString());
+      const spanTotal = el("span", "itoken-total", formatTokenCount(row.totalTokens));
+      spanTotal.setAttribute("title", row.totalTokens.toLocaleString());
+      tdTokens.appendChild(spanIn);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanOut);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanTotal);
+
+      tr.appendChild(tdTest);
+      tr.appendChild(tdTokens);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    itemsEl.appendChild(table);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", rows.length === 0 ? "skip" : "pass");
+
+  const summaryText = rows.length === 0
+    ? "No data"
+    : rows.length + " tests";
+  const fullSummaryText = dateLabel ? summaryText + " \u2014 " + dateLabel : summaryText;
+  section.setAttribute("data-summary-text", fullSummaryText);
+
+  const fakeCategory = {
+    status: rows.length === 0 ? "skip" : "pass",
+    summary: { total: rows.length, passed: rows.length, failed: 0, warnings: 0, skipped: 0 },
+    items: rows.map(function (r) { return { name: r.testName, status: "pass" }; }),
+  };
+
+  setupCollapsible(section, fakeCategory, "integration-token-usage");
+}
+
 // ── Initialization ──────────────────────────────────────────────────────────
 
 async function init() {
@@ -1822,4 +1958,5 @@ document.addEventListener("DOMContentLoaded", function () {
   loadE2EPassRates();
   loadConfidenceLevelPerSkill();
   loadDeployScenarioRetries();
+  loadIntegrationTestTokenUsage();
 });

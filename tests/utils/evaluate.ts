@@ -128,6 +128,108 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
   return scanDirectory(workspace);
 }
 
+export type SeparateFilesPatternResult =
+  | { isSeparate: true }
+  | {
+    isSeparate: false;
+    reason: "pattern-not-found";
+    missingPatterns: Array<"patternA" | "patternB">;
+  }
+  | {
+    isSeparate: false;
+    reason: "same-file";
+    filePaths: string[];
+  };
+
+/**
+ * Checks that two value patterns exist in **different** files within the workspace.
+ * This verifies patterns that must exist in different files — e.g. the AcrPull role assignment and the Container App must be in separate bicep modules so they can be provisioned separately to avoid cyclic dependency.
+ * @param workspace Path to a directory containing the files of interest.
+ * @param patternA First value pattern to match
+ * @param patternB Second value pattern — must be in a different file from patternA
+ * @param filePattern If provided, only files whose names match the pattern are considered
+ * @returns Whether the patterns were found in separate files, or why they were not
+ */
+export function arePatternsInSeparateFiles(
+  workspace: string,
+  patternA: RegExp,
+  patternB: RegExp,
+  filePattern?: RegExp,
+): SeparateFilesPatternResult {
+  let hasA = false;
+  let hasB = false;
+  let hasBInDifferentFileFromA = false;
+  const sameFileMatches = new Set<string>();
+
+  const scanDirectory = (dir: string): SeparateFilesPatternResult | undefined => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        const nestedResult = scanDirectory(fullPath);
+        if (nestedResult) {
+          return nestedResult;
+        }
+      } else if (entry.isFile()) {
+        if (filePattern && !entry.name.match(filePattern)) {
+          continue;
+        }
+        try {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          const matchesA = !!content.match(patternA);
+          const matchesB = !!content.match(patternB);
+
+          if (matchesA) {
+            hasA = true;
+          }
+          if (matchesB) {
+            hasB = true;
+          }
+          if (matchesA && matchesB) {
+            sameFileMatches.add(fullPath);
+          }
+          if (matchesB && !matchesA) {
+            hasBInDifferentFileFromA = true;
+          }
+
+          if (hasA && hasBInDifferentFileFromA) {
+            return { isSeparate: true };
+          }
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const result = scanDirectory(workspace);
+  if (result) {
+    return result;
+  }
+
+  const missingPatterns: Array<"patternA" | "patternB"> = [];
+  if (!hasA) {
+    missingPatterns.push("patternA");
+  }
+  if (!hasB) {
+    missingPatterns.push("patternB");
+  }
+  if (missingPatterns.length > 0) {
+    return {
+      isSeparate: false,
+      reason: "pattern-not-found",
+      missingPatterns,
+    };
+  }
+
+  return {
+    isSeparate: false,
+    reason: "same-file",
+    filePaths: Array.from(sameFileMatches),
+  };
+}
+
 /**
  * Recursively list all files under a directory, returning paths relative to the root.
  * Paths are normalized to use forward slashes for cross-platform regex matching.
@@ -344,7 +446,14 @@ const maxToolCallBeforeSkillInvocationTerminate = 3;
  * Helper context passed to the test function inside `withTestResult`.
  */
 interface WithTestResultContext {
+  /**
+   * Sets the skill vocation rate in the test results indicating how many attempts successfully invoked a skill of interest.
+   */
   setSkillInvocationRate: (rate: number) => void;
+  /**
+   * Sets the screenshot flag in the test result indicating the test case expects a screenshot of a deployed website.
+   */
+  expectScreenshot: () => void;
 }
 
 /**
@@ -355,19 +464,26 @@ interface WithTestResultContext {
  */
 export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise<void> | void): Promise<void> {
   let skillInvocationRate: number | undefined;
-
+  let expectsScreenshot: boolean = false;
   const ctx: WithTestResultContext = {
     setSkillInvocationRate: (rate: number) => {
       skillInvocationRate = rate;
     },
+    expectScreenshot: () => {
+      expectsScreenshot = true;
+    }
   };
 
   try {
     // Before agent run starts, initialize the test result as if it failed.
     // This ensures every test case has a result even when the agent run times out.
-    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
+    global.setTestResult({
+      isPass: false,
+      message: "agent run did not finish; test likely timed out or was terminated before completion",
+      expectsScreenshot: false
+    });
     await fn(ctx);
-    global.setTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate, expectsScreenshot });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -376,7 +492,7 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.setTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate, expectsScreenshot });
     throw e;
   }
 }

@@ -3,7 +3,8 @@ import { Transform } from "stream";
 import * as nbgv from "nerdbank-gitversioning";
 import * as path from "path";
 import log from "fancy-log";
-import { rmSync } from "fs";
+import { execSync } from "child_process";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import Vinyl = require("vinyl");
 
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
@@ -106,10 +107,96 @@ function stampPluginVersions() {
 
 function build() {
   rmSync("output", { recursive: true, force: true });
-  return src(["plugin/**/*", "!plugin/**/version.json"], { dot: true, encoding: false })
+  const pipeline = src(["plugin/**/*", "!plugin/**/version.json", "!plugin/CHANGELOG.md"], { dot: true, encoding: false })
     .pipe(stampSkillVersions())
     .pipe(stampPluginVersions())
     .pipe(dest("output"));
+
+  pipeline.on("end", () => {
+    try {
+      generateChangelog();
+    } catch (err) {
+      const error =
+        err instanceof Error ? err : new Error(String(err));
+      log.error("Failed to generate CHANGELOG.md after writing output/.", error);
+      throw error;
+    }
+  });
+
+  return pipeline;
+}
+
+/**
+ * Generates a CHANGELOG.md in the output directory based on merged PRs
+ * that touch plugin/ and have titles starting with fix:, feat:, or feature:.
+ * Each version corresponds to a single first-parent commit touching plugin/
+ * since the NBGV baseline commit (when plugin/version.json was introduced).
+ */
+function generateChangelog(): void {
+  const versionJson = JSON.parse(
+    readFileSync("plugin/version.json", "utf-8")
+  );
+  const majorMinor = versionJson.version as string;
+
+  // Find the commit that introduced plugin/version.json (the NBGV baseline).
+  const baselineCommit = execSync(
+    "git log --diff-filter=A --format=%H --first-parent -- plugin/version.json",
+    { encoding: "utf-8" }
+  ).trim();
+
+  if (!baselineCommit) {
+    log.warn("Could not find baseline commit for plugin/version.json; skipping changelog generation.");
+    return;
+  }
+
+  // Enumerate first-parent commits touching plugin/ from baseline (inclusive) to HEAD.
+  // We include the baseline itself by using baseline~1..HEAD (or just --ancestry-path from baseline).
+  const logOutput = execSync(
+    `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- plugin/`,
+    { encoding: "utf-8" }
+  ).trim();
+
+  if (!logOutput) {
+    log.warn("No commits found touching plugin/; skipping changelog generation.");
+    return;
+  }
+
+  const commits = logOutput.split("\n").map((line, index) => {
+    const [hash, subject] = line.split("\0", 2);
+    return { hash, subject, height: index + 1 };
+  });
+
+  // Filter to only include PRs with fix:/feat:/feature: prefixes.
+  const prefixRe = /^(fix|feat|feature)(\(.+?\))?:/i;
+  const filtered = commits.filter((c) => prefixRe.test(c.subject));
+
+  // Determine the repository URL for PR links. Prefer the "upstream" remote
+  // (the canonical repo where PRs live) and fall back to "origin".
+  let remoteUrl: string;
+  try {
+    remoteUrl = execSync("git remote get-url upstream", { encoding: "utf-8" }).trim();
+  } catch {
+    remoteUrl = execSync("git remote get-url origin", { encoding: "utf-8" }).trim();
+  }
+  const repoUrl = remoteUrl.replace(/\.git$/, "").replace(/^git@github\.com:/, "https://github.com/");
+
+  // Build changelog content (newest first).
+  let content = "# Changelog\n";
+
+  for (let i = filtered.length - 1; i >= 0; i--) {
+    const entry = filtered[i];
+    const version = `${majorMinor}.${entry.height}`;
+    // Turn (#NNN) into a markdown link.
+    const subject = entry.subject.replace(
+      /\(#(\d+)\)/g,
+      (_, num) => `([#${num}](${repoUrl}/pull/${num}))`
+    );
+    content += `\n## ${version}\n\n- ${subject}\n`;
+  }
+
+  mkdirSync("output", { recursive: true });
+  writeFileSync("output/CHANGELOG.md", content, "utf-8");
+  log(`generated CHANGELOG.md with ${filtered.length} entries`);
 }
 
 export default build;
