@@ -126,6 +126,8 @@ resources
 | where hasAppInsights == 0
 ```
 
+> **Note:** This query only covers apps with existing environment variables. Apps with no env vars are excluded by the `mv-expand` and should be identified separately (e.g., filter for containers where `env` is null or empty).
+
 ## KQL Query Library
 
 ### Console log errors
