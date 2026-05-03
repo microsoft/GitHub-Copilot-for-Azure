@@ -44,6 +44,7 @@ Parse a Draw.io XML file into a structured resource model. Referenced by all ski
    | `strokeColor=#E81123` | `secures` (security / private link) |
    | `strokeColor=#999999` + `dashed=1` | `depends` (dependency) |
    | `strokeColor=#00A4EF` + `dashed=1` | `peers` (network link) |
+   | _(no matching style / default Draw.io edge)_ | `connects` (fallback) |
 
 6. **Output the resource model** in chat so the user can verify parsing is correct.
 
