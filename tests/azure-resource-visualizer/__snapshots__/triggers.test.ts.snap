@@ -39,6 +39,7 @@ exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot ski
     "visualization",
     "visualize",
     "visualizer",
+    "vnet",
     "when",
   ],
   "name": "azure-resource-visualizer",
@@ -82,6 +83,7 @@ exports[`azure-resource-visualizer - Trigger Tests Trigger Keywords Snapshot ski
   "visualization",
   "visualize",
   "visualizer",
+  "vnet",
   "when",
 ]
 `;

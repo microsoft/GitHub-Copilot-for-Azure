@@ -37,8 +37,8 @@ const config: Config = {
 
   // Coverage configuration
   collectCoverageFrom: [
-    "../plugin/skills/**/*.js",
-    "../plugin/skills/**/*.ts",
+    "../output/skills/**/*.js",
+    "../output/skills/**/*.ts",
     "!**/node_modules/**",
     "!**/_template/**"
   ],

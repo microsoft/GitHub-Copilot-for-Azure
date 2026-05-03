@@ -42,9 +42,11 @@ stages:
         addSpnToEnvironment: true
         scriptType: 'pscore'
         scriptLocation: 'scriptPath'
-        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-CopilotBenchmarks.ps1
+        scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/Invoke-RunBenchmarks.ps1
         scriptArguments: >
           -OutputPath "$(Build.ArtifactStagingDirectory)"
+          -StorageAccountName "msbenchnightlydata"
+          -ContainerName "msbench-reports"
 
     - script: echo "Run IDs - $(RunBenchmarks.RUN_IDS)"
       displayName: 'Display Run IDs'
