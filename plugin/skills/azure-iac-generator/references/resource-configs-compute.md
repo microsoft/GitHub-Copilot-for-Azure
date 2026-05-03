@@ -66,7 +66,7 @@ Per-resource property retrieval for compute and container resource types.
 | publicNetworkAccess | `properties.publicNetworkAccess` | |
 | vnetIntegrationSubnet | `properties.virtualNetworkSubnetId` | |
 
-### Microsoft.Web/sites/functions
+### Microsoft.Web/sites[functionapp]
 
 **MCP Tool**: `mcp_azure_mcp_appservice`
 **Fallback**: `az functionapp show --ids <resourceId> -o json`
