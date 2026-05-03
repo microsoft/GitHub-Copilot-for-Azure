@@ -51,8 +51,7 @@ From the `dashboard/api/` directory:
 
 ```bash
 npm install
-npm run build
-func start --port 7071
+npm run dev
 ```
 
 The default configuration points the frontend at `http://localhost:7071` for API requests. To use a different port, update the proxy setting in `vite.config.ts` as well.

@@ -38,6 +38,11 @@ import {
 
 const SKILL_NAME = "azure-hosted-copilot-sdk";
 const RUNS_PER_PROMPT = 3;
+// Greenfield-explicit prompts trigger full planning + scaffolding per run (~6-8 min each).
+// Three runs exceed the 20-min timeout. One run is sufficient to validate routing correctness
+// for an explicit SDK mention, matching the pattern used by other slow suites (azure-deploy,
+// azure-prepare). See: https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/1447
+const GREENFIELD_RUNS_PER_PROMPT = 1;
 const EXPECTED_INVOCATION_RATE = 0.6; // 60% minimum invocation rate
 const TEST_TIMEOUT = 1200_000; // 20 minutes per test
 
@@ -57,13 +62,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("skill-invocation", () => {
 
-    // Scenario 1: Greenfield + explicit SDK mention
+    // Scenario 1: Greenfield + explicit SDK mention (uses reduced run count — see GREENFIELD_RUNS_PER_PROMPT)
     test("greenfield: invokes skill when prompt mentions copilot SDK", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         const rate = await measureInvocationRate(agent, SKILL_NAME, {
           prompt: "Build an Azure app that uses the Copilot SDK to brutally review GitHub repos based on user input",
           shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
-        }, "greenfield-explicit", RUNS_PER_PROMPT);
+        }, "greenfield-explicit", GREENFIELD_RUNS_PER_PROMPT);
         if (rate >= 0) {
           setSkillInvocationRate(rate);
           expect(rate).toBeGreaterThanOrEqual(EXPECTED_INVOCATION_RATE);
@@ -92,7 +97,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = await measureInvocationRate(agent, SKILL_NAME, {
           setup: setupCopilotSdkApp,
           prompt: "Deploy this app to Azure",
-          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
+          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME, 10),
         }, "existing-sdk-deploy", RUNS_PER_PROMPT);
         if (rate >= 0) {
           setSkillInvocationRate(rate);
@@ -107,7 +112,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = await measureInvocationRate(agent, SKILL_NAME, {
           setup: setupCopilotSdkApp,
           prompt: "Add a new feature to this app that summarizes pull requests",
-          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME),
+          shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME, 10),
         }, "existing-sdk-modify", RUNS_PER_PROMPT);
         if (rate >= 0) {
           setSkillInvocationRate(rate);

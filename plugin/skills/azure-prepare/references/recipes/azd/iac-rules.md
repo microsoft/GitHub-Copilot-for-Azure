@@ -18,11 +18,11 @@ For **Terraform**:
 
 If no pattern module exists for the active provider, default immediately to AVM modules in the same provider order (resource, then utility) instead of using non-AVM modules.
 
-## Retrieval Strategy (Hybrid: azure-documentation MCP + Context7)
+## Retrieval Strategy (azure-documentation MCP primary + optional Context7)
 
 - **Primary (authoritative):** Use `mcp_azure_mcp_documentation` (`azure-documentation`) for current Azure guidance and AVM integration documentation.
 - **Primary (module catalog):** Use `mcp_bicep_list_avm_metadata` plus official AVM indexes to select concrete modules.
-- **Secondary (supplemental):** Use Context7 only for implementation examples when `mcp_azure_mcp_documentation` does not provide enough detail.
+- **Secondary (supplemental):** Use Context7 only for implementation examples when `mcp_azure_mcp_documentation` does not provide enough detail. If Context7 is not available, instruct the user to install it: `npx -y @upstash/context7-mcp@latest`.
 
 ## Validation Plan
 
@@ -39,8 +39,25 @@ Before finalizing generated guidance:
 |-------------|---------|
 | Location | `./infra/` folder |
 | Entry point | `main.bicep` with `targetScope = 'subscription'` |
-| Parameters | `main.parameters.json` |
+| Parameters | `main.parameters.json` (ARM JSON — see format below) |
 | Modules | `./infra/modules/*.bicep` with `targetScope = 'resourceGroup'` |
+
+## Parameter File Format
+
+`main.parameters.json` uses ARM JSON syntax. Do **not** use `.bicepparam` syntax (`using`, `param`, `readEnvironmentVariable()`) in this file — `azd` will fail with a JSON parse error.
+
+```json
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "${AZURE_ENV_NAME}" },
+    "location": { "value": "${AZURE_LOCATION}" }
+  }
+}
+```
+
+Use `azd env set` to supply values. During `azd provision`, azd substitutes `${VAR}` placeholders with values from the environment.
 
 ## Naming Convention
 

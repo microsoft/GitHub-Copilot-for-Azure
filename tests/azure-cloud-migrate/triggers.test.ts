@@ -42,6 +42,42 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe("Should Trigger — Container Apps Migration", () => {
+    const containerAppsPrompts: string[] = [
+      "migrate Cloud Run to Azure Container Apps",
+      "migrate GCP Cloud Run services to Container Apps",
+      "Cloud Run to Container Apps migration assessment",
+      "convert Cloud Run workloads to Azure",
+      "move Cloud Run containers to Azure Container Apps",
+      "assess Cloud Run to Container Apps migration",
+      "I want to migrate my Cloud Run service to Azure",
+      "help me move from Google Cloud Run to Container Apps",
+      "migrate Fargate to Azure Container Apps",
+      "Fargate to Container Apps migration assessment",
+      "convert AWS Fargate workloads to Azure",
+      "move ECS Fargate containers to Azure Container Apps",
+      "migrate ECS on Fargate to Container Apps",
+      "assess AWS Fargate for Azure migration",
+      "replatform Fargate to Container Apps",
+      "migrate Kubernetes to Container Apps",
+      "convert k8s manifests to Azure Container Apps",
+      "move from GKE to Azure Container Apps",
+      "migrate from EKS to Azure Container Apps",
+      "migrate k8s deployments to Azure",
+      "k8s to ACA migration assessment",
+      "I want to migrate my GKE workload to Azure",
+      "help me move from Kubernetes to Container Apps",
+    ];
+
+    test.each(containerAppsPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
   describe("Should Trigger — Beanstalk to App Service", () => {
     const beanstalkPrompts: string[] = [
       "How do I migrate my Elastic Beanstalk app to Azure App Service?",
@@ -103,6 +139,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What is the capital of France?",
       "Help me debug my React application",
       "How do I optimize MySQL queries?",
+      // Near-miss negatives — mention source platforms WITHOUT migration intent
+      // Note: keyword-based matching cannot reliably distinguish "Deploy to Heroku" from
+      // "Migrate from Heroku" — those are intent-level decisions handled by the agent at
+      // routing time, not by keyword extraction.
+      "What is Elastic Beanstalk?",
+      "Set up monitoring for my Fargate cluster",
+      "Write a Dockerfile for App Engine",
     ];
 
     test.each(shouldNotTriggerPrompts)(

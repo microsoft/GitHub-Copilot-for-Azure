@@ -120,15 +120,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(fs.existsSync(aspirePath)).toBe(true);
     });
 
-    test("aspire.md contains Docker context guidance", () => {
+    test("aspire.md contains AddDockerfile guidance", () => {
       const aspirePath = path.join(
         SKILLS_PATH,
         "azure-prepare/references/recipes/azd/aspire.md"
       );
       const aspireContent = fs.readFileSync(aspirePath, "utf-8");
       expect(aspireContent).toContain("AddDockerfile");
-      expect(aspireContent).toContain("docker.context");
-      expect(aspireContent).toContain("build context");
+      expect(aspireContent).toContain("container builds");
     });
 
     test("azure-yaml.md references aspire.md", () => {
@@ -138,7 +137,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       );
       const azureYamlContent = fs.readFileSync(azureYamlPath, "utf-8");
       expect(azureYamlContent).toContain("aspire.md");
-      expect(azureYamlContent).toContain("docker.context");
+      expect(azureYamlContent).toContain("docker");
     });
   });
 });

@@ -22,8 +22,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe("Should Trigger", () => {
-    // Prompts that SHOULD trigger this skill - Azure-to-Azure upgrade workflows
+    // Prompts that SHOULD trigger this skill - Azure-to-Azure upgrade workflows and Azure SDK modernization
     const shouldTriggerPrompts: string[] = [
+      // Azure service/plan/SKU upgrades
       "Upgrade my function app from Consumption to Flex Consumption",
       "Move my function app to a better plan",
       "Is my function app ready for Flex Consumption?",
@@ -32,6 +33,10 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Change my function app hosting plan",
       "Migrate my Azure Functions from Consumption to Flex Consumption",
       "Assess my function app for upgrade readiness",
+      // Azure SDK source-code modernization (Java legacy → modern)
+      "Migrate legacy Azure SDKs for Java",
+      "Upgrade legacy Azure Java SDK",
+      "Migrate my Java project from com.microsoft.azure to com.azure",
     ];
 
     test.each(shouldTriggerPrompts)(

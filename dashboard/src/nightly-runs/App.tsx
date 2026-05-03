@@ -2,18 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
-
-interface BlobEntry {
-    name: string;
-    blobName: string;
-}
-
-interface BlobTreeNode {
-    files: BlobEntry[];
-    children: Record<string, BlobTreeNode>;
-}
-
-type BlobTree = Record<string, BlobTreeNode>;
+import type { BlobEntry, BlobTree, BlobTreeNode } from "../shared/blobTree";
 
 interface FileSection {
     label: string;
@@ -142,6 +131,11 @@ function Dashboard() {
         const viewerUrl = `${window.location.origin}${window.location.pathname}?file=${encodeURIComponent(blobName)}`;
         window.open(viewerUrl, "_blank");
     }, []);
+
+    // Update browser tab title with selected date
+    useEffect(() => {
+        document.title = selectedDate ? `Nightly Runs ${selectedDate}` : "Nightly Runs";
+    }, [selectedDate]);
 
     // Auto-scroll the right panel to the section matching the URL fragment
     useEffect(() => {

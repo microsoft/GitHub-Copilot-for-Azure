@@ -21,6 +21,15 @@ param storageAccountName string
 @description('Application Insights connection string for monitoring.')
 param appInsightsConnectionString string
 
+@description('Name of the existing MSBench nightly data storage account.')
+param msbenchStorageAccountName string
+
+@description('Name of the Azure Table for MSBench eval metrics.')
+param msbenchEvalTableName string
+
+@description('Name of the MSBench reports blob container.')
+param msbenchReportsContainerName string
+
 var resourceSuffix = take(uniqueString(subscription().id, resourceGroup().name, environmentName), 6)
 var storagePrefix = take(replace(environmentName, '-', ''), 14)
 
@@ -88,7 +97,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       }
       runtime: {
         name: 'node'
-        version: '20'
+        version: '22'
       }
     }
     siteConfig: {
@@ -105,6 +114,9 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
         { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
         { name: 'STORAGE_ACCOUNT_NAME', value: storageAccountName }
+        { name: 'MSBENCH_STORAGE_ACCOUNT', value: msbenchStorageAccountName }
+        { name: 'MSBENCH_REPORTS_CONTAINER', value: msbenchReportsContainerName }
+        { name: 'MSBENCH_EVAL_TABLE_NAME', value: msbenchEvalTableName }
       ]
     }
     httpsOnly: true

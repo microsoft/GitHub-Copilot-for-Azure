@@ -42,6 +42,12 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Check the RBAC role assignments in my Bicep before deploying",
       "Verify managed identity permissions in my infrastructure code",
       "Review role assignments in my Terraform before Azure deployment",
+      // Container Apps / containerized validation
+      "Validate my containerized app before deploying to Azure Container Apps",
+      "Check if my container app is ready to deploy",
+      "Validate docker build before deploying to Container Apps",
+      "Run validation checks for my containerized web application",
+      "Verify my Container Apps deployment configuration",
     ];
 
     test.each(shouldTriggerPrompts)(
