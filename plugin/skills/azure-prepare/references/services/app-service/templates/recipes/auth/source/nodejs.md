@@ -43,6 +43,7 @@ function authMiddleware(req, res, next) {
       token,
       key.getPublicKey(),
       {
+        algorithms: ["RS256"],
         audience: AUDIENCE,
         issuer: `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/v2.0`,
       },

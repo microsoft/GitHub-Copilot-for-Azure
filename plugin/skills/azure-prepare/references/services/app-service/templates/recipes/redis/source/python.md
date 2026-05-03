@@ -28,7 +28,7 @@ _TOKEN_SCOPE = "https://redis.azure.com/.default"
 _TOKEN_REFRESH_MARGIN = 300  # Refresh 5 minutes before expiry
 
 _credential = DefaultAzureCredential()
-_lock = threading.Lock()
+_lock = threading.RLock()  # reentrant — get_cache() calls _get_token() while holding the lock
 _token_cache: dict = {}
 
 
@@ -44,7 +44,7 @@ def _get_token():
 
 
 def create_redis_client() -> redis.Redis:
-    """Create a Redis client using Entra ID token authentication."""
+    """Create a Redis client. Token is refreshed on each call via _get_token()."""
     return redis.Redis(
         host=os.environ["REDIS_HOST"],
         port=int(os.environ.get("REDIS_PORT", 6380)),
@@ -55,20 +55,35 @@ def create_redis_client() -> redis.Redis:
     )
 
 
-# Re-create the client periodically to pick up refreshed tokens
-# For long-running processes, call create_redis_client() before each operation
-# or implement a background refresh thread.
-cache = create_redis_client()
+def get_cache() -> redis.Redis:
+    """Lazy/refreshing accessor — call this from request handlers instead of holding a module-level client.
+    Recreates the client when the cached token is within the refresh margin and closes the prior one."""
+    global _client
+    with _lock:
+        now = time.time()
+        if _client is None or now >= _token_cache.get("expires_on", 0) - _TOKEN_REFRESH_MARGIN:
+            old = _client
+            _client = create_redis_client()
+            if old is not None:
+                try:
+                    old.close()
+                except Exception:
+                    pass
+        return _client
+
+
+_client: redis.Redis | None = None
 ```
 
-> ⚠️ Entra ID tokens expire in ~1 hour. The `_get_token()` helper refreshes proactively 5 minutes before expiry. For long-lived processes, recreate the client or refresh the `password` before expiry.
+> ⚠️ Entra ID tokens expire in ~1 hour. The `_get_token()` helper refreshes proactively 5 minutes before expiry, and `get_cache()` recreates the underlying client so in-flight pool connections pick up the new token. Always call `get_cache()` from request handlers — never cache the client at module scope across the token lifetime.
 
 ### Usage
 
 ```python
-from cache import cache
+from cache import get_cache
 
 def get_cached(key: str):
+    cache = get_cache()
     value = cache.get(key)
     if value is None:
         value = "computed-value"

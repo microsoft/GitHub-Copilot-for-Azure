@@ -23,7 +23,7 @@ Create `database.py`:
 ```python
 import os
 import struct
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from azure.identity import ManagedIdentityCredential
 
@@ -40,15 +40,11 @@ def create_db_engine():
         # e.g. mssql+pyodbc://sa:password@localhost/myapp?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
         return create_engine(conn_str)
 
-    # Azure: use managed identity token
+    # Azure: use managed identity token (refreshed per-connection so pool stays valid past 1 hour)
     server = os.environ["AZURE_SQL_SERVER"]
     database = os.environ["AZURE_SQL_DATABASE"]
-    client_id = os.environ.get("AZURE_CLIENT_ID", "")
-
-    credential = ManagedIdentityCredential(client_id=client_id)
-    token = credential.get_token("https://database.windows.net/.default")
-    token_bytes = token.token.encode("utf-16-le")
-    token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
+    client_id = os.environ.get("AZURE_CLIENT_ID")
+    credential = ManagedIdentityCredential(client_id=client_id) if client_id else ManagedIdentityCredential()
 
     odbc_conn = (
         f"DRIVER={{ODBC Driver 18 for SQL Server}};"
@@ -56,13 +52,20 @@ def create_db_engine():
         f"DATABASE={database};"
         f"Encrypt=yes;TrustServerCertificate=no;"
     )
-    return create_engine(
+    engine = create_engine(
         "mssql+pyodbc://",
-        connect_args={
-            "odbc_connect": odbc_conn,
-            "attrs_before": {1256: token_struct},  # SQL_COPT_SS_ACCESS_TOKEN
-        },
+        connect_args={"odbc_connect": odbc_conn},
     )
+
+    @event.listens_for(engine, "do_connect")
+    def provide_token(dialect, conn_rec, cargs, cparams):
+        # Fetch a fresh token for every new physical connection — pool refills won't fail after 1h
+        token = credential.get_token("https://database.windows.net/.default")
+        token_bytes = token.token.encode("utf-16-le")
+        token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
+        cparams["attrs_before"] = {1256: token_struct}  # SQL_COPT_SS_ACCESS_TOKEN
+
+    return engine
 
 
 engine = create_db_engine()

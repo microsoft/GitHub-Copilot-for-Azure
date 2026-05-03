@@ -55,7 +55,16 @@ app.get("/api/todos", async (req, res) => {
 });
 
 app.post("/api/todos", async (req, res) => {
-  const todo = await prisma.todoItem.create({ data: req.body });
+  const body = req.body || {};
+  const title = typeof body.title === "string" ? body.title.trim() : "";
+  if (!title) {
+    return res.status(400).json({ error: "title is required and must be a non-empty string" });
+  }
+  const isComplete = body.isComplete === undefined ? false : body.isComplete;
+  if (typeof isComplete !== "boolean") {
+    return res.status(400).json({ error: "isComplete must be a boolean" });
+  }
+  const todo = await prisma.todoItem.create({ data: { title, isComplete } });
   res.status(201).json(todo);
 });
 

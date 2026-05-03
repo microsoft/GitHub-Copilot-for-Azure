@@ -76,6 +76,14 @@ Read the recipe's `README.md` for required app settings. Add them to the web app
 > For service bindings, prefer User Assigned Managed Identity (UAMI).
 > Always include connection settings that reference managed identity, not passwords:
 >
+> ⚠️ **Connection-string format is language-specific.** The example below is **.NET / ADO.NET** format. For other stacks, use the per-language env vars documented in `recipes/sql/source/{language}.md`:
+>
+> | Language | Env var(s) | Format |
+> |---|---|---|
+> | .NET | `AZURE_SQL_CONNECTION_STRING` | `Server=...;Authentication=Active Directory Managed Identity;User Id=<clientId>;` (ADO.NET) |
+> | Python | `AZURE_SQL_SERVER`, `AZURE_SQL_DATABASE`, `AZURE_CLIENT_ID` | Code obtains MI access token and passes via ODBC `attrs_before` |
+> | Node.js | `DATABASE_URL` | `sqlserver://<host>:1433;database=<db>;authentication=ActiveDirectoryMsi;clientId=<clientId>` (Prisma) |
+
 > ```bicep
 > appSettings: [
 >   { name: 'AZURE_SQL_CONNECTION_STRING', value: 'Server=${sqlServer.properties.fullyQualifiedDomainName};Database=${dbName};Authentication=Active Directory Managed Identity;User Id=${managedIdentity.properties.clientId};' }
