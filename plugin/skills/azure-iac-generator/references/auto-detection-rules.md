@@ -7,7 +7,7 @@ Settings automatically applied based on diagram topology during Bicep generation
 | Resource has a Private Endpoint connection | Set `publicNetworkAccess: 'Disabled'` on target resource |  
 | App Service connected to a Subnet | Set `vnetIntegrationSubnet` to the subnet reference |  
 | Private Endpoint connected to SQL Server | Set `groupIds: ['sqlServer']` |  
-| Private Endpoint connected to Storage Account | Set `groupIds: ['blob']` |  
+| Private Endpoint connected to Storage Account | Set `groupIds` based on the target sub-resource: `blob` (default), `file`, `queue`, `table`, `web`, or `dfs`. When the sub-resource cannot be inferred from the diagram, default to `['blob']` and note the assumption in a Bicep comment. |  
 | Private Endpoint connected to App Service | Set `groupIds: ['sites']` |  
 | Private Endpoint connected to Key Vault | Set `groupIds: ['vault']` |  
 | Private Endpoint connected to Cosmos DB | Set `groupIds: ['Sql']` |  
