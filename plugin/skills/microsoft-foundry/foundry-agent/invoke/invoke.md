@@ -44,7 +44,9 @@ Hosted agents support two invocation protocols declared at deployment time.
 | `responses` | `1.0.0` | `.../agents/{agentName}/endpoint/protocols/openai/responses` | Conversational agents, OpenAI-compatible |
 | `invocations` | `1.0.0` | `.../agents/{agentName}/endpoint/protocols/invocations` | Custom payloads, protocol bridges, webhook callers |
 
-Key differences: `responses` uses a structured OpenAI request/response with platform-managed conversation history via `conversationId`. `invocations` accepts arbitrary JSON defined by the agent implementation — conversation state is agent-managed via session filesystem.
+Key difference: `responses` takes a natural language `inputText` message with platform-managed history. `invocations` is **bytes in, bytes out** — the request body is forwarded as-is to the container and the raw response is returned. The developer defines the schema; the platform is pure pass-through. See [Invocations Protocol Guide](references/invocations-protocol.md) for I/O details, schema discovery, and examples.
+
+> ⚠️ **Critical for invocations:** `inputText` is forwarded as the raw HTTP request body. The agent developer defines what the container accepts. **Do not guess** — fetch the agent's OpenAPI spec or inspect its source code first.
 
 > 💡 **Tip:** The `agent_invoke` MCP tool supports both protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
 
@@ -68,17 +70,22 @@ Use the project endpoint and agent name from the project context. Use `agent_inv
 - `projectEndpoint`, `agentName`, `inputText` (required)
 - `agentVersion`, `conversationId`, `sessionId`, `protocol`, `stream` (optional)
 
-**Responses protocol** (default): OpenAI-compatible structured request/response. Multi-turn via `conversationId`.
+**Responses protocol** (default): `inputText` is a natural language message string. Multi-turn via `conversationId`.
 
-**Invocations protocol**: Set `protocol: 'invocations'`. The `inputText` is passed as request body content. Payload shape depends on what the hosted agent code expects.
+**Invocations protocol**: Set `protocol: 'invocations'`. This is **bytes in, bytes out** — `inputText` is forwarded as the raw HTTP request body to the container. The developer defines the expected schema.
 
-> ⚠️ For `invocations` protocol, check the agent's documentation for expected payload shape.
+> ⚠️ **Do not guess the invocations request body.** To discover the expected schema:
+> 1. **Fetch the OpenAPI spec** from the agent's endpoint: `GET {agentEndpoint}/invocations/docs/openapi.json` (if the developer registered one)
+> 2. Inspect the agent's **route handler code** or README for the expected payload shape
+> 3. If unknown, ask the user for the agent's API contract before invoking
+
+See [Invocations Protocol Guide](references/invocations-protocol.md) for full details and examples.
 
 ### Step 4: Multi-Turn Conversations
 
-**Responses protocol** → Pass `conversationId` from previous response to continue the thread.
+**Responses protocol** → Pass `conversationId` from previous response to continue the thread. Platform manages history.
 
-**Invocations protocol** → Reuse same `sessionId`; conversation state is agent-managed via `$HOME`.
+**Invocations protocol** → Reuse same `sessionId`; conversation state is agent-managed via `$HOME`. Do **not** pass `conversationId` — it has no effect for invocations.
 
 ### Step 5: File Operations (Hosted Agents)
 
@@ -106,6 +113,7 @@ Use `session_delete` to release compute resources when done. Undeleted sessions 
 | Hosted agent not active | Version still provisioning or failed | Check version status via `agent_get` |
 | Session not found | Invalid ID or expired | Create new session with `session_create` |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment |
+| Invocations schema mismatch | Request body does not match what the agent expects | Inspect agent's route handler or API docs for the correct JSON schema; do not guess |
 | File operation failed | Session not active or invalid path | Verify session with `session_get` |
 | Permission error | Missing RBAC | Follow [troubleshoot skill](../troubleshoot/troubleshoot.md) |
 | Rate limit exceeded | Too many requests | Implement backoff and retry |
