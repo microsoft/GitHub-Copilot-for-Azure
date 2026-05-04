@@ -69,8 +69,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("documents MCP tools for repo practice", () => {
       expect(skill.content).toContain("mcp_azure_mcp_documentation");
-      expect(skill.content).toContain("mcp_azure_mcp_monitor");
-      expect(skill.content).toContain("mcp_azure_mcp_resourcehealth");
     });
 
     test("links expected guidance files with markdown links", () => {

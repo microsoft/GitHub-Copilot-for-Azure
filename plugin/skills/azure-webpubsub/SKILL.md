@@ -11,36 +11,37 @@ metadata:
 
 ## Quick Reference
 
-| Best For | Tools |
+| Property | Value |
 |----------|-------|
-| Runtime, event path, and `/negotiate` | `mcp_azure_mcp_documentation`, `mcp_azure_mcp_monitor`, `mcp_azure_mcp_resourcehealth` |
+| **Service** | Azure Web PubSub |
+| **Best For** | Realtime fan-out, WebSocket replacement, client runtime selection, upstream event handling, Socket.IO on Azure Web PubSub |
+| **MCP Tools** | `mcp_azure_mcp_documentation` |
+| **CLI** | `az extension add --name webpubsub --upgrade`; `az webpubsub`, `az webpubsub hub`, `az webpubsub service`, `az webpubsub client`, `az webpubsub key` |
+| **Primary SDKs** | `@azure/web-pubsub-client` for connected participants; `@azure/web-pubsub` / `WebPubSubServiceClient` for server negotiate, publish, and manage operations |
 
 ## When to Use This Skill
 
-- Add Azure Web PubSub to an app
-- Replace polling, SSE, or custom WebSockets with Web PubSub Service
-- Implement real-time features like chat, live updates, or gaming with Web PubSub
+- Add or migrate to Azure Web PubSub
+- Replace polling, SSE, or custom WebSockets
+- Build chat, live update, streaming, or gaming features
 - Choose between `@azure/web-pubsub-client`, `WebPubSubServiceClient`, `upstream`, or Socket.IO
-- Review `/negotiate` or reconnect behavior in a Web PubSub app
+- Review negotiation process, roles, or reconnect behavior
 
 ## MCP Tools
 
 | Tool | Use |
 |------|-----|
-| `mcp_azure_mcp_documentation` | Product/runtime guidance |
+| `mcp_azure_mcp_documentation` | SDK/runtime docs for gaps |
 
 ## Workflow
 
-1. Existing app or transport swap -> [Existing App Integration](references/existing-app-integration.md).
-2. Runtime: [PubSub Client SDK](references/pubsub-client-sdk.md) for browser/client; [Web PubSub for Socket.IO](references/webpubsub-for-socketio.md) for Socket.IO.
-3. Choose the server role with [Server Role Decision](references/server-role-decision.md): `@azure/web-pubsub-client` = client/group pubsub; `WebPubSubServiceClient` = publish/manage; `upstream` = one server handler per event.
-4. `/negotiate`, identity, roles, or reconnect -> [Negotiate Checklist](references/negotiate-checklist.md). `/negotiate` is a server-owned auth boundary.
-5. Browser group/reconnect edge cases -> [Common Pitfalls](references/common-pitfalls.md).
+1. Existing app/transport swap: [Existing App Integration](references/existing-app-integration.md).
+2. Runtime: [PubSub Client SDK](references/pubsub-client-sdk.md) or [Web PubSub for Socket.IO](references/webpubsub-for-socketio.md).
+3. Choose the server role with [Server Role Decision](references/server-role-decision.md): `@azure/web-pubsub-client` client pubsub; `WebPubSubServiceClient` publish/manage; `upstream` event handler.
+4. Negotiation process, identity, roles, reconnect: [Negotiate Checklist](references/negotiate-checklist.md); server-owned auth boundary.
+5. Browser group/reconnect edges: [Common Pitfalls](references/common-pitfalls.md).
 
 ## Error Handling
 
-| Error | Remediation |
-|------|-------------|
-| Socket.IO and native APIs are mixed | Pick one runtime |
-| Browser owns `userId`, tokens, or broad roles | Move tokens and roles behind `/negotiate` |
-| One server handler is required | Choose `upstream` in [Server Role Decision](references/server-role-decision.md) |
+- For implementation drift, runtime mixing, browser bundling, and reconnect/group rejoin issues, use [Common Pitfalls](references/common-pitfalls.md).
+- For service/runtime errors, use the official Azure Web PubSub troubleshooting documentation: https://learn.microsoft.com/azure/azure-web-pubsub/howto-troubleshoot-guide.
