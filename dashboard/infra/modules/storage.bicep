@@ -36,6 +36,11 @@ resource integrationReportsContainer 'Microsoft.Storage/storageAccounts/blobServ
   name: 'integration-reports'
 }
 
+resource nonIntegrationContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobServices
+  name: 'non-integration'
+}
+
 resource storageBlobDataReaderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, principalId, storageBlobDataReaderRoleId)
   scope: storageAccount

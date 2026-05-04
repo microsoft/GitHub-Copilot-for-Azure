@@ -1,0 +1,10 @@
+id: plan-genai-chatbot
+inputs:
+  prompt: "I need to build a customer support chatbot powered by GPT-4. It should use Azure OpenAI Service for the LLM, store conversation history in a database, and have a REST API frontend. The system needs to handle about 1000 concurrent users. Can you plan the Azure infrastructure for this? Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+graders:
+  - type: skill_invocation
+    name: skill_invoked
+    config:
+      required_skills:
+        - azure-enterprise-infra-planner
+      mode: any_order

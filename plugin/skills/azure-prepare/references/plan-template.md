@@ -1,12 +1,13 @@
 # Plan Template
 
-Create `.azure/plan.md` using this template. This file is **mandatory** and serves as the source of truth for the entire workflow.
+Create `.azure/deployment-plan.md` using this template. This file is **mandatory** and serves as the source of truth for the entire workflow.
 
 ## ⛔ BLOCKING REQUIREMENTS
 
 1. You **MUST** create this plan file BEFORE generating any code, infrastructure, or configuration.
 2. You **MUST** complete Step 6 Phase 2 (Provisioning Limit Checklist) with NO "_TBD_" entries remaining before presenting the plan to the user.
 3. Present the plan to the user and get approval before proceeding to execution.
+4. You **MUST NOT** skip any part of the plan.
 
 ---
 
@@ -164,12 +165,13 @@ For each resource type:
 - [ ] Apply recipes for integrations (if needed)
 - [ ] Generate application configuration
 - [ ] Generate Dockerfiles (if containerized)
-- [ ] **⛔ Update plan status to "Ready for Validation"** — Use the `edit` tool to change the Status line in `.azure/plan.md`. This step is MANDATORY before invoking azure-validate.
+- [ ] **⛔ Update plan status to "Ready for Validation"** — Use the `edit` tool to change the Status line in `.azure/deployment-plan.md`. This step is MANDATORY before invoking azure-validate.
 
 ### Phase 3: Validation
 - [ ] **PREREQUISITE:** Plan status MUST be "Ready for Validation" (Phase 2 last step)
 - [ ] Invoke azure-validate skill
 - [ ] All validation checks pass
+  - [ ] _Replace this with recipe validation steps_
 - [ ] Update plan status to "Validated"
 - [ ] Record validation proof below
 
@@ -198,7 +200,7 @@ For each resource type:
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `.azure/plan.md` | This plan | ✅ |
+| `.azure/deployment-plan.md` | This plan | ✅ |
 | `azure.yaml` | AZD configuration | ⏳ |
 | `infra/main.bicep` | Infrastructure | ⏳ |
 | `src/{component}/Dockerfile` | Container build | ⏳ |

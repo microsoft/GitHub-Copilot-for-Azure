@@ -2,7 +2,7 @@
 
 ## Status Tracking
 
-Maintain a `migration-status.md` file in the output directory (`<source-folder>-azure/`):
+Maintain a `migration-status.md` file in the output directory (`<workspace-root-basename>-azure/`):
 
 ```markdown
 # Migration Status

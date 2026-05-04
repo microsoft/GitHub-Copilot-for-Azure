@@ -32,6 +32,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me migrate code to Azure Functions",
       "Assess my AWS Lambda project for Azure migration",
       "I need to move my Lambda workloads to Azure Functions",
+      "migrate Cloud Run to Azure Container Apps",
+      "migrate GCP Cloud Run services to Container Apps",
+      "Cloud Run to Container Apps migration assessment",
+      "convert Cloud Run workloads to Azure",
+      "move Cloud Run containers to Azure Container Apps",
+      "assess Cloud Run to Container Apps migration",
+      "I want to migrate my Cloud Run service to Azure",
+      "help me move from Google Cloud Run to Container Apps",
     ];
 
     test.each(shouldTriggerPrompts)(

@@ -46,9 +46,7 @@ Install the Azure plugin:
 
 ## Local Development Setup
 
-To develop and test skills locally, you'll need to link your cloned repository to the installed plugins folder. This allows you to make changes and see them reflected immediately without reinstalling the plugin.
-
-> **Important:** Do NOT run `/plugin install azure@azure-skills` when developing locally. The symlink setup below IS the installation. Running the install command would create a nested copy that shadows your local changes.
+To develop and test skills locally, you build the plugin from source and point Copilot CLI at the build output.
 
 ### 1. Fork and Clone the Repository
 
@@ -58,119 +56,49 @@ git clone https://github.com/YOUR-USERNAME/GitHub-Copilot-for-Azure.git
 cd GitHub-Copilot-for-Azure
 ```
 
-### 2. Install Dependencies
+### 2. Build the Plugin
+
+Install dependencies and run the build. This copies the plugin source files into `output/`, stamping version numbers automatically via [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning).
 
 ```bash
-cd scripts
 npm install
-cd ..
+npm run build
 ```
 
-### 3. Set Up Local Development (Recommended)
+The `output/` directory now contains the fully built plugin, ready for use.
 
-The easiest way to set up local development is using the provided scripts:
+### 3. Run Copilot CLI with the Local Plugin
+
+Use the `--plugin-dir` flag to point Copilot CLI at your build output:
 
 ```bash
-# From the repository root
-cd scripts
-
-# Create the symlink
-npm run local setup
-
-# Verify the setup is correct
-npm run local verify
+copilot --plugin-dir ./output
 ```
 
-The setup script will:
-- Create a symlink from `~/.copilot/installed-plugins/azure-skills` to your local `plugin/` folder
-- Handle Windows junction fallback if admin privileges aren't available
-
-The verify script will:
-- Check for nested plugin installs (which shadow your local changes)
-- Test that file changes propagate correctly via the symlink
-- Compare file contents between local and installed locations
-
-Use `npm run local verify --fix` to automatically fix common issues.
-
-### 3b. Manual Symlink Setup (Alternative)
-
-If you prefer to create the symlink manually:
-
-#### Windows (Command Prompt - Run as Administrator)
-
-```cmd
-mklink /J "%USERPROFILE%\.copilot\installed-plugins\azure-skills\azure" "C:\path\to\GitHub-Copilot-for-Azure\plugin"
-```
-
-#### Windows (PowerShell - Run as Administrator)
-
-```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\installed-plugins\azure-skills\azure" -Target "C:\path\to\GitHub-Copilot-for-Azure\plugin"
-```
-
-#### macOS / Linux
-
-```bash
-ln -s ~/path/to/GitHub-Copilot-for-Azure/plugin ~/.copilot/installed-plugins/azure-skills/azure
-```
-
-> **Note:** Replace the paths above with your actual cloned repository location.
+This loads the locally built plugin instead of any marketplace-installed version.
 
 ### 4. Reloading Skills After Changes
 
-After making changes to skills:
+After making changes to skill files under `plugin/`:
 
-1. **In an active Copilot CLI session**, run:
+1. **Rebuild** the plugin to update the `output/` directory:
+   ```bash
+   npm run build
+   ```
+
+2. **In an active Copilot CLI session**, run:
    ```
    /skills reload
    ```
    This reloads all skills without restarting the CLI.
 
-2. **Alternatively**, restart the GitHub Copilot CLI to pick up changes.
+3. **Alternatively**, restart the Copilot CLI to pick up changes.
 
-> **Tip:** Use `/skills reload` for faster iteration during development.
+> **Tip:** Use `/skills reload` after rebuilding for faster iteration during development.
 
-### 5. Verify the Symlink
+### 5. Testing Pull Requests Locally
 
-Verify that the symlink was created correctly:
-
-```bash
-# Using the verify script (recommended)
-cd scripts
-npm run local verify
-
-# Or manually:
-# Windows (PowerShell)
-Get-ChildItem "$env:USERPROFILE\.copilot\installed-plugins" | Format-List
-
-# macOS / Linux
-ls -la ~/.copilot/installed-plugins/
-```
-
-You should see `azure-skills` pointing to your cloned repository's `plugin` folder.
-
-### 6. Remove an Existing Symlink (If Needed)
-
-If you need to remove or recreate a symlink:
-
-#### Windows (Command Prompt - Run as Administrator)
-```cmd
-rmdir "%USERPROFILE%\.copilot\installed-plugins\azure-skills"
-```
-
-#### Windows (PowerShell - Run as Administrator)
-```powershell
-Remove-Item "$env:USERPROFILE\.copilot\installed-plugins\azure-skills" -Force
-```
-
-#### macOS / Linux
-```bash
-rm ~/.copilot/installed-plugins/azure-skills
-```
-
-### 7. Testing Pull Requests Locally
-
-Once your symlink is set up, you can quickly test any open pull request by checking out its branch. This is especially useful during code review to verify changes work as expected.
+You can quickly test any open pull request by checking out its branch and building. This is especially useful during code review to verify changes work as expected.
 
 #### Using GitHub CLI
 
@@ -178,20 +106,17 @@ Install the [GitHub CLI](https://cli.github.com/) if you haven't already, then r
 
 ```bash
 gh pr checkout <PR-NUMBER>
+npm run build
+copilot --plugin-dir ./output
 ```
 
 For example, to test PR #42:
 
 ```bash
 gh pr checkout 42
+npm run build
+copilot --plugin-dir ./output
 ```
-
-This automatically:
-1. Fetches the PR branch from the contributor's fork
-2. Creates a local branch tracking the PR
-3. Updates your symlinked plugin folder with the PR's changes
-
-After checking out, run `/skills reload` in your Copilot CLI session (or restart the CLI) to pick up the changes and test the skill or feature.
 
 #### Switching Back
 
@@ -199,9 +124,8 @@ To return to the main branch after testing:
 
 ```bash
 git checkout main
+npm run build
 ```
-
-> **Tip:** You can also use `gh pr checkout <PR-NUMBER> --force` to discard any local changes and switch to the PR branch.
 
 ---
 
@@ -229,9 +153,10 @@ plugin/skills/your-skill-name/
 
 > ⚠️ Char count of skill descriptions in this repo is close to the char count budget in tools like Copilot CLI. Exceeding the char count budget may result in any skill being truncated at runtime, causing inconsistent agent behavior. Consider adding the new content to an existing skill or rebrand an existing skill to cover the new content.
 
-_NOTE:_ If you open the repo in VS Code, you can use the "Azure Skill Brainstormer" or "Azure Skill Creator" agents in Copilot to help you build out an initial version of the skill.
-- The Creator agents expects you already know what scenarios the skill should address
+_NOTE:_ You can use the "Azure Skill Brainstormer", "Azure Skill Creator", or "Skill Fixer" agents in Copilot to help you build and maintain skills. They are recognizable across all github copilot agent hosts, such as Copilot Coding Agent, Copilot CLI and VSCode copilot chat.
+- The Creator agent expects you already know what scenarios the skill should address
 - The Brainstormer agent will help you identify scenarios
+- The Skill Fixer agent works on your skills related tasks and follows rules it was pre-configured with, such as skill version bumping.
 
 1. **Create your skill folder** under `plugin/skills/your-skill-name/`
 
@@ -444,11 +369,11 @@ For feature requests, include:
 
 After making changes to a skill:
 
-1. Run `/skills reload` in your Copilot CLI session to reload all skills
-2. Test the skill by asking relevant questions
-3. Verify all referenced documentation and examples work
-
-> **Tip:** Use `/skills reload` instead of restarting the CLI for faster iteration during development.
+1. Rebuild the plugin: `npm run build`
+2. Start Copilot CLI with `copilot --plugin-dir ./output`
+3. Run `/skills reload` if you already have a session open
+4. Test the skill by asking relevant questions
+5. Verify all referenced documentation and examples work
 
 ### Debugging
 

@@ -56,14 +56,9 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | `tests/utils/regression-detectors.ts` | Regression detectors (secrets, ACR spirals, port confusion, etc.) | ✅ |
 | `tests/_template/unit.test.ts` | Unit test template for new skills | ✅ |
 
-### Local Dev Tooling — ✅ Complete
+### Local Dev Tooling — 🔄 Replaced
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `scripts/src/local/cli.ts` | Local development CLI (`npm run local`) | ✅ |
-| `scripts/src/local/commands/setup.ts` | Plugin + MCP server registration | ✅ |
-| `scripts/src/local/commands/verify.ts` | Health checks for plugin and MCP servers | ✅ |
-| `scripts/src/local/commands/test.ts` | Live validation of the local plugin | ✅ |
+The local development scripts (`scripts/src/local/`) have been replaced by the Gulp build system. Developers now run `npm run build` at the repo root and use `copilot --plugin-dir ./output` to test locally.
 
 ### What Changed in This PR
 

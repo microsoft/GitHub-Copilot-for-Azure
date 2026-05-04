@@ -1,0 +1,57 @@
+# Task: ML training pipeline infrastructure planning with Terraform
+# Tests ML workspace with GPU compute and dataset versioning
+id: plan-ml-training-pipeline-001
+name: ML Training - Distributed Deep Learning
+description: |
+  Plan Azure infrastructure for a distributed deep learning training environment.
+  Validates resource selection for ML workspaces, GPU compute, and dataset management.
+
+tags:
+  - ml
+
+inputs:
+  prompt: |
+    Provision an Azure ML workspace for distributed deep learning, scale GPU clusters dynamically, and version datasets with Azure ML Data. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_contains:
+    - "ml"
+    - "gpu"
+    - "dataset"
+
+graders:
+  - name: identifies_ml_workspace
+    type: text
+    config:
+      regex_match:
+        - "(?i)ml.?workspace|machine.?learning|azure.?ml"
+
+  - name: identifies_gpu_compute
+    type: text
+    config:
+      regex_match:
+        - "(?i)gpu|compute|cluster|training|deep.?learning"
+
+  - name: identifies_data_management
+    type: text
+    config:
+      regex_match:
+        - "(?i)data|dataset|version|storage"
+
+  - name: plan_created
+    type: text
+    config:
+      regex_match:
+        - "(?i)plan|infrastructure|resource"
+
+  - name: generates_infra_artifacts
+    type: file
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"
+      content_patterns:
+        - path: ".azure/infrastructure-plan.json"
+          must_match:
+            - "(?i)ml|machinelearning|workspace"

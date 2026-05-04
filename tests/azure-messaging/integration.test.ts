@@ -131,8 +131,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt,
-            shouldEarlyTerminate: (metadata) => isSkillInvoked(metadata, SKILL_NAME)
+            prompt
           });
 
           if (isSkillInvoked(agentMetadata, SKILL_NAME)) {

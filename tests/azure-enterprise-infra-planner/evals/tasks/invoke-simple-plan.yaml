@@ -1,0 +1,15 @@
+id: invoke-simple-plan
+inputs:
+  prompt: "Plan Azure infrastructure for a web app with a database and a Redis cache. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+graders:
+  - type: skill_invocation
+    name: skill_invoked
+    config:
+      required_skills:
+        - azure-enterprise-infra-planner
+      mode: any_order
+  - type: file
+    name: plan_generated
+    config:
+      must_exist:
+        - ".azure/infrastructure-plan.json"

@@ -88,7 +88,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("links to Azure Kubernetes troubleshooting reference", () => {
-      expect(skill.content).toContain("aks-troubleshooting/aks-troubleshooting.md");
+      expect(skill.content).toContain("troubleshooting/aks/aks-troubleshooting.md");
     });
 
     test("routes AKS incidents to the troubleshooting guide", () => {
@@ -96,7 +96,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("supports sidecar references for AKS command flows and MCP guidance", () => {
-      const troubleshootingSkillPath = path.join(skill.path, "aks-troubleshooting", "aks-troubleshooting.md");
+      const troubleshootingSkillPath = path.join(skill.path, "troubleshooting", "aks", "aks-troubleshooting.md");
       const troubleshootingContent = readFileSync(troubleshootingSkillPath, "utf-8");
 
       expect(troubleshootingContent).toContain("references/command-flows.md");
@@ -105,7 +105,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("documents AKS-MCP preference and lightweight discovery guidance", () => {
-      const aksMcpReferencePath = path.join(skill.path, "aks-troubleshooting", "references", "aks-mcp.md");
+      const aksMcpReferencePath = path.join(skill.path, "troubleshooting", "aks", "references", "aks-mcp.md");
       const aksMcpReference = readFileSync(aksMcpReferencePath, "utf-8");
 
       expect(aksMcpReference).toContain("mcp_azure_mcp_aks");

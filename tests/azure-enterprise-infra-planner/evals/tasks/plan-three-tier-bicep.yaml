@@ -1,0 +1,10 @@
+id: plan-three-tier-bicep
+inputs:
+  prompt: "Plan a 3-tier web application architecture on Azure with a React frontend hosted on Static Web Apps, a Node.js API layer on App Service, and Azure Database for PostgreSQL. Include a CDN for static assets and Application Gateway for load balancing across the API tier. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+graders:
+  - type: skill_invocation
+    name: skill_invoked
+    config:
+      required_skills:
+        - azure-enterprise-infra-planner
+      mode: any_order

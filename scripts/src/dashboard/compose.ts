@@ -65,13 +65,11 @@ async function tryImportCollector(
 async function loadCollectors(): Promise<Collector[]> {
   const entries: Array<{ specifier: string; exportName: string }> = [
     { specifier: "./collectors/tests.js", exportName: "default" },
-    { specifier: "./collectors/coverage.js", exportName: "default" },
     { specifier: "./collectors/lint.js", exportName: "default" },
     { specifier: "./collectors/typecheck.js", exportName: "default" },
     { specifier: "./collectors/tokens.js", exportName: "default" },
     { specifier: "./collectors/frontmatter.js", exportName: "frontmatterCollector" },
     { specifier: "./collectors/references.js", exportName: "referencesCollector" },
-    { specifier: "./collectors/integration.js", exportName: "default" },
   ];
 
   const collectors: Collector[] = [];

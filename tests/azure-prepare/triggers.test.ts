@@ -35,6 +35,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Create a serverless HTTP API using Azure Functions and deploy to Azure",
       "Create an event-driven function app to process messages and deploy to Azure Functions",
       "Create an Azure Functions app with a timer trigger",
+      // Functional verification before deployment
+      "Build my web app for Azure and test it locally before deploying",
+      "Prepare my app for Azure and verify it works before deployment",
     ];
 
     test.each(shouldTriggerPrompts)(

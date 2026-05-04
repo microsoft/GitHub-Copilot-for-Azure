@@ -77,7 +77,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   // Need to be logged into az for these tests.
   // az login
-  const FOLLOW_UP_PROMPT = ["Go with recommended options."];
+  const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
 
   describe("resource-group-visualization", () => {
     test("generates architecture diagram for a resource group", () => withTestResult(async () => {

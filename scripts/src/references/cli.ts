@@ -28,7 +28,7 @@ function getRepoRoot(): string {
 }
 
 const REPO_ROOT = getRepoRoot();
-const SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
+let SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -417,10 +417,20 @@ function main(): void {
     args: process.argv.slice(2),
     options: {
       json: { type: "boolean", default: false },
+      "skills-dir": { type: "string" },
     },
     strict: false,
     allowPositionals: true,
   });
+
+  if (values["skills-dir"] && typeof values["skills-dir"] === "string") {
+    const dir = resolve(values["skills-dir"]);
+    if (!existsSync(dir) || !statSync(dir).isDirectory()) {
+      console.error(`\n❌ Skills directory not found: ${dir}\n`);
+      process.exit(1);
+    }
+    SKILLS_DIR = dir;
+  }
 
   const jsonOutput = values.json ?? false;
   const requestedSkill = positionals[0];

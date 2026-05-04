@@ -48,11 +48,85 @@ brew install node
 
 ### Installation
 
+#### VS Code
+
+The GitHub Copilot for Azure extension installs skills when the extension activates. At that point, you may see a toast notification like the following (if you don't see it, you can use the manual commands below):
+
+![Toast notification asking "GitHub Copilot for Azure can install skills to enhance your experience. Would you like to install Azure skills?" with Install, Not Now, and Don't Ask Again buttons](https://github.com/user-attachments/assets/b2ac7a0d-1f72-4af5-8cb5-a38f344a9244)
+
+To manually install skills from the Command Palette, the following commands are available:
+
+- `@azure: Install Azure Skills Globally` — installs to your home directory (for example `~` on macOS/Linux or `%UserProfile%` on Windows), available in all workspaces
+- `@azure: Install Azure Skills Locally` — installs to the current workspace folder, workspace-scoped
+- `@azure: Uninstall Azure Skills Globally` — removes globally installed skills
+
+#### Copilot CLI
+
 To install the Azure plugin into Copilot CLI and Claude:
 
 1. Add the marketplace with `/plugin marketplace add microsoft/azure-skills`
 2. Install the plugin with `/plugin install azure@azure-skills`
 3. Update the plugin with `/plugin update azure@azure-skills`
+
+## Sovereign Cloud Configuration
+
+By default, the Azure MCP server connects to the Azure Public Cloud. If you use a sovereign cloud (Azure China Cloud or Azure US Government), you need to configure the MCP server to use the appropriate cloud environment.
+
+### Copilot CLI
+
+After installing the plugin from the marketplace, the skills are installed in `~/.copilot/installed-plugins/` on macOS/Linux (or `%USERPROFILE%\.copilot\installed-plugins\` on Windows). Edit the `<skill_installation_dir>/azure-skills/azure/.mcp.json` file in the installed plugin directory to add the `--cloud` argument:
+
+> **Note:** If you are developing locally using `copilot --plugin-dir ./output`, edit `output/.mcp.json` in your local build output instead.
+
+**Azure China Cloud:**
+
+```json
+{
+  "mcpServers": {
+    "azure": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start", "--cloud", "AzureChinaCloud"]
+    }
+    // Keep the other MCP server configurations in this file as they are.
+  }
+}
+```
+
+**Azure US Government:**
+
+```json
+{
+  "mcpServers": {
+    "azure": {
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start", "--cloud", "AzureUSGovernment"]
+    }
+    // Keep the other MCP server configurations in this file as they are.
+  }
+}
+```
+
+Before starting the MCP server, ensure your local CLI tools are authenticated against the correct cloud:
+
+| Cloud | Azure CLI | Azure PowerShell | Azure Developer CLI |
+|-------|-----------|-----------------|---------------------|
+| China | `az cloud set --name AzureChinaCloud && az login` | `Connect-AzAccount -Environment AzureChinaCloud` | `azd config set cloud.name AzureChinaCloud && azd auth login` |
+| US Government | `az cloud set --name AzureUSGovernment && az login` | `Connect-AzAccount -Environment AzureUSGovernment` | `azd config set cloud.name AzureUSGovernment && azd auth login` |
+
+For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/azure/developer/azure-mcp-server/how-to/connect-sovereign-clouds) in the Azure MCP Server documentation.
+
+## Client Support Matrix
+
+| Client | Skills | MCP Servers | Hooks | Marketplace | Manifest | Status |
+|--------|:------:|:-----------:|:-----:|:-----------:|----------|--------|
+| **Copilot CLI** | ✅ | ✅ | ✅ Custom (`plugin/hooks/copilot-hooks.json`) | ✅ `.plugin/` | `.plugin/plugin.json` | ✅ Onboarded |
+| **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/marketplace.json` (exists only in azure-skills repo)| ✅ `plugin/.claude-plugin/plugin.json` | ✅ Onboarded |
+| **VS Code Extension** | ✅ (`.agents` folder) | ✅ | ✅ `hooks/hooks.json` (`.agents` folder) | Extension-based | Extension-based | ✅ Onboarded |
+| **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
+| **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | No marketplace | `gemini-extension.json` | ✅ Onboarded|
+| **Cursor** | ✅ | ✅ | `plugin/hooks/cursor-hooks.json` |  `.cursor-plugin/marketplace.json` (exists only in azure-skills repo) |  ✅ `plugin/.cursor-plugin/plugin.json` | ✅ Onboarded. Hooks testing - WIP |
+| **Codex** | 🔜 Working with OpenAI | 🔜 | ❌ Not supported by client | 🔜 | TBD | 🔜 WIP |
+| **Eclipse** | ❌ Not supported by client | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ⚠️ MCP only |
 
 ## Contributing
 

@@ -49,6 +49,21 @@ HOSTNAME=$(az staticwebapp show --name <app-name> --resource-group <rg-name> --q
 echo "https://$HOSTNAME"
 ```
 
+**PowerShell:**
+```powershell
+# Container Apps
+$Fqdn = az containerapp show --name <app-name> --resource-group <rg-name> --query "properties.configuration.ingress.fqdn" -o tsv
+Write-Output "https://$Fqdn"
+
+# App Service
+$Hostname = az webapp show --name <app-name> --resource-group <rg-name> --query "defaultHostName" -o tsv
+Write-Output "https://$Hostname"
+
+# Static Web Apps
+$Hostname = az staticwebapp show --name <app-name> --resource-group <rg-name> --query "defaultHostname" -o tsv
+Write-Output "https://$Hostname"
+```
+
 > ⚠️ **These commands return bare hostnames without a scheme.** Always prepend `https://` when presenting URLs to the user. For example, report `https://myapp.azurewebsites.net`, never `myapp.azurewebsites.net`.
 
 Present a summary including all service URLs as fully-qualified `https://` links. Do NOT end your response without including them.

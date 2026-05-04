@@ -76,7 +76,7 @@ const shouldNotTriggerPrompts = [
   'Query my Application Insights logs',  // → azure-observability
   'Create an alert in Azure Monitor',     // → azure-observability
   'Show me my App Insights dashboard',    // → azure-observability
-  'How much does App Insights cost?',     // → azure-cost-optimization
+  'How much does App Insights cost?',     // → azure-cost
   'Help me with AWS CloudWatch',          // Wrong cloud provider
 ];
 ```
@@ -191,7 +191,7 @@ description: "Deploy applications to Azure App Service, Azure Functions, and Sta
 'Validate my Bicep template',        // → azure-deployment-preflight
 'Create an azure.yaml file',         // → azure-create-app
 'Why did my deployment fail?',       // → azure-diagnostics
-'How much will this deployment cost?', // → azure-cost-optimization
+'How much will this deployment cost?', // → azure-cost
 ```
 
 ---

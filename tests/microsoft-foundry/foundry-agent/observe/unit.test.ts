@@ -16,11 +16,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const OBSERVE_MD = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/observe/observe.md"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/observe/observe.md"
 );
 const REFERENCES_PATH = path.resolve(
   __dirname,
-  "../../../../plugin/skills/microsoft-foundry/foundry-agent/observe/references"
+  "../../../../output/skills/microsoft-foundry/foundry-agent/observe/references"
 );
 
 describe("observe - Unit Tests", () => {

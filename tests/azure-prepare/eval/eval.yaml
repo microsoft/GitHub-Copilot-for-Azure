@@ -8,7 +8,7 @@ description: |
   Evaluation suite for the azure-prepare skill.
   Tests across dimensions:
   - Template selection accuracy (HTTP base, Cosmos DB, Service Bus, Timer, Durable)
-  - Plan-first workflow compliance (creates .azure/plan.md before code)
+  - Plan-first workflow compliance (creates .azure/deployment-plan.md before code)
   - IaC generation quality (Bicep and Terraform)
   - Language coverage (C#, TypeScript, Python, Java, PowerShell)
   - Security posture (managed identity, RBAC, no connection strings)

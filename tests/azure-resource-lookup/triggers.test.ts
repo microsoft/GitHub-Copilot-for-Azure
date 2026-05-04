@@ -91,7 +91,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Check my AWS Lambda functions",
       "Show my DigitalOcean droplets",
 
-      // Cost optimization (use azure-cost-optimization)
+      // Cost optimization (use azure-cost)
       "Optimize my cloud spending",
       "Reduce my monthly bill",
 

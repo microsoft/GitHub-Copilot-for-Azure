@@ -29,7 +29,8 @@ safe-outputs:
     title-prefix: "[repo-status] "
     labels: [report, weekly-status]
 source: githubnext/agentics/workflows/daily-repo-status.md@3a74730dbaddf484a9002a4bf34cd588cace7767
-engine: copilot
+engine:
+  id: copilot
 ---
 
 # Weekly Repo Status

@@ -41,6 +41,7 @@ services:
 ## References
 
 - [Bicep Patterns](bicep.md)
+- [Terraform Patterns](terraform.md)
 - [Scaling Patterns](scaling.md)
 - [Health Probes](health-probes.md)
 - [Environment Variables](environment.md)

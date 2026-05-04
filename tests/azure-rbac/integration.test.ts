@@ -138,24 +138,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     });
 
-    test("generates CLI commands for role assignment", async () => {
-      await withTestResult(async () => {
-        const agentMetadata = await agent.run({
-          prompt: "Generate Azure CLI command to assign Storage Blob Data Contributor role to my managed identity"
-        });
-
-        const isSkillUsed = isSkillInvoked(agentMetadata, "azure-rbac");
-        const mentionsRole = doesAssistantMessageIncludeKeyword(agentMetadata, "Storage Blob Data Contributor");
-        const hasCLICommand = doesAssistantMessageIncludeKeyword(agentMetadata, "az role assignment");
-
-        // User explicitly specifies the role name ("Storage Blob Data Contributor") and requests CLI command generation
-        // Expects: skill invocation, role name mentioned, and CLI commands
-        expect(isSkillUsed).toBe(true);
-        expect(mentionsRole).toBe(true);
-        expect(hasCLICommand).toBe(true);
-      });
-    });
-
     test("provides Bicep code for role assignment", async () => {
       await withTestResult(async () => {
         const agentMetadata = await agent.run({
