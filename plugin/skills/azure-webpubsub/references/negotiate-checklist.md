@@ -25,27 +25,14 @@ Use this file whenever the task includes `/negotiate`, token generation, browser
 - `role` / initial client permissions for the PubSub WebSocket subprotocol
 - `webpubsub.group` / initial groups
 
-Official `role` values:
-- Not specified: the client can send event requests, but cannot join/leave groups or publish messages to groups by itself.
-- `webpubsub.joinLeaveGroup`: the client can join or leave any group.
-- `webpubsub.sendToGroup`: the client can publish messages to any group.
-- `webpubsub.joinLeaveGroup.<group>`: the client can join or leave the exact group `<group>`.
-- `webpubsub.sendToGroup.<group>`: the client can publish messages to the exact group `<group>`.
-- `webpubsub.joinLeaveGroups.<pattern>`: the client can join or leave any group whose name matches `<pattern>`.
-- `webpubsub.sendToGroups.<pattern>`: the client can publish messages to any group whose name matches `<pattern>`.
-
 Role claim rules:
 - Use multiple `role` claims, or the server SDK `roles` array, when the client needs multiple permissions.
-- Literal group roles use singular `Group`: `sendToGroup.<group>` and `joinLeaveGroup.<group>`.
-- Wildcard pattern roles use plural `Groups`: `sendToGroups.<pattern>` and `joinLeaveGroups.<pattern>`.
 - Pattern roles support bounded group families; prefer the narrowest pattern that satisfies the scenario.
 - Wildcard roles are token/connect-time permissions. Do not assume runtime REST or server SDK grant/revoke APIs support wildcard roles.
 - These are client access-token roles, not Azure RBAC roles such as `Web PubSub Service Owner`.
 
 4. Permission scope
-- Only grant the minimum required roles.
 - Avoid unconditional `webpubsub.sendToGroup` and `webpubsub.joinLeaveGroup` unless the task really needs any-group access.
-- Prefer exact group roles for small known sets, for example `webpubsub.sendToGroup.room-1` plus `webpubsub.joinLeaveGroup.room-1`.
 - Prefer wildcard pattern roles only for large but bounded dynamic sets, for example tenant- or project-scoped group names.
 - If the server can manage membership or publish on the client's behalf, avoid granting the client join/send roles at all.
 

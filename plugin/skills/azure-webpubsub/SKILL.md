@@ -16,16 +16,14 @@ metadata:
 | **Service** | Azure Web PubSub |
 | **Best For** | Realtime fan-out, WebSocket replacement, client runtime selection, upstream event handling, Socket.IO on Azure Web PubSub |
 | **MCP Tools** | `mcp_azure_mcp_documentation` |
-| **CLI** | `az extension add --name webpubsub --upgrade`; `az webpubsub`, `az webpubsub hub`, `az webpubsub service`, `az webpubsub client`, `az webpubsub key` |
-| **Primary SDKs** | `@azure/web-pubsub-client` for connected participants; `@azure/web-pubsub` / `WebPubSubServiceClient` for server negotiate, publish, and manage operations |
+| **CLI** | `az extension add --name webpubsub --upgrade`; `az webpubsub` |
+| **Primary SDKs** | `@azure/web-pubsub-client` for connected participants; `@azure/web-pubsub` for server negotiate, publish, and manage operations |
 
 ## When to Use This Skill
 
 - Add or migrate to Azure Web PubSub
 - Replace polling, SSE, or custom WebSockets
 - Build chat, live update, streaming, or gaming features
-- Choose between `@azure/web-pubsub-client`, `WebPubSubServiceClient`, `upstream`, or Socket.IO
-- Review negotiation process, roles, or reconnect behavior
 
 ## MCP Tools
 
@@ -43,5 +41,4 @@ metadata:
 
 ## Error Handling
 
-- For implementation drift, runtime mixing, browser bundling, and reconnect/group rejoin issues, use [Common Pitfalls](references/common-pitfalls.md).
 - For service/runtime errors, use the official Azure Web PubSub troubleshooting documentation: https://learn.microsoft.com/azure/azure-web-pubsub/howto-troubleshoot-guide.
