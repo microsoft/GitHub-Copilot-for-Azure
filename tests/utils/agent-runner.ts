@@ -875,8 +875,11 @@ export function useAgentRunner() {
     } catch (error) {
       // Mark as complete to stop event processing
       isComplete = true;
-      console.error("Agent runner error:", error);
-      agentMetadata.testComments.push(`❗️Agent runner error: ${(error as Error)?.message ?? JSON.stringify(error)}`);
+      const errorDetails = error instanceof Error
+        ? (error.message)
+        : String(error);
+      agentMetadata.testComments.push(`❗️Agent runner error: ${errorDetails}`);
+      console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
       if (!isTest()) {
