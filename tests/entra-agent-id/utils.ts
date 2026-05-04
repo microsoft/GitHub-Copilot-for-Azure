@@ -1,11 +1,102 @@
 import { type AgentMetadata, getAllAssistantMessages } from "../utils/agent-runner";
+import { argsString } from "../utils/evaluate";
 
 /**
- * The Blueprint creation flow MUST mention the typed Graph endpoint
+ * Tool names whose `arguments.command` carries the actual script body.
+ */
+const SHELL_TOOL_NAMES = ["bash", "powershell"];
+
+/**
+ * Tool name fragments used to detect file-write/edit calls. Matches the
+ * convention used by `tests/utils/regression-detectors.ts`.
+ */
+const WRITE_TOOL_FRAGMENTS = ["create", "edit", "write"];
+
+/**
+ * File extensions that should also be searched for the patterns below
+ * (Python, PowerShell, shell). Matched case-insensitively against any
+ * `filePath` / `file_path` / `file` / `path` / `target_file` / `uri`
+ * argument on a file-write tool call.
+ */
+const SCRIPT_EXTENSIONS = [".py", ".ps1", ".sh"];
+
+function extractFilePath(args: unknown): string {
+  let record: Record<string, unknown> | undefined;
+  if (args && typeof args === "object") {
+    record = args as Record<string, unknown>;
+  } else if (typeof args === "string") {
+    try {
+      const parsed: unknown = JSON.parse(args);
+      if (parsed && typeof parsed === "object") {
+        record = parsed as Record<string, unknown>;
+      }
+    } catch {
+      /* ignore non-JSON string args */
+    }
+  }
+  if (!record) return "";
+  for (const key of ["filePath", "file_path", "file", "path", "target_file", "uri"]) {
+    const value = record[key];
+    if (typeof value === "string") return value;
+  }
+  return "";
+}
+
+function isScriptFile(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return SCRIPT_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
+/**
+ * Collect the bodies of any Python (`.py`), PowerShell (`.ps1`), or shell
+ * (`.sh`) scripts the agent produced — either as `bash` / `powershell`
+ * tool invocations, or as file-write tool calls targeting one of those
+ * extensions.
+ */
+function getScriptContent(agentMetadata: AgentMetadata): string {
+  const parts: string[] = [];
+
+  for (const event of agentMetadata.events) {
+    if (event.type !== "tool.execution_start") continue;
+    const data = event.data as { toolName?: string; arguments?: unknown };
+    const toolName = data.toolName ?? "";
+
+    if (SHELL_TOOL_NAMES.includes(toolName)) {
+      const args = data.arguments as { command?: string } | undefined;
+      if (args?.command) parts.push(args.command);
+      continue;
+    }
+
+    if (WRITE_TOOL_FRAGMENTS.some((fragment) => toolName.toLowerCase().includes(fragment))) {
+      const filePath = extractFilePath(data.arguments);
+      if (filePath && isScriptFile(filePath)) {
+        parts.push(argsString(event));
+      }
+    }
+  }
+
+  return parts.join("\n");
+}
+
+/**
+ * Combined haystack for all pattern helpers below: assistant prose plus any
+ * Python/PowerShell/shell script bodies the agent wrote or executed. The
+ * helpers exported below all assert that the relevant Graph token / API
+ * fragment appears somewhere in the agent's externally observable output —
+ * a token that shows up only inside a generated `.py` / `.ps1` / `.sh`
+ * counts as evidence, not just conversational mention.
+ */
+function getSearchableContent(agentMetadata: AgentMetadata): string {
+  return `${getAllAssistantMessages(agentMetadata)}\n${getScriptContent(agentMetadata)}`;
+}
+
+/**
+ * The Blueprint creation flow MUST surface the typed Graph endpoint
  * (microsoft.graph.agentIdentityBlueprint) — there is no other canonical
  * way to refer to the Blueprint API. The negative lookahead excludes
  * `agentIdentityBlueprintPrincipal` so this matches only the Blueprint
- * itself.
+ * itself. Evidence is accepted from either assistant prose or any
+ * Python/PowerShell/shell script the agent wrote or executed.
  */
 const BLUEPRINT_CREATE_PATTERNS: readonly RegExp[] = [
   /microsoft\.graph\.agentIdentityBlueprint(?!Principal)/i,
@@ -15,7 +106,8 @@ const BLUEPRINT_CREATE_PATTERNS: readonly RegExp[] = [
  * Creating a Blueprint does NOT auto-create its service principal. Skipping
  * the BlueprintPrincipal step produces:
  *   400: The Agent Blueprint Principal for the Agent Blueprint does not exist.
- * Any correct Blueprint walkthrough must surface this step.
+ * Any correct Blueprint walkthrough must surface this step in either prose
+ * or generated scripts.
  */
 const BLUEPRINT_PRINCIPAL_PATTERNS: readonly RegExp[] = [
   /microsoft\.graph\.agentIdentityBlueprintPrincipal/i,
@@ -88,27 +180,27 @@ function anyPatternMatches(content: string, patterns: readonly RegExp[]): boolea
 }
 
 export function mentionsBlueprintCreation(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), BLUEPRINT_CREATE_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), BLUEPRINT_CREATE_PATTERNS);
 }
 
 export function mentionsBlueprintPrincipalStep(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), BLUEPRINT_PRINCIPAL_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), BLUEPRINT_PRINCIPAL_PATTERNS);
 }
 
 export function mentionsSponsorsBinding(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), SPONSORS_BINDING_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), SPONSORS_BINDING_PATTERNS);
 }
 
 export function mentionsAgentIdentityCreation(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), AGENT_IDENTITY_CREATE_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), AGENT_IDENTITY_CREATE_PATTERNS);
 }
 
 export function mentionsBlueprintBackreference(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), BLUEPRINT_BACKREF_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), BLUEPRINT_BACKREF_PATTERNS);
 }
 
 export function mentionsFmiPathExchange(agentMetadata: AgentMetadata): boolean {
-  const content = getAllAssistantMessages(agentMetadata);
+  const content = getSearchableContent(agentMetadata);
   return (
     anyPatternMatches(content, FMI_PATH_PATTERNS) &&
     anyPatternMatches(content, CLIENT_CREDENTIALS_PATTERNS) &&
@@ -117,9 +209,9 @@ export function mentionsFmiPathExchange(agentMetadata: AgentMetadata): boolean {
 }
 
 export function recommendsSupportedAuth(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), SUPPORTED_AUTH_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), SUPPORTED_AUTH_PATTERNS);
 }
 
 export function mentionsPerAgentPermissionGrant(agentMetadata: AgentMetadata): boolean {
-  return anyPatternMatches(getAllAssistantMessages(agentMetadata), PERMISSION_GRANT_PATTERNS);
+  return anyPatternMatches(getSearchableContent(agentMetadata), PERMISSION_GRANT_PATTERNS);
 }

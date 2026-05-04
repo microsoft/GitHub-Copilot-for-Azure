@@ -163,8 +163,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         prompt: "Migrate my Java project from legacy Azure SDK to modern Azure SDK",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
-        followUpTimeout: javaMigrationTimeoutMs,
-        preserveWorkspace: true,
+        followUpTimeout: javaMigrationTimeoutMs
       });
 
       softCheckSkill(agentMetadata, SKILL_NAME);

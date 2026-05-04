@@ -69,6 +69,10 @@ siteConfig: {
 
 Endpoint should return 200 OK when healthy.
 
+## Templates
+
+For App Service templates with composable recipes (SQL, Cosmos DB, Auth, Redis), see [Template Selection](templates/selection.md).
+
 ## Common Data Backends
 
 When pairing App Service with a data layer, load the corresponding service references:
