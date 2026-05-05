@@ -24,7 +24,7 @@ Use Azure Resource Graph for cross-resource inventory. Resource providers and AP
 
 List Azure Local instances:
 
-```kusto
+```kql
 Resources
 | where type =~ 'microsoft.azurestackhci/clusters'
 | project name, resourceGroup, location, id, properties
@@ -32,7 +32,7 @@ Resources
 
 List Arc resource bridges and custom locations:
 
-```kusto
+```kql
 Resources
 | where type in~ ('microsoft.resourceconnector/appliances', 'microsoft.extendedlocation/customlocations')
 | project name, type, resourceGroup, location, id, properties
@@ -40,7 +40,7 @@ Resources
 
 List Azure Local workload resources:
 
-```kusto
+```kql
 Resources
 | where type startswith 'microsoft.azurestackhci/'
 | project name, type, resourceGroup, location, id, properties
@@ -48,7 +48,7 @@ Resources
 
 Find Arc machines associated with Azure Local:
 
-```kusto
+```kql
 Resources
 | where type =~ 'microsoft.hybridcompute/machines'
 | project name, resourceGroup, location, id, properties
