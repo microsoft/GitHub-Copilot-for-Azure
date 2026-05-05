@@ -1,6 +1,6 @@
 # MCP and CLI Tools for Azure Local
 
-Prefer Azure MCP tools for Azure control-plane discovery, then use generated Azure CLI/PowerShell commands when a documented operation requires command execution.
+Prefer Azure MCP tools for Azure control-plane discovery where they support the Azure Local resource type, then use generated Azure CLI/PowerShell commands when a documented operation requires command execution. Azure MCP does not currently expose a dedicated Azure Local tool namespace; treat support as partial through generic Azure, Azure Resource Graph, documentation, monitor/resource health, and Bicep schema surfaces.
 
 ## MCP tools
 
@@ -12,6 +12,9 @@ Prefer Azure MCP tools for Azure control-plane discovery, then use generated Azu
 | `mcp_azure_mcp_monitor` | Query logs/metrics when Azure Monitor or Log Analytics is configured. |
 | `mcp_azure_mcp_resourcehealth` | Check resource health where supported. |
 | `mcp_azure_mcp_documentation` | Retrieve current Microsoft Learn content. |
+| `mcp_azure_mcp_bicepschema` | Inspect ARM/Bicep schemas for Azure Local resource types such as `Microsoft.AzureStackHCI/clusters` when authoring templates. |
+
+Do not assume public Azure service-specific MCP tools are interchangeable with Azure Local. For example, public Azure VM and AKS tools may not cover Arc VMs or AKS on Azure Local; confirm the resource provider/type and use ARG, generated CLI, or documented PowerShell when the dedicated MCP tool does not match.
 
 ## Azure CLI patterns
 
