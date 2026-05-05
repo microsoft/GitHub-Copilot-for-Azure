@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner.ts";
 
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
