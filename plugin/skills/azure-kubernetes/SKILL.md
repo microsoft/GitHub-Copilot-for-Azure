@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "0.0.0-placeholder"
-description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, rightsize AKS pod, AKS spot nodes, AKS cluster-autoscaler. DO NOT USE FOR: AKS on Azure Local, AKS hybrid, or Arc-enabled Kubernetes on Azure Local; use azure-local."
+description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, rightsize AKS pod, AKS spot nodes, AKS cluster-autoscaler."
 ---
 
 # Azure Kubernetes Service
@@ -19,7 +19,7 @@ description: "Plan, create, and configure production-ready Azure Kubernetes Serv
 | Best for | AKS cluster planning and Day-0 decisions |
 | MCP Tools | `mcp_azure_mcp_aks` |
 | CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
-| Related skills | azure-diagnostics (troubleshooting AKS), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic), azure-local (AKS on Azure Local / AKS hybrid) |
+| Related skills | azure-diagnostics (troubleshooting AKS), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic) |
 
 ## When to Use This Skill
 Activate this skill when user wants to:
@@ -32,8 +32,6 @@ Activate this skill when user wants to:
 - Define AKS upgrade and patching strategy
 - Understand AKS Automatic vs Standard SKU differences
 - Get a Day-0 checklist for AKS cluster setup and configuration
-
-Do **not** use this skill for AKS on Azure Local, AKS hybrid, or Arc-enabled Kubernetes hosted on Azure Local. Use `azure-local` Workload Management because Azure Local AKS depends on the Azure Local instance, Arc resource bridge, local logical networks, and hybrid lifecycle guidance.
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
@@ -53,10 +51,6 @@ If the user is unsure, use safe defaults.
 - Cost constraints
 
 ## Workflow
-
-### 0. Route Azure Local / AKS hybrid away first
-
-If the user says "AKS on Azure Local", "AKS hybrid", "Arc-enabled Kubernetes on Azure Local", or asks to run AKS on customer-owned Azure Local infrastructure, route to `azure-local` Workload Management before applying standard AKS guidance.
 
 ### 1. Cluster Type
 - **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by Node Auto-Provisioning (NAP).
