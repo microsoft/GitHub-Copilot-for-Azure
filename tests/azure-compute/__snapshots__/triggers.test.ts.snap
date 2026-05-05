@@ -2,7 +2,7 @@
 
 exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, connectivity troubleshooting, capacity reservations, and Essential Machine Management. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot, capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, CRG association, CRG disassociation, essential machine management, EMM, machine enrollment. DO NOT USE FOR: Azure Local VMs, Arc VMs on Azure Local, custom locations, or Azure Arc resource bridge; use azure-local.",
+  "description": "Azure VM and VMSS router for recommendations, pricing, autoscale, orchestration, connectivity troubleshooting, capacity reservations, and Essential Machine Management. WHEN: Azure VM, VMSS, scale set, recommend, compare, server, website, burstable, lightweight, VM family, workload, GPU, learning, simulation, dev/test, backend, autoscale, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, connect, refused, Linux, black screen, reset password, reach VM, port 3389, NSG, troubleshoot, capacity reservation, CRG, reserve VMs, guarantee capacity, pre-provision capacity, CRG association, CRG disassociation, essential machine management, EMM, machine enrollment. DO NOT USE FOR: Azure Local VMs, Arc VMs on Azure Local, or Azure Local resource bridge; use azure-local.",
   "extractedKeywords": [
     "3389",
     "association",
@@ -20,7 +20,6 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill descripti
     "connect",
     "connectivity",
     "cost",
-    "custom",
     "disassociation",
     "enrollment",
     "essential",
@@ -33,7 +32,6 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill descripti
     "linux",
     "load",
     "local",
-    "locations",
     "machine",
     "management",
     "monitor",
@@ -89,7 +87,6 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "connect",
   "connectivity",
   "cost",
-  "custom",
   "disassociation",
   "enrollment",
   "essential",
@@ -102,7 +99,6 @@ exports[`azure-compute - Trigger Tests Trigger Keywords Snapshot skill keywords 
   "linux",
   "load",
   "local",
-  "locations",
   "machine",
   "management",
   "monitor",

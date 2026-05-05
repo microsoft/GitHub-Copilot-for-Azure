@@ -17,9 +17,7 @@
     "microsoft",
     "devops",
     "foundry",
-    "diagnostics",
-    "hybrid",
-    "azure-local"
+    "diagnostics"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",

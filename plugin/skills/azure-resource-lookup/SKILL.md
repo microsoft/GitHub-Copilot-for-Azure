@@ -23,7 +23,7 @@ Use this skill when the user wants to:
 - Find resources in a **specific state** (unhealthy, failed provisioning, stopped)
 - Answer "**what resources do I have?**" or "**show me my Azure resources**"
 - **List web apps, websites, or App Services**
-- Inventory **Azure Local and Azure Arc resources** such as Azure Local instances, Arc machines, Arc resource bridges, custom locations, Arc VMs, logical networks, disks, NICs, storage paths, and AKS Arc resources
+- Inventory **Azure Local and Azure Arc resources** such as Azure Local instances, Arc machines, Azure Local resource bridges, Arc VMs, logical networks, disks, NICs, storage paths, and AKS Arc resources
 
 > ⚠️ **Warning:** App Service / Web Apps have no dedicated MCP `list` command. Prompts like "list websites", "list web apps", or "list app services" **must** route through this skill to use Azure Resource Graph.
 
@@ -63,7 +63,7 @@ For single-resource-type queries, check if a dedicated MCP tool can handle it:
 | Container Registries | `acr` | ✅ Full — list registries |
 | Kubernetes (AKS) | `aks` | ✅ Full — clusters, node pools |
 | Azure Local / Azure Stack HCI | — | ⚠️ Inventory via ARG; operational workflows route to `azure-local` |
-| Arc resource bridge / custom locations | — | ⚠️ Inventory via ARG; troubleshooting routes to `azure-local` |
+| Azure Local resource bridge | — | ⚠️ Inventory via ARG; troubleshooting routes to `azure-local` |
 | Azure Local Arc VMs/resources | — | ⚠️ Inventory via ARG; create/update/delete routes to `azure-local` |
 | App Service / Web Apps | `appservice` | ❌ No list command — use ARG |
 | Container Apps | — | ❌ No MCP tool — use ARG |
