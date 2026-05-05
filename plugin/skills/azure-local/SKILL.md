@@ -1,7 +1,6 @@
 ---
 name: azure-local
-description: >-
-  Azure Local guidance. WHEN: Azure Local, Azure Stack HCI, Arc resource bridge, custom location, Azure Local VM, Arc VM, AKS on Azure Local, AKS hybrid, SDN, Lifecycle Manager. Exclude cloud VM/AKS guidance.
+description: "Azure Local guidance. WHEN: Azure Local, Azure Stack HCI, Arc resource bridge, custom location, Azure Local VM, Arc VM, AKS on Azure Local, AKS hybrid, SDN, Lifecycle Manager. Exclude cloud VM/AKS guidance."
 license: MIT
 metadata:
   author: Microsoft
