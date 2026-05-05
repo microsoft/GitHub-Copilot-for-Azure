@@ -190,6 +190,12 @@ az containerapp update --name spring-app --resource-group spring-rg --yaml app.y
 az containerapp show --name spring-app --resource-group spring-rg -o yaml > app.yaml
 # Edit app.yaml: add probes under containers[0]
 #   probes:
+#   - type: Startup
+#     httpGet:
+#       path: /actuator/health
+#       port: 8080
+#     failureThreshold: 30
+#     periodSeconds: 2
 #   - type: Liveness
 #     httpGet:
 #       path: /actuator/health/liveness
@@ -206,6 +212,12 @@ az containerapp update --name spring-app --resource-group spring-rg --yaml app.y
 az containerapp show --name spring-app --resource-group spring-rg -o yaml | Out-File -Encoding utf8 app.yaml
 # Edit app.yaml: add probes under containers[0]
 #   probes:
+#   - type: Startup
+#     httpGet:
+#       path: /actuator/health
+#       port: 8080
+#     failureThreshold: 30
+#     periodSeconds: 2
 #   - type: Liveness
 #     httpGet:
 #       path: /actuator/health/liveness

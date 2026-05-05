@@ -54,7 +54,8 @@ describe("eval-datasets - Unit Tests", () => {
     });
 
     test("documents .foundry cache and metadata", () => {
-      expect(datasetsContent).toContain(".foundry/agent-metadata.yaml");
+      expect(datasetsContent).toContain(".foundry/agent-metadata*.yaml");
+      expect(datasetsContent).toContain("selected metadata file");
       expect(datasetsContent).toContain(".foundry/datasets/");
       expect(datasetsContent).toContain(".foundry/results/");
     });
@@ -72,7 +73,18 @@ describe("eval-datasets - Unit Tests", () => {
       expect(datasetsContent).toMatch(/filenames? must start with the selected Foundry agent name/i);
       expect(datasetsContent).toMatch(/do\s+\*\*not\*\*\s+append the environment key a second time/i);
       expect(datasetsContent).toMatch(/cache|refresh/i);
-      expect(datasetsContent).toContain("testCases[]");
+      expect(datasetsContent).toContain("evaluationSuites[]");
+    });
+
+    test("scopes local dataset guidance to the selected agent root", () => {
+      const traceToDatasetContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "trace-to-dataset.md"),
+        "utf-8"
+      );
+
+      expect(datasetsContent).toMatch(/selected agent root/i);
+      expect(traceToDatasetContent).toMatch(/selected agent root's `.foundry\/datasets\/`, `.foundry\/results\/`, and metadata files/i);
+      expect(traceToDatasetContent).toMatch(/Do \*\*not\*\* merge sibling agent folders/i);
     });
 
     test("documents dataset metadata conventions and remote dataset tracking", () => {
@@ -104,6 +116,11 @@ describe("eval-datasets - Unit Tests", () => {
       expect(seedGuideContent).toMatch(/appending a new entry to the `datasets\[\]` list/i);
       expect(seedGuideContent).toContain('"datasets": [');
       expect(seedGuideContent).toContain('"name": "<agent-name>-eval-seed"');
+      expect(seedGuideContent).toContain("evaluationSuites:");
+      expect(seedGuideContent).toContain("older `testSuites[]`");
+      expect(seedGuideContent).toContain("tags:");
+      expect(seedGuideContent).toContain("legacy `testCases[]`");
+      expect(seedGuideContent).toContain("rewrite that environment to `evaluationSuites[]`");
       expect(seedGuideContent).toContain("--account-key <storage-account-key>");
       expect(seedGuideContent).toContain("--auth-mode login");
     });
@@ -133,6 +150,13 @@ describe("eval-datasets - Unit Tests", () => {
       expect(metadataContractContent).toContain("datasetVersion: v3");
       expect(metadataContractContent).toContain("dataset: support-agent-prod-curated");
       expect(metadataContractContent).toContain("datasetVersion: v2");
+      expect(metadataContractContent).toContain("agent-metadata.prod.yaml");
+      expect(metadataContractContent).toContain("selected metadata file");
+      expect(metadataContractContent).toContain("evaluationSuites:");
+      expect(metadataContractContent).toContain("tags:");
+      expect(metadataContractContent).toContain("Legacy Compatibility (`testCases[]` / `testSuites[]` -> `evaluationSuites[]`)");
+      expect(metadataContractContent).toContain("map `P0` -> `smoke`, `P1` -> `regression`, `P2` -> `coverage`");
+      expect(metadataContractContent).not.toContain("priority: P0");
       expect(metadataContractContent).toMatch(/do not append the environment key again/i);
       expect(traceToDatasetContent).toContain('datasetVersion: "v<N>"');
       expect(traceToDatasetContent).toContain('"name": "support-bot-prod-traces"');
@@ -152,6 +176,12 @@ describe("eval-datasets - Unit Tests", () => {
       expect(versioningContent).not.toContain('"version": "2"');
       expect(lineageContent).toContain('"name": "support-bot-prod-traces"');
       expect(lineageContent).toContain('"version": "v3"');
+    });
+
+    test("documents rewriting older metadata during dataset updates", () => {
+      expect(datasetsContent).toContain("older `testSuites[]`");
+      expect(datasetsContent).toContain("legacy `testCases[]`");
+      expect(datasetsContent).toContain("rewrite it as `evaluationSuites[]`");
     });
 
     test("documents evalId versus evaluationId guidance", () => {

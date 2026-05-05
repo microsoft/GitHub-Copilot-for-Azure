@@ -1,10 +1,88 @@
 import { useEffect, useState } from "react";
+import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 
 interface TestCase {
     testName: string;
     message?: string;
     skillInvocationRate?: number;
+    expectsScreenshot?: boolean;
 }
+
+// Cache /api/data/{date} responses keyed by encoded date so repeated lookups
+// (e.g. clicking the agentMetadata button on multiple test cases for the
+// same date) reuse a single network request.
+const blobTreeCache = new Map<string, Promise<BlobTree>>();
+
+function fetchBlobTree(date: string): Promise<BlobTree> {
+    const key = encodeURIComponent(date);
+    let cached = blobTreeCache.get(key);
+    if (!cached) {
+        cached = fetch(`/api/data/${key}`)
+            .then((res) => {
+                if (!res.ok) throw new Error(`API error: ${res.status}`);
+                return res.json() as Promise<BlobTree>;
+            })
+            .catch((err) => {
+                blobTreeCache.delete(key);
+                throw err;
+            });
+        blobTreeCache.set(key, cached);
+    }
+    return cached;
+}
+
+function findTestCaseBlobs(
+    dateNode: BlobTreeNode,
+    testName: string,
+    pattern: RegExp,
+): string[] {
+    const targetFolder = `/${formatTestName(testName)}/`;
+    const matches: string[] = [];
+    const walk = (node: BlobTreeNode): void => {
+        for (const file of node.files) {
+            if (file.blobName.includes(targetFolder) && pattern.test(file.blobName)) {
+                matches.push(file.blobName);
+            }
+        }
+        for (const child of Object.values(node.children)) {
+            walk(child);
+        }
+    };
+    walk(dateNode);
+    return matches;
+}
+
+async function openAgentMetadataLinks(date: string, testName: string): Promise<void> {
+    const tree = await fetchBlobTree(date);
+    const dateNode = tree[date];
+    if (!dateNode) throw new Error("No data for this date.");
+
+    const matches = findTestCaseBlobs(dateNode, testName, /\/agent-metadata-[^/]+\.md$/);
+
+    if (matches.length === 0) {
+        throw new Error("No agentMetadata files found for this test case.");
+    }
+    for (const blobName of matches) {
+        // Note: when there are multiple matches, the browser may block attempts
+        // to open the new page after the first one.
+        // The user may unblock pop ups from this website or open them individually.
+        window.open(
+            `/nightly-runs.html?file=${encodeURIComponent(blobName)}`,
+            "_blank",
+            "noopener,noreferrer",
+        );
+    }
+}
+
+async function findAppSnapshotBlob(date: string, testName: string): Promise<string | null> {
+    const tree = await fetchBlobTree(date);
+    const dateNode = tree[date];
+    if (!dateNode) return null;
+    const found = findTestCaseBlobs(dateNode, testName, /\/app-snapshot\.jpe?g$/i);
+    return found[0] ?? null;
+}
+
+const AZURE_DEPLOY_SKILL = "azure-deploy";
 
 interface SkillStats {
     skillInvocationTestsPassed: number;
@@ -209,6 +287,17 @@ function App() {
                                         {ft.message && (
                                             <span className="it-failed-message">{ft.message}</span>
                                         )}
+                                        <ViewAgentMetadataButton
+                                            date={selectedDate!}
+                                            testName={ft.testName}
+                                        />
+                                        {/* Show the preview for legacy items which don't the flag set */}
+                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && ft.expectsScreenshot !== false && (
+                                            <AppSnapshotPreview
+                                                date={selectedDate!}
+                                                testName={ft.testName}
+                                            />
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -235,6 +324,17 @@ function App() {
                                                 rate: {formatRate(pt.skillInvocationRate)}
                                             </span>
                                         )}
+                                        <ViewAgentMetadataButton
+                                            date={selectedDate!}
+                                            testName={pt.testName}
+                                        />
+                                        {/* Show the preview for legacy items which don't the flag set */}
+                                        {detailsPanelSkill === AZURE_DEPLOY_SKILL && pt.expectsScreenshot !== false && (
+                                            <AppSnapshotPreview
+                                                date={selectedDate!}
+                                                testName={pt.testName}
+                                            />
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -242,6 +342,91 @@ function App() {
                     </aside>
                 )}
             </div>
+        </div>
+    );
+}
+
+function ViewAgentMetadataButton({ date, testName }: { date: string; testName: string }) {
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+    const onClick = async () => {
+        setBusy(true);
+        setErr(null);
+        try {
+            await openAgentMetadataLinks(date, testName);
+        } catch (e) {
+            setErr(e instanceof Error ? e.message : String(e));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <span className="it-view-agent-metadata">
+            <button
+                className="it-view-agent-metadata-btn"
+                onClick={onClick}
+                disabled={busy}
+            >
+                {busy ? "Loading\u2026" : "view agentMetadata"}
+            </button>
+            {err && <span className="it-view-agent-metadata-error">{err}</span>}
+        </span>
+    );
+}
+
+function AppSnapshotPreview({ date, testName }: { date: string; testName: string }) {
+    const [blobName, setBlobName] = useState<string | null | undefined>(undefined);
+    const [imgFailed, setImgFailed] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        setBlobName(undefined);
+        setImgFailed(false);
+        findAppSnapshotBlob(date, testName)
+            .then((found) => {
+                if (!cancelled) setBlobName(found);
+            })
+            .catch(() => {
+                if (!cancelled) setBlobName(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [date, testName]);
+
+    if (blobName === undefined) {
+        return <div className="it-app-snapshot it-app-snapshot-empty">Loading snapshot&hellip;</div>;
+    }
+
+    if (blobName === null || imgFailed) {
+        return (
+            <div className="it-app-snapshot it-app-snapshot-empty">
+                Snapshot not available
+            </div>
+        );
+    }
+
+    const url = `/api/fetch?path=${encodeURIComponent(blobName)}`;
+    const viewerUrl = `/image-viewer.html?path=${encodeURIComponent(blobName)}`;
+    return (
+        <div className="it-app-snapshot">
+            <a
+                className="it-app-snapshot-link"
+                href={viewerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open snapshot in new tab"
+            >
+                <img
+                    className="it-app-snapshot-img"
+                    src={url}
+                    alt={`App snapshot for ${formatTestName(testName)}`}
+                    loading="lazy"
+                    onError={() => setImgFailed(true)}
+                />
+            </a>
         </div>
     );
 }

@@ -48,15 +48,10 @@ metadata:
 6. **Recommend fix** — Apply remediation, citing documentation found
 
 
-## Connectivity Troubleshooting
+## Troubleshooting Guides
 
-See [Service Troubleshooting Guide](references/service-troubleshooting.md) for ports, WebSocket fallback, IP firewall, private endpoints, and service tags.
-
-## SDK Troubleshooting Guides
-
-- **Event Hubs**: [Python](references/sdk/azure-eventhubs-py.md) | [Java](references/sdk/azure-eventhubs-java.md) | [JS](references/sdk/azure-eventhubs-js.md) | [.NET](references/sdk/azure-eventhubs-dotnet.md)
-- **Service Bus**: [Python](references/sdk/azure-servicebus-py.md) | [Java](references/sdk/azure-servicebus-java.md) | [JS](references/sdk/azure-servicebus-js.md) | [.NET](references/sdk/azure-servicebus-dotnet.md)
+Connectivity, SDK, and auth troubleshooting guides are located in the azure-diagnostics skill under `troubleshooting/messaging/`.
 
 ## References
 
-Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance. See [Service Troubleshooting Guide](references/service-troubleshooting.md) for network and service-level docs.
+- Use `mcp_azure_mcp_documentation` to search Microsoft Learn for latest guidance.
