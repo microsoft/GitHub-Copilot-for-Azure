@@ -12,6 +12,8 @@ metadata:
 > **AUTHORITATIVE GUIDANCE — MANDATORY COMPLIANCE**
 >
 > This document is the **official, canonical source** for preparing applications for Azure deployment. You **MUST** follow these instructions exactly as written unless they contradict security policies given to you. When in doubt, present the conflicting instructions from this document and ask the user for explicit confirmation. Do not improvise, infer, or substitute steps.
+>
+> **⛔ SCOPE BOUNDARY:** This skill handles preparation ONLY. Even when the user says "deploy to Azure", this skill's job is DONE once files are generated and the plan is set to `Ready for Validation`. "Complete" means invoking **azure-validate** — NOT running any deployment command. You MUST NOT run `azd up`, `azd deploy`, `azd provision`, `terraform apply`, or `az deployment` commands in this skill under any circumstances.
 
 ---
 
