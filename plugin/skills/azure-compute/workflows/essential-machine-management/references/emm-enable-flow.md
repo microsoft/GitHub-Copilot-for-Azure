@@ -57,12 +57,12 @@ For each role assignment, match `properties.roleDefinitionId` to the role defini
 | Managed Identity Operator | `Microsoft.ManagedIdentity/userAssignedIdentities/*/read`, `Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action` |
 | Resource Policy Contributor | `Microsoft.Authorization/policyassignments/*`, `Microsoft.Authorization/policydefinitions/*`, `Microsoft.PolicyInsights/*` |
 
-> 💡 **Tip:** If the user has **Owner** or **Contributor** at subscription scope, they satisfy all required permissions. Check for these first as a fast path.
+> 💡 **Tip:** If the user has **Owner** at subscription scope, they satisfy all required permissions. Check for these first as a fast path.
 
 ```text
 Check result?
 ├─ All 3 roles covered → Proceed to Step 3
-├─ Owner/Contributor found → All roles satisfied, proceed to Step 3
+├─ Owner found → All roles satisfied, proceed to Step 3
 └─ Missing roles → Inform user which roles are missing and how to assign them, then re-check
 ```
 
