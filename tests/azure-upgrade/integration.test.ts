@@ -35,6 +35,10 @@ import {
   shouldEarlyTerminateForSkillInvocation,
   softCheckSkill,
   withTestResult,
+  getAllToolText,
+  getAllAssistantMessages,
+  doesAssistantOrToolsIncludeKeyword,
+  getToolCalls,
 } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-upgrade";
@@ -70,6 +74,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
       softCheckSkill(agentMetadata, SKILL_NAME);
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      // Negative routing: a non-Redis migration prompt must NOT surface Redis migration skills.
+      expect(doesAssistantOrToolsIncludeKeyword(agentMetadata, "amr-migration-skill")).toBe(false);
+      expect(doesAssistantOrToolsIncludeKeyword(agentMetadata, "acre-to-amr-migration-skill")).toBe(false);
     }));
 
     test("invokes azure-upgrade skill for upgrading Functions plan prompt", () => withTestResult(async () => {
@@ -106,6 +114,85 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
       softCheckSkill(agentMetadata, SKILL_NAME);
       expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+    }));
+
+    test("invokes azure-upgrade skill for Azure Cache for Redis (ACR/OSS) to Azure Managed Redis migration prompt", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Migrate my Azure Cache for Redis Premium P2 cache to Azure Managed Redis (AMR)",
+        nonInteractive: true,
+        followUp: ["Continue with recommended options until complete."],
+        // Custom termination: keep running past skill invocation until the agent
+        // both navigates to the reference doc AND surfaces the dedicated skill name,
+        // capped at 30 tool calls.
+        shouldEarlyTerminate: (m) => {
+          if (!isSkillInvoked(m, SKILL_NAME)) {
+            return getToolCalls(m).length > 30;
+          }
+          const navigated = /redis-to-amr\.md/.test(getAllToolText(m));
+          const surfaced = doesAssistantOrToolsIncludeKeyword(m, "amr-migration-skill");
+          return (navigated && surfaced) || getToolCalls(m).length > 30;
+        }
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      // Tier 1: agent navigated to the Redis routing reference doc.
+      expect(getAllToolText(agentMetadata)).toMatch(/redis-to-amr\.md/);
+
+      // Tier 2: agent surfaces the ACR/OSS dedicated skill name.
+      // (We don't assert ACRE skill absence — the reference doc mentions both routes,
+      // so its tool text necessarily contains the ACRE skill name as well.)
+      expect(doesAssistantOrToolsIncludeKeyword(agentMetadata, "amr-migration-skill")).toBe(true);
+    }));
+
+    test("invokes azure-upgrade skill for Azure Cache for Redis Enterprise (ACRE) to Azure Managed Redis migration prompt", () => withTestResult(async () => {
+      const agentMetadata = await agent.run({
+        prompt: "Migrate my Azure Cache for Redis Enterprise (Enterprise_E10) cache to Azure Managed Redis",
+        nonInteractive: true,
+        followUp: ["Continue with recommended options until complete."],
+        shouldEarlyTerminate: (m) => {
+          if (!isSkillInvoked(m, SKILL_NAME)) {
+            return getToolCalls(m).length > 30;
+          }
+          const navigated = /redis-to-amr\.md/.test(getAllToolText(m));
+          const surfaced = doesAssistantOrToolsIncludeKeyword(m, "acre-to-amr-migration-skill");
+          return (navigated && surfaced) || getToolCalls(m).length > 30;
+        }
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      // Tier 1: agent navigated to the Redis routing reference doc.
+      expect(getAllToolText(agentMetadata)).toMatch(/redis-to-amr\.md/);
+
+      // Tier 2: agent surfaces the ACRE-specific dedicated skill.
+      expect(doesAssistantOrToolsIncludeKeyword(agentMetadata, "acre-to-amr-migration-skill")).toBe(true);
+    }));
+
+    // Tier 3: ambiguous Redis prompt should trigger disambiguation rather than guessing a tier.
+    test("invokes azure-upgrade skill and disambiguates Redis tier for ambiguous Redis migration prompt", () => withTestResult(async () => {
+      const disambiguationPattern = /enterprise|premium|standard|basic|tier|sku|acre|\bacr\b/i;
+      const agentMetadata = await agent.run({
+        prompt: "I want to migrate my Redis cache to Azure Managed Redis",
+        nonInteractive: true,
+        followUp: ["Continue with recommended options until complete."],
+        shouldEarlyTerminate: (m) => {
+          if (!isSkillInvoked(m, SKILL_NAME)) {
+            return getToolCalls(m).length > 30;
+          }
+          const asked = disambiguationPattern.test(getAllAssistantMessages(m));
+          return asked || getToolCalls(m).length > 30;
+        }
+      });
+
+      softCheckSkill(agentMetadata, SKILL_NAME);
+      expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+      // The agent should ask about the source tier/SKU (Basic/Standard/Premium vs. Enterprise)
+      // or otherwise reference the disambiguation signals from the routing doc.
+      expect(getAllAssistantMessages(agentMetadata)).toMatch(disambiguationPattern);
     }));
   });
 
