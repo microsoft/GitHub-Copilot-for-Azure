@@ -1,6 +1,7 @@
 ---
 name: azure-local
-description: "Plan, deploy, operate, update, secure, and troubleshoot Azure Local. WHEN: Azure Local, Azure Stack HCI, Arc resource bridge, custom location, Azure Local VM, Arc VM, AKS on Azure Local, AKS hybrid, SDN, Lifecycle Manager, disconnected site. DO NOT USE FOR: standard public Azure VM or AKS guidance."
+description: >-
+  Azure Local guidance. WHEN: Azure Local, Azure Stack HCI, Arc resource bridge, custom location, Azure Local VM, Arc VM, AKS on Azure Local, AKS hybrid, SDN, Lifecycle Manager. Exclude cloud VM/AKS guidance.
 license: MIT
 metadata:
   author: Microsoft
@@ -9,28 +10,28 @@ metadata:
 
 # Azure Local
 
-Use for Azure Local infrastructure and workloads: deployment, operations, lifecycle updates, Arc resource bridge, custom locations, Azure Local VMs, AKS hybrid, SDN, security, and troubleshooting.
+## Quick Reference
 
-## Routing
+Best for Azure Local infrastructure and workloads. See [docs-map](references/docs-map.md), [mcp-and-cli-tools](references/mcp-and-cli-tools.md), [resource-types](references/resource-types.md), and [safety-rules](references/safety-rules.md).
 
-| Signal | Workflow |
-| --- | --- |
-| Deploy, prerequisites, topology, Arc gateway, portal/ARM deployment | [Plan and Deploy](workflows/plan-and-deploy/plan-and-deploy.md) |
-| Operate, inventory, monitor, update, lifecycle | [Operate and Update](workflows/operate-and-update/operate-and-update.md) |
-| Azure Local VM, Arc VM, AKS hybrid, SQL, images, disks, networks | [Workload Management](workflows/workload-management/workload-management.md) |
-| SDN, NSG, load balancer, gateway, private endpoint, security | [Networking and Security](workflows/networking-and-security/networking-and-security.md) |
-| Deployment, Arc bridge, custom location, VM, AKS, SDN, update failure | [Troubleshooting](workflows/troubleshooting/troubleshooting.md) |
+## When to Use This Skill
 
-## Rules
+Use for Azure Local, Azure Stack HCI, Azure Local VMs, AKS on Azure Local, AKS hybrid, SDN, lifecycle updates, disconnected sites, or troubleshooting. Do not use for cloud VM or public AKS guidance.
 
-1. Read the matched workflow first.
-2. Treat Microsoft Learn as authoritative; use [docs-map](references/docs-map.md).
-3. Start read-only. Ask before updates, deletes, reimages, network changes, VM power/delete operations, or Arc bridge/custom location changes.
-4. Use Azure MCP/ARG for inventory; use CLI/PowerShell only where documented.
-5. Keep public Azure VM/AKS guidance separate.
+## MCP Tools
 
-## References
+Use documentation, CLI generation, monitor/resource health, and Bicep schema where supported. Azure MCP has no dedicated Azure Local namespace.
 
-- [MCP and CLI tools](references/mcp-and-cli-tools.md)
-- [Safety rules](references/safety-rules.md)
-- [Resource types](references/resource-types.md)
+## Workflow
+
+- Deploy -> [Plan and Deploy](workflows/plan-and-deploy/plan-and-deploy.md)
+- Operate/update -> [Operate and Update](workflows/operate-and-update/operate-and-update.md)
+- VM, AKS, SQL, images, disks, networks -> [Workload Management](workflows/workload-management/workload-management.md)
+- SDN, NSG, load balancer, gateway, security -> [Networking and Security](workflows/networking-and-security/networking-and-security.md)
+- Failures -> [Troubleshooting](workflows/troubleshooting/troubleshooting.md)
+
+Read the matched workflow first. Use [docs-map](references/docs-map.md). Start read-only. Ask before updates, deletes, reimages, network changes, VM power/delete operations, or Arc bridge/custom location changes.
+
+## Error Handling
+
+Ask for version when unclear. Stop for risky changes and follow [safety-rules](references/safety-rules.md). Prefer Azure Local docs over cloud guidance. Without local access, stay with Azure control-plane checks.

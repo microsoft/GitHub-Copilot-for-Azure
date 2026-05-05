@@ -43,7 +43,7 @@ Do not recommend out-of-band updates for Azure Local components. Avoid unsupport
 
 Use Azure control-plane discovery first:
 
-```kusto
+```kql
 Resources
 | where type =~ 'microsoft.azurestackhci/clusters'
 | project name, resourceGroup, location, properties
