@@ -72,7 +72,7 @@ For single-resource-type queries, check if a dedicated MCP tool can handle it:
 
 If a dedicated tool is available with full coverage, use it. Otherwise proceed to Step 2.
 
-For Azure Local inventory, use ARG patterns from [azure-local resource types](../azure-local/references/resource-types.md). If the user wants to create, change, update, troubleshoot, or decommission Azure Local resources, route to `azure-local`.
+For Azure Local inventory, use the `azure-local` Resource Types reference. If the user wants to create, change, update, troubleshoot, or decommission Azure Local resources, route to `azure-local`.
 
 ### Step 2: Generate the ARG Query
 

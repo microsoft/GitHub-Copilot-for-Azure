@@ -61,7 +61,7 @@ Activate this skill when user wants to:
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
 | **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md) |
 | **Messaging** | Event Hubs & Service Bus SDK errors, AMQP failures, message lock, connectivity | [Messaging Troubleshooting](troubleshooting/messaging/README.md) |
-| **Azure Local** | Deployment, Arc resource bridge, custom location, SDN, Azure Local VMs, updates/upgrades | azure-local [Troubleshooting](../azure-local/workflows/troubleshooting/troubleshooting.md) |
+| **Azure Local** | Deployment, Arc resource bridge, custom location, SDN, Azure Local VMs, updates/upgrades | `azure-local` Troubleshooting |
 
 ---
 
@@ -69,9 +69,9 @@ Activate this skill when user wants to:
 
 - Keep Container Apps and Function Apps diagnostics in this parent skill.
 - Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md).
-- Route AKS on Azure Local / AKS hybrid incidents to azure-local [Troubleshooting](../azure-local/workflows/troubleshooting/troubleshooting.md), not standard AKS-only troubleshooting.
+- Route AKS on Azure Local / AKS hybrid incidents to `azure-local` Troubleshooting, not standard AKS-only troubleshooting.
 - Route Azure Messaging SDK troubleshooting (Event Hubs, Service Bus) to [Messaging Troubleshooting](troubleshooting/messaging/README.md).
-- Route Azure Local infrastructure, Arc resource bridge, custom location, SDN, updates/upgrades, and Azure Local VM issues to azure-local [Troubleshooting](../azure-local/workflows/troubleshooting/troubleshooting.md).
+- Route Azure Local infrastructure, Arc resource bridge, custom location, SDN, updates/upgrades, and Azure Local VM issues to `azure-local` Troubleshooting.
 
 ---
 

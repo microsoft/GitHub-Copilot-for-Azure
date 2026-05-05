@@ -33,7 +33,7 @@ Activate this skill when user wants to:
 - Understand AKS Automatic vs Standard SKU differences
 - Get a Day-0 checklist for AKS cluster setup and configuration
 
-Do **not** use this skill for AKS on Azure Local, AKS hybrid, Arc-enabled Kubernetes hosted on Azure Local, custom locations, or Azure Arc resource bridge issues. Use `azure-local` [Workload Management](../azure-local/workflows/workload-management/workload-management.md) because Azure Local AKS depends on the Azure Local instance, Arc resource bridge, custom location, local logical networks, and hybrid lifecycle guidance.
+Do **not** use this skill for AKS on Azure Local, AKS hybrid, Arc-enabled Kubernetes hosted on Azure Local, custom locations, or Azure Arc resource bridge issues. Use `azure-local` Workload Management because Azure Local AKS depends on the Azure Local instance, Arc resource bridge, custom location, local logical networks, and hybrid lifecycle guidance.
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
@@ -56,7 +56,7 @@ If the user is unsure, use safe defaults.
 
 ### 0. Route Azure Local / AKS hybrid away first
 
-If the user says "AKS on Azure Local", "AKS hybrid", "Arc-enabled Kubernetes on Azure Local", "custom location", "Azure Arc resource bridge", or asks to run AKS on customer-owned Azure Local infrastructure, route to `azure-local` [Workload Management](../azure-local/workflows/workload-management/workload-management.md) before applying standard AKS guidance.
+If the user says "AKS on Azure Local", "AKS hybrid", "Arc-enabled Kubernetes on Azure Local", "custom location", "Azure Arc resource bridge", or asks to run AKS on customer-owned Azure Local infrastructure, route to `azure-local` Workload Management before applying standard AKS guidance.
 
 ### 1. Cluster Type
 - **AKS Automatic** (default): Best for most production workloads, provides a curated experience with pre-configured best practices for security, reliability, and performance. Use unless you have specific custom requirements for networking, autoscaling, or node pool configurations not supported by Node Auto-Provisioning (NAP).

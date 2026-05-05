@@ -30,7 +30,7 @@ Do **not** use this skill for Azure Local VMs enabled by Azure Arc, Arc VM resou
 ```text
 User intent?
 ├─ Azure Local VM / Arc VM on Azure Local / custom location / Arc resource bridge
-│  └─ Route to azure-local [Workload Management](../azure-local/workflows/workload-management/workload-management.md)
+│  └─ Route to `azure-local` Workload Management
 │
 ├─ Recommend / choose / compare / price a VM or VMSS
 │  └─ Route to [VM Recommender](workflows/vm-recommender/vm-recommender.md)
@@ -50,7 +50,7 @@ User intent?
 
 | Signal                                                                        | Workflow                                                                                   |
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| "Azure Local VM", "Arc VM", "Arc-enabled VM", "custom location", "Arc resource bridge", "VM on Azure Local" | azure-local [Workload Management](../azure-local/workflows/workload-management/workload-management.md) |
+| "Azure Local VM", "Arc VM", "Arc-enabled VM", "custom location", "Arc resource bridge", "VM on Azure Local" | `azure-local` Workload Management |
 | "recommend VM", "which VM", "VM size", "VM pricing", "VMSS", "scale set"     | [VM Recommender](workflows/vm-recommender/vm-recommender.md)                               |
 | "can't connect", "RDP", "SSH", "NSG blocking", "reset password", "black screen" | [VM Troubleshooter](workflows/vm-troubleshooter/vm-troubleshooter.md)                   |
 | "capacity reservation", "CRG", "reserve capacity", "guarantee capacity", "associate VM with CRG" | [Capacity Reservation](workflows/capacity-reservation/capacity-reservation.md) |
