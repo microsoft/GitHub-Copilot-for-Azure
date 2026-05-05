@@ -1,6 +1,6 @@
 ---
 name: azure-diagnostics
-description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter."
+description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter. DO NOT USE FOR: Azure Local infrastructure, Arc resource bridge, custom location, SDN on Azure Local, Azure Local update/upgrade failures, or Arc VMs on Azure Local; use azure-local."
 license: MIT
 metadata:
   author: Microsoft
@@ -28,6 +28,7 @@ Activate this skill when user wants to:
 - Find the App Insights or Log Analytics workspace linked to a Function App
 - Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 - Troubleshoot Azure Messaging SDK issues (Event Hubs, Service Bus connection failures, AMQP errors, message lock issues)
+- Troubleshoot Azure production issues that are not Azure Local infrastructure, Azure Local VM, Arc resource bridge, custom location, or Azure Local SDN/update/upgrade issues
 
 ## Rules
 
@@ -37,6 +38,7 @@ Activate this skill when user wants to:
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
 6. Route AKS incidents to the dedicated AKS troubleshooting document
+7. Route Azure Local infrastructure, Arc resource bridge, custom location, SDN, update/upgrade, and Azure Local VM issues to `azure-local`
 
 ---
 
@@ -59,6 +61,7 @@ Activate this skill when user wants to:
 | **Function Apps** | App details, invocation failures, timeouts, binding errors, cold starts, missing app settings | [functions/](references/functions/README.md) |
 | **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md) |
 | **Messaging** | Event Hubs & Service Bus SDK errors, AMQP failures, message lock, connectivity | [Messaging Troubleshooting](troubleshooting/messaging/README.md) |
+| **Azure Local** | Deployment, Arc resource bridge, custom location, SDN, Azure Local VMs, updates/upgrades | azure-local [Troubleshooting](../azure-local/workflows/troubleshooting/troubleshooting.md) |
 
 ---
 
@@ -66,7 +69,9 @@ Activate this skill when user wants to:
 
 - Keep Container Apps and Function Apps diagnostics in this parent skill.
 - Route active AKS incidents, AKS-specific intake, evidence gathering, and remediation guidance to [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md).
+- Route AKS on Azure Local / AKS hybrid incidents to azure-local [Troubleshooting](../azure-local/workflows/troubleshooting/troubleshooting.md), not standard AKS-only troubleshooting.
 - Route Azure Messaging SDK troubleshooting (Event Hubs, Service Bus) to [Messaging Troubleshooting](troubleshooting/messaging/README.md).
+- Route Azure Local infrastructure, Arc resource bridge, custom location, SDN, updates/upgrades, and Azure Local VM issues to azure-local [Troubleshooting](../azure-local/workflows/troubleshooting/troubleshooting.md).
 
 ---
 

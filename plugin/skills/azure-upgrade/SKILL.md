@@ -1,6 +1,6 @@
 ---
 name: azure-upgrade
-description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, change hosting plan, function app SKU, migrate App Service to Container Apps, modernize legacy Azure Java SDKs (com.microsoft.azure to com.azure), migrate Azure Cache for Redis (ACR/ACRE) to Azure Managed Redis (AMR)."
+description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, change hosting plan, function app SKU, migrate App Service to Container Apps, modernize legacy Azure Java SDKs (com.microsoft.azure to com.azure), migrate Azure Cache for Redis (ACR/ACRE) to Azure Managed Redis (AMR). DO NOT USE FOR: Azure Local solution updates, Azure Local upgrades, Lifecycle Manager, or Azure Local release updates; use azure-local."
 license: MIT
 compatibility: python3.10+
 metadata:
@@ -23,6 +23,8 @@ metadata:
 | Modernize legacy Azure Java SDK | "Migrate legacy Azure SDKs for Java", "Upgrade legacy Azure Java SDK", "Migrate my Java project from com.microsoft.azure to com.azure" |
 | Migrate Azure Cache for Redis (ACR/OSS) to Azure Managed Redis (AMR) | "Migrate my Redis cache to AMR", "ACR to AMR", "OSS to AMR", "Upgrade my Premium P2 cache to Managed Redis", "Pick an AMR SKU", "Convert my Redis IaC template to AMR" |
 | Migrate Azure Cache for Redis Enterprise (ACRE) to Azure Managed Redis (AMR) | "Migrate my Enterprise_E10 cache to AMR", "ACRE to AMR", "Update my ACRE IaC template for AMR", "Migrate EnterpriseFlash to AMR", "Migrate my geo-replicated Enterprise Redis" |
+
+For Azure Local solution updates, release upgrades, Lifecycle Manager, Arc resource bridge update requirements, or Azure Local update troubleshooting, route to `azure-local` [Operate and Update](../azure-local/workflows/operate-and-update/operate-and-update.md).
 
 ## Rules
 

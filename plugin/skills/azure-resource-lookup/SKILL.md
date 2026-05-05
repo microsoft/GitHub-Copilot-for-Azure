@@ -1,6 +1,6 @@
 ---
 name: azure-resource-lookup
-description: "List, find, and show Azure resources across subscriptions or resource groups. Handles prompts like \"list the websites in my subscription\", \"list my web apps\", \"show my app services\", \"list virtual machines\", \"list my VMs\", \"show storage accounts\", \"find container apps\", and \"what resources do I have\". USE FOR: list websites, list web apps, list app services, show websites in subscription, resource inventory, find resources by tag, tag analysis, orphaned resource discovery (not for cost analysis), unattached disks, count resources by type, cross-subscription lookup, and Azure Resource Graph queries. DO NOT USE FOR: deploying/changing resources (use azure-deploy), cost optimization (use azure-cost), or non-Azure clouds."
+description: "List, find, and show Azure resources across subscriptions or resource groups. Handles prompts like \"list the websites in my subscription\", \"list my web apps\", \"show my app services\", \"list virtual machines\", \"list my VMs\", \"show storage accounts\", \"find container apps\", and \"what resources do I have\". USE FOR: list websites, list web apps, list app services, show websites in subscription, resource inventory, find resources by tag, tag analysis, orphaned resource discovery (not for cost analysis), unattached disks, count resources by type, cross-subscription lookup, Azure Local and Arc resource inventory, and Azure Resource Graph queries. DO NOT USE FOR: deploying/changing resources (use azure-deploy or azure-local), cost optimization (use azure-cost), or non-Azure clouds."
 license: MIT
 metadata:
   author: Microsoft
@@ -23,6 +23,7 @@ Use this skill when the user wants to:
 - Find resources in a **specific state** (unhealthy, failed provisioning, stopped)
 - Answer "**what resources do I have?**" or "**show me my Azure resources**"
 - **List web apps, websites, or App Services**
+- Inventory **Azure Local and Azure Arc resources** such as Azure Local instances, Arc machines, Arc resource bridges, custom locations, Arc VMs, logical networks, disks, NICs, storage paths, and AKS Arc resources
 
 > ⚠️ **Warning:** App Service / Web Apps have no dedicated MCP `list` command. Prompts like "list websites", "list web apps", or "list app services" **must** route through this skill to use Azure Resource Graph.
 
@@ -61,12 +62,17 @@ For single-resource-type queries, check if a dedicated MCP tool can handle it:
 | SQL Databases | `sql` | ⚠️ Partial — requires resource group name |
 | Container Registries | `acr` | ✅ Full — list registries |
 | Kubernetes (AKS) | `aks` | ✅ Full — clusters, node pools |
+| Azure Local / Azure Stack HCI | — | ⚠️ Inventory via ARG; operational workflows route to `azure-local` |
+| Arc resource bridge / custom locations | — | ⚠️ Inventory via ARG; troubleshooting routes to `azure-local` |
+| Azure Local Arc VMs/resources | — | ⚠️ Inventory via ARG; create/update/delete routes to `azure-local` |
 | App Service / Web Apps | `appservice` | ❌ No list command — use ARG |
 | Container Apps | — | ❌ No MCP tool — use ARG |
 | Event Hubs | `eventhubs` | ✅ Full — namespaces, hubs |
 | Service Bus | `servicebus` | ✅ Full — queues, topics |
 
 If a dedicated tool is available with full coverage, use it. Otherwise proceed to Step 2.
+
+For Azure Local inventory, use ARG patterns from [azure-local resource types](../azure-local/references/resource-types.md). If the user wants to create, change, update, troubleshoot, or decommission Azure Local resources, route to `azure-local`.
 
 ### Step 2: Generate the ARG Query
 
