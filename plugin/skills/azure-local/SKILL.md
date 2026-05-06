@@ -11,26 +11,42 @@ metadata:
 
 ## Quick Reference
 
-Best for Azure Local infrastructure and workloads. See [docs-map](references/docs-map.md), [mcp-and-cli-tools](references/mcp-and-cli-tools.md), [resource-types](references/resource-types.md), and [safety-rules](references/safety-rules.md).
+| Property | Value |
+| --- | --- |
+| Best for | Azure Local infrastructure planning, deployment, operations, and workload management |
+| MCP Tools | Generic Azure MCP tools only; no dedicated Azure Local namespace |
+| CLI | `az graph query`, `az resource show`, Azure Local PowerShell modules |
+| Key references | [docs-map](references/docs-map.md), [mcp-and-cli-tools](references/mcp-and-cli-tools.md), [resource-types](references/resource-types.md), [safety-rules](references/safety-rules.md) |
+| Related skills | azure-compute (public VMs), azure-kubernetes (public AKS) |
 
 ## When to Use This Skill
 
-Use for Azure Local, Azure Stack HCI, Azure Local VMs, AKS on Azure Local, AKS hybrid, SDN, lifecycle updates, disconnected sites, or troubleshooting. Do not use for cloud VM or public AKS guidance.
+Use this skill for Azure Local, Azure Stack HCI, Azure Local VMs, AKS on Azure Local, AKS hybrid, SDN, lifecycle updates, disconnected sites, or troubleshooting. Do not use for cloud VM or public AKS guidance.
 
 ## MCP Tools
 
-Use documentation, CLI generation, monitor/resource health, and Bicep schema where supported. Azure MCP has no dedicated Azure Local namespace.
+| Tool | Purpose | Key Parameters | Azure Local limitation |
+| --- | --- | --- | --- |
+| `mcp_azure_mcp_extension_cli_generate` | Generate ARG or CLI commands for inventory | subscription, resource type, query goal | No Azure Local-specific operations |
+| `mcp_azure_mcp_monitor` | Query logs or metrics when Log Analytics is configured | workspace/resource ID, query, time range | Requires Azure Monitor setup |
+| `mcp_azure_mcp_resourcehealth` | Check Azure control-plane health signals | resource ID, subscription | Partial cluster/node coverage |
+| `mcp_azure_mcp_documentation` | Fetch current Microsoft Learn content | article title, Azure Local version when known | Version awareness needed |
 
 ## Workflow
 
-- Deploy -> [Plan and Deploy](workflows/plan-and-deploy/plan-and-deploy.md)
-- Operate/update -> [Operate and Update](workflows/operate-and-update/operate-and-update.md)
-- VM, AKS, SQL, images, disks, networks -> [Workload Management](workflows/workload-management/workload-management.md)
-- SDN, NSG, load balancer, gateway, security -> [Networking and Security](workflows/networking-and-security/networking-and-security.md)
-- Failures -> [Troubleshooting](workflows/troubleshooting/troubleshooting.md)
+1. Deploy -> [Plan and Deploy](workflows/plan-and-deploy/plan-and-deploy.md)
+2. Operate/update -> [Operate and Update](workflows/operate-and-update/operate-and-update.md)
+3. VM, AKS, SQL, images, disks, networks -> [Workload Management](workflows/workload-management/workload-management.md)
+4. SDN, NSG, load balancer, gateway, security -> [Networking and Security](workflows/networking-and-security/networking-and-security.md)
+5. Failures -> [Troubleshooting](workflows/troubleshooting/troubleshooting.md)
 
 Read the matched workflow first. Use [docs-map](references/docs-map.md). Start read-only. Ask before updates, deletes, reimages, network changes, VM power/delete operations, or Arc bridge/custom location changes.
 
 ## Error Handling
 
-Ask for version when unclear. Stop for risky changes and follow [safety-rules](references/safety-rules.md). Prefer Azure Local docs over cloud guidance. Without local access, stay with Azure control-plane checks.
+| Scenario | Message | Remediation |
+| --- | --- | --- |
+| Version unknown | Need the Azure Local version before version-specific guidance. | Ask the user for the version or fetch current docs for latest guidance. |
+| Risky change detected | This may change cluster, network, VM, or Arc bridge state. | Stop and follow [safety-rules](references/safety-rules.md). |
+| No local access | Local host checks are unavailable. | Stay with Azure control-plane checks only. |
+| Doc URL 404/redirect | The linked article moved or changed. | Search Learn for the article title with the user's version. |

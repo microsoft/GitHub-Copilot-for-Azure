@@ -6,7 +6,6 @@ exports[`azure-local - Trigger Tests Trigger Keywords Snapshot skill description
   "extractedKeywords": [
     "aks",
     "azure",
-    "bicep",
     "bridge",
     "cli",
     "cloud",
@@ -15,6 +14,7 @@ exports[`azure-local - Trigger Tests Trigger Keywords Snapshot skill description
     "exclude",
     "guidance",
     "hybrid",
+    "kubernetes",
     "lifecycle",
     "local",
     "location",
@@ -36,7 +36,6 @@ exports[`azure-local - Trigger Tests Trigger Keywords Snapshot skill keywords ma
 [
   "aks",
   "azure",
-  "bicep",
   "bridge",
   "cli",
   "cloud",
@@ -45,6 +44,7 @@ exports[`azure-local - Trigger Tests Trigger Keywords Snapshot skill keywords ma
   "exclude",
   "guidance",
   "hybrid",
+  "kubernetes",
   "lifecycle",
   "local",
   "location",
