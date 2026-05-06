@@ -1,13 +1,30 @@
 name: Run Skill Evaluations
 on:
+  pull_request:
+    paths:
+      - 'plugin/skills/**'
+      - 'evals/**'
+      - '.vally.yaml'
   workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Eval suite to run (triggers, integration, full)'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - triggers
+          - integration
+          - full
+  schedule:
+    - cron: '0 6 * * *' # Nightly full suite at 06:00 UTC
 
 permissions:
   contents: read
 
 jobs:
-  eval:
-    name: Run Evaluations
+  lint:
+    name: Lint Eval Specs
     runs-on: ubuntu-latest
     if: >-
       github.event_name != 'pull_request' ||
@@ -20,8 +37,39 @@ jobs:
           node-version: '22'
       - name: Install vally
         run: npm install --no-save @microsoft/vally
+      - name: Lint skills and eval specs
+        run: npx @microsoft/vally lint -e evals/ --strict
+
+  eval:
+    name: Run Evaluations
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '22'
+      - name: Install vally
+        run: npm install --no-save @microsoft/vally
+      - name: Determine suite
+        id: suite
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "name=triggers" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "name=full" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.event.inputs.suite || 'full' }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Run evaluations
-        run: npx @microsoft/vally eval --eval-spec evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results --output jsonl
+        run: >
+          npx @microsoft/vally eval
+          --suite ${{ steps.suite.outputs.name }}
+          --output-dir ./results
+          --output jsonl
+          --junit
+          --threshold 0.8
         env:
           GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
       - name: Upload results
