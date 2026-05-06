@@ -20,7 +20,7 @@ on:
     - cron: '0 12 * * 2-6'
     # 4:00 AM PST Sun (12:00 PM UTC Sun)
     # Comparison test runs that don't use skills
-    - cron: '0 12 * * 7'
+    - cron: '0 12 * * 0'
   workflow_dispatch:
     inputs:
       skills:
@@ -117,7 +117,7 @@ jobs:
               "0 12 * * 2-6")
                 echo "debug=$SCHEDULED_DEBUG_04" >> "$GITHUB_OUTPUT"
                 ;;
-              "0 12 * * 7")
+              "0 12 * * 0")
                 echo "debug=$SCHEDULED_DEBUG_NO_SKILLS" >> "$GITHUB_OUTPUT"
                 echo "no-skills=true" >> "$GITHUB_OUTPUT"
                 ;;

@@ -268,7 +268,7 @@ jobs:
                 hasError = true;
             }
 
-            // 2. Integration test schedule coverages all skills.
+            // 2. Integration test schedule covers all skills.
             // Only consider the cron schedules referenced by .github/workflows/test-all-integration.yml.
             // Other entries in integrationTestSchedule (e.g. Sunday comparison runs) don't count
             // toward the coverage check.
