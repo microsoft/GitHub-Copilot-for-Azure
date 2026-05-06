@@ -1,4 +1,4 @@
-# FAOS Optimize Python Agent
+# FAOS (Foundry Agent Optimization Service) Optimize Python Agent
 
 Convert existing Python agent code into a FAOS optimization-ready version by wiring runtime configuration knobs to the FAOS config contract. This workflow prepares source code for optimization, asks the user to review the changes, and then routes to Foundry deployment only after explicit user approval.
 
@@ -142,13 +142,16 @@ Proposed FAOS targets:
 Use the generic Python contract from [Python Patterns](references/python-patterns.md). At minimum, add or reuse:
 
 ```python
+import os
+
 from agent_optimization import load_config
 
 SYSTEM_PROMPT = """...existing default instructions..."""
+EXISTING_MODEL_FALLBACK = os.getenv("<existing-model-env-var>", "gpt-4.1")
 
 config = load_config(
     default_instructions=SYSTEM_PROMPT,
-    default_model=os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1"),
+    default_model=EXISTING_MODEL_FALLBACK,
     default_skills_dir="skills",
 )
 ```
@@ -156,7 +159,7 @@ config = load_config(
 Then map the selected target knobs:
 
 - Existing default instructions -> `config.compose_instructions()`
-- Existing model default -> `config.model or <existing fallback>`
+- Existing model default -> `config.model or <existing fallback>`. Reuse the app's current model-selection environment variable(s) and fallback chain instead of hard-coding `MODEL_DEPLOYMENT_NAME` unless that is already what the app uses.
 - Existing temperature/default options -> `config.temperature` only when the runtime supports it
 - Skills directory -> `config.skills_dir` only when the runtime has a skill/tool loading mechanism or one is explicitly added
 

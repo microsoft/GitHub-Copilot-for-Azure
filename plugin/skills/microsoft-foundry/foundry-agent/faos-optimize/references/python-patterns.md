@@ -1,4 +1,4 @@
-# Python FAOS Optimization Patterns
+# Python FAOS (Foundry Agent Optimization Service) Optimization Patterns
 
 These patterns are framework-neutral. Use them to expose Python agent behavior knobs to FAOS while preserving the app's current runtime.
 
