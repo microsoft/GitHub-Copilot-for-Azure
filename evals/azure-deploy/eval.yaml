@@ -23,7 +23,7 @@ environment:
 
 config:
   runs: 3
-  timeout: 420
+  timeout: "7m"
   executor: copilot-sdk
   model: claude-sonnet-4
 
