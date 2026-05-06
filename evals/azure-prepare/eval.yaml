@@ -38,6 +38,15 @@ config:
 
 scoring:
   threshold: 0.8
+  weights:
+    output-contains: 0.5
+    output-matches: 0.5
+    output-not-matches: 2.0
+    completed: 1.0
+    token-budget: 0.5
+    turn-count: 0.5
+    wall-time: 0.5
+    error-count: 1.0
 
 stimuli:
   # ── cosmosdb-dotnet-bicep-001 ──
@@ -51,6 +60,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -102,6 +112,19 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── cosmosdb-typescript-terraform-001 ──
   # Waza source: tasks/cosmosdb-typescript-terraform.yaml
@@ -114,6 +137,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -164,6 +188,19 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── durable-dotnet-001 ──
   # Waza source: tasks/durable-dotnet.yaml
@@ -176,6 +213,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -214,6 +252,19 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── http-dotnet-001 ──
   # Waza source: tasks/http-dotnet.yaml
@@ -226,6 +277,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -269,6 +321,19 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── http-python-001 ──
   # Waza source: tasks/http-python.yaml
@@ -281,6 +346,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -312,6 +378,19 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── http-typescript-001 ──
   # Waza source: tasks/http-typescript.yaml
@@ -324,6 +403,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -363,6 +443,19 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── mcp-typescript-001 ──
   # Waza source: tasks/mcp-typescript.yaml
@@ -375,6 +468,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -414,6 +508,19 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── plan-first-001 ──
   # Waza source: tasks/plan-first-enforcement.yaml
@@ -426,6 +533,7 @@ stimuli:
       type: integration
       tier: full
       area: behavior
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -466,6 +574,19 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── servicebus-dotnet-001 ──
   # Waza source: tasks/servicebus-dotnet.yaml
@@ -478,6 +599,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -517,6 +639,19 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── timer-python-001 ──
   # Waza source: tasks/timer-python.yaml
@@ -529,6 +664,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-prepare
     constraints:
       max_turns: 40
     graders:
@@ -571,3 +707,16 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 40
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
