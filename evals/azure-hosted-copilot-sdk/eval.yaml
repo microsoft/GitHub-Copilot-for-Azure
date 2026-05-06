@@ -33,7 +33,6 @@ scoring:
   threshold: 0.8
   weights:
     output-contains: 0.5
-    output-not-contains: 0.5
     output-not-matches: 2.0
     skill-invocation: 2.0
     token-budget: 0.5
@@ -186,15 +185,15 @@ stimuli:
         config:
           substring: "createSession"
       # Task: expected.output_not_contains
-      - type: output-not-contains
+      - type: output-not-matches
         config:
-          substring: "wireApi"
-      - type: output-not-contains
+          pattern: "wireApi"
+      - type: output-not-matches
         config:
-          substring: "bearerToken"
-      - type: output-not-contains
+          pattern: "bearerToken"
+      - type: output-not-matches
         config:
-          substring: "DefaultAzureCredential"
+          pattern: "DefaultAzureCredential"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -241,15 +240,15 @@ stimuli:
         config:
           substring: "DefaultAzureCredential"
       # Task: expected.output_not_contains
-      - type: output-not-contains
+      - type: output-not-matches
         config:
-          substring: "apiKey"
-      - type: output-not-contains
+          pattern: "apiKey"
+      - type: output-not-matches
         config:
-          substring: "AZURE_OPENAI_API_KEY"
-      - type: output-not-contains
+          pattern: "AZURE_OPENAI_API_KEY"
+      - type: output-not-matches
         config:
-          substring: "AZURE_OPENAI_KEY"
+          pattern: "AZURE_OPENAI_KEY"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -286,21 +285,21 @@ stimuli:
       max_turns: 10
     graders:
       # Task: expected.output_not_contains
-      - type: output-not-contains
+      - type: output-not-matches
         config:
-          substring: "copilot-sdk-service"
-      - type: output-not-contains
+          pattern: "copilot-sdk-service"
+      - type: output-not-matches
         config:
-          substring: "CopilotClient"
-      - type: output-not-contains
+          pattern: "CopilotClient"
+      - type: output-not-matches
         config:
-          substring: "createSession"
-      - type: output-not-contains
+          pattern: "createSession"
+      - type: output-not-matches
         config:
-          substring: "azd init --template azure-samples/copilot-sdk-service"
-      - type: output-not-contains
+          pattern: "azd init --template azure-samples/copilot-sdk-service"
+      - type: output-not-matches
         config:
-          substring: "wireApi"
+          pattern: "wireApi"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
