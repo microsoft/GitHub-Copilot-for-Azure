@@ -6,34 +6,31 @@ Evaluation suite for the `azure-prepare` skill using [Vally](https://www.npmjs.c
 
 There are three ways to run `vally`:
 
-**Option 1 — Vally CLI**
+**Option 1 — npm scripts (recommended)**
 ```bash
 # Install vally globally
-npm install -g @microsoft/vally-cli
+npm install -g @microsoft/vally
 
-# Run evals (executor is configured in the YAML — mock or copilot-sdk)
-vally eval -e evals/azure-prepare/eval.yaml \
-  --work-dir evals/azure-prepare/fixtures --verbose
+# Run with mock executor (fast, no auth)
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
+
+# Run with real Copilot SDK (requires GITHUB_TOKEN)
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
 ```
-
-> **Tip:** The `executor` field in `eval.yaml` controls whether evals run
-> against a mock backend (fast, no auth) or the real Copilot SDK.
-> Authentication is handled automatically via your local `gh` CLI session.
-> Environment variables (`COPILOT_GITHUB_TOKEN`) are only required in CI
-> environments. Change `executor: mock` → `executor: copilot-sdk` to switch
-> modes.
 
 **Option 2 — npx (no global install)**
 ```bash
-npx @microsoft/vally-cli eval -e evals/azure-prepare/eval.yaml \
-  --work-dir evals/azure-prepare/fixtures --verbose
+npx @microsoft/vally-cli eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
 ```
 
 **Option 3 — global install**
 ```bash
 npm install -g @microsoft/vally-cli   # adds `vally` to PATH
-vally eval -e evals/azure-prepare/eval.yaml \
-  --work-dir evals/azure-prepare/fixtures --verbose
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
 ```
 
 > **Note:** `npx @microsoft/vally-cli` or the npm scripts are preferred for
