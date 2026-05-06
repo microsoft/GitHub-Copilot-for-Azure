@@ -268,9 +268,18 @@ jobs:
                 hasError = true;
             }
 
-            // 2. Integration test schedule coverages all skills
+            // 2. Integration test schedule coverages all skills.
+            // Only consider the cron schedules referenced by .github/workflows/test-all-integration.yml.
+            // Other entries in integrationTestSchedule (e.g. Sunday comparison runs) don't count
+            // toward the coverage check.
+            const requiredCronSchedules = [
+                '0 5 * * 2-6',
+                '0 8 * * 2-6',
+                '0 12 * * 2-6',
+            ];
             let scheduledSkills = [];
-            Object.values(skillsJson.integrationTestSchedule).forEach(value => {
+            requiredCronSchedules.forEach(cron => {
+                const value = skillsJson.integrationTestSchedule[cron];
                 if (value) {
                     value.split(',').forEach(s => scheduledSkills.push(s));
                 }

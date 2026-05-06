@@ -50,6 +50,11 @@ on:
         required: false
         type: boolean
         default: false
+      no-skills:
+        description: 'Whether to set NO_SKILLS=true for jest tests (skip loading skills)'
+        required: false
+        type: boolean
+        default: false
     secrets:
       COPILOT_CLI_TOKEN:
         required: true
@@ -189,6 +194,7 @@ jobs:
           DEBUG: ${{ inputs.debug && '1' || '' }}
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           TEST_GROUP: ${{ matrix.test-group }}
+          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
         run: |
           echo test with $MODEL_OVERRIDE
           npm run test:integration -- azure-deploy "$TEST_GROUP"

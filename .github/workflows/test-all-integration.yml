@@ -18,6 +18,9 @@ on:
     - cron: '0 8 * * 2-6'
     # 4:00 AM PST Tue-Sat (12:00 PM UTC Tue-Sat)
     - cron: '0 12 * * 2-6'
+    # 4:00 AM PST Sun (12:00 PM UTC Sun)
+    # Comparison test runs that don't use skills
+    - cron: '0 12 * * 7'
   workflow_dispatch:
     inputs:
       skills:
@@ -51,10 +54,10 @@ on:
 # Customize the inputs for each scheduled run by modifying these env vars.
 # Skills for each schedule are defined in tests/skills.json under integrationTestSchedule.
 env:
-  SCHEDULED_DEBUG_21: 'false'        # debug flag for 9:00 PM PST run
-  SCHEDULED_DEBUG_00: 'false'        # debug flag for 12:00 AM PST run
-  SCHEDULED_DEBUG_04: 'false'         # debug flag for 4:00 AM PST run
-
+  SCHEDULED_DEBUG_21: 'false'        # debug flag for 9:00 PM PST run (Weekday)
+  SCHEDULED_DEBUG_00: 'false'        # debug flag for 12:00 AM PST run (Weekday)
+  SCHEDULED_DEBUG_04: 'false'        # debug flag for 4:00 AM PST run (Weekday)
+  SCHEDULED_DEBUG_SUN: 'false'       # debug flag for 4:00 AM PST run (Sunday)
 jobs:
   resolve-inputs:
     name: Resolve workflow inputs
@@ -64,6 +67,7 @@ jobs:
       skills: ${{ steps.resolve.outputs.skills }}
       deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
       debug: ${{ steps.resolve.outputs.debug }}
+      no-skills: ${{ steps.resolve.outputs.no-skills }}
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
@@ -112,6 +116,10 @@ jobs:
                 ;;
               "0 12 * * 2-6")
                 echo "debug=$SCHEDULED_DEBUG_04" >> "$GITHUB_OUTPUT"
+                ;;
+              "0 12 * * 7")
+                echo "debug=$SCHEDULED_DEBUG_SUN" >> "$GITHUB_OUTPUT"
+                echo "no-skills=true" >> "$GITHUB_OUTPUT"
                 ;;
               *)
                 echo "Unknown schedule: $CRON"
@@ -168,6 +176,7 @@ jobs:
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
       publish-reports: ${{ github.event_name == 'schedule' }}
+      no-skills: ${{ needs.resolve-inputs.outputs.no-skills == 'true' }}
     secrets:
       COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
 
@@ -282,6 +291,7 @@ jobs:
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
           SKILL: ${{ matrix.skill }}
+          NO_SKILLS: ${{ needs.resolve-inputs.outputs.no-skills == 'true' && 'true' || '' }}
         run: |
           echo test with $MODEL_OVERRIDE
           # Handle azure-ai vs azure-aigateway prefix collision
