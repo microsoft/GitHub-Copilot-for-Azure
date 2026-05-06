@@ -25,12 +25,12 @@ Use this skill for Azure Local, Azure Stack HCI, Azure Local VMs, AKS on Azure L
 
 ## MCP Tools
 
-| Tool | Purpose | Key Parameters | Azure Local limitation |
+| Tool | Purpose | Key Parameters | Azure Local scope note |
 | --- | --- | --- | --- |
-| `mcp_azure_mcp_extension_cli_generate` | Generate ARG or CLI commands for inventory | subscription, resource type, query goal | No Azure Local-specific operations |
-| `mcp_azure_mcp_monitor` | Query logs or metrics when Log Analytics is configured | workspace/resource ID, query, time range | Requires Azure Monitor setup |
-| `mcp_azure_mcp_resourcehealth` | Check Azure control-plane health signals | resource ID, subscription | Partial cluster/node coverage |
-| `mcp_azure_mcp_documentation` | Fetch current Microsoft Learn content | article title, Azure Local version when known | Version awareness needed |
+| `mcp_azure_mcp_extension_cli_generate` | Generate ARG or CLI commands for inventory | subscription, resource type, query goal | Verify generated commands against Azure Local docs and resource types |
+| `mcp_azure_mcp_monitor` | Query logs or metrics when Log Analytics is configured | workspace/resource ID, query, time range | Returns data only where Azure Monitor or Log Analytics is configured |
+| `mcp_azure_mcp_resourcehealth` | Check Azure control-plane health signals | resource ID, subscription | Use only where Azure Resource Health supports the resource type; do not treat missing data as local cluster health |
+| `mcp_azure_mcp_documentation` | Fetch current Microsoft Learn content | article title, Azure Local version when known | Use the user's Azure Local version when provided; otherwise fetch latest docs |
 
 ## Workflow
 
