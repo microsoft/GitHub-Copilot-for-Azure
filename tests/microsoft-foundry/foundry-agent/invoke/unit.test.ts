@@ -55,7 +55,7 @@ describe("invoke - Unit Tests", () => {
     test("documents hosted session behavior", () => {
       expect(invokeContent).toContain("sessionId");
       expect(invokeContent).toContain("session_create");
-      expect(invokeContent).toMatch(/\^?\[A-Za-z0-9_/);
+      expect(invokeContent).toContain("^[A-Za-z0-9_-]{8,128}$");
     });
 
     test("does not reference removed Python fallback scripts", () => {

@@ -10,7 +10,7 @@ Invoke deployed agents in Azure AI Foundry. Manage sessions and file operations 
 | MCP server | `azure` |
 | Key Foundry MCP tools | `agent_invoke`, `agent_get`, `session_create`, `session_get`, `session_delete`, `session_list` |
 | File operation tools | `session_file_upload`, `session_file_download`, `session_file_list`, `session_file_delete`, `session_file_stat`, `session_file_mkdir` |
-| Conversation support | Single-turn and multi-turn (via `conversationId`) |
+| Conversation support | Single-turn and multi-turn (via `conversationId` for responses protocol, via session state for invocations protocol) |
 | Session support | Managed sessions for hosted agents (via `session_create`) |
 | Protocols | `responses` (OpenAI-compatible), `invocations` (custom payloads) |
 
@@ -75,9 +75,15 @@ Use the project endpoint and agent name from the project context. Use `agent_inv
 **Invocations protocol**: Set `protocol: 'invocations'`. This is **bytes in, bytes out** — `inputText` is forwarded as the raw HTTP request body to the container. The developer defines the expected schema.
 
 > ⚠️ **Do not guess the invocations request body.** To discover the expected schema:
-> 1. **Fetch the OpenAPI spec** from the agent's endpoint: `GET {agentEndpoint}/invocations/docs/openapi.json` (if the developer registered one)
+> 1. **Fetch the OpenAPI spec**: `GET {projectEndpoint}/agents/{agentName}/endpoint/protocols/invocations/docs/openapi.json` (if the developer registered one)
 > 2. Inspect the agent's **route handler code** or README for the expected payload shape
 > 3. If unknown, ask the user for the agent's API contract before invoking
+
+Example invocations call (agent expects `{"message": "<text>"}`):
+
+```text
+agent_invoke(projectEndpoint, agentName, inputText: "{\"message\":\"hello\"}", protocol: "invocations", sessionId: "<id>")
+```
 
 See [Invocations Protocol Guide](references/invocations-protocol.md) for full details and examples.
 
@@ -120,6 +126,7 @@ Use `session_delete` to release compute resources when done. Undeleted sessions 
 
 ## Additional Resources
 
-- [Session Management](references/session-management.md) | [File Operations](references/file-operations.md)
+- [Session Management](references/session-management.md)
+- [File Operations](references/file-operations.md)
 - [Foundry Hosted Agents](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)
