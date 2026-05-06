@@ -163,6 +163,35 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, migrationTestTimeoutMs);
   });
 
+  describe("Spring Boot to Container Apps migration scenario", () => {
+    test("invokes skill for Spring Boot to ACA migration prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "I want to migrate my Spring Boot application from Azure Spring Apps to Azure Container Apps. Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+    test("invokes skill for Spring Boot containerization prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I containerize my Spring Boot JAR and deploy it to Azure Container Apps?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+  });
+
   // Fargate tests only validate skill invocation (isSkillInvoked), not output files.
   // Unlike the Lambda tests above, there is no public sample repo to clone and
   // produce migration artifacts, so output-quality assertions are omitted.
