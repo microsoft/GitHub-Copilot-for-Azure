@@ -31,6 +31,15 @@ config:
 
 scoring:
   threshold: 0.8
+  weights:
+    output-contains: 0.5
+    output-not-contains: 0.5
+    output-not-matches: 2.0
+    skill-invocation: 2.0
+    token-budget: 0.5
+    turn-count: 0.5
+    wall-time: 0.5
+    error-count: 1.0
 
 stimuli:
   # ── scaffold-new-001 ──
@@ -42,6 +51,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-hosted-copilot-sdk
     constraints:
       max_turns: 10
     graders:
@@ -54,6 +64,23 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-hosted-copilot-sdk"]
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 30000
+      - type: turn-count
+        config:
+          max: 15
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── scaffold-alongside-001 ──
   # Waza source: tasks/scaffold-alongside.yaml
@@ -64,6 +91,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-hosted-copilot-sdk
     constraints:
       max_turns: 10
     graders:
@@ -76,6 +104,23 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-hosted-copilot-sdk"]
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 30000
+      - type: turn-count
+        config:
+          max: 15
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── deploy-existing-001 ──
   # Waza source: tasks/deploy-existing.yaml
@@ -86,6 +131,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-hosted-copilot-sdk
     constraints:
       max_turns: 15
     graders:
@@ -104,6 +150,23 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-hosted-copilot-sdk"]
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 30000
+      - type: turn-count
+        config:
+          max: 15
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── github-default-model-001 ──
   # Waza source: tasks/github-default-model.yaml
@@ -114,6 +177,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-hosted-copilot-sdk
     constraints:
       max_turns: 10
     graders:
@@ -135,6 +199,23 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-hosted-copilot-sdk"]
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 30000
+      - type: turn-count
+        config:
+          max: 15
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── byom-config-001 ──
   # Waza source: tasks/byom-config.yaml
@@ -145,6 +226,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      skill: azure-hosted-copilot-sdk
     constraints:
       max_turns: 10
     graders:
@@ -172,6 +254,23 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-hosted-copilot-sdk"]
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 30000
+      - type: turn-count
+        config:
+          max: 15
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── negative-not-copilot-001 ──
   # Waza source: tasks/negative-not-copilot.yaml
@@ -182,6 +281,7 @@ stimuli:
       type: trigger
       tier: smoke
       area: routing
+      skill: azure-hosted-copilot-sdk
     constraints:
       max_turns: 10
     graders:
@@ -205,3 +305,20 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          disallowed: ["azure-hosted-copilot-sdk"]
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 30000
+      - type: turn-count
+        config:
+          max: 15
+      - type: wall-time
+        config:
+          max: "10m"
+      - type: error-count
+        config:
+          max: 0
