@@ -52,6 +52,7 @@ jobs:
       - name: Determine suite
         id: suite
         run: |
+          set -e
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "name=triggers" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" = "schedule" ]; then
