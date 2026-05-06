@@ -730,10 +730,11 @@ export function useAgentRunner() {
         disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
       }
 
+      const noSkills = process.env.NO_SKILLS === "true";
       const session = await client.createSession({
         model: modelOverride || "claude-sonnet-4.5",
         onPermissionRequest: approveAll,
-        skillDirectories: [skillDirectory],
+        skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
         mcpServers: {
           azure: {
