@@ -28,10 +28,22 @@ config:
   runs: 1
   timeout: "10m"
   executor: copilot-sdk
-  model: claude-sonnet-4.6
+  model: claude-sonnet-4
 
 scoring:
   threshold: 0.8
+  weights:
+    completed: 1.0
+    file-exists: 1.5
+    file-matches: 1.0
+    output-contains: 0.5
+    output-matches: 1.0
+    output-not-matches: 1.0
+    skill-invocation: 1.5
+    token-budget: 0.5
+    turn-count: 0.5
+    wall-time: 0.5
+    error-count: 0.5
 
 stimuli:
   # ── invoke-simple-plan ──
