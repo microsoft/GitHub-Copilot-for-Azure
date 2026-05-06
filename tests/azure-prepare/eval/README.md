@@ -1,28 +1,20 @@
-# azure-prepare Waza Eval Suite
+# azure-prepare Vally Eval Suite
 
-Evaluation suite for the `azure-prepare` skill using [waza](https://github.com/microsoft/waza).
+Evaluation suite for the `azure-prepare` skill using [Vally](https://www.npmjs.com/package/@microsoft/vally).
 
 ## Quick Start
 
 ```bash
-# Install waza (pick one)
-azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
-azd ext install microsoft.azd.waza
-
-# Or via Go
-go install github.com/microsoft/waza/cmd/waza@latest
+# Install vally globally
+npm install -g @microsoft/vally
 
 # Run with mock executor (fast, no auth)
-waza run tests/azure-prepare/eval/eval.yaml \
-  --context-dir tests/azure-prepare/eval/fixtures -v
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
 
 # Run with real Copilot SDK (requires GITHUB_TOKEN)
-waza run tests/azure-prepare/eval/eval.yaml \
-  --executor copilot-sdk \
-  --context-dir tests/azure-prepare/eval/fixtures -v
-
-# Run via azd extension
-azd waza run tests/azure-prepare/eval/eval.yaml -v
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
 ```
 
 ## What It Tests
@@ -87,27 +79,25 @@ eval/
 
 This repo has **two eval modes** that complement each other:
 
-| | Jest (`npm test`) | Waza (`waza run`) |
+| | Jest (`npm test`) | Vally (`vally eval`) |
 |---|---|---|
-| **Runner** | Jest + @github/copilot-sdk | Waza CLI (Go) |
+| **Runner** | Jest + @github/copilot-sdk | Vally CLI (Node.js) |
 | **Speed** | Fast for unit/trigger, slow for integration | Mock executor = fast, copilot-sdk = slow |
 | **Auth** | Copilot SDK for integration tests | Mock needs none, copilot-sdk needs GITHUB_TOKEN |
 | **Graders** | Custom JS assertions | YAML-defined (regex, code, behavior, file, action_sequence) |
-| **CI** | `npm run test:ci` | `waza run eval.yaml` (exit code 0/1/2) |
+| **CI** | `npm run test:ci` | `vally eval --suite full` (exit code 0/1/2) |
 | **Best for** | Skill metadata validation, trigger matching | Template selection accuracy, composable recipe correctness |
-| **Compare** | N/A | `waza compare results-a.json results-b.json` |
-| **Cache** | N/A | `--cache` flag for repeated runs |
 
-**Recommendation**: Use Jest for fast unit/trigger tests in CI. Use waza for template selection evals and model comparison benchmarks.
+**Recommendation**: Use Jest for fast unit/trigger tests in CI. Use Vally for template selection evals and model comparison benchmarks.
 
 ## Hybrid Eval Model
 
-This repo uses a **hybrid** approach for waza evals:
+This repo uses a **hybrid** approach for Vally evals:
 
 | Mode | Skills | How it works |
 |------|--------|-------------|
 | **Committed** (⬢) | azure-prepare | Hand-authored `eval/` dir in `tests/{skill}/eval/`. Custom graders, fixtures, assertions specific to the skill's domain. |
-| **Generated** (⬡) | All other skills | Auto-generated at runtime via `waza generate plugin/skills/{skill}/SKILL.md`. Generic trigger + invocation tests. |
+| **Generated** (⬡) | All other skills | Auto-generated at runtime via `vally eval plugin/skills/{skill}/SKILL.md`. Generic trigger + invocation tests. |
 
 **When to commit vs. generate:**
 - **Commit** when the skill has domain-specific correctness criteria (e.g., must select the right template, must use RBAC not keys, must enforce plan-first workflow)
@@ -116,7 +106,7 @@ This repo uses a **hybrid** approach for waza evals:
 To promote a generated eval to committed:
 ```bash
 # Generate into the test directory
-waza generate plugin/skills/azure-deploy/SKILL.md -d tests/azure-deploy/eval
+vally eval plugin/skills/azure-deploy/SKILL.md --output-dir tests/azure-deploy/eval
 
 # Customize the generated files, then commit
 git add tests/azure-deploy/eval/
