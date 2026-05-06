@@ -8,10 +8,16 @@ There are three ways to run `vally`:
 
 **Option 1 — npm scripts (recommended)**
 ```bash
-cd tests
-npm install          # installs vally-cli as a devDependency
-npm run eval         # runs vally eval
-npm run eval:lint    # lints skill + eval specs
+# Install vally globally
+npm install -g @microsoft/vally
+
+# Run with mock executor (fast, no auth)
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
+
+# Run with real Copilot SDK (requires GITHUB_TOKEN)
+vally eval -e tests/azure-prepare/eval/eval.yaml \
+  --work-dir tests/azure-prepare/eval/fixtures --verbose
 ```
 
 **Option 2 — npx (no global install)**
