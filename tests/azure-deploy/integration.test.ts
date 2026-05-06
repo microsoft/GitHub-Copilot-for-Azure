@@ -43,7 +43,8 @@ const pseudoRandomResourceGroupNameSystemPromptModifier = {
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
-  describe("skill-invocation", () => {
+  const describeSkillInvocation = process.env.NO_SKILLS === "true" ? describe.skip : describe;
+  describeSkillInvocation("skill-invocation", () => {
     const followUp = ["Continue with recommended options until complete."];
     test("invokes azure-deploy skill for deployment prompt", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {

@@ -300,6 +300,9 @@ export function isToolCalled(metadata: AgentMetadata, toolName: string, argument
 }
 
 export function softCheckSkill(agentMetadata: AgentMetadata, skillName: string): void {
+  if (process.env.NO_SKILLS === "true") {
+    return;
+  }
   const isSkillUsed = isSkillInvoked(agentMetadata, skillName);
 
   if (!isSkillUsed) {

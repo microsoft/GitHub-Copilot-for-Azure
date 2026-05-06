@@ -57,7 +57,7 @@ env:
   SCHEDULED_DEBUG_21: 'false'        # debug flag for 9:00 PM PST run (Weekday)
   SCHEDULED_DEBUG_00: 'false'        # debug flag for 12:00 AM PST run (Weekday)
   SCHEDULED_DEBUG_04: 'false'        # debug flag for 4:00 AM PST run (Weekday)
-  SCHEDULED_DEBUG_SUN: 'false'       # debug flag for 4:00 AM PST run (Sunday)
+  SCHEDULED_DEBUG_NO_SKILLS: 'false'       # debug flag for 4:00 AM PST run (Sunday)
 jobs:
   resolve-inputs:
     name: Resolve workflow inputs
@@ -118,7 +118,7 @@ jobs:
                 echo "debug=$SCHEDULED_DEBUG_04" >> "$GITHUB_OUTPUT"
                 ;;
               "0 12 * * 7")
-                echo "debug=$SCHEDULED_DEBUG_SUN" >> "$GITHUB_OUTPUT"
+                echo "debug=$SCHEDULED_DEBUG_NO_SKILLS" >> "$GITHUB_OUTPUT"
                 echo "no-skills=true" >> "$GITHUB_OUTPUT"
                 ;;
               *)
