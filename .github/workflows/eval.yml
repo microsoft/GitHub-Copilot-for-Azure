@@ -38,7 +38,7 @@ jobs:
       - name: Install vally
         run: npm install --no-save @microsoft/vally
       - name: Lint skills and eval specs
-        run: npx @microsoft/vally lint -e evals/ --strict
+        run: npx @microsoft/vally lint plugin/skills/ --eval evals/ --strict
 
   eval:
     name: Run Evaluations
