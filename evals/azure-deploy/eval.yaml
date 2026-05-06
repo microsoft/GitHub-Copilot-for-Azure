@@ -29,6 +29,15 @@ config:
 
 scoring:
   threshold: 0.8
+  weights:
+    output-contains: 0.5
+    output-matches: 0.5
+    output-not-matches: 2.0
+    completed: 1.0
+    token-budget: 0.5
+    turn-count: 0.5
+    wall-time: 0.5
+    error-count: 1.0
 
 stimuli:
   # ── avm-order-bicep-001 ──
@@ -41,6 +50,7 @@ stimuli:
       Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
     tags:
       type: integration
+      skill: azure-deploy
       tier: full
       area: output
     graders:
@@ -68,6 +78,19 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|exception occurred|crashed"
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 30
+      - type: wall-time
+        config:
+          max: "7m"
+      - type: error-count
+        config:
+          max: 0
 
   # ── avm-fallback-no-pattern-001 ──
   # Waza source: tasks/avm-fallback-no-pattern.yaml
@@ -78,6 +101,7 @@ stimuli:
       What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
     tags:
       type: integration
+      skill: azure-deploy
       tier: full
       area: output
     graders:
@@ -105,3 +129,16 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|exception occurred|crashed"
+      # Metric-threshold graders (P0-5, P1-6)
+      - type: token-budget
+        config:
+          max: 50000
+      - type: turn-count
+        config:
+          max: 30
+      - type: wall-time
+        config:
+          max: "7m"
+      - type: error-count
+        config:
+          max: 0
