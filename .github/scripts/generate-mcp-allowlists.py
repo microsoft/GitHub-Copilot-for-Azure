@@ -26,14 +26,14 @@ def main() -> None:
         print(f"ERROR: skills directory not found: {skills_dir}", file=sys.stderr)
         sys.exit(1)
 
-    # Get sorted list of skill directory names
+    # Get sorted list of skill directory names (exclude hidden directories)
     skill_names = sorted([
         d for d in os.listdir(skills_dir)
-        if os.path.isdir(os.path.join(skills_dir, d))
+        if os.path.isdir(os.path.join(skills_dir, d)) and not d.startswith(".")
     ])
 
     if not skill_names:
-        print("ERROR: No skills found - aborting to prevent empty sync", file=sys.stderr)
+        print(f"ERROR: No skills found in {skills_dir} - aborting to prevent empty sync", file=sys.stderr)
         sys.exit(1)
 
     # Get sorted list of reference file paths (Windows-style backslash separators).
