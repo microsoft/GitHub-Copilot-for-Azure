@@ -16,6 +16,10 @@ on:
           - triggers
           - integration
           - full
+      pr_number:
+        description: 'PR number to evaluate (checks out refs/pull/<n>/head)'
+        required: false
+        type: string
   schedule:
     - cron: '0 6 * * *' # Nightly full suite at 06:00 UTC
 
@@ -33,7 +37,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install vally
-        run: npm install --no-save @microsoft/vally
+        run: npm install --no-save --ignore-scripts @microsoft/vally
       - name: Lint skills and eval specs
         run: npx @microsoft/vally lint plugin/skills/ --eval evals/ --strict
 
@@ -43,12 +47,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.event.inputs.pr_number && format('refs/pull/{0}/head', github.event.inputs.pr_number) || '' }}
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '22'
       - name: Install vally
-        run: npm install --no-save @microsoft/vally
+        run: npm install --no-save --ignore-scripts @microsoft/vally
       - name: Determine suite
         id: suite
         run: |
