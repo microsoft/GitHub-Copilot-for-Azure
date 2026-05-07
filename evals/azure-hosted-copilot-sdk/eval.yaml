@@ -55,7 +55,13 @@ stimuli:
       - type: output-contains
         config:
           substring: "azd init --template azure-samples/copilot-sdk-service"
-      # Task: expected.output_not_contains
+      # Task: expected.output_not_contains (Waza parity)
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -82,7 +88,13 @@ stimuli:
       - type: output-contains
         config:
           substring: "azure.yaml"
-      # Task: expected.output_not_contains
+      # Task: expected.output_not_contains (Waza parity)
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -115,7 +127,13 @@ stimuli:
       - type: output-contains
         config:
           substring: "azure-deploy"
-      # Task: expected.output_not_contains
+      # Task: expected.output_not_contains (Waza parity)
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -152,6 +170,13 @@ stimuli:
       - type: output-not-contains
         config:
           substring: "DefaultAzureCredential"
+      # Task: expected.output_not_contains (Waza parity)
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -194,6 +219,13 @@ stimuli:
       - type: output-not-contains
         config:
           substring: "AZURE_OPENAI_KEY"
+      # Task: expected.output_not_contains (Waza parity)
+      - type: output-not-contains
+        config:
+          substring: "error"
+      - type: output-not-contains
+        config:
+          substring: "failed"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
