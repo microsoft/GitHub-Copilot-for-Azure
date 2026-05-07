@@ -9,9 +9,9 @@ environment:
     - ../../plugin/skills/azure-diagnostics
 config:
   runs: 3
-  timeout: 120
+  timeout: "2m"
   executor: copilot-sdk
-  model: claude-sonnet-4
+  model: claude-sonnet-4.5
 scoring:
   threshold: 0.8
 stimuli:
