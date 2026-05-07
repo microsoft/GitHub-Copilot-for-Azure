@@ -39,7 +39,7 @@ jobs:
       - name: Install vally
         run: npm install --no-save --ignore-scripts @microsoft/vally-cli
       - name: Lint skills and eval specs
-        run: npx @microsoft/vally lint plugin/skills/ --eval evals/ --strict
+        run: npx @microsoft/vally-cli lint plugin/skills/ --eval evals/ --strict
 
   eval:
     name: Run Evaluations
@@ -68,7 +68,7 @@ jobs:
           fi
       - name: Run evaluations
         run: >
-          npx @microsoft/vally eval
+          npx @microsoft/vally-cli eval
           --suite ${{ steps.suite.outputs.name }}
           --output-dir ./results
           --output jsonl
