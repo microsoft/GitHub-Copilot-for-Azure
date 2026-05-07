@@ -2,11 +2,15 @@ name: Sync skill references to Azure MCP repo
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 11 * * 1-5'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: sync-azure-mcp
+  cancel-in-progress: true
 
 jobs:
   sync-to-azure-mcp:
@@ -22,48 +26,7 @@ jobs:
 
       # 2. Generate allowed-skill-names.json and allowed-plugin-file-references.json
       - name: Generate JSON files
-        run: |
-          python3 - <<'EOF'
-          import json
-          import os
-
-          skills_dir = "source-repo/plugin/skills"
-
-          # Get sorted list of skill directory names
-          skill_names = sorted([
-              d for d in os.listdir(skills_dir)
-              if os.path.isdir(os.path.join(skills_dir, d))
-          ])
-
-          # Get sorted list of reference file paths (Windows-style backslash separators)
-          # Exclude SKILL.md, version.json, and license files
-          excluded_filenames = {"SKILL.md", "version.json", "LICENSE", "LICENSE.txt", "LICENSE.md"}
-          reference_files = []
-          for skill in skill_names:
-              skill_path = os.path.join(skills_dir, skill)
-              for root, dirs, files in os.walk(skill_path):
-                  dirs.sort()
-                  for filename in sorted(files):
-                      if filename in excluded_filenames:
-                          continue
-                      full_path = os.path.join(root, filename)
-                      rel_path = os.path.relpath(full_path, skills_dir)
-                      # Convert to Windows-style backslash separators
-                      rel_path = rel_path.replace("/", "\\")
-                      reference_files.append(rel_path)
-
-          # Write allowed-skill-names.json
-          with open("allowed-skill-names.json", "w") as f:
-              json.dump(skill_names, f, indent=2)
-              f.write("\n")
-
-          # Write allowed-plugin-file-references.json
-          with open("allowed-plugin-file-references.json", "w") as f:
-              json.dump(reference_files, f, indent=2)
-              f.write("\n")
-
-          print(f"Generated {len(skill_names)} skill names and {len(reference_files)} reference file paths.")
-          EOF
+        run: python3 source-repo/.github/scripts/generate-mcp-allowlists.py source-repo/plugin/skills
 
       # 3. Clone microsoft/mcp and create feature branch
       - name: Clone microsoft/mcp and create feature branch
@@ -123,7 +86,7 @@ jobs:
             --base "main" \
             --state open \
             --json number \
-            --jq '.[0].number')
+            --jq '.[0].number // empty')
 
           if [ -n "$EXISTING_PR" ]; then
             echo "Updating existing PR #$EXISTING_PR"
