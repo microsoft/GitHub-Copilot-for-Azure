@@ -15,7 +15,7 @@ config:
   timeout_seconds: 2700  # 45 min — matches aspireEnvVarTestTimeoutMs
   parallel: false
   executor: copilot-sdk
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4.5-20250514
 
 metrics:
   - name: task_completion

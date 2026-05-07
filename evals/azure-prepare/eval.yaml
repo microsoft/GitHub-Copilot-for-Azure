@@ -16,7 +16,7 @@ config:
   timeout_seconds: 3600  # 60 min — matches long prepare+deploy workflows
   parallel: false
   executor: copilot-sdk
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4.5-20250514
 
 metrics:
   - name: task_completion
