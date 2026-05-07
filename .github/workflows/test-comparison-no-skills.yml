@@ -1,0 +1,51 @@
+# Comparison integration tests (no skills).
+#
+# Runs azure-deploy deployment tests with NO_SKILLS=true on Sundays as a
+# baseline / comparison run against the regular weekday integration tests.
+# This workflow has its own name so downstream automation (e.g. the
+# "Analyze Test Run" agentic workflow that listens to "Integration Tests - all")
+# does not get triggered by the Sunday baseline runs.
+
+name: Integration Tests - comparison (no skills)
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  schedule:
+    # 4:00 AM PST Sun (12:00 PM UTC Sun) — comparison runs that don't use skills
+    - cron: "0 12 * * 0"
+  workflow_dispatch:
+    inputs:
+      model-override:
+        description: "Model to use for testing"
+        required: false
+        type: choice
+        options:
+          - claude-sonnet-4.5
+          - claude-opus-4.5
+      test-pattern:
+        description: 'Optional: Comma separated patterns by name or describe block. If empty, all tests will be run.'
+        required: false
+        type: string
+        default: ""
+      debug:
+        description: "Whether to set DEBUG=1 for jest tests"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  azure-deploy:
+    name: Integration – azure-deploy (no skills)
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
+    uses: ./.github/workflows/test-azure-deploy.yml
+    with:
+      model-override: ${{ inputs.model-override }}
+      test-pattern: ${{ inputs.test-pattern }}
+      debug: ${{ inputs.debug || false }}
+      publish-reports: ${{ github.event_name == 'schedule' }}
+      no-skills: true
+    secrets:
+      COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
