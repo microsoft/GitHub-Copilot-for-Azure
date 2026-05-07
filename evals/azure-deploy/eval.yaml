@@ -15,7 +15,7 @@ config:
   timeout_seconds: 3600  # 60 min — matches deployTestTimeoutMs / brownfieldTestTimeoutMs
   parallel: false
   executor: copilot-sdk
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4.5-20250514
 
 metrics:
   - name: task_completion
@@ -181,9 +181,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       # hasDeployLinks — checks for Azure deployment URLs
       - type: output-matches
         config:
@@ -214,9 +211,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -250,9 +244,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -281,9 +272,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -317,9 +305,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -348,9 +333,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -379,9 +361,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -417,9 +396,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: file-exists
         config:
           path: "infra/*.bicep"
@@ -466,9 +442,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -497,9 +470,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -534,9 +504,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -565,9 +532,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -601,9 +565,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -632,9 +593,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -668,9 +626,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -699,9 +654,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -730,9 +682,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -766,9 +715,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -797,9 +743,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -828,9 +771,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -868,9 +808,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -899,9 +836,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -929,9 +863,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -959,9 +890,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -989,9 +917,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1020,9 +945,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       # NEGATIVE: deploy links should NOT be present
       - type: output-not-matches
         config:
@@ -1051,9 +973,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1081,9 +1000,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       # NEGATIVE: deploy links should NOT be present
       - type: output-not-matches
         config:
@@ -1115,9 +1031,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1149,9 +1062,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1179,9 +1089,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1209,9 +1116,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1243,9 +1147,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
@@ -1273,9 +1174,6 @@ stimuli:
         config:
           required:
             - azure-deploy
-          optional:
-            - azure-validate
-            - azure-prepare
       - type: output-matches
         config:
           pattern: "(?i)https?://[\\w.-]+\\.(azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io|web\\.core\\.windows\\.net)"
