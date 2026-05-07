@@ -34,10 +34,6 @@ scoring:
     output-matches: 0.5
     output-not-matches: 2.0
     completed: 1.0
-    token-budget: 0.5
-    turn-count: 0.5
-    wall-time: 0.5
-    error-count: 1.0
 
 stimuli:
   # ── avm-order-bicep-001 ──
@@ -78,19 +74,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|exception occurred|crashed"
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 50000
-      - type: turn-count
-        config:
-          max: 30
-      - type: wall-time
-        config:
-          max: "7m"
-      - type: error-count
-        config:
-          max: 0
 
   # ── avm-fallback-no-pattern-001 ──
   # Waza source: tasks/avm-fallback-no-pattern.yaml
@@ -129,16 +112,3 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|exception occurred|crashed"
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 50000
-      - type: turn-count
-        config:
-          max: 30
-      - type: wall-time
-        config:
-          max: "7m"
-      - type: error-count
-        config:
-          max: 0

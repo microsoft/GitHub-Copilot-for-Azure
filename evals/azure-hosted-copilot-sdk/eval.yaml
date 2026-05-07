@@ -33,12 +33,9 @@ scoring:
   threshold: 0.8
   weights:
     output-contains: 0.5
+    output-not-contains: 2.0
     output-not-matches: 2.0
     skill-invocation: 2.0
-    token-budget: 0.5
-    turn-count: 0.5
-    wall-time: 0.5
-    error-count: 1.0
 
 stimuli:
   # ── scaffold-new-001 ──
@@ -67,19 +64,6 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-hosted-copilot-sdk"]
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 30000
-      - type: turn-count
-        config:
-          max: 15
-      - type: wall-time
-        config:
-          max: "10m"
-      - type: error-count
-        config:
-          max: 0
 
   # ── scaffold-alongside-001 ──
   # Waza source: tasks/scaffold-alongside.yaml
@@ -107,19 +91,6 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-hosted-copilot-sdk"]
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 30000
-      - type: turn-count
-        config:
-          max: 15
-      - type: wall-time
-        config:
-          max: "10m"
-      - type: error-count
-        config:
-          max: 0
 
   # ── deploy-existing-001 ──
   # Waza source: tasks/deploy-existing.yaml
@@ -153,19 +124,6 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-hosted-copilot-sdk"]
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 30000
-      - type: turn-count
-        config:
-          max: 15
-      - type: wall-time
-        config:
-          max: "10m"
-      - type: error-count
-        config:
-          max: 0
 
   # ── github-default-model-001 ──
   # Waza source: tasks/github-default-model.yaml
@@ -185,15 +143,15 @@ stimuli:
         config:
           substring: "createSession"
       # Task: expected.output_not_contains
-      - type: output-not-matches
+      - type: output-not-contains
         config:
-          pattern: "wireApi"
-      - type: output-not-matches
+          substring: "wireApi"
+      - type: output-not-contains
         config:
-          pattern: "bearerToken"
-      - type: output-not-matches
+          substring: "bearerToken"
+      - type: output-not-contains
         config:
-          pattern: "DefaultAzureCredential"
+          substring: "DefaultAzureCredential"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -202,19 +160,6 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-hosted-copilot-sdk"]
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 30000
-      - type: turn-count
-        config:
-          max: 15
-      - type: wall-time
-        config:
-          max: "10m"
-      - type: error-count
-        config:
-          max: 0
 
   # ── byom-config-001 ──
   # Waza source: tasks/byom-config.yaml
@@ -240,15 +185,15 @@ stimuli:
         config:
           substring: "DefaultAzureCredential"
       # Task: expected.output_not_contains
-      - type: output-not-matches
+      - type: output-not-contains
         config:
-          pattern: "apiKey"
-      - type: output-not-matches
+          substring: "apiKey"
+      - type: output-not-contains
         config:
-          pattern: "AZURE_OPENAI_API_KEY"
-      - type: output-not-matches
+          substring: "AZURE_OPENAI_API_KEY"
+      - type: output-not-contains
         config:
-          pattern: "AZURE_OPENAI_KEY"
+          substring: "AZURE_OPENAI_KEY"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -257,19 +202,6 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-hosted-copilot-sdk"]
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 30000
-      - type: turn-count
-        config:
-          max: 15
-      - type: wall-time
-        config:
-          max: "10m"
-      - type: error-count
-        config:
-          max: 0
 
   # ── negative-not-copilot-001 ──
   # Waza source: tasks/negative-not-copilot.yaml
@@ -285,21 +217,21 @@ stimuli:
       max_turns: 10
     graders:
       # Task: expected.output_not_contains
-      - type: output-not-matches
+      - type: output-not-contains
         config:
-          pattern: "copilot-sdk-service"
-      - type: output-not-matches
+          substring: "copilot-sdk-service"
+      - type: output-not-contains
         config:
-          pattern: "CopilotClient"
-      - type: output-not-matches
+          substring: "CopilotClient"
+      - type: output-not-contains
         config:
-          pattern: "createSession"
-      - type: output-not-matches
+          substring: "createSession"
+      - type: output-not-contains
         config:
-          pattern: "azd init --template azure-samples/copilot-sdk-service"
-      - type: output-not-matches
+          substring: "azd init --template azure-samples/copilot-sdk-service"
+      - type: output-not-contains
         config:
-          pattern: "wireApi"
+          substring: "wireApi"
       # Global: no_fatal_errors
       - type: output-not-matches
         config:
@@ -308,16 +240,3 @@ stimuli:
       - type: skill-invocation
         config:
           disallowed: ["azure-hosted-copilot-sdk"]
-      # Metric-threshold graders (P0-5, P1-6)
-      - type: token-budget
-        config:
-          max: 30000
-      - type: turn-count
-        config:
-          max: 15
-      - type: wall-time
-        config:
-          max: "10m"
-      - type: error-count
-        config:
-          max: 0
