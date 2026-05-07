@@ -57,7 +57,7 @@ For more authentication options, see the [Azure Identity documentation](https://
 
 ## Available Tools
 
-The Azure plugin provides MCP tools and skills for 40+ Azure services:
+The Azure MCP Server provides tools for 40+ Azure services:
 
 ### AI & Machine Learning
 - Microsoft Foundry (AI models, deployments, knowledge indexes)
