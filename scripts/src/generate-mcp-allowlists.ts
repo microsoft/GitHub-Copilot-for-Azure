@@ -26,9 +26,9 @@ const EXCLUDED_FILENAMES = new Set([
 
 function walkDir(dir: string): string[] {
   const results: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  )) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  entries.sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isSymbolicLink()) {
       // Skip symlinks (defense-in-depth against symlink traversal)
