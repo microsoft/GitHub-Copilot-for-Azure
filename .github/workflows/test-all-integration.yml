@@ -46,6 +46,11 @@ on:
         required: false
         type: boolean
         default: false
+      ReportStorageAccount:
+        description: 'Optional: Azure Storage account name to publish reports to (only used for manual runs)'
+        required: false
+        type: string
+        default: ''
 
 # SCHEDULE CONFIGURATION
 # Customize the inputs for each scheduled run by modifying these env vars.
@@ -332,6 +337,29 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           JOB_ID: ${{ github.job }}
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
+          SKILL: ${{ matrix.skill }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --destination "$STORAGE_CONTAINER" \
+            --destination-path "$PREFIX" \
+            --source reports/test-run-all-integration/ \
+            --auth-mode login \
+            --overwrite
+
+      # Publish reports to a user-provided storage account for manual runs.
+      # Note: The managed identity must have write permission to the target storage account.
+      - name: Publish report to Azure Storage (manual run)
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.ReportStorageAccount != ''
+        id: publish-report-manual
+        env:
+          RUN_ID: ${{ github.run_id }}
+          JOB_ID: ${{ github.job }}
+          STORAGE_ACCOUNT: ${{ inputs.ReportStorageAccount }}
           STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
           SKILL: ${{ matrix.skill }}
         run: |
