@@ -19,7 +19,7 @@ config:
   runs: 3
   timeout: "10m"
   executor: mock
-  model: claude-sonnet-4.6
+  model: claude-sonnet-4.5
 
 scoring:
   threshold: 0.8
@@ -42,5 +42,10 @@ graders:
     name: security_posture
     config:
       pattern: "(?i)connection.?string.*=.*Account(Key|Name)=|SharedAccessKey="
+  - type: output-matches
+    name: nodejs_entry_point
+    config:
+      pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
 tasks:
   - "tasks/*.yaml"

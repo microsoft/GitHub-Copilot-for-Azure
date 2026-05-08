@@ -15,7 +15,7 @@ config:
   runs: 3
   timeout: "7m"
   executor: mock
-  model: claude-sonnet-4.6
+  model: claude-sonnet-4.5
 
 scoring:
   threshold: 0.8
