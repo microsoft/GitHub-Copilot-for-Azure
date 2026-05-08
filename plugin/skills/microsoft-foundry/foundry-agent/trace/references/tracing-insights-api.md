@@ -15,7 +15,7 @@ Use this instead of manual KQL queries when you want **automated anomaly detecti
 > **Preview:** The Tracing Insights endpoint (`eastus2euap.api.azureml.ms`) is preview/canary infrastructure subject to change. When the production URL becomes available, update the base URL accordingly.
 
 ```
-POST https://eastus2euap.api.azureml.ms/notification/v1-beta1/subscriptions/{sub}/resourceGroups/{rg}/providers/microsoft.insights/components/{component}/:insights
+POST https://eastus2euap.api.azureml.ms/notification/v1-beta2/subscriptions/{sub}/resourceGroups/{rg}/providers/microsoft.insights/components/{component}/:insights
 ```
 
 **Query parameters:**
@@ -38,7 +38,7 @@ $token = az account get-access-token --resource https://ai.azure.com --query acc
 $encodedAgent = [uri]::EscapeDataString("my-agent")
 $encodedProjectId = [uri]::EscapeDataString("/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/projects/{project}")
 
-$uri = "https://eastus2euap.api.azureml.ms/notification/v1-beta1/subscriptions/{sub}/resourceGroups/{rg}/providers/microsoft.insights/components/{component}/:insights?startDateTimeUtc=2025-01-01T00:00:00Z&endDateTimeUtc=2025-01-18T00:00:00Z&agent=$encodedAgent&projectId=$encodedProjectId&top=50"
+$uri = "https://eastus2euap.api.azureml.ms/notification/v1-beta2/subscriptions/{sub}/resourceGroups/{rg}/providers/microsoft.insights/components/{component}/:insights?startDateTimeUtc=2025-01-01T00:00:00Z&endDateTimeUtc=2025-01-18T00:00:00Z&agent=$encodedAgent&projectId=$encodedProjectId&top=50"
 
 $response = Invoke-RestMethod -Uri $uri -Method POST -Headers @{
     "Authorization" = "Bearer $token"
@@ -46,37 +46,53 @@ $response = Invoke-RestMethod -Uri $uri -Method POST -Headers @{
 } -Body "{}"
 ```
 
-## Response Structure
+## Response Structure (v1-beta2)
+
+Response is grouped by agent version. Each insight includes `relatedSpans` with `operationId` (App Insights trace ID) for querying full trace content.
 
 ```json
 {
-  "insights": [
-    {
-      "id": "anomaly-evaluator-changepoint-<hash>",
-      "type": "Evaluation",
-      "severity": "Warning|Critical|Improvement",
-      "message": "TaskAdherence scores shifted down from avg 1.0 to 0.7",
-      "metadata": {
-        "evaluationName": "TaskAdherence",
-        "meanBefore": 1.0,
-        "meanAfter": 0.714,
-        "shift": -0.286,
-        "confidence": 0.999
+  "agents": [{
+    "agent": "my-agent:1",
+    "insights": [{
+      "id": "anomaly-token-shift-<hash>",
+      "type": "Token",
+      "severity": "Critical",
+      "message": "Token usage increased by 137%",
+      "agentVersion": "1",
+      "metadata": { "meanBefore": 2041, "meanAfter": 4831, "confidence": 0.91 },
+      "relatedSpans": {
+        "totalCount": 13,
+        "spans": [
+          { "responseId": "resp_...", "operationId": "<trace-id>", "evaluationRunId": null }
+        ]
       }
-    }
-  ],
-  "totalCount": 3,
-  "criticalCount": 0,
-  "warningCount": 2,
-  "improvementCount": 1
+    }],
+    "insightCount": 3
+  }],
+  "totalCount": 3, "criticalCount": 1, "warningCount": 1, "improvementCount": 1
 }
 ```
+
+## Querying Traces from relatedSpans
+
+Use `operationId` from `relatedSpans` to fetch full trace content from App Insights:
+
+```kql
+dependencies
+| where operation_Id == "<operationId>"
+| where customDimensions has "invoke_agent"
+| project input = customDimensions["gen_ai.input.messages"],
+          output = customDimensions["gen_ai.output.messages"],
+          tokens = toint(customDimensions["gen_ai.usage.output_tokens"])
+```
+
+This returns the user query and agent response — use these to auto-build FAOS optimization datasets from real production traces.
 
 ## How Changepoint Detection Works
 
 The API finds **statistical inflection points within the queried time window**. `meanBefore`/`meanAfter` represent averages on either side of the detected shift — not comparisons to a historical baseline.
 
-- Order and diversity of queries matters — mix easy and hard scenarios
 - 10+ data points give better signal for changepoint detection
 - `confidence` close to 1.0 = statistically significant shift
 

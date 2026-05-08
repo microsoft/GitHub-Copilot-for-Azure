@@ -35,7 +35,22 @@ See [Tracing Insights API reference](../../trace/references/tracing-insights-api
 
 Filter results to `Warning` and `Critical` severity insights.
 
-## Step 2: Convert Insights to FAOS Dataset
+## Step 2: Extract Traces from relatedSpans
+
+Each insight in v1-beta2 includes `relatedSpans` with `operationId` values. Query App Insights to get the actual user queries and agent responses:
+
+```kql
+dependencies
+| where operation_Id in ("<operationId1>", "<operationId2>")
+| where customDimensions has "invoke_agent"
+| project query = parse_json(customDimensions["gen_ai.input.messages"]),
+          response = parse_json(customDimensions["gen_ai.output.messages"]),
+          tokens = toint(customDimensions["gen_ai.usage.output_tokens"])
+```
+
+Use the extracted queries as FAOS dataset prompts. If `relatedSpans` is empty, fall back to manually crafted queries.
+
+## Step 3: Convert Insights to FAOS Dataset
 
 For each insight, map to a FAOS dataset item:
 
@@ -49,13 +64,13 @@ For each insight, map to a FAOS dataset item:
 
 Generate 2-3 representative prompts per insight that exercise the problem area. Use the agent's domain context to make prompts realistic.
 
-## Step 3: Call FAOS
+## Step 4: Call FAOS
 
 See [FAOS Optimization reference](./faos-optimization.md) for endpoint details and workspace requirement.
 
 Construct request body with the converted dataset and use `"strategies": ["instruction"]` to rewrite the system prompt.
 
-## Step 4: Apply and Verify
+## Step 5: Apply and Verify
 
 1. Extract `best.config.systemPrompt` from FAOS response
 2. Create a new agent (e.g., `<name>-v2`) or update existing agent with optimized instructions
