@@ -731,9 +731,9 @@ export function useAgentRunner() {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
-      const defaultModel = "claude-sonnet-4.6";
+      const model = modelOverride || "claude-sonnet-4.6";
       const session = await client.createSession({
-        model: modelOverride || defaultModel,
+        model: model,
         onPermissionRequest: approveAll,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
@@ -792,7 +792,7 @@ export function useAgentRunner() {
         cacheWriteTokens: 0,
         totalApiDurationMs: 0,
         apiCallCount: 0,
-        model: modelOverride || defaultModel,
+        model: model,
         perCallUsage: [],
       };
 
