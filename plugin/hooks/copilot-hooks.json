@@ -6,6 +6,22 @@
         "bash": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.sh",
         "powershell": "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1"
       }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "./.github/hooks/check_existing_iac_files.sh",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "./.github/hooks/collect_azure_skills_usage.sh",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
     ]
   }
 }
