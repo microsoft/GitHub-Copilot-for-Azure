@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install vally
-        run: npm install --no-save --ignore-scripts @microsoft/vally-cli
+        run: npm install --no-save --ignore-scripts @microsoft/vally-cli@^0.4.0
       - name: Lint skills and eval specs
         run: npx @microsoft/vally-cli lint plugin/skills/ --eval evals/ --strict
       - name: Determine suite
