@@ -2,7 +2,7 @@ import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import type { BlobEntry, BlobTree, BlobTreeNode } from "./shared/blobTree";
 
-const INTEGRATION_REPORTS_CONTAINER_NAME = "integration-reports";
+const INTEGRATION_REPORTS_CONTAINER_NAME = process.env.INTEGRATION_REPORTS_CONTAINER_NAME || "integration-reports";
 
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
 
