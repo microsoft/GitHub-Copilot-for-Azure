@@ -21,7 +21,9 @@
     "update:snapshots": "node scripts/update-snapshots.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "eval": "vally eval",
+    "eval:lint": "vally lint plugin/skills/ --eval evals/ --strict"
   },
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
@@ -45,6 +47,7 @@
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "6.0.2",
+    "@microsoft/vally-cli": "^0.4.0",
     "typescript-eslint": "^8.58.0"
   },
   "jest-junit": {
