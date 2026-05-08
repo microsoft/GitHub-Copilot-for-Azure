@@ -1,11 +1,27 @@
 name: Run Skill Evaluations
-
 on:
   pull_request:
-    branches: [main]
     paths:
-      - 'evals/**'
       - 'plugin/skills/**'
+      - 'evals/**'
+      - '.vally.yaml'
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Eval suite to run (triggers, integration, full)'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - triggers
+          - integration
+          - full
+      pr_number:
+        description: 'PR number to evaluate (checks out refs/pull/<n>/head)'
+        required: false
+        type: string
+  schedule:
+    - cron: '0 6 * * *' # Nightly full suite at 06:00 UTC
 
 permissions:
   contents: read
@@ -16,15 +32,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - name: Install Azure Developer CLI
-        uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2
-      - name: Install waza extension
+        with:
+          ref: ${{ github.event.inputs.pr_number && format('refs/pull/{0}/head', github.event.inputs.pr_number) || '' }}
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '22'
+      - name: Install vally
+        run: npm install --no-save --ignore-scripts @microsoft/vally-cli@^0.4.0
+      - name: Lint skills and eval specs
+        run: npx @microsoft/vally-cli lint plugin/skills/ --eval evals/ --strict
+      - name: Determine suite
+        id: suite
         run: |
-          azd config set alpha.extensions on
-          azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
-          azd ext install microsoft.azd.waza
+          set -e
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "name=triggers" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "name=full" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.event.inputs.suite || 'full' }}" >> "$GITHUB_OUTPUT"
+          fi
       - name: Run evaluations
-        run: azd waza run evals/azure-hosted-copilot-sdk/eval.yaml --output-dir ./results
+        run: >
+          npx @microsoft/vally-cli eval
+          --suite ${{ steps.suite.outputs.name }}
+          --output-dir ./results
+          --output jsonl
+          --junit
+          --threshold 0.8
+        env:
+          GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -32,3 +70,4 @@ jobs:
           name: eval-results
           path: ./results
           retention-days: 30
+

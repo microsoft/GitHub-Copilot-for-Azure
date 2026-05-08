@@ -22,8 +22,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "waza": "node scripts/run-waza.js",
-    "waza:live": "node scripts/run-waza.js --executor copilot-sdk"
+    "eval": "vally eval",
+    "eval:lint": "vally lint plugin/skills/ --eval evals/ --strict"
   },
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
@@ -47,6 +47,7 @@
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "6.0.2",
+    "@microsoft/vally-cli": "^0.4.0",
     "typescript-eslint": "^8.58.0"
   },
   "jest-junit": {

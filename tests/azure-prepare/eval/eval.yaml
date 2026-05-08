@@ -1,8 +1,7 @@
-# Waza eval specification for azure-prepare skill
+# Vally eval specification for azure-prepare skill
 # Tests composable template selection, plan-first workflow, and IaC generation quality
 #
-# Run:  waza run tests/azure-prepare/eval/eval.yaml --context-dir tests/azure-prepare/eval/fixtures -v
-# Or:   azd waza run tests/azure-prepare/eval/eval.yaml --context-dir tests/azure-prepare/eval/fixtures -v
+# Run:  vally eval -e tests/azure-prepare/eval/eval.yaml --work-dir tests/azure-prepare/eval/fixtures -v
 name: azure-prepare-eval
 description: |
   Evaluation suite for the azure-prepare skill.
