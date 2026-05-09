@@ -54,6 +54,9 @@ stimuli:
   # Jest setup: cloneRepo({ repoUrl: "https://github.com/aws-samples/serverless-face-blur-service.git",
   #   targetDir: workspace, depth: 1 })
   # Jest followUp: ["Go with recommended options and test it locally."]
+  # PENDING: This stimulus requires workspace seed files (Lambda repo clone).
+    # environment.commands is commented out. Will produce low pass rates until
+    # Vally environment.files/commands support lands.
   - name: "Migrate serverless-face-blur-service Lambda to Azure"
     prompt: "Migrate this Lambda to Azure. Use the eastus2 region. Use my current subscription. "
     # environment:
@@ -63,7 +66,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     graders:
       - type: skill-invocation
@@ -99,6 +102,9 @@ stimuli:
   # Jest setup: cloneRepo({ repoUrl: "https://github.com/aws-samples/lambda-refarch-webapp.git",
   #   targetDir: workspace, depth: 1 })
   # Jest followUp: ["Go with recommended options and test it locally."]
+  # PENDING: This stimulus requires workspace seed files (Lambda repo clone).
+    # environment.commands is commented out. Will produce low pass rates until
+    # Vally environment.files/commands support lands.
   - name: "Migrate lambda-refarch-webapp to Azure"
     prompt: "Migrate this Lambda to Azure. Use the eastus2 region. Use my current subscription. "
     # environment:
@@ -108,7 +114,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     graders:
       - type: skill-invocation

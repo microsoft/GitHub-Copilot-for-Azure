@@ -43,7 +43,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Check if my app is ready to deploy to Azure"
     graders:
@@ -64,7 +64,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Validate my azure.yaml configuration before deploying"
     graders:
@@ -86,7 +86,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Validate my Bicep template before deploying to Azure"
     graders:
@@ -107,7 +107,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Run a what-if analysis to preview changes before deploying my infrastructure"
     graders:
@@ -128,7 +128,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Verify the RBAC role assignments in my Bicep templates before deploying to Azure"
     graders:
@@ -149,7 +149,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure"
     graders:
@@ -186,7 +186,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: behavior
     prompt: "Create a static whiteboard web app and deploy to Azure."
     graders:
@@ -213,7 +213,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: behavior
     prompt: "Create a static portfolio website and deploy to Azure."
     graders:
@@ -238,7 +238,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: behavior
     prompt: "Create a containerized web application and deploy to Azure Container Apps."
     graders:
@@ -274,7 +274,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     # Environment setup: cloneRepo with sparse checkout samples/client-apps-integration
     prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
@@ -305,7 +305,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     # Environment setup: cloneRepo with sparse checkout samples/aspire-with-azure-functions
     prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."

@@ -50,7 +50,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: output-contains
@@ -71,7 +71,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: output-contains
@@ -96,7 +96,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: output-contains
@@ -121,7 +121,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: output-contains
@@ -148,7 +148,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       # Jest used OR logic across "web", "app", "site" — any match passes.
@@ -178,7 +178,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       # Jest used OR logic across "health", "available", "resource" — any match passes.
@@ -204,7 +204,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation

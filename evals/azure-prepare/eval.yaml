@@ -1,45 +1,23 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
 # Migrated from: tests/azure-prepare/integration.test.ts
 # Source helpers: tests/azure-prepare/utils.ts (hasPlanReadyForValidation, hasServicesSection, getServiceProject, getDockerContext)
 # Also references: tests/azure-validate/utils.ts (hasValidationCommand)
 name: azure-prepare-integration-eval
-description: "Integration evaluation for azure-prepare skill — migrated from Jest integration tests"
-skill: azure-prepare
-version: "1.0"
+description: |
+  Integration evaluation for azure-prepare skill — migrated from Jest integration tests
+
+tags:
+  type: integration
+  skill: azure-prepare
 
 environment:
   skills:
     - "../../plugin/skills/azure-prepare"
 
 config:
-  trials_per_task: 1
-  timeout_seconds: 3600  # 60 min — matches long prepare+deploy workflows
-  parallel: false
+  runs: 1
+  timeout: "60m"
   executor: copilot-sdk
-  model: claude-sonnet-4.5-20250514
-
-metrics:
-  - name: task_completion
-    weight: 0.4
-    threshold: 0.8
-    description: Did the skill complete the preparation task?
-  - name: trigger_accuracy
-    weight: 0.3
-    threshold: 0.8
-    description: Does the skill trigger on prepare prompts?
-  - name: behavior_quality
-    weight: 0.3
-    threshold: 0.8
-    description: Correct files generated, plan-first workflow, no fatal errors
-
-graders:
-  # Global safety graders applied to every stimulus
-  - type: completed
-  - type: regex
-    name: no_fatal_errors
-    config:
-      must_not_match:
-        - "(?i)fatal error|unhandled exception|stack trace"
+  model: claude-sonnet-4.5
 
 scoring:
   threshold: 0.8
@@ -64,7 +42,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Prepare my application for Azure deployment and set up the infrastructure"
     graders:
@@ -85,7 +63,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
     graders:
@@ -106,7 +84,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Prepare my web app for Azure and verify it works locally before deploying"
     graders:
@@ -127,7 +105,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Prepare my application for Azure deployment and check subscription policies for compliance"
     graders:
@@ -148,7 +126,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
     graders:
@@ -169,7 +147,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
     graders:
@@ -190,7 +168,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
     graders:
@@ -211,7 +189,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure"
     graders:
@@ -232,7 +210,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create an event-driven function app to process messages and deploy to Azure Functions"
     graders:
@@ -253,7 +231,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create an Azure Functions app with a timer trigger"
     graders:
@@ -278,7 +256,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
     graders:
@@ -299,7 +277,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
     graders:
@@ -324,7 +302,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region."
     graders:
@@ -345,7 +323,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region."
     graders:
@@ -370,7 +348,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
     graders:
@@ -391,7 +369,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
     graders:
@@ -412,7 +390,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
     graders:
@@ -437,7 +415,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region."
     graders:
@@ -458,7 +436,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region."
     graders:
@@ -483,7 +461,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -504,7 +482,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -529,7 +507,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -550,7 +528,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -575,7 +553,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -596,7 +574,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -617,7 +595,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -642,7 +620,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -663,7 +641,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -684,7 +662,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
     graders:
@@ -705,7 +683,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     prompt: "Deploy a new Azure API Management instance for my application"
     graders:
@@ -738,7 +716,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: behavior
     prompt: "Create a static whiteboard web app and deploy to Azure."
     graders:
@@ -766,7 +744,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     prompt: "Create a simple todo web app and deploy to Azure."
     graders:
@@ -799,7 +777,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     prompt: "Create a simple todo web app and deploy to Azure with Terraform as the infrastructure provider."
     graders:
@@ -829,7 +807,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     prompt: "Create a simple todo web app and deploy to Azure using standalone Bicep templates."
     graders:
@@ -869,7 +847,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     # Environment setup: cloneRepo with sparse checkout samples/aspire-with-azure-functions
     prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
@@ -910,7 +888,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: files
     # Environment setup: cloneRepo with sparse checkout samples/container-build
     prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
@@ -948,7 +926,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: behavior
     prompt: "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment. Use the eastus2 region and my current subscription."
     graders:
@@ -987,7 +965,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: behavior
     prompt: "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
     graders:

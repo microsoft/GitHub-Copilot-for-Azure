@@ -1,23 +1,23 @@
 # azure-prepare Vally Eval Suite
 
-Evaluation suite for the `azure-prepare` skill using [Vally](https://www.npmjs.com/package/@microsoft/vally).
+Evaluation suite for the `azure-prepare` skill using [Vally](https://www.npmjs.com/package/@microsoft/vally-cli).
 
 ## Quick Start
 
 There are three ways to run `vally`:
 
-**Option 1 — npm scripts (recommended)**
+**Option 1 — Vally CLI (recommended)**
 ```bash
 # Install vally globally
-npm install -g @microsoft/vally
+npm install -g @microsoft/vally-cli
 
 # Run with mock executor (fast, no auth)
 vally eval -e tests/azure-prepare/eval/eval.yaml \
-  --work-dir tests/azure-prepare/eval/fixtures --verbose
+  --work-dir tests/azure-prepare/eval/fixtures --executor mock --verbose
 
 # Run with real Copilot SDK (requires GITHUB_TOKEN)
 vally eval -e tests/azure-prepare/eval/eval.yaml \
-  --work-dir tests/azure-prepare/eval/fixtures --verbose
+  --work-dir tests/azure-prepare/eval/fixtures --executor copilot-sdk --verbose
 ```
 
 **Option 2 — npx (no global install)**

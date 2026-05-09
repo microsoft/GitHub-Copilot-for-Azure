@@ -60,7 +60,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -92,7 +92,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -124,7 +124,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -156,7 +156,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -178,7 +178,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -208,7 +208,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       # Jest OR: "copilot-sdk-service" | "copilot-sdk" | "Copilot SDK"
@@ -238,7 +238,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       # Jest OR: "DefaultAzureCredential" | "bearerToken" | "provider"
@@ -279,7 +279,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       # Jest OR: "copilot-sdk" | "Copilot SDK" | "copilot-sdk-service" | "CopilotClient"
