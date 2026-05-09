@@ -42,6 +42,9 @@ graders:
     name: security_posture
     config:
       pattern: "(?i)connection.?string.*=.*Account(Key|Name)=|SharedAccessKey="
+  # NOTE: nodejs_entry_point is global but only relevant for Node.js/TypeScript tasks.
+  # Python and .NET tasks will match on generic terms (e.g. "entry point").
+  # Consider moving to per-task graders if false-positive rate is high.
   - type: output-matches
     name: nodejs_entry_point
     config:

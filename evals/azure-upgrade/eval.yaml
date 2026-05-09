@@ -36,13 +36,14 @@ stimuli:
   # ── consumption-to-flex-migration-prompt ──
   # Jest: "invokes azure-upgrade skill for Functions Consumption to Flex migration prompt"
   # Assertions: softCheckSkill + expect(isSkillInvoked(...)).toBe(true)
-  # Note: Jest used nonInteractive + followUp — omitted (agent runner specifics)
+  # NOTE: Original Jest test used followUp for multi-turn confirmation. Vally single-turn
+  # evaluation may produce lower pass rates. Threshold may need adjustment once multi-turn support lands.
   - name: "Functions Consumption to Flex migration"
     prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan"
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -59,13 +60,14 @@ stimuli:
   # ── upgrade-hosting-plan-prompt ──
   # Jest: "invokes azure-upgrade skill for upgrading Functions plan prompt"
   # Assertions: softCheckSkill + expect(isSkillInvoked(...)).toBe(true)
-  # Note: Jest used nonInteractive + followUp — omitted (agent runner specifics)
+  # NOTE: Original Jest test used followUp for multi-turn confirmation. Vally single-turn
+  # evaluation may produce lower pass rates. Threshold may need adjustment once multi-turn support lands.
   - name: "Upgrade Functions hosting plan to Flex"
     prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption"
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
