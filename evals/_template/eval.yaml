@@ -1,0 +1,51 @@
+# Vally eval config template — copy this file when creating a new eval spec.
+# Replace all <placeholders> with actual values for your skill.
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: <skill-name>-integration-eval
+description: |
+  Integration evaluation for <skill-name> skill.
+  Tests skill routing and response quality.
+
+tags:
+  type: integration
+  skill: <skill-name>
+
+environment:
+  skills:
+    - "../../plugin/skills/<skill-name>"
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: copilot-sdk
+  model: claude-sonnet-4.5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════
+  # skill-invocation
+  # ═══════════════════════════════════════════════════════════════════════
+
+  - name: "Example stimulus"
+    prompt: "Replace with a prompt that should invoke the skill"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - <skill-name>
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

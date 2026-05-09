@@ -42,6 +42,9 @@ graders:
     name: security_posture
     config:
       pattern: "(?i)connection.?string.*=.*Account(Key|Name)=|SharedAccessKey="
+  # NOTE: nodejs_entry_point is a global grader that runs on all tasks, including
+  # non-Node tasks (e.g., Python). It may produce false negatives for those tasks.
+  # Consider scoping this to Node/TypeScript tasks only when Vally supports per-task graders.
   - type: output-matches
     name: nodejs_entry_point
     config:

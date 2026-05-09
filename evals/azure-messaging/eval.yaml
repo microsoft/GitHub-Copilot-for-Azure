@@ -41,7 +41,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -63,7 +63,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -85,7 +85,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -107,7 +107,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -129,7 +129,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -151,7 +151,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -173,7 +173,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -195,7 +195,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -222,7 +222,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: skill-invocation
@@ -254,7 +254,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: skill-invocation

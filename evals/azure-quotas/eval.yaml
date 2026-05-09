@@ -7,6 +7,10 @@
 #
 # Note: Jest tests used doToolCallArgsIncludeKeyword() to check tool call
 # arguments. Mapped to output-contains since Vally output includes tool data.
+#
+# NOTE: output-contains checks assistant message text, not tool-call arguments directly.
+# These checks assume the assistant echoes relevant command info in its response.
+# If pass rates are low, consider switching to tool-calls grader with arg matching when available.
 
 name: azure-quotas-integration-eval
 description: |
@@ -44,7 +48,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -66,7 +70,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: routing
     graders:
       - type: skill-invocation
@@ -92,7 +96,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: skill-invocation
@@ -120,7 +124,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: skill-invocation
@@ -145,7 +149,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: skill-invocation
@@ -170,7 +174,7 @@ stimuli:
     tags:
       type: integration
       tier: full
-      cost: free
+      cost: llm
       area: output
     graders:
       - type: skill-invocation
