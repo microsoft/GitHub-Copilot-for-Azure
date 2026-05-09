@@ -1,3 +1,7 @@
+# NOTE: This file covers top-level microsoft-foundry triggers only.
+# Nested Foundry sub-skills (foundry-agent/invoke, create, deploy, observe,
+# trace, troubleshoot, eval-datasets, models/deploy/capacity, etc.) are
+# intentionally deferred to a follow-up PR per the skill directory structure.
 name: microsoft-foundry-trigger-eval
 description: "Trigger routing evaluation for microsoft-foundry — migrated from Jest trigger tests"
 type: capability
@@ -21,7 +25,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -38,7 +42,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -55,7 +59,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -72,7 +76,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -89,7 +93,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -106,7 +110,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -123,7 +127,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -140,7 +144,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -157,7 +161,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -174,7 +178,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -191,7 +195,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -208,7 +212,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -225,7 +229,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -242,7 +246,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -259,7 +263,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -276,7 +280,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -293,7 +297,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -310,7 +314,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -327,7 +331,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -344,7 +348,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -361,7 +365,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -378,7 +382,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -395,7 +399,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -412,7 +416,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -429,7 +433,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -446,7 +450,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -463,7 +467,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -480,7 +484,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -497,7 +501,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -515,7 +519,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -532,7 +536,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -549,7 +553,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -566,7 +570,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -583,7 +587,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -600,7 +604,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -617,7 +621,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -634,7 +638,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -651,7 +655,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:

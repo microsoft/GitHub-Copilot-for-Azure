@@ -21,7 +21,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -38,7 +38,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -55,7 +55,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -72,7 +72,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -89,7 +89,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -106,7 +106,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -123,7 +123,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -140,7 +140,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -157,7 +157,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -174,7 +174,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: positive
       area: routing
     graders:
@@ -192,7 +192,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -209,7 +209,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -226,7 +226,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -243,7 +243,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -260,7 +260,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -277,7 +277,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
@@ -294,7 +294,7 @@ stimuli:
     tags:
       type: trigger
       tier: full
-      cost: free
+      cost: llm
       polarity: negative
       area: routing
     graders:
