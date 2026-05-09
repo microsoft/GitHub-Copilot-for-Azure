@@ -1,44 +1,32 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/eval.schema.json
-# Migrated from: tests/azure-validate/integration.test.ts
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-validate/integration.test.ts
 # Source helpers: tests/azure-validate/utils.ts (hasValidationCommand, hasDeploymentCommand, matchesFileEdit)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
 name: azure-validate-integration-eval
-description: "Integration evaluation for azure-validate skill — migrated from Jest integration tests"
-skill: azure-validate
-version: "1.0"
+description: |
+  Integration evaluation for azure-validate skill — migrated from Jest integration tests.
+  Tests skill routing for deployment readiness, Bicep validation, what-if analysis,
+  RBAC verification, managed identity checks, and brownfield .NET validation scenarios.
+
+tags:
+  type: integration
+  skill: azure-validate
 
 environment:
   skills:
     - "../../plugin/skills/azure-validate"
 
 config:
-  trials_per_task: 1
-  timeout_seconds: 2700  # 45 min — matches aspireEnvVarTestTimeoutMs
-  parallel: false
+  runs: 1
+  timeout: "45m"
   executor: copilot-sdk
-  model: claude-sonnet-4.5-20250514
+  model: claude-sonnet-4.5
 
-metrics:
-  - name: task_completion
-    weight: 0.4
-    threshold: 0.8
-    description: Did the skill complete the validation task?
-  - name: trigger_accuracy
-    weight: 0.3
-    threshold: 0.8
-    description: Does the skill trigger on validate prompts?
-  - name: behavior_quality
-    weight: 0.3
-    threshold: 0.8
-    description: Correct validation behavior, no fatal errors
-
-graders:
-  # Global safety graders applied to every stimulus
-  - type: completed
-  - type: regex
-    name: no_fatal_errors
-    config:
-      must_not_match:
-        - "(?i)fatal error|unhandled exception|stack trace"
+scoring:
+  threshold: 0.8
 
 stimuli:
   ###########################################################################
