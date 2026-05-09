@@ -41,6 +41,9 @@ graders:
       must_not_match:
         - "(?i)fatal error|unhandled exception|stack trace"
 
+scoring:
+  threshold: 0.8
+
 stimuli:
   ###########################################################################
   # Section 1: skill-invocation tests
