@@ -13,6 +13,8 @@
 
 ## Assessment Queries
 
+> **⚠️ Output format:** Use `--query "data[]" -o json` for `az graph query`. `-o table` only shows summary columns (`Count`, `Total_records`) and hides projected fields.
+
 ### Environment Zone Redundancy
 ```bash
 az graph query -q "
@@ -21,7 +23,7 @@ resources
 | where type =~ 'microsoft.app/managedenvironments'
 | project name, zoneRedundant=properties.zoneRedundant, location,
     hasVnet=isnotempty(properties.vnetConfiguration.infrastructureSubnetId)
-" --subscriptions <sub-id>
+" --subscriptions <sub-id> --query "data[]" -o json
 ```
 
 ### Container App Replica Count
@@ -32,7 +34,7 @@ resources
 | where type =~ 'microsoft.app/containerapps'
 | extend minReplicas = properties.template.scale.minReplicas
 | project name, minReplicas, location
-" --subscriptions <sub-id>
+" --subscriptions <sub-id> --query "data[]" -o json
 ```
 
 ### Health Probes Check
@@ -96,12 +98,10 @@ az containerapp create \
 
 ## Configure: Health Probes
 
-Container Apps support liveness, readiness, and startup probes:
+Container Apps support liveness, readiness, and startup probes. Author them in a YAML file and apply with `az containerapp update --yaml`:
 
-```bash
-az containerapp update --name <app> --resource-group <rg> \
-  --set-env-vars "HEALTH_CHECK=true" \
-  --yaml - <<EOF
+**probes.yaml:**
+```yaml
 properties:
   template:
     containers:
@@ -125,8 +125,27 @@ properties:
               port: 8080
             periodSeconds: 5
             failureThreshold: 30
-EOF
 ```
+
+```bash
+az containerapp update --name <app> --resource-group <rg> --yaml probes.yaml
+```
+
+### ⛔ STOP — If the container has no `/health` endpoint, ask before adding code
+
+Adding `probes` against a path that doesn't exist will mark every replica unhealthy. If the container image doesn't already serve a `/health` route, **ask the user before modifying their source code**:
+
+```
+⚠️ This container app has no health probes configured, and I don't see a `/health`
+   route in the container image. To enable readiness + liveness probes I would need to:
+     • Add a GET /health handler to your app code (returns 200 OK)
+     • Rebuild and push the container image
+     • Then update the Container App with the probes
+
+   Do you want me to add the /health endpoint to your code? (yes / no)
+```
+
+Proceed only on explicit yes. If no, leave both the code and the IaC unchanged and report the row as `🔴 OFF (code-only fix — declined)` in the assessment table.
 
 ## Configure: Min Replicas
 
@@ -136,6 +155,8 @@ az containerapp update --name <app> --resource-group <rg> \
 ```
 
 ## IaC Patching: Bicep
+
+> **AVM modules:** If the project uses `br/public:avm/res/app/managed-environment` or `br/public:avm/res/app/container-app`, the parameter names differ from raw ARM (e.g. `zoneRedundant` becomes a top-level param). Always grep the actual module call (`Select-String -Path infra -Recurse -Pattern "avm/res/app/" -Context 0,15`) and patch the params already in use. The raw-Bicep examples below show the property paths to translate.
 
 ### Environment (new — with VNet)
 ```bicep
@@ -238,3 +259,14 @@ resource "azurerm_container_app" "app" {
 - Use Front Door to route between regions
 - Dapr service-to-service calls don't cross regions automatically — plan for cross-region communication
 - Consider Consumption plan in secondary to reduce standby costs
+
+## Reporting (for the assessment table)
+
+When the parent skill builds the feature-pivoted assessment table, report each Container Apps resource on the relevant rows:
+
+| Feature row | What to report |
+|---|---|
+| Zone redundancy — compute | `🟢 ON` if the **environment** has `zoneRedundant: true` and a VNet infrastructure subnet, else `🔴 OFF`. Container apps inherit this from the environment. |
+| Health probes | `🟢 ON` if the container has both liveness AND readiness probes; `🟡 PARTIAL` if only one is set; `🔴 OFF` if none. Annotate `(code-only fix)` if the image doesn't expose a `/health` route. |
+| Multi-region failover | `🟢 ON` if the same app is deployed in ≥2 regions behind Front Door; otherwise `🔴 OFF`. |
+

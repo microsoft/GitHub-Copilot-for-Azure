@@ -172,3 +172,13 @@ resource "azurerm_linux_function_app" "func" {
 - Code must be deployed to both regions separately
 - Event Hub checkpoints are per-app — secondary starts from its own checkpoint on failover
 - Consider Event Hubs Geo-DR for true event replication
+
+## Reporting (for the assessment table)
+
+When the parent skill builds the feature-pivoted assessment table, report each Functions resource on the relevant rows:
+
+| Feature row | What to report |
+|---|---|
+| Zone redundancy — compute | `🟢 ON` if the **plan** has `zoneRedundant: true`. For Premium plans, also requires `sku.capacity ≥ 2` AND each Function App has `minimumElasticInstanceCount ≥ 2`. `🔴 OFF` if the plan tier doesn't support ZR (Consumption Y1) — annotate `(needs plan upgrade to Flex / Premium)`. |
+| Health probes | For Premium / Dedicated: `🟢 ON` if `siteConfig.healthCheckPath` is set, `🔴 OFF` otherwise. For Flex Consumption (FC1) / Consumption (Y1): always annotate `🔴 OFF (code-only fix)` — `healthCheckPath` is not supported on these plans, so an HTTP-triggered `/api/health` function must be added in app code (gated by user consent — see [configure-health-probes.md](../../configure-health-probes.md)). |
+| Multi-region failover | `🟢 ON` if the same Function App is deployed in ≥2 regions behind Front Door / Traffic Manager; otherwise `🔴 OFF`. |

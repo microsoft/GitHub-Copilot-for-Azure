@@ -13,6 +13,8 @@
 
 ## Assessment Queries
 
+> **⚠️ Output format:** Use `--query "data[]" -o json` for `az graph query`. `-o table` only shows summary columns (`Count`, `Total_records`) and hides projected fields. Standard `az webapp` commands work fine with `-o table`.
+
 ### Plan Zone Redundancy
 ```bash
 az graph query -q "
@@ -21,7 +23,7 @@ resources
 | where type =~ 'microsoft.web/serverfarms'
 | where kind !contains 'functionapp'
 | project name, sku=sku.name, capacity=sku.capacity, zoneRedundant=properties.zoneRedundant, location
-" --subscriptions <sub-id>
+" --subscriptions <sub-id> --query "data[]" -o json
 ```
 
 ### Health Check Configuration
@@ -29,6 +31,13 @@ resources
 az webapp config show --name <app> --resource-group <rg> \
   --query "{healthCheckPath:healthCheckPath, alwaysOn:alwaysOn}" -o table
 ```
+
+### Client Affinity (ARR Affinity) — should be **disabled** for ZR / multi-region
+```bash
+az webapp show --name <app> --resource-group <rg> \
+  --query "clientAffinityEnabled" -o tsv
+```
+When `true`, sticky sessions pin clients to a single instance and defeat zone load balancing.
 
 ### Deployment Slots (for zero-downtime deploys)
 ```bash
@@ -94,6 +103,17 @@ az webapp config set \
   --always-on true
 ```
 
+## Configure: Disable Client Affinity (ARR Affinity)
+
+App Service enables ARR affinity by default, which pins each client to a single instance via the `ARRAffinity` cookie. **This defeats zone-load-balancing and any multi-region routing**, so it should be disabled for stateless apps:
+
+```bash
+az webapp update --name <app> --resource-group <rg> \
+  --client-affinity-enabled false
+```
+
+Leave it on **only** if your app stores state in instance memory and you cannot move it to a shared cache / database.
+
 ## Configure: Deployment Slots (Zero-Downtime)
 
 Deployment slots complement reliability by enabling safe deployments:
@@ -114,6 +134,8 @@ az webapp deployment slot swap \
 ```
 
 ## IaC Patching: Bicep
+
+> **AVM modules:** If the project uses `br/public:avm/res/web/serverfarm` or `br/public:avm/res/web/site`, the parameter names differ from raw ARM (e.g. `zoneRedundant` and `skuCapacity` are top-level params; `siteConfig` is usually preserved). Always grep the actual module call (`Select-String -Path infra -Recurse -Pattern "avm/res/web/" -Context 0,15`) and patch the params already in use. The raw-Bicep examples below show the property paths to translate.
 
 ### App Service Plan
 ```bicep
@@ -181,8 +203,15 @@ resource "azurerm_linux_web_app" "app" {
 - App Service supports deployment slots — use slot swap for safe regional deployments
 - Consider auto-scale rules to handle failover traffic surge
 - App Service Managed Certificates don't support custom domains on Front Door — use App Service Certificate or Key Vault
-- ARR affinity should be disabled for multi-region (stateless design)
-```bash
-az webapp update --name <app> --resource-group <rg> \
-  --client-affinity-enabled false
-```
+- Client affinity (ARR Affinity) must be disabled for multi-region (see Configure: Disable Client Affinity above)
+
+## Reporting (for the assessment table)
+
+When the parent skill builds the feature-pivoted assessment table, report each App Service resource on the relevant rows:
+
+| Feature row | What to report |
+|---|---|
+| Zone redundancy — compute | `🟢 ON` if the **plan** has `zoneRedundant: true` AND `sku.capacity ≥ 2`. `🔴 OFF` if either is missing or the plan tier doesn't support ZR (Free / Shared / Basic / Standard). Annotate `(needs plan upgrade)` for unsupported tiers. |
+| Health probes | `🟢 ON` if `siteConfig.healthCheckPath` is set on the **app**. `🔴 OFF` if empty. Standard tier and above support it; Free/Shared/Basic do not — annotate `(needs plan upgrade)` in that case. |
+| Multi-region failover | `🟢 ON` if the same app is deployed in ≥2 regions behind Front Door / Traffic Manager. `🟡 PARTIAL` if multi-region is set up but `clientAffinityEnabled` is still `true` (sticky sessions break failover). `🔴 OFF` otherwise. |
+
