@@ -1,0 +1,93 @@
+# Task: Container Apps discovery — multi-component repo with BuildKit Dockerfiles
+# Tests Step 2 preview quality: does the agent scan the repo, detect both components,
+# identify BuildKit incompatibility, and communicate an end-to-end deploy intent
+# (ACR build + Container Apps) — not just generic "deploy to Azure" language.
+# NOTE: Single-turn waza reaches Step 2 only. Actual deploy execution (B50/B59)
+# requires integration tests — this task validates the discovery & preview phase.
+id: container-apps-code-deploy
+name: "[Repo Context] — Container Apps discovery (multi-component + BuildKit)"
+description: |
+  With full-stack-fastapi-template cloned (React frontend + FastAPI backend,
+  both with Dockerfiles, backend uses BuildKit --mount=type=cache), verifies
+  the agent's Step 2 discovery: scans repo files, detects both components with
+  version-level detail, identifies Container Apps as the target, plans ACR image
+  builds, and flags BuildKit syntax for ACR-compatible conversion. Single-turn
+  waza tests the preview/planning phase — deploy execution is integration-only.
+
+tags:
+  - deploy
+  - container-apps
+  - multi-component
+  - buildkit
+  - acr
+
+inputs:
+  repo_id: full-stack-fastapi-template
+  prompt: "I have a full-stack app with a React frontend and FastAPI backend, both containerized. Help me get this running on Azure — I want the containers built and deployed, not just infrastructure."
+  context:
+    session_state: new
+    workspace: repo
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 30
+
+graders:
+  - name: mentions_acr_build
+    type: text
+    config:
+      # Agent must plan for ACR image builds — not defer to user.
+      # Matches: "az acr build", "ACR-compatible", "Container Registry...build",
+      # "build...images...registry", or "before building" (BuildKit context)
+      regex_match:
+        - "(?i)(az acr build|acr.{0,30}build|build.{0,30}acr|acr.compatible|container.registry.{0,50}build|build.{0,50}container.registry|before.building)"
+
+  - name: mentions_container_apps
+    type: text
+    config:
+      regex_match:
+        - "(?i)(container.?apps|container apps)"
+
+  - name: does_not_give_manual_deploy_steps
+    type: text
+    config:
+      # Must NOT present manual CLI as "next steps" for core deploy actions
+      # This is the exact Run 12 failure: "Next Steps (Phase 2)" with docker build/push
+      regex_not_match:
+        - "(?i)next steps.{0,50}(docker build|docker push|deploy your code)"
+
+  - name: detects_multi_components
+    type: text
+    config:
+      # Must identify both components with repo-scanned detail — not just echo the prompt.
+      # Prompt says "React frontend and FastAPI backend" so bare "react...fastapi" is echo.
+      # Require version numbers OR specific deps only discoverable from repo files:
+      #   Frontend: react 19, vite, bun, nginx, tanstack, tailwind
+      #   Backend: sqlmodel, alembic, pyjwt, pwdlib, sentry, uvicorn, python 3.10
+      #   DB: postgresql 18/16
+      regex_match:
+        - "(?i)(react.{0,5}1[89]|vite|bun|nginx|tanstack|tailwind|sqlmodel|alembic|pyjwt|pwdlib|sentry|uvicorn|python.{0,5}3\\.1[0-9]|postgresql.{0,5}1[68])"
+
+  # handles_buildkit_incompatibility removed — BuildKit Dockerfile.azure creation
+  # happens at scaffold (Step 7) and deploy (Step 9), not during Step 2 quick probe.
+  # Single-turn waza only reaches Step 2. BuildKit handling validated in integration tests.
+
+  - name: plans_end_to_end_code_deploy
+    type: text
+    config:
+      # Agent must communicate that code deploy is end-to-end — not just IaC.
+      # Strict (Step 6+): placeholder→swap, redeploy, Phase 2-4 language
+      # Broad (Step 2): "build...images...deploy", "build...container...Container Apps",
+      #   "deploy...to Container Apps" (proves agent plans full pipeline, not IaC-only)
+      regex_match:
+        - "(?i)(placeholder.{0,30}image|update.{0,30}image|replace.{0,30}(image|placeholder)|swap.{0,30}(image|placeholder)|real.{0,10}image|redeploy|phase.{0,5}[234].{0,30}(build|update|image|swap)|build.{0,50}(image|container).{0,50}(deploy|container.?app)|deploy.{0,30}(to|on).{0,20}container.?app)"
+
+  - name: scans_repo
+    type: tool
+    config:
+      tool_name: "view|glob|powershell"
+      min_calls: 1

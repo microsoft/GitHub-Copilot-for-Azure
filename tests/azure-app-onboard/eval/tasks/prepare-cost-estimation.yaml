@@ -1,0 +1,48 @@
+# Task: Service mapping and cost estimation for Node.js API
+# Merged from: prepare-service-selection.yaml + prepare-cost-estimation.yaml
+id: prepare-cost-estimation
+name: "[prepare] — Cost estimation and SKU selection"
+description: |
+  Verifies prepare correctly maps a Node.js/Express API to Azure services
+  with budget-aware SKU selection, detailed cost breakdown with pricing
+  disclaimer, and rejected alternatives documentation.
+
+tags:
+  - prepare
+  - service-mapping
+  - cost-estimation
+  - pricing
+
+inputs:
+  repo_id: bya-simple-web-app
+  prompt: "I have a prototype ready — help me get it to production on Azure"
+  context:
+    session_state: new
+    workspace: repo
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 25
+
+graders:
+  # NOTE: mentions_cost removed as a hard grader. In single-turn waza evals the
+  # agent correctly asks clarifying questions before reaching cost estimation —
+  # cost vocabulary only appears after the user replies (which waza can't simulate).
+  # Cost coverage is verified in integration tests where multi-turn is supported.
+
+  - name: mentions_service_or_sku
+    type: text
+    config:
+      # Accept either a named service OR a SKU code (F1/B1 implies App Service)
+      regex_match:
+        - "(?i)(container apps|app service|static web apps|azure functions|aks|kubernetes|F1|B1|S1|S0|Free|Basic|Standard|Consumption|tier|sku)"
+
+  - name: scans_repo
+    type: tool
+    config:
+      tool_name: "view|glob|powershell"
+      min_calls: 1

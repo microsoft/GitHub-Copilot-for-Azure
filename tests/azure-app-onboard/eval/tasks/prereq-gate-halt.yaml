@@ -1,0 +1,49 @@
+# Task: Verify orchestrator halts pipeline on broken prereq results
+id: prereq-gate-halt
+name: "[prereq] — Halt on broken app before planning"
+description: |
+  With bya-broken-web-app cloned (intentionally broken code), verifies the
+  orchestrator detects issues during prereq scan, flags problems, and does
+  NOT proceed to architecture planning without addressing them. Tests the
+  readiness gate (Bug B1) — broken repo must halt the pipeline.
+
+tags:
+  - negative
+  - broken
+  - prereq
+  - readiness
+  - gate
+
+inputs:
+  repo_id: bya-broken-web-app
+  prompt: "Check if my app is ready to deploy to Azure and tell me about any issues"
+  context:
+    session_state: new
+    workspace: repo
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 25
+
+graders:
+  - name: identifies_issues
+    type: text
+    config:
+      regex_match:
+        - "(?i)(issue|problem|error|warning|broken|fail|concern|missing|incomplete|blocker)"
+
+  - name: does_not_blindly_plan_deployment
+    type: text
+    config:
+      regex_not_match:
+        - "(?i)here('s| is) (the|your) (full )?architecture plan|everything looks good|no issues found"
+
+  - name: suggests_next_steps
+    type: text
+    config:
+      regex_match:
+        - "(?i)fix|add|create|update|repair|restore|resolve|address|correct|need|should|before.{0,20}deploy|recommend|suggest|option"

@@ -1,0 +1,55 @@
+# Task: Fast-track a simple static site with Dockerfile
+id: fast-track-static-site
+name: "[Fast-Track] — Static site with Dockerfile skips questions"
+description: |
+  With DockerStaticSite cloned (single HTML file + Dockerfile, no package.json,
+  no DB, no auth), verifies the orchestrator detects fast-track eligibility and
+  skips remaining questions. Should default to free tier and collapse approval.
+
+tags:
+  - fast-track
+  - static
+  - repo-context
+
+inputs:
+  repo_id: docker-static-site
+  prompt: "I have no Azure experience but need to host my web app"
+  context:
+    session_state: new
+    workspace: repo
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 20
+
+graders:
+  - name: detects_static_site
+    type: text
+    config:
+      regex_match:
+        - "(?i)static|html|nginx"
+
+  - name: detects_dockerfile
+    type: text
+    config:
+      regex_match:
+        - "(?i)dockerfile|docker|container"
+
+  - name: recommends_free_tier
+    type: text
+    config:
+      regex_match:
+        - "(?i)(F1|Free|no.?cost|zero.?cost|\\$0|free.?tier|cheapest|low.?cost|minimal.?cost|Static.?Web.?App|SWA|lowest.?cost)"
+
+  - name: skips_unnecessary_questions
+    type: text
+    config:
+      regex_not_match:
+        - "(?i)what (stack|language|framework|database|auth).*(are you|do you|will you)|which (database|auth|framework)"
+
+  # shows_approval_gate removed — 13% flaky in single-turn waza.
+  # Deploy safety covered by global does_not_run_deploy_commands (tool_constraint) in eval.yaml.

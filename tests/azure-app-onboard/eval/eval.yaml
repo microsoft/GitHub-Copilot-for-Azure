@@ -1,0 +1,68 @@
+# Waza eval specification for azure-app-onboard skill
+# Body quality evaluation — validates orchestrator workflow produces correct agent behavior.
+name: azure-app-onboard-eval
+description: |
+  Evaluation suite for the azure-app-onboard orchestrator skill.
+  Tests that body instructions guide the agent through the end-to-end workflow:
+  - Session check + intent questioning
+  - Prereq scanning + readiness assessment
+  - Prepare (service mapping + cost estimation)
+  - Approval gate + deploy
+  Baseline measurement: body-only (no phase skills). Each phase skill addition
+  is measured as a delta against this baseline.
+
+skill: azure-app-onboard
+expected_skill: azure-app-onboard
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 600
+  parallel: true
+  executor: copilot-sdk
+  model: claude-sonnet-4-20250514
+
+metrics:
+  - name: task_completion
+    weight: 0.5
+    threshold: 0.8
+    description: Does the skill guide the agent to the correct output for the workflow step?
+
+  - name: behavior_quality
+    weight: 0.3
+    threshold: 0.7
+    description: Clean execution, no errors, within tool call budget
+
+  - name: instruction_adherence
+    weight: 0.2
+    threshold: 0.8
+    description: Does the agent follow the workflow steps documented in the skill?
+
+graders:
+  - type: code
+    name: has_output
+    config:
+      assertions:
+        - "len(output) > 10"
+
+  - type: text
+    name: no_runtime_failure
+    config:
+      regex_not_match:
+        - "(?i)fatal error|unhandled exception|stack trace|crashed|exception occurred"
+
+  - type: behavior
+    name: efficiency
+    config:
+      max_tool_calls: 200
+      max_duration_ms: 600000
+
+  - type: tool_constraint
+    name: does_not_run_deploy_commands
+    config:
+      reject_tools:
+        - tool: "powershell|bash"
+          command_pattern: "(?i)az\\s+deployment|azd\\s+up|azd\\s+deploy"
+
+tasks:
+  - "tasks/*.yaml"

@@ -1,0 +1,66 @@
+# Task: Map Docker Compose services to Azure PaaS equivalents
+id: prepare-docker-compose-mapping
+name: "[prepare] — Docker Compose services → Azure PaaS mapping"
+description: |
+  With Yamtrack (Django + PostgreSQL + Redis via Docker Compose) cloned into
+  the workspace, verifies the agent reads docker-compose files, identifies
+  containerized service dependencies (postgres, redis), and maps each to its
+  Azure PaaS equivalent (Azure Database for PostgreSQL, Azure Cache for Redis).
+  Unique signal: Docker Compose dependency extraction → Azure service mapping.
+
+tags:
+  - prepare
+  - docker-compose
+  - service-mapping
+  - python
+  - no-azure-infra
+
+inputs:
+  repo_id: yamtrack-django
+  prompt: "I have an existing app — what's the best way to migrate it to Azure?"
+  context:
+    session_state: new
+    workspace: repo
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 25
+
+graders:
+  - name: reads_docker_compose
+    type: text
+    config:
+      # Must reference docker-compose file or compose services
+      regex_match:
+        - "(?i)(docker.?compose|compose\\.ya?ml|compose.{0,30}(service|postgres|redis)|services.{0,30}(postgres|redis|db)|multi.?container|multiple.?(service|container)|postgres.{0,30}redis|celery.{0,30}redis|redis.{0,30}(cache|queue|celery)|gunicorn|supervisor)"
+
+  - name: maps_postgres_to_azure_paas
+    type: text
+    config:
+      # Must map PostgreSQL container to Azure Database for PostgreSQL (not just say "database")
+      regex_match:
+        - "(?i)(azure.{0,20}(database|db).{0,20}postgres|postgres.{0,20}flexible|flexible.?server|azure.{0,20}postgres)"
+
+  - name: maps_redis_to_azure_paas
+    type: text
+    config:
+      # Must map Redis container to Azure Cache for Redis (managed PaaS, not sidecar — Celery needs persistence)
+      regex_match:
+        - "(?i)(azure.{0,20}cache.{0,20}redis|azure.{0,20}redis|cache.{0,20}for.{0,20}redis)"
+
+  - name: scans_repo
+    type: tool
+    config:
+      tool_name: "view|glob|powershell"
+      min_calls: 1
+
+  - name: surfaces_scan_discovered_facts
+    type: text
+    config:
+      # Pass 2 (refine intent) must surface compose-discovered services as confirmations, not open questions
+      regex_match:
+        - "(?i)(found|detected|discovered|scan.{0,20}(found|shows|reveals)|docker.?compose.{0,30}(postgres|redis|service)|compose.{0,20}service)"

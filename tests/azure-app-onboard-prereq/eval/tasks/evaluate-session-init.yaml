@@ -1,0 +1,34 @@
+# Task: Evaluate session initialization for prereq scanning
+id: evaluate-session-init
+name: "[No Repo Context] — Evaluate session init"
+description: |
+  Without a repo in the workspace, verifies the agent initializes a session
+  and outlines the prereq evaluation phases it will perform (build health,
+  completeness, deployability).
+
+tags:
+  - workflow
+  - session-init
+  - no-repo
+
+inputs:
+  prompt: |
+    Can you check if my dependencies are compatible with Azure?
+  context:
+    session_state: new
+    workspace: empty
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 10
+
+graders:
+  - name: mentions_evaluation_phases
+    type: text
+    config:
+      regex_match:
+        - "(?i)build|complete|deploy|check|scan|assess|evaluat|readiness|prerequisite"
