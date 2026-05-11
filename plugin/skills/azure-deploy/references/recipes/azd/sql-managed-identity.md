@@ -16,7 +16,8 @@ Grant Azure managed identities database permissions on Azure SQL with Entra auth
 SQL_SERVER=$(azd env get-value SQL_SERVER)
 SQL_DATABASE=$(azd env get-value SQL_DATABASE)
 AZURE_RESOURCE_GROUP=$(azd env get-value AZURE_RESOURCE_GROUP)
-APP_NAME=$(azd env get-value SERVICE_API_NAME)  # or SERVICE_WEB_NAME
+APP_NAME=$(azd env get-value SERVICE_API_NAME)
+# APP_NAME=$(azd env get-value SERVICE_WEB_NAME)
 
 az sql db query \
   --server "$SQL_SERVER" \
@@ -36,7 +37,8 @@ az sql db query \
 $SqlServer = azd env get-value SQL_SERVER
 $SqlDatabase = azd env get-value SQL_DATABASE
 $ResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
-$AppName = azd env get-value SERVICE_API_NAME  # or SERVICE_WEB_NAME
+$AppName = azd env get-value SERVICE_API_NAME
+# $AppName = azd env get-value SERVICE_WEB_NAME
 
 $SqlQuery = @"
 CREATE USER [$AppName] FROM EXTERNAL PROVIDER;
@@ -174,7 +176,8 @@ az sql db query `
 ```bash
 SQL_SERVER=$(azd env get-value SQL_SERVER)
 SQL_DATABASE=$(azd env get-value SQL_DATABASE)
-APP_NAME=$(azd env get-value SERVICE_API_NAME)  # or SERVICE_WEB_NAME
+APP_NAME=$(azd env get-value SERVICE_API_NAME)
+# APP_NAME=$(azd env get-value SERVICE_WEB_NAME)
 
 az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
   --auth-mode ActiveDirectoryDefault --queries "
@@ -190,7 +193,8 @@ az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
 ```powershell
 $SqlServer = azd env get-value SQL_SERVER
 $SqlDatabase = azd env get-value SQL_DATABASE
-$AppName = azd env get-value SERVICE_API_NAME  # or SERVICE_WEB_NAME
+$AppName = azd env get-value SERVICE_API_NAME
+# $AppName = azd env get-value SERVICE_WEB_NAME
 
 $SqlQuery = @"
 SELECT dp.name AS UserName, dr.name AS RoleName

@@ -35,7 +35,8 @@ See [SQL Managed Identity Access](sql-managed-identity.md) for detailed SQL scri
 
 ```bash
 # Get the app identity name from azd
-APP_NAME=$(azd env get-value SERVICE_API_NAME)  # or SERVICE_WEB_NAME
+APP_NAME=$(azd env get-value SERVICE_API_NAME)
+# APP_NAME=$(azd env get-value SERVICE_WEB_NAME)
 
 # Connect as Entra admin and grant permissions
 # See sql-managed-identity.md for connection patterns
@@ -44,7 +45,8 @@ APP_NAME=$(azd env get-value SERVICE_API_NAME)  # or SERVICE_WEB_NAME
 **PowerShell:**
 ```powershell
 # Get the app identity name from azd
-$AppName = azd env get-value SERVICE_API_NAME  # or SERVICE_WEB_NAME
+$AppName = azd env get-value SERVICE_API_NAME
+# $AppName = azd env get-value SERVICE_WEB_NAME
 
 # Connect as Entra admin and grant permissions
 # See sql-managed-identity.md for connection patterns
