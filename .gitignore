@@ -268,7 +268,7 @@ dashboard/data/
 # Visual Studio profiler
 # Visual Studio Trace Files
 # VS Code files for those working on multiple tools
-# Waza cache
+# Legacy Waza cache (pre-Vally)
 # Web workbench (sass)
 # Windows Installer files from build outputs
 # Windows Store app package directories and files
@@ -356,3 +356,6 @@ dashboard/**/dist/
 
 # C# DevKit (VS Code extension) language server cache files
 *.lscache
+
+# Local vally eval outputs
+results/

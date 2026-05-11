@@ -20,6 +20,7 @@ const SKILL_NAME = "azure-compute";
 const RECOMMENDER_WORKFLOW_PATH = /workflows\/vm-recommender\/vm-recommender\.md/i;
 const TROUBLESHOOTER_WORKFLOW_PATH = /workflows\/vm-troubleshooter\/vm-troubleshooter\.md/i;
 const CAPACITY_RESERVATION_WORKFLOW_PATH = /workflows\/capacity-reservation\/capacity-reservation\.md/i;
+const EMM_WORKFLOW_PATH = /workflows\/essential-machine-management\/essential-machine-management\.md/i;
 const VMSS_GUIDE_PATH = /references\/vmss-guide\.md/i;
 const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
@@ -192,6 +193,36 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
         expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
+    });
+
+    test("routes EMM enable prompt to essential-machine-management", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "How do I enable Essential Machine Management on my Azure subscription to onboard VMs for monitoring and security?",
+          EMM_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("routes EMM enrollment status prompt to essential-machine-management", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "Check which of my Azure subscriptions have machine enrollment enabled for EMM",
+          EMM_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
   });
