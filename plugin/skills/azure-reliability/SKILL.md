@@ -406,15 +406,3 @@ Do you want me to set up multi-region failover now? (yes / no / later)
 > - Container Apps environment zone redundancy requires **recreating** the environment (cannot be enabled in-place)
 > - Enabling zone redundancy may require a **plan upgrade** (e.g., Consumption → Flex Consumption) with cost implications
 > - Storage migration from LRS to ZRS can take hours/days; confirm with user before initiating
-
-## Integration with Other Skills
-
-This skill works alongside other azure skills:
-
-| Skill | Integration |
-|---|---|
-| `azure-validate` | Reliability checks can be surfaced during pre-deploy validation |
-| `azure-prepare` | New apps should default to zone-redundant configurations |
-| `azure-deploy` | Reliability changes are deployed by this skill directly (`azd up` / `terraform apply` / `az deployment` after user confirmation). Hand off to `azure-deploy` only for general/non-reliability deploys or as a post-deploy nudge to run a fresh reliability assessment. |
-| `azure-diagnostics` | After outage diagnosis, suggest reliability improvements |
-| `azure-compliance` | Reliability findings complement compliance/security audits |
