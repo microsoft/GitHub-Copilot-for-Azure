@@ -69,7 +69,7 @@ jobs:
             --output jsonl \
             --threshold 0.7
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
       - name: Run evaluations
         if: github.event_name != 'pull_request'
@@ -81,7 +81,7 @@ jobs:
             --junit \
             --threshold 0.8
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
       - name: Upload results
         if: github.event_name != 'pull_request' && always()
