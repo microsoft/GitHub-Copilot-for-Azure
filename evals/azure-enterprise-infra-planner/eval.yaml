@@ -49,7 +49,7 @@ stimuli:
     prompt: "Plan Azure infrastructure for a web app with a database and a Redis cache. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
     tags:
       type: integration
-      tier: smoke
+      tier: full
       area: files
       skill: azure-enterprise-infra-planner
     constraints:
