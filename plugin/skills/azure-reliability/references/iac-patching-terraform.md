@@ -179,12 +179,12 @@ resource "azurerm_linux_web_app" "app" {
 
 ### ⚠️ Plan Type Gating
 
-Same as Bicep \u2014 do **NOT** add `health_check_path` for Flex Consumption or Consumption plans (it's unsupported on these plans).
+Same as Bicep — do **NOT** add `health_check_path` for Flex Consumption or Consumption plans (it's unsupported on these plans).
 
 For FC1 / Consumption:
 
 1. Leave the `site_config` unchanged.
-2. **Ask the user** before adding any health endpoint code (see [configure-health-probes.md](configure-health-probes.md#-stop--confirm-before-adding-http-trigger-health-endpoint-fc1--consumption)) \u2014 it requires adding an HTTP-triggered function to their source, not a Terraform change.
+2. **Ask the user** before adding any health endpoint code (see [configure-health-probes.md](configure-health-probes.md#-stop--confirm-before-adding-http-trigger-health-endpoint-fc1--consumption)) — it requires adding an HTTP-triggered function to their source, not a Terraform change.
 3. Optionally, leave a comment in the Terraform so future readers know why `health_check_path` is intentionally absent:
 
 ```hcl
@@ -343,24 +343,24 @@ resource "azurerm_container_app" "app" {
 | 7 | `azurerm_container_app` | `liveness_probe` + `readiness_probe` | HTTP /health |
 | 8 | `azurerm_container_app` | `template.min_replicas` | `≥ 2` |
 
-After patching, **the skill executes the deploys itself** \u2014 do not stop and tell the user to run commands. Confirm once with the user before each deploy, then run it.
+After patching, **the skill executes the deploys itself** — do not stop and tell the user to run commands. Confirm once with the user before each deploy, then run it.
 
 Summarize the plan for the user:
 ```
-\u2705 Terraform files patched for reliability.
+✅ Terraform files patched for reliability.
 
 Deploy plan (the skill will run these for you after your confirmation):
   1. `terraform plan -out tfplan` (skill will show the plan summary)
-  2. Deploy 1 \u2014 `terraform apply tfplan` for the safe patches.
-  3. Storage migration (only if upgrading LRS \u2192 ZRS).
+  2. Deploy 1 — `terraform apply tfplan` for the safe patches.
+  3. Storage migration (only if upgrading LRS → ZRS).
      Command: `az storage account migration start ...`, then poll until `sku.name = Standard_ZRS`.
-  4. Deploy 2 \u2014 second `terraform plan` + `apply` for the storage SKU patch (no-op confirmation).
+  4. Deploy 2 — second `terraform plan` + `apply` for the storage SKU patch (no-op confirmation).
 
-Do NOT bundle the storage SKU change with the safe patches \u2014 a failed storage redundancy update can fail the whole apply.
+Do NOT bundle the storage SKU change with the safe patches — a failed storage redundancy update can fail the whole apply.
 
-\u26a0\ufe0f Note: If you have an existing Container Apps environment without zone redundancy,
+⚠️ Note: If you have an existing Container Apps environment without zone redundancy,
    the environment name was changed to force recreation. The skill will surface the
-   `terraform plan` summary before applying so you can confirm \u2014 apps will be recreated
+   `terraform plan` summary before applying so you can confirm — apps will be recreated
    in the new environment.
 
 Ready to run `terraform plan`? (yes / no)

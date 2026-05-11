@@ -14,19 +14,9 @@ metadata:
 | Property | Details |
 |---|---|
 | Best for | Reliability posture assessment, zone redundancy enablement, multi-region failover setup |
-| Primary capabilities | Reliability Checklist, Zone Redundancy Configuration, Multi-Region IaC Generation |
+| Primary capabilities | Reliability assessment table, Zone Redundancy Configuration, Multi-Region IaC Generation |
 | Supported services | Azure Functions, Azure Container Apps, Azure App Service |
 | MCP tools | Azure Resource Graph queries, Azure CLI commands |
-
-## When to Use This Skill
-
-- Assess the reliability posture of a deployed application or resource group
-- Check if zone redundancy is enabled across compute and storage
-- Identify single points of failure (single-region, LRS storage, no health probes)
-- Enable zone redundancy for Functions, Container Apps, or App Service
-- Set up multi-region failover with Azure Front Door
-- Validate that reliability patterns are correctly configured
-- Check an app against the Well-Architected Framework reliability pillar
 
 ## Skill Activation Triggers
 
@@ -135,9 +125,7 @@ migration and multi-region setup. (yes/no)
 - **Do not** include numeric scores, grades, or point totals.
 - End the assessment with a **single yes/no question** that kicks off the staged remediation flow. Do not enumerate the per-resource fix list here — the user will see it after they say yes (Configuration Workflow Step 1).
 
-> **UX Note:** If the assessment finds the app **already has** all core reliability features (zone redundancy, ZRS/GZRS storage, health probes) and is single-region, congratulate the user and offer multi-region as an optional follow-up using the same wait-and-confirm prompt as Configuration Workflow [Step 3](#step-3-both-paths-multi-region-followup--ask-and-wait). Do **NOT** start any multi-region work without explicit consent.
->
-> If core reliability is **not** all 🟢 at assessment time, do not mention multi-region as a separate question here — the assessment table already shows its status, and Configuration Workflow Step 3 will offer it after core gaps are fixed.
+> **UX Note:** If the assessment finds the app **already has** all core reliability features (zone redundancy, ZRS/GZRS storage, health probes), skip the fix-it question and jump straight to Configuration Workflow [Step 3](#step-3-both-paths-multi-region-followup--ask-and-wait) (Multi-region follow-up). Do **NOT** start any multi-region work without explicit consent.
 
 ## Configuration Workflow
 
@@ -229,17 +217,12 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 | Fix | Risk Level | What Happens |
 |-----|-----------|--------------|
 | Zone redundancy (compute) | 🟢 Safe patch | In-place property update on next deploy |
-| Storage LRS → ZRS | 🟡 Pre-migration required | Run `az storage account migration start` before deploy |
+| Storage LRS → ZRS | 🟡 Pre-migration required | Live storage migration must complete before the IaC SKU change can deploy. **Never bundle with safe patches** — use the two-deploy flow in Steps 3–5. |
 | Health check path (Premium / Dedicated) | 🟢 Safe patch | In-place update, but causes app restart |
 | Health check path (FC1 / Consumption) | ⚪ Code-only — ask first | `healthCheckPath` is unsupported. Adding a health endpoint requires adding an HTTP-triggered `/api/health` function to **app code**. **Always ask the user for explicit consent before touching source code.** Do **not** patch IaC. |
 | Container Apps env ZR (new env) | 🟢 Safe patch | Deploys as zone-redundant from start |
 | Container Apps env ZR (existing) | 🔴 Blue/green required | Must rename env + migrate all apps + child resources |
 | Container Apps probes | 🟢 Safe patch | In-place update |
-
-> **⚠️ Deploy-order rule:** Do **not** apply storage SKU patches in the same deploy as safe patches. Storage redundancy changes can fail the whole `azd up` / `terraform apply` (especially if migration is in-flight or the account kind doesn't support live conversion). Split into two deploys:
-> 1. **Deploy 1** — all 🟢 Safe patches (zone redundancy, health probes, probes). Verify success.
-> 2. **Storage migration** — run `az storage account migration start` and wait for completion (`az storage account show --query sku.name` returns `Standard_ZRS`).
-> 3. **Deploy 2** — the storage SKU patch (now matches actual state, so it's a no-op confirmation).
 
 **Step 3: Apply patches in two deploys (quick wins first)**
 
@@ -383,26 +366,16 @@ Do you want me to set up multi-region failover now? (yes / no / later)
 ## Best Practices
 
 - Run reliability assessments after every significant infrastructure change
-- Zone redundancy is the highest-value, lowest-cost improvement — always start there
-- Multi-region adds complexity and cost; recommend only for production workloads
-- Always upgrade storage to ZRS when enabling compute zone redundancy
 - Test failover scenarios periodically (at least quarterly)
 
 ## Skill Boundaries
 
-> **\u26a0\ufe0f IMPORTANT \u2014 This skill assesses, configures, and deploys reliability changes end-to-end. Hand off only for capabilities outside its scope.**
-
 | Action | This skill does | Hand off to |
 |---|---|---|
-| Assess reliability posture | \u2705 Yes | \u2014 |
-| Recommend improvements | \u2705 Yes | \u2014 |
-| Enable zone redundancy (CLI commands) | \u2705 Yes | \u2014 |
-| Patch Bicep/Terraform for reliability | \u2705 Yes | \u2014 |
-| Generate multi-region IaC | \u2705 Yes (additions for the secondary region + Front Door) | `azure-prepare` for full new-app IaC scaffolding |
-| Deploy IaC for reliability changes | \u2705 Yes (runs `azd up` / `terraform apply` / `az deployment` itself, after user confirmation) | `azure-deploy` for general/non-reliability deploys |
+| Assess reliability posture | ✅ Yes | — |
+| Recommend improvements | ✅ Yes | — |
+| Enable zone redundancy (CLI commands) | ✅ Yes | — |
+| Patch Bicep/Terraform for reliability | ✅ Yes | — |
+| Generate multi-region IaC | ✅ Yes (additions for the secondary region + Front Door) | `azure-prepare` for full new-app IaC scaffolding |
+| Deploy IaC for reliability changes | ✅ Yes (runs `azd up` / `terraform apply` / `az deployment` itself, after user confirmation) | `azure-deploy` for general/non-reliability deploys |
 | Validate pre-deployment | Reliability checks only | `azure-validate` for full validation |
-
-> **⛔ HARD STOPS — Warn user before these actions:**
-> - Container Apps environment zone redundancy requires **recreating** the environment (cannot be enabled in-place)
-> - Enabling zone redundancy may require a **plan upgrade** (e.g., Consumption → Flex Consumption) with cost implications
-> - Storage migration from LRS to ZRS can take hours/days; confirm with user before initiating
