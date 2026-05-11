@@ -37,7 +37,7 @@ stimuli:
     prompt: "Run azqr to check my Azure subscription for compliance against best practices"
     tags:
       type: integration
-      tier: smoke
+      tier: full
       cost: llm
       area: routing
     graders:
