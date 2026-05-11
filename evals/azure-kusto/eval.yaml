@@ -36,7 +36,7 @@ stimuli:
     prompt: "Write a KQL query to analyze logs in my Azure Data Explorer database"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

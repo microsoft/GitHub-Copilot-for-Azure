@@ -7,15 +7,14 @@ paths:
 
 suites:
   smoke:
-    description: "Static non-LLM checks only (e.g., trigger-pattern tests). Currently empty — all evals use the copilot-sdk executor."
+    description: "Quick routing checks — 1 stimulus per skill, runs: 1"
     filter:
       tier: smoke
-      cost: free
 
   pr:
-    description: "Non-LLM PR gate evals (cost: free reserved for static checks). Currently empty — populate as static evals are added."
+    description: "PR gate — smoke routing checks"
     filter:
-      cost: free
+      tier: smoke
 
   triggers:
     description: "All routing/trigger evals"

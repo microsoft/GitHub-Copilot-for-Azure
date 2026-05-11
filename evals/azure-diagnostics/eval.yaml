@@ -37,7 +37,7 @@ stimuli:
     prompt: "My Azure Container App keeps restarting, how do I troubleshoot it?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

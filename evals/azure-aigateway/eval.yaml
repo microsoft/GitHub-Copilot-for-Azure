@@ -37,7 +37,7 @@ stimuli:
     prompt: "How do I set up Azure API Management as an AI Gateway for my Azure OpenAI models?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

@@ -37,7 +37,7 @@ stimuli:
     prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

@@ -36,7 +36,7 @@ stimuli:
     prompt: "How do I create a Microsoft Entra app registration for OAuth authentication?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:
