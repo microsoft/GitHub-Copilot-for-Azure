@@ -11,14 +11,15 @@ There are three ways to run `vally`:
 # Install vally globally
 npm install -g @microsoft/vally-cli
 
-# Run with mock executor (fast, no auth)
-vally eval -e tests/azure-prepare/eval/eval.yaml \
-  --work-dir tests/azure-prepare/eval/fixtures --verbose
-
-# Run with real Copilot SDK (requires GITHUB_TOKEN)
+# Run evals (executor is configured in the YAML — mock or copilot-sdk)
 vally eval -e evals/azure-prepare/eval.yaml \
   --work-dir tests/azure-prepare/eval/fixtures --verbose
 ```
+
+> **Tip:** The `executor` field in `eval.yaml` controls whether evals run
+> against a mock backend (fast, no auth) or the real Copilot SDK
+> (requires `GITHUB_TOKEN`). Change `executor: mock` → `executor: copilot-sdk`
+> to switch modes.
 
 **Option 2 — npx (no global install)**
 ```bash
