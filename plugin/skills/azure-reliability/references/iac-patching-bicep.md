@@ -468,18 +468,24 @@ Before completing IaC patching, verify all applicable patches:
 | 7 | `Microsoft.App/containerApps` | `template.containers[].probes` | liveness + readiness |
 | 8 | `Microsoft.App/containerApps` | `template.scale.minReplicas` | `≥ 2` |
 
-After patching, tell the user:
+After patching, **the skill executes the deploys itself** \u2014 do not stop and tell the user to run commands. Confirm once with the user before each deploy, then run it.
+
+Summarize the plan for the user:
 ```
-✅ Bicep files patched for reliability. 
+\u2705 Bicep files patched for reliability.
 
-Recommended deploy order:
-  1. Deploy 1 — safe patches only (zone redundancy, health probes, probes). Run `azd up` / `az deployment` and verify success.
-  2. Storage migration — run `az storage account migration start` (if upgrading LRS → ZRS) and wait for `az storage account show --query sku.name` to return `Standard_ZRS`.
-  3. Deploy 2 — the storage SKU patch (no-op confirmation now that the live SKU matches).
+Deploy plan (the skill will run these for you after your confirmation):
+  1. Deploy 1 \u2014 safe patches only (zone redundancy, health probes, probes).
+     Command: `azd up` (or `az deployment group create ...`).
+  2. Storage migration (only if upgrading LRS \u2192 ZRS).
+     Command: `az storage account migration start ...`, then poll until `sku.name = Standard_ZRS`.
+  3. Deploy 2 \u2014 storage SKU patch (no-op confirmation that IaC matches live state).
 
-Do NOT bundle the storage SKU change with the safe patches — a failed storage redundancy update can fail the whole deployment.
+Do NOT bundle the storage SKU change with the safe patches \u2014 a failed storage redundancy update can fail the whole deployment.
 
-⚠️ Note: If you have an existing Container Apps environment without zone redundancy,
+\u26a0\ufe0f Note: If you have an existing Container Apps environment without zone redundancy,
    the environment name was changed to force recreation. Your apps will be migrated
    to the new environment on next deploy.
+
+Ready for Deploy 1? (yes / no)
 ```

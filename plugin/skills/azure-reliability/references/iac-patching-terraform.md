@@ -343,12 +343,25 @@ resource "azurerm_container_app" "app" {
 | 7 | `azurerm_container_app` | `liveness_probe` + `readiness_probe` | HTTP /health |
 | 8 | `azurerm_container_app` | `template.min_replicas` | `≥ 2` |
 
-After patching, tell the user:
-```
-✅ Terraform files patched for reliability. Run `terraform plan` to review changes,
-   then `terraform apply` (or `azd up`) to deploy.
+After patching, **the skill executes the deploys itself** \u2014 do not stop and tell the user to run commands. Confirm once with the user before each deploy, then run it.
 
-⚠️ Note: If you have an existing Container Apps environment without zone redundancy,
-   the environment name was changed to force recreation. Review the plan carefully
-   before applying — apps will be recreated in the new environment.
+Summarize the plan for the user:
+```
+\u2705 Terraform files patched for reliability.
+
+Deploy plan (the skill will run these for you after your confirmation):
+  1. `terraform plan -out tfplan` (skill will show the plan summary)
+  2. Deploy 1 \u2014 `terraform apply tfplan` for the safe patches.
+  3. Storage migration (only if upgrading LRS \u2192 ZRS).
+     Command: `az storage account migration start ...`, then poll until `sku.name = Standard_ZRS`.
+  4. Deploy 2 \u2014 second `terraform plan` + `apply` for the storage SKU patch (no-op confirmation).
+
+Do NOT bundle the storage SKU change with the safe patches \u2014 a failed storage redundancy update can fail the whole apply.
+
+\u26a0\ufe0f Note: If you have an existing Container Apps environment without zone redundancy,
+   the environment name was changed to force recreation. The skill will surface the
+   `terraform plan` summary before applying so you can confirm \u2014 apps will be recreated
+   in the new environment.
+
+Ready to run `terraform plan`? (yes / no)
 ```

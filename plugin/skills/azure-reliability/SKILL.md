@@ -248,7 +248,26 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 | Bicep | [references/iac-patching-bicep.md](references/iac-patching-bicep.md) |
 | Terraform | [references/iac-patching-terraform.md](references/iac-patching-terraform.md) |
 
-**Deploy 1 — Quick wins only.** Patch and deploy the 🟢 Safe items: zone redundancy on compute, health probes (Premium / Dedicated only), Container Apps probes. Do **NOT** include the storage SKU patch in this deploy. Verify the deployment succeeded.
+**Deploy 1 — Quick wins only.** Patch the 🟢 Safe items (zone redundancy on compute, health probes on Premium / Dedicated, Container Apps probes). Do **NOT** include the storage SKU patch in this deploy.
+
+After patching, **the skill runs the deploy itself** (do not stop and tell the user to run it). Detect the deployment tool and confirm once before executing:
+
+```
+📦 Patches applied to your IaC. Ready to deploy:
+   Tool detected: azd (found azure.yaml)
+   Command:       azd up
+
+Proceed with deployment? (yes / no)
+```
+
+On **yes**, run the appropriate command, stream output back to the user, and continue to the next step on success:
+- AZD project (has `azure.yaml`): `azd up`
+- Bicep-only: `az deployment group create --resource-group <rg> --template-file infra/main.bicep --parameters @infra/main.parameters.json`
+- Terraform: `terraform plan -out tfplan` → (show plan summary) → `terraform apply tfplan`
+
+On **no**, stop and report the patched files; do not proceed to Step 4 / Re-Assess.
+
+If deployment fails, surface the error and stop — do not continue to the storage step.
 
 **⛔ STOP — Ask about storage upgrade before Deploy 2.** After Deploy 1 succeeds, ask the user explicitly:
 
@@ -265,36 +284,31 @@ To be **fully zone-redundant**, your storage account also needs to be upgraded:
 Do you want me to start the storage migration now? (yes / no / later)
 ```
 
-- **yes** → run the migration command from Step 5 below; once `az storage account show --query sku.name` returns `Standard_ZRS`, patch the storage SKU in IaC and run **Deploy 2** (now a no-op confirmation).
+- **yes** → the skill runs the migration command itself, polls until complete, then patches the storage SKU in IaC and runs **Deploy 2** (now a no-op confirmation). The user does not need to run anything manually.
 - **no / later** → leave the storage SKU patch unapplied. Note in the re-assessment that ZR storage remains a gap; suggest revisiting later.
 
-**Step 4: Pre-deploy migration commands (only if user said yes to storage upgrade)**
+**Step 4: Storage migration (only if user said yes in Step 3)**
 
-Some IaC patches require a live migration step BEFORE deploying:
-- **Storage LRS → ZRS on existing account**: Run `az storage account migration start` first, then deploy the updated IaC
-- **Container Apps environment without ZR**: IaC creates a new environment (blue/green). Warn user that apps will be recreated.
+The skill runs these commands itself — do not ask the user to run them. Show progress as you go:
 
-Present these pre-deploy steps clearly:
 ```
-⚠️ Before Deploy 2, run these pre-migration steps:
+🔄 Starting storage migration (this can take up to 72 hours)...
 
-1. Storage migration (takes up to 72 hours):
    az storage account migration start --name stii5trxva2ark4 \
      --resource-group rg-example --sku Standard_ZRS --no-wait
 
-2. Wait for migration to complete:
-   az storage account show --name stii5trxva2ark4 --query sku.name
-   # Expect: "Standard_ZRS"
-
-3. Then run azd up / terraform apply (Deploy 2).
+   Polling: az storage account show --name stii5trxva2ark4 --query sku.name
+   ...
+   ✅ Migration complete: sku.name = Standard_ZRS
 ```
 
-**Step 5: Instruct user to deploy**
+For very long migrations, you may surface a checkpoint to the user ("this is still running, check back later") rather than blocking the entire conversation.
 
-After each deploy stage, tell the user the appropriate command:
-- AZD project (has `azure.yaml`): "Run `azd up` to deploy with reliability changes."
-- Bicep-only: "Run your Bicep deployment command (e.g., `az deployment group create`)."
-- Terraform: "Run `terraform plan` to review, then `terraform apply` to deploy."
+**For Container Apps environment blue/green** (existing env without ZR): IaC will create a new environment. Warn the user explicitly before running Deploy 1 that all apps will be recreated on the new environment.
+
+**Step 5: Deploy 2 — storage SKU patch**
+
+After the migration completes, the skill patches the storage SKU in IaC and runs the same deploy command as Step 3 (e.g. `azd up`). This deploy is a no-op confirmation that the IaC matches the live state. Confirm once with the user before executing, then run it directly.
 
 ### Step 2 (both paths): Re-Assess
 
@@ -338,7 +352,11 @@ Multi-region is a significant cost/complexity step. Do **NOT** start it automati
 Do you want me to set up multi-region failover now? (yes / no / later)
 ```
 
-- **yes** → proceed with [references/configure-multi-region.md](references/configure-multi-region.md). Confirm secondary region choice with the user before generating any IaC.
+- **yes** → proceed with [references/configure-multi-region.md](references/configure-multi-region.md). Confirm secondary region choice with the user, then:
+  1. Generate the multi-region IaC (Bicep / Terraform additions for the secondary region + Front Door).
+  2. Confirm once with the user: `📦 Multi-region IaC generated. Ready to deploy with \`azd up\`. Proceed? (yes / no)`
+  3. On **yes**, **the skill runs the deploy itself** (`azd up` / `az deployment group create` / `terraform apply`) and streams output. Do not stop and tell the user to run it.
+  4. After successful deploy, run a final re-assessment so the user sees Multi-region failover flip to 🟢 ON.
 - **no / later** → leave the deployment as-is. Note that single-region zone-redundant is a reliable end state; multi-region can be revisited anytime.
 
 > **⛔ Do not skip the wait.** Do not generate multi-region IaC, deploy a Front Door, or modify any files until the user has explicitly said yes. If core reliability is not yet all 🟢, do **not** ask about multi-region — finish the core gaps first.
@@ -372,16 +390,16 @@ Do you want me to set up multi-region failover now? (yes / no / later)
 
 ## Skill Boundaries
 
-> **⚠️ IMPORTANT — This skill assesses and recommends. For implementation, hand off to the appropriate skill.**
+> **\u26a0\ufe0f IMPORTANT \u2014 This skill assesses, configures, and deploys reliability changes end-to-end. Hand off only for capabilities outside its scope.**
 
 | Action | This skill does | Hand off to |
 |---|---|---|
-| Assess reliability posture | ✅ Yes | — |
-| Recommend improvements | ✅ Yes | — |
-| Enable zone redundancy (CLI commands) | ✅ Yes | — |
-| Patch Bicep/Terraform for reliability | ✅ Yes | — |
-| Generate multi-region IaC | Generates Bicep/Terraform files | `azure-prepare` for full IaC scaffolding |
-| Deploy infrastructure | ❌ No | `azure-deploy` |
+| Assess reliability posture | \u2705 Yes | \u2014 |
+| Recommend improvements | \u2705 Yes | \u2014 |
+| Enable zone redundancy (CLI commands) | \u2705 Yes | \u2014 |
+| Patch Bicep/Terraform for reliability | \u2705 Yes | \u2014 |
+| Generate multi-region IaC | \u2705 Yes (additions for the secondary region + Front Door) | `azure-prepare` for full new-app IaC scaffolding |
+| Deploy IaC for reliability changes | \u2705 Yes (runs `azd up` / `terraform apply` / `az deployment` itself, after user confirmation) | `azure-deploy` for general/non-reliability deploys |
 | Validate pre-deployment | Reliability checks only | `azure-validate` for full validation |
 
 > **⛔ HARD STOPS — Warn user before these actions:**
@@ -397,6 +415,6 @@ This skill works alongside other azure skills:
 |---|---|
 | `azure-validate` | Reliability checks can be surfaced during pre-deploy validation |
 | `azure-prepare` | New apps should default to zone-redundant configurations |
-| `azure-deploy` | Post-deploy nudge to run reliability assessment |
+| `azure-deploy` | Reliability changes are deployed by this skill directly (`azd up` / `terraform apply` / `az deployment` after user confirmation). Hand off to `azure-deploy` only for general/non-reliability deploys or as a post-deploy nudge to run a fresh reliability assessment. |
 | `azure-diagnostics` | After outage diagnosis, suggest reliability improvements |
 | `azure-compliance` | Reliability findings complement compliance/security audits |
