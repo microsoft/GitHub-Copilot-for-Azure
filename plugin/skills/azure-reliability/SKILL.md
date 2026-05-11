@@ -95,39 +95,49 @@ For service-specific assessment criteria, configuration commands, IaC patterns, 
 
 ### Phase 3: Generate Reliability Checklist
 
-Present findings as a reliability checklist showing which reliability features are enabled (✅) vs disabled (❌) for each resource. Do **not** assign numeric scores or grades.
+Present findings as a **feature-pivoted** table: one row per reliability feature (Zone redundancy on compute, Zone-redundant storage, Health probes, Multi-region failover), with a single status indicator and the **specific resources** that are relevant to that feature. This avoids the noise of one-row-per-resource with mostly `n/a` cells. Do **not** assign numeric scores or grades.
 
 ```
 🔍 Reliability Assessment — {scope}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Resource                        Zone Redundant   ZRS Storage   Health Probe   Multi-Region
-────────────────────────────────────────────────────────────────────────────────────────────
-Function App (my-func)          ❌               —             ✅             ❌
-Storage Account (mystor)        ❌ (LRS)         ❌            —              ❌
-Container App (my-api)          ✅               —             ✅             ❌
-App Service (my-web)            ❌               —             ❌             ❌
-Front Door                      —                —             —              ❌ Not configured
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+─────────────────────────────────────────────────────────────────────────────────────────────
+Reliability Feature              Status      Resources
+─────────────────────────────────────────────────────────────────────────────────────────────
+Zone redundancy — compute        🔴 OFF      • plan-ii5trxva2ark4 (FC1)
+                                              • plan-web-ii5trxva2ark4 (P1v3)
+                                              • cae-ii5trxva2ark4 (Container Env) — already ON
 
-Legend: ✅ enabled   ❌ disabled   — not applicable
+Zone-redundant storage           🔴 GRS      • stii5trxva2ark4 (defaulted; no SKU set in IaC)
 
-Recommendations (priority order):
-1. [Critical] ...
-2. [High] ...
-3. [Medium] ...
+Health probes                    🟡 PARTIAL  • app-web-ii5trxva2ark4 — no health check path
+                                              • ca-worker — liveness only (missing readiness)
+                                              • func-api-ii5trxva2ark4 — needs code change (FC1)
+
+Multi-region failover            🔴 OFF      • Single region (eastus) only — Front Door not configured
+─────────────────────────────────────────────────────────────────────────────────────────────
+
+Want me to fix the 🔴 items? I'll do the quick wins first (compute zone
+redundancy + health checks on supported plans), then ask before storage
+migration and multi-region setup. (yes/no)
 ```
 
-**Rules for the checklist:**
-- One row per resource discovered in scope.
-- Columns: only include the reliability features that apply to that resource type. Use `—` for non-applicable cells.
-- Use ✅ when the feature is enabled and correctly configured, ❌ when disabled or misconfigured.
-- For storage rows, annotate `❌ (LRS)` or `❌ (GRS)` so the user sees the current SKU at a glance. If the storage account has no explicit SKU set, treat it as `❌ (GRS)` — ARM/AVM defaults to `Standard_GRS` when none is specified.
-- For health probes on **Flex Consumption (FC1)** or **Consumption (Y1)** Function Apps, annotate `❌ (code-only fix)` — these plans do not support the `healthCheckPath` IaC property; the health endpoint must be implemented in app code.
-- Do **not** include numeric scores, grades, or point totals anywhere in the output.
+**Rules for the table:**
+
+- **Four feature rows, in this order:** Zone redundancy — compute · Zone-redundant storage · Health probes · Multi-region failover. Omit a row entirely only if no resource in scope could ever apply to it.
+- **Status column** is one symbol + one short word, no other characters:
+  - `🟢 ON` — feature is fully enabled across all relevant resources in scope
+  - `🟡 PARTIAL` — some resources have it, some don't (or partial config like liveness-only)
+  - `🔴 OFF` — feature is missing on all relevant resources
+  - For storage, replace `OFF` with the current SKU when relevant (`🔴 LRS`, `🔴 GRS`, `🟢 ZRS`, `🟢 GZRS`). When no SKU is set in IaC, label as `🔴 GRS` (ARM/AVM default) and note that in the resource line.
+- **Resources column** lists only what's relevant to that feature, one bullet per resource:
+  - For "needs fixing" resources, include a short inline reason (`(FC1)`, `(defaulted; no SKU set)`, `liveness only`, `needs code change (FC1)`).
+  - For resources that are **already ON** for that feature, mention them on the same row with `— already ON` so the user sees credit for what's right.
+- **Do not** include `n/a`, `—`, or empty cells. If a feature doesn't apply to any resource in scope, drop the row.
+- **Do not** include numeric scores, grades, or point totals.
+- End the assessment with a **single yes/no question** that kicks off the staged remediation flow. Do not enumerate the per-resource fix list here — the user will see it after they say yes (Configuration Workflow Step 1).
 
 > **UX Note:** If the assessment finds the app **already has** all core reliability features (zone redundancy, ZRS/GZRS storage, health probes) and is single-region, congratulate the user and offer multi-region as an optional follow-up using the same wait-and-confirm prompt as Configuration Workflow [Step 3](#step-3-both-paths-multi-region-followup--ask-and-wait). Do **NOT** start any multi-region work without explicit consent.
 >
-> If core reliability is **not** all ✅ at assessment time, do not mention multi-region here \u2014 it will be offered automatically after the core gaps are fixed (Configuration Workflow Step 3).
+> If core reliability is **not** all 🟢 at assessment time, do not mention multi-region as a separate question here — the assessment table already shows its status, and Configuration Workflow Step 3 will offer it after core gaps are fixed.
 
 ## Configuration Workflow
 
@@ -288,24 +298,36 @@ After each deploy stage, tell the user the appropriate command:
 
 ### Step 2 (both paths): Re-Assess
 
-After changes are applied (CLI) or deployed (IaC), automatically re-run the assessment and show before/after as a checklist diff:
+After changes are applied (CLI) or deployed (IaC), automatically re-run the assessment and show the **same feature-pivoted table** as Phase 3, with each feature row's status updated to reflect the new state. Briefly call out what changed since the previous run.
 
 ```
-🔄 Reliability Re-Assessment — rg-eventhubs-python-jan13
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Resource                        Feature              Before   After
-─────────────────────────────────────────────────────────────────────
-plan-ii5trxva2ark4              Zone redundant       ❌       ✅
-stii5trxva2ark4                 ZRS storage          ❌ LRS   ✅ ZRS
-func-api-ii5trxva2ark4          Health check path    ❌       ✅
+🔄 Reliability Re-Assessment — rg-eventhubs-python-jan13 (eastus)
+───────────────────────────────────────────────────────────────────────────────────────
+Reliability Feature              Status      Resources
+───────────────────────────────────────────────────────────────────────────────────────
+Zone redundancy — compute        🟢 ON       • plan-ii5trxva2ark4 (FC1)              — now ON
+                                              • plan-web-ii5trxva2ark4 (P1v3)         — now ON
+                                              • cae-ii5trxva2ark4 (Container Env)     — already ON
+
+Zone-redundant storage           🟢 ZRS      • stii5trxva2ark4                       — GRS → ZRS
+
+Health probes                    🟡 PARTIAL  • app-web-ii5trxva2ark4                 — now ON
+                                              • ca-worker                             — added readiness probe
+                                              • func-api-ii5trxva2ark4                — still off (FC1, code change declined)
+
+Multi-region failover            🔴 OFF      • Single region (eastus) only
+───────────────────────────────────────────────────────────────────────────────────────
+
+What changed: compute zone redundancy, storage replication, and health probes
+on App Service / Container Apps. (Multi-region offered next — see Step 3.)
 ```
 
 ### Step 3 (both paths): Multi-region follow-up — ASK and WAIT
 
-Multi-region is a significant cost/complexity step. Do **NOT** start it automatically. After re-assessment, only if **all core single-region reliability features are ✅** (zone-redundant compute, ZRS/GZRS storage, health probes), explicitly ask the user and **wait for their response** before doing anything:
+Multi-region is a significant cost/complexity step. Do **NOT** start it automatically. After re-assessment, only if **all core single-region reliability features are 🟢 ON** (zone-redundant compute, ZRS/GZRS storage, health probes), explicitly ask the user and **wait for their response** before doing anything:
 
 ```
-✅ Your app is now fully zone-redundant in {region}.
+🟢 Your app is now fully zone-redundant in {region}.
 
 🌟 The next step (optional) is multi-region failover with Azure Front Door:
    • Deploys compute + storage in a second region (paired region recommended)
@@ -319,7 +341,7 @@ Do you want me to set up multi-region failover now? (yes / no / later)
 - **yes** → proceed with [references/configure-multi-region.md](references/configure-multi-region.md). Confirm secondary region choice with the user before generating any IaC.
 - **no / later** → leave the deployment as-is. Note that single-region zone-redundant is a reliable end state; multi-region can be revisited anytime.
 
-> **⛔ Do not skip the wait.** Do not generate multi-region IaC, deploy a Front Door, or modify any files until the user has explicitly said yes. If core reliability is not yet all ✅, do **not** ask about multi-region \u2014 finish the core gaps first.
+> **⛔ Do not skip the wait.** Do not generate multi-region IaC, deploy a Front Door, or modify any files until the user has explicitly said yes. If core reliability is not yet all 🟢, do **not** ask about multi-region — finish the core gaps first.
 
 ## Priority Classification
 
