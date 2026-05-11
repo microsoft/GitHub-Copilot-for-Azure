@@ -21,7 +21,9 @@
     "update:snapshots": "node scripts/update-snapshots.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "eval": "vally eval",
+    "eval:lint": "vally lint plugin/skills/ --eval evals/ --strict"
   },
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
