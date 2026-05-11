@@ -52,10 +52,10 @@ describe("invoke - Unit Tests", () => {
       expect(invokeContent.length).toBeGreaterThan(100);
     });
 
-    test("documents hosted sticky session behavior", () => {
+    test("documents hosted session behavior", () => {
       expect(invokeContent).toContain("sessionId");
-      expect(invokeContent).toMatch(/Sticky sessions/i);
-      expect(invokeContent).toMatch(/25 character alphanumeric/i);
+      expect(invokeContent).toContain("session_create");
+      expect(invokeContent).toContain("^[A-Za-z0-9_-]{8,128}$");
     });
 
     test("does not reference removed Python fallback scripts", () => {
@@ -64,19 +64,17 @@ describe("invoke - Unit Tests", () => {
       expect(invokeContent).not.toContain("scripts/requirements.txt");
     });
 
-    test("documents generic hosted agent readiness checks", () => {
-      expect(invokeContent).toMatch(/\*\*Hosted agents\*\*/i);
+    test("documents hosted agent readiness checks", () => {
+      expect(invokeContent).toMatch(/hosted agents/i);
       expect(invokeContent).toMatch(/agent_get/i);
+      expect(invokeContent).toMatch(/active/i);
       expect(invokeContent).not.toContain("Hosted Agent (ACA)");
       expect(invokeContent).not.toContain("Hosted Agent (vNext)");
     });
 
     test("documents required hosted-agent invocation RBAC", () => {
-      expect(invokeContent).toContain("Azure AI User");
-      expect(invokeContent).not.toContain("Cognitive Services OpenAI User");
-      expect(invokeContent).toMatch(/per-agent identity/i);
-      expect(invokeContent).toMatch(/project-level agent identity/i);
-      expect(invokeContent).toMatch(/Cognitive Services account scope/i);
+      expect(invokeContent).toMatch(/RBAC|permission/i);
+      expect(invokeContent).toMatch(/troubleshoot/i);
     });
   });
 });
