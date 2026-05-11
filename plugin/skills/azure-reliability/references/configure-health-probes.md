@@ -14,7 +14,36 @@ App Service Health Check is only supported on certain plans:
 - **Flex Consumption:** ❌ Not supported — use app-level health endpoint only (no platform health check)
 - **Consumption:** ❌ Not supported — use app-level health endpoint only
 
-For **Flex Consumption / Consumption plans:** Skip the `az webapp config set` step below. Instead, just implement a `/api/health` HTTP endpoint in your function code. This can be used by Front Door or Traffic Manager for external health probing, but the platform won't use it for instance-level health management.
+For **Flex Consumption / Consumption plans:** Skip the `az webapp config set` step below. There is no platform health check to configure; the only remediation is to add a `/api/health` HTTP endpoint **in your function code**, which can be used by Front Door or Traffic Manager for external health probing.
+
+### ⛔ STOP — Confirm Before Adding HTTP-Trigger Health Endpoint (FC1 / Consumption)
+
+Adding a health endpoint on FC1 / Consumption is **not an IaC patch** — it requires **adding a new HTTP-triggered function to the user's code**. Do **not** generate or modify code without explicit consent.
+
+Before touching any source files, ask the user:
+
+```
+⚠️ This Function App is on Flex Consumption (FC1).
+   The platform `healthCheckPath` setting is not supported on this plan, so the only way
+   to enable health probing is to add an HTTP-triggered `/api/health` function to your code.
+
+   This means I would:
+     • Add a new HTTP trigger (anonymous, GET) returning 200 OK
+     • Touch your source code (not just IaC)
+     • Require a redeploy (`func azure functionapp publish` or `azd deploy`)
+
+   Do you want me to add the `/api/health` HTTP trigger to your function app code? (yes/no)
+```
+
+Proceed only on an explicit **yes**. If the user says no:
+- Leave the code untouched
+- Leave the IaC untouched (do **not** add `healthCheckPath` — it's unsupported on FC1)
+- Note in the assessment that this row remains `❌ (code-only fix — declined)` and continue with other patches
+
+If the user says yes:
+1. Detect the function app's language by inspecting the project (look for `host.json`, `requirements.txt`, `package.json`, `*.csproj`, `pom.xml`)
+2. Add the matching minimal HTTP trigger from the language-specific snippets below
+3. Tell the user which file(s) you added/edited and that they must redeploy
 
 ### Enable Health Check (Premium / Dedicated only)
 

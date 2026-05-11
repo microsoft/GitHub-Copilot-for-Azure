@@ -179,11 +179,18 @@ resource "azurerm_linux_web_app" "app" {
 
 ### ⚠️ Plan Type Gating
 
-Same as Bicep — do NOT add `health_check_path` for Flex Consumption or Consumption plans. Add a comment instead:
+Same as Bicep \u2014 do **NOT** add `health_check_path` for Flex Consumption or Consumption plans (it's unsupported on these plans).
+
+For FC1 / Consumption:
+
+1. Leave the `site_config` unchanged.
+2. **Ask the user** before adding any health endpoint code (see [configure-health-probes.md](configure-health-probes.md#-stop--confirm-before-adding-http-trigger-health-endpoint-fc1--consumption)) \u2014 it requires adding an HTTP-triggered function to their source, not a Terraform change.
+3. Optionally, leave a comment in the Terraform so future readers know why `health_check_path` is intentionally absent:
 
 ```hcl
-# Health check: Add /api/health HTTP endpoint in your function app code.
-# Platform health check is not supported on Flex Consumption.
+# Health check: Platform `health_check_path` is not supported on Flex Consumption / Consumption.
+# If a health endpoint is desired, add an HTTP-triggered `/api/health` function in app code
+# (see configure-health-probes.md). Do not set `site_config.health_check_path` here.
 ```
 
 ---

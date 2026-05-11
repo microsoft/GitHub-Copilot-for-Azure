@@ -272,11 +272,16 @@ resource app 'Microsoft.Web/sites@2023-12-01' = {
 | App Service (P1v2+) | ✅ Set `healthCheckPath` |
 | Consumption (Y1) | ❌ Not supported |
 
-**Do NOT add `healthCheckPath` to Flex Consumption or Consumption plans.** It will be ignored or cause errors. Instead, add a comment:
+**Do NOT add `healthCheckPath` to Flex Consumption or Consumption plans.** It will be ignored or cause errors. Instead:
+
+1. Leave the IaC `siteConfig` unchanged for these plans.
+2. **Ask the user** before adding any health endpoint code (see [configure-health-probes.md](configure-health-probes.md#-stop--confirm-before-adding-http-trigger-health-endpoint-fc1--consumption)) — it requires adding an HTTP-triggered function to their source, not an IaC change.
+3. Optionally, leave a comment in the Bicep so future readers know why `healthCheckPath` is intentionally absent:
 
 ```bicep
-// Health check: Add /api/health HTTP endpoint in your function app code.
-// Platform health check is not supported on Flex Consumption.
+// Health check: Platform `healthCheckPath` is not supported on Flex Consumption / Consumption.
+// If a health endpoint is desired, add an HTTP-triggered `/api/health` function in app code
+// (see configure-health-probes.md). Do not set `siteConfig.healthCheckPath` here.
 ```
 
 ---

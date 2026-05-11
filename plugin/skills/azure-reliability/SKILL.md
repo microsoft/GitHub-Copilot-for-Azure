@@ -210,7 +210,7 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 | Zone redundancy (compute) | 🟢 Safe patch | In-place property update on next deploy |
 | Storage LRS → ZRS | 🟡 Pre-migration required | Run `az storage account migration start` before deploy |
 | Health check path (Premium / Dedicated) | 🟢 Safe patch | In-place update, but causes app restart |
-| Health check path (FC1 / Consumption) | ⚪ Code-only | `healthCheckPath` is unsupported — add `/api/health` endpoint in app code; do **not** patch IaC |
+| Health check path (FC1 / Consumption) | ⚪ Code-only — ask first | `healthCheckPath` is unsupported. Adding a health endpoint requires adding an HTTP-triggered `/api/health` function to **app code**. **Always ask the user for explicit consent before touching source code.** Do **not** patch IaC. |
 | Container Apps env ZR (new env) | 🟢 Safe patch | Deploys as zone-redundant from start |
 | Container Apps env ZR (existing) | 🔴 Blue/green required | Must rename env + migrate all apps + child resources |
 | Container Apps probes | 🟢 Safe patch | In-place update |
