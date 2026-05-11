@@ -4,7 +4,7 @@
 
 ## Automated (Python available)
 
-Run the `upgrade_bom.py` script located at `references/languages/java/scripts/upgrade_bom.py` (relative to this skill). It auto-detects Gradle and performs:
+Run the `upgrade_bom.py` script located at `references/languages/java/scripts/upgrade_bom.py` (relative to this skill). It resolves the latest stable BOM version, auto-detects Gradle, and performs:
 
 1. **Set/upgrade the BOM** — adds `enforcedPlatform("com.azure:azure-sdk-bom:...")` if missing, or upgrades the version.
 2. **Remove redundant explicit versions** — strips inline version strings from Azure dependencies managed by the BOM.
@@ -13,7 +13,7 @@ The following invocation works identically in **bash** and **PowerShell**:
 
 ```bash
 # Path is relative to the skill directory (plugin/skills/azure-upgrade/)
-python3 ./references/languages/java/scripts/upgrade_bom.py <project_dir> <bom_version>
+python3 ./references/languages/java/scripts/upgrade_bom.py <project_dir>
 ```
 
 Options:
@@ -123,6 +123,7 @@ Run the Gradle wrapper to inspect the resolved classpath. Use the form appropria
 
 Then confirm:
 - The platform `com.azure:azure-sdk-bom:{bom_version}` appears.
+- `{bom_version}` equals `TARGET_AZURE_SDK_BOM_VERSION`.
 - All BOM-managed Azure artifacts resolve to versions sourced from the BOM.
 
 Then continue with the validation checklist in [bom-validation.md](./bom-validation.md).
