@@ -1,0 +1,133 @@
+# Bicep Patterns
+
+Bicep default-path patterns for AppOnboard scaffold. Used as the primary IaC format. For the alternative Terraform path (existing `.tf` files or user override), scaffold uses `mcp_azure_mcp_azureterraformbestpractices` output patterns.
+
+> **Source:** Adapted from [`azure-prepare/references/recipes/bicep/patterns.md`](../../azure-prepare/references/recipes/bicep/patterns.md). See [Bicep best practices](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/best-practices) for updates.
+
+## File Structure
+
+> ⛔ **Always use `targetScope = 'subscription'`.** Subscription-scope Bicep creates the resource group in IaC with all 5 AppOnboard tags (including `created-at`). Resource-group scope requires `az group create` via CLI, which consistently misses `created-at` — this has caused 4/5 tag failures in every resource-group-scope run. There are zero benefits to resource-group scope for AppOnboard.
+
+```
+infra/
+├── main.bicep              # Entry point (subscription scope)
+├── main.parameters.json    # ARM JSON parameter values (NOT .bicepparam)
+└── modules/
+    ├── container-app.bicep
+    ├── app-service.bicep
+    ├── sql-database.bicep
+    ├── key-vault.bicep
+    ├── log-analytics.bicep
+    └── ...
+```
+
+Each service gets its own module. `main.bicep` orchestrates resource group creation + module calls.
+
+## main.bicep Skeleton
+
+```bicep
+targetScope = 'subscription'
+
+@minLength(1)
+@maxLength(64)
+param environmentName string
+
+@minLength(1)
+param location string
+
+param sessionId string
+
+param deployedBy string   // resolved via: az ad signed-in-user show --query displayName -o tsv
+
+// ⛔ createdAt: passed in parameters.json, NOT utcNow() default (crashes Portal blade)
+param createdAt string
+
+var tags = {
+  'app-onboard-skill': 'true'
+  'app-onboard-session-id': sessionId
+  'created-at': createdAt
+  environment: environmentName
+  'deployed-by': deployedBy
+}
+
+resource rg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
+  name: 'rg-${environmentName}'
+  location: location
+  tags: tags
+}
+
+module resources './modules/resources.bicep' = {
+  name: 'resources'
+  scope: rg
+  params: {
+    location: location
+    environmentName: environmentName
+    tags: tags
+  }
+}
+```
+
+## main.parameters.json
+
+> ⛔ **ARM JSON only.** Do NOT use `.bicepparam` syntax (`using`, `param`, `readEnvironmentVariable()`). AppOnboard deploys via `az deployment sub create` (subscription-scope default) — not `azd` — and `.bicepparam` requires azd or newer tooling. If the user lacks subscription-level permissions, the deploy phase falls back to `az deployment group create` automatically.
+
+```json
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "{project}-{env}" },
+    "location": { "value": "{region}" },
+    "sessionId": { "value": "{context.json.sessionId}" },
+    "deployedBy": { "value": "{context.json.azure.userDisplayName}" }
+  }
+}
+```
+
+## Naming Convention (Bicep)
+
+```bicep
+var resourceToken = uniqueString(subscription().id, resourceGroup().id, location)
+
+// Pattern: {prefix}{name}{token} — enforce per-resource max length
+var kvName = 'kv-${take(environmentName, 10)}-${resourceToken}'    // Key Vault ≤24 chars
+var storName = 'st${take(environmentName, 8)}${resourceToken}'     // Storage ≤24 chars, alphanumeric only
+var acrName = replace('cr${environmentName}${resourceToken}', '-', '')  // ACR ≤50 chars, alphanumeric only
+```
+
+Cross-reference naming with [prepare/references/naming-patterns.md](../../prepare/references/naming-patterns.md) — Bicep names must match `prepare-plan.json.naming.resources[]`.
+
+## Compute-Target Patterns
+
+Read the file matching the service mapping — load only one:
+- **App Service / Functions:** [bicep-app-service.md](bicep-app-service.md) — module template, SCM/FTP auth, native module deploy strategy
+- **Container Apps:** [bicep-container-apps.md](bicep-container-apps.md) — two-phase ACR wiring, ingress, secretRef, image parameter, multi-container DNS
+
+Load both only if the plan includes both compute targets.
+
+### Two-Phase Deploy Pattern (Container Apps)
+
+> ⛔ **ACR role + KV secretRef timing.** Container Apps has a circular dependency: the CA needs the ACR image, but the managed identity for AcrPull and KV Secrets User doesn't exist until the CA is created. Additionally, KV `secretRef` entries fail if the CA's identity doesn't have the `Key Vault Secrets User` role yet.
+
+1. **Phase 1** — Deploy CA with placeholder image `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`. No `registries` block, no KV `secretRef`. This creates the managed identity.
+2. **Phase 2** — Assign `AcrPull` + `Key Vault Secrets User` roles to the CA's managed identity. Wait ~60s for RBAC propagation. Then redeploy with the real ACR image + KV `secretRef` entries.
+
+This consolidates the ACR pull and KV secret timing issues into one pattern. See [bicep-container-apps.md § Two-Phase Wiring](bicep-container-apps.md) for the full Bicep template.
+
+## Service Tagging
+
+> ⛔ **You MUST read [iac-generation-rules.md § Session Tags](iac-generation-rules.md) using the `view` tool.** All resources MUST include the 5 AppOnboard session tags. Pass `tags` object from `main.bicep` into every module.
+
+## API Version Policy
+
+Use the latest stable API version for each resource type. Never use preview APIs unless required for a feature with no GA alternative. Validate via `bicep build` — stale API versions produce warnings.
+
+## Key Vault Reference Syntax by Service
+
+| Service | Secret Reference Syntax | Identity Requirement |
+|---------|------------------------|---------------------|
+| App Service / Functions | `@Microsoft.KeyVault(SecretUri=https://{kv}.vault.azure.net/secrets/{name})` in app settings | System-assigned MI + `Key Vault Secrets User` role |
+| Container Apps | `secrets[].keyVaultUrl` + `secrets[].identity: 'system'` → `env[].secretRef` | System-assigned MI + `Key Vault Secrets User` role |
+| Terraform (any) | `azurerm_key_vault_secret` data source → `value` attribute | `azurerm_role_assignment` for the app identity |
+
+> ⛔ **Never mix syntaxes.** App Service `@Microsoft.KeyVault()` on Container Apps = silent failure (value treated as literal string). Container Apps `secretRef` on App Service = invalid config.

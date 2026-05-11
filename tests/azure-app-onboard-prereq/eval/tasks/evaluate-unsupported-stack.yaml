@@ -1,0 +1,64 @@
+# Task: Evaluate an unsupported technology stack
+id: evaluate-unsupported-stack
+name: "[Repo Context] — Evaluate unsupported tech stack"
+description: |
+  With bya-unsupported-web-app cloned into the workspace, verifies the agent
+  recognizes the unsupported technology and provides appropriate guidance.
+
+tags:
+  - repo-context
+  - evaluate
+  - unsupported
+
+inputs:
+  repo_id: bya-unsupported-web-app
+  prompt: |
+    Is my app ready to deploy to Azure?
+  context:
+    session_state: new
+    workspace: repo
+
+expected:
+  outcomes:
+    - type: task_completed
+  output_not_contains:
+    - "(?i)fatal error|unhandled exception"
+  behavior:
+    max_tool_calls: 15
+
+graders:
+  - name: acknowledges_stack
+    type: text
+    config:
+      regex_match:
+        - "(?i)support|compatible|alternative|limitation|unsupported|not.{0,20}(support|available)|eol|end.of.life|obsolete|outdated|migrate|caveats|legacy"
+
+  - name: detects_dynamodb_dependency
+    type: text
+    config:
+      regex_match:
+        - "(?i)dynamo.?db"
+
+  - name: detects_aspnet_21_outdated
+    type: text
+    config:
+      regex_match:
+        - "(?i)(2\\.1|asp\\.?net.+(outdated|end.of.life|eol|unsupported|legacy|old)|outdated.+asp\\.?net)"
+
+  - name: suggests_cosmos_db_replacement
+    type: text
+    config:
+      regex_match:
+        - "(?i)cosmos.?db|cosmos"
+
+  - name: does_not_blindly_approve
+    type: text
+    config:
+      regex_not_match:
+        - "(?i)everything looks good|no issues found|(?:is |it.s )ready to deploy|here('s| is) (the|your) (full )?architecture plan"
+
+  - name: scans_repo
+    type: tool
+    config:
+      tool_name: "view|glob|powershell"
+      min_calls: 1

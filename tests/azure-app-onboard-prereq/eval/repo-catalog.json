@@ -1,0 +1,1450 @@
+{
+  "$schema": "../../utils/skill-eval/repo-catalog.schema.json",
+  "_comment": "Repo catalog with ground-truth expectations for AppOnboard prereq evals. Prereq evaluates 3 axes: build health, completeness, deployability. Prompts sourced from app-onboard-learnings/golden_prompts/azure-app-onboard-prereq/prompts.json.",
+  "repos": {
+    "bya-simple-web-app": {
+      "url": "https://github.com/samcdonald-ms/bya-simple-web-app",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "app-onboard-team",
+      "description": "Simple notes web app for up to 15 users. Express.js backend, static HTML/CSS frontend. Has package.json + lock file, index.js entry point, tests/ directory. No Dockerfile, no README, no Azure infra.",
+      "expectedStack": {
+        "language": "javascript",
+        "framework": "express",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "javascript",
+          "framework": "express"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "App Service",
+          "sku": "F1",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host Express.js web app (free tier)"
+        },
+        {
+          "service": "App Service",
+          "sku": "B1 Linux",
+          "estimatedMonthlyUsd": 12.41,
+          "purpose": "host Express.js web app (paid tier)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 15
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "package.json present with valid dependencies, package-lock.json present, no version conflicts detected",
+        "completeness": "FAIL",
+        "completenessNotes": "has index.js entry point, package.json with deps, public/ static assets, tests/ directory; FAIL: express-session without external store (in-memory sessions lost on restart per deterministic sub-check); missing README.md (deleted), no Dockerfile, no .dockerignore, no CI/CD workflows",
+        "deployability": "WARN",
+        "deployabilityNotes": "maps to App Service (B1 — native modules block F1); SQLite ephemeral on PaaS; no existing Azure infra; at least one recipe viable"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "should detect single Express.js component via package.json scan, confirm build health (valid manifest + lock file), flag missing README.md and Dockerfile as WARN-level completeness gaps (non-blocking), confirm Azure deployability mapping to App Service, and produce overall readiness assessment as ready with minor warnings",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "no-db",
+        "beginner",
+        "has-tests",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "What prerequisites does my project need to meet for Azure deployment?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "bya-broken-web-app": {
+      "url": "https://github.com/samcdonald-ms/bya-broken-web-app",
+      "branch": "main",
+      "depth": 1,
+      "status": "unfunctional",
+      "maintainer": "app-onboard-team",
+      "description": "Intentionally broken clone of bya-simple-web-app. Missing src/db.js and public/css/style.css. Tests fail (10/10 crash). No Dockerfile, no README.",
+      "expectedStack": {
+        "language": "javascript",
+        "framework": "express",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "javascript",
+          "framework": "express"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "App Service",
+          "sku": "B1 Linux",
+          "estimatedMonthlyUsd": 12.41,
+          "purpose": "host Express.js web app (post-fix — native module blocks F1)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 15
+      },
+      "expectedPrereqVerdicts": {
+        "build": "FAIL",
+        "buildNotes": "missing src/db.js — app crashes on startup with MODULE_NOT_FOUND; all 10 tests fail because they require the missing db.js module",
+        "completeness": "FAIL",
+        "completenessNotes": "missing critical source file (src/db.js), missing public/css/style.css (UI renders unstyled), missing README.md (deleted), missing Dockerfile, missing .dockerignore, missing CI/CD workflows",
+        "deployability": "WARN",
+        "deployabilityNotes": "could map to App Service if build issues are fixed; no Dockerfile but not strictly required; no existing Azure infra; at least one recipe viable with modifications"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "Two expected paths — PATH 1 (initial detection): MUST identify build failure as blocking: missing src/db.js → MODULE_NOT_FOUND crash (static import analysis → ❌ FAIL build), missing public/css/style.css → unstyled UI (🔧 Highly Recommended Fix). Present fix plan, wait for user approval. Deployability WARN (viable if build fixed). PATH 2 (post-fix): After user approves fixes, agent creates missing files, re-runs full 3-axis scan, verdicts improve, readiness becomes fixesApplied. Pipeline continues to prepare phase. Post-fix: App Service B1 (~$12-15/mo)",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "no-db",
+        "broken",
+        "negative-test",
+        "no-azure-infra",
+        "prereq-fail"
+      ],
+      "prompt": "Can you scan my repo and tell me if there are any blockers for deployment?",
+      "agentCanFix": true,
+      "mustHalt": false
+    },
+    "bya-unsupported-web-app": {
+      "url": "https://github.com/samcdonald-ms/bya-unsupported-web-app",
+      "branch": "main",
+      "depth": 1,
+      "status": "unsupported",
+      "maintainer": "app-onboard-team",
+      "description": "ASP.NET Core 2.1 web app with Amazon DynamoDB integration. Uses AWS-native services Azure cannot directly support. End-of-life runtime, deprecated APIs.",
+      "expectedStack": {
+        "language": "csharp",
+        "framework": "aspnetcore",
+        "runtime": "dotnet",
+        "version": "2.1",
+        "versionNote": "ASP.NET Core 2.1 reached end-of-life Aug 2021; unsupported on Azure App Service"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "csharp",
+          "framework": "aspnetcore"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host containerized ASP.NET Core 2.1 app (post-fix — EOL runtime isolated in container)"
+        },
+        {
+          "service": "Cosmos DB",
+          "sku": "Serverless",
+          "estimatedMonthlyUsd": 1,
+          "purpose": "replace AWS DynamoDB via SDK swap (post-fix)"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store Docker images (post-fix)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 15
+      },
+      "expectedPrereqVerdicts": {
+        "build": "FAIL",
+        "buildNotes": "global.json pins SDK to 2.1.818 — modern .NET SDKs will not build the project; ASP.NET Core 2.1 is EOL (Aug 2021); deprecated APIs (IHostingEnvironment, CompatibilityVersion.Version_2_1) require rewriting Startup.cs and Program.cs, not just a TFM bump",
+        "completeness": "WARN",
+        "completenessNotes": "has Startup.cs entry point, .csproj manifest, and appsettings.json configuration; missing README.md (deleted), no Dockerfile, no .dockerignore; hardcoded AWS region (us-east-1) in appsettings.json",
+        "deployability": "FAIL",
+        "deployabilityNotes": "Amazon DynamoDB dependency is unsupported on Azure (needs Cosmos DB migration); EOL runtime not supported on Azure App Service; hardcoded AWS config blocks direct deployment; would need full framework upgrade + service migration"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "MUST flag compatibility blockers — do NOT assess as ready: (1) Amazon DynamoDB dependency unsupported on Azure — recommend Cosmos DB migration, (2) ASP.NET Core 2.1 is EOL (Aug 2021) — unsupported runtime, needs upgrade to supported .NET version, (3) global.json pins SDK to 2.1.818 preventing modern builds, (4) hardcoded AWS region (us-east-1) in appsettings.json, (5) deprecated APIs (IHostingEnvironment, CompatibilityVersion.Version_2_1). Should present ❌ FAIL verdicts for build and deployability, recommend migration path (upgrade .NET + replace DynamoDB with Cosmos DB), and require user acknowledgment before any downstream planning",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "aws-dependency",
+        "unsupported",
+        "negative-test",
+        "no-azure-infra",
+        "prereq-fail"
+      ],
+      "prompt": "Does Azure support my framework and runtime?",
+      "agentCanFix": true,
+      "mustHalt": false
+    },
+    "microblog-ai-remix": {
+      "url": "https://github.com/Azure-Samples/microblog-ai-remix",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "azure",
+      "description": "Full-stack AI microblogging app. Remix SSR + Azure Functions v4 + Azure OpenAI GPT-4o. Has Dockerfile, azure.yaml, Bicep infra. Archived on GitHub since Nov 2025 (read-only).",
+      "expectedStack": {
+        "language": "typescript",
+        "framework": "remix",
+        "runtime": "node",
+        "version": "20.x"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "typescript",
+          "framework": "remix"
+        },
+        {
+          "name": "server",
+          "language": "typescript",
+          "framework": "azure-functions-v4"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 2,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "host Remix SSR + Azure Functions via Dockerfile"
+        },
+        {
+          "service": "Azure OpenAI",
+          "sku": "gpt-4o global",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "AI content generation (GPT-4o)"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store Docker images"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 10,
+        "maxUsd": 50
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "package.json with valid dependencies, Dockerfile present, TypeScript compiles; azure.yaml and Bicep infra present",
+        "completeness": "PASS",
+        "completenessNotes": "has entry point, Dockerfile, azure.yaml, infra/ directory with Bicep, README, package.json with deps; fully equipped for deployment",
+        "deployability": "PASS",
+        "deployabilityNotes": "already Azure-ready with azure.yaml + Bicep infra; maps to Container Apps + Azure OpenAI + Container Registry; existing IaC detected — must set existingAzdProject: true in prereq-output.json to trigger azure.yaml gate in orchestrator"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect existing azure.yaml and Bicep infra, confirm build health (Dockerfile + package.json valid), confirm completeness (all artifacts present), confirm deployability (already Azure-ready), and set existingAzdProject: true in prereq-output.json. This flag triggers the azure.yaml decision gate in the orchestrator (use existing IaC via azd up or start fresh)",
+      "expectedIacFormat": "bicep",
+      "tags": [
+        "multi-component",
+        "ai",
+        "has-dockerfile",
+        "has-azure-yaml",
+        "has-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "Is my app configured correctly for Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "app-service-web-html": {
+      "url": "https://github.com/Azure-Samples/app-service-web-html-get-started",
+      "branch": "master",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "azure",
+      "description": "Simple static HTML/CSS/JS site built on Bootstrap Carousel template. Azure App Service getting-started sample. No package.json, no build step, no DB, no auth.",
+      "expectedStack": {
+        "language": "html",
+        "framework": "none",
+        "runtime": "static"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "html",
+          "framework": "static"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Static Web Apps",
+          "sku": "Free",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host static HTML site (recommended)"
+        },
+        {
+          "service": "App Service",
+          "sku": "F1",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host static HTML site (alternative)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 10
+      },
+      "expectedPrereqVerdicts": {
+        "build": "WARN",
+        "buildNotes": "static site — no build system detected per build-check.md (WARN); index.html serves as entry point directly",
+        "completeness": "WARN",
+        "completenessNotes": "has index.html entry point, CSS/JS/fonts/img assets, README.md, LICENSE; no package.json (acceptable for static sites), no Dockerfile, no dependency manifest (none needed for static HTML); health endpoint N/A for static sites",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to Static Web Apps (Free) as primary or App Service (F1) as alternative; no database, no auth, no backend — ideal for static hosting; no existing Azure infra in repo; at least one recipe clearly viable"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect static HTML/CSS/JS site with no backend or build step, assign build WARN (no build system detected — correct per build-check.md for sites without project manifests), confirm completeness PASS (has entry point, README, LICENSE; no manifest needed for static sites per exception), confirm Azure deployability PASS mapping to Static Web Apps or App Service, and produce overall readiness as ready (WARNs are non-blocking per Rule 5)",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "static",
+        "no-db",
+        "beginner",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass",
+        "completeness-edge-case"
+      ],
+      "prompt": "What do I need to do before I can deploy to Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "get-started-ai-agents": {
+      "url": "https://github.com/Azure-Samples/get-started-with-ai-agents",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "azure",
+      "description": "AI agent web chat app using Microsoft Foundry, Azure Container Apps, OpenAI, AI Search, and Application Insights. Python backend + TypeScript frontend.",
+      "expectedStack": {
+        "language": "python",
+        "framework": "foundry-agents",
+        "runtime": "python"
+      },
+      "expectedComponents": [
+        {
+          "name": "app",
+          "language": "python",
+          "framework": "foundry-agents"
+        },
+        {
+          "name": "frontend",
+          "language": "typescript",
+          "framework": "react"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 2,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "host web application"
+        },
+        {
+          "service": "Azure OpenAI",
+          "sku": "gpt-5-mini global",
+          "estimatedMonthlyUsd": 3,
+          "purpose": "power AI agent (default gpt-5-mini)"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store container images"
+        },
+        {
+          "service": "Storage Account",
+          "sku": "Standard LRS",
+          "estimatedMonthlyUsd": 1,
+          "purpose": "blob storage for uploaded files"
+        },
+        {
+          "service": "AI Search",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 75,
+          "purpose": "knowledge retrieval (optional)"
+        },
+        {
+          "service": "Application Insights",
+          "sku": "Pay-as-you-go",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "monitoring and tracing (optional)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 15,
+        "maxUsd": 100
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "Python requirements present, TypeScript package.json valid, Dockerfiles present; azure.yaml and Bicep infra complete",
+        "completeness": "PASS",
+        "completenessNotes": "has entry points for both components, Dockerfiles, azure.yaml, infra/ with Bicep, README, dependency manifests; fully equipped",
+        "deployability": "PASS",
+        "deployabilityNotes": "already Azure-ready with azure.yaml + Bicep infra; maps to Container Apps + Azure OpenAI + AI Search; existing IaC detected — must set existingAzdProject: true in prereq-output.json to trigger azure.yaml gate in orchestrator"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect existing azure.yaml and Bicep infra, confirm build health for both Python and TypeScript components, confirm completeness (all artifacts present), confirm deployability (already Azure-ready with Foundry framework), and set existingAzdProject: true in prereq-output.json. This flag triggers the azure.yaml decision gate in the orchestrator (use existing IaC via azd up or start fresh)",
+      "expectedIacFormat": "bicep",
+      "tags": [
+        "multi-component",
+        "ai",
+        "has-dockerfile",
+        "has-azure-yaml",
+        "has-infra",
+        "foundry",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "Is my app configured correctly for Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "aws-bookstore-demo": {
+      "url": "https://github.com/aws-samples/aws-bookstore-demo-app",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "aws",
+      "description": "Full-stack AWS bookstore app. React frontend, Lambda backend, DynamoDB, Neptune (graph), ElastiCache Redis, Elasticsearch, Cognito auth, CloudFront CDN. CloudFormation-deployed.",
+      "expectedStack": {
+        "language": "typescript",
+        "framework": "react",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "frontend",
+          "language": "typescript",
+          "framework": "react"
+        },
+        {
+          "name": "functions",
+          "language": "javascript",
+          "framework": "aws-lambda",
+          "note": "needs migration to Azure Functions or Container Apps"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 2,
+      "migrationSource": "aws",
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 15,
+          "purpose": "host backend APIs (migrated from Lambda)"
+        },
+        {
+          "service": "Static Web Apps",
+          "sku": "Free",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host React frontend (migrated from S3+CloudFront)"
+        },
+        {
+          "service": "Azure Cosmos DB",
+          "sku": "Serverless",
+          "estimatedMonthlyUsd": 25,
+          "purpose": "NoSQL data store (migrated from DynamoDB)"
+        },
+        {
+          "service": "Azure Cache for Redis",
+          "sku": "Basic C0",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "leaderboard/best sellers cache (migrated from ElastiCache)"
+        },
+        {
+          "service": "Azure Cognitive Search",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 75,
+          "purpose": "full-text search (migrated from Elasticsearch)"
+        },
+        {
+          "service": "Azure Cosmos DB",
+          "sku": "Gremlin API Serverless",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "graph database for book recommendations (migrated from Neptune)"
+        },
+        {
+          "service": "Entra ID (Azure AD)",
+          "sku": "Free",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "user authentication (migrated from Cognito)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 50,
+        "maxUsd": 150
+      },
+      "expectedPrereqVerdicts": {
+        "build": "WARN",
+        "buildNotes": "package.json with valid dependencies for React frontend; Lambda function JS files have no package.json (rely on Lambda runtime for aws-sdk); Python functions have no requirements.txt (rely on Lambda layer); WARN for missing manifests on Lambda components",
+        "completeness": "WARN",
+        "completenessNotes": "has README (PASS), frontend package.json with dependencies (PASS), entry points for React and Lambda handlers (PASS); WARN: Lambda JS/Python functions missing dependency manifests; no hardcoded secrets (config.ts has AWS endpoint URLs — identifiers not secrets)",
+        "deployability": "FAIL",
+        "deployabilityNotes": "ALL components have hard AWS dependencies: aws-sdk (DynamoDB), boto3 (Elasticsearch, Neptune), aws-amplify (Cognito, API), Lambda handler signatures — all FAIL per Non-Azure Cloud SDKs rule. Python 2 syntax in 2 files — FAIL per EOL Runtimes. Route to azure-cloud-migrate."
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "should identify all AWS-native service dependencies (DynamoDB, Lambda, Neptune, ElastiCache, Elasticsearch, Cognito) as requiring migration, flag CloudFormation as non-Azure IaC, confirm build PASS (manifests valid), confirm completeness PASS (all artifacts present), present deployability ⚠️ WARN (viable with migration), and produce readiness as ready (WARNs are non-blocking per Rule 5)",
+      "expectedIacFormat": "bicep",
+      "tags": [
+        "multi-component",
+        "aws-migration",
+        "has-db",
+        "has-cache",
+        "has-search",
+        "has-auth",
+        "complex",
+        "no-azure-infra",
+        "prereq-warn"
+      ],
+      "prompt": "Can you check if my dependencies are compatible with Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "fullstack-starter": {
+      "url": "https://github.com/first-fluke/fullstack-starter",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Production-ready fullstack monorepo. Next.js 16 frontend, FastAPI backend, Flutter mobile, PostgreSQL + Redis, Terraform + GCP infra. mise-based task management.",
+      "expectedStack": {
+        "language": "typescript",
+        "framework": "nextjs",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "typescript",
+          "framework": "nextjs"
+        },
+        {
+          "name": "api",
+          "language": "python",
+          "framework": "fastapi"
+        },
+        {
+          "name": "worker",
+          "language": "python",
+          "framework": "fastapi"
+        },
+        {
+          "name": "mobile",
+          "language": "dart",
+          "framework": "flutter",
+          "note": "mobile app — not deployed to Azure"
+        }
+      ],
+      "isMonorepo": true,
+      "componentCount": 4,
+      "deployableComponentCount": 3,
+      "migrationSource": "gcp",
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 20,
+          "purpose": "host Next.js + FastAPI + Worker (3 containers)"
+        },
+        {
+          "service": "Azure Database for PostgreSQL",
+          "sku": "Flexible Server Burstable B1ms",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "relational database"
+        },
+        {
+          "service": "Azure Cache for Redis",
+          "sku": "Basic C0",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "caching layer"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store container images"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 40,
+        "maxUsd": 100
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "package.json for Next.js, pyproject.toml for FastAPI, Dockerfiles present; all components have valid manifests and build configurations",
+        "completeness": "PASS",
+        "completenessNotes": "monorepo with clear component boundaries; has README, Dockerfiles, Terraform infra, CI/CD configs; Flutter mobile component detected but not deployable to Azure",
+        "deployability": "FAIL",
+        "deployabilityNotes": "worker has google-cloud-tasks + google-cloud-pubsub direct deps — FAIL per Non-Azure Cloud SDKs rule; web has @google-cloud/opentelemetry-cloud-trace-exporter — WARN (observability carve-out); GCP Terraform needs migration; Flutter mobile N/A; route to azure-cloud-migrate"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "should detect monorepo with 4 components (Next.js, FastAPI, worker, Flutter mobile), confirm build health for all components, flag Flutter mobile as non-deployable to Azure, identify GCP Terraform requiring migration to azurerm or Bicep, confirm 3 deployable components map to Container Apps + PostgreSQL + Redis on Azure",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "monorepo",
+        "multi-component",
+        "has-db",
+        "has-cache",
+        "gcp-migration",
+        "has-mobile",
+        "complex",
+        "no-azure-infra",
+        "prereq-pass"
+      ],
+      "prompt": "Can you scan my repo and tell me if there are any blockers for deployment?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "wetty": {
+      "url": "https://github.com/butlerx/wetty",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Terminal-in-browser over HTTP/HTTPS. Node.js/TypeScript SSH client with xterm.js frontend. Has Dockerfile and docker-compose.",
+      "expectedStack": {
+        "language": "typescript",
+        "framework": "express",
+        "runtime": "node",
+        "version": ">=18"
+      },
+      "expectedComponents": [
+        {
+          "name": "app",
+          "language": "typescript",
+          "framework": "express"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "host via Docker (recommended)"
+        },
+        {
+          "service": "App Service",
+          "sku": "B1 Linux",
+          "estimatedMonthlyUsd": 12.41,
+          "purpose": "host Node.js web app (alternative)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 5,
+        "maxUsd": 15
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "package.json with valid dependencies, Dockerfile present, TypeScript compiles; docker-compose available for local development",
+        "completeness": "PASS",
+        "completenessNotes": "has entry point, package.json, Dockerfile, docker-compose.yml, README; WebSocket/SSH requirements noted — needs persistent connection support",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to Container Apps (better WebSocket support) or App Service (B1+); Dockerfile present enables containerized deployment; no database dependencies; WebSocket support is key architectural requirement"
+      },
+      "expectedReadiness": "ready",
+      "fastTrackEligible": true,
+      "expectedBehavior": "should detect single TypeScript/Express component with Dockerfile + docker-compose, confirm build health (valid manifest + Dockerfile), confirm completeness (all artifacts present), flag WebSocket/SSH persistent connection as architectural consideration, recommend Container Apps for better WebSocket support, and set fastTrackEligible: true (single component, no DB, no auth, Dockerfile present)",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "no-db",
+        "has-dockerfile",
+        "has-docker-compose",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "Do I need a Dockerfile before deploying to Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "todo-nodejs-mongo": {
+      "url": "https://github.com/Azure-Samples/todo-nodejs-mongo",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "azure",
+      "description": "Full-stack ToDo app. React frontend, Node.js/Express API, Azure Cosmos DB (MongoDB API). Canonical azd template with Bicep infra, azure.yaml, Key Vault, and Application Insights.",
+      "expectedStack": {
+        "language": "typescript",
+        "framework": "express",
+        "runtime": "node",
+        "version": "18.x"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "typescript",
+          "framework": "react"
+        },
+        {
+          "name": "api",
+          "language": "typescript",
+          "framework": "express"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 2,
+      "expectedServices": [
+        {
+          "service": "App Service Plan",
+          "sku": "B1 Linux",
+          "estimatedMonthlyUsd": 12.41,
+          "purpose": "shared plan hosting two App Service instances (web + api)"
+        },
+        {
+          "service": "Azure Cosmos DB",
+          "sku": "Serverless (MongoDB API)",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "NoSQL document store"
+        },
+        {
+          "service": "Key Vault",
+          "sku": "Standard",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "secure connection strings"
+        },
+        {
+          "service": "Application Insights",
+          "sku": "Pay-as-you-go",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "monitoring and logging"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 22,
+        "maxUsd": 50
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "package.json with valid dependencies for both web and api; TypeScript compiles; azure.yaml and Bicep infra present and valid",
+        "completeness": "PASS",
+        "completenessNotes": "has entry points for both components, package.json, azure.yaml, infra/ with Bicep, README; canonical azd template with Key Vault and Application Insights configured",
+        "deployability": "PASS",
+        "deployabilityNotes": "already Azure-ready — canonical azd template with azure.yaml + Bicep infra; maps to App Service Plan + Cosmos DB + Key Vault + Application Insights; must set existingAzdProject: true in prereq-output.json to trigger azure.yaml gate in orchestrator"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect existing azd template with azure.yaml and Bicep infra, confirm build health for both React frontend and Express API, confirm completeness (canonical azd template with all artifacts), confirm deployability (already Azure-ready), and set existingAzdProject: true in prereq-output.json. This flag triggers the azure.yaml decision gate in the orchestrator (use existing IaC via azd up or start fresh)",
+      "expectedIacFormat": "bicep",
+      "tags": [
+        "multi-component",
+        "has-db",
+        "has-azure-yaml",
+        "has-infra",
+        "azd-template",
+        "beginner",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "What prerequisites does my project need to meet for Azure deployment?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "golang-clean-web-api": {
+      "url": "https://github.com/naeemaei/golang-clean-web-api",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Go REST API with clean architecture. Gin framework, PostgreSQL, Redis, Elasticsearch, Kibana, Docker Compose. No frontend, no Azure infra — pure API-only backend.",
+      "expectedStack": {
+        "language": "go",
+        "framework": "gin",
+        "runtime": "go"
+      },
+      "expectedComponents": [
+        {
+          "name": "api",
+          "language": "go",
+          "framework": "gin"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "host Go API via Docker"
+        },
+        {
+          "service": "Azure Database for PostgreSQL",
+          "sku": "Flexible Server Burstable B1ms",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "relational database"
+        },
+        {
+          "service": "Azure Cache for Redis",
+          "sku": "Basic C0",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "caching layer"
+        },
+        {
+          "service": "Azure Cognitive Search",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 75,
+          "purpose": "full-text search (migrated from Elasticsearch)"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store container images"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 30,
+        "maxUsd": 130
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "go.mod present with valid dependencies, Dockerfile present, Docker Compose available; Go project compiles",
+        "completeness": "PASS",
+        "completenessNotes": "has main.go entry point, go.mod manifest, Dockerfile, docker-compose, README; PostgreSQL + Redis + Elasticsearch dependencies detected in docker-compose",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to Container Apps for API; PostgreSQL → Azure Database for PostgreSQL, Redis → Azure Cache for Redis, Elasticsearch → Azure Cognitive Search; Kibana → Azure Monitor + Log Analytics; no existing Azure infra"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect Go/Gin API with Docker Compose, confirm build health (go.mod + Dockerfile valid), confirm completeness (all artifacts present), map PostgreSQL + Redis + Elasticsearch/Kibana to Azure equivalents, recommend Container Apps for the API",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "api-only",
+        "has-db",
+        "has-cache",
+        "has-dockerfile",
+        "has-docker-compose",
+        "no-azure-infra",
+        "go",
+        "community",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "I want to make sure my project structure is right before deploying",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "full-stack-fastapi-template": {
+      "url": "https://github.com/fastapi/full-stack-fastapi-template",
+      "branch": "master",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Production-grade full-stack template. React (TypeScript/Vite/Tailwind) frontend, FastAPI backend, PostgreSQL with SQLModel ORM, Docker Compose, Traefik reverse proxy, JWT auth, Playwright E2E tests. 42k+ stars.",
+      "expectedStack": {
+        "language": "python",
+        "framework": "fastapi",
+        "runtime": "python"
+      },
+      "expectedComponents": [
+        {
+          "name": "frontend",
+          "language": "typescript",
+          "framework": "react"
+        },
+        {
+          "name": "backend",
+          "language": "python",
+          "framework": "fastapi"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 2,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 15,
+          "purpose": "host FastAPI backend + React frontend (2 containers)"
+        },
+        {
+          "service": "Azure Database for PostgreSQL",
+          "sku": "Flexible Server Burstable B1ms",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "relational database"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store container images"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 25,
+        "maxUsd": 50
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "Python requirements and package.json both present, Dockerfiles for frontend and backend, Docker Compose valid; builds cleanly",
+        "completeness": "PASS",
+        "completenessNotes": "has entry points, dependency manifests, Dockerfiles, docker-compose, README, Playwright E2E tests; Traefik reverse proxy present — needs migration to Container Apps ingress",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to Container Apps for both components (built-in ingress replaces Traefik); PostgreSQL → Azure Database for PostgreSQL; Docker Compose networking must migrate to Container Apps environment internal DNS"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect React frontend + FastAPI backend with Docker Compose, confirm build health (Dockerfiles + manifests valid), confirm completeness (all artifacts present), note Traefik reverse proxy needs migration to Container Apps ingress, map PostgreSQL to Azure Database for PostgreSQL, recommend Container Apps for both components",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "multi-component",
+        "has-db",
+        "has-dockerfile",
+        "has-docker-compose",
+        "has-tests",
+        "community",
+        "python",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "What do I need to do before I can deploy to Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "dvwa": {
+      "url": "https://github.com/digininja/DVWA",
+      "branch": "master",
+      "depth": 1,
+      "status": "security-vulnerable",
+      "maintainer": "external",
+      "description": "Damn Vulnerable Web Application. PHP/MariaDB web app with intentional OWASP Top 10 vulnerabilities: SQL injection, XSS, CSRF, file inclusion, command injection, broken auth. 12.9k stars. Has Dockerfile and compose.yml.",
+      "expectedStack": {
+        "language": "php",
+        "framework": "none",
+        "runtime": "php"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "php",
+          "framework": "none"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 0
+      },
+      "expectedPrereqVerdicts": {
+        "build": "WARN",
+        "buildNotes": "Container-only build — no standalone build system detected (no root-level composer.json, no Makefile); Dockerfile runs composer install for API sub-component and docker-php-ext-install for extensions; WARN per build-check.md 'Only Dockerfile found'",
+        "completeness": "FAIL",
+        "completenessNotes": "has index.php entry point (PASS), Dockerfile and compose.yml (PASS), README present (PASS); FAIL: hardcoded default credentials (admin/password) in source — 'Hardcoded secrets in source → FAIL' per completeness-check.md configuration criterion",
+        "deployability": "FAIL",
+        "deployabilityNotes": "MUST NOT deploy — intentionally vulnerable app with OWASP Top 10 vulnerabilities (SQLi, XSS, CSRF, command injection, file inclusion); README explicitly warns 'do not upload to Internet-facing servers'; fundamentally incompatible with public cloud hosting; no viable safe deployment recipe"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "MUST flag security risks as blocking: completeness FAIL (hardcoded credentials admin/password per completeness-check.md 'Hardcoded secrets → FAIL'), deployability FAIL (intentionally vulnerable, README warns against internet deployment — fundamentally incompatible). Build PASS (Dockerfile + PHP code builds). Should refuse or strongly warn against deploying to Azure",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "has-db",
+        "has-dockerfile",
+        "has-compose-yml",
+        "security-vulnerable",
+        "negative-test",
+        "php",
+        "community",
+        "prereq-fail"
+      ],
+      "prompt": "Can you scan my repo and tell me if there are any blockers for deployment?",
+      "agentCanFix": false,
+      "mustHalt": true
+    },
+    "flasky-first-edition": {
+      "url": "https://github.com/miguelgrinberg/flasky-first-edition",
+      "branch": "master",
+      "depth": 1,
+      "status": "deprecated",
+      "maintainer": "external",
+      "description": "Archived Flask Web Development book companion (1st edition). Python 2 era code from 2016. Uses deprecated Flask-Script manage.py pattern, Heroku-specific Procfile. Archived on GitHub Oct 2025. 230 stars.",
+      "expectedStack": {
+        "language": "python",
+        "framework": "flask",
+        "runtime": "python",
+        "version": "2.7",
+        "versionNote": "first edition book targeted Python 2.7; code uses Python 2/3 compatible libraries but was written for 2.7 era"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "python",
+          "framework": "flask"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "App Service",
+          "sku": "B1 Linux",
+          "estimatedMonthlyUsd": 12.41,
+          "purpose": "host Flask web app (post-fix — requires Python 3 + Flask upgrade)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 15
+      },
+      "expectedPrereqVerdicts": {
+        "build": "FAIL",
+        "buildNotes": "Python 2.7 era code with Flask 0.12 and Werkzeug 0.11 — Python 2 is EOL (Jan 2020); dependencies are 9+ years old with likely known CVEs (bleach 1.4.0, html5lib 1.0b3); uses deprecated Flask-Script (manage.py) removed in Flask 2.0+",
+        "completeness": "WARN",
+        "completenessNotes": "has manage.py entry point, requirements.txt, README; Heroku-specific Procfile (minor adaptation needed); no Dockerfile, no pyproject.toml or modern Python packaging; archived GitHub repository — read-only",
+        "deployability": "FAIL",
+        "deployabilityNotes": "Python 2.7 is EOL and unsupported on Azure App Service; archived repo (read-only, unmaintained since Oct 2025); requires full Python 3 + modern Flask upgrade before any deployment is feasible"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "Two expected paths — PATH 1 (initial detection): MUST flag deprecation blockers: (1) archived repo (read-only), (2) Python 2.7 — EOL, unsupported on Azure, (3) Flask 0.12 + Werkzeug 0.11 with CVEs, (4) deprecated Flask-Script, (5) 9+ year old deps. PATH 2 (post-fix): After user approves, agent attempts Python 3 + modern Flask upgrade (major migration — warn about scope), re-runs prereq scan, then continues pipeline. Post-fix: App Service B1 (~$12/mo).",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "has-db-sqlite",
+        "deprecated",
+        "archived",
+        "negative-test",
+        "python",
+        "community",
+        "no-azure-infra",
+        "prereq-fail"
+      ],
+      "prompt": "Check what happens if my app uses something Azure doesn't support?",
+      "agentCanFix": true,
+      "mustHalt": false
+    },
+    "ticket-mate-broken": {
+      "url": "https://github.com/nevaroAI/ticket-mate-broken",
+      "branch": "main",
+      "depth": 1,
+      "status": "unfunctional",
+      "maintainer": "external",
+      "description": "Intentionally broken TypeScript React codebase with critical bugs: null reference errors, memory leaks, race conditions, missing error handling, type safety issues. No backend, no Dockerfile. Used as bug detection demo.",
+      "expectedStack": {
+        "language": "typescript",
+        "framework": "react",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "typescript",
+          "framework": "react"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Static Web Apps",
+          "sku": "Free",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host React SPA (post-fix — code quality bugs fixed)",
+          "note": "frontend-only app; Static Web Apps Free after agent fixes null refs, memory leaks, race conditions"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 0
+      },
+      "expectedPrereqVerdicts": {
+        "build": "WARN",
+        "buildNotes": "package.json with valid dependencies (manifest structure OK); static detection does not run tsc — code quality bugs (null refs, memory leaks, race conditions) are runtime issues not manifest-level; WARN for potential issues visible in source if agent scans beyond manifest",
+        "completeness": "WARN",
+        "completenessNotes": "has React entry point (PASS), has package.json with dependencies (PASS), no hardcoded secrets (PASS); WARN: sparse or missing documentation; note: missing tests, missing Dockerfile, and code quality issues are NOT completeness criteria per completeness-check.md",
+        "deployability": "PASS",
+        "deployabilityNotes": "React SPA maps to Static Web Apps (Free) — component mapping feasible; no exotic dependencies; at least one deployment recipe clearly viable (Static Web Apps or Container Apps with Dockerfile)"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "prereq static detection assesses manifest health, not code quality: build WARN (package.json valid, but code quality concerns visible), completeness WARN (has entry point + manifest, sparse docs), deployability PASS (React SPA → Static Web Apps). Readiness is ready (WARNs non-blocking per Rule 5). Note: code quality issues (null refs, memory leaks, race conditions) are beyond prereq's static manifest detection scope",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "broken",
+        "no-db",
+        "negative-test",
+        "typescript",
+        "community",
+        "no-azure-infra",
+        "prereq-warn"
+      ],
+      "prompt": "My app isn't containerized yet — is that a problem?",
+      "agentCanFix": true,
+      "mustHalt": false
+    },
+    "broken-todo-demo": {
+      "url": "https://github.com/Arun07AK/broken-todo-demo",
+      "branch": "main",
+      "depth": 1,
+      "status": "unfunctional",
+      "maintainer": "external",
+      "description": "Vibe-coded Express.js todo app with intentional flaws. Single server.js file. Has GitHub Actions CI that fails. Designed as a VibeCheck demo target.",
+      "expectedStack": {
+        "language": "javascript",
+        "framework": "express",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "javascript",
+          "framework": "express"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "App Service",
+          "sku": "F1",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host Express.js app (post-fix — entry point fixed, secrets externalized)",
+          "note": "simple single-file Express app; F1 viable after agent fixes entry point mismatch and externalizes hardcoded secrets"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 0
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "package.json present with valid dependencies and start script; no version conflicts or manifest errors detectable via static detection; code quality issues (no validation, no error handling) are runtime concerns not manifest-level",
+        "completeness": "FAIL",
+        "completenessNotes": "FAIL: entry point mismatch (package.json.main points to index.js but file doesn't exist — app crashes with MODULE_NOT_FOUND) + hardcoded secrets (OPENAI_API_KEY and DB_PASSWORD literals in source with no env var fallback). Remediation loop should fix both → fixesApplied",
+        "deployability": "WARN",
+        "deployabilityNotes": "Express.js maps to App Service; greenfield (no Dockerfile, no Azure IaC); in-memory storage is ephemeral on PaaS; at least one deployment recipe viable"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "prereq detects 2 blockers: entry point mismatch (main: index.js but server.js is the actual file) and hardcoded API key + DB password. Presents fix plan, waits for user approval. After remediation: entry point corrected, secrets externalized to process.env, .env.example created. Re-evaluation produces fixesApplied. Deployability WARN from greenfield + in-memory storage.",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "no-db",
+        "broken",
+        "negative-test",
+        "beginner",
+        "community",
+        "no-azure-infra",
+        "prereq-warn"
+      ],
+      "prompt": "Check what happens if my app uses something Azure doesn't support?",
+      "agentCanFix": true,
+      "mustHalt": false
+    },
+    "demo-app-broken-deps": {
+      "url": "https://github.com/dev-arv13/demo-app",
+      "branch": "main",
+      "depth": 1,
+      "status": "unfunctional",
+      "maintainer": "external",
+      "description": "Node.js Express app that intentionally fails due to a broken npm dependency. npm install fails. GitHub Actions workflow configured to demonstrate CI failure.",
+      "expectedStack": {
+        "language": "javascript",
+        "framework": "express",
+        "runtime": "node"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "javascript",
+          "framework": "express"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "App Service",
+          "sku": "F1",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host Express.js app (post-fix — F1 viable after dependency fixed)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 0
+      },
+      "expectedPrereqVerdicts": {
+        "build": "FAIL",
+        "buildNotes": "broken npm dependency — package.json references non-existent or unresolvable package; missing lock file (npm install never succeeded) → WARN escalated to FAIL as obvious misconfiguration; app cannot be built",
+        "completeness": "WARN",
+        "completenessNotes": "has package.json manifest (structurally valid JSON), has entry point; WARN: missing lock file, no Dockerfile, sparse docs; note: dependency resolution failure is a build-axis issue, not completeness — completeness checks artifact presence not functional resolution",
+        "deployability": "WARN",
+        "deployabilityNotes": "could map to App Service if dependency is fixed; agent can identify and fix broken dependency reference; at least one recipe viable with modifications; completely blocked by build failure upstream"
+      },
+      "expectedReadiness": "needsFixes",
+      "expectedBehavior": "Two expected paths — PATH 1 (initial detection): MUST flag dependency failure as blocking: broken npm dependency (npm install fails, unresolvable package), app cannot be built. CI pipeline fails (cascades). Present as blocking with fix plan, wait for user approval. PATH 2 (post-fix): After user approves, agent identifies the broken dependency reference in package.json, removes or replaces it with a valid alternative, verifies npm install succeeds, re-runs prereq scan, verdicts improve, pipeline continues. Post-fix: App Service F1 ($0). The agent SHOULD attempt the fix — broken dependency references are within agent fix scope.",
+      "expectedIacFormat": "none",
+      "tags": [
+        "single-component",
+        "no-db",
+        "broken",
+        "broken-deps",
+        "fixable-blocker",
+        "community",
+        "no-azure-infra",
+        "prereq-warn"
+      ],
+      "prompt": "Can you scan my repo and tell me if there are any blockers for deployment?",
+      "agentCanFix": true,
+      "mustHalt": false
+    },
+    "docker-static-site": {
+      "url": "https://github.com/nishanttotla/DockerStaticSite",
+      "branch": "master",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Minimal static HTML site served by nginx in Docker. Single index.html + Dockerfile + nginx config. No package.json, no DB, no auth. Perfect fast-track candidate.",
+      "expectedStack": {
+        "language": "html",
+        "framework": "none",
+        "runtime": "static"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "html",
+          "framework": "static"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "App Service",
+          "sku": "F1",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host static site via Dockerfile (free tier)"
+        },
+        {
+          "service": "Static Web Apps",
+          "sku": "Free",
+          "estimatedMonthlyUsd": 0,
+          "purpose": "host static HTML (alternative — no Docker needed)"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 0,
+        "maxUsd": 0
+      },
+      "expectedPrereqVerdicts": {
+        "build": "WARN",
+        "buildNotes": "no project manifest detected (no package.json, no go.mod, etc.); only Dockerfile found → WARN per build-check.md ('Only Dockerfile found → WARN — Build depends on container'); static site with nginx config",
+        "completeness": "PASS",
+        "completenessNotes": "has index.html entry point (PASS), Dockerfile and nginx config present (PASS); no dependency manifest but acceptable for static sites (PASS per exception); no hardcoded secrets (PASS)",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to App Service (F1) via Dockerfile or Static Web Apps (Free) without Docker; no DB, no auth — fast-track eligible; single component + Dockerfile + no dependencies = minimal deployment path"
+      },
+      "expectedReadiness": "ready",
+      "fastTrackEligible": true,
+      "expectedBehavior": "should detect single static HTML component with Dockerfile, assign build WARN (only Dockerfile found, no project manifest per build-check.md), confirm completeness PASS (minimal but sufficient for static site), confirm deployability PASS (fast-track eligible), and set fastTrackEligible: true in prereq output",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "static",
+        "no-db",
+        "no-auth",
+        "has-dockerfile",
+        "fast-track",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "Do I need a Dockerfile before deploying to Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "yamtrack-django": {
+      "url": "https://github.com/FuzzyGrim/Yamtrack",
+      "branch": "dev",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Self-hosted media tracker for movies, TV, anime, manga, games, books. Django backend with PostgreSQL, Redis (Celery), Docker Compose. OIDC/social auth via django-allauth. 2.6k+ stars.",
+      "expectedStack": {
+        "language": "python",
+        "framework": "django",
+        "runtime": "python"
+      },
+      "expectedComponents": [
+        {
+          "name": "web",
+          "language": "python",
+          "framework": "django"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "host Django app via Dockerfile"
+        },
+        {
+          "service": "Azure Database for PostgreSQL",
+          "sku": "Flexible Server Burstable B1ms",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "relational database"
+        },
+        {
+          "service": "Azure Cache for Redis",
+          "sku": "Basic C0",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "Celery broker + caching"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store container images"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 30,
+        "maxUsd": 60
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "Python requirements present, Dockerfile present, Docker Compose available; Django project with manage.py entry point builds cleanly",
+        "completeness": "PASS",
+        "completenessNotes": "has manage.py entry point, requirements, Dockerfile, docker-compose, README, tests; PostgreSQL + Redis (Celery) dependencies detected; OIDC/social auth via django-allauth configured",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to Container Apps for Django app; PostgreSQL → Azure Database for PostgreSQL, Redis → Azure Cache for Redis (Celery broker); Dockerfile enables containerized deployment; no existing Azure infra"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect Django web app with Dockerfile + Docker Compose, confirm build health (Python requirements + Dockerfile valid), confirm completeness (all artifacts present including tests), map PostgreSQL + Redis to Azure equivalents, recommend Container Apps for the web tier",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "has-db",
+        "has-cache",
+        "has-dockerfile",
+        "has-docker-compose",
+        "has-tests",
+        "has-auth",
+        "python",
+        "django",
+        "community",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "My app uses a local database — check what I need to change before moving to Azure",
+      "agentCanFix": false,
+      "mustHalt": false
+    },
+    "postgresql-event-sourcing": {
+      "url": "https://github.com/eugene-khyst/postgresql-event-sourcing",
+      "branch": "main",
+      "depth": 1,
+      "status": "functional",
+      "maintainer": "external",
+      "description": "Event-sourced ride-hailing system. Spring Boot + PostgreSQL + Kafka + nginx. Gradle build, Docker Compose, CQRS pattern. 1.3k+ stars.",
+      "expectedStack": {
+        "language": "java",
+        "framework": "spring-boot",
+        "runtime": "java",
+        "version": "21"
+      },
+      "expectedComponents": [
+        {
+          "name": "api",
+          "language": "java",
+          "framework": "spring-boot"
+        }
+      ],
+      "isMonorepo": false,
+      "componentCount": 1,
+      "expectedServices": [
+        {
+          "service": "Container Apps",
+          "sku": "Consumption",
+          "estimatedMonthlyUsd": 10,
+          "purpose": "host Spring Boot API via Docker"
+        },
+        {
+          "service": "Azure Database for PostgreSQL",
+          "sku": "Flexible Server Burstable B1ms",
+          "estimatedMonthlyUsd": 16,
+          "purpose": "event store (PostgreSQL)"
+        },
+        {
+          "service": "Event Hubs",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 11,
+          "purpose": "message broker (migrated from Kafka)"
+        },
+        {
+          "service": "Container Registry",
+          "sku": "Basic",
+          "estimatedMonthlyUsd": 5,
+          "purpose": "store container images"
+        }
+      ],
+      "expectedCostRange": {
+        "minUsd": 30,
+        "maxUsd": 60
+      },
+      "expectedPrereqVerdicts": {
+        "build": "PASS",
+        "buildNotes": "Gradle build with valid build.gradle, Dockerfile present, Docker Compose available; Java 21 Spring Boot project compiles",
+        "completeness": "PASS",
+        "completenessNotes": "has main class entry point, build.gradle manifest, Dockerfile, docker-compose, README, tests; PostgreSQL + Kafka dependencies detected in Docker Compose; CQRS/event-sourcing architecture",
+        "deployability": "PASS",
+        "deployabilityNotes": "maps to Container Apps for Spring Boot API; PostgreSQL → Azure Database for PostgreSQL, Kafka → Azure Event Hubs (Kafka protocol support); Dockerfile enables containerized deployment; no existing Azure infra"
+      },
+      "expectedReadiness": "ready",
+      "expectedBehavior": "should detect Java/Spring Boot API with Gradle build and Docker Compose, confirm build health (Gradle + Dockerfile valid), confirm completeness (all artifacts present including tests), map PostgreSQL to Azure Database for PostgreSQL and Kafka to Azure Event Hubs, recommend Container Apps for the API",
+      "expectedIacFormat": "terraform",
+      "tags": [
+        "single-component",
+        "api-only",
+        "has-db",
+        "has-dockerfile",
+        "has-docker-compose",
+        "has-tests",
+        "java",
+        "spring-boot",
+        "community",
+        "no-azure-infra",
+        "functional",
+        "prereq-pass"
+      ],
+      "prompt": "Can you check if my dependencies are compatible with Azure?",
+      "agentCanFix": false,
+      "mustHalt": false
+    }
+  }
+}
