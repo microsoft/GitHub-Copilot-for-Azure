@@ -81,8 +81,10 @@ For deployments with Azure SQL Database and managed identity:
 > ⚠️ **Warning:** `az sql db query` requires the `rdbms-connect` extension: `az extension add --name rdbms-connect --yes`
 
 ```bash
-# Load environment variables
-eval $(azd env get-values)
+# Get required values from azd
+SQL_SERVER=$(azd env get-value SQL_SERVER)
+SQL_DATABASE=$(azd env get-value SQL_DATABASE)
+AZURE_RESOURCE_GROUP=$(azd env get-value AZURE_RESOURCE_GROUP)
 
 # Check managed identity user exists in database
 az sql db query \
@@ -95,17 +97,16 @@ az sql db query \
 
 **PowerShell:**
 ```powershell
-# Load environment variables
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value
-}
+# Get required values from azd
+$SqlServer = azd env get-value SQL_SERVER
+$SqlDatabase = azd env get-value SQL_DATABASE
+$ResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
 
 # Check managed identity user exists in database
 az sql db query `
-  --server $env:SQL_SERVER `
-  --database $env:SQL_DATABASE `
-  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --server $SqlServer `
+  --database $SqlDatabase `
+  --resource-group $ResourceGroup `
   --auth-mode ActiveDirectoryDefault `
   --queries "SELECT name, type_desc FROM sys.database_principals WHERE type = 'E'"
 ```
@@ -117,6 +118,11 @@ az sql db query `
 For EF Core applications:
 
 ```bash
+# Get required values from azd
+SQL_SERVER=$(azd env get-value SQL_SERVER)
+SQL_DATABASE=$(azd env get-value SQL_DATABASE)
+AZURE_RESOURCE_GROUP=$(azd env get-value AZURE_RESOURCE_GROUP)
+
 # Check tables exist
 az sql db query \
   --server "$SQL_SERVER" \
@@ -128,10 +134,14 @@ az sql db query \
 
 **PowerShell:**
 ```powershell
+$SqlServer = azd env get-value SQL_SERVER
+$SqlDatabase = azd env get-value SQL_DATABASE
+$ResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
+
 az sql db query `
-  --server $env:SQL_SERVER `
-  --database $env:SQL_DATABASE `
-  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --server $SqlServer `
+  --database $SqlDatabase `
+  --resource-group $ResourceGroup `
   --auth-mode ActiveDirectoryDefault `
   --queries "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
 ```

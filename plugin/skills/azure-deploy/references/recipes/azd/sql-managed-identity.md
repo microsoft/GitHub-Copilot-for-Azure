@@ -13,8 +13,10 @@ Grant Azure managed identities database permissions on Azure SQL with Entra auth
 ## Quick Grant
 
 ```bash
-eval $(azd env get-values)
-APP_NAME=$(echo "$SERVICE_API_NAME")  # or SERVICE_WEB_NAME
+SQL_SERVER=$(azd env get-value SQL_SERVER)
+SQL_DATABASE=$(azd env get-value SQL_DATABASE)
+AZURE_RESOURCE_GROUP=$(azd env get-value AZURE_RESOURCE_GROUP)
+APP_NAME=$(azd env get-value SERVICE_API_NAME)  # or SERVICE_WEB_NAME
 
 az sql db query \
   --server "$SQL_SERVER" \
@@ -31,11 +33,10 @@ az sql db query \
 
 **PowerShell:**
 ```powershell
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value
-}
-$AppName = $env:SERVICE_API_NAME  # or SERVICE_WEB_NAME
+$SqlServer = azd env get-value SQL_SERVER
+$SqlDatabase = azd env get-value SQL_DATABASE
+$ResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
+$AppName = azd env get-value SERVICE_API_NAME  # or SERVICE_WEB_NAME
 
 $SqlQuery = @"
 CREATE USER [$AppName] FROM EXTERNAL PROVIDER;
@@ -45,9 +46,9 @@ ALTER ROLE db_ddladmin ADD MEMBER [$AppName];
 "@
 
 az sql db query `
-  --server $env:SQL_SERVER `
-  --database $env:SQL_DATABASE `
-  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --server $SqlServer `
+  --database $SqlDatabase `
+  --resource-group $ResourceGroup `
   --auth-mode ActiveDirectoryDefault `
   --queries $SqlQuery
 ```
@@ -80,7 +81,10 @@ hooks:
 ```bash
 #!/bin/bash
 set -e
-eval $(azd env get-values)
+SQL_SERVER=$(azd env get-value SQL_SERVER)
+SQL_DATABASE=$(azd env get-value SQL_DATABASE)
+AZURE_RESOURCE_GROUP=$(azd env get-value AZURE_RESOURCE_GROUP)
+SERVICE_API_NAME=$(azd env get-value SERVICE_API_NAME)
 
 az sql db query \
   --server "$SQL_SERVER" \
@@ -121,44 +125,44 @@ az sql db query \
 
 ```powershell
 $ErrorActionPreference = 'Stop'
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value
-}
+$SqlServer = azd env get-value SQL_SERVER
+$SqlDatabase = azd env get-value SQL_DATABASE
+$ResourceGroup = azd env get-value AZURE_RESOURCE_GROUP
+$ServiceApiName = azd env get-value SERVICE_API_NAME
 
 $SqlQuery = @"
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$($env:SERVICE_API_NAME)')
-  CREATE USER [$($env:SERVICE_API_NAME)] FROM EXTERNAL PROVIDER;
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '$ServiceApiName')
+  CREATE USER [$ServiceApiName] FROM EXTERNAL PROVIDER;
 
 IF NOT EXISTS (
   SELECT 1 FROM sys.database_role_members drm
   JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
   JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_datareader' AND m.name = '$($env:SERVICE_API_NAME)'
+  WHERE r.name = 'db_datareader' AND m.name = '$ServiceApiName'
 )
-  ALTER ROLE db_datareader ADD MEMBER [$($env:SERVICE_API_NAME)];
+  ALTER ROLE db_datareader ADD MEMBER [$ServiceApiName];
 
 IF NOT EXISTS (
   SELECT 1 FROM sys.database_role_members drm
   JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
   JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_datawriter' AND m.name = '$($env:SERVICE_API_NAME)'
+  WHERE r.name = 'db_datawriter' AND m.name = '$ServiceApiName'
 )
-  ALTER ROLE db_datawriter ADD MEMBER [$($env:SERVICE_API_NAME)];
+  ALTER ROLE db_datawriter ADD MEMBER [$ServiceApiName];
 
 IF NOT EXISTS (
   SELECT 1 FROM sys.database_role_members drm
   JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id
   JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id
-  WHERE r.name = 'db_ddladmin' AND m.name = '$($env:SERVICE_API_NAME)'
+  WHERE r.name = 'db_ddladmin' AND m.name = '$ServiceApiName'
 )
-  ALTER ROLE db_ddladmin ADD MEMBER [$($env:SERVICE_API_NAME)];
+  ALTER ROLE db_ddladmin ADD MEMBER [$ServiceApiName];
 "@
 
 az sql db query `
-  --server $env:SQL_SERVER `
-  --database $env:SQL_DATABASE `
-  --resource-group $env:AZURE_RESOURCE_GROUP `
+  --server $SqlServer `
+  --database $SqlDatabase `
+  --resource-group $ResourceGroup `
   --auth-mode ActiveDirectoryDefault `
   --queries $SqlQuery
 ```
@@ -168,8 +172,9 @@ az sql db query `
 ## Verification
 
 ```bash
-eval $(azd env get-values)
-APP_NAME=$SERVICE_API_NAME  # or SERVICE_WEB_NAME
+SQL_SERVER=$(azd env get-value SQL_SERVER)
+SQL_DATABASE=$(azd env get-value SQL_DATABASE)
+APP_NAME=$(azd env get-value SERVICE_API_NAME)  # or SERVICE_WEB_NAME
 
 az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
   --auth-mode ActiveDirectoryDefault --queries "
@@ -183,11 +188,9 @@ az sql db query --server "$SQL_SERVER" --database "$SQL_DATABASE" \
 
 **PowerShell:**
 ```powershell
-azd env get-values | ForEach-Object {
-    $name, $value = $_.Split('=', 2)
-    Set-Item "env:$name" $value
-}
-$AppName = $env:SERVICE_API_NAME  # or SERVICE_WEB_NAME
+$SqlServer = azd env get-value SQL_SERVER
+$SqlDatabase = azd env get-value SQL_DATABASE
+$AppName = azd env get-value SERVICE_API_NAME  # or SERVICE_WEB_NAME
 
 $SqlQuery = @"
 SELECT dp.name AS UserName, dr.name AS RoleName
@@ -197,7 +200,7 @@ JOIN sys.database_principals dr ON drm.role_principal_id = dr.principal_id
 WHERE dp.name = '$AppName'
 "@
 
-az sql db query --server $env:SQL_SERVER --database $env:SQL_DATABASE `
+az sql db query --server $SqlServer --database $SqlDatabase `
   --auth-mode ActiveDirectoryDefault --queries $SqlQuery
 ```
 
