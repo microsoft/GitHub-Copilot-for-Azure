@@ -17,7 +17,7 @@ If Step 11 validation fails, classify each error as FIXABLE or BLOCKING per [sel
 >
 > After the user approves continuing, auto-heal for up to 5 more attempts before asking again. Ask again every 5 attempts thereafter.
 
-> ⛔ **Docs fallback after 3 failed attempts on the same error.** If 3 consecutive healing attempts fail with the same error class (e.g., same Bicep compilation error, same ARM deployment error code), stop retrying and search Azure documentation for the error. Present the user with the relevant doc link + a suggested manual fix. Do NOT continue auto-healing the same error pattern.
+> ⛔ **Docs fallback after 3 failed attempts on the same error.** If 3 consecutive healing attempts fail with the same error class (e.g., same Bicep compilation error, same ARM deployment error code), stop retrying and ⛔ **read [iac-resources.md](../../references/iac-resources.md)** for external documentation and validation tool links. Present the user with the relevant doc link + a suggested manual fix. Do NOT continue auto-healing the same error pattern.
 
 ## PLAN_LEVEL_CHANGE
 

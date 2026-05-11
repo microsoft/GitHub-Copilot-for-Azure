@@ -102,7 +102,7 @@ Cross-reference naming with [prepare/references/naming-patterns.md](../../prepar
 
 ## Resource Tags — Mandatory
 
-> ⛔ **You MUST read [iac-generation-rules.md § Session Tags](iac-generation-rules.md) using the `view` tool** for the 5 AppOnboard tag names and their value sources. Apply them as `local.tags` in Terraform:
+> ⛔ **You MUST read [iac-generation-rules.md § Session Tags](iac-generation-rules.md)** for the 5 AppOnboard tag names and their value sources. Apply them as `local.tags` in Terraform:
 
 ```hcl
 locals {

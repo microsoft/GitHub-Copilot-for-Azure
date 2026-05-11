@@ -81,4 +81,4 @@ Returns: resource names, IDs, types, locations within the group.
 
 ## Tool Pitfalls
 
-- **`mcp_azure_mcp_pricing` → `pricing_get` requires `--sku`:** Omitting `--sku` returns HTTP 400. Always include the SKU parameter.
+- **`mcp_azure_mcp_pricing` → `pricing_get`:** Use `--sku` when querying by `armSkuName` (e.g., Redis Cache, App Service Premium). For services without `armSkuName`, use `filter` and `meterName` matching instead. Omitting all filter params returns too many results.

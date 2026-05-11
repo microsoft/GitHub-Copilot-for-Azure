@@ -16,7 +16,7 @@ Look up when stuck after 3 tries, edge cases, or validating generated code again
 
 | Resource | URL | Use When |
 |----------|-----|----------|
-| HashiCorp Developer Docs | https://developer.hashicorp.com/terraform | HCL syntax, provider config, built-in functions |
+| HashiCorp Developer Docs | https://developer.hashicorp.com/terraform/docs | HCL syntax, provider config, built-in functions |
 | Terraform Registry — azurerm | https://registry.terraform.io/providers/hashicorp/azurerm/latest | Resource type properties, argument reference, import blocks |
 | Terraform Registry — azapi | https://registry.terraform.io/providers/azure/azapi/latest | Bleeding-edge resources not yet in azurerm; maps to ARM REST APIs |
 | HCL Language Reference | https://developer.hashicorp.com/terraform/language | Expressions, modules, state management, backends |
@@ -38,7 +38,20 @@ Look up when stuck after 3 tries, edge cases, or validating generated code again
 |----------|-----|----------|
 | Azure Well-Architected Framework | https://learn.microsoft.com/en-us/azure/well-architected/ | WAF pillar alignment (Reliability, Security, Cost, Ops, Performance) |
 | WAF Service Guides | https://learn.microsoft.com/en-us/azure/well-architected/service-guides/ | Per-service WAF checklists |
-| Azure Security Baseline (MCSB) | https://learn.microsoft.com/en-us/security/benchmark/azure/overview | Security control domains, MCSB recommendations |
+| Azure Security Baseline (MCSB) | https://learn.microsoft.com/en-us/security/benchmark/azure/ | Security control domains, MCSB recommendations |
+
+## Deploy Troubleshooting
+
+> ⛔ **Primary lookup path:** Call `mcp_azure_mcp_documentation` with the error message or error code first. Use the table below as fallback when MCP is unavailable or returns no results.
+
+| Resource | URL | Use When |
+|----------|-----|----------|
+| Common ARM Deployment Errors | https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/common-deployment-errors | `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, any ARM error code |
+| ARM Troubleshooting Hub | https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/ | General deployment failure triage, what-if issues, template debugging |
+| App Service Troubleshooting | https://learn.microsoft.com/en-us/troubleshoot/azure/app-service/ | Startup crashes, Kudu/Oryx build failures, health probe issues |
+| App Service Diagnostics | https://learn.microsoft.com/en-us/azure/app-service/overview-diagnostics | Portal diagnostics tool, runtime issue triage |
+| App Service Zip Deploy Guide | https://learn.microsoft.com/en-us/azure/app-service/deploy-zip | Zip deploy, SCM_DO_BUILD_DURING_DEPLOYMENT, Kudu publish API |
+| Container Apps Troubleshooting | https://learn.microsoft.com/en-us/azure/container-apps/troubleshooting | Revision failures, ingress errors, secret resolution, image pull failures |
 
 ## Validation & Quality Tools
 

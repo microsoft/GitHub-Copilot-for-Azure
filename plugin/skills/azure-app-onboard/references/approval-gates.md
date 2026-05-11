@@ -48,7 +48,7 @@ Three options:
 
 This is a SEPARATE gate from Step 6.
 
-> ⛔ **Context refresh:** Before presenting this gate, re-read this SKILL.md Steps 8-9 using the `view` tool if you have not read them in the last 5 turns. Scaffold reference loading (Steps 6-7) consumes significant context — deploy rules may have been evicted.
+> ⛔ **Context refresh:** Before presenting this gate, re-read this SKILL.md Steps 8-9 if you have not read them in the last 5 turns. Scaffold reference loading (Steps 6-7) consumes significant context — deploy rules may have been evicted.
 
 Display:
 - Validation status from `scaffold-manifest.json.validationResult`
@@ -57,13 +57,13 @@ Display:
 - Services + SKUs + estimated cost
 - End with **"🚀 Ready to deploy? (Yes / Run manually / Edit plan / Cancel)"**
 
-If "Run manually" is selected → point to [deployment-summary.md](deployment-summary.md) for manual execution steps.
+If "Run manually" is selected → point to [deployment-summary-template.md](deployment-summary-template.md) for manual execution steps.
 
 If validation failed or any FLAGGED findings exist at L1 (Security) or L3 (Hallucination), block **Yes** until resolved.
 
 Only after user approves: set `currentPhase: "deploy"`.
 
-> ⛔ **Before entering deploy:** scaffold references (bicep-patterns, self-review, waf-checklist) are no longer needed — let context compaction clear them. After ANY mid-session compaction during deploy, re-read `deploy/SKILL.md` Steps 4-8 before continuing. **You MUST read [`deploy/SKILL.md`](../deploy/SKILL.md) using the `view` tool before executing any deployment, preflight check, or health verification.** Do not skip — the sub-skill contains preflight checks, error classification tables, and health-check patterns required for safe deployment. Follow its workflow. You MUST write `deploy-result.json` to the session folder.
+> ⛔ **Before entering deploy:** scaffold references (bicep-patterns, self-review, waf-checklist) are no longer needed — let context compaction clear them. After ANY mid-session compaction during deploy, re-read `deploy/SKILL.md` Steps 4-8 before continuing. **You MUST read [`deploy/SKILL.md`](../deploy/SKILL.md) before executing any deployment, preflight check, or health verification.** Do not skip — the sub-skill contains preflight checks, error classification tables, and health-check patterns required for safe deployment. Follow its workflow. You MUST write `deploy-result.json` to the session folder.
 
 > ⛔ **Deploy via `az deployment sub create` — NEVER `azd up`.** AppOnboard's deploy phase uses `az deployment sub create` for IaC and `az acr build` for Container Apps code deploy. Do NOT run `azd up`, `azd provision`, or `azd deploy`. Repos with existing `azure.yaml` are routed to `azure-prepare` at Step 4 — if you reach this step, either the user chose "Start fresh" or the repo has no azd setup. Either way, deploy via `az deployment sub create`. If you find a AppOnboard-generated `azure.yaml` in the workspace, DELETE it before deploying.
 

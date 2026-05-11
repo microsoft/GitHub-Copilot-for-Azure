@@ -87,11 +87,13 @@ When `hasNativeModules: true` (any language):
 | SKU | Viable? | Reason |
 |-----|---------|--------|
 | F1 (Free) | ❌ No | 60 CPU-min/day quota. Native compilation takes 2-5 min, consuming the entire daily budget. App auto-disables (403 Site Disabled) |
-| F1 (Free) with build-time compilation (TypeScript `tsc`, large `npm install` >500KB lockfile) | ❌ No | Same CPU quota issue — build-time compilation exhausts F1 daily budget even without native modules. Seen in 5/18 manual runs. Default to B1 when prereq detects TypeScript or large lockfiles. |
+| F1 (Free) with build-time compilation (TypeScript `tsc`, large `npm install` >500KB lockfile) | ❌ No | Same CPU quota issue — build-time compilation exhausts F1 daily budget even without native modules. Default to B1 when prereq detects TypeScript or large lockfiles. |
+| F1 (Free) with large dependency tree (Python >10 deps, .NET >20 NuGet, Java WAR) | ❌ No | Oryx compresses deps into `output.tar.zst`. F1 (shared CPU, 1 GB RAM) cannot decompress at cold start — container times out. |
+| F1 (Free) with WSGI/ASGI server (gunicorn, uvicorn) | ❌ No | WSGI/ASGI server + Oryx venv decompression + app startup exceeds F1 cold-start budget. |
 | B1 (Basic) | ✅ Yes | No CPU quota limit. Native compilation succeeds. ~$13/month |
 | S1+ | ✅ Yes | Production tiers |
 
-Surface at the approval gate: "⚠️ Native modules detected ({signal}). F1 not viable — B1 (~$13/mo) minimum required."
+When `prereq-output.json.buildRequirements.f1Viable == false`, use B1 as minimum SKU. Surface at the approval gate: "⚠️ {f1BlockReason}. F1 not viable — B1 (~$13/mo) minimum required."
 
 ### Container Timeout
 

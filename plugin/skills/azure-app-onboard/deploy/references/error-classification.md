@@ -75,7 +75,7 @@ Each attempt logged to `deploy-result.json.healingAttempts[]`:
 
 > ⛔ **Orphan RG tracking.** See [`deploy-safety.md`](deploy-safety.md) § Artifact Reconciliation for full orphan RG protocol.
 
-After 3 failed cycles: write `partial: true` to `deploy-result.json`, surface remaining errors to user. Do NOT auto-rollback.
+After 3 failed cycles: write `partial: true` to `deploy-result.json`, surface remaining errors to user. ⛔ **Read [iac-resources.md](../../references/iac-resources.md)** for external documentation and validation tool links to help diagnose persistent errors. Do NOT auto-rollback.
 
 ## Known Platform Bugs
 

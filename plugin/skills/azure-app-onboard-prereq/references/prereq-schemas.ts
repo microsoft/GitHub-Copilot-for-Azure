@@ -26,6 +26,10 @@ export interface BuildRequirements {
    *  larger compiled dependencies like scipy may take 600+s).
    *  Used by deploy phase to set WEBSITES_CONTAINER_START_TIME_LIMIT. */
   estimatedInstallTime?: number;
+  /** Why F1 is not viable — set when f1Viable is false.
+   *  Examples: "native modules (node-gyp)", "large dependency tree (27 pinned deps)",
+   *  "build-time compilation (TypeScript tsc)", "major migration (Flask 0.12→2.3)" */
+  f1BlockReason?: string;
 }
 
 export interface CloudSdkSwap {

@@ -38,6 +38,8 @@ If the migration command fails, classify as `IAC_ERROR` and check based on the d
 - Extension/feature missing → check DB-specific config (PostgreSQL: `azure.extensions`, SQL: compatibility level, MySQL: `require_secure_transport`)
 - Module not found → verify the runtime includes the migration tool
 
+> ⛔ **`{pass}` MUST be the same password passed to `az deployment sub create --parameters pgAdminPassword={value}`.** See deploy SKILL.md § "Generate secrets ONCE — reuse everywhere." Mismatched passwords cause silent auth failures on migrations and connectivity checks.
+
 ## PostgreSQL-Specific Checks
 
 Run BEFORE migrations when `services[]` includes PostgreSQL Flexible Server:

@@ -116,7 +116,7 @@ This consolidates the ACR pull and KV secret timing issues into one pattern. See
 
 ## Service Tagging
 
-> ⛔ **You MUST read [iac-generation-rules.md § Session Tags](iac-generation-rules.md) using the `view` tool.** All resources MUST include the 5 AppOnboard session tags. Pass `tags` object from `main.bicep` into every module.
+> ⛔ **You MUST read [iac-generation-rules.md § Session Tags](iac-generation-rules.md).** All resources MUST include the 5 AppOnboard session tags. Pass `tags` object from `main.bicep` into every module.
 
 ## API Version Policy
 

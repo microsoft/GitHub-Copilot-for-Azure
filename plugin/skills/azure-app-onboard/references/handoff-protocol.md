@@ -6,12 +6,12 @@ Offer next steps: CI/CD setup, monitoring, domain config, **🗑️ resource cle
 
 > ⛔ **Start handoff with deployment identity.** First lines of the handoff response MUST be:
 > ```
-> 🏢 Subscription: {context.json.azure.subscriptionName} ({subscriptionId})
-> 📁 Resource Group: {prepare-plan.json.naming.resourceGroupName}
-> 🌍 Region: {prepare-plan.json.deploymentVariables.location}
+> 🏢 Subscription: {context.json.azure.subscriptionName} ({context.json.azure.subscriptionId})
+> 📁 Resource Group: {context.json.azure.resourceGroup}
+> 🌍 Region: {context.json.azure.region}
 > 🔗 Portal: https://portal.azure.com/#@/resource/subscriptions/{subId}/resourceGroups/{rgName}/overview
 > ```
-> Source: `context.json.azure` + `prepare-plan.json.naming`. This is the user's quickest path to finding their resources after the session ends.
+> Source: `context.json.azure`. This is the user's quickest path to finding their resources after the session ends.
 
 See [deployment-summary-template.md](deployment-summary-template.md) for the full deployment summary format.
 

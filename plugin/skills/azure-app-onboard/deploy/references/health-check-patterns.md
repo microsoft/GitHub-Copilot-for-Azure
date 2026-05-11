@@ -37,7 +37,7 @@ After receiving HTTP 200 from an App Service endpoint, check the response body f
 
 **Detection procedure:** After HTTP 200, read the first 2KB of the response body. If any of the strings above are found, set `healthStatus: "degraded"` and add a warning: `"App Service default page detected — application did not start. Check logs: az webapp log tail -g {rg} -n {app}"`.
 
-> **Why this matters:** Run 13 (flasky) returned HTTP 200 with the Azure default "Hey, Python developers!" page while Flask 0.12 silently failed to start. The health check accepted 200 as healthy, masking the failure.
+> **Why this matters:** Some frameworks return HTTP 200 with the Azure default page (e.g., "Hey, Python developers!") while the actual app silently fails to start. The health check accepts 200 as healthy, masking the failure.
 
 ## Non-HTTP Resources
 

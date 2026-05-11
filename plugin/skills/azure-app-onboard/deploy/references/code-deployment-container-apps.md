@@ -2,7 +2,7 @@
 
 After IaC deployment creates the Container App with a placeholder image (`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`), deploy the actual application code. This is **Phase 2** of the two-phase Container Apps deployment pattern.
 
-> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `deploymentVariables.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
+> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `context.json.azure.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
 
 > ⛔ **Phase 2 is NOT optional.** If IaC deployed a Container App with a placeholder image, you MUST execute Phase 2 before health checks. Do NOT leave a placeholder image and tell the user to deploy code manually.
 
@@ -62,6 +62,8 @@ Redeploy IaC with ACR included. Wait for AcrPull role to propagate (~60s). Log a
 
 > ⛔ **`az acr build` failures count toward the `deploy-result.json.healingAttempts[]` counter.** After 3 failed builds (even with different root causes), pause and present a diagnosis to the user: "Web image build failed 3 times: [root causes]. Continue healing? (Yes / Cancel)." Each build fix attempt = 1 healing entry. Cross-reference deploy SKILL.md healing loop rule.
 
+> ⛔ **Windows: `az acr build` may fail with `UnicodeEncodeError`.** Azure CLI log streaming crashes on non-ASCII characters (✓, ✗) using Windows `charmap` codec. Append `--no-logs` to the build command. Build success/failure is still reported via exit code.
+
 ## Step 5 — Oryx Shortcut (no ACR needed, no Dockerfile)
 
 ```powershell
@@ -80,6 +82,20 @@ az containerapp update --subscription {subscriptionId} -g {rg} -n {ca} --source 
 
 > ⛔ **KV secretRef requires managed identity + role to exist first.** Phase 1 of the two-phase deploy creates the Container App with a placeholder image. KV `secretRef` cannot be used in Phase 1 because the Container App's managed identity doesn't exist yet (CA not created → no principalId → role assignment fails → KV access denied). Use inline `@secure()` parameters or hardcoded env vars in Phase 1. After Phase 1 completes and RBAC propagates (~60s), Phase 2 can use KV secretRef.
 
+## Config-File Apps (Go/Viper, Spring Boot, etc.)
+
+Creating an Azure-specific config file (e.g., `config-azure.yml`) is fine for non-secret values (hostnames, ports, feature flags).
+
+> ⛔ **NEVER bake secrets into config files COPY'd into Docker images.** Images are stored in ACR — secrets in the image are secrets in the registry.
+
+**Secret injection pattern:**
+1. Config file uses **placeholders** for secrets (`password: "REPLACE_AT_RUNTIME"`)
+2. `az containerapp secret set -n {app} -g {rg} --secrets pg-password={value} redis-key={value}`
+3. `az containerapp update -n {app} -g {rg} --set-env-vars POSTGRES_PASSWORD=secretref:pg-password REDIS_PASSWORD=secretref:redis-key`
+4. Framework env var override maps these over config file values at runtime
+
+> **Go/Viper:** `AutomaticEnv()` maps `POSTGRES_PASSWORD` → key `postgres_password` (underscores), NOT `postgres.password` (dots). Without `viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))` in the app code, env vars can't override nested keys. In that case, put non-secret values in the config file and inject secrets via separate env vars — do NOT bake secrets into the file.
+
 ## BuildKit Dockerfile Handling
 
 When `buildRequirements.hasBuildKitSyntax == true`, `az acr build` will fail because ACR's server-side builder does not support BuildKit extensions. Generate `Dockerfile.azure`:
@@ -96,25 +112,11 @@ When `buildRequirements.hasBuildKitSyntax == true`, `az acr build` will fail bec
 RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 # Dockerfile.azure:
 RUN pip install -r requirements.txt
-
-# Multi-stage with --mount in build stage:
-FROM node:20 AS builder
-RUN --mount=type=cache,target=/root/.npm npm ci
-COPY . .
-RUN npm run build
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html  # preserved
 ```
 
-**Multi-line continuation (critical):** When `--mount` is on a line ending with `\`, the actual command is on the NEXT line. Strip the `--mount` flag AND the line continuation, then keep the command:
+**Multi-line continuation (critical):** When `--mount` is on a line ending with `\`, strip the flag AND continuation, keep the command:
 
 ```dockerfile
-# Original (BuildKit with continuation):
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
-# Dockerfile.azure:
-RUN uv sync --frozen --no-dev --no-install-project
-
 # Original (multiple flags on continuation lines):
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
@@ -123,9 +125,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN pip install -r requirements.txt
 ```
 
-⛔ **Do NOT strip `--mount` and leave a bare `RUN` instruction** — this produces `unknown instruction` errors on the next line. The command after ALL mount flags MUST be preserved as the `RUN` argument.
+⛔ **Do NOT strip `--mount` and leave a bare `RUN` instruction** — the command after ALL mount flags MUST be preserved as the `RUN` argument.
 
-Use `az acr build -f Dockerfile.azure .` for the ACR build step. Complex cases (multiple `--mount` types, secret mounts with build args) may need manual review — flag as ⚠️ WARN if unsure.
+Use `az acr build -f Dockerfile.azure .` for the ACR build step.
 
 ## Image Parameter Pass-Through (Bicep Redeploy Safety)
 
@@ -137,4 +139,4 @@ az deployment sub create ... --parameters containerImage='{acrLoginServer}/{appN
 
 ## Database Post-Deploy Verification
 
-> ⛔ **You MUST read [`database-post-deploy.md`](database-post-deploy.md) using the `view` tool** for migration discovery, execution via Container Apps exec, error handling, and PostgreSQL-specific checks.
+> ⛔ **You MUST read [`database-post-deploy.md`](database-post-deploy.md)** for migration discovery, execution via Container Apps exec, error handling, and PostgreSQL-specific checks.

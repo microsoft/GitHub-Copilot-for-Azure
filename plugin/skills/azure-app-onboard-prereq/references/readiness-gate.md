@@ -2,7 +2,7 @@
 
 ## Write Artifacts
 
-⛔ **You MUST read [`prereq-artifacts.md`](prereq-artifacts.md) using the `view` tool** for the complete artifact write procedures (prereq-output.json, context.json, readiness-report.md) and phase exit checklist.
+⛔ **You MUST read [`prereq-artifacts.md`](prereq-artifacts.md)** for the complete artifact write procedures (prereq-output.json, context.json, readiness-report.md) and phase exit checklist.
 
 ---
 

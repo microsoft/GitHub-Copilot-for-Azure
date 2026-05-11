@@ -126,7 +126,19 @@ Static lockfile analysis — no install/build execution.
 
 **Key edge cases:** `bcrypt` ✅ native, `bcryptjs` ❌ pure JS. `psycopg2` ✅ native, `psycopg2-binary` ❌. `sharp` v0.33+ ❌ usually prebuilt. `canvas` ✅ always native.
 
-When `hasNativeModules: true`: set `f1Viable: false`, set `estimatedInstallTime`. No lockfile → `nativeModuleSignal: "unknown"`, ⚠️ WARN.
+When `hasNativeModules: true`: set `f1Viable: false`, `f1BlockReason: "native modules ({signal})"`, set `estimatedInstallTime`. No lockfile → `nativeModuleSignal: "unknown"`, ⚠️ WARN.
+
+## F1 Viability — Beyond Native Modules
+
+Set `f1Viable: false` when ANY of these are true (native modules covered above):
+
+| Condition | Detection | f1BlockReason |
+|-----------|-----------|---------------|
+| Large dependency tree | Python >10 pinned deps, Node.js lockfile >500KB, .NET >20 NuGet `<PackageReference>`, Java WAR/JAR | `"large dependency tree ({N} deps)"` |
+| Build-time compilation | `tsconfig.json` + `"build"` script in `package.json` | `"build-time compilation (TypeScript)"` |
+| 🔶 Major Migration | >5 source files changed during remediation | `"major migration ({N} files changed)"` |
+
+When `f1Viable: false`: prepare selects B1 (~$13/mo) minimum.
 
 ## Database & Storage
 

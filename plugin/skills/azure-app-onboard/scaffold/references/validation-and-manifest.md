@@ -46,12 +46,12 @@ Pass: exit 0 + resource change list. Fail: fix and retry per [self-healing.md](s
 
 **Terraform path:** Replace 11a–11b with `terraform init -backend=false && terraform validate` + `terraform plan -detailed-exitcode`.
 
-- If validation finds FIXABLE errors: edit IaC → re-run self-review (L1–L4) → re-validate (max 3 attempts). ⛔ **You MUST read [self-healing.md](self-healing.md) using the `view` tool before entering the healing loop** — it defines FIXABLE vs BLOCKING classification and auto-fix strategies.
+- If validation finds FIXABLE errors: edit IaC → re-run self-review (L1–L4) → re-validate (max 3 attempts). ⛔ **You MUST read [self-healing.md](self-healing.md) before entering the healing loop** — it defines FIXABLE vs BLOCKING classification and auto-fix strategies.
 - If BLOCKING errors remain after 3 attempts: surface to user and halt.
 
 ## Step 12 — Write `scaffold-manifest.json`
 
-⛔ **You MUST read [`session-schemas-deploy.ts`](../../references/session-schemas-deploy.ts) using the `view` tool** to get the exact `ScaffoldManifest` interface. Write to the session folder with ALL fields populated: `files[]`, `selfReview.findings[]`, AND `validationResult` (from Step 11). This is a single write — validation is already complete.
+⛔ **You MUST read [`session-schemas-deploy.ts`](../../references/session-schemas-deploy.ts)** to get the exact `ScaffoldManifest` interface. Write to the session folder with ALL fields populated: `files[]`, `selfReview.findings[]`, AND `validationResult` (from Step 11). This is a single write — validation is already complete.
 
 > ⛔ **Phase exit gate: `scaffold-manifest.json.validationResult` MUST NOT be null.** If validation ran: `{ status: 'Passed'/'Failed', details }`. If skipped: `{ status: 'Skipped', reason }`. Null = incomplete scaffold.
 

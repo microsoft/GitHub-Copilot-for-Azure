@@ -80,6 +80,8 @@ Scan `*.py` for `import {pkg}` / `from {pkg} import`, cross-reference against `r
 
 **Dependency vintage check:** If ALL pinned dependencies are 5+ years old AND the ecosystem has known breaking changes (e.g., Werkzeug 0.x→1.x removed `werkzeug.contrib`, MarkupSafe <1.0 has no Python 3.10+ wheels, `itsdangerous<1.0` API completely changed), classify as ❌ FAIL — `pip install` / `npm install` WILL fail on Azure's current runtimes. Check: grep for imports from removed modules (e.g., `werkzeug.contrib.*`, `flask.ext.*`). If found → ❌ FAIL with "imports from removed module — dependency chain incompatible with modern runtime."
 
+**F1 viability signal:** While evaluating dependencies, also check `f1Viable` per the heuristics in [dependency-compatibility.md § F1 Viability](dependency-compatibility.md). A dependency vintage ❌ FAIL that requires 🔶 Major Migration (>5 files) should set `f1Viable: false` — the migration + Oryx rebuild will exhaust F1's CPU budget.
+
 ## Step 3: Build Execution (Optional — User-Confirmed)
 
 ⛔ **Only run when user explicitly asks** (e.g., "Does my code compile?", "Can you build this?") **and confirms via `ask_user`.**

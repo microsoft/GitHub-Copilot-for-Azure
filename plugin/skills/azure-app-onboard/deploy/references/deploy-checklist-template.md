@@ -26,7 +26,10 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - Verify `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is active before deploy (ARM timing can delay)
 - If build reports "0 seconds" but app needs deps: re-set the setting, wait 10s, retry
 - If 0s persists after 2 retries: fall back to Kudu `/api/zipdeploy`
-- F1 + large deps: set WEBSITES_CONTAINER_START_TIME_LIMIT=1800
+- Python: if no `antenv/` after deploy, use Kudu `/api/zipdeploy` immediately (OneDeploy may skip Oryx)
+- Windows zip paths: normalize with `.Replace('\', '/')` before creating zip entries
+- F1 + large deps: set ORYX_DISABLE_COMPRESSION=true and WEBSITES_CONTAINER_START_TIME_LIMIT=1800
+- TypeScript apps: move `typescript` to `dependencies` (not devDependencies) before creating deploy zip
 - Enable SCM before zip deploy, re-disable after: `az rest --method put` → allow:false → verify
 - After deploy: check response body for Azure default page ("Your app service is up and running" = app didn't start)
 
@@ -37,6 +40,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - Pass real image on EVERY Bicep redeploy: --parameters containerImage='{acr}/{app}:latest'
 - KV secrets: `revision restart` does NOT refresh — must create new revision
 - ACR build failures count toward healing counter
+- Windows: append `--no-logs` to `az acr build` to avoid UnicodeEncodeError
 
 ## Code deploy — Static Web Apps (delete if not using SWA)
 - Use `swa deploy` (NOT `az staticwebapp deploy` — doesn't exist)
@@ -53,9 +57,10 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - deploy-result.json MUST exist — read back to verify, rewrite if missing
   Finalize: overwrite skeleton with real values — status (succeeded/failed), deploymentNames (all used),
   healthStatus (worst across endpoints), duration.completedUtc, resourceResults from `az deployment operation list`
-- ⛔ You MUST read `session-schemas-deploy.ts` using the `view` tool for exact DeployResult field names
+- ⛔ You MUST read `session-schemas-deploy.ts` for exact DeployResult field names
 - deployment-summary.md — update Status, Health, Links
 - SCM re-disabled (App Service) or image param set (Container Apps)
 - If prereq found migration frameworks: run migrations before declaring healthy
-- context.json — add "deploy" to completedPhases, set currentPhase to null
+- DB password: `{pass}` MUST match `pgAdminPassword` from `az deployment sub create` — mismatched passwords cause silent auth failures
+- ⛔ context.json — add "deploy" to completedPhases, set currentPhase to null, update lastModifiedUtc. VERIFY by reading back
 ```

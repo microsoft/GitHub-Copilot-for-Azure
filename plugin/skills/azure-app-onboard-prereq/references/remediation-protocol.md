@@ -27,7 +27,7 @@
 
 If any ❌ FAIL exists:
 1. Present each failure with a specific fix suggestion.
-2. After user fixes (manual or agent-applied per Rule 3), ⛔ **you MUST re-run the full Step 3 evaluation (all 3 axes) on the affected component(s).** This is not optional — static grep of exports is NOT sufficient. ⛔ **Re-read each reference file using the `view` tool** — [build-check.md](build-check.md), [completeness-check.md](completeness-check.md), [deployability-check.md](deployability-check.md) — and re-evaluate. The re-scan may catch secondary issues the first scan missed.
+2. After user fixes (manual or agent-applied per Rule 3), ⛔ **you MUST re-run the full Step 3 evaluation (all 3 axes) on the affected component(s).** This is not optional — static grep of exports is NOT sufficient. ⛔ **Re-read each reference file** — [build-check.md](build-check.md), [completeness-check.md](completeness-check.md), [deployability-check.md](deployability-check.md) — and re-evaluate. The re-scan may catch secondary issues the first scan missed.
 3. ⛔ **Verify fixes via static analysis only — NEVER run terminal commands.** After creating or modifying a file to fix a blocker, verify it using ONLY this procedure:
    - ⛔ **Do NOT run `npm install`, `npm test`, `npx jest`, `node index.js`, `dotnet build`, `dotnet restore`, `dotnet test`, `pip install`, `pytest`, `go mod download`, `cargo build`, or ANY terminal command to verify.** This is the most commonly violated rule. Agents reflexively run install/test commands after applying a fix. THIS IS FORBIDDEN. Static analysis IS the verification.
    - **File exists:** Confirm the created file is on disk (you just wrote it — it is).
@@ -35,7 +35,7 @@ If any ❌ FAIL exists:
    - **No syntax errors:** Read the file back and visually check for unclosed braces, missing semicolons, or obvious typos.
    - **Config values present:** If the fix adds env vars or config, confirm they appear in the file.
    This static check IS the verification. It is complete. Proceed to Step 6.4.
-4. ⛔ **Re-read this SKILL.md before applying any fix.** If you haven't read `azure-app-onboard-prereq/SKILL.md` in the current turn, re-read it before generating or applying code fixes. The remediation rules (no `npm install`, no test execution, static-only verification) are frequently violated when the skill context has been evicted. Do NOT apply fixes from memory — re-read the rules first.
+4. ⛔ **Re-read [SKILL.md](../SKILL.md) before applying any fix.** If you haven't read `azure-app-onboard-prereq/SKILL.md` in the current turn, re-read it before generating or applying code fixes. The remediation rules (no `npm install`, no test execution, static-only verification) are frequently violated when the skill context has been evicted. Do NOT apply fixes from memory — re-read the rules first.
 5. ⛔ **After re-evaluation, you MUST print this exact line** (the integration test checks for it):
    ```
    🔄 Re-evaluation complete — ✅ N issues resolved, ❌ M remaining.
