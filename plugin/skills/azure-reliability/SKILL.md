@@ -125,19 +125,9 @@ Recommendations (priority order):
 - For health probes on **Flex Consumption (FC1)** or **Consumption (Y1)** Function Apps, annotate `❌ (code-only fix)` — these plans do not support the `healthCheckPath` IaC property; the health endpoint must be implemented in app code.
 - Do **not** include numeric scores, grades, or point totals anywhere in the output.
 
-> **UX Note:** Once all core reliability features (zone redundancy, ZRS storage, health probes) are ✅, congratulate the user and offer the multi-region upgrade as an optional next step:
-> ```
-> ✅ Your app has all core reliability features enabled (zone redundant, ZRS storage, health probes).
+> **UX Note:** If the assessment finds the app **already has** all core reliability features (zone redundancy, ZRS/GZRS storage, health probes) and is single-region, congratulate the user and offer multi-region as an optional follow-up using the same wait-and-confirm prompt as Configuration Workflow [Step 3](#step-3-both-paths-multi-region-followup--ask-and-wait). Do **NOT** start any multi-region work without explicit consent.
 >
-> 🌟 Want to go further? Multi-region deployment would protect against full region outages.
->    This involves:
->    • Deploying compute + storage in a second region
->    • Adding Azure Front Door for global load balancing
->    • Configuring health probes for automatic failover
->    • Estimated additional cost: ~2x compute for active-passive
->
->    Would you like me to generate multi-region IaC? (yes/no)
-> ```
+> If core reliability is **not** all ✅ at assessment time, do not mention multi-region here \u2014 it will be offered automatically after the core gaps are fixed (Configuration Workflow Step 3).
 
 ## Configuration Workflow
 
@@ -154,13 +144,15 @@ After assessment, if user says "fix it" / "improve my reliability" / "enable zon
 3. **Ask user which path they want:**
 
 ```
-I'll make these changes to improve your reliability posture:
+I'll start with the quick wins (no downtime, fast):
 
 1. ✏️  Enable zone redundancy on plan-ii5trxva2ark4 (Flex Consumption — no cost change)
-2. ✏️  Upgrade stii5trxva2ark4 from LRS → ZRS (small cost increase, ~$0.01/GB/month more)
-3. ✏️  Set health check path to /api/health on func-api-ii5trxva2ark4
+2. ✏️  Set health check path to /api/health on func-api-ii5trxva2ark4
 
-⚠️  Note: Storage migration can take several hours.
+Then, separately, I'll ask if you want to upgrade storage:
+
+3. 🕒  Upgrade stii5trxva2ark4 from LRS → ZRS (small cost increase, migration takes hours)
+   — Required for full zone redundancy, but I'll confirm with you before starting.
 
 How would you like to apply these changes?
 
@@ -172,7 +164,7 @@ How would you like to apply these changes?
 
 ### Path A: Fix Now (CLI)
 
-Run fixes against live resources using `az` CLI commands in dependency order.
+Run fixes against live resources using `az` CLI commands. **Quick wins first, then ask before the slow storage migration.**
 
 | Fix | Reference |
 |---|---|
@@ -181,12 +173,31 @@ Run fixes against live resources using `az` CLI commands in dependency order.
 | Configure health probes | [references/configure-health-probes.md](references/configure-health-probes.md) |
 | Set up multi-region | [references/configure-multi-region.md](references/configure-multi-region.md) |
 
-**Execution order:**
-1. Storage upgrade (ZRS) — must complete and verify `sku.name` is ZRS/GZRS before proceeding
-2. **⛔ WAIT GATE** — Do NOT proceed until `az storage account show --query sku.name` confirms ZRS/GZRS
-3. Zone redundancy enablement — depends on ZRS storage being confirmed
-4. Health probes — independent, can run anytime
-5. Multi-region setup — only if user explicitly requests
+**Execution order — always quick wins first:**
+
+1. **Zone redundancy on compute** (fast, in-place property update). For Container Apps environments without ZR, flag the blue/green requirement and wait for user confirmation before proceeding.
+2. **Health probes** (Premium / Dedicated only — in-place; for FC1 / Consumption, follow the consent gate in [configure-health-probes.md](references/configure-health-probes.md)).
+3. **Verify** the compute changes succeeded before doing anything else.
+4. **⛔ STOP — Ask about storage upgrade.** Compute is now zone-redundant, but storage may still be LRS or GRS. Ask the user explicitly:
+
+   ```
+   ✅ Compute is now zone-redundant.
+
+   To be **fully zone-redundant**, your storage account also needs to be upgraded:
+     • stii5trxva2ark4: currently `Standard_LRS` → needs `Standard_ZRS`
+
+   ⚠️  This is a live storage redundancy conversion:
+      • Takes hours to days depending on data volume
+      • Small ongoing cost increase (~$0.01/GB/month more)
+      • Only supported for Standard general-purpose v2 accounts
+
+   Do you want me to start the storage migration now? (yes / no / later)
+   ```
+
+   - **yes** → run `az storage account update --sku Standard_ZRS` (or `migration start` if needed); poll `az storage account show --query sku.name` until it reports `Standard_ZRS`.
+   - **no / later** → leave storage as-is; note in the re-assessment that ZR storage remains a gap.
+
+5. **Multi-region** — do NOT auto-run. Handled in **Step 3** below as an explicit follow-up after re-assessment.
 
 > **⚠️ Warning:** If the user uses `azd up` or `terraform apply` later, CLI-only changes may be overwritten by the IaC definitions. Recommend also patching IaC after CLI fixes.
 
@@ -220,14 +231,34 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 > 2. **Storage migration** — run `az storage account migration start` and wait for completion (`az storage account show --query sku.name` returns `Standard_ZRS`).
 > 3. **Deploy 2** — the storage SKU patch (now matches actual state, so it's a no-op confirmation).
 
-**Step 3: Apply patches**
+**Step 3: Apply patches in two deploys (quick wins first)**
 
 | IaC Type | Reference |
 |---|---|
 | Bicep | [references/iac-patching-bicep.md](references/iac-patching-bicep.md) |
 | Terraform | [references/iac-patching-terraform.md](references/iac-patching-terraform.md) |
 
-**Step 4: Handle existing resources that need live migration**
+**Deploy 1 — Quick wins only.** Patch and deploy the 🟢 Safe items: zone redundancy on compute, health probes (Premium / Dedicated only), Container Apps probes. Do **NOT** include the storage SKU patch in this deploy. Verify the deployment succeeded.
+
+**⛔ STOP — Ask about storage upgrade before Deploy 2.** After Deploy 1 succeeds, ask the user explicitly:
+
+```
+✅ Quick-win patches deployed. Compute is now zone-redundant.
+
+To be **fully zone-redundant**, your storage account also needs to be upgraded:
+  • stii5trxva2ark4: currently `Standard_LRS` → needs `Standard_ZRS`
+
+⚠️  This is a two-part change:
+   1. Live storage migration (`az storage account migration start`) — takes hours to days
+   2. A second deploy to update your IaC's storage SKU to match
+
+Do you want me to start the storage migration now? (yes / no / later)
+```
+
+- **yes** → run the migration command from Step 5 below; once `az storage account show --query sku.name` returns `Standard_ZRS`, patch the storage SKU in IaC and run **Deploy 2** (now a no-op confirmation).
+- **no / later** → leave the storage SKU patch unapplied. Note in the re-assessment that ZR storage remains a gap; suggest revisiting later.
+
+**Step 4: Pre-deploy migration commands (only if user said yes to storage upgrade)**
 
 Some IaC patches require a live migration step BEFORE deploying:
 - **Storage LRS → ZRS on existing account**: Run `az storage account migration start` first, then deploy the updated IaC
@@ -235,18 +266,22 @@ Some IaC patches require a live migration step BEFORE deploying:
 
 Present these pre-deploy steps clearly:
 ```
-⚠️ Before deploying, run these pre-migration steps:
+⚠️ Before Deploy 2, run these pre-migration steps:
 
 1. Storage migration (takes up to 72 hours):
    az storage account migration start --name stii5trxva2ark4 \
      --resource-group rg-example --sku Standard_ZRS --no-wait
 
-2. Wait for migration to complete before running azd up.
+2. Wait for migration to complete:
+   az storage account show --name stii5trxva2ark4 --query sku.name
+   # Expect: "Standard_ZRS"
+
+3. Then run azd up / terraform apply (Deploy 2).
 ```
 
 **Step 5: Instruct user to deploy**
 
-After patching (and any pre-deploy migrations), tell the user:
+After each deploy stage, tell the user the appropriate command:
 - AZD project (has `azure.yaml`): "Run `azd up` to deploy with reliability changes."
 - Bicep-only: "Run your Bicep deployment command (e.g., `az deployment group create`)."
 - Terraform: "Run `terraform plan` to review, then `terraform apply` to deploy."
@@ -263,10 +298,28 @@ Resource                        Feature              Before   After
 plan-ii5trxva2ark4              Zone redundant       ❌       ✅
 stii5trxva2ark4                 ZRS storage          ❌ LRS   ✅ ZRS
 func-api-ii5trxva2ark4          Health check path    ❌       ✅
-
-Remaining recommendations:
-  [Medium] Consider multi-region with Azure Front Door for region-level failover
 ```
+
+### Step 3 (both paths): Multi-region follow-up — ASK and WAIT
+
+Multi-region is a significant cost/complexity step. Do **NOT** start it automatically. After re-assessment, only if **all core single-region reliability features are ✅** (zone-redundant compute, ZRS/GZRS storage, health probes), explicitly ask the user and **wait for their response** before doing anything:
+
+```
+✅ Your app is now fully zone-redundant in {region}.
+
+🌟 The next step (optional) is multi-region failover with Azure Front Door:
+   • Deploys compute + storage in a second region (paired region recommended)
+   • Adds Azure Front Door for global load balancing with health-probe-driven failover
+   • Protects against full region outages
+   • Estimated additional cost: ~2x compute (active-passive); Front Door ~$35/month base
+
+Do you want me to set up multi-region failover now? (yes / no / later)
+```
+
+- **yes** → proceed with [references/configure-multi-region.md](references/configure-multi-region.md). Confirm secondary region choice with the user before generating any IaC.
+- **no / later** → leave the deployment as-is. Note that single-region zone-redundant is a reliable end state; multi-region can be revisited anytime.
+
+> **⛔ Do not skip the wait.** Do not generate multi-region IaC, deploy a Front Door, or modify any files until the user has explicitly said yes. If core reliability is not yet all ✅, do **not** ask about multi-region \u2014 finish the core gaps first.
 
 ## Priority Classification
 
