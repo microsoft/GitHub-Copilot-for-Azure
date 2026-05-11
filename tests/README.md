@@ -2,10 +2,13 @@
 
 Automated testing framework for Azure Copilot Skills using **Jest**. This system validates that skills have correct metadata, trigger on appropriate prompts, and interact with an Agent properly using Copilot SDK.
 
+> ❗️ This automated testing framework is under migration to use **Vally**. If you need to add new test cases, please add Vally eval suites instead. Learn more at [evals/README](../evals/README.md), [Vally documentation](https://literate-engine-r3wnl4v.pages.github.io/get-started/), [vally-eval skill](../.github/skills/vally-eval/SKILL.md).
+
 ---
 
 ## Table of Contents
 
+- [Migration to Vally](#migration-to-vally)
 - [How the Test System Works](#how-the-test-system-works)
 - [When Tests Run](#when-tests-run)
 - [What Tests Validate](#what-tests-validate)
@@ -16,6 +19,18 @@ Automated testing framework for Azure Copilot Skills using **Jest**. This system
 - [Skills Coverage Grid](#skills-coverage-grid)
 
 ---
+
+## Migration to Vally
+
+Integration tests for azure-skills use features that Vally doesn't support, such as
+- Early termination
+- Follow up
+- System prompt modification
+- Screenshot
+
+They also publish data consumed by the [dashboard/Readme](../dashboard/Readme.md) app for visualizing test results.
+
+To support the missing features and publish compatible data for the dashboard app. A custom executor is created to run Vally eval suites against Copilot SDK [vally-executor](./vally/vally-executor.ts). Refer to [vally-eval skill](../.github/skills/vally-eval/SKILL.md) to learn more about how vally suites are implemented in this repo or work with LLM agent to add more vally eval suites.
 
 ## How the Test System Works
 

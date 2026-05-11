@@ -32,7 +32,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
     test("invokes entra-app-registration skill for OAuth app registration prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {

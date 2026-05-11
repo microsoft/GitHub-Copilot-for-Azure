@@ -27,7 +27,7 @@ environment:
 config:
   runs: 1
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -50,6 +50,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -90,6 +91,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: behavior
       skill: azure-enterprise-infra-planner
     constraints:
@@ -126,6 +128,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -195,6 +198,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -263,6 +267,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: behavior
       skill: azure-enterprise-infra-planner
     constraints:
@@ -298,6 +303,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: behavior
       skill: azure-enterprise-infra-planner
     constraints:
@@ -334,6 +340,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -403,6 +410,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -472,6 +480,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -541,6 +550,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -609,6 +619,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: behavior
       skill: azure-enterprise-infra-planner
     constraints:
@@ -645,6 +656,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:

@@ -16,7 +16,10 @@ const SKILL_NAME = "microsoft-foundry";
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_trace - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   test("invokes skill for trace analysis prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({

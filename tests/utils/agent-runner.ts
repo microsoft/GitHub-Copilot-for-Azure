@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { listSkills } from "./skill-loader.ts";
 
@@ -114,14 +114,18 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
   nonInteractive?: boolean;
   followUp?: string[];
-  systemPrompt?: {
-    mode: "append" | "replace",
-    content: string
-  };
+  systemPrompt?: SystemMessageConfig;
+
+  /**
+   * Optional. An absolute path to a directory.
+   * if not specified, the agent will create a temporary directory and use it as the workspace.
+   */
+  workspace?: string;
   preserveWorkspace?: boolean;
 
   /**
@@ -530,22 +534,29 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
 }
 
 export type AgentRunnerConfig = {
+  /**
+   * If the runner is running for an integration test.
+   */
   isTest: boolean;
-  testName: string;
+  /**
+   * If the runner is running in a jest environment.
+   * Used for backward compatibility.
+   * @todo: Remove this option after migrating all jest integration tests.
+   */
+  useJest: boolean;
+
+  /**
+   * Name of the test.
+   * Only used when the runner is running for a test and isn't running in a jest environment.
+   * @todo: Make this parameter required after migrating all jest integration tests.
+   */
+  testName?: string;
 };
 
 /**
  * Sets up the agent runner with proper per-test cleanup via afterEach.
  * Call once inside each describe() block. Each describe() gets its own
  * isolated cleanup scope via closure, so parallel file execution is safe.
- *
- * Usage:
- *   describe("my suite", () => {
- *     const agent = useAgentRunner();
- *     it("test", async () => {
- *       const metadata = await agent.run({ prompt: "..." });
- *     });
- *   });
  */
 export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
   let currentCleanups: RunnerCleanup[] = [];
@@ -572,21 +583,70 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     currentCleanups = [];
   }
 
+  // @todo: Remove the code for jest tests.
+  function useJest(): boolean {
+    return config.useJest;
+  }
+
   function isTest(): boolean {
     return config.isTest;
   }
 
   function getTestName(): string {
-    return config.testName;
+    // @todo: Remove the code for jest tests.
+    if (config.useJest) {
+      try {
+        // Jest provides expect.getState() with current test info
+        const state = expect.getState();
+        const testName = state.currentTestName ?? "unknown-test";
+        // Sanitize for use as filename
+        return sanitizeFileName(testName);
+      } catch {
+        // Fallback if not running in Jest context
+        return `test-${Date.now()}`;
+      }
+    } else {
+      return config.testName ?? "unknown";
+    }
+  }
+
+  /**
+   * @deprecated Migrate jest test cases to vally suites and stop using this function.
+   * @todo: Remove the code for jest tests.
+   */
+  async function createMarkdownReportInternal(): Promise<void> {
+    for (const entry of currentCleanups) {
+      try {
+        if (isTest() && useJest() && entry.config && entry.agentMetadata) {
+          writeMarkdownReport(getTestName(), entry.config, entry.agentMetadata);
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  // @todo: Remove the code for jest tests.
+  if (isTest() && useJest()) {
+    // Guarantees cleanup even if it times out in a test.
+    // No harm in running twice if the test also calls cleanup.
+    afterEach(async () => {
+      await createMarkdownReportInternal();
+      await cleanup();
+    });
   }
 
   async function run(config: AgentRunConfig): Promise<AgentMetadata> {
-    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    let testWorkspace: string;
+    if (config.workspace) {
+      testWorkspace = config.workspace;
+    } else {
+      testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    }
     const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
 
     const entry: RunnerCleanup = { config };
+    currentCleanups.push(entry);
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = config.preserveWorkspace;
 
@@ -632,7 +692,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
-      const model = modelOverride || "claude-sonnet-4.6";
+      const model = config.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
