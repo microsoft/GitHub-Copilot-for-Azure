@@ -30,6 +30,35 @@ The resource definitions may be in module files, not `main.bicep`. Search all `.
 
 ---
 
+## ⚠️ AVM Modules vs Raw Bicep — Parameter Naming Differs
+
+If the project uses **Azure Verified Modules** (`br/public:avm/res/...`), the parameter names will **not** match the raw ARM property names shown in the patches below. Examples:
+
+| Raw ARM/Bicep property | AVM module parameter |
+|---|---|
+| `sku.name` (storage) | `skuName` (top-level) |
+| `properties.zoneRedundant` (App Service plan) | `zoneRedundant` (top-level) |
+| `properties.zoneRedundant` (Container Apps env) | `zoneRedundant` (top-level) |
+| `siteConfig.healthCheckPath` | `siteConfig.healthCheckPath` (usually preserved) |
+| `properties.minimumElasticInstanceCount` | `siteConfig.minimumElasticInstanceCount` |
+
+**Before patching, always:**
+
+1. Detect AVM usage:
+   ```powershell
+   Select-String -Path infra -Recurse -Pattern "br/public:avm/res/" -List
+   ```
+2. For each AVM module reference, open the module's published README (the version is in the registry path, e.g. `br/public:avm/res/storage/storage-account:0.x.y`) or run:
+   ```powershell
+   # Show the module call so you can see which params it currently passes
+   Select-String -Path infra -Recurse -Pattern "avm/res/storage/storage-account" -Context 0,15
+   ```
+3. Map the reliability property to the **module's parameter name**, not the ARM property name. When in doubt, search the actual module call for the property and patch what's already in use.
+
+The patches in this document assume **raw Bicep**. When patching AVM-based projects, translate the property paths using the table above (and the module's README).
+
+---
+
 ## Patch 1: Zone Redundancy — App Service Plan / Function App Plan
 
 **Find:** `Microsoft.Web/serverfarms`
@@ -98,6 +127,8 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
 
 **Search pattern:** `resource .* 'Microsoft.Storage/storageAccounts@`
 
+> **💡 No `sku` block in the IaC?** If the storage resource (or AVM module call) does not specify a SKU, Azure deploys it as **`Standard_GRS`** by default. The patch in that case is to **add** the `sku` block (raw Bicep) or **add** the `skuName` parameter (AVM), not find-and-replace an existing value. Always grep for the absence of `sku` / `skuName` before assuming there's a value to swap.
+
 **Before:**
 ```bicep
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -119,6 +150,41 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     name: 'Standard_ZRS'
   }
   kind: 'StorageV2'
+}
+```
+
+### Case: SKU not specified at all (defaulted to GRS)
+
+**Before (no `sku` block):**
+```bicep
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: storageAccountName
+  location: location
+  kind: 'StorageV2'
+}
+```
+
+**After — add an explicit `sku`:**
+```bicep
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: storageAccountName
+  location: location
+  sku: {
+    name: 'Standard_ZRS'
+  }
+  kind: 'StorageV2'
+}
+```
+
+**AVM module equivalent:**
+```bicep
+module storage 'br/public:avm/res/storage/storage-account:<version>' = {
+  // ...
+  params: {
+    name: storageAccountName
+    skuName: 'Standard_ZRS'   // ← ADD THIS (defaults to Standard_GRS if omitted)
+    // ...
+  }
 }
 ```
 
@@ -399,7 +465,14 @@ Before completing IaC patching, verify all applicable patches:
 
 After patching, tell the user:
 ```
-✅ Bicep files patched for reliability. Run `azd up` to deploy with these changes.
+✅ Bicep files patched for reliability. 
+
+Recommended deploy order:
+  1. Deploy 1 — safe patches only (zone redundancy, health probes, probes). Run `azd up` / `az deployment` and verify success.
+  2. Storage migration — run `az storage account migration start` (if upgrading LRS → ZRS) and wait for `az storage account show --query sku.name` to return `Standard_ZRS`.
+  3. Deploy 2 — the storage SKU patch (no-op confirmation now that the live SKU matches).
+
+Do NOT bundle the storage SKU change with the safe patches — a failed storage redundancy update can fail the whole deployment.
 
 ⚠️ Note: If you have an existing Container Apps environment without zone redundancy,
    the environment name was changed to force recreation. Your apps will be migrated

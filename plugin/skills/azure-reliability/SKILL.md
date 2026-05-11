@@ -121,7 +121,8 @@ Recommendations (priority order):
 - One row per resource discovered in scope.
 - Columns: only include the reliability features that apply to that resource type. Use `—` for non-applicable cells.
 - Use ✅ when the feature is enabled and correctly configured, ❌ when disabled or misconfigured.
-- For storage rows, annotate `❌ (LRS)` or `❌ (GRS)` so the user sees the current SKU at a glance.
+- For storage rows, annotate `❌ (LRS)` or `❌ (GRS)` so the user sees the current SKU at a glance. If the storage account has no explicit SKU set, treat it as `❌ (GRS)` — ARM/AVM defaults to `Standard_GRS` when none is specified.
+- For health probes on **Flex Consumption (FC1)** or **Consumption (Y1)** Function Apps, annotate `❌ (code-only fix)` — these plans do not support the `healthCheckPath` IaC property; the health endpoint must be implemented in app code.
 - Do **not** include numeric scores, grades, or point totals anywhere in the output.
 
 > **UX Note:** Once all core reliability features (zone redundancy, ZRS storage, health probes) are ✅, congratulate the user and offer the multi-region upgrade as an optional next step:
@@ -208,10 +209,16 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 |-----|-----------|--------------|
 | Zone redundancy (compute) | 🟢 Safe patch | In-place property update on next deploy |
 | Storage LRS → ZRS | 🟡 Pre-migration required | Run `az storage account migration start` before deploy |
-| Health check path | 🟢 Safe patch | In-place update, but causes app restart |
+| Health check path (Premium / Dedicated) | 🟢 Safe patch | In-place update, but causes app restart |
+| Health check path (FC1 / Consumption) | ⚪ Code-only | `healthCheckPath` is unsupported — add `/api/health` endpoint in app code; do **not** patch IaC |
 | Container Apps env ZR (new env) | 🟢 Safe patch | Deploys as zone-redundant from start |
 | Container Apps env ZR (existing) | 🔴 Blue/green required | Must rename env + migrate all apps + child resources |
 | Container Apps probes | 🟢 Safe patch | In-place update |
+
+> **⚠️ Deploy-order rule:** Do **not** apply storage SKU patches in the same deploy as safe patches. Storage redundancy changes can fail the whole `azd up` / `terraform apply` (especially if migration is in-flight or the account kind doesn't support live conversion). Split into two deploys:
+> 1. **Deploy 1** — all 🟢 Safe patches (zone redundancy, health probes, probes). Verify success.
+> 2. **Storage migration** — run `az storage account migration start` and wait for completion (`az storage account show --query sku.name` returns `Standard_ZRS`).
+> 3. **Deploy 2** — the storage SKU patch (now matches actual state, so it's a no-op confirmation).
 
 **Step 3: Apply patches**
 

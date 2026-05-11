@@ -177,4 +177,5 @@ done
 For the reliability checklist, mark the **Health Probe** column per resource:
 - ✅ — health endpoint defined and (where applicable) Application Insights wired up
 - ❌ — missing health endpoint or monitoring on a web-facing service
+- `❌ (code-only fix)` — the resource is on **Flex Consumption (FC1)** or **Consumption (Y1)**, where `healthCheckPath` is not supported as an IaC property. The `/api/health` endpoint must be implemented in app code; do not patch the Bicep/Terraform `siteConfig.healthCheckPath`.
 - — — not applicable for this resource type

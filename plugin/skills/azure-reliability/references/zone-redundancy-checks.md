@@ -6,6 +6,8 @@ Zone redundancy distributes compute instances across availability zones within a
 
 ## Resource Graph Queries
 
+> **⚠️ Output format:** Use `-o json` (default) when running these queries from the agent. `az graph query -o table` only renders summary columns (`Count`, `Total_records`) and does not show projected fields. If you need a human-readable table, pipe JSON through `jq` or use `--query "data[]" -o table`.
+
 ### Check Function Apps for Zone Redundancy
 
 ```bash
@@ -15,7 +17,7 @@ Resources
 | where kind contains 'functionapp' or kind contains 'elastic'
 | extend zoneRedundant = tobool(properties.zoneRedundant)
 | project name, resourceGroup, location, sku=sku.name, zoneRedundant
-" -o table
+" --query "data[]" -o json
 ```
 
 **Interpretation:**
@@ -36,7 +38,7 @@ Resources
 | where type =~ 'microsoft.app/managedenvironments'
 | extend zoneRedundant = tobool(properties.zoneRedundant)
 | project name, resourceGroup, location, zoneRedundant
-" -o table
+" --query "data[]" -o json
 ```
 
 **Interpretation:**
@@ -54,7 +56,7 @@ Resources
 | where kind !contains 'functionapp' and kind !contains 'elastic'
 | extend zoneRedundant = tobool(properties.zoneRedundant)
 | project name, resourceGroup, location, sku=sku.name, tier=sku.tier, zoneRedundant
-" -o table
+" --query "data[]" -o json
 ```
 
 **Requirements for zone redundancy:**
@@ -75,7 +77,7 @@ Resources
 | where zoneRedundant == false or isnull(zoneRedundant)
 | project name, type, resourceGroup, location, sku=sku.name
 | order by type asc
-" -o table
+" --query "data[]" -o json
 ```
 
 ## Regions Supporting Availability Zones
@@ -107,7 +109,7 @@ Resources
 | extend minRequired = 2
 | extend hasSufficientInstances = currentWorkers >= minRequired
 | project name, resourceGroup, sku=sku.name, currentWorkers, minRequired, hasSufficientInstances
-" -o table
+" --query "data[]" -o json
 ```
 
 ### Check Container Apps Minimum Replicas
@@ -120,7 +122,7 @@ Resources
 | extend maxReplicas = toint(properties.template.scale.maxReplicas)
 | project name, resourceGroup, minReplicas, maxReplicas
 | where minReplicas < 2
-" -o table
+" --query "data[]" -o json
 ```
 
 **Interpretation:**

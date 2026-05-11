@@ -22,6 +22,8 @@ Storage accounts underpin Azure Functions, Container Apps (for host storage), an
 
 ## Resource Graph Queries
 
+> **⚠️ Output format:** Use `--query "data[]" -o json` (not `-o table`). `az graph query -o table` only renders summary columns and does not show projected fields.
+
 ### Find All Storage Accounts and Their Replication
 
 ```bash
@@ -32,8 +34,10 @@ Resources
 | extend tier = tostring(sku.tier)
 | project name, resourceGroup, location, replication, tier, kind
 | order by replication asc
-" -o table
+" --query "data[]" -o json
 ```
+
+> **💡 No SKU specified?** If a storage account was deployed without an explicit `sku.name` (raw ARM/Bicep) or `skuName` (AVM module), Azure defaults to **`Standard_GRS`**. Treat any storage account showing `Standard_GRS` as potentially "defaulted" rather than intentionally chosen — check the IaC source to confirm and recommend setting it explicitly to `Standard_ZRS` or `Standard_GZRS`.
 
 ### Find Storage Accounts Using LRS (Not Zone Redundant)
 
@@ -43,7 +47,7 @@ Resources
 | where type =~ 'microsoft.storage/storageaccounts'
 | where sku.name =~ 'Standard_LRS' or sku.name =~ 'Premium_LRS'
 | project name, resourceGroup, location, replication=sku.name
-" -o table
+" --query "data[]" -o json
 ```
 
 ### Find Function App Host Storage Accounts
@@ -55,7 +59,7 @@ Resources
 | where type =~ 'microsoft.web/sites'
 | where kind contains 'functionapp'
 | project name, resourceGroup, location
-" -o table
+" --query "data[]" -o json
 
 # Then for each function app, check its storage:
 az functionapp config appsettings list \
@@ -75,7 +79,7 @@ Resources
 | where type =~ 'microsoft.web/serverfarms'
 | where tobool(properties.zoneRedundant) == true
 | project planName=name, resourceGroup, location
-" -o table
+" --query "data[]" -o json
 
 # Step 2: Check if associated storage accounts are ZRS
 # (Requires app-level inspection of AzureWebJobsStorage setting)
@@ -125,6 +129,6 @@ az storage account update \
 For the reliability checklist, mark the **ZRS Storage** column per storage account:
 - ✅ — SKU is `Standard_ZRS` or `Standard_GZRS`
 - ❌ (LRS) — `Standard_LRS` (no zone redundancy)
-- ❌ (GRS) — `Standard_GRS` or `Standard_RAGRS` (region-redundant but uses LRS in each region; still a zone-failure risk)
+- ❌ (GRS) — `Standard_GRS` or `Standard_RAGRS` (region-redundant but uses LRS in each region; still a zone-failure risk). Also flag this when no SKU is set in IaC at all — ARM/AVM defaults to `Standard_GRS`.
 
 ⚠️ **Key distinction:** GRS provides region redundancy but uses LRS in each region. If compute is zone-redundant but storage is GRS (not ZRS/GZRS), a zone failure can still impact storage availability.

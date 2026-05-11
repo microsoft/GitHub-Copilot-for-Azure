@@ -6,6 +6,8 @@ Multi-region deployment protects against entire region outages. This requires de
 
 ## Resource Graph Queries
 
+> **⚠️ Output format:** Use `--query "data[]" -o json` (not `-o table`). `az graph query -o table` only renders summary columns and does not show projected fields.
+
 ### Check if App is Deployed in Multiple Regions
 
 ```bash
@@ -21,7 +23,7 @@ Resources
 | summarize regions=make_list(location), regionCount=dcount(location), apps=make_list(name) by baseName, appKind
 | where regionCount > 1
 | project baseName, appKind, regionCount, regions, apps
-" -o table
+" --query "data[]" -o json
 ```
 
 **Interpretation:**
@@ -39,7 +41,7 @@ Resources
 | summarize regions=make_list(location), regionCount=dcount(location) by appGroup
 | where regionCount > 1
 | project appGroup, regionCount, regions
-" -o table
+" --query "data[]" -o json
 ```
 
 ### Check for Azure Front Door
@@ -50,7 +52,7 @@ Resources
 | where type =~ 'microsoft.cdn/profiles'
 | where sku.name =~ 'Standard_AzureFrontDoor' or sku.name =~ 'Premium_AzureFrontDoor'
 | project name, resourceGroup, sku=sku.name
-" -o table
+" --query "data[]" -o json
 ```
 
 ### Check for Traffic Manager Profiles
@@ -62,7 +64,7 @@ Resources
 | extend routingMethod = tostring(properties.trafficRoutingMethod)
 | extend endpoints = array_length(properties.endpoints)
 | project name, resourceGroup, routingMethod, endpoints, status=properties.profileStatus
-" -o table
+" --query "data[]" -o json
 ```
 
 ### Check Front Door Origins/Backends
