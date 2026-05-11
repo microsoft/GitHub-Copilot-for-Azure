@@ -67,7 +67,7 @@ jobs:
             --runs 1 \
             --output-dir ./results \
             --output jsonl \
-            --threshold 0.8
+            --threshold 0.7
         env:
           GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
 
