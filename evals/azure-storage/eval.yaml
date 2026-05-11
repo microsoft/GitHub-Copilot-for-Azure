@@ -36,7 +36,7 @@ stimuli:
     prompt: "How do I upload files to Azure Blob Storage and manage containers?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

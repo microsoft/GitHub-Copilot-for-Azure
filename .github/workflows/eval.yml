@@ -59,11 +59,23 @@ jobs:
             echo "name=full" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Run smoke evaluations
+        if: github.event_name == 'pull_request'
+        run: |
+          npx @microsoft/vally-cli eval \
+            --suite smoke \
+            --runs 1 \
+            --output-dir ./results \
+            --output jsonl \
+            --threshold 0.8
+        env:
+          GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+
       - name: Run evaluations
         if: github.event_name != 'pull_request'
         run: |
           npx @microsoft/vally-cli eval \
-            --eval-spec evals/azure-deploy/eval.yaml \
+            --suite ${{ steps.suite.outputs.name }} \
             --output-dir ./results \
             --output jsonl \
             --junit \

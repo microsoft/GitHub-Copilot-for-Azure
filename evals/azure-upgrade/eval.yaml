@@ -42,7 +42,7 @@ stimuli:
     prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

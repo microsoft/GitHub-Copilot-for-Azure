@@ -36,7 +36,7 @@ stimuli:
     prompt: "How do I create a vector search index in Azure AI Search?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:
