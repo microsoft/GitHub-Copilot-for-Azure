@@ -20,10 +20,6 @@ on:
           - triggers
           - integration
           - smoke
-      pr_number:
-        description: 'PR number (for fork testing)'
-        required: false
-        type: string
 
 permissions:
   contents: read

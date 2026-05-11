@@ -15,7 +15,7 @@ npm install -g @microsoft/vally
 # or, no install: use `npx @microsoft/vally ...` below
 ```
 
-You will also need a `GITHUB_TOKEN` (Copilot-enabled) in your environment for the `copilot-sdk` executor used by most evals.
+Authentication is handled automatically via your local `gh` CLI session. Environment variables (`COPILOT_GITHUB_TOKEN`) are only required in CI environments.
 
 ## Running a single eval spec
 
