@@ -12,7 +12,7 @@ Resolve active session via pointer file.
 >
 > 1. **STOP** — Do not answer the user's question, scan code, or plan architecture yet
 > 2. **CHECK** — Read `.copilot-azure/sessions/active-session.json`.
->    - **Pointer exists** → ⛔ **You MUST read [`session-schemas.ts`](session-schemas.ts) using the `view` tool** to get the exact field names and types for `AppOnboardContext`, `PrereqOutput`, and `PreparePlan`. For scaffold/deploy artifacts, also read [`session-schemas-deploy.ts`](session-schemas-deploy.ts) — `ScaffoldManifest`, `DeployResult`. Do not guess field names. Then read the pointed-to session's `context.json`. Display: "Found session from [lastModifiedUtc] — {statusSummary}." Ask: **"Resume or start fresh?"**
+>    - **Pointer exists** → ⛔ **You MUST read [`session-schemas.ts`](session-schemas.ts)** to get the exact field names and types for `AppOnboardContext`, `PrereqOutput`, and `PreparePlan`. For scaffold/deploy artifacts, also read [`session-schemas-deploy.ts`](session-schemas-deploy.ts) — `ScaffoldManifest`, `DeployResult`. Do not guess field names. Then read the pointed-to session's `context.json`. Display: "Found session from [lastModifiedUtc] — {statusSummary}." Ask: **"Resume or start fresh?"**
 >      - Resume → continue from `currentPhase`.
 >      - Start fresh → generate a new UUID via `[guid]::NewGuid().ToString()`, create a new session folder, update `active-session.json` to point to the new session. Old session folder is never touched again.
 >    - **Pointer missing but session folders exist** → list folders under `.copilot-azure/sessions/`. If 1 folder: adopt it (read its `context.json`, write `active-session.json` pointing to it, show summary). If 2+: show a numbered list with `statusSummary` + `lastModifiedUtc` from each, ask user to pick one or start fresh. Write pointer for the chosen session.
@@ -36,7 +36,7 @@ Call `mcp_azure_mcp_extension_cli_install` with `cli-type: "az"` to verify Azure
 
 **Azure login gate (mandatory):** Run `az account show --query "{id:id, name:name, tenantId:tenantId}" -o json` with a **5-second timeout** (PowerShell: `Start-Process` with `-Wait` or inline timeout; if command hangs beyond 5s, treat as failure). If it succeeds, merge `subscriptionId`, `subscriptionName`, `tenantId` into `context.json.azure` (use `replace_string_in_file` or rewrite the file — the minimal context.json from Step 1 sub-step 2 may not have the `azure` key yet).
 
-> ⛔ **If `az account show` fails or hangs:** ⛔ **You MUST read [`subscription-resolution.md`](subscription-resolution.md) using the `view` tool** and follow its fallback procedure. Do NOT proceed to Step 2 without a resolved subscription. Do NOT leave `context.json.azure` empty and continue. Every downstream phase (prepare, scaffold validation, deploy) requires Azure auth — proceeding without it produces incomplete results.
+> ⛔ **If `az account show` fails or hangs:** ⛔ **You MUST read [`subscription-resolution.md`](subscription-resolution.md)** and follow its fallback procedure. Do NOT proceed to Step 2 without a resolved subscription. Do NOT leave `context.json.azure` empty and continue. Every downstream phase (prepare, scaffold validation, deploy) requires Azure auth — proceeding without it produces incomplete results.
 
 ## User Identity Detection
 

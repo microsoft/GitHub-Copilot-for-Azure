@@ -37,7 +37,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 
 ## MCP Tools
 
-> ⛔ **`pricing_get` requires `--sku` on EVERY call.** For free-tier SKUs, skip the API — see [pricing-guide.md](references/pricing-guide.md).
+> ⛔ **`pricing_get`: use `--sku` when querying by `armSkuName`; use `filter`/`meterName` matching for services without `armSkuName`.** For free-tier SKUs, skip the API — see [pricing-guide.md](references/pricing-guide.md).
 
 | Tool | Purpose |
 |------|---------|
@@ -50,7 +50,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 
 ## Workflow
 
-> ⛔ **You MUST read these using the `view` tool before executing ANY step:**
+> ⛔ **You MUST read these before executing ANY step:**
 > - [service-mapping.md](references/service-mapping.md) — component→service mapping + Dockerfile routing
 > - [sku-matrix.md](references/sku-matrix.md) — budget→SKU selection
 > - [pricing-guide.md](references/pricing-guide.md) — per-service filter strings, formulas
@@ -62,17 +62,17 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 | 2 | **Query policy constraints** | Sub-agent: fetch policy + advisor recommendations | `mcp_azure_mcp_policy` + `mcp_azure_mcp_advisor` |
 | 3 | **Map components to services** | Per-component Azure service selection, Dockerfile routing, deploy-as-is | ⛔ Read [service-mapping.md](references/service-mapping.md) + [deploy-strategy.md](references/deploy-strategy.md) |
 | 4 | **Select SKUs + WAF analysis** | Budget-aware SKU selection, WAF service guidance via sub-agent | ⛔ Read [sku-matrix.md](references/sku-matrix.md) |
-| 5 | **Validate quotas + region capacity** | Check quota BEFORE presenting regions. Sub-agent validation | ⛔ **You MUST read [`sku-quota-validation.md`](references/sku-quota-validation.md) using the `view` tool** |
+| 5 | **Validate quotas + region capacity** | Check quota BEFORE presenting regions. Sub-agent validation | ⛔ **You MUST read [`sku-quota-validation.md`](references/sku-quota-validation.md)** |
 | 6 | **Estimate costs** | Sub-agent pricing call, free-tier shortcut, AI cost caveats | ⛔ Read [pricing-guide.md](references/pricing-guide.md) |
 | 7 | **Generate naming** | Centralized naming: suffix, prefix, all resource names | ⛔ Read [naming-patterns.md](references/naming-patterns.md) |
-| 8 | **Determine IaC format** | Bicep (default) or Terraform if existing `.tf` detected | (inline — 2 lines) |
-| 9 | **Write prepare-plan.json** | Per `PreparePlan` schema. Include postDeployRecommendations, deploymentVariables | ⛔ Read [session-schemas.ts](../references/session-schemas.ts) |
+| 8 | **Determine IaC format** | If existing non-Azure `.tf` detected → **ask user**: "Your repo has existing Terraform (targeting {provider}). For the new Azure infrastructure, would you like **(A) fresh Bicep** (recommended — Azure-native) or **(B) Terraform** (keeps toolchain consistent)?" Write choice to `context.json.overrides[].iacFormat`. No `.tf` found → default Bicep, no prompt needed | (inline) |
+| 9 | **Write prepare-plan.json** | Per `PreparePlan` schema. Include postDeployRecommendations, deploymentVariables | ⛔ Read [session-schemas-prepare.ts](../references/session-schemas-prepare.ts) for `PreparePlan` schema |
 | 10 | **Return summary** | Structured summary for orchestrator approval gate | (inline — 1 line) |
 | 11 | **Validate plan** | 4-dimension quality check | ⛔ Read [validation-rubric.md](references/validation-rubric.md) |
 
 ### Step 5 — Quota Validation Procedure
 
-> ⛔ **STOP — Read [`sku-quota-validation.md`](references/sku-quota-validation.md) using the `view` tool BEFORE doing anything in this step.**
+> ⛔ **STOP — Read [`sku-quota-validation.md`](references/sku-quota-validation.md) BEFORE doing anything in this step.**
 
 > ⛔ **NEVER present a region without checking quota first.** Skipping quota validation causes extended healing cascades during deployment. Blind region picks cause cascading deploy failures (3+ retries, 80+ min wasted on healing loops).
 

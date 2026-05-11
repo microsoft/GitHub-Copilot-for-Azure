@@ -14,7 +14,7 @@ Set `currentPhase: "prereq"`.
 >
 > ### If azd template detected
 >
-> ⛔ **You MUST read [`azd-template-routing.md`](azd-template-routing.md) using the `view` tool** — it contains the detection criteria, gate presentation, routing protocol, and edge cases. Do NOT proceed without reading it.
+> ⛔ **You MUST read [`azd-template-routing.md`](azd-template-routing.md)** — it contains the detection criteria, gate presentation, routing protocol, and edge cases. Do NOT proceed without reading it.
 >
 > ### If NO azd template (normal workspace)
 >

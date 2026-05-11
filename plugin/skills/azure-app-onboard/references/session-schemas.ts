@@ -226,5 +226,4 @@ export interface ActiveSessionPointer {
   activeSessionId: string;
 }
 
-// PrereqOutput, BuildRequirements, CloudSdkSwap -> azure-app-onboard-prereq/references/prereq-schemas.ts
-// PrereqOutput, BuildRequirements, CloudSdkSwap → azure-app-onboard-prereq/references/prereq-schemas
+// PrereqOutput, BuildRequirements, CloudSdkSwap → see azure-app-onboard-prereq/references/prereq-schemas.ts

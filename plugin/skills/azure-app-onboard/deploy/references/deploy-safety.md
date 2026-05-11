@@ -26,7 +26,7 @@ Append to `deploymentNames[]` on each healing retry that generates a new `--name
 
 ## Deploy Checklist (compaction-safe — generated at Step 5b)
 
-> ⛔ **You MUST read [`deploy-checklist-template.md`](deploy-checklist-template.md) using the `view` tool** at Step 5b to generate the checklist. Write the result to `.copilot-azure/sessions/{id}/deploy-checklist.md`. Re-read the generated checklist via `view` after every long-running command, failed health check, and conversation compaction.
+> ⛔ **You MUST read [`deploy-checklist-template.md`](deploy-checklist-template.md)** at Step 5b to generate the checklist. Write the result to `.copilot-azure/sessions/{id}/deploy-checklist.md`. Re-read the generated checklist after every long-running command, failed health check, and conversation compaction.
 
 ## Finalize deploy-result.json (Step 8)
 
@@ -39,7 +39,7 @@ Overwrite the skeleton with real values:
 
 ## Blocked Patterns
 
-> ⛔ **You MUST read [`blocked-patterns.md`](blocked-patterns.md) using the `view` tool** before running ANY `az` command during the deploy phase. This file contains every command the agent is forbidden from executing. Block decisions are non-negotiable — user must run blocked commands manually outside AppOnboard.
+> ⛔ **You MUST read [`blocked-patterns.md`](blocked-patterns.md)** before running ANY `az` command during the deploy phase. This file contains every command the agent is forbidden from executing. Block decisions are non-negotiable — user must run blocked commands manually outside AppOnboard.
 
 ## 403 Scope Fallback
 

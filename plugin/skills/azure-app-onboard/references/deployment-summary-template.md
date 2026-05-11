@@ -109,8 +109,8 @@ az group list --tag app-onboard-session-id={sessionId} --query "[].name" -o tsv 
 | `{timestamp}` | Current UTC ISO 8601 |
 | §1 Service rows | `prepare-plan.json.services[]` → `name` (service), `sku`, `resourceName`, `monthlyUsd` from `costEstimate.breakdown[]` |
 | `{total}` | `prepare-plan.json.costEstimate.monthlyUsd` |
-| `{region}` | `prepare-plan.json.deploymentVariables.location` |
-| `{rgName}` | `prepare-plan.json.naming.resourceGroupName` |
+| `{region}` | `context.json.azure.region` |
+| `{rgName}` | `context.json.azure.resourceGroup` |
 | §2 Decision rows | `prepare-plan.json.rejectedAlternatives[]` → decision category, chosen service, rejected service, reason |
 | §2 Caveats | `prereq-output.json.warnings[]` that have severity ≥ WARN + `prepare-plan.json.postDeployRecommendations[]` |
 | §3 File rows | `scaffold-manifest.json.files[]` → `path`, `type` |

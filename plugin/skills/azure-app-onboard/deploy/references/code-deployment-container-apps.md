@@ -2,7 +2,7 @@
 
 After IaC deployment creates the Container App with a placeholder image (`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`), deploy the actual application code. This is **Phase 2** of the two-phase Container Apps deployment pattern.
 
-> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `deploymentVariables.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
+> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `context.json.azure.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
 
 > ⛔ **Phase 2 is NOT optional.** If IaC deployed a Container App with a placeholder image, you MUST execute Phase 2 before health checks. Do NOT leave a placeholder image and tell the user to deploy code manually.
 

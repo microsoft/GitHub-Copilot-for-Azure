@@ -8,8 +8,8 @@ Display template for the deploy approval gate. Present after preflight validatio
 ## Deploy Approval
 
 🏢 **Subscription:** {context.json.azure.subscriptionName} (`{context.json.azure.subscriptionId}`)
-📁 **Resource Group:** {prepare-plan.json.naming.resourceGroupName}
-🌍 **Region:** {prepare-plan.json.services[0].region}
+📁 **Resource Group:** {context.json.azure.resourceGroup}
+🌍 **Region:** {context.json.azure.region}
 
 **Services:**
 | Service | SKU | Region | Resource Name |

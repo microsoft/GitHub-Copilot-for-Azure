@@ -99,7 +99,7 @@ Required: `Contributor` or `Owner` on the target resource group. If missing → 
 
 If `prepare-plan.json.quotaValidation.verified == true` → quota was confirmed at prepare time via direct API check. Proceed to Step 6.
 
-If `quotaValidation.verified == false` or `method == "unverifiable"` → **⛔ you MUST read [sku-quota-validation.md](../../prepare/references/sku-quota-validation.md) using the `view` tool** and run a direct quota check NOW. Do not guess quota commands — the reference contains per-provider API patterns, anti-patterns to avoid, and offer restriction checks. If the check shows limit=0, HALT and present region fallback options.
+If `quotaValidation.verified == false` or `method == "unverifiable"` → **⛔ you MUST read [sku-quota-validation.md](../../prepare/references/sku-quota-validation.md)** and run a direct quota check NOW. Do not guess quota commands — the reference contains per-provider API patterns, anti-patterns to avoid, and offer restriction checks. If the check shows limit=0, HALT and present region fallback options.
 
 ⛔ **If `SubscriptionIsOverQuotaForSku` appears in `az deployment sub create` output, HALT.** Read `prepare-plan.json.quotas[]` for `currentUsage` and `currentLimit`. If `currentLimit == 0`, the SKU is not available in this region — skip straight to region fallback. Skip regions already listed in `quotaValidation.checkedRegions` that had zero availability.
 

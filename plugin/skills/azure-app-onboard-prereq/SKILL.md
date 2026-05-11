@@ -30,7 +30,7 @@ Phase 1 of 4 in AppOnboard pipeline. Session: `.copilot-azure/sessions/{session-
 > Under NO circumstances may you run `npm install`, `npm test`, `npx jest`, `pip install`, `pytest`, `dotnet build`, `dotnet restore`, `dotnet test`, `go mod download`, `cargo build`, or ANY package-manager install, build, or test command during the prereq phase. The prereq phase is read-only evaluation + static-only verification.
 
 1. **Read-only by default** — Do not modify user code unless asked.
-2. ⛔ **Build/install commands and test suites are FORBIDDEN** — no exceptions, no `ask_user` override.
+2. ⛔ **Build/install commands and test suites are FORBIDDEN** on existing code — no `ask_user` override. Limited exception: agent-generated code may be validated via `ask_user` gate (see [remediation-protocol.md](references/remediation-protocol.md))
 3. ⛔ **Every repo goes through the full pipeline (Steps 1–5). No exceptions.** Do not refuse, skip, or short-circuit based on what you recognize. The readiness gate in Step 4 is the ONLY mechanism that halts the pipeline.
 4. ⛔ **Code modifications require `ask_user`** — Dockerfile generation, config changes, scaffolding.
 5. ⛔ **Destructive actions require `ask_user`** — deleting files, overwriting config, provisioning resources, modifying RBAC.
@@ -52,7 +52,7 @@ Phase 1 of 4 in AppOnboard pipeline. Session: `.copilot-azure/sessions/{session-
 
 **If called by orchestrator (`azure-app-onboard`):** Session already exists — read `context.json` and proceed to Step 2.
 
-**If entered directly:** Follow session creation from [azure-app-onboard SKILL.md](../azure-app-onboard/references/session-protocol.md). Set `currentPhase: "prereq"`, `completedPhases: []`.
+**If entered directly:** Follow session creation from [session-protocol.md](../azure-app-onboard/references/session-protocol.md). Set `currentPhase: "prereq"`, `completedPhases: []`.
 
 ### Step 2: Scan Workspace
 

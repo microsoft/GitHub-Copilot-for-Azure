@@ -42,14 +42,14 @@ metadata:
 
 ## Pipeline Rules
 
-> ⛔ **You MUST read [`references/pipeline-rules.md`](references/pipeline-rules.md) using the `view` tool at the start of every AppOnboard session.** It contains approval gates, phase lifecycle, session artifacts, deploy-as-is, and security baseline rules.
+> ⛔ **You MUST read [`references/pipeline-rules.md`](references/pipeline-rules.md) at the start of every AppOnboard session.** It contains approval gates, phase lifecycle, session artifacts, deploy-as-is, and security baseline rules.
 
 ## Workflow
 
 | # | Step | Action | Reference |
 |---|------|--------|-----------|
 | 1 | **Session check + Azure login** | Create/resume session, verify Azure CLI auth, resolve subscription + user identity | ⛔ Read [session-protocol.md](references/session-protocol.md) |
-| 2 | **Gather intent (quick probe)** | Scan workspace, present detected stack + preliminary Azure services, write `context.json.quickProbe`, ask ≤2-6 questions | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 1 — contains probe budget, workspace-detection gate, and artifact schema |
+| 2 | **Gather intent (quick probe)** | Scan workspace, present detected stack + preliminary Azure services, write `context.json.quickProbe`, ask ≤2-6 questions | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 1 — contains probe budget, workspace-detection gate, existing IaC detection, and artifact schema |
 | 3 | **Prereq scan** | **Before invoking, ensure `context.json.quickProbe` is written** with populated `manifests[]`, `importSamples[]`, `dockerfiles[]`, `missingFiles[]` — prereq reuses these to skip re-reading files the probe already extracted. Invoke `{"skill": "azure-app-onboard-prereq"}`. Write `prereq-output.json`. If prereq returns `overallHealth: "blocked"` with unsupported stack/EOL runtime, HALT — do NOT proceed to prepare | ⛔ MANDATORY — do NOT skip. See [azure-app-onboard-prereq/SKILL.md](../azure-app-onboard-prereq/SKILL.md) |
 | 4 | **Refine intent (scan-informed)** | Compare prereq results vs probe, resolve remaining questions, check azd routing | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 2 |
 | 5 | **Plan architecture** | Set `currentPhase: "prepare"`. Write `prepare-plan.json`. ⛔ Self-check: have you read `pipeline-rules.md` and `session-protocol.md`? If not, read them NOW before proceeding | ⛔ Read [prepare/SKILL.md](prepare/SKILL.md) |
@@ -57,7 +57,7 @@ metadata:
 | 7 | **Scaffold** | Set `currentPhase: "scaffold"`. Generate IaC, run self-review. Write `scaffold-manifest.json` | ⛔ Read [scaffold/SKILL.md](scaffold/SKILL.md) |
 | 8 | **Deploy approval gate** | Display validation summary. SEPARATE gate from Step 6 | ⛔ Read [approval-gates.md](references/approval-gates.md) § Deploy Gate |
 | 9 | **Deploy** | Set `currentPhase: "deploy"`. Execute IaC, health-check. Write `deploy-result.json` | ⛔ Read [deploy/SKILL.md](deploy/SKILL.md) |
-| 10 | **Handoff** | Surface deployment identity, cleanup commands, recommendations, next steps | ⛔ **You MUST read [`handoff-protocol.md`](references/handoff-protocol.md) using the `view` tool** |
+| 10 | **Handoff** | Surface deployment identity, cleanup commands, recommendations, next steps | ⛔ **You MUST read [`handoff-protocol.md`](references/handoff-protocol.md)** |
 
 ## Error Handling
 

@@ -53,7 +53,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - deploy-result.json MUST exist — read back to verify, rewrite if missing
   Finalize: overwrite skeleton with real values — status (succeeded/failed), deploymentNames (all used),
   healthStatus (worst across endpoints), duration.completedUtc, resourceResults from `az deployment operation list`
-- ⛔ You MUST read `session-schemas-deploy.ts` using the `view` tool for exact DeployResult field names
+- ⛔ You MUST read `session-schemas-deploy.ts` for exact DeployResult field names
 - deployment-summary.md — update Status, Health, Links
 - SCM re-disabled (App Service) or image param set (Container Apps)
 - If prereq found migration frameworks: run migrations before declaring healthy

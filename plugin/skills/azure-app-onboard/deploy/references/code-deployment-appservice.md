@@ -2,7 +2,7 @@
 
 After IaC deployment creates the Azure resources, deploy application code.
 
-> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `deploymentVariables.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
+> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `context.json.azure.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
 
 > ⛔ **Verify `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is active BEFORE deploying code.** When the app needs server-side dependency installation (Python pip, Node.js native modules, TypeScript build), Oryx must run during deploy. The Bicep template sets this app setting, but ARM deployment timing can delay propagation — the setting may not be active when code deploy starts.
 >
@@ -92,4 +92,4 @@ Log this command in `deploy-audit.log`.
 
 ## Database Post-Deploy Verification
 
-> ⛔ **You MUST read [`database-post-deploy.md`](database-post-deploy.md) using the `view` tool** for migration discovery, execution via App Service SSH, error handling, and PostgreSQL-specific checks.
+> ⛔ **You MUST read [`database-post-deploy.md`](database-post-deploy.md)** for migration discovery, execution via App Service SSH, error handling, and PostgreSQL-specific checks.
