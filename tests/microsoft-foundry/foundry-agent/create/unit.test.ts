@@ -3,7 +3,7 @@
  * 
  * Test isolated skill logic and validation rules.
  * Tests load the parent microsoft-foundry skill and verify
- * the create.md reference document content directly.
+ * the create-hosted.md reference document content directly.
  */
 
 import * as fs from "fs";
@@ -19,7 +19,7 @@ describe("create - Unit Tests", () => {
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
     createContent = fs.readFileSync(
-      path.join(skill.path, "foundry-agent", "create", "create.md"),
+      path.join(skill.path, "foundry-agent", "create", "create-hosted.md"),
       "utf-8"
     );
   });

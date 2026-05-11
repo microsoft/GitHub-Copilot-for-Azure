@@ -1,8 +1,7 @@
-# Waza eval specification for azure-enterprise-infra-planner skill
+# Vally eval specification for azure-enterprise-infra-planner skill
 # Tests infrastructure planning from workload descriptions and correct anti-trigger behavior
 #
-# Run:  waza run tests/azure-enterprise-infra-planner/evals/eval.yaml -v
-# Or:   azd waza run tests/azure-enterprise-infra-planner/evals/eval.yaml -v
+# Run:  vally eval -e tests/azure-enterprise-infra-planner/evals/eval.yaml -v
 name: azure-enterprise-infra-planner-eval
 description: |
   Evaluation suite for the azure-enterprise-infra-planner skill.

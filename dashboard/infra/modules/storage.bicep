@@ -69,6 +69,11 @@ resource integrationReportsContainer 'Microsoft.Storage/storageAccounts/blobServ
   name: 'integration-reports'
 }
 
+resource manualIntegrationReportsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobServices
+  name: 'manual-integration-reports'
+}
+
 resource nonIntegrationContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobServices
   name: 'non-integration'
