@@ -19,13 +19,13 @@ function updateChangelog(
   sourceRepo: string,
   sourceSha: string,
   sourceServerUrl: string
-): boolean {
+): void {
   const entry = buildEntry(sourceRepo, sourceSha, sourceServerUrl);
   let text = fs.readFileSync(changelogPath, "utf8");
 
   if (text.includes(entry)) {
     console.log("Changelog already contains the sync entry; skipping update.");
-    return false;
+    return;
   }
 
   if (!text.includes(UNRELEASED_HEADING)) {
@@ -66,7 +66,6 @@ function updateChangelog(
 
   fs.writeFileSync(changelogPath, text, "utf8");
   console.log(`Updated changelog: ${changelogPath}`);
-  return true;
 }
 
 function main(): void {

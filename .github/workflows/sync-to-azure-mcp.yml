@@ -73,9 +73,8 @@ jobs:
             exit 0
           fi
 
-          cd source-repo/scripts
-          npm run updateAzureMcpChangelog -- \
-            ../../mcp-repo/servers/Azure.Mcp.Server/CHANGELOG.md \
+          npm --prefix source-repo/scripts run updateAzureMcpChangelog -- \
+            mcp-repo/servers/Azure.Mcp.Server/CHANGELOG.md \
             "$SOURCE_REPO" \
             "$SOURCE_SHA" \
             "$SOURCE_SERVER_URL"
