@@ -191,3 +191,7 @@ When the parent skill builds the feature-pivoted assessment table, report each F
 | Zone redundancy — compute | `🟢 ON` if the **plan** has `zoneRedundant: true`. For Premium plans, also requires `sku.capacity ≥ 2` AND each Function App has `minimumElasticInstanceCount ≥ 2`. `🔴 OFF` if the plan tier doesn't support ZR (Consumption Y1) — annotate `(needs plan upgrade to Flex / Premium)`. |
 | Health probes | For Premium / Dedicated: `🟢 ON` if `siteConfig.healthCheckPath` is set, `🔴 OFF` otherwise. For Flex Consumption (FC1) / Consumption (Y1): always annotate `🔴 OFF (code-only fix)` — `healthCheckPath` is not supported on these plans, so an HTTP-triggered `/api/health` function must be added in app code (gated by user consent — see [configure-health-probes.md](../../configure-health-probes.md)). |
 | Multi-region failover | `🟢 ON` if the same Function App is deployed in ≥2 regions behind Front Door / Traffic Manager; otherwise `🔴 OFF`. |
+
+## Additional References
+
+- [Reliability in Azure Functions (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/reliability/reliability-functions?pivots=flex-consumption) — official guidance on availability zones, regional resiliency, and disaster recovery for Azure Functions (Flex Consumption pivot).

@@ -80,8 +80,6 @@ Two-step assessment: **platform-level discovery first, then per-service deep div
 | Service detected | Reference |
 |---|---|
 | Azure Functions (`microsoft.web/serverfarms` with `kind contains 'functionapp'`) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
-| Azure App Service (`microsoft.web/serverfarms`, other kinds) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
-| Azure Container Apps (`microsoft.app/managedenvironments` + `microsoft.app/containerapps`) | [references/services/container-apps/reliability.md](references/services/container-apps/reliability.md) |
 
 ### Phase 3: Generate Reliability Checklist
 
@@ -169,8 +167,6 @@ The exact CLI commands per service live in the per-service references — pick t
 | Fix | Reference |
 |---|---|
 | Enable zone redundancy / configure health probes (Functions) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
-| Enable zone redundancy / configure health probes (App Service) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
-| Enable zone redundancy / configure probes (Container Apps) | [references/services/container-apps/reliability.md](references/services/container-apps/reliability.md) |
 | Upgrade storage replication (cross-service) | [references/configure-storage.md](references/configure-storage.md) |
 | Set up multi-region (cross-service) | [references/configure-multi-region.md](references/configure-multi-region.md) |
 | Platform overview / verification | [references/configure-zone-redundancy.md](references/configure-zone-redundancy.md), [references/configure-health-probes.md](references/configure-health-probes.md) |
